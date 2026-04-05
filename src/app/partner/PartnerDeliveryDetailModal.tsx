@@ -497,7 +497,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                   </div>
 
                   {mapData ? (
-                    <div className="relative overflow-hidden h-[280px] bg-[#1A1A1A] rounded-lg">
+                    <div className="relative overflow-hidden h-[280px] bg-[#EDE9E4] rounded-lg">
                       <DeliveryTrackMap
                         center={mapData.center}
                         crew={isCompleted ? null : mapData.crew}
@@ -509,7 +509,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                       {!isCompleted &&
                         mapData.navEtaSeconds != null &&
                         mapData.navEtaSeconds > 0 && (
-                          <div className="absolute bottom-2 left-2 z-[500] pointer-events-none rounded-lg px-2.5 py-1.5 text-white text-[11px] font-semibold shadow-lg bg-[rgba(74,21,40,0.92)]">
+                          <div className="absolute bottom-2 left-2 z-[500] pointer-events-none rounded-lg border border-[#E8E4DF] bg-white/95 px-2.5 py-1.5 text-[11px] font-semibold text-[#1A1816] shadow-lg backdrop-blur-sm">
                             ~{Math.max(1, Math.round(mapData.navEtaSeconds / 60))} min ETA
                             {mapData.navDistanceRemainingM != null && mapData.navDistanceRemainingM > 0 && (
                               <span className="font-normal opacity-85">

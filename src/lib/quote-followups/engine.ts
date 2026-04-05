@@ -8,6 +8,7 @@ import { getFeatureConfig } from "@/lib/platform-settings";
 import { sendQuoteFollowupSms } from "@/lib/quote-sms";
 import { logActivity } from "@/lib/activity";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
+import { processColdRules } from "@/lib/quote-followups/cold-intelligence";
 
 const HS_TASKS = "https://api.hubapi.com/crm/v3/objects/tasks";
 const HS_ASSOC = "https://api.hubapi.com/crm/v4/objects/tasks";
@@ -205,8 +206,24 @@ export type QuoteFollowupCronJobResult = {
   followup2: number;
   followup3: number;
   expired: number;
+  coldMarked: number;
   errors: string[];
 };
+
+function followupEmailExtras(
+  baseUrl: string,
+  quoteId: string,
+  token: string | null | undefined,
+  followupRowId: string | null,
+): { declineUrl: string | null; openPixelSrc: string | null } {
+  const t = token?.trim();
+  if (!t) return { declineUrl: null, openPixelSrc: null };
+  const declineUrl = `${baseUrl}/quote/${encodeURIComponent(quoteId)}?action=decline&token=${encodeURIComponent(t)}`;
+  const openPixelSrc = followupRowId
+    ? `${baseUrl}/api/email/quote-followup-open?id=${encodeURIComponent(followupRowId)}&t=${encodeURIComponent(t)}`
+    : null;
+  return { declineUrl, openPixelSrc };
+}
 
 /**
  * Rules 1–3 (nurture) + rule 4 (mark expired). Caller must enforce auto_followup_enabled for cron-only runs.
@@ -224,8 +241,13 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
     followup2: 0,
     followup3: 0,
     expired: 0,
+    coldMarked: 0,
     errors: [],
   };
+
+  const coldRun = await processColdRules(supabase);
+  results.coldMarked = coldRun.marked;
+  for (const e of coldRun.errors) results.errors.push(`cold:${e}`);
 
   const statusNotAcceptedOrExpired = ["draft", "sent", "viewed", "declined"];
 
@@ -233,8 +255,11 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
 
   const { data: rule1Quotes } = await supabase
     .from("quotes")
-    .select("quote_id, service_type, factors_applied, contact_id, contacts:contact_id(name, email, phone)")
+    .select(
+      "id, quote_id, public_action_token, service_type, factors_applied, contact_id, contacts:contact_id(name, email, phone)",
+    )
     .eq("status", "sent")
+    .eq("auto_followup_active", true)
     .lt("sent_at", cutoff24h)
     .is("viewed_at", null)
     .is("followup_1_sent", null)
@@ -258,9 +283,24 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
           .select("quote_id");
         if (!claimed?.length) continue;
 
+        const internalId = (q as { id: string }).id;
+        const token = (q as { public_action_token?: string | null }).public_action_token;
+        const { data: fuRow, error: fuErr } = await supabase
+          .from("quote_followups")
+          .insert({ quote_id: internalId, type: "first_followup" })
+          .select("id")
+          .single();
+
+        if (fuErr || !fuRow?.id) {
+          await supabase.from("quotes").update({ followup_1_sent: null }).eq("quote_id", q.quote_id);
+          results.errors.push(`f1:${q.quote_id}:followup_row`);
+          continue;
+        }
+
         const quoteUrl = `${baseUrl}/quote/${q.quote_id}`;
         const serviceLabel = SERVICE_LABELS[q.service_type] ?? q.service_type;
         const firstName = contact.name ? contact.name.split(" ")[0] : "";
+        const extras = followupEmailExtras(baseUrl, q.quote_id, token, fuRow.id);
 
         const res = await sendEmail({
           to: contact.email,
@@ -270,6 +310,8 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
             clientName: contact.name || "",
             quoteUrl,
             serviceLabel,
+            declineUrl: extras.declineUrl,
+            openPixelSrc: extras.openPixelSrc,
           },
         });
 
@@ -297,6 +339,8 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
             }).catch(() => {});
           }
         } else {
+          await supabase.from("quote_followups").delete().eq("id", fuRow.id);
+          await supabase.from("quotes").update({ followup_1_sent: null }).eq("quote_id", q.quote_id);
           results.errors.push(`f1:${q.quote_id}:${res.error}`);
         }
       } catch (err) {
@@ -312,9 +356,10 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
       ? await supabase
           .from("quotes")
           .select(
-            "id, quote_id, service_type, move_date, expires_at, tiers, custom_price, hubspot_deal_id, factors_applied, contact_id, contacts:contact_id(name, email, phone)",
+            "id, quote_id, public_action_token, service_type, move_date, expires_at, tiers, custom_price, hubspot_deal_id, factors_applied, contact_id, contacts:contact_id(name, email, phone)",
           )
           .eq("status", "viewed")
+          .eq("auto_followup_active", true)
           .lt("viewed_at", cutoff48h)
           .is("accepted_at", null)
           .is("followup_2_sent", null)
@@ -344,9 +389,23 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
           .select("quote_id");
         if (!claimed?.length) continue;
 
+        const token = (q as { public_action_token?: string | null }).public_action_token;
+        const { data: fuRow, error: fuErr } = await supabase
+          .from("quote_followups")
+          .insert({ quote_id: q.id, type: "second_followup" })
+          .select("id")
+          .single();
+
+        if (fuErr || !fuRow?.id) {
+          await supabase.from("quotes").update({ followup_2_sent: null }).eq("quote_id", q.quote_id);
+          results.errors.push(`f2:${q.quote_id}:followup_row`);
+          continue;
+        }
+
         const quoteUrl = `${baseUrl}/quote/${q.quote_id}`;
         const serviceLabel = SERVICE_LABELS[q.service_type] ?? q.service_type;
         const firstName = contact.name ? contact.name.split(" ")[0] : "";
+        const extras = followupEmailExtras(baseUrl, q.quote_id, token, fuRow.id);
 
         const res = await sendEmail({
           to: contact.email,
@@ -358,6 +417,8 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
             serviceLabel,
             moveDate: q.move_date,
             expiresAt: q.expires_at,
+            declineUrl: extras.declineUrl,
+            openPixelSrc: extras.openPixelSrc,
             ...variant.extraData,
           },
         });
@@ -387,6 +448,8 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
             }).catch(() => {});
           }
         } else {
+          await supabase.from("quote_followups").delete().eq("id", fuRow.id);
+          await supabase.from("quotes").update({ followup_2_sent: null }).eq("quote_id", q.quote_id);
           results.errors.push(`f2:${q.quote_id}:${res.error}`);
         }
 
@@ -410,9 +473,10 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
       ? await supabase
           .from("quotes")
           .select(
-            "id, quote_id, service_type, expires_at, hubspot_deal_id, factors_applied, contact_id, contacts:contact_id(name, email, phone)",
+            "id, quote_id, public_action_token, service_type, expires_at, hubspot_deal_id, factors_applied, contact_id, contacts:contact_id(name, email, phone)",
           )
           .in("status", ["viewed", "sent"])
+          .eq("auto_followup_active", true)
           .lt("viewed_at", cutoff5d)
           .is("accepted_at", null)
           .is("followup_3_sent", null)
@@ -442,9 +506,23 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
           .select("quote_id");
         if (!claimed?.length) continue;
 
+        const token = (q as { public_action_token?: string | null }).public_action_token;
+        const { data: fuRow, error: fuErr } = await supabase
+          .from("quote_followups")
+          .insert({ quote_id: q.id, type: "third_followup" })
+          .select("id")
+          .single();
+
+        if (fuErr || !fuRow?.id) {
+          await supabase.from("quotes").update({ followup_3_sent: null }).eq("quote_id", q.quote_id);
+          results.errors.push(`f3:${q.quote_id}:followup_row`);
+          continue;
+        }
+
         const quoteUrl = `${baseUrl}/quote/${q.quote_id}`;
         const serviceLabel = SERVICE_LABELS[q.service_type] ?? q.service_type;
         const firstName = contact.name ? contact.name.split(" ")[0] : "";
+        const extras = followupEmailExtras(baseUrl, q.quote_id, token, fuRow.id);
 
         const res = await sendEmail({
           to: contact.email,
@@ -455,6 +533,8 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
             quoteUrl,
             serviceLabel,
             expiresAt: q.expires_at,
+            declineUrl: extras.declineUrl,
+            openPixelSrc: extras.openPixelSrc,
             ...variant.extraData,
           },
         });
@@ -484,6 +564,8 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
             }).catch(() => {});
           }
         } else {
+          await supabase.from("quote_followups").delete().eq("id", fuRow.id);
+          await supabase.from("quotes").update({ followup_3_sent: null }).eq("quote_id", q.quote_id);
           results.errors.push(`f3:${q.quote_id}:${res.error}`);
         }
 

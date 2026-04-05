@@ -95,8 +95,8 @@ export default function ActivityFeed({ events, unseenIds, onMarkSeen }: Activity
       <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-0.5 px-1 pr-2">
         {events.length === 0 ? (
           <div className="py-16 sm:py-20 flex flex-col items-center text-center px-2">
-            <p className="text-[12px] font-semibold text-[var(--tx2)]">No activity yet</p>
-            <p className="text-[10px] text-[var(--tx3)] mt-0.5">
+            <p className="text-base font-semibold text-[var(--tx2)]">No activity yet</p>
+            <p className="text-sm text-[var(--tx3)] mt-1 leading-snug">
               Events appear here as jobs progress
             </p>
           </div>
@@ -127,13 +127,13 @@ export default function ActivityFeed({ events, unseenIds, onMarkSeen }: Activity
                 </div>
                 <div className="min-w-0 flex-1">
                   <p
-                    className={`text-[11px] leading-snug ${
+                    className={`text-sm leading-snug ${
                       isUnseen ? "font-bold text-[var(--tx)]" : "text-[var(--tx2)]"
                     }`}
                   >
                     {e.description}
                   </p>
-                  <p className="text-[9px] text-[var(--tx3)] mt-0.5">{formatTime(e.timestamp)}</p>
+                  <p className="text-xs text-[var(--tx3)] mt-0.5 tabular-nums">{formatTime(e.timestamp)}</p>
                 </div>
                 {isUnseen && (
                   <div className="shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--gold)] mt-2" />

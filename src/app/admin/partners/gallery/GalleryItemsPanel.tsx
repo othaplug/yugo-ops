@@ -49,8 +49,8 @@ function ConditionDot({ rating }: { rating: ConditionRating | null }) {
   const opt = CONDITION_OPTIONS.find((o) => o.value === rating);
   return (
     <span
-      className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-      style={{ background: (opt?.color || "#888") + "22", color: opt?.color || "#888" }}
+      className="inline-flex items-center gap-1 dt-badge tracking-[0.04em]"
+      style={{ color: opt?.color || "#888" }}
     >
       <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: opt?.color || "#888" }} />
       {STATUS_LABELS[rating]}
@@ -112,7 +112,7 @@ function AddItemForm({
 
   return (
     <form onSubmit={handleSubmit} className="bg-[var(--bg)] rounded-xl p-4 border border-[var(--brd)]/50 space-y-3">
-      <div className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60 mb-2">Add Item</div>
+      <div className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/82 mb-2">Add Item</div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
@@ -180,7 +180,7 @@ function AddItemForm({
         ].map(({ key, label, val, set }) => (
           <label key={key} className="flex items-center gap-2 cursor-pointer select-none">
             <div
-              className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${val ? "bg-[var(--gold)] border-[var(--gold)]" : "border-[var(--brd)] bg-[var(--card)]"}`}
+              className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${val ? "bg-[var(--admin-primary-fill)] border-[var(--gold)]" : "border-[var(--brd)] bg-[var(--card)]"}`}
               onClick={() => set(!val)}
             >
               {val && (
@@ -196,7 +196,7 @@ function AddItemForm({
         <button
           type="submit"
           disabled={saving || !title.trim()}
-          className="px-4 py-2 rounded-lg bg-[var(--gold)] text-white text-[12px] font-semibold hover:opacity-90 disabled:opacity-40 transition-colors"
+          className="px-4 py-2 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-40 transition-colors"
         >
           {saving ? "Adding…" : "Add Item"}
         </button>
@@ -258,7 +258,7 @@ function ConditionReportForm({
 
   return (
     <div className="mt-3 bg-[var(--bg)] rounded-xl p-3 border border-[var(--brd)]/40 space-y-3">
-      <div className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60">
+      <div className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/82">
         {phase === "pre" ? "Pre-Transport Condition" : "Post-Transport Condition"}
       </div>
       <div className="flex flex-wrap gap-2">
@@ -290,7 +290,7 @@ function ConditionReportForm({
           type="button"
           onClick={handleSave}
           disabled={saving || !condition}
-          className="px-3 py-1.5 rounded-lg bg-[var(--gold)] text-white text-[11px] font-semibold hover:opacity-90 disabled:opacity-40 transition-colors"
+          className="px-3 py-1.5 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[11px] font-semibold hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-40 transition-colors"
         >
           {saving ? "Saving…" : "Save Report"}
         </button>
@@ -341,7 +341,7 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Artwork Items</div>
+          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-0.5">Artwork Items</div>
           <div className="flex items-center gap-2 text-[11px] text-[var(--tx3)]">
             <span>{items.length} item{items.length !== 1 ? "s" : ""}</span>
             {conditionedCount > 0 && (
@@ -402,16 +402,16 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
                   {/* Flags */}
                   <div className="shrink-0 flex gap-1">
                     {item.fragile && (
-                      <span className="text-[10px] font-bold px-1 py-0.5 rounded bg-[#F59E0B]/15 text-[#F59E0B]">FRAGILE</span>
+                      <span className="dt-badge tracking-[0.04em] text-[#F59E0B]">FRAGILE</span>
                     )}
                     {item.crating_required && (
-                      <span className="text-[10px] font-bold px-1 py-0.5 rounded bg-[#8B5CF6]/15 text-[#8B5CF6]">CRATING</span>
+                      <span className="dt-badge tracking-[0.04em] text-[#8B5CF6]">CRATING</span>
                     )}
                     {item.climate_sensitive && (
-                      <span className="text-[10px] font-bold px-1 py-0.5 rounded bg-[#3B82F6]/15 text-[#3B82F6]">CLIMATE</span>
+                      <span className="dt-badge tracking-[0.04em] text-[#3B82F6]">CLIMATE</span>
                     )}
                     {hasDiscrepancy && (
-                      <span className="text-[10px] font-bold px-1 py-0.5 rounded bg-[#EF4444]/15 text-[#EF4444]">DISCREPANCY</span>
+                      <span className="dt-badge tracking-[0.04em] text-[#EF4444]">DISCREPANCY</span>
                     )}
                   </div>
 
@@ -441,25 +441,25 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
                       {item.insurance_value && (
                         <div>
-                          <p className="text-[9px] font-bold uppercase text-[var(--tx3)]/60">Insurance Value</p>
+                          <p className="text-[9px] font-bold uppercase text-[var(--tx3)]/82">Insurance Value</p>
                           <p className="font-semibold text-[var(--tx)]">{item.insurance_value}</p>
                         </div>
                       )}
                       {item.serial_number && (
                         <div>
-                          <p className="text-[9px] font-bold uppercase text-[var(--tx3)]/60">Serial / Reg #</p>
+                          <p className="text-[9px] font-bold uppercase text-[var(--tx3)]/82">Serial / Reg #</p>
                           <p className="font-semibold text-[var(--tx)]">{item.serial_number}</p>
                         </div>
                       )}
                       {item.weight_kg != null && (
                         <div>
-                          <p className="text-[9px] font-bold uppercase text-[var(--tx3)]/60">Weight</p>
+                          <p className="text-[9px] font-bold uppercase text-[var(--tx3)]/82">Weight</p>
                           <p className="font-semibold text-[var(--tx)]">{item.weight_kg} kg</p>
                         </div>
                       )}
                       {item.handling_notes && (
                         <div className="col-span-2 sm:col-span-3">
-                          <p className="text-[9px] font-bold uppercase text-[var(--tx3)]/60">Handling Notes</p>
+                          <p className="text-[9px] font-bold uppercase text-[var(--tx3)]/82">Handling Notes</p>
                           <p className="text-[var(--tx2)]">{item.handling_notes}</p>
                         </div>
                       )}
@@ -468,7 +468,7 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
                     {/* Condition report summary */}
                     <div className="flex flex-wrap gap-2 pt-1">
                       <div className="flex-1 min-w-[160px] bg-[var(--bg)] rounded-lg p-3">
-                        <div className="text-[9px] font-bold uppercase text-[var(--tx3)]/60 mb-1">Pre-Transport</div>
+                        <div className="text-[9px] font-bold uppercase text-[var(--tx3)]/82 mb-1">Pre-Transport</div>
                         {item.pre_condition ? (
                           <>
                             <ConditionDot rating={item.pre_condition} />
@@ -490,7 +490,7 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
                         </button>
                       </div>
                       <div className="flex-1 min-w-[160px] bg-[var(--bg)] rounded-lg p-3">
-                        <div className="text-[9px] font-bold uppercase text-[var(--tx3)]/60 mb-1">Post-Transport</div>
+                        <div className="text-[9px] font-bold uppercase text-[var(--tx3)]/82 mb-1">Post-Transport</div>
                         {item.post_condition ? (
                           <>
                             <ConditionDot rating={item.post_condition} />

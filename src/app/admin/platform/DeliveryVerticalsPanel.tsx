@@ -162,7 +162,7 @@ export default function DeliveryVerticalsPanel({ isSuperAdmin = false }: { isSup
         <button
           type="button"
           onClick={openNew}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)]"
         >
           <Plus className="w-4 h-4" />
           New vertical
@@ -746,7 +746,7 @@ function VerticalEditForm({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save"}
         </button>

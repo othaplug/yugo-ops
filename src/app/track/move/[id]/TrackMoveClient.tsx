@@ -20,7 +20,7 @@ import {
 import { getDisplayLabel } from "@/lib/displayLabels";
 import { isMoveRowLogisticsDelivery } from "@/lib/quotes/b2b-quote-copy";
 import { SafeText } from "@/components/SafeText";
-import { formatMoveDate, parseDateOnly } from "@/lib/date-format";
+import { formatMoveDate, formatPlatformDisplay, parseDateOnly } from "@/lib/date-format";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
 import { formatAccessForDisplay, toTitleCase } from "@/lib/format-text";
 import { formatPhone, normalizePhone } from "@/lib/phone";
@@ -86,10 +86,7 @@ function formatPerkOffer(
 }
 
 function formatPerkExpiry(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
+  return formatPlatformDisplay(iso, { month: "short", day: "numeric" }, "");
 }
 
 const PERK_CARD_THEMES = [
@@ -1095,13 +1092,13 @@ export default function TrackMoveClient({
   if (isB2BOneOff) {
     return (
       <div
-        className="min-h-screen font-sans flex items-center justify-center px-4"
+        className="min-h-dvh font-sans flex items-center justify-center px-4 py-8"
         data-theme="light"
         style={{ backgroundColor: "#F9EDE4", color: FOREST }}
       >
         <div className="max-w-md w-full text-center">
           <h1
-            className="font-hero text-[26px] sm:text-[30px] font-semibold mb-2"
+            className="font-hero text-[24px] sm:text-[30px] font-semibold mb-2 break-words"
             style={{ color: WINE }}
           >
             Partner-Managed Delivery
@@ -1124,13 +1121,13 @@ export default function TrackMoveClient({
   if (linkExpired) {
     return (
       <div
-        className="min-h-screen font-sans flex items-center justify-center px-4"
+        className="min-h-dvh font-sans flex items-center justify-center px-4 py-8"
         data-theme="light"
         style={{ backgroundColor: "#F9EDE4", color: FOREST }}
       >
         <div className="max-w-md w-full text-center">
           <h1
-            className="font-hero text-[26px] sm:text-[30px] font-semibold mb-2"
+            className="font-hero text-[24px] sm:text-[30px] font-semibold mb-2 break-words"
             style={{ color: WINE }}
           >
             Your move is complete
@@ -1153,7 +1150,7 @@ export default function TrackMoveClient({
 
   return (
     <div
-      className={`${fillParentHeight ? "h-full min-h-0" : "h-screen"} flex flex-col overflow-x-hidden overflow-y-hidden font-sans min-w-0 max-w-[100vw]`}
+      className={`${fillParentHeight ? "h-full min-h-0" : "h-dvh max-h-dvh"} flex flex-col overflow-x-hidden overflow-y-hidden font-sans min-w-0 w-full max-w-full`}
       data-theme="light"
       style={{ backgroundColor: trackPageBg, color: trackPageInk }}
     >
@@ -1185,7 +1182,7 @@ export default function TrackMoveClient({
           <div
             className="fixed left-1/2 -translate-x-1/2 z-[100] flex items-center justify-center w-9 h-9 rounded-full shadow-lg transition-transform"
             style={{
-              top: 52,
+              top: "max(5.25rem, calc(3rem + env(safe-area-inset-top, 0px)))",
               transform: `translate(-50%, ${pullDistance}px)`,
               backgroundColor: "#FFFDF8",
               border: `1px solid ${FOREST}40`,
@@ -1210,7 +1207,7 @@ export default function TrackMoveClient({
             )}
           </div>
         )}
-        <main className="flex-1 max-w-[800px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-6 min-w-0 w-full pb-8">
+        <main className="flex-1 max-w-[800px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-6 min-w-0 w-full pb-8 scroll-pb-8">
           {showPaymentSuccess && (
             <div className="mb-5 text-center py-6 animate-fade-up">
               <div
@@ -1381,14 +1378,11 @@ export default function TrackMoveClient({
               </p>
             </div>
             <span
-              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold shrink-0"
-              style={{
-                backgroundColor: `${FOREST}12`,
-                color: WINE,
-              }}
+              className="inline-flex items-center gap-1.5 shrink-0 text-[11px] font-bold uppercase tracking-[0.04em]"
+              style={{ color: WINE }}
             >
               <span
-                className="w-1.5 h-1.5 rounded-full"
+                className="w-1.5 h-1.5 rounded-full shrink-0"
                 style={{
                   backgroundColor: FOREST,
                 }}
@@ -2896,9 +2890,9 @@ export default function TrackMoveClient({
 
           {/* Tabs (hidden for completed moves, perks hub is the permanent view) */}
           {!isCompleted && (
-            <div className="relative mb-3">
+            <div className="sticky top-0 z-20 -mx-4 px-4 mb-3 pt-1 pb-0.5 backdrop-blur-md bg-[#F9EDE4]/92 border-b sm:static sm:z-auto sm:mx-0 sm:px-0 sm:mb-3 sm:border-b-0 sm:bg-transparent sm:backdrop-blur-none sm:pt-0 sm:pb-0" style={{ borderColor: `${FOREST}10` }}>
               <div
-                className="flex flex-wrap justify-center gap-x-0 overflow-x-auto overflow-y-hidden scrollbar-hide scroll-smooth"
+                className="flex flex-wrap justify-center gap-x-0 overflow-x-auto overflow-y-hidden scrollbar-hide scroll-smooth snap-x snap-mandatory"
                 style={{ WebkitOverflowScrolling: "touch" }}
               >
                 {tabs.map((t) => (
@@ -2906,7 +2900,7 @@ export default function TrackMoveClient({
                     key={t.key}
                     type="button"
                     onClick={() => setActiveTab(t.key)}
-                    className={`shrink-0 px-3 py-2 text-[12px] sm:text-[13px] font-bold uppercase tracking-[0.08em] leading-none whitespace-nowrap border-b-2 transition-colors [font-family:var(--font-body)] ${
+                    className={`shrink-0 px-3 py-2.5 min-h-11 sm:min-h-0 text-[12px] sm:text-[13px] font-bold uppercase tracking-[0.08em] leading-none whitespace-nowrap border-b-2 transition-colors touch-manipulation snap-start [font-family:var(--font-body)] ${
                       activeTab === t.key
                         ? "opacity-100"
                         : "border-transparent opacity-45 hover:opacity-70"
@@ -3925,6 +3919,7 @@ export default function TrackMoveClient({
                   token={token}
                   move={move}
                   crew={crew}
+                  isEstate={isEstateTier}
                   revealCrewNames={revealCrewNames}
                   crewAssigned={crewAssigned}
                   onLiveStageChange={setLiveStage}

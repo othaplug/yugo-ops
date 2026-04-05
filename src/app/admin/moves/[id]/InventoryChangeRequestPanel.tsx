@@ -197,7 +197,7 @@ export default function InventoryChangeRequestPanel({
                   admin_notes: adjustNote.trim(),
                 })
               }
-              className="flex-1 py-2 rounded-lg bg-[var(--gold)] text-[11px] font-bold text-[var(--btn-text-on-accent)] disabled:opacity-50"
+              className="flex-1 py-2 rounded-lg bg-[var(--admin-primary-fill)] text-[11px] font-bold text-[var(--btn-text-on-accent)] disabled:opacity-50"
             >
               {busy === "adjust" ? "…" : "Apply adjusted price"}
             </button>

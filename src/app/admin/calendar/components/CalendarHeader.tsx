@@ -127,7 +127,7 @@ export default function CalendarHeader({
         <button
           type="button"
           onClick={onScheduleJob}
-          className="inline-flex items-center justify-center gap-1 min-h-[40px] sm:min-h-0 px-4 sm:px-2.5 py-2 sm:py-1 rounded-lg sm:rounded-md text-xs sm:text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors shrink-0 w-full sm:w-auto"
+          className="inline-flex items-center justify-center gap-1 min-h-[40px] sm:min-h-0 px-4 sm:px-2.5 py-2 sm:py-1 rounded-lg sm:rounded-md text-xs sm:text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors shrink-0 w-full sm:w-auto"
         >
           + Schedule
         </button>

@@ -188,6 +188,8 @@ export function buildNotificationTitle(
     quote_accepted: "New booking",
     quote_expiring_soon: "Quote expiring soon",
     quote_expired: "Quote expired",
+    quote_declined: "Quote declined",
+    quote_cold: "Quote went cold",
     payment_received: "Payment received",
     payment_failed: "Payment failed",
     deposit_received: "Deposit received",
@@ -227,6 +229,9 @@ export function buildNotificationBody(
     const base = data.clientName ? `${data.clientName} viewed their quote` : "Quote was viewed";
     return data.tierClicked ? `${base} (${data.tierClicked} clicked)` : base;
   }
+  if (slug === "quote_declined" || slug === "quote_cold") {
+    return (data.description as string) || "";
+  }
   if (slug === "payment_received" || slug === "deposit_received") {
     const amt = data.amount ? `$${Number(data.amount).toLocaleString()}` : "";
     return data.clientName ? `${amt} from ${data.clientName}`.trim() : amt;
@@ -251,6 +256,8 @@ export function getNotificationIcon(slug: string): string {
     quote_accepted: "party",
     quote_expiring_soon: "clock",
     quote_expired: "clock",
+    quote_declined: "file",
+    quote_cold: "clock",
     payment_received: "dollar",
     payment_failed: "alertTriangle",
     deposit_received: "dollar",

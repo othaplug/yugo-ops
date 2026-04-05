@@ -1,10 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { DownloadSimple } from "@phosphor-icons/react";
 import { useToast } from "../../components/Toast";
 import { generateDeliveryPDF } from "@/lib/pdf";
 
-export default function DownloadPDFButton({ delivery }: { delivery: any }) {
+export default function DownloadPDFButton({
+  delivery,
+  className,
+}: {
+  delivery: any;
+  /** Must match sibling header actions (Edit, Delete) for one toolbar row. */
+  className: string;
+}) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -17,12 +25,9 @@ export default function DownloadPDFButton({ delivery }: { delivery: any }) {
   };
 
   return (
-    <button 
-      onClick={handleDownload} 
-      disabled={loading}
-      className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all disabled:opacity-50"
-    >
-      {loading ? "Generating..." : "Download"}
+    <button type="button" onClick={handleDownload} disabled={loading} className={className}>
+      <DownloadSimple weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
+      {loading ? "Generating…" : "Download"}
     </button>
   );
 }

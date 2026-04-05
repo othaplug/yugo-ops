@@ -429,11 +429,11 @@ function PartnerPortalInner({
     <PartnerNotificationProvider orgId={orgId}>
       <PartnerChangePasswordGate>
         <div
-          className="min-h-screen bg-[#FAF7F2] text-[#1a1f1b]"
+          className="min-h-screen min-h-dvh w-full max-w-full min-w-0 overflow-x-clip bg-[#FAF7F2] text-[#1a1f1b]"
           data-theme="light"
         >
           {/* Header */}
-          <header className="bg-[#FFFBF7]/95 backdrop-blur border-b border-[#2C3E2D]/12 px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-30">
+          <header className="bg-[#FFFBF7]/95 backdrop-blur border-b border-[#2C3E2D]/12 px-4 sm:px-6 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-3 flex items-center justify-between sticky top-0 z-30">
             <div className="flex items-center gap-2 min-w-0">
               <YugoLogo size={19} variant="wine" />
               <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#2C3E2D]/40 shrink-0">
@@ -457,7 +457,7 @@ function PartnerPortalInner({
                 type="button"
                 onClick={() => setSettingsOpen(true)}
                 aria-label="Account settings"
-                className="w-8 h-8 rounded-sm border border-[#5C1A33]/28 bg-transparent flex items-center justify-center text-[10px] font-bold cursor-pointer transition-colors hover:bg-[#5C1A33]/[0.06]"
+                className="min-h-10 min-w-10 h-10 w-10 shrink-0 rounded-sm border border-[#5C1A33]/28 bg-transparent flex items-center justify-center text-[10px] font-bold cursor-pointer transition-colors hover:bg-[#5C1A33]/[0.06] touch-manipulation active:scale-[0.98]"
                 style={{ color: WINE }}
               >
                 {contactName.charAt(0).toUpperCase()}
@@ -648,7 +648,7 @@ function PartnerPortalInner({
             ref={(el) => {
               pullRef.current = el;
             }}
-            className="max-w-[1100px] mx-auto px-4 sm:px-8 py-5 sm:py-8 pb-[calc(72px+env(safe-area-inset-bottom,0px))] sm:pb-10"
+            className="max-w-[1100px] mx-auto px-4 sm:px-8 py-5 sm:py-8 pb-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px))] sm:pb-10"
           >
             {/* Pull-to-refresh indicator */}
             {(pullDistance > 0 || refreshing) && (
@@ -733,7 +733,7 @@ function PartnerPortalInner({
                 Partner portal
               </p>
               <h1
-                className="font-hero text-[32px] sm:text-[36px] font-normal leading-[1.08] tracking-tight"
+                className="font-hero text-[28px] sm:text-[34px] md:text-[36px] font-normal leading-[1.08] tracking-tight break-words"
                 style={{ color: WINE }}
               >
                 {isReturning ? "Welcome back" : getPartnerGreeting()},{" "}
@@ -1276,7 +1276,8 @@ function PartnerPortalInner({
           {/* Mobile bottom navigation, hidden on sm+ */}
           {!features.showReferrals && (
             <nav
-              className="sm:hidden fixed bottom-0 left-0 right-0 z-[var(--z-topbar)] border-t border-[#2C3E2D]/10 flex items-stretch bg-[#FFFBF7]/98 backdrop-blur-md safe-area-bottom"
+              className="sm:hidden fixed bottom-0 left-0 right-0 z-[var(--z-topbar)] border-t border-[#2C3E2D]/10 flex items-stretch bg-[#FFFBF7]/98 backdrop-blur-md"
+              style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
               aria-label="Main navigation"
             >
               {[
@@ -1351,7 +1352,7 @@ function PartnerPortalInner({
                         setSettingsOpen(true);
                       } else setActiveTab(key);
                     }}
-                    className={`flex-1 flex flex-col items-center justify-end gap-1 pb-3 pt-2 min-h-[56px] text-[9px] font-bold tracking-[0.08em] uppercase transition-colors touch-manipulation ${
+                    className={`flex-1 flex flex-col items-center justify-end gap-1 pb-2.5 pt-2 min-h-[52px] text-[10px] font-bold tracking-[0.08em] uppercase transition-colors touch-manipulation ${
                       isActive ? "text-[#2C3E2D]" : "text-[#5A6B5E]"
                     }`}
                     aria-current={isActive ? "page" : undefined}

@@ -3103,7 +3103,7 @@ export default function QuoteFormClient({
             <button
               type="button"
               onClick={() => setSpecialtyBuilderOpen(true)}
-              className="px-3 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+              className="px-3 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
             >
               Open builder
             </button>
@@ -3196,7 +3196,7 @@ export default function QuoteFormClient({
         <div className={`flex flex-col transition-all duration-300 max-w-4xl w-full ${previewOpen ? "min-[480px]:w-[60%] min-w-0" : "min-[480px]:w-full"}`}>
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-[var(--brd)]">
-              <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales</p>
+              <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Sales</p>
               <h1 className="admin-page-hero text-[var(--tx)]">Generate Quote</h1>
               <p className="text-[11px] text-[var(--tx3)] mt-1.5">
                 Fill in the details and generate a quote. The live preview updates as you type.
@@ -3206,7 +3206,7 @@ export default function QuoteFormClient({
             <div className="p-5 space-y-0">
               {/* ── 1. Service type ── */}
               <div>
-                <label className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>
+                <label className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Service Type</label>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
                   {SERVICE_TYPES.map((card) => {
                     const sel = serviceType === card.value;
@@ -3217,7 +3217,7 @@ export default function QuoteFormClient({
                         onClick={() => setServiceType(card.value)}
                         className={`relative text-left px-3 py-2 rounded-lg border transition-all duration-200 ${
                           sel
-                            ? "bg-gradient-to-br from-[#2C3E2D] to-[#8B7332] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
+                            ? "bg-gradient-to-br from-[#2C3E2D] to-[#5C1A33] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
                             : "bg-[var(--card)] border-[var(--brd)] hover:border-[var(--gold)]/40 hover:bg-[var(--bg)]"
                         }`}
                       >
@@ -3247,7 +3247,7 @@ export default function QuoteFormClient({
               {/* ── 2. Client ── */}
               {serviceType !== "b2b_delivery" && (
               <div className="space-y-3">
-                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client</h3>
+                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Client</h3>
                 <Field label="Select to auto fill">
                   <div ref={contactDropdownRef} className="relative">
                     <input
@@ -3408,7 +3408,7 @@ export default function QuoteFormClient({
                         <button
                           type="button"
                           onClick={handleClientAutoFill}
-                          className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
+                          className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
                         >
                           Auto-fill
                         </button>
@@ -3451,7 +3451,7 @@ export default function QuoteFormClient({
                         <button
                           type="button"
                           onClick={handleClientAutoFill}
-                          className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
+                          className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
                         >
                           Auto-fill from HubSpot
                         </button>
@@ -3472,7 +3472,7 @@ export default function QuoteFormClient({
               {/* ── Referral Code ── */}
               {serviceType !== "b2b_delivery" && (
               <div className="border-t border-[var(--brd)]/30 pt-4 pb-1">
-                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Referral Code</h3>
+                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3">Referral Code</h3>
                 <div className="flex gap-2">
                   <input
                     value={referralCode}
@@ -3502,7 +3502,7 @@ export default function QuoteFormClient({
               {/* ── 3. Addresses ── */}
               {serviceType !== "b2b_delivery" && (
               <div className="space-y-3">
-                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
                   {serviceType === "event" && eventMulti
                     ? "Addresses (per event below)"
                     : serviceType === "event"
@@ -3699,7 +3699,7 @@ export default function QuoteFormClient({
               {/* Event and labour_only manage their own date fields */}
               {serviceType !== "event" && serviceType !== "b2b_delivery" && (
               <div>
-                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
+                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3">
                   {quoteFormSchedulingSectionTitle(serviceType)}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -3813,7 +3813,7 @@ export default function QuoteFormClient({
                         setBinMaterialDelivery(false);
                         setBinLinkedMoveId("");
                       }}
-                      className="shrink-0 px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-95 transition-opacity"
+                      className="shrink-0 px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:opacity-95 transition-opacity"
                     >
                       Add to quote
                     </button>
@@ -3970,7 +3970,7 @@ export default function QuoteFormClient({
               {/* ── 5. Specialty items ── */}
               {(serviceType === "local_move" || serviceType === "long_distance") && (
                 <div className="space-y-2">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Items</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Specialty Items</h3>
                   <div className="flex flex-wrap gap-1.5">
                     {SPECIALTY_ITEM_TYPES.map((type) => {
                       const active = specialtyItems.some((i) => i.type === type);
@@ -3979,10 +3979,10 @@ export default function QuoteFormClient({
                           key={type}
                           type="button"
                           onClick={() => toggleSpecialtyItem(type)}
-                          className={`px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
+                          className={`px-2.5 py-1 rounded-md text-[9px] font-semibold border transition-colors ${
                             active
-                              ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
-                              : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
+                              ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                              : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
                           }`}
                         >
                           {toTitleCase(type)}
@@ -4014,7 +4014,7 @@ export default function QuoteFormClient({
               {(serviceType === "local_move" || serviceType === "long_distance" || serviceType === "white_glove" || serviceType === "specialty") && (
                 <div className="space-y-2 mt-3">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Custom Crating</h3>
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Custom Crating</h3>
                     <label className="flex items-center gap-1.5 ml-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -4115,7 +4115,7 @@ export default function QuoteFormClient({
               {/* ── Office fields ── */}
               {serviceType === "office_move" && (
                 <div className="space-y-2">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Office Details</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Office Details</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <Field label="Billable hours (crew block)">
                       <input
@@ -4166,7 +4166,7 @@ export default function QuoteFormClient({
                           role="switch"
                           aria-checked={tog.val}
                           onClick={() => tog.set(!tog.val)}
-                          className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${tog.val ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+                          className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${tog.val ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
                         >
                           <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${tog.val ? "translate-x-4" : ""}`} />
                         </button>
@@ -4179,7 +4179,7 @@ export default function QuoteFormClient({
               {/* ── Single item fields ── */}
               {serviceType === "single_item" && (
                 <div className="space-y-3">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Items</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Items</h3>
                   <div className="rounded-xl border-2 border-[var(--gold)]/40 bg-[var(--gold)]/8 px-3 py-3 space-y-2">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--gold)]">Special handling instructions</p>
                     <p className="text-[9px] text-[var(--tx3)] leading-snug">
@@ -4223,7 +4223,7 @@ export default function QuoteFormClient({
                     </Field>
                     <div className="flex items-center gap-1.5">
                       <span className="text-[9px] font-bold uppercase text-[var(--tx3)] shrink-0">Stair Carry</span>
-                      <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${stairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                      <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${stairCarry ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                         <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`} />
                       </button>
                       {stairCarry && (
@@ -4237,7 +4237,7 @@ export default function QuoteFormClient({
               {/* ── White glove fields ── */}
               {serviceType === "white_glove" && (
                 <div className="space-y-2">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove, Items</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">White Glove, Items</h3>
                   <Field label="Item description *">
                     <input
                       value={itemDescription}
@@ -4268,7 +4268,7 @@ export default function QuoteFormClient({
                     </Field>
                     <div className="flex items-center gap-1.5">
                       <span className="text-[9px] font-bold uppercase text-[var(--tx3)] shrink-0">Stair Carry</span>
-                      <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${stairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                      <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${stairCarry ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                         <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`} />
                       </button>
                       {stairCarry && (
@@ -4282,7 +4282,7 @@ export default function QuoteFormClient({
               {/* ── Specialty fields ── */}
               {serviceType === "specialty" && (
                 <div className="space-y-4">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Move</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Specialty Move</h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Field label="Specialty Type">
@@ -4396,7 +4396,7 @@ export default function QuoteFormClient({
               {serviceType === "event" && (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Event Details</h3>
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Event Details</h3>
                     <Field label="Event Name">
                       <input value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="e.g. L'Oréal Beauty Event" className={fieldInput} />
                     </Field>
@@ -4537,7 +4537,7 @@ export default function QuoteFormClient({
                   {!eventMulti && (
                     <>
                       <div className="space-y-2">
-                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Venue</h3>
+                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Venue</h3>
                         {eventSameLocationSingle ? (
                           <p className="text-[11px] text-[var(--tx2)] rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
                             Venue matches origin, on-site event (no separate venue address).
@@ -4557,7 +4557,7 @@ export default function QuoteFormClient({
                       </div>
 
                       <div className="space-y-2">
-                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Delivery (Day 1)</h3>
+                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Delivery (Day 1)</h3>
                         <div className="grid grid-cols-2 gap-2">
                           <Field label="Delivery Date *">
                             <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} required className={fieldInput} />
@@ -4605,7 +4605,7 @@ export default function QuoteFormClient({
                           <>
                             <div className="flex items-center gap-3">
                               <span className="text-[10px] font-medium text-[var(--tx)]">Setup required (paid)</span>
-                              <button type="button" role="switch" aria-checked={eventSetupRequired} onClick={() => setEventSetupRequired(!eventSetupRequired)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${eventSetupRequired ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                              <button type="button" role="switch" aria-checked={eventSetupRequired} onClick={() => setEventSetupRequired(!eventSetupRequired)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${eventSetupRequired ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                                 <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${eventSetupRequired ? "translate-x-4" : ""}`} />
                               </button>
                             </div>
@@ -4629,7 +4629,7 @@ export default function QuoteFormClient({
                       </div>
 
                       <div className="space-y-2">
-                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Return (Day 2+)</h3>
+                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Return (Day 2+)</h3>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input type="checkbox" checked={eventSameDay} onChange={(e) => setEventSameDay(e.target.checked)} className="accent-[var(--gold)] w-3.5 h-3.5" />
                           <span className="text-[11px] text-[var(--tx2)]">Same Day Event, delivery and return on same day</span>
@@ -4873,7 +4873,7 @@ export default function QuoteFormClient({
                       </button>
 
                       <div className="space-y-2">
-                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Setup (program)</h3>
+                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Setup (program)</h3>
                         <p className="text-[10px] text-[var(--tx3)]">One setup fee for the bundled program (not per venue).</p>
                         {eventLuxury ? (
                           <div className="rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)] space-y-2">
@@ -4910,7 +4910,7 @@ export default function QuoteFormClient({
                           <>
                             <div className="flex items-center gap-3">
                               <span className="text-[10px] font-medium text-[var(--tx)]">Setup required (paid)</span>
-                              <button type="button" role="switch" aria-checked={eventSetupRequired} onClick={() => setEventSetupRequired(!eventSetupRequired)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${eventSetupRequired ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                              <button type="button" role="switch" aria-checked={eventSetupRequired} onClick={() => setEventSetupRequired(!eventSetupRequired)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${eventSetupRequired ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                                 <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${eventSetupRequired ? "translate-x-4" : ""}`} />
                               </button>
                             </div>
@@ -4946,7 +4946,7 @@ export default function QuoteFormClient({
 
                   {/* Event Items */}
                   <div className="space-y-2">
-                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Event Items</h3>
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Event Items</h3>
                     <div className="space-y-1.5">
                       {eventItems.map((item, idx) => (
                         <div key={idx} className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
@@ -5027,7 +5027,7 @@ export default function QuoteFormClient({
 
                   {/* Additional Services */}
                   <div className="space-y-2">
-                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Additional Services</h3>
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Additional Services</h3>
                     {[
                       "Furniture assembly at venue",
                       "Signage installation",
@@ -5053,7 +5053,7 @@ export default function QuoteFormClient({
               {/* ── Labour Only fields ── */}
               {serviceType === "labour_only" && (
                 <div className="space-y-3">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Labour Only</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Labour Only</h3>
                   <div className="flex flex-col sm:flex-row gap-3 items-start">
                     <div className="flex-1 min-w-0">
                       <MultiStopAddressField
@@ -5160,7 +5160,7 @@ export default function QuoteFormClient({
 
               {(serviceType === "b2b_delivery" || serviceType === "b2b_oneoff") && (
                 <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 md:p-6 space-y-4 max-w-[720px]">
-                  <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">B2B delivery (single form)</p>
+                  <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82">B2B delivery (single form)</p>
                   <p className="text-[12px] text-[var(--tx3)] leading-relaxed">
                     Same B2B Jobs form as Deliveries: verticals, dimensional pricing, multi-stop routes, draft / quote / schedule.
                   </p>
@@ -5176,7 +5176,7 @@ export default function QuoteFormClient({
 
               {serviceType === "bin_rental" && (
                 <div className="space-y-4">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Bundle & pricing</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Bundle & pricing</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {BIN_BUNDLE_OPTIONS.map((b) => (
                       <button
@@ -5319,7 +5319,7 @@ export default function QuoteFormClient({
               {/* ── 6. Add-ons (popular first, show all expander) ── */}
               {applicableAddons.length > 0 && serviceType !== "bin_rental" && (
                 <div className="space-y-3">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Add-Ons</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Add-Ons</h3>
                   {recommendedTier === "estate" && serviceType === "local_move" && (
                     <div className="text-[10px] text-[var(--tx2)] bg-[var(--bg)] rounded-lg px-3 py-2.5 border border-[var(--brd)] space-y-1.5">
                       <p className="font-bold tracking-wide text-[var(--tx)]">{ESTATE_ADDON_UI_LINES[0]}</p>
@@ -5349,7 +5349,7 @@ export default function QuoteFormClient({
                               <div className="flex items-center gap-2">
                                 <span className="text-[12px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{addon.name}</span>
                                 {addon.is_popular && (
-                                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
+                                  <span className="dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">Popular</span>
                                 )}
                                 <span className="text-[11px] text-[var(--tx3)] ml-auto shrink-0">{displayPrice}</span>
                               </div>
@@ -5419,7 +5419,7 @@ export default function QuoteFormClient({
                               <div className="flex items-center gap-2">
                                 <span className="text-[12px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{addon.name}</span>
                                 {addon.is_popular && (
-                                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
+                                  <span className="dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">Popular</span>
                                 )}
                                 <span className="text-[11px] text-[var(--tx3)] ml-auto shrink-0">{displayPrice}</span>
                               </div>
@@ -5471,8 +5471,8 @@ export default function QuoteFormClient({
           </div>
 
           {/* ── Sticky bottom button bar ── */}
-          <div className="sticky bottom-0 z-10 py-3 px-5 bg-[var(--card)] border border-[var(--brd)] border-t-[var(--brd)] rounded-b-xl">
-            <div className="flex gap-3">
+          <div className="sticky bottom-0 z-10 py-3 px-4 sm:px-5 bg-[var(--card)] border border-[var(--brd)] border-t-[var(--brd)] rounded-b-xl pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-stretch">
               <button
                 type="button"
                 onClick={() => void handleGenerate()}
@@ -5481,7 +5481,7 @@ export default function QuoteFormClient({
                   serviceType === "b2b_delivery" ||
                   serviceType === "b2b_oneoff"
                 }
-                className="flex-1 py-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-2 bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+                className="flex-1 min-h-11 py-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-2 bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50 touch-manipulation active:scale-[0.99]"
               >
                 {generating ? (
                   <>
@@ -5506,7 +5506,7 @@ export default function QuoteFormClient({
                   serviceType === "b2b_delivery" ||
                   serviceType === "b2b_oneoff"
                 }
-                className={`flex-1 py-2.5 rounded-lg text-[11px] font-bold border-2 flex items-center justify-center gap-2 ${
+                className={`flex-1 min-h-11 py-2.5 rounded-lg text-[11px] font-bold border-2 flex items-center justify-center gap-2 touch-manipulation active:scale-[0.99] ${
                   sendSuccess
                     ? "border-[var(--grn)] bg-[var(--grn)]/10 text-[var(--grn)] cursor-default"
                     : "border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10 disabled:opacity-40"
@@ -5535,7 +5535,7 @@ export default function QuoteFormClient({
                 type="button"
                 onClick={() => quoteResult && window.open(`/quote/${quoteResult.quote_id}`, "_blank")}
                 disabled={!quoteResult}
-                className="py-2.5 px-4 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                className="min-h-11 py-2.5 px-4 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 touch-manipulation sm:shrink-0 w-full sm:w-auto"
               >
                 <Eye className="w-3.5 h-3.5" /> Preview
               </button>
@@ -5597,7 +5597,7 @@ export default function QuoteFormClient({
                         type="button"
                         onClick={() => void handleGenerate({ serviceAreaOverride: true })}
                         disabled={generating}
-                        className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+                        className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
                       >
                         Quote anyway (manual override)
                       </button>
@@ -6130,7 +6130,7 @@ export default function QuoteFormClient({
               <div className="bg-[var(--bg2)] border border-[var(--brd)] rounded-xl p-4 space-y-3 text-[11px]">
                 <div className="flex items-center gap-1.5">
                   <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Margin Estimate</h4>
-                  <span className="text-[10px] font-bold uppercase tracking-wide bg-[var(--tx3)]/20 text-[var(--tx3)] px-1.5 py-0.5 rounded">Super Admin</span>
+                  <span className="dt-badge text-[var(--tx3)]">Super Admin</span>
                 </div>
                 {(() => {
                   const f = quoteResult.factors as Record<string, unknown>;
@@ -6365,7 +6365,7 @@ function TiersDisplay({
               <div className="flex items-center gap-2">
                 <span className={`text-[13px] font-extrabold tracking-tight ${c.accent}`}>{tierLabels[name]}</span>
                 {isRecommended && (
-                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
+                  <span className="dt-badge text-[var(--gold)]">
                     Recommended
                   </span>
                 )}

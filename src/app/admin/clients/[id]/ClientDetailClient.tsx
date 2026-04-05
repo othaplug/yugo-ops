@@ -2,6 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { PencilSimple as Pencil, Trash as Trash2 } from "@phosphor-icons/react";
+import {
+  ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS,
+  ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS,
+} from "../../components/admin-toolbar-action-classes";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import Badge from "../../components/Badge";
@@ -164,7 +169,7 @@ export default function ClientDetailClient({
       </button>
 
       <div className="mb-4">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">CRM · Client Profile</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82">CRM · Client Profile</p>
       </div>
 
       {/* Hero + actions */}
@@ -173,7 +178,7 @@ export default function ClientDetailClient({
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="admin-page-hero text-[var(--tx)] break-words line-clamp-3">{client.name}</h1>
-              <span className={`inline-flex px-2.5 py-[3px] rounded text-[9px] font-bold ${isClient ? "bg-[var(--bldim)] text-[var(--blue)]" : "bg-[var(--gdim)] text-[var(--gold)]"}`}>
+              <span className={`dt-badge ${isClient ? "text-[var(--blue)]" : "text-[var(--gold)]"}`}>
                 {personaLabel}
               </span>
             </div>
@@ -216,7 +221,7 @@ export default function ClientDetailClient({
                   }
                 }}
                 disabled={resendPortalLoading || !client.email?.trim() || moves.length === 0}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all disabled:opacity-50"
+                className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
               >
                 {resendPortalLoading ? "Sending…" : "Send tracking link"}
               </button>
@@ -242,7 +247,7 @@ export default function ClientDetailClient({
                     }
                   }}
                   disabled={resendPortalLoading || !client.email?.trim()}
-                  className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all disabled:opacity-50"
+                  className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
                 >
                   {resendPortalLoading ? "Sending…" : "Resend portal access"}
                 </button>
@@ -276,7 +281,7 @@ export default function ClientDetailClient({
                         setProposalLoading(false);
                       }
                     }}
-                    className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all disabled:opacity-50"
+                    className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
                   >
                     {proposalLoading ? "Generating…" : "Generate proposal PDF"}
                   </button>
@@ -284,15 +289,19 @@ export default function ClientDetailClient({
               </>
             )}
             <button
+              type="button"
               onClick={() => setEditModalOpen(true)}
-              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+              className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
             >
+              <Pencil weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
               Edit {isClient ? "client" : "partner"}
             </button>
             <button
+              type="button"
               onClick={() => setDeleteConfirmOpen(true)}
-              className="px-3 py-1 rounded text-[10px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all"
+              className={ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS}
             >
+              <Trash2 weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
               Delete
             </button>
           </div>
@@ -365,7 +374,7 @@ export default function ClientDetailClient({
 
       {!isClient && isAdmin && portfolioPartner && activeTab === "moves" && (
         <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
-          <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Moves for this partner</h3>
+          <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3">Moves for this partner</h3>
           <p className="text-[11px] text-[var(--tx3)] mb-4">
             Tenant and portfolio jobs tied to this organization (residential move ops), not B2B deliveries.
           </p>
@@ -464,11 +473,11 @@ export default function ClientDetailClient({
 
       {/* Overview + since */}
       <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
-        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Overview</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3">Overview</div>
         <div className="grid md:grid-cols-2 gap-6">
           {partnerSince && (
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{personaLabel} since</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">{personaLabel} since</div>
               <div className="text-[15px] font-bold font-heading text-[var(--tx)]">
                 {partnerSince.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 {partnerDuration && (
@@ -478,13 +487,13 @@ export default function ClientDetailClient({
             </div>
           )}
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{isClient ? "Type" : "Partner type"}</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">{isClient ? "Type" : "Partner type"}</div>
             <div className="text-[13px] font-semibold text-[var(--tx)]">
               {isClient ? "Move client" : organizationTypeLabel(client.vertical || client.type)}
             </div>
             {client.address && (
               <>
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mt-3 mb-1">Address</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mt-3 mb-1">Address</div>
                 <div className="text-[12px] text-[var(--tx2)]">{client.address}</div>
               </>
             )}
@@ -494,49 +503,49 @@ export default function ClientDetailClient({
 
       {/* High-level metrics */}
       <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
-        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Metrics</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3">Metrics</div>
         {portfolioPartner && pmMetrics ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Buildings</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Buildings</div>
               <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{pmMetrics.buildingsCount}</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total moves</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Total moves</div>
               <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{pmMetrics.totalMoves}</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">This month</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">This month</div>
               <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{pmMetrics.movesThisMonth} moves</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Revenue (MTD)</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Revenue (MTD)</div>
               <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(pmMetrics.revenueMtd)}</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Revenue (YTD)</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Revenue (YTD)</div>
               <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(pmMetrics.revenueYtd)}</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Outstanding</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Outstanding</div>
               <div className={`text-[18px] md:text-[20px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>
                 {outstandingTotal > 0 ? formatCompactCurrency(outstandingTotal) : formatCompactCurrency(0)}
               </div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Avg move value</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Avg move value</div>
               <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">
                 {pmMetrics.avgMoveValue > 0 ? formatCompactCurrency(pmMetrics.avgMoveValue) : "—"}
               </div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">On-time rate</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">On-time rate</div>
               <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">
                 {pmMetrics.onTimeRate != null ? `${Math.round(pmMetrics.onTimeRate * 100)}%` : "—"}
               </div>
             </div>
             <div className="col-span-2 sm:col-span-1">
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Invoices</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Invoices</div>
               <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">
                 {allInvoices.length}{" "}
                 <span className="text-[11px] font-normal text-[var(--tx3)]">({paidInvoices.length} paid)</span>
@@ -546,7 +555,7 @@ export default function ClientDetailClient({
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-6">
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">
                 {isClient ? "Moves" : partnerLabels.totalMetric}
               </div>
               <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">
@@ -554,21 +563,21 @@ export default function ClientDetailClient({
               </div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">AVG DEL</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">AVG DEL</div>
               <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{client.deliveries_per_month ?? "-"}</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total paid</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Total paid</div>
               <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(paidTotal)}</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Outstanding</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Outstanding</div>
               <div className={`text-[18px] md:text-[20px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>
                 {outstandingTotal > 0 ? formatCompactCurrency(outstandingTotal) : formatCompactCurrency(0)}
               </div>
             </div>
             <div className="col-span-2 sm:col-span-1">
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Invoices</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Invoices</div>
               <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">
                 {allInvoices.length} <span className="text-[11px] font-normal text-[var(--tx3)]">({paidInvoices.length} paid)</span>
               </div>
@@ -579,7 +588,7 @@ export default function ClientDetailClient({
 
       {/* Recent moves (B2C) or Recent projects (delivery partners) / moves (portfolio) */}
       <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
-        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
+        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3">
           {isClient ? "Recent moves" : partnerLabels.recentLabel}
         </h3>
         <div className="divide-y divide-[var(--brd)]/30 -mx-2">
@@ -648,7 +657,7 @@ export default function ClientDetailClient({
       {changeRequests.length > 0 && (
         <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Change requests</h3>
+            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Change requests</h3>
             <Link href="/admin/change-requests" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
               View all
             </Link>
@@ -668,8 +677,8 @@ export default function ClientDetailClient({
                     <div className="text-[9px] text-[var(--tx3)] line-clamp-1">{cr.description}</div>
                   </div>
                   <span className="text-[9px] text-[var(--tx3)] shrink-0">{moveCode}</span>
-                  <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold shrink-0 ${
-                    cr.status === "pending" ? "bg-[var(--gdim)] text-[var(--gold)]" : cr.status === "approved" ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"
+                  <span className={`dt-badge tracking-[0.04em] shrink-0 ${
+                    cr.status === "pending" ? "text-[var(--gold)]" : cr.status === "approved" ? "text-[var(--grn)]" : "text-[var(--red)]"
                   }`}>
                     {toTitleCase(cr.status)}
                   </span>
@@ -683,7 +692,7 @@ export default function ClientDetailClient({
       {/* Invoices - click opens detail popup */}
       <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Invoices</h3>
+          <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Invoices</h3>
           {outstandingTotal > 0 && (
             <div className="text-[11px] font-semibold text-[var(--org)]">
               Outstanding: {formatCompactCurrency(outstandingTotal)}

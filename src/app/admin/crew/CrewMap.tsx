@@ -4,6 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import ModalOverlay from "../components/ModalOverlay";
+import { useTheme } from "../components/ThemeContext";
 
 const CrewMapLeaflet = dynamic(
   () => import("./CrewMapLeaflet").then((mod) => mod.CrewMapLeaflet),
@@ -126,7 +127,11 @@ const HAS_MAPBOX =
 
 export default function CrewMap({ crews, deliveries = [] }: { crews: Crew[]; deliveries?: Delivery[] }) {
   const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
-  const mapStyle = "mapbox://styles/mapbox/dark-v11";
+  const { theme } = useTheme();
+  const mapStyle =
+    theme === "light"
+      ? "mapbox://styles/mapbox/light-v11"
+      : "mapbox://styles/mapbox/dark-v11";
 
   const crewsWithPosition = crews.filter((c) => c.current_lat != null && c.current_lng != null);
   const center =
@@ -143,10 +148,12 @@ export default function CrewMap({ crews, deliveries = [] }: { crews: Crew[]; del
       <>
         <div className="mb-4">
           <h2 className="admin-section-h2">Live Tracking</h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Using OpenStreetMap (add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN for Mapbox)</p>
+          <p className="text-[11px] text-[var(--tx2)] mt-0.5">
+            Using OpenStreetMap (add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN for Mapbox)
+          </p>
         </div>
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-4 relative z-0">
-          <div className="w-full rounded-lg border border-[var(--brd)] overflow-hidden relative z-0" style={{ height: 380 }}>
+        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-sm p-4 mb-4 relative z-0">
+          <div className="w-full rounded-sm border border-[var(--brd)] overflow-hidden relative z-0" style={{ height: 380 }}>
             <CrewMapLeaflet
               crews={crewsWithPosition}
               center={center}
@@ -163,11 +170,12 @@ export default function CrewMap({ crews, deliveries = [] }: { crews: Crew[]; del
     <>
       <div className="mb-4">
         <h2 className="admin-section-h2">Live Tracking</h2>
-        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Click a team for details</p>
+        <p className="text-[11px] text-[var(--tx2)] mt-0.5">Click a team for details</p>
       </div>
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-4 relative z-0">
-        <div className="w-full rounded-lg border border-[var(--brd)] overflow-hidden relative z-0" style={{ height: 380 }}>
+      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-sm p-4 mb-4 relative z-0">
+        <div className="w-full rounded-sm border border-[var(--brd)] overflow-hidden relative z-0" style={{ height: 380 }}>
           <MapboxMap
+            key={mapStyle}
             token={MAPBOX_TOKEN}
             crews={crewsWithPosition}
             center={center}
@@ -233,8 +241,8 @@ function CrewListAndModal({
             return (
               <div className="p-5 space-y-5">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold ${isEnRoute ? "bg-[var(--gdim)] text-[var(--gold)]" : "bg-[var(--grdim)] text-[var(--grn)]"}`}>
-                    <span className={`w-2 h-2 rounded-full ${isEnRoute ? "bg-[var(--gold)] animate-pulse" : "bg-[var(--grn)]"}`} />
+                  <span className={`inline-flex items-center gap-1.5 dt-badge tracking-[0.04em] ${isEnRoute ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>
+                    <span className={`w-2 h-2 rounded-full ${isEnRoute ? "bg-[var(--admin-primary-fill)] animate-pulse" : "bg-[var(--grn)]"}`} />
                     {isEnRoute ? "En route" : "Standby"}
                   </span>
                   {selectedCrew.updated_at && (
@@ -262,7 +270,7 @@ function CrewListAndModal({
                             <div className="flex flex-col items-center flex-1 min-w-0">
                               <div
                                 className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 transition-colors ${
-                                  isCancelled && isActive ? "bg-[var(--red)]/20 text-[var(--red)]" : isActive ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : isPast ? "bg-[var(--grn)] text-white" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx3)]"
+                                  isCancelled && isActive ? "bg-[var(--red)]/20 text-[var(--red)]" : isActive ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : isPast ? "bg-[var(--grn)] text-white" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx3)]"
                                 }`}
                               >
                                 {isPast ? "✓" : i + 1}

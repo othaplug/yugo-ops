@@ -17,11 +17,11 @@ interface Referral {
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  new: "bg-blue-50 text-blue-600",
-  contacted: "bg-amber-50 text-amber-600",
-  booked: "bg-green-50 text-green-700",
-  completed: "bg-green-50 text-green-700",
-  cancelled: "bg-red-50 text-red-600",
+  new: "text-blue-600",
+  contacted: "text-amber-600",
+  booked: "text-green-700",
+  completed: "text-green-700",
+  cancelled: "text-red-600",
 };
 
 const TIER_LABEL: Record<string, string> = {
@@ -54,7 +54,7 @@ export default function PartnerRealtorTab({
   return (
     <div className="space-y-0">
       {referrals.map((r, i) => {
-        const badgeClass = STATUS_BADGE[(r.status || "").toLowerCase()] || "bg-gray-50 text-gray-600";
+        const badgeClass = STATUS_BADGE[(r.status || "").toLowerCase()] || "text-gray-600";
         const statusLabel = toTitleCase(r.status || "");
         const tierLabel = TIER_LABEL[r.tier || "standard"] || r.tier || "Standard";
 
@@ -68,7 +68,7 @@ export default function PartnerRealtorTab({
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${badgeClass}`}>
+                <span className={`text-[10px] font-bold uppercase tracking-[0.04em] ${badgeClass}`}>
                   {statusLabel}
                 </span>
                 {r.commission > 0 && (

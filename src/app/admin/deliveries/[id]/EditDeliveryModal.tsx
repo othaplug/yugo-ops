@@ -377,11 +377,11 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
         </div>
 
         {/* ── Submit ── */}
-        <div className="sticky bottom-0 pt-3 -mx-5 px-5 pb-1 bg-gradient-to-t from-[var(--card)] via-[var(--card)] to-transparent">
+        <div className="sticky bottom-0 pt-3 -mx-5 px-5 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] bg-gradient-to-t from-[var(--card)] via-[var(--card)] to-transparent">
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl text-[12px] font-bold tracking-wide bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50 hover:bg-[var(--gold2)] transition-all shadow-sm"
+            className="w-full min-h-12 py-3 rounded-xl text-[12px] font-bold tracking-wide bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50 hover:bg-[var(--admin-primary-fill-hover)] transition-all shadow-sm touch-manipulation"
           >
             {loading ? "Saving…" : "Save Changes"}
           </button>

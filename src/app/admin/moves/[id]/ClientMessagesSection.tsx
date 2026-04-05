@@ -84,7 +84,7 @@ export default function ClientMessagesSection({ moveId, clientName }: { moveId: 
         <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)]">
           Client Messages
           {unreadCount > 0 && (
-            <span className="ml-1.5 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-[var(--gold)] text-[9px] font-bold text-white">
+            <span className="ml-1.5 dt-badge tracking-[0.04em] text-[var(--admin-primary-fill)] tabular-nums">
               {unreadCount}
             </span>
           )}
@@ -126,7 +126,7 @@ export default function ClientMessagesSection({ moveId, clientName }: { moveId: 
           <button
             type="submit"
             disabled={sending || !reply.trim()}
-            className="rounded-md px-4 py-2 text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-md px-4 py-2 text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {sending ? "Sending…" : "Send"}
           </button>

@@ -43,16 +43,15 @@ export type ClientEmailFooterOptions = {
    */
   variant?: "full" | "transactional";
   /**
-   * Vertical space above the footer so the legal block sits below the first viewport in most clients.
-   * Background should match the email’s outer page color (not the footer band).
+   * Background for the small gutter row above the footer (match outer page color, not the footer band).
    */
   spacerBackground?: string;
 };
 
 /** Match premium / finalize page cream so footer bands are not a stark white slab. */
 const FOOTER_BG = "#FCF9F4";
-/** Empty vertical band before the footer nav (encourages scroll before legal). */
-const FOOTER_TOP_SPACER_PX = 320;
+/** Modest gutter between main body and footer nav (large values break mobile layout). */
+const FOOTER_TOP_SPACER_PX = 24;
 const FOOTER_TEXT = "#000000";
 const FOOTER_LEGAL_TEXT = "#555555";
 /** Body / nav text links — brand wine (not default blue). */

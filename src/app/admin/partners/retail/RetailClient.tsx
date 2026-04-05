@@ -112,7 +112,7 @@ export default function RetailClient({
       <div className="pt-6 border-t border-[var(--brd)]/30">
         {activeTab === "deliveries" && (
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Deliveries</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-4">Deliveries</div>
             {/* Filter bar */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
               <div className="relative flex-1">
@@ -195,7 +195,7 @@ export default function RetailClient({
 
         {activeTab === "partners" && (
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Partners</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-4">Partners</div>
 
             <div className="divide-y divide-[var(--brd)]/30">
             {clients.length === 0 ? (

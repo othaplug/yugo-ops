@@ -4,8 +4,8 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { formatTime12, timeToMinutes, minutesToTime } from "@/lib/calendar/types";
 import {
-  CALENDAR_PILL_TEXT,
-  CALENDAR_PILL_TEXT_MUTED,
+  calendarPillForeground,
+  calendarPillUsesLightInk,
   jobPillCompactStyle,
   jobPillSurfaceStyle,
   pillStatusDotColor,
@@ -272,7 +272,7 @@ export default function DayView({
         }) && (
           <div className="flex border-b border-[var(--brd)] bg-[var(--bg)]/40">
             <div className="w-12 sm:w-16 shrink-0 py-1.5 flex items-center justify-end pr-1.5">
-              <span className="text-[7px] sm:text-[8px] font-semibold text-[var(--tx3)]/60 uppercase tracking-wide">Unsched.</span>
+              <span className="text-[7px] sm:text-[8px] font-semibold text-[var(--tx3)]/82 uppercase tracking-wide">Unsched.</span>
             </div>
             {columns.map((col) => {
               const allColEvs = col.id === "__unassigned" ? unassigned : eventsByCrew[col.id] || [];
@@ -377,6 +377,9 @@ export default function DayView({
                     const top = getTopOffset(ev.start);
                     const height = getHeight(ev.start, ev.end, ev.durationHours);
                     const dotColor = pillStatusDotColor(ev.calendarStatus);
+                    const fg = calendarPillForeground(ev);
+                    const lightInk = calendarPillUsesLightInk(ev);
+                    const dotRing = lightInk ? "ring-white/15" : "ring-black/10";
                     const cancelled = ev.calendarStatus === "cancelled";
                     const isComplete = ev.calendarStatus === "completed";
                     const isProgress = ev.calendarStatus === "in_progress";
@@ -401,7 +404,7 @@ export default function DayView({
                             isDragging: false,
                           };
                         }}
-                        className={`absolute left-1 right-1 rounded-lg overflow-hidden text-left transition-opacity shadow-sm ${
+                        className={`absolute left-1 right-1 rounded-lg overflow-hidden text-left transition-opacity ${
                           canDrag ? "cursor-grab" : "cursor-pointer"
                         } ${isComplete ? "opacity-50" : ""} ${
                           isBeingDragged ? "opacity-30 pointer-events-none" : ""
@@ -416,26 +419,26 @@ export default function DayView({
                         <div className="p-1.5 h-full flex flex-col pointer-events-none">
                           <div className="flex items-center gap-1 mb-0.5">
                             <span
-                              className={`w-2 h-2 rounded-full shrink-0 ring-1 ring-black/10 ${isProgress ? "animate-pulse" : ""}`}
-                              style={{ backgroundColor: cancelled ? "rgba(248,250,252,0.85)" : dotColor }}
+                              className={`w-2 h-2 rounded-full shrink-0 ring-1 ${dotRing} ${isProgress ? "animate-pulse" : ""}`}
+                              style={{ backgroundColor: cancelled ? "rgba(249,237,228,0.85)" : dotColor }}
                             />
                             <span
                               className="text-[11px] font-bold truncate"
-                              style={{ color: cancelled ? "inherit" : CALENDAR_PILL_TEXT }}
+                              style={{ color: cancelled ? "inherit" : fg.main }}
                             >
                               {ev.name}
                             </span>
                           </div>
                           <div
                             className="flex items-center text-[9px] truncate"
-                            style={{ color: cancelled ? "rgba(248,250,252,0.88)" : CALENDAR_PILL_TEXT_MUTED }}
+                            style={{ color: cancelled ? "rgba(249,237,228,0.88)" : fg.muted }}
                           >
                             <span className="truncate">{ev.description}</span>
                           </div>
                           {height > 60 && ev.truckName && (
                             <div
                               className="text-[8px] mt-0.5 truncate"
-                              style={{ color: cancelled ? "rgba(248,250,252,0.7)" : CALENDAR_PILL_TEXT_MUTED }}
+                              style={{ color: cancelled ? "rgba(249,237,228,0.7)" : fg.muted }}
                             >
                               {ev.truckName}
                               {ev.crewName ? ` · ${ev.crewName}` : ""}
@@ -444,7 +447,7 @@ export default function DayView({
                           {height > 80 && ev.start && ev.end && (
                             <div
                               className="text-[8px] mt-auto opacity-90"
-                              style={{ color: cancelled ? "rgba(248,250,252,0.75)" : CALENDAR_PILL_TEXT_MUTED }}
+                              style={{ color: cancelled ? "rgba(249,237,228,0.75)" : fg.muted }}
                             >
                               {formatTime12(ev.start)} – {formatTime12(ev.end)}
                             </div>
@@ -465,7 +468,7 @@ export default function DayView({
               style={{ top: nowTop }}
             >
               <div className="w-12 sm:w-16 text-right pr-1">
-                <span className="text-[8px] font-bold text-red-500 bg-red-500/10 px-1 py-0.5 rounded">
+                <span className="dt-badge text-red-500">
                   NOW
                 </span>
               </div>
@@ -482,11 +485,11 @@ export default function DayView({
           style={{ left: dragPos.x + 14, top: dragPos.y - 16 }}
         >
           <div
-            className="px-2.5 py-1.5 rounded-md shadow-2xl text-[11px] font-bold max-w-[180px] truncate border"
+            className="px-2.5 py-1.5 rounded-md text-[11px] font-bold max-w-[180px] truncate border"
             style={{
               borderLeft: `4px solid ${draggingEvent.color}`,
               background: `${draggingEvent.color}cc`,
-              color: "#fff",
+              color: calendarPillForeground(draggingEvent).main,
               borderColor: draggingEvent.color,
             }}
           >

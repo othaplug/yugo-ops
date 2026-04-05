@@ -19,7 +19,7 @@ export default function DraftBanner({ onRestore, onDismiss }: DraftBannerProps) 
         <button
           type="button"
           onClick={onRestore}
-          className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-90 transition-opacity"
+          className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:opacity-90 transition-opacity"
         >
           Restore Draft
         </button>

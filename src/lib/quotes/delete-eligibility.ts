@@ -11,6 +11,8 @@ export const QUOTE_DELETABLE_SUPERADMIN_EXTRA_STATUSES = new Set([
   "expired",
   "declined",
   "superseded",
+  "cold",
+  "lost",
 ]);
 
 export function quoteStatusAllowsHardDelete(

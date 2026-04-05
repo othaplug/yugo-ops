@@ -35,7 +35,7 @@ import {
 const DeliveryTrackMap = dynamic(() => import("./DeliveryTrackMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full min-h-[240px] flex items-center justify-center bg-[#1A1A1A] text-[#555] text-[12px]">
+    <div className="w-full h-full min-h-[240px] flex items-center justify-center bg-[#FAF7F2] text-[#4F4B47] text-[12px]">
       Loading map…
     </div>
   ),
@@ -484,7 +484,7 @@ export default function TrackDeliveryClient({
   /* ── Fullscreen map overlay ── */
   if (isFullscreen) {
     return (
-      <div className="fixed inset-0 z-50 bg-[#1A1A1A]">
+      <div className="fixed inset-0 z-50 bg-[#FAF7F2]">
         {crewHasStarted && liveStage && (
           <div
             className="absolute top-4 left-4 z-20 rounded-none bg-white/95 backdrop-blur-sm border px-4 py-3 flex items-center gap-3 shadow-lg"
@@ -532,7 +532,7 @@ export default function TrackDeliveryClient({
           />
         ) : (
           <div className="h-full flex items-center justify-center">
-            <span className="text-[13px] text-white/60">
+            <span className="text-[13px] text-[#4F4B47]">
               No map data available
             </span>
           </div>
@@ -1135,11 +1135,11 @@ export default function TrackDeliveryClient({
                 >
                   {/* Mini map preview strip when collapsed */}
                   {!mapExpanded && (
-                    <div className="relative h-[56px] bg-[#1E1E1E] overflow-hidden">
+                    <div className="relative h-[56px] bg-[#E8E4DF] overflow-hidden">
                       <div
                         className="absolute inset-0"
                         style={{
-                          filter: "blur(2px) brightness(0.6) saturate(0.4)",
+                          filter: "blur(2px) saturate(0.92)",
                         }}
                       >
                         {hasMapCoords && (
@@ -1252,14 +1252,14 @@ export default function TrackDeliveryClient({
                     opacity: mapExpanded ? 1 : 0,
                   }}
                 >
-                  <div className="relative h-[300px] bg-[#1A1A1A]">
+                  <div className="relative h-[300px] bg-[#EDE9E4]">
                     {/* Map layer, blurred when crew hasn't started */}
                     <div
                       className="absolute inset-0 transition-[filter] duration-700"
                       style={{
                         filter: crewHasStarted
                           ? "none"
-                          : "blur(6px) saturate(0.5) brightness(0.7)",
+                          : "blur(5px) saturate(0.88)",
                       }}
                     >
                       {hasMapCoords ? (
@@ -1272,7 +1272,7 @@ export default function TrackDeliveryClient({
                         />
                       ) : (
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-[13px] font-semibold text-white/60">
+                          <span className="text-[13px] font-semibold text-[#4F4B47]">
                             Map loading…
                           </span>
                         </div>
@@ -1281,11 +1281,11 @@ export default function TrackDeliveryClient({
 
                     {/* Waiting overlay when crew hasn't started, z-[1000] above Leaflet */}
                     {!crewHasStarted && (
-                      <div className="absolute inset-0 z-[1000] flex flex-col items-center justify-center bg-black/30 px-4 text-center">
-                        <span className="text-[13px] font-semibold text-white/90 tracking-tight">
+                      <div className="absolute inset-0 z-[1000] flex flex-col items-center justify-center bg-white/75 backdrop-blur-sm px-4 text-center">
+                        <span className="text-[13px] font-semibold text-[#1A1816] tracking-tight">
                           Waiting for crew
                         </span>
-                        <span className="text-[11px] text-white/50 mt-0.5">
+                        <span className="text-[11px] text-[#4F4B47] mt-0.5">
                           {timeWindow
                             ? `Window: ${timeWindow}`
                             : "Map goes live when crew starts the job"}

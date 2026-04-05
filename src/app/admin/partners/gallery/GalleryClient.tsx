@@ -6,6 +6,7 @@ import CreateDeliveryDropdown from "../../components/CreateDeliveryDropdown";
 import Badge from "../../components/Badge";
 import EditProjectModal, { type GalleryProject } from "./EditProjectModal";
 import CreateGalleryProjectModal from "./CreateGalleryProjectModal";
+import { formatPlatformDisplay } from "@/lib/date-format";
 import { toTitleCase } from "@/lib/format-text";
 import { MagnifyingGlass, CaretDown, CaretRight } from "@phosphor-icons/react";
 
@@ -18,12 +19,12 @@ interface GalleryPartner {
 
 function formatDateShort(d: string | null): string {
   if (!d) return "-";
-  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return formatPlatformDisplay(new Date(d), { month: "short", day: "numeric" }, "-");
 }
 
 function formatDate(d: string | null): string {
   if (!d) return "-";
-  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return formatPlatformDisplay(new Date(d), { month: "short", day: "numeric" }, "-");
 }
 
 export default function GalleryClient({ galleryPartners = [] }: { galleryPartners?: GalleryPartner[] }) {
@@ -117,7 +118,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
         {/* ── Projects Tab ── */}
         {activeTab === "projects" && (
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Projects</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-4">Projects</div>
 
             {/* Search + filter */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
@@ -182,7 +183,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                         <div className="flex items-center gap-2">
                           <span className="text-[13px] font-semibold text-[var(--tx)] truncate">{p.name}</span>
                           {p.project_type && (
-                            <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[var(--bg)] text-[var(--tx3)] flex-shrink-0">
+                            <span className="dt-badge tracking-[0.04em] text-[var(--tx3)] flex-shrink-0">
                               {toTitleCase(p.project_type)}
                             </span>
                           )}
@@ -246,7 +247,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
         {/* ── Partners Tab ── */}
         {activeTab === "partners" && (
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Partners</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-4">Partners</div>
             <div className="divide-y divide-[var(--brd)]/30">
               {galleryPartners.length === 0 ? (
                 <div className="px-4 py-10 text-center">
@@ -290,7 +291,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
             </div>
             <div className="space-y-3 text-[12px]">
               <div>
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Name</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-0.5">Name</div>
                 <div className="text-[var(--tx)] font-semibold">{projectDetail.name}</div>
               </div>
               <div>
@@ -306,7 +307,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                 <div className="text-[var(--tx)]">{projectDetail.address || "-"}</div>
               </div>
               <div>
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Location</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-0.5">Location</div>
                 <div className="text-[var(--tx)]">{projectDetail.location || "-"}</div>
               </div>
               <div>
@@ -318,7 +319,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                 <div className="text-[var(--gold)] font-semibold">{projectDetail.insurance_value || "-"}</div>
               </div>
               <div>
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Status</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-0.5">Status</div>
                 <Badge status={projectDetail.status} />
               </div>
               {(projectDetail.white_glove || projectDetail.crating_required || projectDetail.climate_controlled) && (
@@ -334,14 +335,14 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                 </div>
               )}
               <div>
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Details</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-0.5">Details</div>
                 <p className="text-[var(--tx2)] leading-relaxed">{projectDetail.details || "-"}</p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => { setEditingProject(projectDetail); setProjectDetail(null); }}
-              className="mt-4 w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
+              className="mt-4 w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)]"
             >
               Edit project
             </button>

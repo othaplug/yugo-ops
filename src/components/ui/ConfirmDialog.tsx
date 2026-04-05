@@ -103,7 +103,7 @@ export default function ConfirmDialog({
             className={`flex-1 px-4 py-3.5 sm:py-2.5 rounded-xl text-[13px] font-bold transition-all active:scale-95 touch-manipulation ${
               isDanger
                 ? "bg-[var(--red)] text-white hover:opacity-90"
-                : "bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
+                : "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)]"
             }`}
           >
             {confirmLabel}

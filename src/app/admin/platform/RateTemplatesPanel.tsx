@@ -5,6 +5,7 @@ import { organizationTypeLabel, VERTICAL_LABELS } from "@/lib/partner-type";
 import ModalOverlay from "../components/ModalOverlay";
 import CreateButton from "../components/CreateButton";
 import { useToast } from "../components/Toast";
+import { formatPlatformDisplay } from "@/lib/date-format";
 
 /* ─── Types ─── */
 
@@ -460,7 +461,7 @@ function TemplateRateEditor({
                 type="button"
                 onClick={handleSaveClick}
                 disabled={saving}
-                className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-white disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-white disabled:opacity-50"
               >
                 {saving ? "Saving…" : "Save Changes"}
               </button>
@@ -479,7 +480,7 @@ function TemplateRateEditor({
                 <button type="button" onClick={() => setConfirmOpen(false)} className="flex-1 py-2 rounded-lg text-[11px] border border-[var(--brd)] text-[var(--tx2)]">
                   Cancel
                 </button>
-                <button type="button" onClick={handleConfirmSave} disabled={saving} className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-white disabled:opacity-50">
+                <button type="button" onClick={handleConfirmSave} disabled={saving} className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-white disabled:opacity-50">
                   {saving ? "Saving…" : "Confirm & Save"}
                 </button>
               </div>
@@ -661,7 +662,7 @@ function TemplateRateEditor({
             <button
               onClick={handleSaveClick}
               disabled={saving}
-              className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-white disabled:opacity-50"
+              className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-white disabled:opacity-50"
             >
               {saving ? "Saving…" : "Save Changes"}
             </button>
@@ -684,7 +685,7 @@ function TemplateRateEditor({
               <button onClick={() => setConfirmOpen(false)} className="flex-1 py-2 rounded-lg text-[11px] border border-[var(--brd)] text-[var(--tx2)]">
                 Cancel
               </button>
-              <button onClick={handleConfirmSave} disabled={saving} className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-white disabled:opacity-50">
+              <button onClick={handleConfirmSave} disabled={saving} className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-white disabled:opacity-50">
                 {saving ? "Saving…" : "Confirm & Save"}
               </button>
             </div>
@@ -783,7 +784,7 @@ function CreateTemplateModal({
         </div>
         <div className="flex gap-2 pt-1">
           <button onClick={onClose} className="flex-1 py-2 rounded-lg text-[11px] border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
-          <button onClick={handleCreate} disabled={saving} className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-white disabled:opacity-50">
+          <button onClick={handleCreate} disabled={saving} className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-white disabled:opacity-50">
             {saving ? "Creating…" : "Create Template"}
           </button>
         </div>
@@ -856,7 +857,7 @@ function EditTemplateNameModal({
         </div>
         <div className="flex gap-2 pt-1">
           <button onClick={onClose} className="flex-1 py-2 rounded-lg text-[11px] border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
-          <button onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-white disabled:opacity-50">
+          <button onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-white disabled:opacity-50">
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
@@ -945,7 +946,7 @@ function ViewPartnersModal({ templateName, partners, onClose }: { templateName: 
                   <div className="text-[12px] font-semibold text-[var(--tx)]">{p.name}</div>
                   <div className="text-[10px] text-[var(--tx3)]">{organizationTypeLabel(p.type)}</div>
                 </div>
-                <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${p.pricing_tier === "partner" ? "bg-[var(--gdim)] text-[var(--gold)]" : "bg-[var(--bgsub)] text-[var(--tx3)]"}`}>
+                <span className={`dt-badge tracking-[0.04em] ${p.pricing_tier === "partner" ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>
                   {p.pricing_tier === "partner" ? "Partner ✦" : "Standard"}
                 </span>
               </a>
@@ -1054,7 +1055,7 @@ export default function RateTemplatesPanel({ isSuperAdmin = false }: { isSuperAd
             {/* Top row: name + status badge */}
             <div className="flex items-center gap-3 mb-2 flex-wrap">
               <span className="font-heading font-bold text-[17px] md:text-[19px] text-[var(--tx)] leading-tight">{t.template_name}</span>
-              <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold ${t.is_active ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"}`}>
+              <span className={`dt-badge ${t.is_active ? "text-[var(--grn)]" : "text-[var(--red)]"}`}>
                 {t.is_active ? "Active" : "Inactive"}
               </span>
             </div>
@@ -1071,7 +1072,7 @@ export default function RateTemplatesPanel({ isSuperAdmin = false }: { isSuperAd
                 {loadingId === t.id + "_p" ? "Loading…" : `${t.partner_count} partner${t.partner_count !== 1 ? "s" : ""}`}
               </button>
               <span className="text-[var(--brd)]">·</span>
-              <span>Updated {new Date(t.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+              <span>Updated {formatPlatformDisplay(t.updated_at, { month: "short", day: "numeric" })}</span>
             </div>
             {/* Action buttons row, full-width on mobile */}
             <div className="flex flex-wrap gap-2.5 md:gap-3">

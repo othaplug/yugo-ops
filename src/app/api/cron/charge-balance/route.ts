@@ -7,6 +7,7 @@ import { signTrackToken } from "@/lib/track-token";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment";
 import { humanizePaymentProcessorMessage } from "@/lib/email/payment-error-message";
+import { moveMatchesBalanceReminder48hWindow } from "@/lib/quotes/estate-schedule";
 
 const HS_BASE = "https://api.hubapi.com/crm/v3/objects";
 const HS_TASKS = `${HS_BASE}/tasks`;
@@ -14,7 +15,8 @@ const HS_ASSOC = `${HS_BASE}/tasks`;
 
 /**
  * Vercel Cron: runs daily at 9 AM EST (14:00 UTC).
- * Auto-charges stored cards at T-48hr for moves where balance is unpaid.
+ * Auto-charges stored cards on the same calendar window as the 48hr balance email
+ * (T-2 days before move for most tiers; Estate multi-day uses T-2 days before packing).
  * Processing costs are already baked into the quoted price — no fee added here.
  */
 export async function GET(req: NextRequest) {
@@ -30,13 +32,16 @@ export async function GET(req: NextRequest) {
   const twoDaysFromNow = new Date(now);
   twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
   const chargeDateStr = twoDaysFromNow.toISOString().split("T")[0];
+  const threeDaysFromNow = new Date(now);
+  threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+  const chargeDatePlusOneStr = threeDaysFromNow.toISOString().split("T")[0];
 
   const results = { charged: 0, failed: 0, skipped: 0, errors: [] as string[] };
 
   const { data: moves } = await supabase
     .from("moves")
     .select("*")
-    .eq("scheduled_date", chargeDateStr)
+    .in("scheduled_date", [chargeDateStr, chargeDatePlusOneStr])
     .gt("balance_amount", 0)
     .not("square_card_id", "is", null)
     .not("deposit_paid_at", "is", null);
@@ -46,6 +51,21 @@ export async function GET(req: NextRequest) {
   }
 
   for (const move of moves) {
+    if (
+      !moveMatchesBalanceReminder48hWindow({
+        scheduledDate: move.scheduled_date,
+        twoDaysOutIso: chargeDateStr,
+        tierSelected: move.tier_selected,
+        serviceTier: move.service_tier,
+        moveSize: move.move_size,
+        inventoryScore:
+          move.inventory_score != null ? Number(move.inventory_score) : null,
+      })
+    ) {
+      results.skipped++;
+      continue;
+    }
+
     const balanceAmount = Number(move.balance_amount || 0);
     if (balanceAmount <= 0) {
       results.skipped++;
@@ -90,7 +110,7 @@ export async function GET(req: NextRequest) {
         entity_type: "move",
         entity_id: move.id,
         event_type: "payment_received",
-        description: `Auto-charged card, $${balanceAmount.toFixed(2)} CAD (48 hrs before move)`,
+        description: `Auto-charged card, $${balanceAmount.toFixed(2)} CAD (balance due window)`,
         icon: "dollar",
       });
 

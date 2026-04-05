@@ -177,7 +177,7 @@ function AdminScheduleModal({
             <div className="flex gap-2">
               {["weekly", "biweekly", "monthly"].map((f) => (
                 <button key={f} type="button" onClick={() => setFrequency(f)}
-                  className={`flex-1 py-2 rounded-lg text-[11px] font-semibold border transition-colors ${frequency === f ? "bg-[var(--gold)] border-[var(--gold)] text-[var(--btn-text-on-accent)]" : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"}`}>
+                  className={`flex-1 py-2 rounded-lg text-[11px] font-semibold border transition-colors ${frequency === f ? "bg-[var(--admin-primary-fill)] border-[var(--gold)] text-[var(--btn-text-on-accent)]" : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"}`}>
                   {FREQ_LABELS[f]}
                 </button>
               ))}
@@ -192,7 +192,7 @@ function AdminScheduleModal({
                 const active = daysOfWeek.includes(dow);
                 return (
                   <button key={dow} type="button" onClick={() => toggleDay(dow)}
-                    className={`w-9 h-9 rounded-lg text-[10px] font-bold border transition-colors ${active ? "bg-[var(--gold)] border-[var(--gold)] text-[var(--btn-text-on-accent)]" : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"}`}>
+                    className={`w-9 h-9 rounded-lg text-[10px] font-bold border transition-colors ${active ? "bg-[var(--admin-primary-fill)] border-[var(--gold)] text-[var(--btn-text-on-accent)]" : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"}`}>
                     {day}
                   </button>
                 );
@@ -247,7 +247,7 @@ function AdminScheduleModal({
 
         <div className="flex-shrink-0 px-5 py-4 border-t border-[var(--brd)] flex gap-2 bg-[var(--card)]">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)]">Cancel</button>
-          <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
+          <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50">
             {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Schedule"}
           </button>
         </div>
@@ -313,7 +313,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-1">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">B2B Operations</p>
           <h1 className="admin-page-hero text-[var(--tx)]">Recurring Schedules</h1>
           <p className="text-[12px] text-[var(--tx3)] mt-2">{schedules.length} schedule{schedules.length !== 1 ? "s" : ""} across all partners</p>
         </div>
@@ -394,9 +394,9 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                     </td>
                     <td className="py-3 px-3">
                       {s.is_paused ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">PAUSED</span>
+                        <span className="dt-badge tracking-[0.04em] text-amber-600 dark:text-amber-400">PAUSED</span>
                       ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">ACTIVE</span>
+                        <span className="dt-badge tracking-[0.04em] text-emerald-600 dark:text-emerald-400">ACTIVE</span>
                       )}
                     </td>
                     <td className="py-3 px-3 text-[var(--tx3)]">

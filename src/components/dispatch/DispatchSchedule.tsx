@@ -82,8 +82,8 @@ export default function DispatchSchedule({
 
         {showEmpty && (
           <div className="py-16 sm:py-20 px-4 flex flex-col items-center text-center">
-            <p className="text-[13px] font-semibold text-[var(--tx2)]">No jobs scheduled</p>
-            <p className="text-[10px] text-[var(--tx3)] mt-1">
+            <p className="text-base font-semibold text-[var(--tx2)]">No jobs scheduled</p>
+            <p className="text-sm text-[var(--tx3)] mt-1.5 leading-snug">
               Use the date arrows above to check other days
             </p>
           </div>
@@ -112,11 +112,11 @@ export default function DispatchSchedule({
                 ) : (
                   <ChevronRight className="w-4 h-4 text-[var(--tx3)] group-hover:text-[var(--tx2)] transition-colors" />
                 )}
-                <span className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)] group-hover:text-[var(--tx2)] transition-colors">
+                <span className="text-sm font-bold tracking-wide uppercase text-[var(--tx3)] group-hover:text-[var(--tx2)] transition-colors">
                   Completed
                 </span>
               </div>
-              <span className="text-[10px] font-semibold text-[var(--tx3)] bg-[var(--gdim)] px-2 py-0.5 rounded-full tabular-nums">
+              <span className="text-xs font-semibold text-[var(--tx3)] bg-[var(--gdim)] px-2.5 py-0.5 rounded-full tabular-nums min-w-[1.5rem] text-center">
                 {completed.length}
               </span>
             </button>

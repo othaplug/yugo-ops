@@ -131,7 +131,7 @@ export const EstateExperienceSection = React.forwardRef<
             <div className="grid md:grid-cols-2 gap-6">
               <EstateFeatureCard
                 title={truckLabel}
-                description="Climate-protected and equipped exclusively for your move."
+                description="Fully equipped and prepared exclusively for your move."
               />
               <EstateFeatureCard
                 title={`Professional Crew of ${crewN}`}

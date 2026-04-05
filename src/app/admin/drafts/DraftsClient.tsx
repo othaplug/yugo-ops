@@ -2,16 +2,26 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ClockCounterClockwise, Trash, ArrowRight } from "@phosphor-icons/react";
-import { getAllDraftMetas, deleteDraft, clearAllDrafts, getDraftLabel, type DraftMeta } from "@/hooks/useFormDraft";
+import {
+  ClockCounterClockwise,
+  Trash,
+  ArrowRight,
+} from "@phosphor-icons/react";
+import {
+  getAllDraftMetas,
+  deleteDraft,
+  clearAllDrafts,
+  getDraftLabel,
+  type DraftMeta,
+} from "@/hooks/useFormDraft";
 
 const TYPE_COLORS: Record<string, string> = {
-  delivery: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
-  delivery_b2b: "bg-purple-500/15 text-purple-700 dark:text-purple-400",
-  delivery_dayrate: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-400",
-  move: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
-  quote: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
-  project: "bg-rose-500/15 text-rose-700 dark:text-rose-400",
+  delivery: "text-blue-700 dark:text-blue-400",
+  delivery_b2b: "text-purple-700 dark:text-purple-400",
+  delivery_dayrate: "text-indigo-700 dark:text-indigo-400",
+  move: "text-emerald-700 dark:text-emerald-400",
+  quote: "text-amber-700 dark:text-amber-400",
+  project: "text-rose-700 dark:text-rose-400",
 };
 
 function formatRelativeTime(iso: string): string {
@@ -47,9 +57,7 @@ export default function DraftsClient() {
   if (!mounted) {
     return (
       <div className="p-6">
-        <h1 className="admin-page-hero text-[var(--tx)]">
-          Drafts
-        </h1>
+        <h1 className="admin-page-hero text-[var(--tx)]">Drafts</h1>
         <p className="text-[13px] text-[var(--tx3)] mt-1">Loading…</p>
       </div>
     );
@@ -59,9 +67,7 @@ export default function DraftsClient() {
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="admin-page-hero text-[var(--tx)]">
-            Drafts
-          </h1>
+          <h1 className="admin-page-hero text-[var(--tx)]">Drafts</h1>
           <p className="text-[13px] text-[var(--tx3)] mt-0.5">
             Forms auto-save as you type. Resume any unfinished work below.
           </p>
@@ -78,26 +84,32 @@ export default function DraftsClient() {
 
       {drafts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <p className="text-[15px] font-semibold text-[var(--tx2)]">No drafts saved</p>
+          <p className="text-[15px] font-semibold text-[var(--tx2)]">
+            No drafts saved
+          </p>
           <p className="text-[12px] text-[var(--tx3)] mt-1 max-w-sm">
-            When you start filling out a form and leave before submitting, it will automatically be saved here.
+            When you start filling out a form and leave before submitting, it
+            will automatically be saved here.
           </p>
         </div>
       ) : (
         <div className="divide-y divide-[var(--brd)]/50">
           {drafts.map((draft) => (
-            <div
-              key={draft.id}
-              className="flex items-center gap-3 py-3"
-            >
-              <ClockCounterClockwise size={18} className="text-[var(--gold)] shrink-0" aria-hidden />
+            <div key={draft.id} className="flex items-center gap-3 py-3">
+              <ClockCounterClockwise
+                size={18}
+                className="text-[var(--gold)] shrink-0"
+                aria-hidden
+              />
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="text-[13px] font-semibold text-[var(--tx)] truncate">
                     {draft.title}
                   </span>
-                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide ${TYPE_COLORS[draft.formType] ?? "bg-[var(--bg)] text-[var(--tx3)]"}`}>
+                  <span
+                    className={`dt-badge tracking-[0.04em] ${TYPE_COLORS[draft.formType] ?? "text-[var(--tx3)]"}`}
+                  >
                     {getDraftLabel(draft.formType)}
                   </span>
                 </div>
@@ -116,7 +128,7 @@ export default function DraftsClient() {
                 </button>
                 <Link
                   href={draft.path}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-90 transition-opacity"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--admin-r-md,4px)] text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
                 >
                   Resume <ArrowRight size={12} />
                 </Link>

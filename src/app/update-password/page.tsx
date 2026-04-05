@@ -21,7 +21,9 @@ export default function UpdatePasswordPage() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         router.replace("/login");
         return;
@@ -55,7 +57,9 @@ export default function UpdatePasswordPage() {
 
     setSuccess(true);
     setTimeout(async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         router.push("/login");
         return;
@@ -67,10 +71,10 @@ export default function UpdatePasswordPage() {
     }, 2000);
   };
 
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   useEffect(() => {
     const saved = localStorage.getItem("yugo-theme") as "light" | "dark";
-    if (saved) setTheme(saved);
+    if (saved === "light" || saved === "dark") setTheme(saved);
   }, []);
 
   const isLight = theme === "light";
@@ -82,18 +86,43 @@ export default function UpdatePasswordPage() {
 
   if (checking) {
     return (
-      <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: bg }}>
+      <main
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: bg,
+        }}
+      >
         <div style={{ color: muted, fontSize: 14 }}>Loading...</div>
       </main>
     );
   }
 
   return (
-    <main style={{
-      minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
-      background: bg, fontFamily: "'DM Sans', sans-serif", position: "relative", overflow: "hidden"
-    }}>
-      <div style={{ width: "100%", maxWidth: 460, padding: "0 28px", position: "relative", zIndex: 1, animation: "loginFadeIn 0.6s ease" }}>
+    <main
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: bg,
+        fontFamily: "'DM Sans', sans-serif",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 460,
+          padding: "0 28px",
+          position: "relative",
+          zIndex: 1,
+          animation: "loginFadeIn 0.6s ease",
+        }}
+      >
         <style>{`
           @keyframes loginFadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
           .li:focus { border-bottom-color: rgba(201,169,98,0.65) !important; box-shadow: none !important; }
@@ -101,32 +130,72 @@ export default function UpdatePasswordPage() {
           .lb:hover:not(:disabled) { background: #D4B56C !important; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(201,169,98,0.25); }
         `}</style>
 
-        <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 20, padding: "36px 40px", boxShadow: isLight ? "0 4px 24px rgba(0,0,0,0.04)" : "0 4px 24px rgba(0,0,0,0.2)" }}>
+        <div
+          style={{
+            background: cardBg,
+            border: `1px solid ${cardBorder}`,
+            borderRadius: 20,
+            padding: "36px 40px",
+            boxShadow: isLight
+              ? "0 4px 24px rgba(0,0,0,0.04)"
+              : "0 4px 24px rgba(0,0,0,0.2)",
+          }}
+        >
           <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <YugoLogo size={22} variant="gold" />
+            <YugoLogo size={22} variant="wine" />
           </div>
 
           {success ? (
             <>
               <div style={{ textAlign: "center", marginBottom: 8 }}>
-                <div style={{
-                  width: 56, height: 56, borderRadius: "50%", margin: "0 auto 16px",
-                  background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)",
-                  display: "flex", alignItems: "center", justifyContent: "center"
-                }}>
+                <div
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: "50%",
+                    margin: "0 auto 16px",
+                    background: "rgba(74,222,128,0.1)",
+                    border: "1px solid rgba(74,222,128,0.3)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
                   <Check size={28} color="#4ADE80" weight="bold" />
                 </div>
               </div>
-              <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: text, textAlign: "center", marginBottom: 6 }}>
+              <div
+                style={{
+                  fontFamily: "'Instrument Serif', serif",
+                  fontSize: 24,
+                  color: text,
+                  textAlign: "center",
+                  marginBottom: 6,
+                }}
+              >
                 Password updated
               </div>
-              <div style={{ fontSize: 13, color: muted, textAlign: "center", marginBottom: 16 }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: muted,
+                  textAlign: "center",
+                  marginBottom: 16,
+                }}
+              >
                 Your password has been changed successfully. Redirecting...
               </div>
             </>
           ) : (
             <>
-              <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 26, color: text, marginBottom: 6 }}>
+              <div
+                style={{
+                  fontFamily: "'Instrument Serif', serif",
+                  fontSize: 26,
+                  color: text,
+                  marginBottom: 6,
+                }}
+              >
                 Update your password
               </div>
               <div style={{ fontSize: 14, color: muted, marginBottom: 8 }}>
@@ -134,20 +203,49 @@ export default function UpdatePasswordPage() {
               </div>
               {userEmail && (
                 <div style={{ fontSize: 12, color: muted, marginBottom: 24 }}>
-                  Signed in as <strong style={{ color: text }}>{userEmail}</strong>
+                  Signed in as{" "}
+                  <strong style={{ color: text }}>{userEmail}</strong>
                 </div>
               )}
-              <div style={{ width: 48, height: 1, background: "linear-gradient(90deg, transparent, #2C3E2D, transparent)", margin: "0 auto 28px" }} />
+              <div
+                style={{
+                  width: 48,
+                  height: 1,
+                  background:
+                    "linear-gradient(90deg, transparent, #2C3E2D, transparent)",
+                  margin: "0 auto 28px",
+                }}
+              />
 
               {error && (
-                <div style={{ background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.2)", color: "#F87171", fontSize: 12, padding: "10px 14px", borderRadius: 8, marginBottom: 18 }}>
+                <div
+                  style={{
+                    background: "rgba(248,113,113,0.1)",
+                    border: "1px solid rgba(248,113,113,0.2)",
+                    color: "#F87171",
+                    fontSize: 12,
+                    padding: "10px 14px",
+                    borderRadius: 8,
+                    marginBottom: 18,
+                  }}
+                >
                   {error}
                 </div>
               )}
 
               <form onSubmit={handleSubmit}>
                 <div style={{ marginBottom: 18 }}>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" as const, color: muted, marginBottom: 6 }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: 0.5,
+                      textTransform: "uppercase" as const,
+                      color: muted,
+                      marginBottom: 6,
+                    }}
+                  >
                     New Password
                   </label>
                   <div style={{ position: "relative" }}>
@@ -174,18 +272,53 @@ export default function UpdatePasswordPage() {
                         transition: "border-color 0.2s",
                       }}
                     />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide" : "Show"}
-                      style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 2, color: "#666", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? "Hide" : "Show"}
+                      style={{
+                        position: "absolute",
+                        right: 0,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: 2,
+                        color: "#666",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
                       {showPassword ? (
-                        <Eye size={14} weight="regular" className="text-current" />
+                        <Eye
+                          size={14}
+                          weight="regular"
+                          className="text-current"
+                        />
                       ) : (
-                        <EyeSlash size={14} weight="regular" className="text-current" />
+                        <EyeSlash
+                          size={14}
+                          weight="regular"
+                          className="text-current"
+                        />
                       )}
                     </button>
                   </div>
                 </div>
                 <div style={{ marginBottom: 24 }}>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" as const, color: muted, marginBottom: 6 }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: 0.5,
+                      textTransform: "uppercase" as const,
+                      color: muted,
+                      marginBottom: 6,
+                    }}
+                  >
                     Confirm Password
                   </label>
                   <input
@@ -216,23 +349,73 @@ export default function UpdatePasswordPage() {
                 <div style={{ marginBottom: 20 }}>
                   <div style={{ display: "flex", gap: 4, marginBottom: 6 }}>
                     {[1, 2, 3, 4].map((i) => {
-                      const strength = password.length >= 12 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[!@#$%^&*]/.test(password) ? 4
-                        : password.length >= 10 && /[A-Z]/.test(password) && /[0-9]/.test(password) ? 3
-                        : password.length >= 8 ? 2 : password.length > 0 ? 1 : 0;
+                      const strength =
+                        password.length >= 12 &&
+                        /[A-Z]/.test(password) &&
+                        /[0-9]/.test(password) &&
+                        /[!@#$%^&*]/.test(password)
+                          ? 4
+                          : password.length >= 10 &&
+                              /[A-Z]/.test(password) &&
+                              /[0-9]/.test(password)
+                            ? 3
+                            : password.length >= 8
+                              ? 2
+                              : password.length > 0
+                                ? 1
+                                : 0;
                       const active = i <= strength;
-                      const color = strength <= 1 ? "#F87171" : strength === 2 ? "#FBBF24" : strength === 3 ? "#2C3E2D" : "#4ADE80";
+                      const color =
+                        strength <= 1
+                          ? "#F87171"
+                          : strength === 2
+                            ? "#FBBF24"
+                            : strength === 3
+                              ? "#2C3E2D"
+                              : "#4ADE80";
                       return (
-                        <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: active ? color : (isLight ? "#E0DDD8" : "#2A2A2A"), transition: "background 0.2s" }} />
+                        <div
+                          key={i}
+                          style={{
+                            flex: 1,
+                            height: 3,
+                            borderRadius: 2,
+                            background: active
+                              ? color
+                              : isLight
+                                ? "#E0DDD8"
+                                : "#2A2A2A",
+                            transition: "background 0.2s",
+                          }}
+                        />
                       );
                     })}
                   </div>
                   <div style={{ fontSize: 10, color: muted }}>
-                    Use 8+ characters with uppercase, numbers, and symbols for a strong password
+                    Use 8+ characters with uppercase, numbers, and symbols for a
+                    strong password
                   </div>
                 </div>
 
-                <button type="submit" className="lb" disabled={loading}
-                  style={{ width: "100%", padding: 13, background: "#2C3E2D", color: "#0D0D0D", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", cursor: loading ? "not-allowed" : "pointer", transition: "all 0.2s", opacity: loading ? 0.5 : 1 }}>
+                <button
+                  type="submit"
+                  className="lb"
+                  disabled={loading}
+                  style={{
+                    width: "100%",
+                    padding: 13,
+                    background: "#2C3E2D",
+                    color: "#0D0D0D",
+                    border: "none",
+                    borderRadius: 10,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    fontFamily: "'DM Sans', sans-serif",
+                    cursor: loading ? "not-allowed" : "pointer",
+                    transition: "all 0.2s",
+                    opacity: loading ? 0.5 : 1,
+                  }}
+                >
                   {loading ? "Updating..." : "Update Password"}
                 </button>
               </form>

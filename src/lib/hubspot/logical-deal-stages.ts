@@ -16,6 +16,8 @@ export const LOGICAL_STAGE_PLATFORM_KEYS: Record<string, readonly string[]> = {
   in_progress: ["hubspot_stage_in_progress", "hubspot_stage_booked"],
   closed_won: ["hubspot_stage_closed_won"],
   closed_lost: ["hubspot_stage_closed_lost"],
+  /** Nurture paused / coordinator follow-up — optional; configure in platform_config */
+  stalled: ["hubspot_stage_stalled", "hubspot_stage_quote_viewed"],
   /** Partner onboarding — optional; falls back to closed won if unset */
   partner_signed: ["hubspot_stage_partner_signed", "hubspot_stage_closed_won"],
 };
@@ -37,5 +39,12 @@ export const YUGO_TRIGGER_TO_LOGICAL_STAGE: Record<string, string> = {
   paid: "closed_won",
   cancelled: "closed_lost",
   expired: "closed_lost",
+  /** Client declined from quote page — closed lost */
+  declined: "closed_lost",
+  /** Coordinator-marked loss */
+  lost: "closed_lost",
+  /** Auto-cold or coordinator cold — stalled / nurture paused */
+  cold: "stalled",
+  stalled: "stalled",
   partner_signed: "partner_signed",
 };

@@ -20,6 +20,7 @@ export async function POST() {
       followup2: job.followup2,
       followup3: job.followup3,
       expired: job.expired,
+      coldMarked: job.coldMarked,
       errors: job.errors,
     });
   } catch (e) {

@@ -342,7 +342,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="px-6 py-3 rounded-xl text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all duration-150 disabled:opacity-35 disabled:cursor-not-allowed shadow-sm shadow-[var(--gold)]/20"
+            className="px-6 py-3 rounded-xl text-[13px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all duration-150 disabled:opacity-35 disabled:cursor-not-allowed shadow-sm shadow-[var(--gold)]/20"
           >
             {submitting ? "Scheduling…" : "Schedule"}
           </button>

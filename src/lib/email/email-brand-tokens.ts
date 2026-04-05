@@ -5,6 +5,10 @@
  * Quote HTML emails declare `color-scheme: only light` and explicit hex backgrounds on
  * `html` / `body` / tables so Apple Mail, iOS, and clients that honor `prefers-color-scheme`
  * do not auto-invert or substitute system colours for our cream shell and tier cards.
+ *
+ * Other client mail: {@link getFragmentClientEmailDarkLockCss} in `email-client-dark-lock.ts`
+ * (fragments) and {@link resolveFullDocumentDarkLockCss} (full HTML injected via
+ * `injectEmailResponsiveCssIntoFullDocument`).
  */
 
 export const EMAIL_FOREST = "#2C3E2D";

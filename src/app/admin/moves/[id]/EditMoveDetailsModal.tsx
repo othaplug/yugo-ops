@@ -63,7 +63,7 @@ function Field({ label, children, className = "" }: { label: string; children: R
 }
 
 const inputBase =
-  "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
+  "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/82 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
 
 export default function EditMoveDetailsModal({ open, onClose, section = null, moveId, initial, crews = [], isCompleted = false, onSaved }: EditMoveDetailsModalProps) {
   const router = useRouter();
@@ -375,10 +375,10 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
                             key={preset}
                             type="button"
                             onClick={() => toggleComplexity(preset)}
-                            className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
+                            className={`px-3 py-1.5 rounded-md text-[11px] font-medium transition-all border ${
                               complexityIndicators.includes(preset)
-                                ? "bg-[var(--gold)]/20 text-[var(--gold)] border border-[var(--gold)]/40"
-                                : "bg-[var(--bg)] text-[var(--tx2)] border border-[var(--brd)] hover:border-[var(--gold)]/40"
+                                ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                                : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
                             }`}
                           >
                             {preset}
@@ -425,18 +425,18 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
         </div>
 
         {/* Sticky footer */}
-        <div className="shrink-0 px-5 sm:px-6 py-4 border-t border-[var(--brd)] bg-[var(--card)] flex gap-3 justify-end">
+        <div className="shrink-0 px-5 sm:px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] border-t border-[var(--brd)] bg-[var(--card)] flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-lg text-[12px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors"
+            className="w-full sm:w-auto min-h-11 px-4 py-2.5 rounded-lg text-[12px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors touch-manipulation"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="px-5 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto min-h-11 px-5 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
           >
             {saving ? "Saving…" : "Save changes"}
           </button>

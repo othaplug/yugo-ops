@@ -1,5 +1,5 @@
 import { SERVICE_TYPE_LABELS, TIER_LABELS } from "@/lib/displayLabels";
-import { getAppTimezone } from "@/lib/business-timezone";
+import { formatPlatformDisplay } from "@/lib/date-format";
 
 export { ONTARIO_HST_RATE as TAX_RATE } from "@/lib/format-currency";
 export const WINE = "#5C1A33";
@@ -387,17 +387,15 @@ export function fmtPricePerLb(n: number) {
 
 export function fmtDate(d: string | null) {
   if (!d) return "\u2014";
-  return new Date(d + "T00:00:00").toLocaleDateString("en-CA", {
-    timeZone: getAppTimezone(),
+  return formatPlatformDisplay(new Date(d + "T00:00:00"), {
     weekday: "long",
-    year: "numeric",
     month: "long",
     day: "numeric",
-  });
+  }, "\u2014");
 }
 
 export function fmtShortDate(d: Date) {
-  return d.toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+  return formatPlatformDisplay(d, { month: "short", day: "numeric" }, "");
 }
 
 export function fmtAccess(a: string | null) {

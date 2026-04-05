@@ -751,7 +751,7 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
                       <div
                         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[12px] font-bold transition-all duration-200 ${
                           step === idx
-                            ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm shadow-[var(--gold)]/30 scale-110"
+                            ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] shadow-sm shadow-[var(--gold)]/30 scale-110"
                             : step > idx
                               ? "bg-[var(--grn)]/15 text-[var(--grn)] border border-[var(--grn)]/30"
                               : "bg-[var(--brd)]/60 text-[var(--tx3)] border border-[var(--brd)]"
@@ -870,7 +870,7 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
               type="button"
               onClick={() => setStep((s) => s + 1)}
               disabled={!canAdvance()}
-              className="px-6 py-3 rounded-xl text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all duration-150 disabled:opacity-35 shadow-sm shadow-[var(--gold)]/20"
+              className="px-6 py-3 rounded-xl text-[13px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all duration-150 disabled:opacity-35 shadow-sm shadow-[var(--gold)]/20"
             >
               Continue
             </button>
@@ -888,7 +888,7 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
                 type="button"
                 onClick={() => { setState((s) => ({ ...s, activationMode: "activate" })); setTimeout(handleSubmit, 0); }}
                 disabled={loading}
-                className="px-6 py-3 rounded-xl text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all duration-150 disabled:opacity-50 shadow-sm shadow-[var(--gold)]/20"
+                className="px-6 py-3 rounded-xl text-[13px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all duration-150 disabled:opacity-50 shadow-sm shadow-[var(--gold)]/20"
               >
                 {loading ? "Activating…" : "Activate Partner"}
               </button>
@@ -1334,7 +1334,7 @@ function Step1BusinessDetails({
                   <button
                     type="button"
                     onClick={handleAutoFill}
-                    className="px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
+                    className="px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
                   >
                     Auto-fill from HubSpot
                   </button>

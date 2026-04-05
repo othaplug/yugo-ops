@@ -377,7 +377,7 @@ export default function TrackLiveMap({
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#22C55E]" />
           </span>
           <span
-            className={`text-[13px] font-semibold text-[#22C55E]${isEstate ? " drop-shadow-sm" : ""}`}
+            className="text-[13px] font-semibold text-[#22C55E]"
           >
             LIVE
           </span>
@@ -473,17 +473,13 @@ export default function TrackLiveMap({
               hasActiveTracking
                 ? isFullscreen
                   ? "map-fullscreen"
-                  : isEstate
-                    ? "h-[50vh] min-h-[320px] bg-[#1a0f14] border border-[#EDE6DC]/15"
-                    : "h-[50vh] min-h-[320px] border"
-                : isEstate
-                  ? "mt-4 h-[200px] bg-[#1a0f14] border border-[#EDE6DC]/15"
-                  : "mt-4 h-[200px] border"
+                  : "h-[42dvh] min-h-[260px] sm:min-h-[300px] md:h-[50vh] md:min-h-[320px] border"
+                : "mt-4 h-[200px] min-h-[180px] sm:min-h-[200px] border"
             }`}
             style={
-              hasActiveTracking && !isFullscreen && !isEstate
+              hasActiveTracking && !isFullscreen
                 ? { borderColor: `${FOREST}18`, background: CREAM }
-                : !hasActiveTracking && !isEstate
+                : !hasActiveTracking
                   ? { borderColor: `${FOREST}18`, background: CREAM }
                   : undefined
             }
@@ -530,21 +526,19 @@ export default function TrackLiveMap({
 
             {!hasActiveTracking && (
               <div
-                className={`absolute inset-0 backdrop-blur-md flex flex-col items-center justify-center z-10 pointer-events-none px-4 text-center ${
-                  isEstate ? "bg-[#1a0f14]/82" : "bg-[#FFFBF7]/85"
-                }`}
+                className="absolute inset-0 backdrop-blur-md flex flex-col items-center justify-center z-10 pointer-events-none px-4 text-center bg-[#FFFBF7]/85"
                 aria-hidden="true"
               >
                 <span
                   className="text-[13px] font-semibold"
-                  style={{ color: isEstate ? "#F5F0E8" : FOREST }}
+                  style={{ color: FOREST }}
                 >
                   Live map paused
                 </span>
                 <span
                   className="text-[12px] mt-1 max-w-[240px] leading-snug"
                   style={{
-                    color: isEstate ? "rgba(237,230,220,0.72)" : TEXT_MUTED_ON_LIGHT,
+                    color: TEXT_MUTED_ON_LIGHT,
                   }}
                 >
                   Turns on automatically when your crew is en route.
@@ -649,7 +643,7 @@ export default function TrackLiveMap({
                   <div
                     className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0"
                     style={{
-                      background: "linear-gradient(135deg, #2C3E2D, #8B7332)",
+                      background: "linear-gradient(135deg, #2C3E2D, #3d5a40)",
                     }}
                   >
                     {(maskCrewIdentity ? "Y" : (crew?.name || "Y"))
@@ -735,7 +729,10 @@ export default function TrackLiveMap({
                               key={i}
                               className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#FAF8F5] border border-[#E7E5E4]"
                             >
-                              <div className="w-6 h-6 rounded-full bg-[#C19A6B] flex items-center justify-center text-[10px] font-bold text-white">
+                              <div
+                                className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                                style={{ backgroundColor: FOREST }}
+                              >
                                 {(name || "?").slice(0, 2).toUpperCase()}
                               </div>
                               <span className="text-[12px] font-medium text-[#1A1A1A]">

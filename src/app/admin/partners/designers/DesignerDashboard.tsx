@@ -4,17 +4,18 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { getDeliveryDetailPath } from "@/lib/move-code";
 import CreateDeliveryDropdown from "../../components/CreateDeliveryDropdown";
+import { formatMoveDate, formatPlatformDisplay } from "@/lib/date-format";
 import { toTitleCase } from "@/lib/format-text";
 import { MagnifyingGlass, CaretRight } from "@phosphor-icons/react";
 
 const STATUS_BADGE: Record<string, string> = {
-  pending: "text-[var(--org)] bg-[rgba(212,138,41,0.1)]",
-  scheduled: "text-blue-600 bg-blue-500/10",
-  confirmed: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
-  "in-transit": "text-[var(--gold)] bg-[var(--gdim)]",
-  delivered: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
-  completed: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
-  cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.1)]",
+  pending: "text-[var(--org)]",
+  scheduled: "text-blue-600",
+  confirmed: "text-[var(--grn)]",
+  "in-transit": "text-[var(--gold)]",
+  delivered: "text-[var(--grn)]",
+  completed: "text-[var(--grn)]",
+  cancelled: "text-[var(--red)]",
 };
 
 const ACTIVE_STATUSES = ["draft", "proposed", "active", "on_hold"];
@@ -92,7 +93,7 @@ export default function DesignerDashboard({
       <div className="pt-6 border-t border-[var(--brd)]/30">
         {activeTab === "deliveries" && (
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Deliveries</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-4">Deliveries</div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
               <div className="relative flex-1">
                 <MagnifyingGlass size={15} weight="regular" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx2)]" aria-hidden />
@@ -122,12 +123,12 @@ export default function DesignerDashboard({
                         <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">
                           {d.client_name && <span className="font-medium">{d.client_name}</span>}
                           {d.delivery_address && <span> · {d.delivery_address}</span>}
-                          {d.scheduled_date && <span> · {new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>}
+                          {d.scheduled_date && <span> · {formatMoveDate(d.scheduled_date)}</span>}
                         </div>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0 ml-3">
                         <span className="text-[10px] text-[var(--tx3)]">{Array.isArray(d.items) ? d.items.length : 0} items</span>
-                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${badgeClass}`}>{statusLabel}</span>
+                        <span className={`dt-badge tracking-[0.04em] ${badgeClass}`}>{statusLabel}</span>
                         <CaretRight size={14} weight="regular" className="flex-shrink-0 text-[var(--tx3)]" />
                       </div>
                     </Link>
@@ -140,7 +141,7 @@ export default function DesignerDashboard({
 
         {activeTab === "projects" && (
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4 flex items-center justify-between">
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-4 flex items-center justify-between">
               <span>Projects</span>
               <Link href="/admin/deliveries?view=projects" className="admin-view-all-link">
                 View all projects
@@ -163,17 +164,17 @@ export default function DesignerDashboard({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-[13px] font-semibold text-[var(--tx)] truncate">{project.project_name}</span>
-                          {isActive && <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-[rgba(45,159,90,0.1)] text-[var(--grn)]">Active</span>}
+                          {isActive && <span className="dt-badge tracking-[0.04em] text-[var(--grn)]">Active</span>}
                           <span className="text-[10px] text-[var(--tx3)] font-mono">{project.project_number}</span>
                         </div>
                         <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">
                           {partnerName}
                           {project.site_address && ` · ${project.site_address}`}
-                          {project.target_end_date && ` · ${new Date(project.target_end_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
+                          {project.target_end_date && ` · ${formatPlatformDisplay(new Date(project.target_end_date + "T00:00:00"), { month: "short", day: "numeric" })}`}
                         </div>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded uppercase ${isActive ? "text-[var(--grn)]" : "text-[var(--gold)]"}`}>{statusLabel}</span>
+                        <span className={`dt-badge tracking-[0.04em] ${isActive ? "text-[var(--grn)]" : "text-[var(--gold)]"}`}>{statusLabel}</span>
                         <CaretRight size={14} weight="regular" className="text-[var(--tx3)]" />
                       </div>
                     </Link>
@@ -186,7 +187,7 @@ export default function DesignerDashboard({
 
         {activeTab === "partners" && (
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Partners</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-4">Partners</div>
             <div className="divide-y divide-[var(--brd)]/30">
             {orgs.length === 0 ? (
               <div className="px-4 py-10 text-center">

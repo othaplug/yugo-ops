@@ -12,7 +12,7 @@ export default function PrivacyPage() {
       <header className="sticky top-0 z-50 bg-white border-b border-[#E7E5E4]">
         <div className="max-w-[720px] mx-auto px-4 py-4">
           <Link href="/" className="inline-block hover:opacity-90 transition-opacity">
-            <YugoLogo size={20} variant="gold" onLightBackground />
+            <YugoLogo size={20} variant="wine" onLightBackground />
           </Link>
         </div>
       </header>

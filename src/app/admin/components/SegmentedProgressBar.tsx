@@ -58,13 +58,13 @@ export default function SegmentedProgressBar({
                 background: isComplete
                   ? "var(--gold)"
                   : isCurrent
-                  ? "linear-gradient(90deg, var(--gold) 35%, rgba(201,169,98,0.25) 100%)"
-                  : "rgba(255,255,255,0.07)",
+                    ? "linear-gradient(90deg, var(--gold) 35%, rgba(255,255,255,0.2) 100%)"
+                    : "rgba(255,255,255,0.07)",
                 boxShadow: isCurrent
-                  ? "0 0 10px rgba(201,169,98,0.35)"
+                  ? "0 0 10px rgba(255,255,255,0.4)"
                   : isComplete && isHovered
-                  ? "0 0 8px rgba(201,169,98,0.2)"
-                  : "none",
+                    ? "0 0 8px rgba(201,169,98,0.2)"
+                    : "none",
                 transform: isHovered ? "scaleY(1.5)" : "scaleY(1)",
               }}
               onMouseEnter={() => setHoveredIdx(i)}
@@ -83,22 +83,31 @@ export default function SegmentedProgressBar({
                   <div
                     className="rounded-lg px-3 py-1.5 whitespace-nowrap min-w-[120px] text-center"
                     style={{
-                      background: "linear-gradient(160deg, #1e1e1e 0%, #161616 100%)",
+                      background:
+                        "linear-gradient(160deg, #1e1e1e 0%, #161616 100%)",
                       border: "1px solid rgba(255,255,255,0.09)",
-                      boxShadow: "0 8px 24px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)",
+                      boxShadow:
+                        "0 8px 24px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)",
                     }}
                   >
                     <div className="text-[10px] font-semibold text-white/90 mb-0.5 leading-tight tracking-wide">
                       {step.label}
                     </div>
                     {step.timestamp ? (
-                      <div className="text-[9px] font-medium" style={{ color: "var(--gold)" }}>
+                      <div
+                        className="text-[9px] font-medium"
+                        style={{ color: "var(--gold)" }}
+                      >
                         {formatTs(step.timestamp)}
                       </div>
                     ) : isComplete || isCurrent ? (
-                      <div className="text-[9px] text-white/30">No timestamp recorded</div>
+                      <div className="text-[9px] text-white/30">
+                        No timestamp recorded
+                      </div>
                     ) : (
-                      <div className="text-[9px] text-white/20 italic">Not yet reached</div>
+                      <div className="text-[9px] text-white/20 italic">
+                        Not yet reached
+                      </div>
                     )}
                   </div>
                 </div>
@@ -120,10 +129,10 @@ export default function SegmentedProgressBar({
                 isAllComplete
                   ? "text-[var(--gold)]/70 font-medium"
                   : isComplete
-                  ? "text-[var(--tx3)]/50 font-medium"
-                  : isCurrent
-                  ? "text-[var(--gold)] font-bold"
-                  : "text-[var(--tx3)]/25 font-medium"
+                    ? "text-[var(--tx3)]/50 font-medium"
+                    : isCurrent
+                      ? "text-[var(--gold)] font-bold"
+                      : "text-[var(--tx3)]/25 font-medium"
               }`}
               onMouseEnter={() => setHoveredIdx(i)}
               onMouseLeave={() => setHoveredIdx(null)}

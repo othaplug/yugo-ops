@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CalendarBlank, CurrencyDollar, LinkSimple } from "@phosphor-icons/react";
 import { useToast } from "@/app/admin/components/Toast";
+import { formatPlatformDisplay } from "@/lib/date-format";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   draft: { label: "Draft", color: "#9c9489", bg: "rgba(156,148,137,0.12)" },
@@ -62,11 +63,10 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
   const org = statement.organizations;
   const statusCfg = STATUS_CONFIG[status] || STATUS_CONFIG.draft!;
 
-  const periodLabel = `${new Date(statement.period_start + "T12:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" })}–${new Date(statement.period_end + "T12:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}`;
-  const dueDateLabel = new Date(statement.due_date + "T12:00:00").toLocaleDateString("en-CA", {
+  const periodLabel = `${formatPlatformDisplay(new Date(statement.period_start + "T12:00:00"), { month: "short", day: "numeric" })}–${formatPlatformDisplay(new Date(statement.period_end + "T12:00:00"), { month: "short", day: "numeric" })}`;
+  const dueDateLabel = formatPlatformDisplay(new Date(statement.due_date + "T12:00:00"), {
     month: "long",
     day: "numeric",
-    year: "numeric",
   });
 
   const deliveries: StatementDelivery[] = Array.isArray(statement.deliveries)
@@ -108,8 +108,8 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
           )}
         </div>
         <span
-          className="px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider"
-          style={{ color: statusCfg.color, background: statusCfg.bg }}
+          className="dt-badge tracking-[0.04em] text-[11px]"
+          style={{ color: statusCfg.color }}
         >
           {statusCfg.label}
         </span>
@@ -198,7 +198,7 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
                     </td>
                     <td className="px-4 py-3 text-[12px] text-[var(--tx3)]">
                       {d.date
-                        ? new Date(d.date).toLocaleDateString("en-CA", { month: "short", day: "numeric" })
+                        ? formatPlatformDisplay(new Date(d.date), { month: "short", day: "numeric" })
                         : "-"}
                     </td>
                     <td className="px-4 py-3 text-[12px] text-[var(--tx2)] max-w-[180px] truncate">

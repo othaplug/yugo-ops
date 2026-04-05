@@ -112,7 +112,7 @@ function getEffectiveValue(
 function StatusBadge({ source, isLocked }: { source: "override" | "discounted" | "template"; isLocked?: boolean }) {
   if (source === "override") {
     return (
-      <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold ${isLocked ? "bg-[var(--gdim)] text-[var(--gold)]" : "bg-[var(--bldim)] text-[var(--blue)]"}`}>
+      <span className={`inline-flex items-center gap-0.5 dt-badge tracking-[0.04em] text-[10px] ${isLocked ? "text-[var(--gold)]" : "text-[var(--blue)]"}`}>
         ✦ Custom{isLocked ? " (locked)" : ""}
       </span>
     );
@@ -301,7 +301,7 @@ function EditOverrideModal({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full py-2.5 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+            className="w-full py-2.5 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
             {saving ? "Saving…" : "Save Override"}
           </button>
@@ -376,7 +376,7 @@ function RateCardSettingsModal({
                 onClick={() => setTier(t)}
                 className={`flex-1 py-2 rounded-lg text-[11px] font-semibold border transition-all ${
                   tier === t
-                    ? "bg-[var(--gold)] border-[var(--gold)] text-white"
+                    ? "bg-[var(--admin-primary-fill)] border-[var(--gold)] text-[var(--btn-text-on-accent)]"
                     : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"
                 }`}
               >
@@ -402,7 +402,7 @@ function RateCardSettingsModal({
 
         <div className="flex gap-2 pt-1">
           <button onClick={onClose} className="flex-1 py-2 rounded-lg text-[11px] border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
-          <button onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-white disabled:opacity-50">
+          <button onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-white disabled:opacity-50">
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
@@ -580,7 +580,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
   /* ─── Section header ─── */
   const SectionHead = ({ label }: { label: string }) => (
     <div className="flex items-center gap-3 mt-6 mb-2">
-      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">{label}</div>
+      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82">{label}</div>
       <div className="flex-1 h-px bg-[var(--brd)]/40" />
     </div>
   );
@@ -615,11 +615,11 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-2">
         <div className="flex flex-col sm:flex-row sm:items-start gap-4">
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-1">Rate Card</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82 mb-1">Rate Card</div>
             <h3 className="font-heading text-[17px] font-bold text-[var(--tx)]">{orgName}</h3>
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-[var(--tx2)]">
               {isDetached ? (
-                <span className="px-2 py-0.5 rounded bg-[var(--bgsub)] border border-[var(--brd)] text-[9px] font-semibold text-[var(--org)]">
+                <span className="dt-badge tracking-[0.04em] text-[var(--org)]">
                   Custom rate card (not linked to template)
                 </span>
               ) : (
@@ -667,7 +667,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
 
       {templateKind === "referral" && templateExtras && (
         <div className="mb-8 space-y-4 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">Commission structure</div>
+          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82">Commission structure</div>
           {(() => {
             const cs = templateExtras.commission_structure as Record<string, unknown> | undefined;
             const rt = templateExtras.referral_terms as Record<string, unknown> | undefined;
@@ -736,7 +736,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
           {Array.isArray((templateExtras as { surcharges?: unknown }).surcharges) &&
             ((templateExtras as { surcharges: { label: string; value: string }[] }).surcharges.length > 0) && (
             <>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">Template surcharges</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82">Template surcharges</div>
               <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
                 <table className="w-full text-[11px]">
                   <thead>
@@ -760,7 +760,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
           {Array.isArray((templateExtras as { additional_services?: unknown }).additional_services) &&
             ((templateExtras as { additional_services: { label: string; value: string }[] }).additional_services.length > 0) && (
             <>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">Template additional services</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82">Template additional services</div>
               <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
                 <table className="w-full text-[11px]">
                   <thead>
@@ -784,7 +784,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
           {Array.isArray((templateExtras as { volume_discounts?: unknown }).volume_discounts) &&
             ((templateExtras as { volume_discounts: { label: string; value: string }[] }).volume_discounts.length > 0) && (
             <>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">Template volume discounts</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82">Template volume discounts</div>
               <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
                 <table className="w-full text-[11px]">
                   <thead>
@@ -810,7 +810,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
 
       {showPortfolioMatrix && (
         <div className="mb-8 space-y-4">
-          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
+          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82">
             Rate card — residential moves (local)
             {showTemplatePmMatrix ? (
               <span className="block mt-1 normal-case font-normal text-[var(--tx3)]">Showing template defaults until contract rates are seeded.</span>

@@ -49,13 +49,13 @@ const STATUS_OPTIONS = [
 
 function statusBadge(status: string): string {
   switch (status) {
-    case "submitted": return "bg-[var(--gold)]/15 text-[var(--gold)]";
-    case "under_review": return "bg-[#3B82F6]/15 text-blue-700 dark:text-sky-300 ring-1 ring-inset ring-[#3B82F6]/25";
-    case "approved": return "bg-[var(--grn)]/15 text-[var(--grn)]";
-    case "partially_approved": return "bg-amber-500/15 text-amber-500";
-    case "denied": return "bg-[var(--red)]/15 text-[var(--red)]";
-    case "settled": case "closed": return "bg-[var(--brd)] text-[var(--tx3)]";
-    default: return "bg-[var(--brd)] text-[var(--tx3)]";
+    case "submitted": return "text-[var(--gold)]";
+    case "under_review": return "text-blue-700 dark:text-sky-300";
+    case "approved": return "text-[var(--grn)]";
+    case "partially_approved": return "text-amber-500";
+    case "denied": return "text-[var(--red)]";
+    case "settled": case "closed": return "text-[var(--tx3)]";
+    default: return "text-[var(--tx3)]";
   }
 }
 
@@ -134,7 +134,7 @@ const claimColumns: ColumnDef<Claim>[] = [
     label: "Status",
     accessor: (c) => c.status,
     render: (c) => (
-      <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusBadge(c.status)}`}>
+      <span className={`dt-badge tracking-[0.04em] ${statusBadge(c.status)}`}>
         {statusLabel(c.status)}
       </span>
     ),
@@ -219,7 +219,7 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
     <div className="p-4 sm:p-6 max-w-[1200px] mx-auto">
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Operations</p>
           <h1 className="admin-page-hero text-[var(--tx)]">Claims</h1>
         </div>
         <CreateButton href="/admin/claims/new" title="New Claim" />
@@ -241,10 +241,10 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
             key={o.value}
             type="button"
             onClick={() => setStatusFilter(o.value)}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all touch-manipulation ${
+            className={`shrink-0 px-3 py-1.5 rounded-md text-[10px] font-semibold transition-all touch-manipulation border ${
               statusFilter === o.value
-                ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
-                : "bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:bg-[var(--bg2)]"
+                ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                : "bg-[var(--bg)] text-[var(--tx)] border-[var(--brd)] hover:bg-[var(--bg2)]"
             }`}
           >
             {o.label}

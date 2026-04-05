@@ -205,7 +205,7 @@ export default function PartnerPortalFeaturesCard({ orgId, vertical, initialFeat
                 aria-checked={enabled}
                 onClick={() => toggle(key)}
                 className={`relative w-9 h-5 rounded-full transition-colors shrink-0 mt-0.5 ${
-                  enabled ? "bg-[var(--gold)]" : "bg-[var(--bg)]  border border-[var(--brd)]"
+                  enabled ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--bg)]  border border-[var(--brd)]"
                 }`}
               >
                 <span
@@ -241,7 +241,7 @@ export default function PartnerPortalFeaturesCard({ orgId, vertical, initialFeat
             type="button"
             onClick={save}
             disabled={saving}
-            className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-60 transition-colors"
+            className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-60 transition-colors"
           >
             {saving ? "Saving…" : "Save changes"}
           </button>

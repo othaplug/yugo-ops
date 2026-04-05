@@ -121,13 +121,13 @@ export default function RecommendedCrewPanel({
             key={rec.crew.user_id}
             className={`relative rounded-xl border p-4 transition-all ${
               isTop
-                ? "border-[var(--gold)]/40 bg-[var(--gold)]/5 shadow-[0_0_0_1px_rgba(201,169,98,0.06)]"
+                ? "border-[var(--gold)]/40 bg-[var(--gold)]/5 shadow-[0_0_0_1px_rgba(255,255,255,0.08)]"
                 : "border-[var(--brd)] bg-[var(--card)]"
             }`}
           >
             {isTop && (
               <div className="absolute -top-2 left-4">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase bg-[var(--gold)] text-[var(--btn-text-on-accent)]">
+                <span className="dt-badge tracking-[0.04em] text-[var(--admin-primary-fill)]">
                   Top Match
                 </span>
               </div>
@@ -140,7 +140,7 @@ export default function RecommendedCrewPanel({
                     {rec.crew.name ?? "Unnamed crew member"}
                   </span>
                   {rec.crew.role === "lead" && (
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--gold)] bg-[var(--gold)]/10 px-1.5 py-0.5 rounded-full border border-[var(--gold)]/20">
+                    <span className="dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">
                       Lead
                     </span>
                   )}
@@ -180,7 +180,7 @@ export default function RecommendedCrewPanel({
                     disabled={!!assigning}
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all disabled:opacity-50 ${
                       isTop
-                        ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-90"
+                        ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:opacity-90"
                         : "border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--tx3)]"
                     }`}
                   >

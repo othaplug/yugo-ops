@@ -14,7 +14,7 @@ export default function QuoteExpired({
   supportTel,
 }: {
   quoteId: string;
-  reason: "not_found" | "expired";
+  reason: "not_found" | "expired" | "declined" | "lost";
   expiresAt?: string | null;
   supportEmail?: string;
   supportTel?: string;
@@ -33,7 +33,7 @@ export default function QuoteExpired({
     >
       <div className="max-w-md w-full text-center py-16">
         <div className="flex justify-center mb-3">
-          <YugoLogo size={28} variant="gold" onLightBackground />
+          <YugoLogo size={28} variant="wine" onLightBackground />
         </div>
         <div
           className="w-16 h-px mx-auto mb-6"
@@ -56,6 +56,50 @@ export default function QuoteExpired({
                 ? ` was valid until ${expiryDate}`
                 : " is no longer available"}
               . Prices and availability may have changed since then.
+            </p>
+            <p
+              className="text-[12px] mb-8 font-mono"
+              style={{ color: TEXT_MUTED_ON_LIGHT }}
+            >
+              {quoteId}
+            </p>
+          </>
+        ) : reason === "declined" ? (
+          <>
+            <h1
+              className="font-hero text-[20px] font-bold mb-3"
+              style={{ color: FOREST }}
+            >
+              Quote Closed
+            </h1>
+            <p
+              className="text-[var(--text-base)] leading-relaxed mb-2"
+              style={{ color: FOREST }}
+            >
+              This quote is no longer active. If your plans change, your coordinator
+              can send a refreshed quote anytime.
+            </p>
+            <p
+              className="text-[12px] mb-8 font-mono"
+              style={{ color: TEXT_MUTED_ON_LIGHT }}
+            >
+              {quoteId}
+            </p>
+          </>
+        ) : reason === "lost" ? (
+          <>
+            <h1
+              className="font-hero text-[20px] font-bold mb-3"
+              style={{ color: FOREST }}
+            >
+              Quote Unavailable
+            </h1>
+            <p
+              className="text-[var(--text-base)] leading-relaxed mb-2"
+              style={{ color: FOREST }}
+            >
+              This quote link is no longer available. Please reach out if you would
+              like a new estimate.
             </p>
             <p
               className="text-[12px] mb-8 font-mono"
@@ -99,7 +143,7 @@ export default function QuoteExpired({
         <div className="mt-10 pt-6 border-t border-[#2C3E2D]/12">
           <YugoMarketingFooter
             contactEmail={mail}
-            logoVariant="gold"
+            logoVariant="wine"
             onLightBackground
             mutedColor={TEXT_MUTED_ON_LIGHT}
             linkColor={FOREST}

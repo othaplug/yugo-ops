@@ -81,7 +81,7 @@ export function estateLoadedLabourCost(plan: EstateDayPlan, loadedHourlyRate: nu
   return Math.round(total);
 }
 
-function addCalendarDaysIso(dateIso: string, deltaDays: number): string {
+export function addCalendarDaysIso(dateIso: string, deltaDays: number): string {
   const base = dateIso?.trim();
   if (!base) return "";
   const d = new Date(`${base}T12:00:00`);
@@ -91,6 +91,50 @@ function addCalendarDaysIso(dateIso: string, deltaDays: number): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+/**
+ * First on-site packing calendar day for Estate (same rules as quote schedule copy).
+ * Single-day Estate plans pack on move day; multi-day plans pack the day before move.
+ */
+export function estatePackingDayIso(
+  moveDateIso: string,
+  moveSize: string | null | undefined,
+  inventoryScore: number | null | undefined,
+): string {
+  const move = moveDateIso?.trim() || "";
+  if (!move) return "";
+  const plan = calculateEstateDays(moveSize, Number(inventoryScore) || 0);
+  if (plan.packDay) {
+    return addCalendarDaysIso(move, -1);
+  }
+  return move;
+}
+
+/**
+ * Cron "T-2 calendar days" balance window: non-Estate = 2 days before move day;
+ * Estate = 2 days before packing day (derived from move_size + inventory_score).
+ */
+export function moveMatchesBalanceReminder48hWindow(params: {
+  scheduledDate: string;
+  twoDaysOutIso: string;
+  tierSelected: string | null | undefined;
+  serviceTier?: string | null | undefined;
+  moveSize: string | null | undefined;
+  inventoryScore: number | null | undefined;
+}): boolean {
+  const tier = String(params.tierSelected || params.serviceTier || "")
+    .toLowerCase()
+    .trim();
+  if (tier !== "estate") {
+    return params.scheduledDate === params.twoDaysOutIso;
+  }
+  const packing = estatePackingDayIso(
+    params.scheduledDate,
+    params.moveSize,
+    params.inventoryScore,
+  );
+  return packing === params.twoDaysOutIso;
 }
 
 function fmtMoveDayLabel(iso: string): string {

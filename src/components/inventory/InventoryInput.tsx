@@ -530,7 +530,7 @@ export default function InventoryInput({
                     });
                     setPasteRows(rows);
                   }}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
                 >
                   Parse &amp; map items
                 </button>
@@ -596,7 +596,7 @@ export default function InventoryInput({
                       setPasteText("");
                       setPasteRows([]);
                     }}
-                    className="mt-2 w-full py-2 rounded-lg text-[10px] font-bold bg-[var(--gold)]/90 text-[var(--btn-text-on-accent)]"
+                    className="mt-2 w-full py-2 rounded-lg text-[10px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
                   >
                     Add matched items to inventory
                   </button>
@@ -705,7 +705,7 @@ export default function InventoryInput({
                 type="button"
                 onClick={addCustomItem}
                 disabled={!customName.trim()}
-                className="inline-flex w-full shrink-0 items-center justify-center gap-1 rounded-lg bg-[var(--gold)] px-3 py-2 text-[10px] font-semibold text-[var(--btn-text-on-accent)] shadow-sm transition-[filter,opacity] hover:brightness-105 disabled:opacity-50 sm:w-auto"
+                className="inline-flex w-full shrink-0 items-center justify-center gap-1 rounded-lg bg-[var(--admin-primary-fill)] px-3 py-2 text-[10px] font-semibold text-[var(--btn-text-on-accent)] shadow-sm transition-colors hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50 sm:w-auto"
               >
                 <Plus className="size-3.5 shrink-0" weight="bold" /> Add custom item
               </button>

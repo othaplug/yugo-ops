@@ -25,6 +25,7 @@ import { useRelativeTime } from "./useRelativeTime";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { isPreMoveChecklistComplete, preMoveChecklistCounts } from "@/lib/pre-move-checklist";
 import EstateServiceChecklistAdminRow from "./EstateServiceChecklistAdminRow";
+import { formatMoveDate, formatPlatformDisplay, parseDateOnly } from "@/lib/date-format";
 
 function isEstateTierMove(m: {
   tier_selected?: string | null;
@@ -167,7 +168,7 @@ function formatReviewTime(dateStr: string): string {
   if (diffMin < 60) return `${diffMin} min${diffMin === 1 ? "" : "s"} ago`;
   if (diffHr < 24) return `${diffHr} hr${diffHr === 1 ? "" : "s"} ago`;
   if (diffDay < 7) return `${diffDay} day${diffDay === 1 ? "" : "s"} ago`;
-  return d.toLocaleDateString();
+  return formatPlatformDisplay(d, { month: "short", day: "numeric" }, "");
 }
 
 function isMoveStatusCompleted(status: string | null | undefined): boolean {
@@ -186,7 +187,6 @@ function isMoveInProgress(status: string | null | undefined, stage: string | nul
   return IN_PROGRESS_STATUSES.includes(s) || IN_PROGRESS_STATUSES.includes(st);
 }
 import { stripClientMessagesFromNotes } from "@/lib/internal-notes";
-import { formatMoveDate, parseDateOnly } from "@/lib/date-format";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
 import { formatAccessForDisplay, toTitleCase } from "@/lib/format-text";
 
@@ -323,7 +323,7 @@ function BinOrderPickupBlock({
           type="button"
           disabled={saving}
           onClick={() => save(true)}
-          className="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+          className="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
         >
           Complete pickup
         </button>
@@ -500,10 +500,9 @@ export default function MoveDetailClient({
   const prepAllDone = isPreMoveChecklistComplete(prepChecklistRecord);
   const prepNotifiedAt = move.pre_move_checklist_notified_at as string | null | undefined;
   const prepNotifiedLabel = prepNotifiedAt
-    ? new Date(prepNotifiedAt).toLocaleString("en-CA", {
+    ? formatPlatformDisplay(prepNotifiedAt, {
         month: "short",
         day: "numeric",
-        year: "numeric",
         hour: "numeric",
         minute: "2-digit",
       })
@@ -513,7 +512,7 @@ export default function MoveDetailClient({
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-3 animate-fade-up">
       <div className="flex items-center gap-2 mb-1">
         <BackButton label="Back" />
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82">
           Operations ·{" "}
           {String(move.service_type || "").toLowerCase() === "bin_rental"
             ? "Bin Rental"
@@ -543,13 +542,13 @@ export default function MoveDetailClient({
                 <Pencil size={12} aria-hidden className="opacity-0 group-hover:opacity-50 transition-opacity shrink-0" />
               </button>
               {move.move_code && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-bold tracking-wide bg-[var(--gdim)]/60 text-[var(--gold)] border border-[var(--gold)]/20">
+                <span className="inline-flex items-center text-[11px] font-mono font-bold tracking-wide text-[var(--gold)]">
                   {move.move_code}
                 </span>
               )}
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-semibold tracking-wide bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/20">
+              <span className="dt-badge text-[var(--gold)]">
                 {String(move.service_type || "").toLowerCase() === "bin_rental"
                   ? "Bin Rental"
                   : `${isOffice ? "Office" : "Residential"} Move`}
@@ -574,7 +573,7 @@ export default function MoveDetailClient({
               {isCompleted ? (
                 <>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className={`inline-flex px-2.5 py-1 rounded-md text-[12px] font-bold ${MOVE_STATUS_COLORS_ADMIN[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
+                    <span className={`dt-badge tracking-[0.04em] text-[11px] ${MOVE_STATUS_COLORS_ADMIN[move.status] || "text-[var(--gold)]"}`}>
                       {getStatusLabel(move.status)}
                     </span>
                     <span className="p-1 rounded-md text-red-500" title="Move completed. Status is locked." aria-hidden="true">
@@ -691,7 +690,7 @@ export default function MoveDetailClient({
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-dashed border-transparent hover:border-[var(--gold)]/40 hover:opacity-90 transition-all cursor-pointer group/btn w-fit"
                   aria-label="Edit status"
                 >
-                  <span className={`inline-flex px-2.5 py-1 rounded-md text-[12px] font-bold ${MOVE_STATUS_COLORS_ADMIN[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
+                  <span className={`dt-badge tracking-[0.04em] text-[11px] ${MOVE_STATUS_COLORS_ADMIN[move.status] || "text-[var(--gold)]"}`}>
                     {getStatusLabel(move.status)}
                   </span>
                     <ChevronDown weight="regular" className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100" />
@@ -970,7 +969,7 @@ export default function MoveDetailClient({
                   router.refresh();
                   setCrewModalOpen(false);
                 }}
-                className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
+                className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
               >
                 Save Assignments
               </button>
@@ -1045,7 +1044,7 @@ export default function MoveDetailClient({
               className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none resize-none"
             />
           </div>
-          <button type="button" onClick={() => setVehicleModalOpen(false)} className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
+          <button type="button" onClick={() => setVehicleModalOpen(false)} className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors">
             Done
           </button>
         </div>
@@ -1224,14 +1223,14 @@ export default function MoveDetailClient({
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
-          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Time & Intelligence</div>
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Time & Intelligence</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-1">
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Date</span><div className="text-[13px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Time Window</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.arrival_window || "-"}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Job duration</span><div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">{jobDurationStr ?? "-"}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Completed at</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.completed_at ? new Date(move.completed_at).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Date</span><div className="text-[13px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Time Window</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.arrival_window || "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Job duration</span><div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">{jobDurationStr ?? "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Completed at</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.completed_at ? formatPlatformDisplay(move.completed_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }, "-") : "-"}</div></div>
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Days Left</span>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Days Left</span>
               <div className={`text-[13px] font-bold tabular-nums ${
                 daysUntil === null || daysUntil === undefined
                   ? "text-[var(--tx3)]"
@@ -1264,15 +1263,15 @@ export default function MoveDetailClient({
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
-          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Addresses</div>
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Addresses</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">From</span>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">From</span>
               <div className="text-[13px] font-medium text-[var(--tx)]">{move.from_address || "-"}</div>
               {formatAccessForDisplay(move.from_access) && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatAccessForDisplay(move.from_access)}</div>}
             </div>
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">To</span>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">To</span>
               <div className="text-[13px] font-medium text-[var(--tx)]">{move.to_address || move.delivery_address || "-"}</div>
               {formatAccessForDisplay(move.to_access) && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatAccessForDisplay(move.to_access)}</div>}
             </div>
@@ -1290,14 +1289,14 @@ export default function MoveDetailClient({
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
-          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Crew</div>
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Crew</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Crew</span><div className="text-[13px] font-medium text-[var(--tx)]">{displayCrewName || "-"}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Coordinator</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.coordinator_name || "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Crew</span><div className="text-[13px] font-medium text-[var(--tx)]">{displayCrewName || "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Coordinator</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.coordinator_name || "-"}</div></div>
             {isCompleted ? (
-              <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[13px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></div>
+              <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Assigned</span><div className="text-[13px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></div>
             ) : (
-              <button type="button" onClick={() => !moveInProgress && setCrewModalOpen(true)} disabled={moveInProgress} className={`text-left hover:opacity-90 transition-opacity ${moveInProgress ? "opacity-60 cursor-not-allowed" : ""}`} title={moveInProgress ? "Cannot reassign job in progress" : undefined}><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[13px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></button>
+              <button type="button" onClick={() => !moveInProgress && setCrewModalOpen(true)} disabled={moveInProgress} className={`text-left hover:opacity-90 transition-opacity ${moveInProgress ? "opacity-60 cursor-not-allowed" : ""}`} title={moveInProgress ? "Cannot reassign job in progress" : undefined}><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Assigned</span><div className="text-[13px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></button>
             )}
           </div>
         </div>
@@ -1313,34 +1312,34 @@ export default function MoveDetailClient({
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
-          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Vehicle</div>
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Vehicle</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Primary</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.truck_primary ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary : "-"}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Secondary</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.truck_secondary ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary : "-"}</div></div>
-            {move.truck_notes && <div className="col-span-2 sm:col-span-1"><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Notes</span><div className="text-[10px] text-[var(--tx3)]">{move.truck_notes}</div></div>}
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Primary</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.truck_primary ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary : "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Secondary</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.truck_secondary ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary : "-"}</div></div>
+            {move.truck_notes && <div className="col-span-2 sm:col-span-1"><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Notes</span><div className="text-[10px] text-[var(--tx3)]">{move.truck_notes}</div></div>}
           </div>
         </div>
 
         {/* Valuation Protection */}
         {(move.valuation_tier || move.valuation_upgrade_cost || move.declaration_total) && (
           <div className="border-t border-[var(--brd)]/30 py-4">
-            <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Valuation Protection</div>
+            <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Valuation Protection</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
               <div>
-                <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Tier</span>
+                <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Tier</span>
                 <div className="text-[13px] font-medium text-[var(--tx)]">
                   {move.valuation_tier === "full_replacement" ? "Full Replacement" : move.valuation_tier === "enhanced" ? "Enhanced Value" : "Released Value"}
                 </div>
               </div>
               {(move.valuation_upgrade_cost ?? 0) > 0 && (
                 <div>
-                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Upgrade Cost</span>
+                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Upgrade Cost</span>
                   <div className="text-[13px] font-medium text-[var(--gold)]">{formatCurrency(move.valuation_upgrade_cost)}</div>
                 </div>
               )}
               {(move.declaration_total ?? 0) > 0 && (
                 <div>
-                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Declarations</span>
+                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Declarations</span>
                   <div className="text-[13px] font-medium text-[var(--gold)]">{formatCurrency(move.declaration_total)}</div>
                 </div>
               )}
@@ -1371,18 +1370,18 @@ export default function MoveDetailClient({
           <div className="rounded-2xl border border-[var(--brd)]/60 bg-[var(--card)] overflow-hidden">
             {/* Header strip */}
             <div className="flex items-center justify-between px-5 pt-4 pb-0">
-              <span className="text-[11px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50">Payments</span>
+              <span className="text-[11px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]">Payments</span>
               <div className="flex items-center gap-1.5">
                 {(() => {
                   const label = tierDisplayLabel(move.tier_selected);
                   return label ? (
-                    <span className="text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)] border border-[var(--gold)]/15">
+                    <span className="dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">
                       {label}
                     </span>
                   ) : null;
                 })()}
                 {move.service_type && (
-                  <span className="text-[9px] text-[var(--tx3)]/50">
+                  <span className="text-[9px] text-[var(--tx3)]">
                     {SERVICE_LABELS[move.service_type as string] || move.service_type}
                   </span>
                 )}
@@ -1395,15 +1394,15 @@ export default function MoveDetailClient({
                   {/* Status badge sits above the number */}
                   <div className="mb-2">
                     {fullyPaid ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--grn)]/12 text-[var(--grn)] border border-[var(--grn)]/20">
+                      <span className="dt-badge tracking-[0.04em] text-[var(--grn)]">
                         Paid
                       </span>
                     ) : balanceUnpaid ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--red)]/10 text-[var(--red)] border border-[var(--red)]/20">
+                      <span className="dt-badge tracking-[0.04em] text-[var(--red)]">
                         Overdue
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20">
+                      <span className="dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">
                         Pending
                       </span>
                     )}
@@ -1414,7 +1413,7 @@ export default function MoveDetailClient({
                     {formatCurrency(fullyPaid ? quoteTotal : balanceDue)}
                   </div>
                   <div className="mt-1.5 flex items-center gap-2">
-                    <span className="text-[10px] text-[var(--tx3)]/60">
+                    <span className="text-[10px] text-[var(--tx3)]/82">
                       {fullyPaid
                         ? `Total collected${move.balance_method ? ` · Card${move.balance_auto_charged ? " (auto)" : ""}` : ""}`
                         : `Balance due · +${formatCurrency(calcHST(balanceDue))} HST`}
@@ -1425,12 +1424,12 @@ export default function MoveDetailClient({
               {/* Progress bar */}
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[9px] text-[var(--tx3)]/50">{formatCurrency(collectedAmount)} collected</span>
-                  <span className="text-[9px] text-[var(--tx3)]/50">{formatCurrency(quoteTotal)} contract</span>
+                  <span className="text-[9px] text-[var(--tx3)]">{formatCurrency(collectedAmount)} collected</span>
+                  <span className="text-[9px] text-[var(--tx3)]">{formatCurrency(quoteTotal)} contract</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-[var(--brd)]/40 overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${fullyPaid ? "bg-[var(--grn)]" : balanceUnpaid ? "bg-[var(--red)]" : "bg-[var(--gold)]"}`}
+                    className={`h-full rounded-full transition-all duration-500 ${fullyPaid ? "bg-[var(--grn)]" : balanceUnpaid ? "bg-[var(--red)]" : "bg-[var(--admin-primary-fill)]"}`}
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
@@ -1439,7 +1438,7 @@ export default function MoveDetailClient({
 
             {paymentLedger.length > 0 && (
               <div className="px-5 py-3 border-t border-[var(--brd)]/40">
-                <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60 mb-2">Payment transactions</div>
+                <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/82 mb-2">Payment transactions</div>
                 <ul className="space-y-2">
                   {paymentLedger.map((row) => {
                     const lineTotal = Number(row.pre_tax_amount) + Number(row.hst_amount);
@@ -1448,8 +1447,8 @@ export default function MoveDetailClient({
                       <li key={row.id} className="flex flex-wrap items-baseline justify-between gap-2 text-[11px] text-[var(--tx)]">
                         <div>
                           <span className="font-semibold">{row.label}</span>
-                          <span className="text-[var(--tx3)]/70 ml-1.5">
-                            · {paid.toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
+                          <span className="text-[var(--tx3)]/88 ml-1.5">
+                            · {formatPlatformDisplay(paid, { month: "short", day: "numeric" })}
                           </span>
                           {row.settlement_method === "admin" && (
                             <span className="text-[9px] text-[var(--tx3)] ml-1">(override)</span>
@@ -1610,7 +1609,7 @@ export default function MoveDetailClient({
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
               {move.walkthrough_completed_at && (
                 <span className="text-[10px] text-[var(--tx3)]">
-                  {new Date(move.walkthrough_completed_at).toLocaleString("en-CA", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                  {formatPlatformDisplay(move.walkthrough_completed_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                 </span>
               )}
               {move.walkthrough_crew_member && (
@@ -1650,7 +1649,7 @@ export default function MoveDetailClient({
             <Lock className="w-[11px] h-[11px]" />
           </span>
         )}
-        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Internal Notes</div>
+        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Internal Notes</div>
         <p className="text-[11px] text-[var(--tx2)] leading-snug whitespace-pre-wrap">
           {stripClientMessagesFromNotes(move.internal_notes) || "No internal notes. Click edit to add."}
         </p>
@@ -1843,8 +1842,8 @@ function MoveProfitCard({ move }: { move: any }) {
   return (
     <div className="border-t border-[var(--brd)]/30 py-4">
       <div className="flex items-center gap-2 mb-3">
-        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Profitability</div>
-        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20 font-medium">Owner Only</span>
+        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Profitability</div>
+        <span className="dt-badge tracking-[0.04em] text-[var(--gold)]">Owner Only</span>
       </div>
       <div className="space-y-1.5 text-[11px]">
         <div className="flex justify-between"><span className="text-[var(--tx3)]">Revenue</span><span className="text-[var(--tx)] font-medium">{formatCurrency(revenue)}</span></div>

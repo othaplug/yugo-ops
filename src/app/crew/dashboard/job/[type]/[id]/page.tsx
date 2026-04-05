@@ -20,7 +20,8 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { formatTime, formatDate } from "@/lib/client-timezone";
+import { formatTime } from "@/lib/client-timezone";
+import { formatPlatformDisplay } from "@/lib/date-format";
 import {
   MOVE_STATUS_FLOW,
   DELIVERY_STATUS_FLOW,
@@ -1187,7 +1188,7 @@ export default function CrewJobPage({
               <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-2">Schedule</p>
               {job.scheduledDate && (
                 <p className="text-[var(--text-base)] font-semibold text-[var(--tx)]">
-                  {formatDate(job.scheduledDate + "T12:00:00", { weekday: "long", month: "short", day: "numeric", year: "numeric" })}
+                  {formatPlatformDisplay(job.scheduledDate + "T12:00:00", { weekday: "long", month: "short", day: "numeric" })}
                 </p>
               )}
               {job.arrivalWindow && <p className="text-[12px] text-[var(--tx3)] mt-1">Window: {job.arrivalWindow}</p>}

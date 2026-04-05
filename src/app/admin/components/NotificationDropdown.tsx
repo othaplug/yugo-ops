@@ -7,7 +7,7 @@ import type { Notification } from "./NotificationContext";
 import { Icon } from "@/components/AppIcons";
 
 const SOURCE_TAGS: Record<string, { label: string; color: string; bg: string }> = {
-  delivery: { label: "Delivery", color: "#2C3E2D", bg: "rgba(201,169,98,0.12)" },
+  delivery: { label: "Delivery", color: "#2C3E2D", bg: "var(--gdim)" },
   quote: { label: "Quote", color: "#6B8CFF", bg: "rgba(107,140,255,0.12)" },
   move: { label: "Move", color: "#2D9F5A", bg: "rgba(45,159,90,0.12)" },
   payment: { label: "Payment", color: "#2D9F5A", bg: "rgba(45,159,90,0.12)" },
@@ -45,7 +45,7 @@ export default function NotificationDropdown() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="relative size-8 rounded-lg border border-[var(--brd)] bg-[var(--card)] hover:bg-[var(--gdim)] hover:border-[var(--gold)] transition-all duration-200 flex items-center justify-center touch-manipulation shrink-0"
+        className="relative size-8 rounded-[2px] border border-[var(--brd)] bg-[var(--card)] hover:bg-[var(--gdim)] hover:border-[var(--gold)] transition-all duration-200 flex items-center justify-center touch-manipulation shrink-0"
       >
         <Icon name="bell" className="w-[14px] h-[14px] shrink-0 stroke-[1.75] stroke-current text-[var(--tx2)]" />
         {unreadCount > 0 && (
@@ -56,7 +56,7 @@ export default function NotificationDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-[9999] mt-2 w-[min(380px,calc(100dvw-1.5rem))] max-w-[380px] overflow-hidden rounded-xl border border-[var(--brd)] bg-[var(--bg2)] shadow-2xl animate-fade-up">
+        <div className="absolute right-0 top-full z-[9999] mt-2 w-[min(380px,calc(100dvw-1.5rem))] max-w-[380px] overflow-hidden rounded-[2px] border border-[var(--brd)] bg-[var(--bg2)] shadow-lg animate-fade-up">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--brd)]">
             <div className="font-heading text-[13px] font-bold text-[var(--tx)]">Notifications</div>
@@ -99,8 +99,8 @@ export default function NotificationDropdown() {
                     <div className="flex-shrink-0 mt-1.5 w-3 flex items-center justify-center">
                       {!notif.read && (
                         <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gold)] opacity-50" />
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--gold)]" />
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--admin-primary-fill)] opacity-50" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--admin-primary-fill)]" />
                         </span>
                       )}
                     </div>
@@ -112,7 +112,7 @@ export default function NotificationDropdown() {
                         </div>
                         {tag && (
                           <span
-                            className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+                            className="shrink-0 text-[10px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 rounded-sm border border-[var(--brd)]/50"
                             style={{ color: tag.color, backgroundColor: tag.bg }}
                           >
                             {tag.label}
@@ -124,7 +124,7 @@ export default function NotificationDropdown() {
                           {notif.body}
                         </div>
                       )}
-                      <div className="text-[9px] text-[var(--tx3)]/60 mt-1">{notif.time}</div>
+                      <div className="text-[9px] text-[var(--tx3)]/82 mt-1">{notif.time}</div>
                     </div>
                   </button>
                 );

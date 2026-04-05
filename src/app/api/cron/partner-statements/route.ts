@@ -267,7 +267,7 @@ function buildStatementEmail(opts: {
 
   return `
 <!DOCTYPE html><html><head><meta charset="utf-8"></head>
-<body style="background:#f5f4f2;margin:0;padding:0;font-family:'Inter',sans-serif;">
+<body class="yugo-partner-billing-email" style="background:#f5f4f2;margin:0;padding:0;font-family:'Inter',sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 16px;">
     <div style="background:#0d0b08;border-radius:12px;padding:28px;margin-bottom:20px;">
       <p style="font-size:10px;letter-spacing:0.04em;text-transform:none;color:#2C3E2D;margin:0 0 4px;">Yugo</p>
@@ -298,7 +298,7 @@ function buildStatementEmail(opts: {
 function buildOverdueEmail(opts: { partnerName: string; statementNumber: string; total: number }): string {
   return `
 <!DOCTYPE html><html><head><meta charset="utf-8"></head>
-<body style="background:#f5f4f2;margin:0;padding:0;font-family:'Inter',sans-serif;">
+<body class="yugo-partner-billing-email" style="background:#f5f4f2;margin:0;padding:0;font-family:'Inter',sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 16px;">
     <div style="background:#1a0a0a;border-radius:12px;padding:28px;margin-bottom:20px;">
       <p style="font-size:10px;letter-spacing:0.04em;text-transform:none;color:#ef4444;margin:0 0 4px;">Payment overdue</p>

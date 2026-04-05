@@ -157,7 +157,7 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
           <div className="flex flex-wrap gap-2 shrink-0">
             <button
               onClick={() => setCreateModalOpen(true)}
-              className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+              className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all"
             >
               + Create Setup Code
             </button>
@@ -181,7 +181,7 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
               </p>
               <button
                 onClick={() => setCreateModalOpen(true)}
-                className="px-6 py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+                className="px-6 py-3 rounded-lg text-[13px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all"
               >
                 Create your first code
               </button>
@@ -210,12 +210,12 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      className={`dt-badge tracking-[0.04em] ${
                         c.used_at
-                          ? "bg-[var(--brd)] text-[var(--tx3)]"
+                          ? "text-[var(--tx3)]"
                           : isExpired(c.expires_at)
-                            ? "bg-[var(--red)]/15 text-[var(--red)]"
-                            : "bg-[rgba(45,159,90,0.15)] text-[var(--grn)]"
+                            ? "text-[var(--red)]"
+                            : "text-[var(--grn)]"
                       }`}
                     >
                       {c.used_at ? "Used" : isExpired(c.expires_at) ? "Expired" : "Active"}
@@ -319,7 +319,7 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
             <button
               type="submit"
               disabled={creating || (!formTruckId && !formTeamId)}
-              className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--admin-primary-fill-hover)] transition-colors disabled:opacity-50"
             >
               {creating ? "Creating…" : "Create Code"}
             </button>
@@ -341,7 +341,7 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
               <code className="text-[24px] font-bold text-[var(--gold)] tracking-[4px]">{createdCode.code}</code>
               <button
                 onClick={() => copyCode(createdCode.code)}
-                className="mt-3 block w-full py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
+                className="mt-3 block w-full py-2 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
               >
                 Copy Code
               </button>

@@ -86,7 +86,7 @@ export default async function PartnerLayout({
     <PartnerOrgProvider orgDisplayName={orgDisplayName}>
       <PartnerLightTheme />
       <div
-        className="min-h-screen bg-[#FAF7F2]"
+        className="min-h-screen min-h-dvh bg-[#FAF7F2] w-full max-w-full min-w-0 overflow-x-clip"
         suppressHydrationWarning
       >
         {children}

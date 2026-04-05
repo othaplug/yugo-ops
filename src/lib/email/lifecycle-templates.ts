@@ -686,6 +686,28 @@ export interface QuoteFollowup1Data {
   clientName: string;
   quoteUrl: string;
   serviceLabel: string;
+  /** Stops follow-ups; opens decline flow on the quote page */
+  declineUrl?: string | null;
+  /** 1×1 open-tracking pixel */
+  openPixelSrc?: string | null;
+}
+
+/** Decline link + optional open pixel (append inside quote follow-up bodies). */
+function quoteFollowupDeclineAndPixelFooter(
+  declineUrl: string | null | undefined,
+  openPixelSrc: string | null | undefined,
+): string {
+  const pixel =
+    openPixelSrc && openPixelSrc.trim()
+      ? `<img src="${hrefAttr(openPixelSrc.trim())}" width="1" height="1" alt="" style="display:block;border:0;width:1px;height:1px;margin:0;padding:0;overflow:hidden;opacity:0;" />`
+      : "";
+  const link =
+    declineUrl && declineUrl.trim()
+      ? `<p style="text-align:center;padding:16px 0 0;font-size:12px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};font-family:${PREMIUM_FONT};line-height:1.55;">
+  <a href="${hrefAttr(declineUrl.trim())}" style="color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};text-decoration:underline;">No longer interested? Click here to stop follow-ups.</a>
+</p>`
+      : "";
+  return `${pixel}${link}`;
 }
 
 export function quoteFollowup1Email(d: QuoteFollowup1Data): string {
@@ -696,6 +718,7 @@ export function quoteFollowup1Email(d: QuoteFollowup1Data): string {
     <p style="${PROMO_CREAM_P}">We have prepared a guaranteed flat-rate ${d.serviceLabel.toLowerCase()} quote for you. One transparent price, nothing added on the day.</p>
     ${equinoxPromoCta(d.quoteUrl, "View Your Quote")}
     ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;">${getClientSupportEmail()}</a>`)}
+    ${quoteFollowupDeclineAndPixelFooter(d.declineUrl, d.openPixelSrc)}
   `,
     "quote",
   );
@@ -710,6 +733,8 @@ export interface QuoteFollowup2Data {
   /** variant hint: warm | essential (default) */
   tier?: string | null;
   addons?: string[];
+  declineUrl?: string | null;
+  openPixelSrc?: string | null;
 }
 
 export function quoteFollowup2Email(d: QuoteFollowup2Data): string {
@@ -752,6 +777,7 @@ export function quoteFollowup2Email(d: QuoteFollowup2Data): string {
     <p style="${PROMO_CREAM_P}">${body}${expiryText ? `<br/><br/><span style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};font-weight:700;letter-spacing:0.04em;text-transform:uppercase;font-size:13px;">${expiryText}</span>` : ""}</p>
     ${equinoxPromoCta(d.quoteUrl, ctaLabel)}
     ${equinoxPromoFinePrint(`Need to adjust anything? Email <a href="mailto:${getClientSupportEmail()}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;">${getClientSupportEmail()}</a>`)}
+    ${quoteFollowupDeclineAndPixelFooter(d.declineUrl, d.openPixelSrc)}
   `,
     "quote",
   );
@@ -764,6 +790,8 @@ export interface QuoteFollowup3Data {
   expiresAt: string | null;
   /** hot variant — payment was started */
   tier?: string | null;
+  declineUrl?: string | null;
+  openPixelSrc?: string | null;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -863,6 +891,8 @@ export interface BalanceReminder72hrData {
   moveDate: string | null;
   balanceAmount: number;
   trackingUrl: string;
+  /** Estate: balance auto-charge is scheduled for ~48h before packing day, not move day. */
+  estateBalanceChargeBeforePacking?: boolean;
 }
 
 export function balanceReminder72hrEmail(d: BalanceReminder72hrData): string {
@@ -878,7 +908,7 @@ export function balanceReminder72hrEmail(d: BalanceReminder72hrData): string {
       <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:16px;font-family:${PREMIUM_FONT}">
         <div style="${FOREST_EYEBROW_UPPER};margin-bottom:8px">Card on file</div>
         <div style="font-size:12px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};line-height:1.65">
-          We will charge <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${formatCurrencyEmail(d.balanceAmount)}</strong> approximately 48 hours before your move. No action required.
+          We will charge <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${formatCurrencyEmail(d.balanceAmount)}</strong> approximately 48 hours before ${d.estateBalanceChargeBeforePacking ? "your scheduled packing day" : "your move"}. No action required.
         </div>
       </div>
     </div>
@@ -1286,6 +1316,7 @@ export function quoteFollowup3Email(d: QuoteFollowup3Data): string {
     <p style="${PROMO_CREAM_P}">${body}</p>
     ${equinoxPromoCta(d.quoteUrl, isHot ? "Complete Booking" : "View Your Quote")}
     ${equinoxPromoFinePrint(`Need more time? Email <a href="mailto:${getClientSupportEmail()}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;">${getClientSupportEmail()}</a> and we will be happy to help.`)}
+    ${quoteFollowupDeclineAndPixelFooter(d.declineUrl, d.openPixelSrc)}
   `,
     "quote",
   );

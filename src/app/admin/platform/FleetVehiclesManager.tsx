@@ -4,7 +4,11 @@ import { useState, useEffect } from "react";
 import { useToast } from "../components/Toast";
 import ModalOverlay from "../components/ModalOverlay";
 import { Icon } from "@/components/AppIcons";
-import { CaretDown } from "@phosphor-icons/react";
+import { CaretDown, PencilSimple as Pencil, Plus } from "@phosphor-icons/react";
+import {
+  ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS,
+  ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS,
+} from "../components/admin-toolbar-action-classes";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
 
 interface Vehicle {
@@ -44,9 +48,9 @@ const TYPE_LABELS: Record<string, { label: string; cuft: number; lbs: number }> 
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  active: "bg-[var(--grdim)] text-[var(--grn)]",
-  maintenance: "bg-amber-500/15 text-amber-400",
-  retired: "bg-[var(--brd)] text-[var(--tx3)]",
+  active: "text-[var(--grn)]",
+  maintenance: "text-amber-400",
+  retired: "text-[var(--tx3)]",
 };
 
 const MAINT_TYPES = ["oil_change", "tire", "repair", "inspection", "other"];
@@ -236,7 +240,7 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
         </div>
         <button
           onClick={() => { resetForm(); setAddOpen(true); }}
-          className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+          className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all"
         >
           + Add Vehicle
         </button>
@@ -282,7 +286,7 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-[9px] font-semibold px-2 py-0.5 rounded uppercase ${statusCls}`}>{v.status}</span>
+                    <span className={`dt-badge tracking-[0.04em] ${statusCls}`}>{v.status}</span>
                     <CaretDown weight="regular" className={`w-4 h-4 text-[var(--tx3)] transition-transform ${isExpanded ? "rotate-180" : ""}`} aria-hidden />
                   </div>
                 </div>
@@ -290,7 +294,7 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
 
               {isExpanded && (
                 <div className="px-4 py-3 border-t border-[var(--brd)] bg-[var(--bg)] space-y-3">
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => {
@@ -302,23 +306,25 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
                         setFormPhone(v.phone || "");
                         setFormNotes(v.notes || "");
                       }}
-                      className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                      className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
                     >
+                      <Pencil weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
                       Edit
                     </button>
                     <button
                       type="button"
                       onClick={() => { setMaintVehicleId(v.id); setMaintDate(new Date().toISOString().split("T")[0]); }}
-                      className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                      className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
                     >
-                      + Log Maintenance
+                      <Plus weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
+                      Log Maintenance
                     </button>
                     {v.status !== "retired" && (
                       <button
                         type="button"
                         onClick={() => handleRetire(v)}
                         disabled={saving}
-                        className="px-2.5 py-1 rounded text-[10px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all disabled:opacity-50"
+                        className={ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS}
                       >
                         Retire Vehicle
                       </button>
@@ -415,7 +421,7 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={() => setAddOpen(false)} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
-            <button type="submit" disabled={!formPlate.trim() || saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">{saving ? "Adding..." : "Add Vehicle"}</button>
+            <button type="submit" disabled={!formPlate.trim() || saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50">{saving ? "Adding..." : "Add Vehicle"}</button>
           </div>
         </form>
       </ModalOverlay>
@@ -469,7 +475,7 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={() => setEditVehicle(null)} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">{saving ? "Saving..." : "Save Changes"}</button>
+            <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50">{saving ? "Saving..." : "Save Changes"}</button>
           </div>
         </form>
       </ModalOverlay>
@@ -499,7 +505,7 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={() => setMaintVehicleId(null)} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">{saving ? "Saving..." : "Log Entry"}</button>
+            <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50">{saving ? "Saving..." : "Log Entry"}</button>
           </div>
         </form>
       </ModalOverlay>

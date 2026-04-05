@@ -8,6 +8,7 @@ import {
   calculateDeposit,
 } from "../quote-shared";
 import { toTitleCase } from "@/lib/format-text";
+import { formatPlatformDisplay } from "@/lib/date-format";
 
 const SPECIALTY_BUILDING_LABELS: Record<string, string> = {
   elevator_booking: "Elevator booking required",
@@ -155,10 +156,9 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
               <div>
                 <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Target Date</p>
                 <p className="text-[12px] font-medium" style={{ color: FOREST }}>
-                  {new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", {
+                  {formatPlatformDisplay(new Date(quote.move_date + "T00:00:00"), {
                     month: "long",
                     day: "numeric",
-                    year: "numeric",
                   })}
                 </p>
               </div>

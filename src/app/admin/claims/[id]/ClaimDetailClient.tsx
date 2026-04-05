@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { formatPlatformDisplay } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
 import { ArrowLeft } from "@phosphor-icons/react";
 
@@ -87,13 +88,13 @@ function statusLabel(s: string): string {
 
 function statusBadge(status: string): string {
   switch (status) {
-    case "submitted": return "bg-[var(--gold)]/15 text-[var(--gold)]";
-    case "under_review": return "bg-[#3B82F6]/15 text-[#3B82F6]";
-    case "approved": return "bg-[var(--grn)]/15 text-[var(--grn)]";
-    case "partially_approved": return "bg-amber-500/15 text-amber-500";
-    case "denied": return "bg-[var(--red)]/15 text-[var(--red)]";
-    case "settled": case "closed": return "bg-[var(--brd)] text-[var(--tx3)]";
-    default: return "bg-[var(--brd)] text-[var(--tx3)]";
+    case "submitted": return "text-[var(--gold)]";
+    case "under_review": return "text-[#3B82F6]";
+    case "approved": return "text-[var(--grn)]";
+    case "partially_approved": return "text-amber-500";
+    case "denied": return "text-[var(--red)]";
+    case "settled": case "closed": return "text-[var(--tx3)]";
+    default: return "text-[var(--tx3)]";
   }
 }
 
@@ -205,13 +206,13 @@ export default function ClaimDetailClient({
         <button type="button" onClick={() => router.back()} className="p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] shrink-0 transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">Operations · Claim</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82">Operations · Claim</p>
       </div>
 
       {/* Title + status */}
       <div className="flex items-center gap-3 flex-wrap mb-1">
         <h1 className="admin-page-hero text-[var(--tx)]">{claim.claim_number}</h1>
-        <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold shrink-0 ${statusBadge(claim.status)}`}>
+        <span className={`dt-badge tracking-[0.04em] shrink-0 ${statusBadge(claim.status)}`}>
           {statusLabel(claim.status)}
         </span>
       </div>
@@ -256,7 +257,7 @@ export default function ClaimDetailClient({
               <div>
                 <p className="text-[var(--tx3)] mb-0.5">Submitted</p>
                 <p className="text-[var(--tx)] font-medium">
-                  {new Date(claim.submitted_at).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
+                  {formatPlatformDisplay(claim.submitted_at, { month: "short", day: "numeric" })}
                 </p>
               </div>
             </div>
@@ -480,13 +481,13 @@ export default function ClaimDetailClient({
                 {timeline.map((event) => (
                   <div key={event.id} className="flex gap-3">
                     <div className="flex flex-col items-center">
-                      <div className="w-2.5 h-2.5 rounded-full bg-[var(--gold)] mt-1.5 shrink-0" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-[var(--admin-primary-fill)] mt-1.5 shrink-0" />
                       <div className="w-px flex-1 bg-[var(--brd)]" />
                     </div>
                     <div className="pb-4">
                       <p className="text-[13px] text-[var(--tx)] leading-relaxed">{event.event_description}</p>
                       <p className="text-[11px] text-[var(--tx3)] mt-0.5">
-                        {new Date(event.created_at).toLocaleDateString("en-CA", {
+                        {formatPlatformDisplay(event.created_at, {
                           month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
                         })}
                       </p>

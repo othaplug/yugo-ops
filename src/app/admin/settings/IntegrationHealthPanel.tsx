@@ -151,10 +151,10 @@ export default function IntegrationHealthPanel({
             </div>
           </div>
           <div className="flex flex-col items-end gap-1.5 shrink-0">
-            <div className={`text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 ${
+            <div className={`text-[10px] font-semibold flex items-center gap-1.5 dt-badge tracking-[0.04em] ${
               item.connected
-                ? "bg-[rgba(45,159,90,0.12)] text-[var(--grn)]"
-                : "bg-[var(--brd)] text-[var(--tx3)]"
+                ? "text-[var(--grn)]"
+                : "text-[var(--tx3)]"
             }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${item.connected ? "bg-[var(--grn)]" : "bg-[var(--tx3)]/40"}`} />
               {item.connected ? "Connected" : "Not connected"}
@@ -187,7 +187,7 @@ export default function IntegrationHealthPanel({
             <button
               type="button"
               onClick={() => openSetup(item.key)}
-              className="px-3 py-1.5 text-[10px] font-semibold rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+              className="px-3 py-1.5 text-[10px] font-semibold rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all"
             >
               Connect
             </button>
@@ -215,7 +215,7 @@ export default function IntegrationHealthPanel({
             <button
               type="button"
               onClick={() => setSetupKey(null)}
-              className="w-full px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+              className="w-full px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
             >
               Done
             </button>
@@ -236,7 +236,7 @@ export default function IntegrationHealthPanel({
             />
           </div>
         </div>
-        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${connectedCount === integrations.length ? "bg-[var(--grn)]/10 text-[var(--grn)]" : "bg-[var(--org)]/10 text-[var(--org)]"}`}>
+        <span className={`text-[11px] font-bold dt-badge tracking-[0.04em] ${connectedCount === integrations.length ? "text-[var(--grn)]" : "text-[var(--org)]"}`}>
           {connectedCount === integrations.length ? "All Systems Go" : "Action Needed"}
         </span>
       </div>

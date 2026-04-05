@@ -10,6 +10,10 @@ import { useToast } from "../../components/Toast";
 import ModalOverlay from "../../components/ModalOverlay";
 import { formatCurrency } from "@/lib/format-currency";
 import { Plus, Truck, Clock, CheckCircle as CheckCircle2, WarningCircle as AlertCircle, Camera, FileText, PaperPlaneTilt as Send, Pulse as Activity, Trash as Trash2, Lock, MapPin, Warning as AlertTriangle, CaretDown as ChevronDown, CaretRight as ChevronRight, PencilSimple as Pencil, ArrowSquareOut } from "@phosphor-icons/react";
+import {
+  ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS,
+  ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS,
+} from "../../components/admin-toolbar-action-classes";
 import { getTrackingUrl } from "@/lib/tracking-url";
 import { getDeliveryDetailPath } from "@/lib/move-code";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
@@ -26,6 +30,7 @@ import {
   getProjectItemStatusUi,
 } from "@/lib/project-item-status";
 import { organizationTypeLabel } from "@/lib/partner-type";
+import { formatMoveDate, formatPlatformDisplay } from "@/lib/date-format";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -110,10 +115,10 @@ interface InventoryItem {
   expected_delivery_date: string | null;
 }
 
-const HANDLER_BADGE: Record<string, { bg: string; text: string; label: string }> = {
-  yugo: { bg: "bg-[var(--gold)]/15", text: "text-[var(--gold)]", label: "Yugo" },
-  vendor_direct: { bg: "bg-[var(--tx3)]/10", text: "text-[var(--tx3)]", label: "VENDOR" },
-  other_carrier: { bg: "bg-[var(--tx3)]/10", text: "text-[var(--tx3)]", label: "CARRIER" },
+const HANDLER_BADGE: Record<string, { text: string; label: string }> = {
+  yugo: { text: "text-[var(--gold)]", label: "Yugo" },
+  vendor_direct: { text: "text-[var(--tx3)]", label: "VENDOR" },
+  other_carrier: { text: "text-[var(--tx3)]", label: "CARRIER" },
 };
 
 interface TimelineEntry {
@@ -140,20 +145,20 @@ interface DeliveryLink {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: "bg-[var(--tx3)]/10 text-[var(--tx3)]",
-  proposed: "bg-amber-500/10 text-amber-500",
-  active: "bg-emerald-500/10 text-emerald-500",
-  on_hold: "bg-orange-500/10 text-orange-500",
-  completed: "bg-blue-500/10 text-blue-500",
-  invoiced: "bg-purple-500/10 text-purple-500",
-  cancelled: "bg-red-500/10 text-red-500",
+  draft: "text-[var(--tx3)]",
+  proposed: "text-amber-500",
+  active: "text-emerald-500",
+  on_hold: "text-orange-500",
+  completed: "text-blue-500",
+  invoiced: "text-purple-500",
+  cancelled: "text-red-500",
 };
 
-const PHASE_COLORS: Record<string, { bg: string; text: string; icon: typeof CheckCircle2 }> = {
-  pending: { bg: "bg-[var(--tx3)]/10", text: "text-[var(--tx3)]", icon: Clock },
-  active: { bg: "bg-amber-500/10", text: "text-amber-500", icon: Activity },
-  completed: { bg: "bg-emerald-500/10", text: "text-emerald-500", icon: CheckCircle2 },
-  skipped: { bg: "bg-[var(--tx3)]/5", text: "text-[var(--tx3)]/50", icon: Clock },
+const PHASE_COLORS: Record<string, { text: string; icon: typeof CheckCircle2 }> = {
+  pending: { text: "text-[var(--tx3)]", icon: Clock },
+  active: { text: "text-amber-500", icon: Activity },
+  completed: { text: "text-emerald-500", icon: CheckCircle2 },
+  skipped: { text: "text-[var(--tx3)]", icon: Clock },
 };
 
 const TABS = ["Overview", "Phases", "Inventory", "Vendor Tracker", "Deliveries", "Timeline", "Invoice"];
@@ -275,7 +280,7 @@ function EditProjectModal({ open, onClose, data, onSaved }: { open: boolean; onC
         </div>
         <div className="flex gap-2 pt-2">
           <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
-          <button type="submit" disabled={loading} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">{loading ? "Saving…" : "Save changes"}</button>
+          <button type="submit" disabled={loading} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50">{loading ? "Saving…" : "Save changes"}</button>
         </div>
       </form>
     </ModalOverlay>
@@ -377,12 +382,12 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
 
       {/* Header */}
       <div className="mt-4 mb-6">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-2">B2B Operations · Project</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-2">B2B Operations · Project</p>
         <div className="flex flex-wrap items-center gap-3 mb-2">
           <h1 className="admin-page-hero text-[var(--tx)]">
             {data.project_number} · {data.project_name}
           </h1>
-          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase ${STATUS_COLORS[data.status] || ""}`}>
+          <span className={`dt-badge tracking-[0.04em] ${STATUS_COLORS[data.status] || "text-[var(--tx3)]"}`}>
             {data.status.replace("_", " ")}
           </span>
         </div>
@@ -422,11 +427,11 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
             </button>
           )}
           </div>
-          <button type="button" onClick={() => setShowEditProject(true)} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-[var(--tx2)] border border-[var(--brd)] hover:bg-[var(--card)] transition-colors shrink-0">
-            <Pencil size={12} weight="regular" className="inline mr-1" /> Edit
+          <button type="button" onClick={() => setShowEditProject(true)} className={`${ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS} shrink-0`}>
+            <Pencil size={12} weight="regular" className="shrink-0" aria-hidden /> Edit
           </button>
-          <button type="button" onClick={() => setDeleteConfirmOpen(true)} className="px-3 py-1 rounded text-[11px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all shrink-0">
-            <Trash2 size={12} weight="regular" className="inline mr-1" /> Delete
+          <button type="button" onClick={() => setDeleteConfirmOpen(true)} className={`${ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS} shrink-0`}>
+            <Trash2 size={12} weight="regular" className="shrink-0" aria-hidden /> Delete
           </button>
         </div>
       </div>
@@ -448,7 +453,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
           </div>
           <button
             onClick={() => setActiveTab("Deliveries")}
-            className="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors whitespace-nowrap"
+            className="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors whitespace-nowrap"
           >
             Convert to Yugo →
           </button>
@@ -532,8 +537,8 @@ function OverviewTab({ data, progressPct, completedPhases, totalPhases, projectE
           {data.end_client_name && <InfoRow label="End Client" value={data.end_client_name} />}
           {data.end_client_contact && <InfoRow label="Contact" value={data.end_client_contact} />}
           {data.site_address && <InfoRow label="Site" value={data.site_address} />}
-          <InfoRow label="Start" value={data.start_date ? new Date(data.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "TBD"} />
-          <InfoRow label="Target End" value={data.target_end_date ? new Date(data.target_end_date + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "TBD"} />
+          <InfoRow label="Start" value={data.start_date ? formatPlatformDisplay(new Date(data.start_date + "T00:00:00"), { month: "long", day: "numeric" }) : "TBD"} />
+          <InfoRow label="Target End" value={data.target_end_date ? formatPlatformDisplay(new Date(data.target_end_date + "T00:00:00"), { month: "long", day: "numeric" }) : "TBD"} />
         </div>
         </section>
 
@@ -584,7 +589,7 @@ function OverviewTab({ data, progressPct, completedPhases, totalPhases, projectE
               <TimelineIcon type={e.event_type} />
               <div className="flex-1 min-w-0">
                 <div className="text-[var(--tx)]">{e.event_description}</div>
-                <div className="text-[10px] text-[var(--tx3)]">{new Date(e.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</div>
+                <div className="text-[10px] text-[var(--tx3)]">{formatPlatformDisplay(e.created_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</div>
               </div>
             </div>
           ))}
@@ -596,7 +601,7 @@ function OverviewTab({ data, progressPct, completedPhases, totalPhases, projectE
 }
 
 /* ─── PHASE ITEM ROW (inline editable) ─── */
-function PhaseItemRow({ item, status, cfg, projectId, onRefresh }: { item: InventoryItem; status: string; cfg: { bg: string; color: string; label: string }; projectId: string; onRefresh: () => void }) {
+function PhaseItemRow({ item, status, cfg, projectId, onRefresh }: { item: InventoryItem; status: string; cfg: { color: string; label: string }; projectId: string; onRefresh: () => void }) {
   const { toast } = useToast();
   const [condition, setCondition] = useState(item.condition_on_receipt || "");
   const [storage, setStorage] = useState(item.storage_location || "");
@@ -657,7 +662,7 @@ function PhaseItemRow({ item, status, cfg, projectId, onRefresh }: { item: Inven
         </select>
       </td>
       <td className="px-2 py-2 text-[11px] text-[var(--tx3)]">
-        {item.received_date ? new Date(item.received_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "-"}
+        {item.received_date ? formatMoveDate(item.received_date) : "-"}
       </td>
       <td className="px-2 py-2">
         <select
@@ -734,7 +739,7 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
               <Icon size={14} className={cfg.text} />
               <div className="text-left">
                 <div className="text-[11px] font-semibold text-[var(--tx)] whitespace-nowrap">{phase.phase_name}</div>
-                <div className="text-[9px] text-[var(--tx3)] uppercase">{phase.status}{phase.scheduled_date ? ` · ${new Date(phase.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}{phase.address ? ` · ${phase.address.split(",")[0]}` : ""}</div>
+                <div className="text-[9px] text-[var(--tx3)] uppercase">{phase.status}{phase.scheduled_date ? ` · ${formatMoveDate(phase.scheduled_date)}` : ""}{phase.address ? ` · ${phase.address.split(",")[0]}` : ""}</div>
               </div>
               {i < data.phases.length - 1 && <span className="text-[var(--tx3)] ml-1">→</span>}
             </button>
@@ -788,7 +793,7 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
                   <thead>
                     <tr className="border-b border-[var(--brd)]">
                       {["Item", "Vendor", "Status", "Received", "Condition", "Storage"].map((h) => (
-                        <th key={h} className="px-2 py-2 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50">{h}</th>
+                        <th key={h} className="px-2 py-2 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -821,7 +826,7 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
                     <div className="flex items-center gap-2">
                       <Truck size={14} weight="regular" className="text-[var(--gold)]" />
                       <span className="text-[12px] font-medium text-[var(--tx)]">{d.delivery_number || "Delivery"}</span>
-                      <span className="text-[10px] text-[var(--tx3)]">{d.scheduled_date ? new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "TBD"}</span>
+                      <span className="text-[10px] text-[var(--tx3)]">{d.scheduled_date ? formatMoveDate(d.scheduled_date) : "TBD"}</span>
                     </div>
                     <span className="text-[10px] font-semibold uppercase text-[var(--tx3)]">{d.status}</span>
                   </Link>
@@ -848,7 +853,7 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
             className={fieldInput}
           />
           <div className="flex gap-2">
-            <button onClick={addPhase} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add Phase</button>
+            <button onClick={addPhase} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]">Add Phase</button>
             <button onClick={() => setShowAddPhase(false)} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]">Cancel</button>
           </div>
         </div>
@@ -1129,7 +1134,7 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
           </div>
           <textarea value={newItemNotes} onChange={(e) => setNewItemNotes(e.target.value)} placeholder="Special handling / status notes" rows={3} className={fieldInput} />
           <div className="flex gap-2">
-            <button onClick={addItem} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
+            <button onClick={addItem} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]">Add</button>
             <button onClick={() => { resetAddItem(); setShowAddItem(false); }} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]">Cancel</button>
           </div>
         </div>
@@ -1173,7 +1178,7 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
               <textarea value={updateNotes} onChange={(e) => setUpdateNotes(e.target.value)} placeholder="e.g., Delayed, customs hold, expected +5 days" rows={2} className={fieldInput} />
             </div>
             <div className="flex gap-2">
-              <button onClick={updateVendorItem} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Save</button>
+              <button onClick={updateVendorItem} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]">Save</button>
               <button onClick={() => setUpdateVendorItemId(null)} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]">Cancel</button>
             </div>
           </div>
@@ -1224,7 +1229,7 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
             <thead>
               <tr className="border-b border-[var(--brd)]">
                 {["Item", "Vendor", "Handled By", "Status", "Tracking", "Received", "Actions"].map((h) => (
-                  <th key={h} className="px-2 py-2 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50">{h === "Actions" ? "" : h}</th>
+                  <th key={h} className="px-2 py-2 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">{h === "Actions" ? "" : h}</th>
                 ))}
               </tr>
             </thead>
@@ -1242,7 +1247,7 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
                     </td>
                     <td className="px-2 py-2.5 text-[11px] text-[var(--tx3)]">{item.vendor_name || item.vendor || "-"}</td>
                     <td className="px-2 py-2.5">
-                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${badge.bg} ${badge.text}`}>{badge.label}</span>
+                      <span className={`dt-badge tracking-[0.04em] ${badge.text}`}>{badge.label}</span>
                     </td>
                     <td className="px-2 py-2.5">
                       <span className={`text-[10px] font-semibold ${statusCfg.color}`}>{statusCfg.label}</span>
@@ -1263,7 +1268,7 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
                         <span className="text-[var(--tx3)]">No tracking</span>
                       )}
                     </td>
-                    <td className="px-2 py-2.5 text-[11px] text-[var(--tx3)]">{item.received_date ? new Date(item.received_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : item.expected_delivery_date ? `ETA ${new Date(item.expected_delivery_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : "-"}</td>
+                    <td className="px-2 py-2.5 text-[11px] text-[var(--tx3)]">{item.received_date ? formatMoveDate(item.received_date) : item.expected_delivery_date ? `ETA ${formatMoveDate(item.expected_delivery_date)}` : "-"}</td>
                     <td className="px-2 py-2.5">
                       {handler === "yugo" && !isComplete(status) && (
                         <span className="text-[10px] text-[var(--tx3)]">Auto-tracked</span>
@@ -1324,7 +1329,7 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
                     </p>
                     <Link
                       href={`/admin/deliveries/new?choice=single&org=${data.partner_id}&projectId=${projectId}`}
-                      className="inline-flex items-center gap-1 mt-3 px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
+                      className="inline-flex items-center gap-1 mt-3 px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)]"
                     >
                       <Truck size={13} weight="regular" /> Schedule these with Yugo
                     </Link>
@@ -1437,7 +1442,7 @@ function DeliveriesTab({ data, projectId, onRefresh }: { data: ProjectData; proj
             <thead>
               <tr className="border-b border-[var(--brd)]">
                 {["DLV #", "Phase", "Date", "Items", "Price", "Status"].map((h) => (
-                  <th key={h} className="px-3 py-2 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50">{h}</th>
+                  <th key={h} className="px-3 py-2 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1451,7 +1456,7 @@ function DeliveriesTab({ data, projectId, onRefresh }: { data: ProjectData; proj
                       <Link href={`/admin/deliveries/${d.id}`} className="text-[12px] font-semibold text-[var(--gold)] hover:underline">{d.delivery_number || "-"}</Link>
                     </td>
                     <td className="px-3 py-2.5 text-[11px] text-[var(--tx3)]">{phase?.phase_name || "-"}</td>
-                    <td className="px-3 py-2.5 text-[11px] text-[var(--tx3)]">{d.scheduled_date ? new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "TBD"}</td>
+                    <td className="px-3 py-2.5 text-[11px] text-[var(--tx3)]">{d.scheduled_date ? formatMoveDate(d.scheduled_date) : "TBD"}</td>
                     <td className="px-3 py-2.5 text-[11px] text-[var(--tx3)]">{itemCount} item{itemCount !== 1 ? "s" : ""}</td>
                     <td className="px-3 py-2.5 text-[12px] font-medium text-[var(--tx)]">{d.total_price ? formatCurrency(d.total_price) : "-"}</td>
                     <td className="px-3 py-2.5">
@@ -1499,7 +1504,7 @@ function TimelineTab({ data, projectId, onRefresh, showAddNote, setShowAddNote }
   return (
     <div className="divide-y divide-[var(--brd)]/50">
       <section className="py-5 first:pt-0">
-      <button onClick={() => setShowAddNote(!showAddNote)} className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]">
+      <button onClick={() => setShowAddNote(!showAddNote)} className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)]">
         <Plus size={13} weight="regular" /> Add Note
       </button>
       </section>
@@ -1513,7 +1518,7 @@ function TimelineTab({ data, projectId, onRefresh, showAddNote, setShowAddNote }
           </select>
           <textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="What happened?" rows={3} className={fieldInput} autoFocus />
           <div className="flex gap-2">
-            <button onClick={addNote} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
+            <button onClick={addNote} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]">Add</button>
             <button onClick={() => setShowAddNote(false)} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]">Cancel</button>
           </div>
         </div>
@@ -1538,7 +1543,7 @@ function TimelineTab({ data, projectId, onRefresh, showAddNote, setShowAddNote }
             <div className="flex-1 min-w-0">
               <div className="text-[12px] font-medium text-[var(--tx)]">{e.event_description}</div>
               <div className="text-[10px] text-[var(--tx3)] mt-0.5">
-                {new Date(e.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
+                {formatPlatformDisplay(e.created_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
               </div>
             </div>
           </div>
@@ -1596,7 +1601,7 @@ function InvoiceTab({ data, projectId }: { data: ProjectData; projectId: string 
           <thead>
             <tr className="border-b border-[var(--brd)]">
               {["Line", "Description", "Amount"].map((h) => (
-                <th key={h} className="px-2 py-2 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50">{h}</th>
+                <th key={h} className="px-2 py-2 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">{h}</th>
               ))}
             </tr>
           </thead>
@@ -1669,7 +1674,7 @@ function InvoiceTab({ data, projectId }: { data: ProjectData; projectId: string 
             <button
               onClick={generateInvoice}
               disabled={generating}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors disabled:opacity-50"
             >
               <FileText size={13} />
               {generating ? "Generating…" : "Generate Project Invoice"}
@@ -1813,9 +1818,9 @@ function VtItemCard({ item, projectId, deliveries, onRefresh }: { item: Inventor
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[12px] font-semibold text-[var(--tx)]">{item.item_name}</span>
             {(item.quantity || 1) > 1 && <span className="text-[10px] text-[var(--tx3)]">×{item.quantity}</span>}
-            {isYugo && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--gold)]/15 text-[var(--gold)]">Yugo</span>}
-            {isCarrier && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400">CARRIER</span>}
-            {isVendorDirect && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400">VENDOR SHIP</span>}
+            {isYugo && <span className="dt-badge tracking-[0.04em] text-[var(--gold)]">Yugo</span>}
+            {isCarrier && <span className="dt-badge tracking-[0.04em] text-purple-400">CARRIER</span>}
+            {isVendorDirect && <span className="dt-badge tracking-[0.04em] text-sky-400">VENDOR SHIP</span>}
           </div>
           {item.room_destination && <p className="text-[10px] text-[var(--tx3)] mt-0.5">{item.room_destination}</p>}
         </div>
@@ -1830,7 +1835,7 @@ function VtItemCard({ item, projectId, deliveries, onRefresh }: { item: Inventor
               setShowStatusPicker((v) => !v);
             }}
             disabled={updatingStatus}
-            className={`flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full transition-colors disabled:opacity-50 ${cfg.bg} ${cfg.color}`}
+            className={`flex items-center gap-1 dt-badge tracking-[0.04em] rounded-md border border-dashed border-transparent hover:border-[var(--gold)]/40 transition-colors disabled:opacity-50 ${cfg.color}`}
           >
             {cfg.label}
             <ChevronDown size={9} />

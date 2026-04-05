@@ -34,13 +34,13 @@ interface Partner {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: "bg-[var(--tx3)]/10 text-[var(--tx3)]",
-  proposed: "bg-amber-500/10 text-amber-500",
-  active: "bg-emerald-500/10 text-emerald-500",
-  on_hold: "bg-orange-500/10 text-orange-500",
-  completed: "bg-blue-500/10 text-blue-500",
-  invoiced: "bg-purple-500/10 text-purple-500",
-  cancelled: "bg-red-500/10 text-red-500",
+  draft: "text-[var(--tx3)]",
+  proposed: "text-amber-500",
+  active: "text-emerald-500",
+  on_hold: "text-orange-500",
+  completed: "text-blue-500",
+  invoiced: "text-purple-500",
+  cancelled: "text-red-500",
 };
 
 const STATUS_OPTIONS = ["all", "draft", "proposed", "active", "on_hold", "completed", "invoiced", "cancelled"];
@@ -97,7 +97,7 @@ const projectColumns: ColumnDef<Project>[] = [
     label: "Status",
     accessor: (p) => p.status,
     render: (p) => (
-      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${STATUS_COLORS[p.status] || ""}`}>
+      <span className={`dt-badge tracking-[0.04em] ${STATUS_COLORS[p.status] || "text-[var(--tx3)]"}`}>
         {p.status.replace("_", " ")}
       </span>
     ),
@@ -157,7 +157,7 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
     <div className="px-4 sm:px-6 py-5">
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">B2B Operations</p>
           <h1 className="admin-page-hero text-[var(--tx)]">All Projects</h1>
         </div>
         <CreateButton href="/admin/projects/new" title="New Project" />

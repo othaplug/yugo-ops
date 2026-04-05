@@ -53,7 +53,13 @@ export async function syncDealStage(
     ) {
       properties.closedate = new Date().toISOString();
     }
-    if (logical === "closed_lost" && (yugoTrigger === "cancelled" || yugoTrigger === "expired")) {
+    if (
+      logical === "closed_lost" &&
+      (yugoTrigger === "cancelled" ||
+        yugoTrigger === "expired" ||
+        yugoTrigger === "declined" ||
+        yugoTrigger === "lost")
+    ) {
       properties.closedate = new Date().toISOString();
     }
 

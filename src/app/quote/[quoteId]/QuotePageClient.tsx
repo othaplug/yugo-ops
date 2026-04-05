@@ -57,6 +57,7 @@ import {
 import YugoLogo from "@/components/YugoLogo";
 import YugoMarketingFooter from "@/components/YugoMarketingFooter";
 import { isQuoteExpiredForBooking } from "@/lib/quote-expiry";
+import { formatMoveDate, formatPlatformDisplay } from "@/lib/date-format";
 
 /* ── Packing kit: move-size → tier index → contents ────────────────────── */
 const PACKING_KIT_TIER_IDX: Record<string, number> = {
@@ -153,7 +154,7 @@ import {
 
 const TRUCK_LUXURY: Record<string, string> = {
   sprinter: "Dedicated Sprinter van",
-  "16ft": "16ft climate-protected moving truck",
+  "16ft": "16ft fully equipped moving truck",
   "20ft": "20ft dedicated moving truck",
   "24ft": "24ft full-capacity moving truck",
   "26ft": "26ft maximum-capacity moving truck",
@@ -242,6 +243,9 @@ export default function QuotePageClient({
   residentialTierCardAdditions = { signature: [], estate: [] },
   residentialTierUseAdditiveCards = { signature: false, estate: false },
   residentialTierMeta,
+  publicActionToken = "",
+  openDeclineModalOnLoad = false,
+  declineTokenFromUrl = null,
 }: {
   quote: Quote;
   addons: Addon[];
@@ -258,6 +262,10 @@ export default function QuotePageClient({
   };
   residentialTierUseAdditiveCards?: { signature: boolean; estate: boolean };
   residentialTierMeta: ResidentialQuoteTierMetaMap;
+  /** Server-issued token for decline + follow-up email links */
+  publicActionToken?: string;
+  openDeclineModalOnLoad?: boolean;
+  declineTokenFromUrl?: string | null;
 }) {
   const isResidential = quote.service_type === "local_move" && !!quote.tiers;
   const tiers = quote.tiers as Record<string, TierData> | null;
@@ -327,6 +335,8 @@ export default function QuotePageClient({
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(quote.status === "accepted");
   const [currentStep, setCurrentStep] = useState(1);
+  /** Highest step the client has reached; never reduced on Back so sections below tiers stay mounted. */
+  const [furthestStepReached, setFurthestStepReached] = useState(1);
   const [selectedAddons, setSelectedAddons] = useState<
     Map<string, AddonSelection>
   >(new Map());
@@ -360,6 +370,18 @@ export default function QuotePageClient({
   const [referralDiscount, setReferralDiscount] = useState(0);
   const [referralId, setReferralId] = useState<string | null>(
     (quote as { referral_id?: string }).referral_id ?? null,
+  );
+
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [showDeclineConfirmation, setShowDeclineConfirmation] = useState(false);
+  const [declineReason, setDeclineReason] = useState("found_another");
+  const [declineComment, setDeclineComment] = useState("");
+  const [declineSubmitting, setDeclineSubmitting] = useState(false);
+  const [declineFormError, setDeclineFormError] = useState<string | null>(null);
+
+  const declineAuthToken = useMemo(
+    () => (declineTokenFromUrl?.trim() || publicActionToken || "").trim(),
+    [declineTokenFromUrl, publicActionToken],
   );
 
   const isEstateFlow = isResidential && selectedTier === "estate";
@@ -440,6 +462,38 @@ export default function QuotePageClient({
     }
   }, [referralCode, quote.quote_id]);
 
+  const handleQuoteDecline = useCallback(async () => {
+    setDeclineFormError(null);
+    if (!declineAuthToken) {
+      setDeclineFormError("This link is missing a security token. Open the quote from your email.");
+      return;
+    }
+    setDeclineSubmitting(true);
+    try {
+      const res = await fetch(
+        `/api/quotes/${encodeURIComponent(quote.quote_id)}/decline`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reason: declineReason,
+            comment: declineComment,
+            token: declineAuthToken,
+          }),
+        },
+      );
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setDeclineFormError(data.error || "Something went wrong. Please try again.");
+        return;
+      }
+      setShowDeclineModal(false);
+      setShowDeclineConfirmation(true);
+    } finally {
+      setDeclineSubmitting(false);
+    }
+  }, [declineAuthToken, quote.quote_id, declineReason, declineComment]);
+
   const contractRef = useRef<HTMLDivElement>(null);
   const comparisonRef = useRef<HTMLElement | null>(null);
   const tiersRef = useRef<HTMLElement>(null);
@@ -499,6 +553,12 @@ export default function QuotePageClient({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (openDeclineModalOnLoad && !booked) {
+      setShowDeclineModal(true);
+    }
+  }, [openDeclineModalOnLoad, booked]);
 
   // Track page exit + abandonment
   useEffect(() => {
@@ -1010,6 +1070,7 @@ export default function QuotePageClient({
         const hasAddons = visible.length > 0 || tierKey === "estate";
         const nextStep = hasAddons ? 2 : 3;
         setCurrentStep(nextStep);
+        setFurthestStepReached((s) => Math.max(s, nextStep));
         // Land on “Your move included” (inclusions / Estate experience) first — not add-ons.
         const tierScrollMs = 480;
         scrollToSection(comparisonRef, {
@@ -1050,23 +1111,36 @@ export default function QuotePageClient({
       applicableAddons.length === 0
     ) {
       setCurrentStep(3);
+      setFurthestStepReached((s) => Math.max(s, 3));
     }
   }, [isResidential, selectedTier, currentStep, applicableAddons.length]);
 
   const handleAddonsComplete = useCallback(() => {
     setCurrentStep(3);
+    setFurthestStepReached((s) => Math.max(s, 3));
     scrollToSection(protectionRef);
   }, [scrollToSection]);
 
   const handleProtectionComplete = useCallback(() => {
     setCurrentStep(4);
+    setFurthestStepReached((s) => Math.max(s, 4));
     scrollToSection(confirmRef);
   }, [scrollToSection]);
 
   const handleConfirmComplete = useCallback(() => {
     setCurrentStep(5);
+    setFurthestStepReached((s) => Math.max(s, 5));
     scrollToSection(paymentRef);
   }, [scrollToSection]);
+
+  /** Progressive sections stay in the DOM after Back so scrolling down still shows Customize → Book + Continue. */
+  const residentialSectionAtLeast = useCallback(
+    (step: number) =>
+      isResidential &&
+      selectedTier != null &&
+      (currentStep >= step || furthestStepReached >= step),
+    [isResidential, selectedTier, currentStep, furthestStepReached],
+  );
 
   const handleStepClick = useCallback(
     (stepNum: number) => {
@@ -1092,6 +1166,9 @@ export default function QuotePageClient({
     if (currentStep === 2) return 1;
     if (currentStep === 3) return applicableAddons.length > 0 ? 2 : 1;
     if (currentStep === 4) return 3;
+    // Step 5 (Book): earlier sections stay mounted with `currentStep >= n`, so their
+    // "← Back" controls must still navigate — previously getBackStep was null and did nothing.
+    if (currentStep === 5) return 4;
     return null;
   }, [currentStep, applicableAddons.length]);
 
@@ -1212,6 +1289,18 @@ export default function QuotePageClient({
     });
   }, [quote.expires_at]);
 
+  const declineFooterBorder =
+    premiumShell && shellKind === "wine"
+      ? "rgba(255,255,255,0.14)"
+      : premiumShell && shellKind === "signature"
+        ? "rgba(244,250,245,0.2)"
+        : "rgba(44,62,45,0.12)";
+
+  const showDeclineHint =
+    !booked &&
+    !showDeclineConfirmation &&
+    (quote.status === "sent" || quote.status === "viewed");
+
   /* ══════════════════════════════════════════════
      RENDER
      ══════════════════════════════════════════════ */
@@ -1227,7 +1316,7 @@ export default function QuotePageClient({
       style={{ backgroundColor: premiumShell ? undefined : CREAM }}
       data-theme="light"
     >
-      {expiringSoon && (
+      {expiringSoon && !showDeclineConfirmation && (
         <div
           className="sticky top-0 z-50 px-4 py-2.5 text-center text-[12px] sm:text-[13px] font-medium tracking-[0.02em] leading-snug"
           style={{
@@ -1237,6 +1326,24 @@ export default function QuotePageClient({
           }}
         >
           This quote expires on {expiryDateStr}. Book now to secure your rate.
+        </div>
+      )}
+      {showDeclineConfirmation && (
+        <div
+          className="sticky top-0 z-50 px-4 py-3 text-center text-[12px] sm:text-[13px] font-medium tracking-[0.02em] leading-snug"
+          style={{
+            backgroundColor: "rgba(244, 250, 245, 0.97)",
+            color: FOREST,
+            borderBottom: "1px solid rgba(44, 62, 45, 0.12)",
+          }}
+        >
+          <p className="font-hero text-[15px] sm:text-[16px] font-semibold mb-1">
+            Thanks for letting us know.
+          </p>
+          <p className="max-w-lg mx-auto leading-relaxed">
+            We&apos;ve stopped follow-up emails. If your plans change, this quote
+            is still valid until {expiryDateStr || expiresValue(quote.expires_at)}.
+          </p>
         </div>
       )}
       {/* ═══ HERO — deep wine (#2B0416) for all flows; headline + meta live in this block ═══ */}
@@ -1303,16 +1410,7 @@ export default function QuotePageClient({
                 className="text-[14px] font-semibold"
                 style={{ color: HERO_META_VALUE }}
               >
-                {quote.move_date
-                  ? new Date(quote.move_date + "T00:00:00").toLocaleDateString(
-                      "en-CA",
-                      {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      },
-                    )
-                  : "TBD"}
+                {quote.move_date ? formatMoveDate(quote.move_date) : "TBD"}
               </p>
             </div>
             {quote.expires_at && (
@@ -1341,7 +1439,7 @@ export default function QuotePageClient({
         </div>
       </header>
 
-      {currentStep >= 2 && !booked && (
+      {furthestStepReached >= 2 && !booked && (
         <ProgressBar
           currentStep={currentStep}
           onStepClick={handleStepClick}
@@ -1597,6 +1695,31 @@ export default function QuotePageClient({
           ) : null}
         </div>
 
+        {showDeclineHint && !(isResidential && tiers) && (
+          <div
+            className="text-center py-8 mt-10 px-2"
+            style={{ borderTop: `1px solid ${declineFooterBorder}` }}
+          >
+            <p
+              className="text-[13px] leading-relaxed"
+              style={{ color: shellInk.muted }}
+            >
+              Not the right time?{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setDeclineFormError(null);
+                  setShowDeclineModal(true);
+                }}
+                className="underline underline-offset-2 transition-opacity hover:opacity-75 font-medium"
+                style={{ color: shellInk.body }}
+              >
+                Let us know
+              </button>
+            </p>
+          </div>
+        )}
+
         {isResidential && tiers ? (
           <>
             {isEstateFlow ? (
@@ -1630,9 +1753,33 @@ export default function QuotePageClient({
           </>
         ) : null}
 
+        {showDeclineHint && isResidential && tiers && (
+          <div
+            className="text-center py-8 px-2"
+            style={{ borderTop: `1px solid ${declineFooterBorder}` }}
+          >
+            <p
+              className="text-[13px] leading-relaxed"
+              style={{ color: shellInk.muted }}
+            >
+              Not the right time?{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setDeclineFormError(null);
+                  setShowDeclineModal(true);
+                }}
+                className="underline underline-offset-2 transition-opacity hover:opacity-75 font-medium"
+                style={{ color: shellInk.body }}
+              >
+                Let us know
+              </button>
+            </p>
+          </div>
+        )}
+
         {/* ═══ SECTION 2: ADD-ONS ═══ */}
-        {((isResidential && currentStep >= 2) ||
-          (!isResidential && isConfirmed)) &&
+        {((residentialSectionAtLeast(2) || (!isResidential && isConfirmed))) &&
           quote.service_type !== "bin_rental" &&
           (applicableAddons.length > 0 ||
             (isResidential && selectedTier === "estate")) &&
@@ -1669,7 +1816,11 @@ export default function QuotePageClient({
                 updateTierIdx={updateTierIdx}
                 isProgressive={isResidential}
                 onContinue={handleAddonsComplete}
-                showContinueButton={isResidential && currentStep === 2}
+                showContinueButton={
+                  isResidential &&
+                  currentStep <= 2 &&
+                  furthestStepReached >= 2
+                }
                 premiumShellKind={shellKind}
                 estateVoiceChrome={isEstateFlow}
               />
@@ -1677,8 +1828,7 @@ export default function QuotePageClient({
           )}
 
         {/* ═══ SECTION 3: VALUATION PROTECTION ═══ */}
-        {((isResidential && currentStep >= 3) ||
-          (!isResidential && isConfirmed)) &&
+        {((residentialSectionAtLeast(3) || (!isResidential && isConfirmed))) &&
           quote.service_type !== "bin_rental" &&
           !booked && (
             <section ref={protectionRef} className="scroll-mt-6">
@@ -1709,7 +1859,9 @@ export default function QuotePageClient({
                 journeyCopy={valuationJourneyCopy}
                 premiumShellKind={shellKind}
               />
-              {isResidential && currentStep === 3 && (
+              {isResidential &&
+                currentStep <= 3 &&
+                furthestStepReached >= 3 && (
                 <div className="mt-6 pb-10 flex flex-col items-center gap-3">
                   <button
                     type="button"
@@ -1731,8 +1883,7 @@ export default function QuotePageClient({
           )}
 
         {/* ═══ SECTION 4: CONFIRM DETAILS ═══ */}
-        {((isResidential && currentStep >= 4) ||
-          (!isResidential && isConfirmed)) &&
+        {((residentialSectionAtLeast(4) || (!isResidential && isConfirmed))) &&
           !booked && (
             <section ref={confirmRef} className="scroll-mt-6">
               {isResidential && currentStep >= 4 && (
@@ -1768,7 +1919,7 @@ export default function QuotePageClient({
                 />
               )}
               {/* Referral code, for residential, inside confirm; for non-residential, standalone */}
-              {(!isResidential || currentStep >= 4) && (
+              {(!isResidential || furthestStepReached >= 4) && (
                 <div
                   className={`mb-6 px-4 py-3.5 rounded-lg border ${shellBorderTopClass}`}
                   style={{
@@ -1825,7 +1976,9 @@ export default function QuotePageClient({
                   )}
                 </div>
               )}
-              {isResidential && currentStep === 4 && (
+              {isResidential &&
+                currentStep <= 4 &&
+                furthestStepReached >= 4 && (
                 <div className="mb-6 flex flex-col items-center gap-3">
                   <button
                     type="button"
@@ -1952,13 +2105,22 @@ export default function QuotePageClient({
           )}
 
         {/* ═══ SECTION 5: AGREEMENT + PAYMENT ═══ */}
-        {((isResidential && currentStep >= 5) ||
-          (!isResidential && isConfirmed)) &&
+        {((residentialSectionAtLeast(5) || (!isResidential && isConfirmed))) &&
           !booked && (
             <section
               ref={paymentRef}
               className={`mb-10 pt-6 scroll-mt-6 border-t ${shellBorderTopClass}`}
             >
+              {isResidential && currentStep === 5 && (
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="text-[12px] font-medium mb-4 transition-opacity hover:opacity-70 flex items-center gap-1"
+                  style={{ color: shellInk.body }}
+                >
+                  ← Back
+                </button>
+              )}
               <h2
                 className="text-2xl md:text-3xl font-serif mb-2 text-center"
                 style={{ color: shellInk.primary }}
@@ -2006,8 +2168,7 @@ export default function QuotePageClient({
           )}
 
         {/* ═══ PAYMENT (inside Section 5, after contract signed) ═══ */}
-        {((isResidential && currentStep >= 5) ||
-          (!isResidential && isConfirmed)) &&
+        {((residentialSectionAtLeast(5) || (!isResidential && isConfirmed))) &&
           contractSigned &&
           !booked && (
             <section className={`mb-10 pt-6 border-t ${shellBorderTopClass}`}>
@@ -2285,6 +2446,119 @@ export default function QuotePageClient({
           />
         </footer>
       </div>
+
+      {showDeclineModal && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50"
+          role="presentation"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="decline-quote-title"
+            className="bg-[#FFFBF7] rounded-none max-w-md w-full p-6 sm:p-7 border max-h-[min(90vh,640px)] overflow-y-auto"
+            style={{ borderColor: "rgba(44,62,45,0.16)" }}
+          >
+            <h3
+              id="decline-quote-title"
+              className="font-hero text-lg sm:text-xl mb-1"
+              style={{ color: WINE }}
+            >
+              No problem at all.
+            </h3>
+            <p className="text-[13px] leading-relaxed mb-5" style={{ color: FOREST_BODY }}>
+              If you&apos;d like, tell us why so we can improve. This stops any
+              follow-up emails.
+            </p>
+
+            <div className="space-y-3 mb-5">
+              {(
+                [
+                  { value: "found_another", label: "Found another company" },
+                  { value: "postponed", label: "Move is postponed or cancelled" },
+                  { value: "budget", label: "Over my budget" },
+                  { value: "diy", label: "Decided to move myself" },
+                  { value: "other", label: "Other reason" },
+                ] as const
+              ).map((option) => (
+                <label
+                  key={option.value}
+                  className="flex items-center gap-3 cursor-pointer text-left"
+                >
+                  <input
+                    type="radio"
+                    name="decline_reason"
+                    value={option.value}
+                    checked={declineReason === option.value}
+                    onChange={() => setDeclineReason(option.value)}
+                    className="shrink-0 accent-[#2C3E2D]"
+                  />
+                  <span className="text-[13px]" style={{ color: FOREST_BODY }}>
+                    {option.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            {declineReason === "budget" && (
+              <div
+                className="mb-4 p-3 rounded-none text-[12px] leading-relaxed border"
+                style={{
+                  backgroundColor: "rgba(212,138,41,0.08)",
+                  borderColor: "rgba(212,138,41,0.25)",
+                  color: FOREST_BODY,
+                }}
+              >
+                We understand budget matters. If you&apos;d like, we can revisit
+                the quote or suggest our Essential package, which starts lower.
+                Reply to any email or call your coordinator directly.
+              </div>
+            )}
+
+            <textarea
+              placeholder="Any additional feedback? (optional)"
+              value={declineComment}
+              onChange={(e) => setDeclineComment(e.target.value)}
+              className="w-full border rounded-none p-3 text-[13px] mb-3 resize-none font-[var(--font-body)]"
+              style={{
+                borderColor: "rgba(44,62,45,0.2)",
+                color: FOREST_BODY,
+                backgroundColor: "#FFFBF7",
+              }}
+              rows={3}
+            />
+
+            {declineFormError && (
+              <p className="text-[12px] mb-3" style={{ color: "#B42318" }}>
+                {declineFormError}
+              </p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeclineModal(false);
+                  setDeclineFormError(null);
+                }}
+                className="flex-1 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] rounded-none border transition-opacity hover:opacity-80"
+                style={{ borderColor: FOREST, color: FOREST }}
+              >
+                Go back
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleQuoteDecline()}
+                disabled={declineSubmitting}
+                className="flex-1 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] rounded-none text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                style={{ backgroundColor: FOREST }}
+              >
+                {declineSubmitting ? "Submitting…" : "Submit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2787,14 +3061,10 @@ function WalkthroughDetails({
 }) {
   const p = inventoryPalette(premiumShellKind);
   const fmtDate = quote.walkthrough_date
-    ? new Date(quote.walkthrough_date + "T12:00:00").toLocaleDateString(
-        "en-CA",
-        {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        },
-      )
+    ? formatPlatformDisplay(new Date(quote.walkthrough_date + "T12:00:00"), {
+        month: "long",
+        day: "numeric",
+      })
     : null;
 
   const body = (
@@ -4220,7 +4490,10 @@ function ValuationProtectionCard({
         </div>
       </div>
 
-      {!isHighest && upgradeData && upgradeTierData && dispUpgrade && (
+      {upgradeData &&
+        upgradeTierData &&
+        dispUpgrade &&
+        (!isHighest || upgradeSelected) && (
         <div
           className={`mt-10 pt-6 border-t ${premiumChrome ? premiumBorder : "border-[var(--brd)]/25"}`}
         >
@@ -4261,7 +4534,12 @@ function ValuationProtectionCard({
             <button
               type="button"
               onClick={onToggleUpgrade}
-              className="w-full sm:w-auto px-6 py-3 rounded-none text-[11px] font-bold uppercase tracking-[0.14em] transition-opacity hover:opacity-90"
+              aria-label={
+                upgradeSelected
+                  ? "Protection upgrade added. Click to remove upgrade."
+                  : undefined
+              }
+              className="w-full sm:w-auto px-6 py-3 rounded-none text-[11px] font-bold uppercase tracking-[0.14em] transition-opacity hover:opacity-90 inline-flex items-center justify-center gap-2"
               style={
                 premiumChrome
                   ? {
@@ -4282,11 +4560,18 @@ function ValuationProtectionCard({
                     }
               }
             >
-              {upgradeSelected
-                ? "Remove upgrade"
-                : journeyCopy === "delivery"
-                  ? "Add to delivery"
-                  : "Add to move"}
+              {upgradeSelected ? (
+                <>
+                  <Check className="w-4 h-4 shrink-0" weight="bold" aria-hidden />
+                  {journeyCopy === "delivery"
+                    ? "Added to delivery"
+                    : "Added to move"}
+                </>
+              ) : journeyCopy === "delivery" ? (
+                "Add to delivery"
+              ) : (
+                "Add to move"
+              )}
             </button>
           </div>
         </div>

@@ -19,6 +19,7 @@ import {
   QUOTE_EYEBROW_CLASS,
   QUOTE_SECTION_H2_CLASS,
 } from "../quote-shared";
+import { formatPlatformDisplay } from "@/lib/date-format";
 import type { PremiumSurfaceInk } from "../quote-premium-shell";
 import { ESTATE_ROSE } from "../estate-quote-ui";
 import {
@@ -141,7 +142,7 @@ export default function ResidentialLayout({
             }}
           >
             Quote valid until{" "}
-            {new Date(quote.expires_at).toLocaleDateString("en-CA", {
+            {formatPlatformDisplay(quote.expires_at, {
               month: "long",
               day: "numeric",
             })}

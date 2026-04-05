@@ -102,18 +102,20 @@ export default function CrewAlwaysOnLocation() {
   // On job pages, the job page handles its own GPS — hide this indicator
   if (isOnJobPage || isPublicPage) return null;
 
-  const pillShell =
-    "rounded-full border border-[#2C3E2D]/20 bg-white/90 backdrop-blur-md shadow-[0_4px_24px_rgba(44,62,45,0.1)] [font-family:var(--font-body)]";
+  const topOffset =
+    "top-[max(0.75rem,env(safe-area-inset-top,0px))] md:top-[max(1rem,env(safe-area-inset-top,0px))]";
+  const rowClass =
+    "flex max-w-[min(100%,calc(100vw-5.5rem))] items-center gap-2.5 text-left [font-family:var(--font-body)]";
 
   return (
     <div
-      className="fixed z-40 max-w-[calc(100vw-2rem)] sm:max-w-none right-4 left-auto bottom-[max(1rem,calc(4.75rem+env(safe-area-inset-bottom,0px)))] md:bottom-6 md:right-6"
+      className={`fixed z-40 right-3 md:right-6 ${topOffset} max-w-[calc(100vw-2rem)]`}
       role="region"
       aria-label="Location sharing status"
     >
       {status === "live" ? (
         <div
-          className={`flex items-center gap-2.5 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#243524] ${pillShell}`}
+          className={`${rowClass} text-[10px] font-bold uppercase tracking-[0.12em] text-[#243524]`}
         >
           <span className="relative flex h-2 w-2 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2C3E2D] opacity-40" />
@@ -133,7 +135,7 @@ export default function CrewAlwaysOnLocation() {
               startTracking();
             }
           }}
-          className={`group flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2.5 text-left transition-colors hover:border-[#2C3E2D]/35 hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2C3E2D]/25 focus-visible:ring-offset-2 ${pillShell}`}
+          className={`group ${rowClass} flex-wrap gap-x-2 gap-y-1 rounded-md py-0.5 -my-0.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2C3E2D]/25 focus-visible:ring-offset-2`}
         >
           <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
             <span

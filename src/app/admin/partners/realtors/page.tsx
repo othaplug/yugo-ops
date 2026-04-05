@@ -56,7 +56,7 @@ export default async function RealtorsPage() {
       </div>
 
       <div className="mb-8">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Partners</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Partners</p>
         <h1 className="admin-page-hero text-[var(--tx)]">Referral Partners</h1>
         <p className="mt-2 text-[13px] text-[var(--tx3)] max-w-2xl leading-relaxed">
           Referral agreements with realtors, property managers, and developers. For property-management service contracts (tenant moves, renovations), manage partners under{" "}

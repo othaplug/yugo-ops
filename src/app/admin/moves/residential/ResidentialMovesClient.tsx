@@ -168,7 +168,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
             >
               Filter
               {activeFilterCount > 0 && (
-                <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold flex items-center justify-center">
+                <span className="dt-badge tracking-[0.04em] text-[var(--admin-primary-fill)] tabular-nums">
                   {activeFilterCount}
                 </span>
               )}

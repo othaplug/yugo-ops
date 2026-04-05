@@ -73,7 +73,7 @@ export default function PartnerPaymentTermsSection({
 
   return (
     <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
-      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Invoice due date</div>
+      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Invoice due date</div>
       <p className="text-[11px] text-[var(--tx3)] mb-4">
         When auto-generated delivery invoices are due for {orgName}.
       </p>
@@ -96,7 +96,7 @@ export default function PartnerPaymentTermsSection({
           type="button"
           onClick={handleSave}
           disabled={saving || !hasChanges}
-          className="px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           {saving ? "Saving…" : "Save"}
         </button>

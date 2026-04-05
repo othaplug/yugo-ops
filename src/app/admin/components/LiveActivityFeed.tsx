@@ -86,8 +86,8 @@ export default function LiveActivityFeed({ initialEvents }: { initialEvents: Act
         <div className="flex items-center gap-2 min-w-0">
           <h2 className="admin-section-h2">Activity</h2>
           <span className="relative flex h-1.5 w-1.5 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gold)] opacity-60" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--gold)]" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--admin-primary-fill)] opacity-60" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--admin-primary-fill)]" />
           </span>
         </div>
         {events.length > 0 && (
@@ -113,7 +113,7 @@ export default function LiveActivityFeed({ initialEvents }: { initialEvents: Act
                 }
                 className="group flex items-start gap-2.5 py-3 px-0 sm:px-0"
               >
-                {isUnread && <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[var(--gold)] shrink-0" />}
+                {isUnread && <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[var(--admin-primary-fill)] shrink-0" />}
                 <div className={`flex-1 min-w-0 ${isUnread ? "" : "pl-4"}`}>
                   <div
                     className={`text-[13px] leading-snug truncate font-semibold ${isUnread ? "text-[var(--tx)]" : "text-[var(--tx2)]"}`}

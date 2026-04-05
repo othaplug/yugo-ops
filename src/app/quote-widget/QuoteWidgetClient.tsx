@@ -565,7 +565,7 @@ export default function QuoteWidgetClient() {
       >
         {/* ── Header ── */}
         <div className="px-6 sm:px-8 pt-6 pb-3 flex items-center justify-between">
-          <YugoLogo size={18} variant="gold" onLightBackground />
+          <YugoLogo size={18} variant="wine" onLightBackground />
           {step > 0 && !submitted && (
             <button
               onClick={goBack}
@@ -1857,7 +1857,7 @@ export default function QuoteWidgetClient() {
             contactEmail={
               process.env.NEXT_PUBLIC_YUGO_EMAIL || "support@helloyugo.com"
             }
-            logoVariant="gold"
+            logoVariant="wine"
             onLightBackground
             logoSize={10}
             mutedColor={`${FOREST}99`}

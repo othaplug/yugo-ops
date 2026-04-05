@@ -30,22 +30,27 @@ export default function ProfileDropdown({ user }: { user: any }) {
     router.refresh();
   };
 
-  const initials = user?.email?.split("@")[0]?.slice(0, 2).toUpperCase() || "JO";
+  const initials =
+    user?.email?.split("@")[0]?.slice(0, 2).toUpperCase() || "JO";
 
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="size-8 rounded-full bg-gradient-to-br from-[var(--gold)] to-[#8B7332] flex items-center justify-center text-white text-[9px] font-bold hover:opacity-90 active:opacity-80 transition-opacity touch-manipulation shrink-0"
+        className="size-8 rounded-[2px] bg-[var(--admin-primary-fill)] flex items-center justify-center text-[var(--btn-text-on-accent)] text-[9px] font-bold hover:bg-[var(--admin-primary-fill-hover)] active:opacity-90 transition-colors touch-manipulation shrink-0"
       >
         {initials}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-[min(220px,calc(100dvw-1.5rem))] max-w-[220px] overflow-hidden rounded-xl border border-[var(--brd)] bg-[var(--bg2)] shadow-2xl animate-fade-up">
+        <div className="absolute right-0 top-full z-50 mt-2 w-[min(220px,calc(100dvw-1.5rem))] max-w-[220px] overflow-hidden rounded-[2px] border border-[var(--brd)] bg-[var(--bg2)] shadow-lg animate-fade-up">
           <div className="px-4 py-3 border-b border-[var(--brd)]">
-            <div className="text-[12px] font-semibold text-[var(--tx)] truncate">{user?.email}</div>
-            <div className="text-[9px] text-[var(--tx3)]">Administrator</div>
+            <div className="text-[12px] font-semibold text-[var(--tx)] truncate">
+              {user?.email}
+            </div>
+            <div className="text-[9px] font-bold uppercase tracking-[0.06em] text-[var(--tx2)]">
+              Administrator
+            </div>
           </div>
 
           <div className="py-1">
@@ -54,7 +59,12 @@ export default function ProfileDropdown({ user }: { user: any }) {
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 px-4 py-2.5 text-[11px] text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--tx)] transition-colors"
             >
-              <User size={14} weight="regular" className="shrink-0 text-current" aria-hidden />
+              <User
+                size={14}
+                weight="regular"
+                className="shrink-0 text-current"
+                aria-hidden
+              />
               Profile Settings
             </Link>
 
@@ -63,7 +73,12 @@ export default function ProfileDropdown({ user }: { user: any }) {
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 px-4 py-2.5 text-[11px] text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--tx)] transition-colors"
             >
-              <GearSix size={14} weight="regular" className="shrink-0 text-current" aria-hidden />
+              <GearSix
+                size={14}
+                weight="regular"
+                className="shrink-0 text-current"
+                aria-hidden
+              />
               Platform Settings
             </Link>
           </div>
@@ -76,13 +91,25 @@ export default function ProfileDropdown({ user }: { user: any }) {
             >
               <span className="flex items-center gap-2.5">
                 {theme === "dark" ? (
-                  <Sun size={14} weight="regular" className="shrink-0 text-current" aria-hidden />
+                  <Sun
+                    size={14}
+                    weight="regular"
+                    className="shrink-0 text-current"
+                    aria-hidden
+                  />
                 ) : (
-                  <Moon size={14} weight="regular" className="shrink-0 text-current" aria-hidden />
+                  <Moon
+                    size={14}
+                    weight="regular"
+                    className="shrink-0 text-current"
+                    aria-hidden
+                  />
                 )}
                 Appearance
               </span>
-              <span className="text-[9px] font-semibold text-[var(--tx3)] bg-[var(--bg)] px-2 py-0.5 rounded-full uppercase">{theme}</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.06em] text-[var(--tx2)] bg-[var(--hover)] px-2 py-0.5 rounded-[2px] border border-[var(--brd)]/50">
+                {theme}
+              </span>
             </button>
           </div>
 
@@ -91,7 +118,12 @@ export default function ProfileDropdown({ user }: { user: any }) {
               onClick={handleLogout}
               className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[11px] text-[var(--red)] hover:bg-[var(--rdim)] transition-colors"
             >
-              <SignOut size={14} weight="regular" className="shrink-0 text-current" aria-hidden />
+              <SignOut
+                size={14}
+                weight="regular"
+                className="shrink-0 text-current"
+                aria-hidden
+              />
               Logout
             </button>
           </div>

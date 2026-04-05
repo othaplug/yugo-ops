@@ -12,9 +12,10 @@ import InvoicesPageClient from "./InvoicesPageClient";
 export default async function InvoicesPage() {
   const db = createAdminClient();
 
+  // Disambiguate embed: PostgREST errors if multiple FKs exist between invoices and organizations.
   const withOrg = await db
     .from("invoices")
-    .select("*, organizations(vertical, type)")
+    .select("*, organizations!organization_id(vertical, type)")
     .order("created_at", { ascending: false });
 
   let invoices = withOrg.data;
@@ -82,7 +83,7 @@ export default async function InvoicesPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-8">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Finance</p>
           <h1 className="admin-page-hero text-[var(--tx)]">Invoices</h1>
         </div>
       </div>

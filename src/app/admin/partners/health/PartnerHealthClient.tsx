@@ -9,29 +9,29 @@ import type { PartnerHealthRow } from "@/app/api/admin/partners/health/route";
 import { organizationTypeLabel } from "@/lib/partner-type";
 
 const TYPE_CHIP_CLASSES: Record<string, string> = {
-  retail: "bg-[rgba(74,124,229,0.14)] text-[#4A7CE5]",
-  designer: "bg-[rgba(139,92,246,0.14)] text-[#8B5CF6]",
-  gallery: "bg-[rgba(201,169,98,0.16)] text-[var(--gold)]",
-  furniture_retailer: "bg-[rgba(59,130,246,0.14)] text-[#3B82F6]",
-  interior_designer: "bg-[rgba(167,139,250,0.16)] text-[#A78BFA]",
-  cabinetry: "bg-[rgba(180,83,9,0.14)] text-[#B45309]",
-  flooring: "bg-[rgba(13,148,136,0.14)] text-[#0D9488]",
-  art_gallery: "bg-[rgba(201,169,98,0.16)] text-[var(--gold)]",
-  antique_dealer: "bg-[rgba(190,18,60,0.12)] text-[#BE123C]",
-  hospitality: "bg-[rgba(212,138,41,0.14)] text-[var(--org)]",
-  medical_equipment: "bg-[rgba(14,165,233,0.14)] text-[#0EA5E9]",
-  av_technology: "bg-[rgba(99,102,241,0.14)] text-[#6366F1]",
-  appliances: "bg-[rgba(71,85,105,0.16)] text-[#64748B]",
-  realtor: "bg-[rgba(45,159,90,0.14)] text-[var(--grn)]",
-  property_manager: "bg-[rgba(22,163,74,0.14)] text-[#16A34A]",
-  developer: "bg-[rgba(124,58,237,0.14)] text-[#7C3AED]",
-  property_management_residential: "bg-[rgba(201,169,98,0.18)] text-[var(--gold)]",
-  property_management_commercial: "bg-[rgba(201,169,98,0.18)] text-[var(--gold)]",
-  developer_builder: "bg-[rgba(124,58,237,0.14)] text-[#7C3AED]",
+  retail: "text-[#4A7CE5]",
+  designer: "text-[#8B5CF6]",
+  gallery: "text-[var(--gold)]",
+  furniture_retailer: "text-[#3B82F6]",
+  interior_designer: "text-[#A78BFA]",
+  cabinetry: "text-[#B45309]",
+  flooring: "text-[#0D9488]",
+  art_gallery: "text-[var(--gold)]",
+  antique_dealer: "text-[#BE123C]",
+  hospitality: "text-[var(--org)]",
+  medical_equipment: "text-[#0EA5E9]",
+  av_technology: "text-[#6366F1]",
+  appliances: "text-[#64748B]",
+  realtor: "text-[var(--grn)]",
+  property_manager: "text-[#16A34A]",
+  developer: "text-[#7C3AED]",
+  property_management_residential: "text-[var(--gold)]",
+  property_management_commercial: "text-[var(--gold)]",
+  developer_builder: "text-[#7C3AED]",
 };
 
 function typeChipCls(type: string): string {
-  return TYPE_CHIP_CLASSES[type] || "bg-[var(--gdim)] text-[var(--gold)]";
+  return TYPE_CHIP_CLASSES[type] || "text-[var(--gold)]";
 }
 
 const STATUS_CONFIG: Record<
@@ -41,22 +41,22 @@ const STATUS_CONFIG: Record<
   active: {
     label: "Active",
     dotCls: "bg-[var(--grn)]",
-    badgeCls: "bg-[var(--grn)]/10 text-[var(--grn)]",
+    badgeCls: "text-[var(--grn)]",
   },
   at_risk: {
     label: "At risk",
     dotCls: "bg-amber-400",
-    badgeCls: "bg-amber-400/10 text-amber-400",
+    badgeCls: "text-amber-400",
   },
   cold: {
     label: "Cold",
     dotCls: "bg-blue-400",
-    badgeCls: "bg-blue-400/10 text-blue-400",
+    badgeCls: "text-blue-400",
   },
   churned: {
     label: "Churned",
     dotCls: "bg-[var(--tx3)]",
-    badgeCls: "bg-[var(--tx3)]/10 text-[var(--tx3)]",
+    badgeCls: "text-[var(--tx3)]",
   },
 };
 
@@ -167,7 +167,7 @@ function ReEngageModal({ partner, onClose }: ReEngageModalProps) {
             type="button"
             onClick={handleSendSms}
             disabled={smsSending || smsSent || !partner.phone}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-40"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-40"
           >
             <Icon name="messageSquare" className="w-3.5 h-3.5" />
             {smsSending ? "Sending…" : "Send via SMS"}
@@ -248,7 +248,7 @@ export default function PartnerHealthClient() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-8">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">
             Partners
           </p>
           <h1 className="admin-page-hero text-[var(--tx)]">
@@ -289,10 +289,10 @@ export default function PartnerHealthClient() {
               key={key}
               type="button"
               onClick={() => setFilter(key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all border ${
                 filter === key
-                  ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
-                  : "border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--tx)]"
+                  ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                  : "border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--tx2)] hover:border-[var(--admin-primary-fill)]/35"
               }`}
             >
               {cfg && filter !== key && (
@@ -345,7 +345,7 @@ export default function PartnerHealthClient() {
                   <tr key={p.id} className="hover:bg-[var(--bg)]/40 transition-colors">
                     <td className="px-4 py-3">
                       <div className="text-[13px] font-semibold text-[var(--tx)]">{p.name}</div>
-                      <span className={`mt-1 inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${typeChipCls(p.type)}`}>
+                      <span className={`mt-1 inline-flex items-center dt-badge tracking-[0.04em] whitespace-nowrap ${typeChipCls(p.type)}`}>
                         {p.type === "b2b" ? "Other partner" : organizationTypeLabel(p.type)}
                       </span>
                       {p.contact_name && (
@@ -366,7 +366,7 @@ export default function PartnerHealthClient() {
                       ) : null}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`text-[10px] font-semibold px-2 py-1 rounded-full flex items-center gap-1.5 w-fit ${statusCfg.badgeCls}`}>
+                      <span className={`text-[10px] font-bold uppercase tracking-[0.04em] flex items-center gap-1.5 w-fit ${statusCfg.badgeCls}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dotCls}`} />
                         {statusCfg.label}
                       </span>

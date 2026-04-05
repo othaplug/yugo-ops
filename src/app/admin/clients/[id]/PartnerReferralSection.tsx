@@ -64,7 +64,7 @@ export default function PartnerReferralSection({
 
   return (
     <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
-      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Referral program</div>
+      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Referral program</div>
       <p className="text-[11px] text-[var(--tx3)] mb-4">
         Service partners contract Yugo for on-site moves. Referral partners send personal-move leads for a commission. A PM company can be both — track the referral relationship here separately from the service contract.
       </p>
@@ -116,7 +116,7 @@ export default function PartnerReferralSection({
         type="button"
         onClick={save}
         disabled={saving}
-        className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+        className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50"
       >
         {saving ? "Saving…" : "Save referral settings"}
       </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { formatPlatformDisplay } from "@/lib/date-format";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/AppIcons";
 
@@ -29,7 +30,7 @@ const SOURCE_FILTERS = [
 ];
 
 const SOURCE_COLORS: Record<string, { color: string; bg: string }> = {
-  delivery: { color: "#2C3E2D", bg: "rgba(201,169,98,0.12)" },
+  delivery: { color: "#2C3E2D", bg: "var(--gdim)" },
   quote: { color: "#6B8CFF", bg: "rgba(107,140,255,0.12)" },
   move: { color: "#2D9F5A", bg: "rgba(45,159,90,0.12)" },
   payment: { color: "#2D9F5A", bg: "rgba(45,159,90,0.12)" },
@@ -45,17 +46,17 @@ function formatRelativeTime(iso: string): string {
   if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
   if (sec < 172800) return "Yesterday";
   if (sec < 604800) return `${Math.floor(sec / 86400)} days ago`;
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return formatPlatformDisplay(iso, { month: "short", day: "numeric" }, "");
 }
 
 function formatFullDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
+  return formatPlatformDisplay(iso, {
     weekday: "short",
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
-  });
+  }, "");
 }
 
 export default function AdminNotificationsPage() {
@@ -127,7 +128,7 @@ export default function AdminNotificationsPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Admin</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Admin</p>
           <h1 className="admin-page-hero text-[var(--tx)]">Notifications</h1>
           <p className="text-[12px] text-[var(--tx3)] mt-2">
             {total} total{unreadOnPage > 0 ? ` · ${unreadOnPage} unread on this page` : ""}
@@ -237,7 +238,7 @@ export default function AdminNotificationsPage() {
                 {/* Unread indicator */}
                 <div className="flex-shrink-0 mt-1.5 w-3 flex justify-center">
                   {!notif.is_read && (
-                    <span className="block w-2 h-2 rounded-full bg-[var(--gold)]" />
+                    <span className="block w-2 h-2 rounded-full bg-[var(--admin-primary-fill)]" />
                   )}
                 </div>
 
@@ -250,8 +251,8 @@ export default function AdminNotificationsPage() {
                     <div className="flex items-center gap-2 shrink-0">
                       {notif.source_type && tag && (
                         <span
-                          className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
-                          style={{ color: tag.color, backgroundColor: tag.bg }}
+                          className="dt-badge tracking-[0.04em]"
+                          style={{ color: tag.color }}
                         >
                           {notif.source_type}
                         </span>
@@ -264,7 +265,7 @@ export default function AdminNotificationsPage() {
                     </div>
                   )}
                   <div className="flex items-center gap-3 mt-1.5">
-                    <span className="text-[10px] text-[var(--tx3)]/60" title={formatFullDate(notif.created_at)}>
+                    <span className="text-[10px] text-[var(--tx3)]/82" title={formatFullDate(notif.created_at)}>
                       {formatRelativeTime(notif.created_at)}
                     </span>
                     {notif.link && (

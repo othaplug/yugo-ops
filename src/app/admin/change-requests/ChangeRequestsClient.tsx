@@ -129,8 +129,8 @@ export default function ChangeRequestsClient({
         accessor: (r) => r.urgency,
         render: (r) => (
           <span
-            className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold ${
-              r.urgency === "urgent" ? "bg-[var(--rdim)] text-[var(--red)]" : "bg-[var(--gdim)] text-[var(--gold)]"
+            className={`dt-badge tracking-[0.04em] ${
+              r.urgency === "urgent" ? "text-[var(--red)]" : "text-[var(--gold)]"
             }`}
           >
             {r.urgency}
@@ -146,8 +146,8 @@ export default function ChangeRequestsClient({
         render: (r) =>
           r.status !== "pending" ? (
             <span
-              className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold ${
-                r.status === "approved" ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"
+              className={`dt-badge tracking-[0.04em] ${
+                r.status === "approved" ? "text-[var(--grn)]" : "text-[var(--red)]"
               }`}
             >
               {toTitleCase(r.status)}
@@ -230,22 +230,22 @@ export default function ChangeRequestsClient({
     <div className="space-y-8">
       {/* Stats bar */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <div className="text-[10px] font-bold tracking-[0.14em] text-[var(--tx3)]/50 mb-4">Overview</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] text-[var(--tx3)] mb-4">Overview</div>
         <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-[var(--brd)]/30">
           <div className="px-4 py-2 first:pl-0">
-            <div className="text-[10px] font-bold tracking-[0.14em] text-[var(--tx3)]/50">Pending</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] text-[var(--tx3)]">Pending</div>
             <div className="text-xl font-bold font-heading text-[var(--tx)]">{pending.length}</div>
           </div>
           <div className="px-4 py-2">
-            <div className="text-[10px] font-bold tracking-[0.14em] text-[var(--tx3)]/50">Approved today</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] text-[var(--tx3)]">Approved today</div>
             <div className="text-xl font-bold font-heading text-[var(--grn)]">{approvedToday.length}</div>
           </div>
           <div className="px-4 py-2">
-            <div className="text-[10px] font-bold tracking-[0.14em] text-[var(--tx3)]/50">Rejected</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] text-[var(--tx3)]">Rejected</div>
             <div className="text-xl font-bold font-heading text-[var(--red)]">{rejected.length}</div>
           </div>
           <div className="px-4 py-2">
-            <div className="text-[10px] font-bold tracking-[0.14em] text-[var(--tx3)]/50">Total approved</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] text-[var(--tx3)]">Total approved</div>
             <div className="text-xl font-bold font-heading text-[var(--blue)]">{approved.length}</div>
           </div>
         </div>
@@ -253,17 +253,17 @@ export default function ChangeRequestsClient({
 
       {/* Filter bar */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <div className="text-[10px] font-bold tracking-[0.14em] text-[var(--tx3)]/50 mb-4">Filter</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] text-[var(--tx3)] mb-4">Filter</div>
         <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
           {STATUS_FILTERS.map((f) => (
             <button
               key={f.value}
               type="button"
               onClick={() => setStatusFilter(f.value)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all touch-manipulation ${
+              className={`shrink-0 px-3 py-1.5 rounded-md text-[10px] font-semibold transition-all touch-manipulation border ${
                 statusFilter === f.value
-                  ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
-                  : "bg-[var(--bg)] text-[var(--tx2)] hover:bg-[var(--bg2)]"
+                  ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                  : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:bg-[var(--bg2)]"
               }`}
             >
               {f.label}
@@ -274,7 +274,7 @@ export default function ChangeRequestsClient({
 
       {/* Content */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Change requests</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-4">Change requests</div>
         <DataTable
           data={filtered}
           columns={columns}

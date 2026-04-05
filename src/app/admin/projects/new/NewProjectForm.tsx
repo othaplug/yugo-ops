@@ -126,11 +126,11 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
           <div key={s} className="flex items-center gap-2">
             <button
               onClick={() => i < step && setStep(i)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors ${
                 i === step
-                  ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+                  ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
                   : i < step
-                    ? "bg-emerald-500/10 text-emerald-500 cursor-pointer hover:bg-emerald-500/20"
+                    ? "text-emerald-500 cursor-pointer hover:underline border border-transparent"
                     : "bg-[var(--bg)] text-[var(--tx3)] border border-[var(--brd)]"
               }`}
             >
@@ -370,7 +370,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
             <button
               onClick={() => setStep(step + 1)}
               disabled={!canNext()}
-              className="px-5 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors disabled:opacity-40"
+              className="px-5 py-2 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors disabled:opacity-40"
             >
               Next
             </button>
@@ -386,7 +386,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
               <button
                 onClick={() => handleSubmit("proposed")}
                 disabled={loading}
-                className="px-5 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors disabled:opacity-40"
+                className="px-5 py-2 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors disabled:opacity-40"
               >
                 {loading ? "Creating..." : "Create & Send Proposal"}
               </button>

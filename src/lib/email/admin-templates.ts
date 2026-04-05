@@ -44,7 +44,7 @@ export function adminNotificationLayout(
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:${PAGE_BG};font-family:${BTN_FONT};">
+<body class="yugo-light-email-doc" style="margin:0;padding:0;background:${PAGE_BG};font-family:${BTN_FONT};">
 <div class="email-outer-gutter" style="width:100%;max-width:${EMAIL_FLUID_MAX_WIDTH_PX}px;margin:0 auto;padding:40px 24px;box-sizing:border-box;">
   <div style="background:${CARD_BG};border-radius:0;padding:28px 24px;box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid ${BORDER};">
     <div style="text-align:center;margin-bottom:22px;">

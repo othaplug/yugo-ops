@@ -290,42 +290,31 @@ export default function LeadsHubClient({
     };
   }, [metrics]);
 
+  const subNavLinkClass = (active: boolean) =>
+    `inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] transition-colors ${
+      active
+        ? "bg-[var(--tx)] text-[var(--bg2)] dark:bg-[var(--tx2)] dark:text-[var(--bg)]"
+        : "bg-transparent text-[var(--tx2)] shadow-[inset_0_0_0_1px_var(--brd)] hover:bg-[var(--hover)]"
+    }`;
+
   const subNav = (
-    <div className="flex flex-wrap gap-2">
-      <Link
-        href="/admin/leads"
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${
-          mode === "dashboard"
-            ? "bg-[var(--hover)] border-[var(--tx)]/25 text-[var(--tx)]"
-            : "border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--hover)]"
-        }`}
-      >
-        <ChartBar size={16} aria-hidden />
+    <nav
+      className="flex flex-wrap gap-1.5 sm:gap-2"
+      aria-label="Leads views"
+    >
+      <Link href="/admin/leads" className={subNavLinkClass(mode === "dashboard")}>
+        <ChartBar size={14} aria-hidden className="opacity-80" />
         Dashboard
       </Link>
-      <Link
-        href="/admin/leads/all"
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${
-          mode === "all"
-            ? "bg-[var(--hover)] border-[var(--tx)]/25 text-[var(--tx)]"
-            : "border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--hover)]"
-        }`}
-      >
-        <List size={16} aria-hidden />
-        All Leads
+      <Link href="/admin/leads/all" className={subNavLinkClass(mode === "all")}>
+        <List size={14} aria-hidden className="opacity-80" />
+        All leads
       </Link>
-      <Link
-        href="/admin/leads/mine"
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${
-          mode === "mine"
-            ? "bg-[var(--hover)] border-[var(--tx)]/25 text-[var(--tx)]"
-            : "border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--hover)]"
-        }`}
-      >
-        <User size={16} aria-hidden />
-        My Leads
+      <Link href="/admin/leads/mine" className={subNavLinkClass(mode === "mine")}>
+        <User size={14} aria-hidden className="opacity-80" />
+        My leads
       </Link>
-    </div>
+    </nav>
   );
 
   const submitManualLead = async () => {
@@ -390,16 +379,16 @@ export default function LeadsHubClient({
       : [];
 
     return (
-      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 flex flex-col gap-3">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
+      <article className="flex flex-col gap-3 rounded-2xl bg-[var(--card)] p-4 shadow-[0_1px_0_rgba(0,0,0,0.04)] ring-1 ring-[var(--brd)]/40 dark:shadow-none dark:ring-[var(--brd)]/50">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
               <span
                 className="shrink-0"
                 title={COMPLETENESS_PATH_LABELS[path] || path}
               >
                 <PathIc
-                  className={`w-4 h-4 ${pathCls}`}
+                  className={`h-4 w-4 ${pathCls}`}
                   weight="fill"
                   aria-hidden
                 />
@@ -413,7 +402,7 @@ export default function LeadsHubClient({
                 responseSlaTargetAt={lead.response_sla_target_at}
                 firstResponseAt={lead.first_response_at}
               />
-              <span className="text-[13px] font-bold text-[var(--tx)] truncate">
+              <span className="truncate text-[13px] font-bold text-[var(--tx)]">
                 {lead.lead_number} — {name}
               </span>
             </div>
@@ -487,13 +476,13 @@ export default function LeadsHubClient({
           </div>
           <Link
             href={`/admin/leads/${lead.id}`}
-            className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-[var(--tx)] hover:underline shrink-0"
+            className="inline-flex shrink-0 items-center gap-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#2C3E2D] underline-offset-2 hover:underline dark:text-[var(--tx2)]"
           >
             Details
             <CaretRight size={12} weight="bold" className="opacity-70" aria-hidden />
           </Link>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 border-t border-[var(--brd)]/35 pt-3">
           <Link
             href={quoteHref}
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--tx)]/25 text-[11px] font-semibold text-[var(--tx)] tracking-wide uppercase hover:bg-[var(--hover)]"
@@ -528,100 +517,107 @@ export default function LeadsHubClient({
             </a>
           ) : null}
         </div>
-      </div>
+      </article>
     );
   }
 
+  const sectionTitle =
+    "mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/65";
+
   return (
-    <div className="max-w-[1100px] mx-auto px-4 md:px-6 py-5 md:py-6">
-      <header className="mb-1">
-        <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]">
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6">
+      <header className="mb-8 space-y-2 sm:mb-10">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--tx3)]/55">
           Revenue
         </p>
         <h1 className="admin-page-hero text-[var(--tx)]">Leads</h1>
+        <p className="max-w-xl text-sm leading-relaxed text-[var(--tx3)]/90">
+          Speed to lead: respond in under five minutes when you can — it drives
+          conversion.
+        </p>
       </header>
-      <p className="text-[12px] text-[var(--tx3)] leading-relaxed mb-4 max-w-xl">
-        Speed to lead: respond in under five minutes when you can — it drives
-        conversion.
-      </p>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         {subNav}
         {(mode === "dashboard" || mode === "all") && (
           <button
             type="button"
             onClick={() => setManualOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-[var(--tx)]/25 text-[var(--tx)] hover:bg-[var(--hover)]"
+            className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg border border-[#2C3E2D]/30 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#2C3E2D] transition-colors hover:bg-[#2C3E2D]/[0.06] dark:border-[var(--brd)] dark:text-[var(--tx2)] dark:hover:bg-[var(--hover)] sm:self-auto"
           >
-            <Plus size={16} weight="bold" aria-hidden />
+            <Plus size={14} weight="bold" aria-hidden />
             Add lead manually
+            <CaretRight size={14} weight="bold" aria-hidden className="opacity-80" />
           </button>
         )}
       </div>
 
       {loadErr && (
-        <div className="mb-4 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/25 text-red-400 text-[12px]">
+        <p
+          className="mb-6 rounded-xl bg-[var(--red)]/10 px-4 py-3 text-[13px] text-[var(--red)] ring-1 ring-[var(--red)]/20"
+          role="alert"
+        >
           {loadErr}
-        </div>
+        </p>
       )}
 
       {mode === "dashboard" && metrics && (
-        <>
-          <section className="mb-8">
-            <h2 className="text-[11px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)] mb-3 flex items-center gap-2">
-              <Lightning size={16} className="text-[var(--tx2)]" aria-hidden />
+        <div className="space-y-10 sm:space-y-12">
+          <section aria-label="Speed to lead today">
+            <h2 className={sectionTitle}>
+              <Lightning size={14} className="text-[var(--tx2)]" aria-hidden />
               Speed to lead — today
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
-              {[
-                { k: "new", label: "Attention" },
-                { k: "contacted", label: "Contacted" },
-                { k: "quote_sent", label: "Quote sent" },
-                { k: "converted", label: "Converted" },
-                { k: "lost", label: "Lost" },
-              ].map(({ k, label }) => (
-                <div
-                  key={k}
-                  className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-3 text-center"
-                >
-                  <div className="text-xl font-bold text-[var(--tx)] tabular-nums">
-                    {todayRow[k as keyof typeof todayRow]}
+            <div className="overflow-hidden rounded-2xl bg-[var(--brd)]/[0.28] p-px shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:bg-[var(--brd)]/35 dark:shadow-none">
+              <div className="grid grid-cols-2 gap-px sm:grid-cols-5">
+                {[
+                  { k: "new", label: "Attention" },
+                  { k: "contacted", label: "Contacted" },
+                  { k: "quote_sent", label: "Quote sent" },
+                  { k: "converted", label: "Converted" },
+                  { k: "lost", label: "Lost" },
+                ].map(({ k, label }) => (
+                  <div
+                    key={k}
+                    className="bg-[var(--card)] px-3 py-4 text-center sm:px-4 sm:py-5"
+                  >
+                    <p className="font-heading text-2xl font-semibold tabular-nums tracking-tight text-[var(--tx)]">
+                      {todayRow[k as keyof typeof todayRow]}
+                    </p>
+                    <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)]/65">
+                      {label}
+                    </p>
                   </div>
-                  <div className="text-[10px] text-[var(--tx3)] uppercase tracking-wide">
-                    {label}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] px-4 py-3 flex flex-wrap items-center gap-2">
-              <span className="text-[12px] text-[var(--tx2)]">
-                Avg response time (this month):
-              </span>
-              <span className="text-[14px] font-bold text-[var(--tx)]">
-                {metrics.avgResponseMin != null
-                  ? `${metrics.avgResponseMin} min`
-                  : "—"}
-              </span>
-              <span className="text-[11px] text-[var(--tx3)]">
-                (target &lt; 5 min)
-              </span>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-[var(--brd)]/35 bg-[var(--card)] px-4 py-3.5 sm:px-5">
+                <span className="text-[13px] text-[var(--tx2)]">
+                  Avg response time (this month)
+                </span>
+                <span className="text-[15px] font-semibold tabular-nums text-[var(--tx)]">
+                  {metrics.avgResponseMin != null
+                    ? `${metrics.avgResponseMin} min`
+                    : "—"}
+                </span>
+                <span className="text-[11px] text-[var(--tx3)]/80">
+                  Target under 5 min
+                </span>
+              </div>
             </div>
           </section>
 
-          <section className="mb-8">
-            <h2 className="text-[11px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)] mb-3">
-              Needs attention
-            </h2>
-            <p className="text-[11px] text-[var(--tx3)] mb-3">
-              Open leads without a quote (new, assigned, follow-up sent,
-              awaiting reply), oldest first. Timer updates live.
+          <section aria-label="Leads needing attention">
+            <h2 className={`${sectionTitle} mb-1`}>Needs attention</h2>
+            <p className="mb-4 max-w-2xl text-[13px] leading-relaxed text-[var(--tx3)]/85">
+              Open leads without a quote (new, assigned, follow-up sent, awaiting
+              reply), oldest first. Timers update live.
             </p>
             {attention.length === 0 ? (
-              <p className="text-[13px] text-[var(--tx2)] py-6 text-center border border-dashed border-[var(--brd)] rounded-xl">
+              <p className="py-14 text-center text-[15px] text-[var(--tx3)]/85">
                 No leads waiting — great job.
               </p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {attention.map((lead) => (
                   <LeadActionCard key={lead.id} lead={lead} />
                 ))}
@@ -629,117 +625,187 @@ export default function LeadsHubClient({
             )}
           </section>
 
-          <section className="mb-8">
-            <h2 className="text-[11px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)] mb-3">
-              This month — funnel
-            </h2>
-            <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 text-[12px] text-[var(--tx2)] space-y-1">
-              <p>Leads received: {metrics.funnel.received}</p>
-              <p>Contacted: {metrics.funnel.contacted}</p>
-              <p>Quote sent: {metrics.funnel.quote_sent}</p>
-              <p>Converted: {metrics.funnel.converted}</p>
-              <p>Lost: {metrics.funnel.lost}</p>
-              <p>Stale: {metrics.funnel.stale}</p>
+          <section aria-label="This month funnel">
+            <h2 className={sectionTitle}>This month — funnel</h2>
+            <div className="overflow-hidden rounded-2xl bg-[var(--brd)]/[0.28] p-px shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:bg-[var(--brd)]/35 dark:shadow-none">
+              <dl className="grid gap-px sm:grid-cols-2 lg:grid-cols-3">
+                {(
+                  [
+                    ["Leads received", metrics.funnel.received],
+                    ["Contacted", metrics.funnel.contacted],
+                    ["Quote sent", metrics.funnel.quote_sent],
+                    ["Converted", metrics.funnel.converted],
+                    ["Lost", metrics.funnel.lost],
+                    ["Stale", metrics.funnel.stale],
+                  ] as const
+                ).map(([label, value]) => (
+                  <div
+                    key={label}
+                    className="flex items-baseline justify-between gap-3 bg-[var(--card)] px-4 py-3.5 sm:px-5"
+                  >
+                    <dt className="text-[13px] text-[var(--tx2)]">{label}</dt>
+                    <dd className="font-heading text-lg font-semibold tabular-nums text-[var(--tx)]">
+                      {value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
             </div>
           </section>
 
-          <section className="mb-8">
-            <h2 className="text-[11px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)] mb-3">
-              Response quality
-            </h2>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 text-[12px]">
-                <p className="font-semibold text-[var(--tx)] mb-2">Buckets</p>
-                <ul className="space-y-1 text-[var(--tx2)]">
-                  <li>
-                    &lt; 5 min:{" "}
-                    {metrics.pctUnder5min != null
-                      ? `${metrics.pctUnder5min}%`
-                      : "—"}
-                  </li>
-                  <li>
-                    &lt; 15 min:{" "}
-                    {metrics.pctUnder15min != null
-                      ? `${metrics.pctUnder15min}%`
-                      : "—"}
-                  </li>
-                  <li>
-                    &gt; 1 hr:{" "}
-                    {metrics.pctOver1hr != null
-                      ? `${metrics.pctOver1hr}%`
-                      : "—"}
-                  </li>
-                </ul>
-              </div>
-              <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 overflow-x-auto">
-                <p className="font-semibold text-[var(--tx)] mb-2 text-[12px]">
-                  Speed vs conversion
-                </p>
-                <table className="w-full text-[11px] text-left">
-                  <thead>
-                    <tr className="text-[var(--tx3)] border-b border-[var(--brd)]">
-                      <th className="py-1.5 pr-2">Window</th>
-                      <th className="py-1.5 pr-2">Leads</th>
-                      <th className="py-1.5 pr-2">Converted</th>
-                      <th className="py-1.5">Rate</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-[var(--tx2)]">
-                    {metrics.speedVsConversion.map((row) => (
-                      <tr
-                        key={row.label}
-                        className="border-b border-[var(--brd)]/60"
-                      >
-                        <td className="py-1.5 pr-2">{row.label}</td>
-                        <td className="py-1.5 pr-2 tabular-nums">
-                          {row.leads}
-                        </td>
-                        <td className="py-1.5 pr-2 tabular-nums">
-                          {row.converted}
-                        </td>
-                        <td className="py-1.5 tabular-nums">{row.rate}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <section aria-label="Response quality">
+            <h2 className={sectionTitle}>Response quality</h2>
+            <div className="overflow-hidden rounded-2xl bg-[var(--brd)]/[0.28] p-px shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:bg-[var(--brd)]/35 dark:shadow-none">
+              <div className="grid gap-px md:grid-cols-2">
+                <div className="bg-[var(--card)] p-4 sm:p-5">
+                  <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70">
+                    Buckets
+                  </p>
+                  <ul className="space-y-2.5 text-[13px] text-[var(--tx2)]">
+                    <li className="flex justify-between gap-3">
+                      <span>Under 5 min</span>
+                      <span className="tabular-nums font-medium text-[var(--tx)]">
+                        {metrics.pctUnder5min != null
+                          ? `${metrics.pctUnder5min}%`
+                          : "—"}
+                      </span>
+                    </li>
+                    <li className="flex justify-between gap-3">
+                      <span>Under 15 min</span>
+                      <span className="tabular-nums font-medium text-[var(--tx)]">
+                        {metrics.pctUnder15min != null
+                          ? `${metrics.pctUnder15min}%`
+                          : "—"}
+                      </span>
+                    </li>
+                    <li className="flex justify-between gap-3">
+                      <span>Over 1 hr</span>
+                      <span className="tabular-nums font-medium text-[var(--tx)]">
+                        {metrics.pctOver1hr != null
+                          ? `${metrics.pctOver1hr}%`
+                          : "—"}
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="min-w-0 bg-[var(--card)] p-4 sm:p-5">
+                  <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70">
+                    Speed vs conversion
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[280px] border-collapse text-left text-[12px]">
+                      <thead>
+                        <tr className="border-b border-[var(--brd)]/50">
+                          <th
+                            scope="col"
+                            className="py-2 pr-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)]/70"
+                          >
+                            Window
+                          </th>
+                          <th
+                            scope="col"
+                            className="py-2 pr-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)]/70"
+                          >
+                            Leads
+                          </th>
+                          <th
+                            scope="col"
+                            className="py-2 pr-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)]/70"
+                          >
+                            Converted
+                          </th>
+                          <th
+                            scope="col"
+                            className="py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)]/70"
+                          >
+                            Rate
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-[var(--tx2)]">
+                        {metrics.speedVsConversion.map((row) => (
+                          <tr
+                            key={row.label}
+                            className="border-b border-[var(--brd)]/[0.35] last:border-b-0"
+                          >
+                            <td className="py-2 pr-3">{row.label}</td>
+                            <td className="py-2 pr-3 tabular-nums">
+                              {row.leads}
+                            </td>
+                            <td className="py-2 pr-3 tabular-nums">
+                              {row.converted}
+                            </td>
+                            <td className="py-2 tabular-nums">{row.rate}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
 
-          <section className="mb-8">
-            <h2 className="text-[11px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)] mb-3">
-              By source
-            </h2>
-            <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 overflow-x-auto">
-              <table className="w-full text-[11px] text-left min-w-[420px]">
+          <section aria-label="Leads by source">
+            <h2 className={sectionTitle}>By source</h2>
+            <div className="overflow-x-auto rounded-2xl bg-[var(--card)] shadow-[0_1px_0_rgba(0,0,0,0.04)] ring-1 ring-[var(--brd)]/40 dark:shadow-none dark:ring-[var(--brd)]/50">
+              <table className="w-full min-w-[420px] border-collapse text-left text-[12px]">
                 <thead>
-                  <tr className="text-[var(--tx3)] border-b border-[var(--brd)]">
-                    <th className="py-1.5 pr-2">Source</th>
-                    <th className="py-1.5 pr-2">Leads</th>
-                    <th className="py-1.5 pr-2">Converted</th>
-                    <th className="py-1.5 pr-2">Rate</th>
-                    <th className="py-1.5">Avg value</th>
+                  <tr className="border-b border-[var(--brd)]/50">
+                    <th
+                      scope="col"
+                      className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)]/70"
+                    >
+                      Source
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)]/70"
+                    >
+                      Leads
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)]/70"
+                    >
+                      Converted
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)]/70"
+                    >
+                      Rate
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)]/70"
+                    >
+                      Avg value
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="text-[var(--tx2)]">
                   {Object.entries(metrics.bySource)
                     .sort((a, b) => b[1].count - a[1].count)
                     .map(([src, v]) => (
-                      <tr key={src} className="border-b border-[var(--brd)]/60">
-                        <td className="py-1.5 pr-2">
+                      <tr
+                        key={src}
+                        className="border-b border-[var(--brd)]/[0.35] transition-colors last:border-b-0 hover:bg-[var(--hover)]/80"
+                      >
+                        <td className="px-4 py-3">
                           {LEAD_SOURCE_LABELS[src] || src}
                         </td>
-                        <td className="py-1.5 pr-2 tabular-nums">{v.count}</td>
-                        <td className="py-1.5 pr-2 tabular-nums">
+                        <td className="px-4 py-3 tabular-nums">{v.count}</td>
+                        <td className="px-4 py-3 tabular-nums">
                           {v.converted}
                         </td>
-                        <td className="py-1.5 pr-2 tabular-nums">
+                        <td className="px-4 py-3 tabular-nums">
                           {v.count
                             ? Math.round((v.converted / v.count) * 100)
                             : 0}
                           %
                         </td>
-                        <td className="py-1.5 tabular-nums">
+                        <td className="px-4 py-3 tabular-nums">
                           {v.count
                             ? `$${Math.round(v.valueSum / v.count).toLocaleString()}`
                             : "—"}
@@ -751,133 +817,154 @@ export default function LeadsHubClient({
             </div>
           </section>
 
-          <section>
-            <h2 className="text-[11px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)] mb-3">
-              Recent activity
-            </h2>
-            <ul className="space-y-2 text-[12px] text-[var(--tx2)]">
-              {(metrics.recentActivity || []).slice(0, 12).map((a) => (
-                <li
-                  key={a.id}
-                  className="flex flex-wrap gap-x-2 border-b border-[var(--brd)]/40 pb-2"
-                >
-                  <Link
-                    href={`/admin/leads/${a.lead_id}`}
-                    className="font-semibold text-[var(--tx)] hover:underline"
+          <section aria-label="Recent lead activity">
+            <h2 className={sectionTitle}>Recent activity</h2>
+            {(metrics.recentActivity || []).length === 0 ? (
+              <p className="py-10 text-center text-[14px] text-[var(--tx3)]/80">
+                No recent activity.
+              </p>
+            ) : (
+              <ul className="divide-y divide-[var(--brd)]/40 text-[13px] text-[var(--tx2)]">
+                {(metrics.recentActivity || []).slice(0, 12).map((a) => (
+                  <li
+                    key={a.id}
+                    className="flex flex-wrap items-baseline gap-x-2 gap-y-1 py-3 first:pt-0"
                   >
-                    {a.lead_number || "Lead"}
-                  </Link>
-                  <span>
-                    — {LEAD_ACTIVITY_LABELS[a.activity_type] || a.activity_type}
-                  </span>
-                  <span className="text-[var(--tx3)]">
-                    ({new Date(a.created_at).toLocaleString()})
-                  </span>
-                </li>
-              ))}
-            </ul>
+                    <Link
+                      href={`/admin/leads/${a.lead_id}`}
+                      className="font-semibold text-[#2C3E2D] underline-offset-2 hover:underline dark:text-[var(--tx2)]"
+                    >
+                      {a.lead_number || "Lead"}
+                    </Link>
+                    <span className="text-[var(--tx3)]">·</span>
+                    <span>
+                      {LEAD_ACTIVITY_LABELS[a.activity_type] ||
+                        a.activity_type}
+                    </span>
+                    <span className="text-[12px] text-[var(--tx3)]">
+                      {new Date(a.created_at).toLocaleString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
-        </>
+        </div>
       )}
 
       {(mode === "all" || mode === "mine") && (
-        <section>
-          <h2 className="text-[11px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)] mb-3">
+        <section aria-label={mode === "mine" ? "Your leads" : "All leads"}>
+          <h2 className={sectionTitle}>
             {mode === "mine" ? "Assigned to you" : "All leads"}
           </h2>
-          <div className="rounded-xl border border-[var(--brd)] overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-[11px] text-left min-w-[640px]">
-                <thead className="bg-[var(--gdim)]/50 text-[var(--tx3)]">
-                  <tr>
-                    <th className="px-3 py-2 font-semibold">#</th>
-                    <th className="px-3 py-2 font-semibold">Contact</th>
-                    <th className="px-3 py-2 font-semibold">Source</th>
-                    <th className="px-3 py-2 font-semibold">Path</th>
-                    <th className="px-3 py-2 font-semibold">Status</th>
-                    <th className="px-3 py-2 font-semibold">Created</th>
-                    <th className="px-3 py-2 font-semibold whitespace-nowrap">
-                      5 min SLA
-                    </th>
-                    <th className="px-3 py-2 font-semibold" />
-                  </tr>
-                </thead>
-                <tbody className="text-[var(--tx2)]">
-                  {list.map((lead) => (
-                    <tr
-                      key={lead.id}
-                      className="border-t border-[var(--brd)]/60 hover:bg-[var(--gdim)]/30"
-                    >
-                      <td className="px-3 py-2 font-mono font-semibold text-[var(--tx)]">
-                        {lead.lead_number}
-                      </td>
-                      <td className="px-3 py-2">
-                        {[lead.first_name, lead.last_name]
-                          .filter(Boolean)
-                          .join(" ") || "—"}
-                        <div className="text-[10px] text-[var(--tx3)]">
-                          {lead.phone || lead.email || ""}
+          <div className="overflow-x-auto rounded-2xl bg-[var(--card)] shadow-[0_1px_0_rgba(0,0,0,0.04)] ring-1 ring-[var(--brd)]/40 dark:shadow-none dark:ring-[var(--brd)]/50">
+            <table className="w-full min-w-[640px] border-collapse text-left text-[12px]">
+              <thead>
+                <tr className="border-b border-[var(--brd)]/50 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)]/70">
+                  <th scope="col" className="px-4 py-3.5">
+                    #
+                  </th>
+                  <th scope="col" className="px-4 py-3.5">
+                    Contact
+                  </th>
+                  <th scope="col" className="px-4 py-3.5">
+                    Source
+                  </th>
+                  <th scope="col" className="px-4 py-3.5">
+                    Path
+                  </th>
+                  <th scope="col" className="px-4 py-3.5">
+                    Status
+                  </th>
+                  <th scope="col" className="px-4 py-3.5">
+                    Created
+                  </th>
+                  <th scope="col" className="whitespace-nowrap px-4 py-3.5">
+                    5 min SLA
+                  </th>
+                  <th scope="col" className="px-4 py-3.5" />
+                </tr>
+              </thead>
+              <tbody className="text-[var(--tx2)]">
+                {list.map((lead) => (
+                  <tr
+                    key={lead.id}
+                    className="border-b border-[var(--brd)]/[0.35] transition-colors last:border-b-0 hover:bg-[var(--hover)]/80"
+                  >
+                    <td className="px-4 py-3 font-mono text-[0.8125rem] font-semibold text-[#2C3E2D] dark:text-[var(--tx2)]">
+                      {lead.lead_number}
+                    </td>
+                    <td className="px-4 py-3">
+                      {[lead.first_name, lead.last_name]
+                        .filter(Boolean)
+                        .join(" ") || "—"}
+                      <div className="text-[10px] text-[var(--tx3)]">
+                        {lead.phone || lead.email || ""}
+                      </div>
+                      {(lead.service_type === "pm_inquiry" ||
+                        lead.detected_service_type === "pm_inquiry") && (
+                        <div className="mt-1">
+                          <span className="inline-flex rounded border border-amber-400/25 bg-amber-400/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-600">
+                            {DETECTED_SERVICE_TYPE_LABELS.pm_inquiry}
+                          </span>
                         </div>
-                        {(lead.service_type === "pm_inquiry" ||
-                          lead.detected_service_type === "pm_inquiry") && (
-                          <div className="mt-1">
-                            <span className="inline-flex rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide bg-amber-400/15 text-amber-600 border border-amber-400/25">
-                              {DETECTED_SERVICE_TYPE_LABELS.pm_inquiry}
-                            </span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-3 py-2">
-                        {sourceLabel(lead.source, lead.source_detail)}
-                      </td>
-                      <td className="px-3 py-2">
-                        <span className="inline-flex items-center gap-1">
-                          {(() => {
-                            const p = lead.completeness_path || "manual_review";
-                            const { Icon: Ic, className: cl } = pathIcon(p);
-                            return (
-                              <>
-                                <Ic
-                                  className={`w-3.5 h-3.5 ${cl}`}
-                                  weight="fill"
-                                  aria-hidden
-                                />
-                                <span className="text-[10px]">
-                                  {COMPLETENESS_PATH_LABELS[p] || p}
-                                </span>
-                              </>
-                            );
-                          })()}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2">
-                        {LEAD_STATUS_LABELS[lead.status] || lead.status}
-                      </td>
-                      <td className="px-3 py-2 tabular-nums text-[var(--tx3)]">
-                        {new Date(lead.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <LeadResponseSlaCountdown
-                          compact
-                          createdAt={lead.created_at}
-                          responseSlaTargetAt={lead.response_sla_target_at}
-                          firstResponseAt={lead.first_response_at}
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {sourceLabel(lead.source, lead.source_detail)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center gap-1">
+                        {(() => {
+                          const p = lead.completeness_path || "manual_review";
+                          const { Icon: Ic, className: cl } = pathIcon(p);
+                          return (
+                            <>
+                              <Ic
+                                className={`h-3.5 w-3.5 ${cl}`}
+                                weight="fill"
+                                aria-hidden
+                              />
+                              <span className="text-[10px]">
+                                {COMPLETENESS_PATH_LABELS[p] || p}
+                              </span>
+                            </>
+                          );
+                        })()}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {LEAD_STATUS_LABELS[lead.status] || lead.status}
+                    </td>
+                    <td className="px-4 py-3 tabular-nums text-[var(--tx3)]">
+                      {new Date(lead.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3">
+                      <LeadResponseSlaCountdown
+                        compact
+                        createdAt={lead.created_at}
+                        responseSlaTargetAt={lead.response_sla_target_at}
+                        firstResponseAt={lead.first_response_at}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/admin/leads/${lead.id}`}
+                        className="inline-flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[#2C3E2D] underline-offset-2 hover:underline dark:text-[var(--tx2)]"
+                      >
+                        Open
+                        <CaretRight
+                          size={12}
+                          weight="bold"
+                          className="opacity-70"
+                          aria-hidden
                         />
-                      </td>
-                      <td className="px-3 py-2">
-                        <Link
-                          href={`/admin/leads/${lead.id}`}
-                          className="inline-flex items-center gap-0.5 text-[var(--tx)] font-semibold hover:underline"
-                        >
-                          Open
-                          <CaretRight size={12} weight="bold" className="opacity-70" aria-hidden />
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       )}

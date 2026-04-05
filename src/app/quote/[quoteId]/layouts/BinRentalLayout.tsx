@@ -9,6 +9,7 @@ import {
   fmtPrice,
 } from "../quote-shared";
 import { abbreviateAddressRegions } from "@/lib/address-abbrev";
+import { formatPlatformDisplay } from "@/lib/date-format";
 
 interface Props {
   quote: Quote;
@@ -18,12 +19,11 @@ interface Props {
 
 function fmtLong(d: string | null | undefined): string {
   if (!d) return "To be confirmed";
-  return new Date(d + "T00:00:00").toLocaleDateString("en-CA", {
+  return formatPlatformDisplay(new Date(d + "T00:00:00"), {
     weekday: "long",
     month: "long",
     day: "numeric",
-    year: "numeric",
-  });
+  }, "To be confirmed");
 }
 
 export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) {
@@ -58,7 +58,7 @@ export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) 
         </h2>
         <p className="text-[11px]" style={{ color: `${FOREST}65` }}>
           {quote.expires_at
-            ? `Valid through ${new Date(quote.expires_at).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}`
+            ? `Valid through ${formatPlatformDisplay(quote.expires_at, { month: "short", day: "numeric" })}`
             : "Valid 7 days"}
         </p>
       </div>

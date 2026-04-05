@@ -86,8 +86,8 @@ export default function InvoicesTable({
           <div>
             <span className="dt-text-id">{r.invoice_number}</span>
             <span
-              className={`ml-2 inline-flex items-center dt-text-meta px-1.5 py-0.5 rounded ${
-                isMove ? "bg-blue-50 text-blue-600" : "bg-[var(--gold)]/10 text-[var(--gold)]"
+              className={`ml-2 inline-flex items-center dt-badge ${
+                isMove ? "text-blue-600" : "text-[var(--gold)]"
               }`}
             >
               {typeLabel}

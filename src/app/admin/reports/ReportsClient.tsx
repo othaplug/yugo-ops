@@ -4,11 +4,6 @@ import { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import KpiCard from "@/components/ui/KpiCard";
 import CrewReportsTab from "./CrewReportsTab";
-import {
-  ChartBar,
-  ClipboardText,
-  GearSix,
-} from "@phosphor-icons/react";
 
 /* ── Shared types ── */
 
@@ -88,9 +83,9 @@ const SERVICE_LABELS: Record<string, string> = {
 };
 
 const TABS = [
-  { key: "crew", label: "Crew Reports", icon: ClipboardText },
-  { key: "financial", label: "Financial", icon: ChartBar },
-  { key: "operations", label: "Operations", icon: GearSix },
+  { key: "crew", label: "Crew Reports" },
+  { key: "financial", label: "Financial" },
+  { key: "operations", label: "Operations" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -324,23 +319,21 @@ export default function ReportsClient({
       {/* ── Tab bar ── */}
       <div className="flex items-center gap-1 border-b border-[var(--brd)] mb-6">
         {TABS.map((tab) => {
-          const Icon = tab.icon;
           const isActive = activeTab === tab.key;
           return (
             <button
               key={tab.key}
               type="button"
               onClick={() => switchTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-3 text-[13px] font-semibold transition-colors relative ${
+              className={`flex items-center px-4 py-3 text-[13px] font-semibold transition-colors relative ${
                 isActive
                   ? "text-[var(--gold)]"
                   : "text-[var(--tx3)] hover:text-[var(--tx)]"
               }`}
             >
-              <Icon size={16} weight={isActive ? "fill" : "regular"} />
               {tab.label}
               {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--gold)] rounded-t-full" />
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--admin-primary-fill)] rounded-t-full" />
               )}
             </button>
           );
@@ -394,7 +387,7 @@ export default function ReportsClient({
 
           {/* Revenue by service type */}
           <div>
-            <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-4">
+            <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82 mb-4">
               Revenue by Service Type
             </h2>
             {revenueByServiceType.length === 0 ? (
@@ -414,7 +407,7 @@ export default function ReportsClient({
                     </div>
                     <div className="h-2 rounded-full bg-[var(--brd)]/40 overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-[var(--gold)] transition-all duration-500"
+                        className="h-full rounded-full bg-[var(--admin-primary-fill)] transition-all duration-500"
                         style={{ width: `${Math.max(2, (item.total / maxServiceRevenue) * 100)}%` }}
                       />
                     </div>
@@ -426,7 +419,7 @@ export default function ReportsClient({
 
           {/* Monthly revenue table */}
           <div>
-            <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-4">
+            <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82 mb-4">
               Monthly Revenue (Last 6 Months)
             </h2>
             {monthlyRevenue.length === 0 ? (
@@ -436,11 +429,11 @@ export default function ReportsClient({
                 <table className="w-full text-[13px]">
                   <thead>
                     <tr className="bg-[var(--bg)]">
-                      <th className="text-left px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">Month</th>
-                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">Moves</th>
-                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">Deliveries</th>
-                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">Total</th>
-                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">Jobs</th>
+                      <th className="text-left px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Month</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Moves</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Deliveries</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Total</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Jobs</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -502,7 +495,7 @@ export default function ReportsClient({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Move status breakdown */}
             <div>
-              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-4">
+              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82 mb-4">
                 Move Status Breakdown
               </h2>
               {statusBreakdown.length === 0 ? (
@@ -529,7 +522,7 @@ export default function ReportsClient({
                                 : item.status === "cancelled" || item.status === "disputed"
                                   ? "bg-[var(--red)]"
                                   : item.status === "in_progress" || item.status === "en_route" || item.status === "en_route_to_pickup"
-                                    ? "bg-[var(--gold)]"
+                                    ? "bg-[var(--admin-primary-fill)]"
                                     : item.status === "invoiced" || item.status === "overdue" || item.status === "unpaid"
                                       ? "bg-amber-500"
                                       : "bg-[var(--tx3)]/40"
@@ -546,7 +539,7 @@ export default function ReportsClient({
 
             {/* Tracking sessions by team */}
             <div>
-              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-4">
+              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82 mb-4">
                 Completed Sessions by Team
               </h2>
               {sessionsByTeam.size === 0 ? (
@@ -571,7 +564,7 @@ export default function ReportsClient({
                           </div>
                           <div className="h-1.5 rounded-full bg-[var(--brd)]/40 overflow-hidden">
                             <div
-                              className="h-full rounded-full bg-[var(--gold)] transition-all duration-500"
+                              className="h-full rounded-full bg-[var(--admin-primary-fill)] transition-all duration-500"
                               style={{ width: `${Math.max(2, pct)}%` }}
                             />
                           </div>
@@ -585,26 +578,26 @@ export default function ReportsClient({
 
           {/* Session performance */}
           <div>
-            <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-4">
+            <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82 mb-4">
               Session Performance
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total Sessions</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Total Sessions</div>
                 <div className="text-[22px] font-bold font-heading text-[var(--tx)]">{trackingSessions.length}</div>
               </div>
               <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Completed</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Completed</div>
                 <div className="text-[22px] font-bold font-heading text-[var(--grn)]">{completedSessions.length}</div>
               </div>
               <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Active</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Active</div>
                 <div className="text-[22px] font-bold font-heading text-[var(--gold)]">
                   {trackingSessions.filter((s) => s.status === "active" || s.status === "in_progress").length}
                 </div>
               </div>
               <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Completion Rate</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Completion Rate</div>
                 <div className="text-[22px] font-bold font-heading text-[var(--tx)]">
                   {trackingSessions.length > 0 ? `${Math.round((completedSessions.length / trackingSessions.length) * 100)}%` : "-"}
                 </div>

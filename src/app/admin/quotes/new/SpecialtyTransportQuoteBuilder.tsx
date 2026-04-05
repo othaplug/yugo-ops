@@ -698,7 +698,7 @@ export default function SpecialtyTransportQuoteBuilder({
             type="button"
             disabled={busy}
             onClick={() => void submit()}
-            className="px-4 py-2 rounded-lg text-[12px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+            className="px-4 py-2 rounded-lg text-[12px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
           >
             {busy ? "Saving…" : "Create draft quote"}
           </button>

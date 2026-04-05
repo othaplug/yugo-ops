@@ -145,7 +145,7 @@ export default function ForecastClient() {
       {/* ──── HEADER ──── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Finance</p>
           <h1 className="admin-page-hero text-[var(--tx)]">Revenue Forecast</h1>
           <p className="text-[11px] text-[var(--tx3)] mt-2">Pipeline, capacity &amp; revenue projections</p>
         </div>
@@ -156,7 +156,7 @@ export default function ForecastClient() {
               onClick={() => setRange(r.id)}
               className={`text-[10px] px-2.5 py-1 rounded-md font-medium transition-colors ${
                 range === r.id
-                  ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+                  ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
                   : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)]"
               }`}
             >
@@ -285,14 +285,14 @@ export default function ForecastClient() {
                       const item = payload?.[0]?.payload as DailyRevenue | undefined;
                       return item ? `${item.dayLabel}, ${item.label}${item.isToday ? " (Today)" : ""}` : "";
                     }}
-                    cursor={{ fill: "rgba(201,169,98,0.06)" }}
+                    cursor={{ fill: "rgba(255,255,255,0.08)" }}
                   />
                   <Bar dataKey="residential" stackId="a" fill="#2C3E2D" name="residential" />
                   <Bar dataKey="b2b" stackId="a" fill="#2D6A4F" name="b2b" />
                   <Bar
                     dataKey="projected"
                     stackId="a"
-                    fill="rgba(201,169,98,0.3)"
+                    fill="rgba(255,255,255,0.35)"
                     radius={[2, 2, 0, 0]}
                     name="projected"
                   />
@@ -357,7 +357,7 @@ export default function ForecastClient() {
               <div className="text-[11px] font-bold text-[var(--tx)]">
                 {s.month}
                 {s.isCurrent && (
-                  <span className="ml-1.5 text-[10px] bg-[var(--gold)]/20 text-[var(--gold)] px-1.5 py-0.5 rounded-full font-semibold">
+                  <span className="ml-1.5 dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">
                     NOW
                   </span>
                 )}
@@ -490,7 +490,7 @@ function PipelineCard({
 }) {
   return (
     <div className={`rounded-xl border p-4 ${bgClass}`}>
-      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-1">{label}</div>
+      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82 mb-1">{label}</div>
       <div className={`text-2xl font-heading font-bold ${color}`}>{formatCurrency(total)}</div>
       {children}
     </div>
@@ -503,7 +503,7 @@ function CapacityRow({ day }: { day: CapacityDay }) {
   const barColor = isFull
     ? "bg-red-500"
     : day.pct >= 70
-      ? "bg-[var(--gold)]"
+      ? "bg-[var(--admin-primary-fill)]"
       : day.pct >= 30
         ? "bg-emerald-500"
         : day.pct > 0

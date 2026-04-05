@@ -79,7 +79,7 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
       ) : (
         <>
           <div className="flex flex-wrap gap-2 mb-2">
-            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] cursor-pointer disabled:opacity-50 transition-colors">
+            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] cursor-pointer disabled:opacity-50 transition-colors">
               <Plus className="w-[11px] h-[11px]" />
               {uploading ? "Uploading…" : "Add photo"}
               <input
@@ -109,8 +109,10 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
                       <Trash2 className="w-[11px] h-[11px]" />
                     </button>
                     {isClient && (
-                      <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[var(--gold)]/90 text-[var(--btn-text-on-accent)]">
-                        Client
+                      <div className="absolute top-1 left-1">
+                        <span className="dt-badge tracking-[0.04em] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+                          Client
+                        </span>
                       </div>
                     )}
                     {p.caption && (

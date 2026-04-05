@@ -12,6 +12,7 @@ import {
   CircleNotch,
 } from "@phosphor-icons/react";
 import { useToast } from "@/app/admin/components/Toast";
+import { formatPlatformDisplay } from "@/lib/date-format";
 import { ordinalDay } from "@/lib/ordinal";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -71,11 +72,7 @@ function fmt(n: number) {
 }
 
 function fmtDate(d: string) {
-  return new Date(d + "T12:00:00").toLocaleDateString("en-CA", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return formatPlatformDisplay(new Date(d + "T12:00:00"), { month: "short", day: "numeric" });
 }
 
 function periodLabel(s: Statement) {
@@ -179,19 +176,19 @@ export default function PartnerBillingAdmin({
           </h1>
           <div className="flex items-center gap-4 mt-1.5 flex-wrap">
             <span className="text-[12px] text-[var(--tx3)]">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]/50 mr-1">Terms</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mr-1">Terms</span>
               {TERMS_LABELS[org.payment_terms ?? "net_30"] ?? org.payment_terms}
             </span>
             {org.billing_anchor_day && org.payment_terms !== "due_on_receipt" && org.payment_terms !== "due_on_delivery" && (
               <span className="text-[12px] text-[var(--tx3)]">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]/50 mr-1">Cycle</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mr-1">Cycle</span>
                 {org.payment_terms === "net_15"
                   ? "1st & 16th of month"
                   : <>{ordinalDay(org.billing_anchor_day)} of month</>}
               </span>
             )}
             <span className="text-[12px] text-[var(--tx3)]">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]/50 mr-1">Billing email</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mr-1">Billing email</span>
               {org.billing_email || org.email}
             </span>
           </div>
@@ -238,7 +235,7 @@ export default function PartnerBillingAdmin({
               onClick={generateStatement}
               disabled={generating}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold text-white transition-all disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
+              style={{ background: "linear-gradient(135deg, #2C3E2D, #5C1A33)" }}
             >
               {generating ? <CircleNotch size={14} className="animate-spin" /> : <Invoice size={14} />}
               {generating ? "Generating…" : "Generate"}
@@ -338,8 +335,8 @@ export default function PartnerBillingAdmin({
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
-                          style={{ color: cfg.color, background: cfg.bg }}
+                          className="dt-badge tracking-[0.04em]"
+                          style={{ color: cfg.color }}
                         >
                           {cfg.label}
                         </span>

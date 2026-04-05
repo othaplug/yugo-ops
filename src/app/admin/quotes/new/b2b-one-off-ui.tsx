@@ -339,14 +339,11 @@ export function B2bPill({
       type="button"
       title={title}
       onClick={onClick}
-      className="px-4 py-2 rounded-full text-[13px] font-medium transition-colors"
-      style={{
-        border: "1px solid var(--brd)",
-        backgroundColor: selected ? "var(--gold)" : "transparent",
-        color: selected
-          ? "var(--btn-text-on-accent)"
-          : "var(--yugo-primary-text, var(--tx))",
-      }}
+      className={`px-4 py-2 rounded-md text-[13px] font-medium transition-colors border ${
+        selected
+          ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+          : "bg-transparent text-[var(--tx)] border-[var(--brd)] hover:bg-[var(--bg2)]"
+      }`}
     >
       {children}
     </button>
@@ -399,8 +396,6 @@ export function B2bItemRowView(props: {
   suggestions: string[];
   wine: string;
   leather: string;
-  rose: string;
-  green: string;
 }) {
   const {
     idx,
@@ -415,8 +410,6 @@ export function B2bItemRowView(props: {
     suggestions,
     wine,
     leather,
-    rose,
-    green,
   } = props;
 
   const handlingOptions: { key: string; label: string }[] = [
@@ -677,21 +670,11 @@ export function B2bItemRowView(props: {
           }}
         />
         {row.bundled ? (
-          <span
-            className="text-[10px] font-bold uppercase px-2 py-0.5 rounded text-white"
-            style={{ backgroundColor: green }}
-          >
-            Bundled
-          </span>
+          <span className="dt-badge text-[var(--grn)]">Bundled</span>
         ) : null}
         {(row.actual_weight_lbs ?? row.weight_lbs ?? 0) > 300 ||
         (tier?.crewImpact ?? 0) >= 1 ? (
-          <span
-            className="text-[10px] font-bold uppercase px-2 py-0.5 rounded text-white"
-            style={{ backgroundColor: rose }}
-          >
-            Heavy Item
-          </span>
+          <span className="dt-badge text-red-400">Heavy Item</span>
         ) : null}
       </div>
 

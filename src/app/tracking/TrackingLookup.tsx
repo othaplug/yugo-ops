@@ -64,7 +64,7 @@ export default function TrackingLookup({
         {/* Logo, no card, no border */}
         <div className="mb-8">
           <Link href="/">
-            <YugoLogo size={30} variant="gold" />
+            <YugoLogo size={30} variant="wine" />
           </Link>
         </div>
 

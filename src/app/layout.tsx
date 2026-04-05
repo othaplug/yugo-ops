@@ -2,6 +2,13 @@ import "./globals.css";
 import { ToastProvider } from "@/app/admin/components/Toast";
 import OfflineBanner from "@/components/ui/OfflineBanner";
 import PhosphorProvider from "@/components/ui/PhosphorProvider";
+import { getConfig } from "@/lib/config";
+import { DISPLAY_DATE_LOCALE_CONFIG_KEY } from "@/lib/display-date-locale";
+import {
+  DISPLAY_DATE_FORMAT_CONFIG_KEY,
+  normalizeDisplayDateFormatPreset,
+  resolveStoredDateFormat,
+} from "@/lib/display-date-format";
 
 export const metadata = {
   title: { default: "Yugo", template: "%s | Yugo" },
@@ -25,14 +32,25 @@ export const viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const formatRaw = await getConfig(DISPLAY_DATE_FORMAT_CONFIG_KEY, "");
+  const legacyLocaleRaw = await getConfig(DISPLAY_DATE_LOCALE_CONFIG_KEY, "en-US");
+  const displayDateFormat = normalizeDisplayDateFormatPreset(
+    resolveStoredDateFormat(formatRaw, legacyLocaleRaw),
+  );
+  const formatJson = JSON.stringify(displayDateFormat);
   return (
     <html lang="en">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{window.__YUGO_DISPLAY_DATE_FORMAT__=${formatJson};}catch(e){}`,
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"

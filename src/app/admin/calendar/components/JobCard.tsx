@@ -3,8 +3,9 @@
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { formatTime12 } from "@/lib/calendar/types";
 import {
-  CALENDAR_PILL_TEXT,
-  CALENDAR_PILL_TEXT_MUTED,
+  calendarPillForeground,
+  calendarPillTagStyle,
+  calendarPillUsesLightInk,
   jobPillCompactStyle,
   jobPillSurfaceStyle,
   pillStatusDotColor,
@@ -23,6 +24,9 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
   const isCompleted = event.calendarStatus === "completed";
   const isCancelled = event.calendarStatus === "cancelled";
   const isInProgress = event.calendarStatus === "in_progress";
+  const lightInk = calendarPillUsesLightInk(event);
+  const fg = calendarPillForeground(event);
+  const tagStyle = calendarPillTagStyle(event);
 
   const timeStr = event.start
     ? event.end
@@ -33,6 +37,8 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
   const compactStyle = jobPillCompactStyle(event);
   const surfaceStyle = jobPillSurfaceStyle(event);
 
+  const dotRing = lightInk ? "ring-white/15" : "ring-black/10";
+
   if (compact) {
     return (
       <button
@@ -40,23 +46,23 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
         onClick={() => onClick?.(event)}
         draggable={!!onDragStart}
         onDragStart={() => onDragStart?.(event)}
-        className={`w-full text-left flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] truncate transition-all cursor-pointer hover:brightness-[1.02] active:scale-[0.99] shadow-sm ${
+        className={`w-full text-left flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] truncate transition-all cursor-pointer hover:brightness-[1.02] active:scale-[0.99] ${
           isCompleted ? "opacity-80" : ""
         } ${isCancelled ? "line-through" : ""}`}
         style={compactStyle}
       >
         <span
-          className={`w-1.5 h-1.5 rounded-full shrink-0 ring-1 ring-black/10 ${isInProgress ? "animate-pulse" : ""}`}
-          style={{ backgroundColor: isCancelled ? "rgba(248,250,252,0.8)" : dotColor }}
+          className={`w-1.5 h-1.5 rounded-full shrink-0 ring-1 ${dotRing} ${isInProgress ? "animate-pulse" : ""}`}
+          style={{ backgroundColor: isCancelled ? "rgba(249,237,228,0.8)" : dotColor }}
         />
         <span
           className="truncate font-semibold"
-          style={{ color: isCancelled ? "inherit" : CALENDAR_PILL_TEXT }}
+          style={{ color: isCancelled ? "inherit" : fg.main }}
         >
           {timeStr && (
             <span
               className="mr-1 font-medium"
-              style={{ color: isCancelled ? "rgba(248,250,252,0.75)" : CALENDAR_PILL_TEXT_MUTED }}
+              style={{ color: isCancelled ? "rgba(249,237,228,0.75)" : fg.muted }}
             >
               {timeStr}
             </span>
@@ -73,52 +79,56 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
       onClick={() => onClick?.(event)}
       draggable={!!onDragStart}
       onDragStart={() => onDragStart?.(event)}
-      className={`w-full text-left p-2.5 rounded-lg transition-all cursor-pointer hover:brightness-[1.02] active:scale-[0.99] shadow-sm ${
+      className={`w-full text-left p-2.5 rounded-lg transition-all cursor-pointer hover:brightness-[1.02] active:scale-[0.99] ${
         isCompleted ? "opacity-75" : ""
       } ${isCancelled ? "opacity-90" : ""}`}
       style={surfaceStyle}
     >
       <div className="flex items-center gap-1.5 mb-1">
         <span
-          className={`w-2 h-2 rounded-full shrink-0 ring-1 ring-black/10 ${isInProgress ? "animate-pulse" : ""}`}
-          style={{ backgroundColor: isCancelled ? "rgba(248,250,252,0.85)" : dotColor }}
+          className={`w-2 h-2 rounded-full shrink-0 ring-1 ${dotRing} ${isInProgress ? "animate-pulse" : ""}`}
+          style={{ backgroundColor: isCancelled ? "rgba(249,237,228,0.85)" : dotColor }}
         />
         {timeStr && (
           <span
             className="text-[10px] font-semibold"
-            style={{ color: isCancelled ? "rgba(248,250,252,0.85)" : CALENDAR_PILL_TEXT_MUTED }}
+            style={{ color: isCancelled ? "rgba(249,237,228,0.85)" : fg.muted }}
           >
             {timeStr}
           </span>
         )}
-        <span className="text-[8px] opacity-50" style={{ color: isCancelled ? "inherit" : CALENDAR_PILL_TEXT }}>
+        <span className="text-[8px] opacity-50" style={{ color: isCancelled ? "inherit" : fg.main }}>
           ·
         </span>
         <span
           className={`text-[12px] font-bold truncate flex-1 min-w-0 ${isCancelled ? "line-through" : ""}`}
-          style={{ color: isCancelled ? "inherit" : CALENDAR_PILL_TEXT }}
+          style={{ color: isCancelled ? "inherit" : fg.main }}
         >
           {event.name}
         </span>
         {event.isRecurring && (
-          <span className="ml-auto shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-black/15 text-slate-900">
+          <span className="ml-auto shrink-0 text-[8px] font-bold uppercase" style={tagStyle}>
             RECURRING
           </span>
         )}
       </div>
       <div
         className="flex items-center gap-1 text-[10px] truncate"
-        style={{ color: isCancelled ? "rgba(248,250,252,0.8)" : CALENDAR_PILL_TEXT_MUTED }}
+        style={{ color: isCancelled ? "rgba(249,237,228,0.8)" : fg.muted }}
       >
         <span className="truncate">{toTitleCase(event.description)}</span>
         {event.eventPhase && (
-          <span className="shrink-0 text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-black/15 text-slate-900">
-            {event.eventPhase === "delivery" ? "Deliver" : event.eventPhase === "return" ? "Return" : event.eventPhase}
+          <span className="shrink-0 font-bold uppercase" style={tagStyle}>
+            {event.eventPhase === "delivery"
+              ? "Deliver"
+              : event.eventPhase === "return"
+                ? "Return"
+                : event.eventPhase}
           </span>
         )}
         {event.crewName && (
           <>
-            <span style={{ color: isCancelled ? "inherit" : CALENDAR_PILL_TEXT }}>·</span>
+            <span style={{ color: isCancelled ? "inherit" : fg.main }}>·</span>
             <span className="truncate">{event.crewName}</span>
           </>
         )}

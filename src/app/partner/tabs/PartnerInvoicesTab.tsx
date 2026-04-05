@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MagnifyingGlass, DownloadSimple, ArrowSquareOut } from "@phosphor-icons/react";
+import { formatPlatformDisplay, formatMoveDate } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
 import { getDisplayLabel } from "@/lib/displayLabels";
 
@@ -19,10 +20,10 @@ interface Invoice {
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  paid: "bg-green-50 text-green-700",
-  sent: "bg-blue-50 text-blue-700",
-  overdue: "bg-red-50 text-red-700",
-  draft: "bg-gray-50 text-gray-600",
+  paid: "text-green-700",
+  sent: "text-blue-700",
+  overdue: "text-red-700",
+  draft: "text-gray-600",
 };
 
 export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }) {
@@ -51,7 +52,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
       rows.push([
         inv.invoice_number || "",
         inv.client_name || "",
-        inv.created_at ? new Date(inv.created_at).toLocaleDateString() : "",
+        inv.created_at ? formatPlatformDisplay(inv.created_at, { month: "short", day: "numeric" }, "") : "",
         inv.due_date || "",
         String(inv.amount || 0),
         inv.status || "",
@@ -145,7 +146,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
             </thead>
             <tbody>
               {filtered.map((inv) => {
-                const badgeClass = STATUS_BADGE[(inv.status || "").toLowerCase()] || "bg-gray-50 text-gray-600";
+                const badgeClass = STATUS_BADGE[(inv.status || "").toLowerCase()] || "text-gray-600";
                 return (
                   <tr key={inv.id} className="border-b border-[var(--brd)]/30 last:border-0 hover:bg-[var(--bg)]/50 transition-colors">
                     <td className="px-4 py-3">
@@ -157,16 +158,16 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
                       )}
                     </td>
                     <td className="px-4 py-3 text-[12px] text-[var(--tx3)] hidden sm:table-cell">
-                      {inv.created_at ? new Date(inv.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "-"}
+                      {inv.created_at ? formatPlatformDisplay(inv.created_at, { month: "short", day: "numeric" }, "-") : "-"}
                     </td>
                     <td className="px-4 py-3 text-[12px] text-[var(--tx3)]">
-                      {inv.due_date ? new Date(inv.due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "-"}
+                      {inv.due_date ? formatMoveDate(inv.due_date) : "-"}
                     </td>
                     <td className="px-4 py-3 text-[13px] font-semibold text-[var(--tx)] text-right">
                       {formatCurrency(inv.amount)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase ${badgeClass}`}>
+                      <span className={`text-[10px] font-bold uppercase tracking-[0.04em] ${badgeClass}`}>
                         {getDisplayLabel(inv.status, "payment")}
                       </span>
                     </td>

@@ -45,8 +45,8 @@ const POLYLINE_HINT_LOOKBACK_SEGS = 6;
 const POLYLINE_REACQUIRE_PERP_M = 110;
 
 const GOLD = "#2C3E2D";
-/** Clear / low traffic — high-contrast on dark map (Mapbox dark-v11). */
-const ROUTE_CLEAR = "#5EEAD4";
+/** Clear / low traffic — readable on Mapbox light basemap. */
+const ROUTE_CLEAR = "#0D9488";
 const TRAFFIC_MODERATE = "#FCD34D";
 const TRAFFIC_HEAVY = "#FB923C";
 const TRAFFIC_SEVERE = "#F87171";
@@ -59,7 +59,7 @@ const EMPTY_TRAFFIC_ROUTE: TrafficRouteFeatureCollection = { type: "FeatureColle
 
 /** Viewport-sized shell; portaled to document.body so fixed positioning is not clipped by PageContent / tab-content transforms. */
 const CREW_NAV_OVERLAY_CLASS =
-  "fixed top-0 left-0 right-0 z-[var(--z-modal)] flex min-h-0 w-full flex-col overflow-hidden overscroll-contain bg-black h-dvh max-h-[100dvh]";
+  "fixed top-0 left-0 right-0 z-[var(--z-modal)] flex min-h-0 w-full flex-col overflow-hidden overscroll-contain bg-[#FAF7F2] h-dvh max-h-[100dvh]";
 
 export type CrewNavDestination = { lat: number; lng: number; address: string };
 
@@ -116,7 +116,7 @@ function ManeuverGlyph({ type, modifier, className }: { type?: string; modifier?
 }
 
 const NAV_BTN_RING =
-  "flex h-10 w-10 shrink-0 items-center justify-center border border-zinc-500/70 bg-zinc-800/95 text-white shadow-lg backdrop-blur-sm active:scale-95 transition-transform";
+  "flex h-10 w-10 shrink-0 items-center justify-center border border-[#CBC4B8] bg-white/95 text-[#2C3E2D] shadow-lg backdrop-blur-sm active:scale-95 transition-transform";
 
 /**
  * Ops-style stack: compass (north-up), my location + follow, next-turn preview, zoom.
@@ -186,7 +186,7 @@ function CrewNavOpsFloatingControls({
         }}
       >
         <span className="relative flex h-8 w-8 items-center justify-center">
-          <Compass className="absolute text-zinc-400" size={28} weight="regular" aria-hidden />
+          <Compass className="absolute text-[#A8A29E]" size={28} weight="regular" aria-hidden />
           <span
             className="relative z-[1] text-[9px] font-bold text-red-400 drop-shadow"
             style={{ transform: `rotate(${-mapBearing}deg)` }}
@@ -252,7 +252,7 @@ function CrewNavOpsFloatingControls({
           }
         }}
       >
-        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#0f172a] rotate-45 shadow-inner">
+        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#2C3E2D] rotate-45 shadow-inner">
           <span className="-rotate-45 text-white">
             <ManeuverGlyph type={maneuverMeta.type} modifier={maneuverMeta.modifier} className="h-7 w-7" />
           </span>
@@ -551,12 +551,7 @@ export function CrewNavigation({
       ? fuelPriceCadPerLitre
       : undefined;
 
-  const isNight = useMemo(() => {
-    const h = new Date().getHours();
-    return h >= 19 || h < 7;
-  }, []);
-
-  const mapStyle = isNight ? "mapbox://styles/mapbox/dark-v11" : "mapbox://styles/mapbox/light-v11";
+  const mapStyle = "mapbox://styles/mapbox/light-v11";
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -870,7 +865,7 @@ export function CrewNavigation({
         <button
           type="button"
           onClick={onExit}
-          className="px-3 py-1.5 bg-[var(--gold)] text-[var(--btn-text-on-accent)] font-semibold text-sm"
+          className="px-3 py-1.5 bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] font-semibold text-sm"
         >
           Close
         </button>
@@ -921,18 +916,16 @@ export function CrewNavigation({
         >
           {trafficRouteGeoJson.features.length > 0 && (
             <Source id="crew-nav-route" type="geojson" data={trafficRouteGeoJson}>
-              {isNight && (
-                <Layer
-                  id="crew-nav-route-halo"
-                  type="line"
-                  layout={{ "line-cap": "round", "line-join": "round" }}
-                  paint={{
-                    "line-color": "rgba(255,255,255,0.28)",
-                    "line-width": CREW_NAV_HALO_WIDTH,
-                    "line-opacity": 0.95,
-                  }}
-                />
-              )}
+              <Layer
+                id="crew-nav-route-halo"
+                type="line"
+                layout={{ "line-cap": "round", "line-join": "round" }}
+                paint={{
+                  "line-color": "rgba(44, 62, 45, 0.2)",
+                  "line-width": CREW_NAV_HALO_WIDTH,
+                  "line-opacity": 0.95,
+                }}
+              />
               <Layer
                 id="crew-nav-route-line"
                 type="line"
@@ -962,7 +955,7 @@ export function CrewNavigation({
           {userPos && (
             <Marker longitude={userPos.lng} latitude={userPos.lat} anchor="center">
               <div
-                className="flex h-[52px] w-[52px] items-center justify-center rounded-full border border-zinc-500/80 bg-zinc-900/90 shadow-[0_4px_14px_rgba(0,0,0,0.5)]"
+                className="flex h-[52px] w-[52px] items-center justify-center rounded-full border border-[#2C3E2D]/35 bg-white/95 shadow-[0_4px_14px_rgba(0,0,0,0.12)]"
                 style={{
                   transform:
                     navBearingDeg != null ? `rotate(${navBearingDeg - mapBearing}deg)` : undefined,
@@ -989,7 +982,7 @@ export function CrewNavigation({
         </Map>
 
         {speedDisplay && (
-          <div className="absolute top-3 left-3 z-10 bg-black/70 text-white text-[12px] font-bold px-2.5 py-1 rounded-lg">
+          <div className="absolute top-3 left-3 z-10 rounded-lg border border-[#CBC4B8] bg-white/92 px-2.5 py-1 text-[12px] font-bold text-[#1A1816] shadow-sm backdrop-blur-sm">
             {speedDisplay}
           </div>
         )}

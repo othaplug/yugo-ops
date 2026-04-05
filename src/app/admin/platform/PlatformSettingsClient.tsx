@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useToast } from "../components/Toast";
@@ -25,6 +25,13 @@ import { useRouter } from "next/navigation";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
 import { Phone, EnvelopeSimple as Envelope, ShareNetwork, CaretDown, X, CurrencyDollar, ListBullets, UsersThree, DeviceMobile, Sliders, Handshake, UserCircleGear, ClipboardText, GasPump, Package } from "@phosphor-icons/react";
 import { DEFAULT_FUEL_PRICE_DIESEL, DEFAULT_FUEL_PRICE_GAS } from "@/lib/routing/fuel-config";
+import { getAppTimezone } from "@/lib/business-timezone";
+import {
+  DEFAULT_DISPLAY_DATE_FORMAT_PRESET,
+  DISPLAY_DATE_FORMAT_OPTION_GROUPS,
+  formatAppDateWithPreset,
+  normalizeDisplayDateFormatPreset,
+} from "@/lib/display-date-format";
 
 const TABS = [
   { id: "pricing",        label: "Pricing",        desc: "Rates & service fees",      Icon: CurrencyDollar },
@@ -151,7 +158,7 @@ function ReadinessChecklistSection() {
             type="button"
             onClick={addItem}
             disabled={!newLabel.trim()}
-            className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+            className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50"
           >
             Add
           </button>
@@ -160,7 +167,7 @@ function ReadinessChecklistSection() {
           type="button"
           onClick={handleSave}
           disabled={saving || items.length === 0}
-          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save checklist"}
         </button>
@@ -170,15 +177,15 @@ function ReadinessChecklistSection() {
 }
 
 const ROLE_BADGE: Record<string, string> = {
-  owner: "bg-[var(--gdim)] text-[var(--gold)]",
-  admin: "bg-blue-500/15 text-blue-400",
-  coordinator: "bg-green-500/15 text-green-400",
+  owner: "text-[var(--gold)]",
+  admin: "text-blue-400",
+  coordinator: "text-green-400",
 };
 const ACTION_BADGE: Record<string, string> = {
-  edit_pricing: "bg-amber-500/15 text-amber-400",
-  access_denied: "bg-red-500/15 text-red-400",
-  login: "bg-green-500/15 text-green-400",
-  send_quote: "bg-blue-500/15 text-blue-400",
+  edit_pricing: "text-amber-400",
+  access_denied: "text-red-400",
+  login: "text-green-400",
+  send_quote: "text-blue-400",
 };
 
 const ACTION_OPTIONS: { value: string; label: string }[] = [
@@ -289,7 +296,7 @@ function AuditLogSection() {
         ) : filtered.length === 0 ? (
           <div className="py-8 text-center space-y-2">
             <p className="text-[12px] text-[var(--tx3)]">No entries found</p>
-            <p className="text-[11px] text-[var(--tx3)]/70 max-w-md mx-auto">
+            <p className="text-[11px] text-[var(--tx3)]/88 max-w-md mx-auto">
               New rows are recorded when you sign in or perform actions (quotes, pricing, moves). If this stays empty, confirm the{" "}
               <code className="text-[10px] bg-[var(--bg)] px-1 rounded">audit_log</code> table exists in Supabase and{" "}
               <code className="text-[10px] bg-[var(--bg)] px-1 rounded">SUPABASE_SERVICE_ROLE_KEY</code> is set on the server.
@@ -308,8 +315,8 @@ function AuditLogSection() {
               <tbody>
                 {filtered.map((log) => {
                   const roleKey = (log.user_role ?? log.role ?? "") as string;
-                  const roleCls = ROLE_BADGE[roleKey] || "bg-[var(--brd)] text-[var(--tx3)]";
-                  const actionCls = ACTION_BADGE[log.action] || "bg-[var(--brd)] text-[var(--tx3)]";
+                  const roleCls = ROLE_BADGE[roleKey] || "text-[var(--tx3)]";
+                  const actionCls = ACTION_BADGE[log.action] || "text-[var(--tx3)]";
                   const isExpanded = expandedRow === log.id;
                   const hasDetails = log.details && Object.keys(log.details).length > 0;
                   return (
@@ -317,10 +324,10 @@ function AuditLogSection() {
                       <td className="text-[11px] text-[var(--tx)] py-2.5 pr-4 whitespace-nowrap">{formatAuditTime(log.created_at)}</td>
                       <td className="text-[11px] text-[var(--tx)] py-2.5 pr-4 max-w-[140px] truncate" title={log.user_email}>{log.user_email}</td>
                       <td className="py-2.5 pr-4">
-                        <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${roleCls}`}>{roleKey || "-"}</span>
+                        <span className={`dt-badge ${roleCls}`}>{roleKey || "-"}</span>
                       </td>
                       <td className="py-2.5 pr-4">
-                        <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${actionCls}`}>{humanizeAction(log.action)}</span>
+                        <span className={`dt-badge ${actionCls}`}>{humanizeAction(log.action)}</span>
                       </td>
                       <td className="text-[11px] text-[var(--tx3)] py-2.5 pr-4 max-w-[120px] truncate" title={log.resource_id}>{log.resource_id || "-"}</td>
                       <td className="text-[11px] text-[var(--tx3)] py-2.5">
@@ -413,6 +420,8 @@ interface PlatformSettingsClientProps {
   initialTeams?: Team[];
   initialToggles?: AppToggles;
   initialReviewConfig?: ReviewConfig;
+  /** Date display preset (`platform_config.display_date_format`). */
+  initialDisplayDateFormat?: string;
   initialQuoteResidentialDisplay?: QuoteResidentialDisplayInitial;
   currentUserId?: string;
   isSuperAdmin?: boolean;
@@ -471,7 +480,7 @@ function BusinessInfoSection() {
 
   const inputCls = "w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none";
   const labelCls = "block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5";
-  const subheadCls = "text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]/60 mb-3 flex items-center gap-1.5";
+  const subheadCls = "text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]/82 mb-3 flex items-center gap-1.5";
 
   const inp = (key: string, label: string, placeholder: string, type = "text") => (
     <div key={key}>
@@ -546,7 +555,7 @@ function BusinessInfoSection() {
           </div>
         </div>
 
-        <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
+        <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50">
           {saving ? "Saving..." : "Save Business Info"}
         </button>
       </div>
@@ -668,7 +677,7 @@ function FuelPricingSection() {
           type="button"
           onClick={() => void handleSave()}
           disabled={saving}
-          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save fuel settings"}
         </button>
@@ -808,7 +817,7 @@ function QuotingDefaultsSection() {
           </div>
         </div>
 
-        <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
+        <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50">
           {saving ? "Saving..." : "Save Quoting Defaults"}
         </button>
       </div>
@@ -925,7 +934,7 @@ function FeatureTogglesSection() {
                 <button
                   type="button"
                   onClick={() => toggleFeature(f.key)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${isOn ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${isOn ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
                 >
                   <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isOn ? "translate-x-6" : "translate-x-1"}`} />
                 </button>
@@ -1074,14 +1083,14 @@ function EmailTemplatesSection() {
               <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Available Variables</label>
               <div className="flex flex-wrap gap-1.5">
                 {editing.merge_variables.map((v: string) => (
-                  <span key={v} className="text-[10px] px-2 py-0.5 rounded bg-[var(--bg)] border border-[var(--brd)] text-[var(--gold)] font-mono">{`{{${v}}}`}</span>
+                  <span key={v} className="text-[10px] font-mono font-semibold text-[var(--gold)] border border-[var(--brd)] px-1.5 py-0.5 rounded-md">{`{{${v}}}`}</span>
                 ))}
               </div>
             </div>
           )}
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={() => setEditing(null)} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]">Cancel</button>
-            <button type="button" onClick={handleSave} disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">{saving ? "Saving..." : "Save Template"}</button>
+            <button type="button" onClick={handleSave} disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50">{saving ? "Saving..." : "Save Template"}</button>
           </div>
         </div>
       </ModalOverlay>
@@ -1118,6 +1127,7 @@ export default function PlatformSettingsClient({
   initialTeams = [],
   initialToggles = DEFAULT_TOGGLES,
   initialReviewConfig = DEFAULT_REVIEW_CONFIG,
+  initialDisplayDateFormat = DEFAULT_DISPLAY_DATE_FORMAT_PRESET,
   initialQuoteResidentialDisplay = DEFAULT_QUOTE_RESIDENTIAL_DISPLAY,
   currentUserId,
   isSuperAdmin = false,
@@ -1152,6 +1162,18 @@ export default function PlatformSettingsClient({
   const [partnerPortal, setPartnerPortal] = useState(initialToggles.partnerPortal);
   const [autoInvoicing, setAutoInvoicing] = useState(initialToggles.autoInvoicing);
   const [togglesSaving, setTogglesSaving] = useState(false);
+  const [displayDateFormatPreset, setDisplayDateFormatPreset] = useState(() =>
+    normalizeDisplayDateFormatPreset(initialDisplayDateFormat),
+  );
+  const [displayDateFormatSaving, setDisplayDateFormatSaving] = useState(false);
+  const dateFormatPreview = useMemo(() => {
+    const tz = getAppTimezone();
+    const now = new Date();
+    const samplePast = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    const todayStr = formatAppDateWithPreset(now, tz, now, displayDateFormatPreset);
+    const otherYearStr = formatAppDateWithPreset(samplePast, tz, now, displayDateFormatPreset);
+    return { todayStr, otherYearStr };
+  }, [displayDateFormatPreset]);
   const [autoReviewRequests, setAutoReviewRequests] = useState(initialReviewConfig.autoReviewRequests);
   const [googleReviewUrl, setGoogleReviewUrl] = useState(initialReviewConfig.googleReviewUrl);
   const [reviewConfigSaving, setReviewConfigSaving] = useState(false);
@@ -1336,6 +1358,33 @@ export default function PlatformSettingsClient({
       setTeams((prev) => { const n = [...prev]; n[teamIdx] = { ...n[teamIdx], memberIds: team.memberIds }; return n; });
     } else {
       toast(`${memberName} removed from ${team.label}`, "check");
+    }
+  };
+
+  const persistDisplayDateFormat = async () => {
+    setDisplayDateFormatSaving(true);
+    try {
+      const res = await fetch("/api/admin/display-date-format", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ preset: displayDateFormatPreset }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string; preset?: string };
+      if (!res.ok) {
+        toast(typeof data.error === "string" ? data.error : "Failed to save date format", "x");
+        return false;
+      }
+      const next = normalizeDisplayDateFormatPreset(data.preset);
+      setDisplayDateFormatPreset(next);
+      if (typeof window !== "undefined") window.__YUGO_DISPLAY_DATE_FORMAT__ = next;
+      toast("Date format saved", "check");
+      return true;
+    } catch {
+      toast("Failed to save date format", "x");
+      return false;
+    } finally {
+      setDisplayDateFormatSaving(false);
     }
   };
 
@@ -1568,7 +1617,7 @@ export default function PlatformSettingsClient({
                   {"desc" in t ? t.desc : ""}
                 </div>
               </div>
-              {active && <span className="ml-0.5 w-1 h-1 rounded-full bg-[var(--gold)] shrink-0 self-start mt-1.5" />}
+              {active && <span className="ml-0.5 w-1 h-1 rounded-full bg-[var(--admin-primary-fill)] shrink-0 self-start mt-1.5" />}
             </Link>
           );
         })}
@@ -1623,7 +1672,7 @@ export default function PlatformSettingsClient({
         <section className="pt-6 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0 scroll-mt-4">
           <div className="mb-4">
             <div className="flex items-center gap-2 mb-1">
-              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">1</span>
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">1</span>
               <h2 className="admin-section-h2 flex items-center gap-2">
                 <Icon name="users" className="w-[14px] h-[14px]" /> Staff Roster
               </h2>
@@ -1663,7 +1712,7 @@ export default function PlatformSettingsClient({
                 type="button"
                 onClick={handleAddStaff}
                 disabled={!addStaffName.trim() || addStaffSaving}
-                className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
               >
                 {addStaffSaving ? "Adding..." : "+ Add Employee"}
               </button>
@@ -1690,7 +1739,7 @@ export default function PlatformSettingsClient({
                         <div key={s.id} className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-[var(--bg)]/30 transition-colors">
                           <div className="flex items-center gap-2 min-w-0 flex-wrap">
                             <span className="text-[12px] font-semibold text-[var(--tx)]">{s.name}</span>
-                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--gold)] font-semibold uppercase shrink-0">{s.role}</span>
+                            <span className="dt-badge text-[var(--gold)] shrink-0">{s.role}</span>
                             {s.hourly_rate != null && <span className="text-[9px] text-[var(--tx3)] shrink-0">${s.hourly_rate}/hr</span>}
                             {memberOfTeams.length > 0 ? (
                               <span className="text-[9px] text-[var(--grn)] shrink-0">{memberOfTeams.map((t) => t.label).join(", ")}</span>
@@ -1700,7 +1749,7 @@ export default function PlatformSettingsClient({
                             {s.specialties && s.specialties.length > 0 && (
                               <span className="flex items-center gap-1 flex-wrap">
                                 {s.specialties.map((sp) => (
-                                  <span key={sp} className="text-[8px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-medium uppercase shrink-0">{sp.replace(/_/g, " ")}</span>
+                                  <span key={sp} className="dt-badge text-blue-400 shrink-0">{sp.replace(/_/g, " ")}</span>
                                 ))}
                               </span>
                             )}
@@ -1752,7 +1801,7 @@ export default function PlatformSettingsClient({
                       <div key={s.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] opacity-70">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-[12px] text-[var(--tx3)] line-through">{s.name}</span>
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 font-semibold">Inactive</span>
+                          <span className="dt-badge text-red-400">Inactive</span>
                           {s.deactivated_at && (
                             <span className="text-[9px] text-[var(--tx3)]">since {new Date(s.deactivated_at).toLocaleDateString()}</span>
                           )}
@@ -1775,13 +1824,13 @@ export default function PlatformSettingsClient({
           <div className="mb-4">
             <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
               <div className="flex items-center gap-2">
-                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">2</span>
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">2</span>
                 <h2 className="admin-section-h2">Teams</h2>
               </div>
               <div className="flex flex-nowrap items-center gap-2 sm:ml-auto">
                 <button
                   onClick={() => setAddTeamModalOpen(true)}
-                  className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+                  className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all"
                 >
                   + Create Team
                 </button>
@@ -1823,7 +1872,7 @@ export default function PlatformSettingsClient({
                   </div>
                 </div>
                 <div className="flex flex-nowrap items-center gap-2 shrink-0">
-                  <span className={`text-[9px] font-semibold px-2 py-0.5 rounded shrink-0 ${team.active ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--brd)] text-[var(--tx3)]"}`}>
+                  <span className={`dt-badge shrink-0 ${team.active ? "text-[var(--grn)]" : "text-[var(--tx3)]"}`}>
                     {team.active ? "Active" : "Inactive"}
                   </span>
                   <button
@@ -1859,7 +1908,7 @@ export default function PlatformSettingsClient({
                         });
                       }
                     }}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 ${team.active ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 ${team.active ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
                   >
                     <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${team.active ? "translate-x-5" : "translate-x-0.5"}`} />
                   </button>
@@ -1925,7 +1974,7 @@ export default function PlatformSettingsClient({
                           .map((m) => (
                             <li key={m.id} className="flex flex-nowrap items-center justify-between gap-2 py-1.5 px-2 rounded bg-[var(--card)] border border-[var(--brd)]">
                               <span className="text-[12px] text-[var(--tx)] min-w-0 truncate">{m.name}</span>
-                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--gold)] shrink-0">{m.role === "lead" ? "Lead" : m.role}</span>
+                              <span className="dt-badge text-[var(--gold)] shrink-0">{m.role === "lead" ? "Lead" : m.role}</span>
                               {m.role !== "lead" && (
                                 <button
                                   type="button"
@@ -2025,14 +2074,14 @@ export default function PlatformSettingsClient({
           <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">3</span>
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">3</span>
                 <h3 className="admin-section-h2">Crew Portal Access</h3>
               </div>
               <p className="text-[11px] text-[var(--tx3)] ml-7">People who can log in on the tablet with a PIN. Each person needs portal access to use the Crew app.</p>
             </div>
             <button
               onClick={() => setAddPortalOpen(true)}
-              className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+              className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all"
             >
               + Add portal access
             </button>
@@ -2053,7 +2102,7 @@ export default function PlatformSettingsClient({
                         <div>
                           <span className="text-[13px] font-medium text-[var(--tx)]">{m.name}</span>
                           <span className="text-[10px] text-[var(--tx3)] ml-2">({teamLabel})</span>
-                          <span className="text-[9px] font-semibold ml-1.5 px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--gold)]">{m.role === "lead" ? "Lead" : m.role}</span>
+                          <span className="dt-badge text-[var(--gold)] ml-1.5">{m.role === "lead" ? "Lead" : m.role}</span>
                           <div className="text-[11px] text-[var(--tx3)] mt-0.5">{m.phone ? "••••" + m.phone.replace(/\D/g, "").slice(-4) : "-"}</div>
                         </div>
                         <div className="flex flex-nowrap items-center gap-2 shrink-0">
@@ -2128,7 +2177,7 @@ export default function PlatformSettingsClient({
             <button
               type="button"
               onClick={() => setTruckOnboardingOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-95 transition-opacity"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:opacity-95 transition-opacity"
             >
               Start truck onboarding
             </button>
@@ -2214,7 +2263,7 @@ export default function PlatformSettingsClient({
                   onClick={handleToggle}
                   aria-label={isOn ? `Turn off ${item.label}` : `Turn on ${item.label}`}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    isOn ? "bg-[var(--gold)]" : "bg-[var(--brd)]"
+                    isOn ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"
                   }`}
                 >
                   <span
@@ -2226,6 +2275,47 @@ export default function PlatformSettingsClient({
               </div>
             );
           })}
+          <div className="pt-4 mt-4 border-t border-[var(--brd)]">
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Date format</label>
+            <p className="text-[11px] text-[var(--tx3)] mb-2">
+              How dates appear across admin, partner, crew, and client surfaces (same business timezone; this only changes presentation).
+            </p>
+            <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+              <select
+                value={displayDateFormatPreset}
+                onChange={(e) => setDisplayDateFormatPreset(normalizeDisplayDateFormatPreset(e.target.value))}
+                className="w-full sm:max-w-xl px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+              >
+                {DISPLAY_DATE_FORMAT_OPTION_GROUPS.map((g) => (
+                  <optgroup key={g.label} label={g.label}>
+                    {g.options.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => void persistDisplayDateFormat()}
+                disabled={displayDateFormatSaving}
+                className="shrink-0 px-4 py-2 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:opacity-90 disabled:opacity-60"
+              >
+                {displayDateFormatSaving ? "Saving…" : "Save"}
+              </button>
+            </div>
+            <p className="text-[10px] text-[var(--tx3)] mt-2 tabular-nums space-y-0.5">
+              <span className="block">
+                Preview (today):{" "}
+                <span className="font-medium text-[var(--tx)]">{dateFormatPreview.todayStr}</span>
+              </span>
+              <span className="block">
+                Preview (same calendar day, prior year — smart year rules):{" "}
+                <span className="font-medium text-[var(--tx)]">{dateFormatPreview.otherYearStr}</span>
+              </span>
+            </p>
+          </div>
           <div className="pt-4 mt-4 border-t border-[var(--brd)]">
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Google Review URL</label>
             <p className="text-[11px] text-[var(--tx3)] mb-2">Link customers are redirected to when they click the review button in emails</p>
@@ -2241,7 +2331,7 @@ export default function PlatformSettingsClient({
                 type="button"
                 onClick={() => persistReviewConfig({ autoReviewRequests, googleReviewUrl })}
                 disabled={reviewConfigSaving}
-                className="px-4 py-2 rounded-lg bg-[var(--gold)] text-[var(--bg)] text-[12px] font-semibold hover:opacity-90 disabled:opacity-60"
+                className="px-4 py-2 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--bg)] text-[12px] font-semibold hover:opacity-90 disabled:opacity-60"
               >
                 {reviewConfigSaving ? "Saving…" : "Save"}
               </button>
@@ -2403,7 +2493,7 @@ export default function PlatformSettingsClient({
             </Link>
             <button
               onClick={() => setInviteUserOpen(true)}
-              className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all shrink-0"
+              className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all shrink-0"
             >
               + Invite Team Member
             </button>
@@ -2418,7 +2508,7 @@ export default function PlatformSettingsClient({
               <p className="text-[12px] text-[var(--tx3)] mb-5 max-w-[260px] mx-auto">Invite team members to give them access to the platform. They&apos;ll receive an email to sign in and get started.</p>
               <button
                 onClick={() => setInviteUserOpen(true)}
-                className="px-6 py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+                className="px-6 py-3 rounded-lg text-[13px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all"
               >
                 Invite your first user
               </button>
@@ -2437,10 +2527,10 @@ export default function PlatformSettingsClient({
                     <div className="text-[11px] text-[var(--tx3)] truncate">{u.email}</div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${u.status === "activated" ? "bg-[rgba(45,159,90,0.15)] text-[var(--grn)]" : u.status === "pending" ? "bg-[rgba(201,169,98,0.15)] text-[var(--gold)]" : "bg-[var(--brd)] text-[var(--tx3)]"}`}>
+                    <span className={`dt-badge tracking-[0.04em] ${u.status === "activated" ? "text-[var(--grn)]" : u.status === "pending" ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>
                       {u.status === "activated" ? "Active" : u.status === "pending" ? "Pending" : "Inactive"}
                     </span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)]">
+                    <span className="dt-badge tracking-[0.04em] text-[var(--gold)]">
                       {u.role === "owner"
                         ? "Owner"
                         : u.role === "admin"
@@ -2503,7 +2593,7 @@ export default function PlatformSettingsClient({
           <button
             onClick={addTeam}
             disabled={!addTeamName.trim()}
-            className="w-full px-4 py-3 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Create Team
           </button>
@@ -2718,7 +2808,7 @@ export default function PlatformSettingsClient({
               <button
                 type="submit"
                 disabled={!editStaffName.trim() || editStaffSaving}
-                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
               >
                 {editStaffSaving ? "Saving..." : "Save Changes"}
               </button>
@@ -2832,7 +2922,7 @@ export default function PlatformSettingsClient({
               <button
                 type="submit"
                 disabled={resetPinValue.length !== 6 || resetPinSaving}
-                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
               >
                 {resetPinSaving ? "Saving…" : "Set new PIN"}
               </button>
@@ -2918,7 +3008,7 @@ export default function PlatformSettingsClient({
                                     setReassignSubmitting(null);
                                   }
                                 }}
-                                className="px-3 py-1 rounded text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+                                className="px-3 py-1 rounded text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50"
                               >
                                 {reassignSubmitting === key ? "Reassigning…" : "Reassign"}
                               </button>
@@ -2998,7 +3088,7 @@ export default function PlatformSettingsClient({
                                     setReassignSubmitting(null);
                                   }
                                 }}
-                                className="px-3 py-1 rounded text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+                                className="px-3 py-1 rounded text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50"
                               >
                                 {reassignSubmitting === key ? "Reassigning…" : "Reassign"}
                               </button>

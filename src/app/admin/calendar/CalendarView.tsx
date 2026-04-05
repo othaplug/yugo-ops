@@ -92,7 +92,7 @@ export default function CalendarView() {
 
       {!cal.loading && !cal.fetchError && cal.counts && cal.view !== "year" && (
         <div className="mx-3 sm:mx-5 mt-3 mb-2 px-3 py-2 rounded-md bg-[var(--card)] border border-[var(--brd)] text-[11px] text-[var(--tx3)] flex items-center gap-2">
-          <span className="text-[var(--tx3)]/50">Range:</span>
+          <span className="text-[var(--tx3)]">Range:</span>
           <span>{cal.counts.moves} moves</span>
           <span className="text-[var(--tx3)]/30">·</span>
           <span>{cal.counts.deliveries} deliveries</span>

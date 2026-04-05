@@ -316,7 +316,7 @@ export default function QuoteResidentialDisplaySection({
             <button
               type="button"
               onClick={convertToAdditiveLists}
-              className="shrink-0 px-3 py-1.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[11px] font-semibold hover:opacity-90"
+              className="shrink-0 px-3 py-1.5 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[11px] font-semibold hover:opacity-90"
             >
               Convert to “plus” lists
             </button>
@@ -345,7 +345,7 @@ export default function QuoteResidentialDisplaySection({
                 onClick={() => setActiveTier(tab.id)}
                 className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors ${
                   activeTier === tab.id
-                    ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+                    ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
                     : "text-[var(--tx2)] hover:text-[var(--tx)]"
                 }`}
               >
@@ -618,7 +618,7 @@ export default function QuoteResidentialDisplaySection({
             type="button"
             onClick={persist}
             disabled={saving}
-            className="px-4 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:opacity-90 disabled:opacity-60"
+            className="px-4 py-2.5 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:opacity-90 disabled:opacity-60"
           >
             {saving ? "Saving…" : "Save quote tier copy"}
           </button>

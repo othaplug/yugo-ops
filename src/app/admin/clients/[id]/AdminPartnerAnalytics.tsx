@@ -120,7 +120,7 @@ export default function AdminPartnerAnalytics({
       {/* KPI Grid */}
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">
+          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/82">
             {labels.serviceUnitPlural}
           </div>
           <div className="text-[20px] font-bold text-[var(--tx)] mt-0.5">
@@ -128,7 +128,7 @@ export default function AdminPartnerAnalytics({
           </div>
         </div>
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">
+          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/82">
             Revenue
           </div>
           <div className="text-[20px] font-bold text-[var(--gold)] mt-0.5">
@@ -136,7 +136,7 @@ export default function AdminPartnerAnalytics({
           </div>
         </div>
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">
+          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/82">
             {labels.avgMetric}
           </div>
           <div className="text-[20px] font-bold text-[var(--tx)] mt-0.5">
@@ -144,7 +144,7 @@ export default function AdminPartnerAnalytics({
           </div>
         </div>
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">
+          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/82">
             On-Time
           </div>
           <div className="text-[20px] font-bold text-emerald-500 mt-0.5">
@@ -152,7 +152,7 @@ export default function AdminPartnerAnalytics({
           </div>
         </div>
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">
+          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/82">
             Satisfaction
           </div>
           <div className="text-[20px] font-bold text-[var(--gold)] mt-0.5">
@@ -160,7 +160,7 @@ export default function AdminPartnerAnalytics({
           </div>
         </div>
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">
+          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/82">
             Damage
           </div>
           <div

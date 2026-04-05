@@ -1,9 +1,39 @@
 import type { CSSProperties } from "react";
 import type { CalendarEvent } from "./types";
 
-/** Dark text on bright pills (Google Calendar–style legibility). */
+/** Wine move / partner-style pill on admin calendar */
+export const CALENDAR_WINE_MOVE_FILL = "#8B1A3A";
+export const CALENDAR_WINE_PILL_TEXT = "#F9EDE4";
+export const CALENDAR_WINE_PILL_TEXT_MUTED = "rgba(249, 237, 228, 0.72)";
+
+/** Dark text on bright pills (non-wine job types). */
 export const CALENDAR_PILL_TEXT = "#0f172a";
 export const CALENDAR_PILL_TEXT_MUTED = "#334155";
+
+export function calendarPillUsesLightInk(ev: CalendarEvent): boolean {
+  return (
+    ev.color.toLowerCase() === CALENDAR_WINE_MOVE_FILL.toLowerCase() ||
+    ev.type === "move"
+  );
+}
+
+/** Partner / list UIs that only have a background hex (no full `CalendarEvent`). */
+export function calendarPillTextForBackground(backgroundHex: string): string {
+  if (backgroundHex.toLowerCase() === CALENDAR_WINE_MOVE_FILL.toLowerCase()) {
+    return CALENDAR_WINE_PILL_TEXT;
+  }
+  return CALENDAR_PILL_TEXT;
+}
+
+export function calendarPillForeground(ev: CalendarEvent): {
+  main: string;
+  muted: string;
+} {
+  if (calendarPillUsesLightInk(ev)) {
+    return { main: CALENDAR_WINE_PILL_TEXT, muted: CALENDAR_WINE_PILL_TEXT_MUTED };
+  }
+  return { main: CALENDAR_PILL_TEXT, muted: CALENDAR_PILL_TEXT_MUTED };
+}
 
 /** Status dot on bright pills — darker ink so it stays visible on yellow/sky fills. */
 export function pillStatusDotColor(calendarStatus: string): string {
@@ -20,11 +50,12 @@ export function pillStatusDotColor(calendarStatus: string): string {
 export function jobPillSurfaceStyle(ev: CalendarEvent): CSSProperties {
   const cancelled = ev.calendarStatus === "cancelled";
   const completed = ev.calendarStatus === "completed";
+  const lightInk = calendarPillUsesLightInk(ev);
 
   if (cancelled) {
     return {
       backgroundColor: "transparent",
-      color: "rgba(248, 250, 252, 0.92)",
+      color: "rgba(249, 237, 228, 0.92)",
       border: `2px dashed ${ev.color}`,
       boxShadow: "none",
     };
@@ -32,27 +63,55 @@ export function jobPillSurfaceStyle(ev: CalendarEvent): CSSProperties {
 
   return {
     backgroundColor: ev.color,
-    color: CALENDAR_PILL_TEXT,
-    borderLeft: `4px solid rgba(15, 23, 42, 0.35)`,
+    color: lightInk ? CALENDAR_WINE_PILL_TEXT : CALENDAR_PILL_TEXT,
+    borderLeft: lightInk
+      ? `4px solid rgba(249, 237, 228, 0.35)`
+      : `4px solid rgba(15, 23, 42, 0.35)`,
     opacity: completed ? 0.72 : 1,
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)",
+    boxShadow: "none",
   };
 }
 
 export function jobPillCompactStyle(ev: CalendarEvent): CSSProperties {
   const cancelled = ev.calendarStatus === "cancelled";
   const completed = ev.calendarStatus === "completed";
+  const lightInk = calendarPillUsesLightInk(ev);
   if (cancelled) {
     return {
       backgroundColor: "transparent",
-      color: "rgba(248, 250, 252, 0.9)",
+      color: "rgba(249, 237, 228, 0.9)",
       border: `1.5px dashed ${ev.color}`,
     };
   }
   return {
     backgroundColor: ev.color,
-    color: CALENDAR_PILL_TEXT,
-    borderLeft: `3px solid rgba(15, 23, 42, 0.3)`,
+    color: lightInk ? CALENDAR_WINE_PILL_TEXT : CALENDAR_PILL_TEXT,
+    borderLeft: lightInk
+      ? `3px solid rgba(249, 237, 228, 0.3)`
+      : `3px solid rgba(15, 23, 42, 0.3)`,
     opacity: completed ? 0.7 : 1,
+  };
+}
+
+/** Small tags on calendar pills (RECURRING, phase) — wine admin: no heavy shadows. */
+export function calendarPillTagStyle(ev: CalendarEvent): CSSProperties {
+  const lightInk = calendarPillUsesLightInk(ev);
+  if (lightInk) {
+    return {
+      backgroundColor: "rgba(249, 237, 228, 0.12)",
+      color: CALENDAR_WINE_PILL_TEXT,
+      borderRadius: 4,
+      fontSize: 11,
+      padding: "1px 8px",
+      fontFamily: "var(--font-body)",
+    };
+  }
+  return {
+    backgroundColor: "rgba(15, 23, 42, 0.15)",
+    color: CALENDAR_PILL_TEXT,
+    borderRadius: 4,
+    fontSize: 11,
+    padding: "1px 8px",
+    fontFamily: "var(--font-body)",
   };
 }

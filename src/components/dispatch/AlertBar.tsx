@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Warning as AlertTriangle, WifiSlash as WifiOff, Clock, X } from "@phosphor-icons/react";
+import {
+  Warning as AlertTriangle,
+  WifiSlash as WifiOff,
+  Clock,
+  X,
+  CaretRight,
+} from "@phosphor-icons/react";
 
 export interface DispatchAlert {
   id: string;
@@ -68,16 +74,17 @@ export default function AlertBar({ alerts }: AlertBarProps) {
             className="inline-flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-full border border-white/[0.06] bg-white/[0.04] backdrop-blur-sm"
           >
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />
-            <Icon className={`w-3.5 h-3.5 shrink-0 ${cfg.iconColor}`} />
-            <span className="text-[11px] text-[var(--tx2)] whitespace-nowrap">
+            <Icon className={`w-4 h-4 shrink-0 ${cfg.iconColor}`} />
+            <span className="text-sm text-[var(--tx2)] whitespace-nowrap">
               {a.message}
             </span>
             {a.href && (
               <Link
                 href={a.href}
-                className="text-[11px] font-semibold text-[var(--gold)] hover:opacity-80 transition-opacity whitespace-nowrap"
+                className="inline-flex items-center gap-0.5 text-sm font-semibold text-[var(--yugo-primary-text)] hover:opacity-90 transition-opacity whitespace-nowrap"
               >
-                {a.action} →
+                {a.action}
+                <CaretRight className="w-4 h-4 shrink-0" weight="bold" aria-hidden />
               </Link>
             )}
             <button

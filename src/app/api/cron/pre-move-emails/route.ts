@@ -4,11 +4,15 @@ import { sendEmail } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
 import { sendMoveReminderSms } from "@/lib/quote-sms";
+import { moveMatchesBalanceReminder48hWindow } from "@/lib/quotes/estate-schedule";
 
 /**
  * Vercel Cron: runs daily at 10 AM EST.
  * Sends T-72hr checklist + balance reminder, T-48hr balance payment email,
  * and T-24hr crew detail emails.
+ * Estate: the 48hr balance email uses two calendar days before packing day (when
+ * the plan has a separate pack day, that is the day before move); single-day Estate
+ * stays tied to move day.
  */
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -52,12 +56,12 @@ export async function GET(req: NextRequest) {
     for (const move of moves72) {
       if (!move.client_email) continue;
 
+      const isEstate =
+        String(move.tier_selected || "").toLowerCase().trim() === "estate";
       const trackToken = signTrackToken("move", move.id);
       const trackingUrl = `${baseUrl}/track/move/${move.move_code ?? move.id}?token=${trackToken}`;
 
       try {
-        const isEstate =
-          String(move.tier_selected || "").toLowerCase().trim() === "estate";
         const result = await sendEmail({
           to: move.client_email,
           subject: isEstate
@@ -118,6 +122,7 @@ export async function GET(req: NextRequest) {
               moveDate: move.scheduled_date,
               balanceAmount: bal,
               trackingUrl,
+              estateBalanceChargeBeforePacking: isEstate,
             },
           });
           if (balResult.success) {
@@ -142,10 +147,10 @@ export async function GET(req: NextRequest) {
   const { data: moves48 } = await supabase
     .from("moves")
     .select(
-      "id, move_code, client_name, client_email, scheduled_date, balance_amount, balance_paid_at, deposit_paid_at",
+      "id, move_code, client_name, client_email, scheduled_date, balance_amount, balance_paid_at, deposit_paid_at, tier_selected, service_tier, move_size, inventory_score",
     )
     .in("status", ["confirmed", "scheduled"])
-    .eq("scheduled_date", twoDaysOut)
+    .in("scheduled_date", [twoDaysOut, threeDaysOut])
     .is("balance_reminder_48hr_sent", null)
     .is("balance_paid_at", null)
     .not("deposit_paid_at", "is", null);
@@ -153,6 +158,19 @@ export async function GET(req: NextRequest) {
   if (moves48 && moves48.length > 0) {
     for (const move of moves48) {
       if (!move.client_email) continue;
+      if (
+        !moveMatchesBalanceReminder48hWindow({
+          scheduledDate: move.scheduled_date,
+          twoDaysOutIso: twoDaysOut,
+          tierSelected: move.tier_selected,
+          serviceTier: move.service_tier,
+          moveSize: move.move_size,
+          inventoryScore:
+            move.inventory_score != null ? Number(move.inventory_score) : null,
+        })
+      ) {
+        continue;
+      }
       const bal = Number(move.balance_amount || 0);
       if (bal <= 0) continue;
 

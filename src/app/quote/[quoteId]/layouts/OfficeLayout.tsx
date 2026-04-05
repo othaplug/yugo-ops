@@ -8,6 +8,7 @@ import {
   calculateDeposit,
 } from "../quote-shared";
 import { toTitleCase } from "@/lib/format-text";
+import { formatMoveDate } from "@/lib/date-format";
 
 interface Props {
   quote: Quote;
@@ -173,12 +174,7 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
           <div>
             <Calendar className="w-5 h-5 mx-auto mb-1.5" style={{ color: FOREST }} />
             <p className="text-[13px] font-bold" style={{ color: FOREST }}>
-              {quote.move_date
-                ? new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", {
-                    month: "short",
-                    day: "numeric",
-                  })
-                : "TBD"}
+              {quote.move_date ? formatMoveDate(quote.move_date) : "TBD"}
             </p>
             <p className="text-[10px]" style={{ color: `${FOREST}60` }}>Move date</p>
           </div>

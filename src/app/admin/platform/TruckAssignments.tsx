@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "../components/Toast";
 import { Icon } from "@/components/AppIcons";
+import { formatPlatformDisplay } from "@/lib/date-format";
 
 interface Truck {
   id: string;
@@ -114,7 +115,7 @@ export default function TruckAssignments({ refreshKey = 0 }: TruckAssignmentsPro
   const formatDateLabel = (d: string) => {
     const [y, m, day] = d.split("-").map(Number);
     const dateObj = new Date(y, m - 1, day);
-    return dateObj.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+    return formatPlatformDisplay(dateObj, { weekday: "short", month: "short", day: "numeric" });
   };
 
   return (
@@ -167,7 +168,7 @@ export default function TruckAssignments({ refreshKey = 0 }: TruckAssignmentsPro
                 <button
                   onClick={() => setAddModalOpen(true)}
                   disabled={trucks.length === 0 || teams.length === 0}
-                  className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
                 >
                   + Add assignment
                 </button>
@@ -270,7 +271,7 @@ export default function TruckAssignments({ refreshKey = 0 }: TruckAssignmentsPro
                 <button
                   type="submit"
                   disabled={saving || !formTruckId || !formTeamId}
-                  className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--admin-primary-fill-hover)] transition-colors disabled:opacity-50"
                 >
                   {saving ? "Saving…" : "Save"}
                 </button>

@@ -62,7 +62,7 @@ export default function SendB2BOneOffInvoiceButton({
       type="button"
       onClick={handleSend}
       disabled={loading || blocked}
-      className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:bg-[var(--bg)] transition-all disabled:opacity-50"
+      className="px-4 py-2 rounded-lg text-[11px] font-semibold border-2 border-[color-mix(in_srgb,var(--tx)_34%,transparent)] text-[var(--tx)] hover:bg-[color-mix(in_srgb,var(--tx)_8%,transparent)] transition-all disabled:opacity-50"
     >
       {loading ? "Sending…" : paid ? "Paid" : pendingInvoice ? "Invoice outstanding" : "Send Square invoice"}
     </button>

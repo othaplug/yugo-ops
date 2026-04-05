@@ -585,7 +585,7 @@ export default function CreateMoveForm({
       </div>
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-4 py-4 border-b border-[var(--brd)]">
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Operations</p>
           <h1 className="admin-page-hero text-[var(--tx)]">Create New Move</h1>
           <p className="text-[10px] text-[var(--tx3)] mt-1.5">
             Choose a service type, then fill in the details. Select a client to auto-fill, or enter details to create a new one.
@@ -595,7 +595,7 @@ export default function CreateMoveForm({
           {hasDraft && <div className="mb-4"><DraftBanner onRestore={handleRestoreDraft} onDismiss={dismissDraft} /></div>}
           {/* Move type selector */}
           <div>
-            <label className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>
+            <label className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Service Type</label>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
               {(
                 [
@@ -626,7 +626,7 @@ export default function CreateMoveForm({
                     onClick={() => setMoveType(val)}
                     className={`relative text-left px-3 py-2 rounded-lg border transition-all duration-200 ${
                       sel
-                        ? "bg-gradient-to-br from-[#2C3E2D] to-[#8B7332] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
+                        ? "bg-gradient-to-br from-[#2C3E2D] to-[#5C1A33] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
                         : "bg-[var(--card)] border-[var(--brd)] hover:border-[var(--gold)]/40 hover:bg-[var(--bg)]"
                     }`}
                   >
@@ -651,7 +651,7 @@ export default function CreateMoveForm({
           {/* Client section */}
           <div ref={moveHs.containerRef}>
           <div className="space-y-2">
-            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client</h3>
+            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Client</h3>
             <Field label="Select to auto fill">
               <div ref={contactDropdownRef} className="relative">
                 <input
@@ -818,7 +818,7 @@ export default function CreateMoveForm({
           {/* Office: Company info */}
           <AnimatedSection show={moveType === "office"}>
             <div className="space-y-2">
-              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Business Details</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Business Details</h3>
               <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Company Name">
                   <div className="relative">
@@ -886,7 +886,7 @@ export default function CreateMoveForm({
                         reader.readAsDataURL(file);
                       } else { setSiItemPhotoPreview(null); }
                     }}
-                    className="text-[11px] text-[var(--tx3)] file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-[var(--gold)] file:text-[var(--btn-text-on-accent)] file:cursor-pointer"
+                    className="text-[11px] text-[var(--tx3)] file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-[var(--admin-primary-fill)] file:text-[var(--btn-text-on-accent)] file:cursor-pointer"
                   />
                   {siItemPhotoPreview && (
                     <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-[var(--brd)]">
@@ -903,7 +903,7 @@ export default function CreateMoveForm({
           {/* White Glove: item info */}
           <AnimatedSection show={moveType === "white_glove"}>
             <div className="space-y-2">
-              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove, Item Info</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">White Glove, Item Info</h3>
               <Field label="Item Description *">
                 <input value={wgItemDescription} onChange={(e) => setWgItemDescription(e.target.value)} placeholder="Describe the item in detail" className={fieldInput} />
               </Field>
@@ -935,7 +935,7 @@ export default function CreateMoveForm({
           {/* Specialty: project info */}
           <AnimatedSection show={moveType === "specialty"}>
             <div className="space-y-2">
-              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Details</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Specialty Details</h3>
               <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Project Type *">
                   <select value={spProjectType} onChange={(e) => setSpProjectType(e.target.value)} className={fieldInput}>
@@ -955,7 +955,7 @@ export default function CreateMoveForm({
 
           <AnimatedSection show={moveType === "event"}>
             <div className="space-y-2">
-              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Event details</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Event details</h3>
               <p className="text-[10px] text-[var(--tx3)]">
                 Multi-leg event bookings from quotes become several linked moves. For a manual event, use From → staging / warehouse and To → venue if applicable.
               </p>
@@ -1001,7 +1001,7 @@ export default function CreateMoveForm({
 
           <AnimatedSection show={moveType === "labour_only"}>
             <div className="space-y-2">
-              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Labour scope</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Labour scope</h3>
               <p className="text-[10px] text-[var(--tx3)]">
                 Use the same address for From and To if all work is at one site.
               </p>
@@ -1025,7 +1025,7 @@ export default function CreateMoveForm({
 
           {/* Addresses */}
           <div className="space-y-2">
-            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Addresses</h3>
+            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Addresses</h3>
             {moveType === "labour_only" && (
               <p className="text-[10px] text-[var(--tx3)]">Work site or primary location, you can use the same address twice.</p>
             )}
@@ -1110,7 +1110,7 @@ export default function CreateMoveForm({
           {/* Residential-only fields */}
           <AnimatedSection show={moveType === "residential"}>
             <div className="space-y-2">
-              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Residential Details</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Residential Details</h3>
               <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Move Size *">
                   <select
@@ -1138,10 +1138,10 @@ export default function CreateMoveForm({
                       key={item}
                       type="button"
                       onClick={() => setSpecialtyItems((prev) => prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item])}
-                      className={`px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
+                      className={`px-2.5 py-1 rounded-md text-[9px] font-semibold border transition-colors ${
                         specialtyItems.includes(item)
-                          ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
-                          : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
+                          ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                          : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
                       }`}
                     >
                       {item}
@@ -1169,7 +1169,7 @@ export default function CreateMoveForm({
                 {specialtyItems.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {specialtyItems.map((item) => (
-                      <span key={item} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
+                      <span key={item} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">
                         {item}
                         <button type="button" onClick={() => setSpecialtyItems((prev) => prev.filter((i) => i !== item))} className="hover:text-[var(--red)]">×</button>
                       </span>
@@ -1209,7 +1209,7 @@ export default function CreateMoveForm({
           {/* Office-only detail fields */}
           <AnimatedSection show={moveType === "office"}>
             <div className="space-y-2">
-              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Office / Commercial Details</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Office / Commercial Details</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <Field label="Square Footage">
                   <input type="number" min={0} value={squareFootage} onChange={(e) => setSquareFootage(e.target.value)} placeholder="e.g. 2500" className={`${fieldInput} min-w-0`} />
@@ -1233,7 +1233,7 @@ export default function CreateMoveForm({
                     role="switch"
                     aria-checked={hasItEquipment}
                     onClick={() => setHasItEquipment(!hasItEquipment)}
-                    className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${hasItEquipment ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+                    className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${hasItEquipment ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
                   >
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${hasItEquipment ? "translate-x-4" : ""}`} />
                   </button>
@@ -1256,19 +1256,19 @@ export default function CreateMoveForm({
               <div className="flex flex-wrap gap-x-4 gap-y-2">
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-medium text-[var(--tx)]">Conference Room</span>
-                  <button type="button" role="switch" aria-checked={hasConferenceRoom} onClick={() => setHasConferenceRoom(!hasConferenceRoom)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${hasConferenceRoom ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                  <button type="button" role="switch" aria-checked={hasConferenceRoom} onClick={() => setHasConferenceRoom(!hasConferenceRoom)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${hasConferenceRoom ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${hasConferenceRoom ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-medium text-[var(--tx)]">Reception Area</span>
-                  <button type="button" role="switch" aria-checked={hasReceptionArea} onClick={() => setHasReceptionArea(!hasReceptionArea)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${hasReceptionArea ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                  <button type="button" role="switch" aria-checked={hasReceptionArea} onClick={() => setHasReceptionArea(!hasReceptionArea)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${hasReceptionArea ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${hasReceptionArea ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-medium text-[var(--tx)]">Building COI Required</span>
-                  <button type="button" role="switch" aria-checked={buildingCoiRequired} onClick={() => setBuildingCoiRequired(!buildingCoiRequired)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${buildingCoiRequired ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                  <button type="button" role="switch" aria-checked={buildingCoiRequired} onClick={() => setBuildingCoiRequired(!buildingCoiRequired)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${buildingCoiRequired ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${buildingCoiRequired ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
@@ -1303,7 +1303,7 @@ export default function CreateMoveForm({
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-semibold text-[var(--tx2)]">Stair Carry</span>
-                    <button type="button" role="switch" aria-checked={siStairCarry} onClick={() => setSiStairCarry(!siStairCarry)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${siStairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                    <button type="button" role="switch" aria-checked={siStairCarry} onClick={() => setSiStairCarry(!siStairCarry)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${siStairCarry ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                       <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${siStairCarry ? "translate-x-4" : ""}`} />
                     </button>
                   </div>
@@ -1321,7 +1321,7 @@ export default function CreateMoveForm({
           {/* White Glove: after-address fields */}
           <AnimatedSection show={moveType === "white_glove"}>
             <div className="space-y-2">
-              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove, Service Details</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">White Glove, Service Details</h3>
               <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Assembly Required">
                   <select value={wgAssemblyRequired} onChange={(e) => setWgAssemblyRequired(e.target.value)} className={fieldInput}>
@@ -1339,7 +1339,7 @@ export default function CreateMoveForm({
                     <span className="text-[11px] font-medium text-[var(--tx)]">Packaging Removal</span>
                     <p className="text-[9px] text-[var(--tx3)]">Remove all packaging on-site</p>
                   </div>
-                  <button type="button" role="switch" aria-checked={wgPackagingRemoval} onClick={() => setWgPackagingRemoval(!wgPackagingRemoval)} className={`relative w-9 h-5 rounded-full transition-colors ${wgPackagingRemoval ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                  <button type="button" role="switch" aria-checked={wgPackagingRemoval} onClick={() => setWgPackagingRemoval(!wgPackagingRemoval)} className={`relative w-9 h-5 rounded-full transition-colors ${wgPackagingRemoval ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${wgPackagingRemoval ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
@@ -1348,7 +1348,7 @@ export default function CreateMoveForm({
                     <span className="text-[11px] font-medium text-[var(--tx)]">Photo Documentation</span>
                     <p className="text-[9px] text-[var(--tx3)]">Before, during, after photos</p>
                   </div>
-                  <button type="button" role="switch" aria-checked={wgPhotoDocumentation} onClick={() => setWgPhotoDocumentation(!wgPhotoDocumentation)} className={`relative w-9 h-5 rounded-full transition-colors ${wgPhotoDocumentation ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                  <button type="button" role="switch" aria-checked={wgPhotoDocumentation} onClick={() => setWgPhotoDocumentation(!wgPhotoDocumentation)} className={`relative w-9 h-5 rounded-full transition-colors ${wgPhotoDocumentation ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${wgPhotoDocumentation ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
@@ -1357,7 +1357,7 @@ export default function CreateMoveForm({
                     <span className="text-[11px] font-medium text-[var(--tx)]">Enhanced Insurance</span>
                     <p className="text-[9px] text-[var(--tx3)]">Full replacement value, recommended for items &gt;$5K</p>
                   </div>
-                  <button type="button" role="switch" aria-checked={wgEnhancedInsurance} onClick={() => setWgEnhancedInsurance(!wgEnhancedInsurance)} className={`relative w-9 h-5 rounded-full transition-colors ${wgEnhancedInsurance ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                  <button type="button" role="switch" aria-checked={wgEnhancedInsurance} onClick={() => setWgEnhancedInsurance(!wgEnhancedInsurance)} className={`relative w-9 h-5 rounded-full transition-colors ${wgEnhancedInsurance ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${wgEnhancedInsurance ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
@@ -1368,7 +1368,7 @@ export default function CreateMoveForm({
           {/* Specialty: after-address fields */}
           <AnimatedSection show={moveType === "specialty"}>
             <div className="space-y-2">
-              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty, Logistics</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Specialty, Logistics</h3>
               <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Timeline">
                   <select value={spTimeline} onChange={(e) => setSpTimeline(e.target.value)} className={fieldInput}>
@@ -1386,13 +1386,13 @@ export default function CreateMoveForm({
               <div className="grid sm:grid-cols-2 gap-x-3 gap-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-medium text-[var(--tx)]">Custom Crating Needed</span>
-                  <button type="button" role="switch" aria-checked={spCustomCrating} onClick={() => setSpCustomCrating(!spCustomCrating)} className={`relative w-9 h-5 rounded-full transition-colors ${spCustomCrating ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                  <button type="button" role="switch" aria-checked={spCustomCrating} onClick={() => setSpCustomCrating(!spCustomCrating)} className={`relative w-9 h-5 rounded-full transition-colors ${spCustomCrating ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${spCustomCrating ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-medium text-[var(--tx)]">Climate Control Required</span>
-                  <button type="button" role="switch" aria-checked={spClimateControl} onClick={() => setSpClimateControl(!spClimateControl)} className={`relative w-9 h-5 rounded-full transition-colors ${spClimateControl ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                  <button type="button" role="switch" aria-checked={spClimateControl} onClick={() => setSpClimateControl(!spClimateControl)} className={`relative w-9 h-5 rounded-full transition-colors ${spClimateControl ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${spClimateControl ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
@@ -1401,7 +1401,7 @@ export default function CreateMoveForm({
                     <span className="text-[11px] font-medium text-[var(--tx)]">Insurance Rider</span>
                     <p className="text-[9px] text-[var(--tx3)]">Fine art or high-value rider</p>
                   </div>
-                  <button type="button" role="switch" aria-checked={spInsuranceRider} onClick={() => setSpInsuranceRider(!spInsuranceRider)} className={`relative w-9 h-5 rounded-full transition-colors ${spInsuranceRider ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                  <button type="button" role="switch" aria-checked={spInsuranceRider} onClick={() => setSpInsuranceRider(!spInsuranceRider)} className={`relative w-9 h-5 rounded-full transition-colors ${spInsuranceRider ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${spInsuranceRider ? "translate-x-4" : ""}`} />
                   </button>
                 </div>
@@ -1413,10 +1413,10 @@ export default function CreateMoveForm({
                       key={item}
                       type="button"
                       onClick={() => setSpSpecialEquipment((prev) => prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item])}
-                      className={`px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
+                      className={`px-2.5 py-1 rounded-md text-[9px] font-semibold border transition-colors ${
                         spSpecialEquipment.includes(item)
-                          ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
-                          : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
+                          ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                          : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
                       }`}
                     >
                       {item}
@@ -1444,7 +1444,7 @@ export default function CreateMoveForm({
                 {spSpecialEquipment.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {spSpecialEquipment.map((item) => (
-                      <span key={item} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
+                      <span key={item} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">
                         {item}
                         <button type="button" onClick={() => setSpSpecialEquipment((prev) => prev.filter((i) => i !== item))} className="hover:text-[var(--red)]">×</button>
                       </span>
@@ -1515,7 +1515,7 @@ export default function CreateMoveForm({
 
           {/* Crew / team */}
           <div className="space-y-2">
-            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Move Team</h3>
+            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Move Team</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Field label="Crew">
                 <select
@@ -1617,7 +1617,7 @@ export default function CreateMoveForm({
                 />
               ) : (
                 <div className="space-y-2">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
                     Client Inventory (optional)
                   </h3>
                   <p className="text-[10px] text-[var(--tx3)]">Add items from the move detail page after creating.</p>
@@ -1629,7 +1629,7 @@ export default function CreateMoveForm({
 
           {/* Documents */}
           <div className="space-y-2">
-            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
               Documents & Invoices (optional)
             </h3>
             <p className="text-[10px] text-[var(--tx3)]">
@@ -1666,7 +1666,7 @@ export default function CreateMoveForm({
               />
               <label
                 htmlFor="move-doc-upload"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] cursor-pointer hover:bg-[var(--gold2)]"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] cursor-pointer hover:bg-[var(--admin-primary-fill-hover)]"
               >
                 <Plus weight="regular" className="w-[12px] h-[12px]" />
                 Upload PDF
@@ -1678,14 +1678,14 @@ export default function CreateMoveForm({
 
           {/* Complexity indicators */}
           <div className="space-y-2">
-            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Complexity Indicators</h3>
+            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Complexity Indicators</h3>
             <div className="flex flex-wrap gap-2 mb-2">
               {COMPLEXITY_PRESETS.map((preset) => (
                 <button
                   key={preset}
                   type="button"
                   onClick={() => setComplexityIndicators((prev) => (prev.includes(preset) ? prev.filter((p) => p !== preset) : [...prev, preset]))}
-                  className={`px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${complexityIndicators.includes(preset) ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]" : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"}`}
+                  className={`px-2.5 py-1 rounded-md text-[9px] font-semibold border transition-colors ${complexityIndicators.includes(preset) ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]" : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"}`}
                 >
                   {preset}
                 </button>
@@ -1722,7 +1722,7 @@ export default function CreateMoveForm({
             {complexityIndicators.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {complexityIndicators.map((ind) => (
-                  <span key={ind} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
+                  <span key={ind} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">
                     {ind}
                     <button type="button" onClick={() => setComplexityIndicators((prev) => prev.filter((p) => p !== ind))} className="hover:text-[var(--red)]" aria-label={`Remove ${ind}`}>×</button>
                   </span>
@@ -1768,7 +1768,7 @@ export default function CreateMoveForm({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-2.5 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50"
             >
               {loading ? "Creating…" : "Create Move"}
             </button>

@@ -56,11 +56,20 @@ const TAB_LABELS: Record<string, string> = {
 
 /** Tab key → organization `type` / `vertical` values included in that filter */
 const TAB_TYPE_MAP: Record<string, string[]> = {
-  furniture_retailer: ["furniture_retailer", "retail", "cabinetry", "flooring", "appliances"],
+  furniture_retailer: [
+    "furniture_retailer",
+    "retail",
+    "cabinetry",
+    "flooring",
+    "appliances",
+  ],
   interior_designer: ["interior_designer", "designer", "av_technology"],
   hospitality: ["hospitality", "medical_equipment"],
   art_gallery: ["art_gallery", "antique_dealer", "gallery"],
-  property_management: ["property_management_residential", "property_management_commercial"],
+  property_management: [
+    "property_management_residential",
+    "property_management_commercial",
+  ],
   commercial_pm: ["property_management_commercial"],
   developer_portfolio: ["developer_builder"],
   referral: ["realtor", "property_manager", "developer"],
@@ -71,38 +80,38 @@ function partnerListTypeLabel(type: string): string {
   return organizationTypeLabel(type);
 }
 
-/** Distinct pill styles per partner type (Tailwind) */
+/** Partner type — text color only (use with .dt-badge) */
 const TYPE_CHIP_CLASSES: Record<string, string> = {
-  retail: "bg-[rgba(74,124,229,0.14)] text-[#4A7CE5]",
-  designer: "bg-[rgba(139,92,246,0.14)] text-[#8B5CF6]",
-  gallery: "bg-[rgba(201,169,98,0.16)] text-[var(--gold)]",
-  furniture_retailer: "bg-[rgba(59,130,246,0.14)] text-[#3B82F6]",
-  interior_designer: "bg-[rgba(167,139,250,0.16)] text-[#A78BFA]",
-  cabinetry: "bg-[rgba(180,83,9,0.14)] text-[#B45309]",
-  flooring: "bg-[rgba(13,148,136,0.14)] text-[#0D9488]",
-  art_gallery: "bg-[rgba(201,169,98,0.16)] text-[var(--gold)]",
-  antique_dealer: "bg-[rgba(190,18,60,0.12)] text-[#BE123C]",
-  hospitality: "bg-[rgba(212,138,41,0.14)] text-[var(--org)]",
-  medical_equipment: "bg-[rgba(14,165,233,0.14)] text-[#0EA5E9]",
-  av_technology: "bg-[rgba(99,102,241,0.14)] text-[#6366F1]",
-  appliances: "bg-[rgba(71,85,105,0.16)] text-[#64748B]",
-  realtor: "bg-[rgba(45,159,90,0.14)] text-[var(--grn)]",
-  property_manager: "bg-[rgba(22,163,74,0.14)] text-[#16A34A]",
-  developer: "bg-[rgba(124,58,237,0.14)] text-[#7C3AED]",
-  property_management_residential: "bg-[rgba(201,169,98,0.18)] text-[var(--gold)]",
-  property_management_commercial: "bg-[rgba(201,169,98,0.18)] text-[var(--gold)]",
-  developer_builder: "bg-[rgba(124,58,237,0.14)] text-[#7C3AED]",
-  b2b: "bg-[rgba(113,113,122,0.18)] text-[var(--tx2)]",
+  retail: "text-[#4A7CE5]",
+  designer: "text-[#8B5CF6]",
+  gallery: "text-[var(--gold)]",
+  furniture_retailer: "text-[#3B82F6]",
+  interior_designer: "text-[#A78BFA]",
+  cabinetry: "text-[#B45309]",
+  flooring: "text-[#0D9488]",
+  art_gallery: "text-[var(--gold)]",
+  antique_dealer: "text-[#BE123C]",
+  hospitality: "text-[var(--org)]",
+  medical_equipment: "text-[#0EA5E9]",
+  av_technology: "text-[#6366F1]",
+  appliances: "text-[#64748B]",
+  realtor: "text-[var(--grn)]",
+  property_manager: "text-[#16A34A]",
+  developer: "text-[#7C3AED]",
+  property_management_residential: "text-[var(--gold)]",
+  property_management_commercial: "text-[var(--gold)]",
+  developer_builder: "text-[#7C3AED]",
+  b2b: "text-[var(--tx2)]",
 };
 
 function typeChipClass(type: string): string {
-  return TYPE_CHIP_CLASSES[type] || "bg-[var(--gdim)] text-[var(--gold)]";
+  return TYPE_CHIP_CLASSES[type] || "text-[var(--gold)]";
 }
 
 function PartnerTypeChip({ type }: { type: string }) {
   return (
     <span
-      className={`inline-flex max-w-max items-center rounded-md px-2 py-0.5 text-[10px] font-semibold leading-tight !whitespace-nowrap ${typeChipClass(type)}`}
+      className={`dt-badge tracking-[0.04em] max-w-max !whitespace-nowrap ${typeChipClass(type)}`}
     >
       {partnerListTypeLabel(type || "")}
     </span>
@@ -128,13 +137,16 @@ const columns: ColumnDef<Partner>[] = [
     label: "Contact Name",
     accessor: (p) => p.contact_name || "",
     render: (p) => (
-      <span className="text-[12px] text-[var(--tx2)]">{p.contact_name?.trim() || "-"}</span>
+      <span className="text-[12px] text-[var(--tx2)]">
+        {p.contact_name?.trim() || "-"}
+      </span>
     ),
   },
   {
     id: "_partner_type_search",
     label: "Type",
-    accessor: (p) => `${p.type ?? ""} ${partnerListTypeLabel(p.type || "")}`.trim(),
+    accessor: (p) =>
+      `${p.type ?? ""} ${partnerListTypeLabel(p.type || "")}`.trim(),
     alwaysHidden: true,
     sortable: false,
     render: (p) => <PartnerTypeChip type={p.type || ""} />,
@@ -143,13 +155,17 @@ const columns: ColumnDef<Partner>[] = [
     id: "email",
     label: "Email",
     accessor: (p) => p.email || "",
-    render: (p) => <span className="text-[12px] text-[var(--tx2)]">{p.email || "-"}</span>,
+    render: (p) => (
+      <span className="text-[12px] text-[var(--tx2)]">{p.email || "-"}</span>
+    ),
   },
   {
     id: "phone",
     label: "Phone",
     accessor: (p) => p.phone || "",
-    render: (p) => <span className="text-[12px] text-[var(--tx2)]">{p.phone || "-"}</span>,
+    render: (p) => (
+      <span className="text-[12px] text-[var(--tx2)]">{p.phone || "-"}</span>
+    ),
   },
   {
     id: "status",
@@ -158,8 +174,22 @@ const columns: ColumnDef<Partner>[] = [
     render: (p) => {
       const active = (p.status || "active") === "active";
       return (
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${active ? "bg-[var(--grn)]/10 text-[var(--grn)]" : "bg-[var(--tx3)]/10 text-[var(--tx3)]"}`}>
-          {active ? "Active" : ({ inactive: "Inactive", suspended: "Suspended", pending_approval: "Pending", pending: "Pending" }[p.status || ""] ?? (p.status ? p.status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Inactive"))}
+        <span
+          className={`dt-badge tracking-[0.04em] ${active ? "text-[var(--grn)]" : "text-[var(--tx3)]"}`}
+        >
+          {active
+            ? "Active"
+            : ({
+                inactive: "Inactive",
+                suspended: "Suspended",
+                pending_approval: "Pending",
+                pending: "Pending",
+              }[p.status || ""] ??
+              (p.status
+                ? p.status
+                    .replace(/_/g, " ")
+                    .replace(/\b\w/g, (c) => c.toUpperCase())
+                : "Inactive"))}
         </span>
       );
     },
@@ -185,8 +215,14 @@ const realtorColumns: ColumnDef<RealtorRow>[] = [
     accessor: (r) => r.agent_name,
     render: (r) => (
       <div className="min-w-0">
-        <div className="text-[13px] font-bold text-[var(--tx)]">{r.agent_name}</div>
-        {r.brokerage ? <div className="text-[11px] text-[var(--tx3)] mt-0.5">{r.brokerage}</div> : null}
+        <div className="text-[13px] font-bold text-[var(--tx)]">
+          {r.agent_name}
+        </div>
+        {r.brokerage ? (
+          <div className="text-[11px] text-[var(--tx3)] mt-0.5">
+            {r.brokerage}
+          </div>
+        ) : null}
       </div>
     ),
   },
@@ -194,13 +230,19 @@ const realtorColumns: ColumnDef<RealtorRow>[] = [
     id: "email",
     label: "Email",
     accessor: (r) => r.email || "",
-    render: (r) => <span className="text-[12px] text-[var(--tx2)]">{r.email || "-"}</span>,
+    render: (r) => (
+      <span className="text-[12px] text-[var(--tx2)]">{r.email || "-"}</span>
+    ),
   },
   {
     id: "referrals",
     label: "Referrals",
     accessor: (r) => String(r.referral_count),
-    render: (r) => <span className="text-[12px] font-semibold text-[var(--tx)]">{r.referral_count}</span>,
+    render: (r) => (
+      <span className="text-[12px] font-semibold text-[var(--tx)]">
+        {r.referral_count}
+      </span>
+    ),
   },
   {
     id: "joined",
@@ -222,7 +264,10 @@ export default function AllPartnersClient() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
-  const [healthStats, setHealthStats] = useState<{ at_risk: number; cold: number } | null>(null);
+  const [healthStats, setHealthStats] = useState<{
+    at_risk: number;
+    cold: number;
+  } | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const router = useRouter();
 
@@ -230,7 +275,8 @@ export default function AllPartnersClient() {
     fetch("/api/admin/partners/health")
       .then((r) => r.json())
       .then((d) => {
-        if (d.stats) setHealthStats({ at_risk: d.stats.at_risk, cold: d.stats.cold });
+        if (d.stats)
+          setHealthStats({ at_risk: d.stats.at_risk, cold: d.stats.cold });
       })
       .catch(() => {});
   }, []);
@@ -246,7 +292,9 @@ export default function AllPartnersClient() {
         const pJson = await pRes.json();
         const rJson = await rRes.json();
         if (!pRes.ok) {
-          setFetchError(pJson?.error || pRes.statusText || "Failed to load partners");
+          setFetchError(
+            pJson?.error || pRes.statusText || "Failed to load partners",
+          );
           setPartners([]);
         } else {
           setPartners(Array.isArray(pJson.partners) ? pJson.partners : []);
@@ -257,7 +305,9 @@ export default function AllPartnersClient() {
           setRealtors([]);
         }
       } catch (e) {
-        setFetchError(e instanceof Error ? e.message : "Failed to load partners");
+        setFetchError(
+          e instanceof Error ? e.message : "Failed to load partners",
+        );
         setPartners([]);
         setRealtors([]);
       } finally {
@@ -269,7 +319,9 @@ export default function AllPartnersClient() {
   const filtered = useMemo(() => {
     if (activeTab === "all") return partners;
     const types = TAB_TYPE_MAP[activeTab];
-    return types ? partners.filter((p) => types.includes(p.type)) : partners.filter((p) => p.type === activeTab);
+    return types
+      ? partners.filter((p) => types.includes(p.type))
+      : partners.filter((p) => p.type === activeTab);
   }, [partners, activeTab]);
 
   const typeCounts = useMemo(() => {
@@ -280,7 +332,9 @@ export default function AllPartnersClient() {
           counts[key] = realtors.length;
         } else {
           const types = TAB_TYPE_MAP[key];
-          counts[key] = types ? partners.filter((p) => types.includes(p.type)).length : 0;
+          counts[key] = types
+            ? partners.filter((p) => types.includes(p.type)).length
+            : 0;
         }
       }
     }
@@ -304,10 +358,13 @@ export default function AllPartnersClient() {
     );
   }
 
-  const activeCount = partners.filter((p) => (p.status || "active") === "active").length;
+  const activeCount = partners.filter(
+    (p) => (p.status || "active") === "active",
+  ).length;
   const recentCount = partners.filter((p) => {
     const d = new Date(p.created_at);
-    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 90);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 90);
     return d > cutoff;
   }).length;
 
@@ -315,7 +372,9 @@ export default function AllPartnersClient() {
     <div className="max-w-[1100px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">CRM</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">
+            CRM
+          </p>
           <h1 className="admin-page-hero text-[var(--tx)]">Partners</h1>
         </div>
         <div className="flex items-center gap-3 shrink-0">
@@ -329,11 +388,10 @@ export default function AllPartnersClient() {
           <button
             type="button"
             onClick={() => setInviteOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold text-[var(--btn-text-on-accent)] transition-all active:scale-95
-              bg-[var(--gold)]
-              shadow-[0_1px_0_rgba(0,0,0,0.1),0_2px_8px_rgba(201,169,98,0.22),inset_0_1px_0_rgba(255,255,255,0.12)]
-              hover:shadow-[0_1px_0_rgba(0,0,0,0.12),0_3px_12px_rgba(201,169,98,0.28),inset_0_1px_0_rgba(255,255,255,0.14)]
-              hover:brightness-105"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-[var(--admin-r-md,4px)] text-[12px] font-bold text-[var(--btn-text-on-accent)] transition-colors active:scale-[0.98]
+              bg-[var(--admin-primary-fill)] hover:bg-[var(--admin-primary-fill-hover)]
+              shadow-[0_1px_0_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.08)]
+              hover:shadow-[0_1px_0_rgba(0,0,0,0.14),0_3px_10px_rgba(0,0,0,0.26),inset_0_1px_0_rgba(255,255,255,0.1)]"
           >
             <Icon name="plus" className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">Add Partner</span>
@@ -341,26 +399,46 @@ export default function AllPartnersClient() {
         </div>
       </div>
 
-      {healthStats && (healthStats.at_risk + healthStats.cold) > 0 && (
+      {healthStats && healthStats.at_risk + healthStats.cold > 0 && (
         <Link
           href="/admin/partners/health"
           className="flex items-center gap-3 mb-6 px-4 py-3 rounded-xl bg-amber-400/10 border border-amber-400/20 hover:border-amber-400/40 transition-all group"
         >
-          <Icon name="alertTriangle" className="w-4 h-4 text-amber-400 shrink-0" />
+          <Icon
+            name="alertTriangle"
+            className="w-4 h-4 text-amber-400 shrink-0"
+          />
           <p className="text-[12px] text-amber-300 flex-1">
-            <span className="font-semibold">{healthStats.at_risk + healthStats.cold} partner{(healthStats.at_risk + healthStats.cold) !== 1 ? "s" : ""}</span>
-            {" "}haven't booked in 15+ days.
+            <span className="font-semibold">
+              {healthStats.at_risk + healthStats.cold} partner
+              {healthStats.at_risk + healthStats.cold !== 1 ? "s" : ""}
+            </span>{" "}
+            haven't booked in 15+ days.
           </p>
-          <span className="text-[11px] font-semibold text-amber-400 group-hover:underline">View Health</span>
+          <span className="text-[11px] font-semibold text-amber-400 group-hover:underline">
+            View Health
+          </span>
         </Link>
       )}
 
       <div className="grid grid-cols-3 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)] mb-8">
-        <KpiCard label="Total Partners" value={String(partners.length)} sub="organizations" />
-        <KpiCard label="Active" value={String(activeCount)} sub="enabled accounts" accent={activeCount > 0} />
-        <KpiCard label="New (90d)" value={String(recentCount)} sub="recently joined" />
+        <KpiCard
+          label="Total Partners"
+          value={String(partners.length)}
+          sub="organizations"
+        />
+        <KpiCard
+          label="Active"
+          value={String(activeCount)}
+          sub="enabled accounts"
+          accent={activeCount > 0}
+        />
+        <KpiCard
+          label="New (90d)"
+          value={String(recentCount)}
+          sub="recently joined"
+        />
       </div>
-
 
       {fetchError && (
         <div className="mb-4 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
@@ -380,7 +458,9 @@ export default function AllPartnersClient() {
             }`}
           >
             {t.label}
-            <span className="ml-1.5 text-[10px] opacity-60">({typeCounts[t.key] || 0})</span>
+            <span className="ml-1.5 text-[10px] opacity-60">
+              ({typeCounts[t.key] || 0})
+            </span>
           </button>
         ))}
       </div>
@@ -412,7 +492,9 @@ export default function AllPartnersClient() {
           onRowClick={(p) => router.push(`/admin/clients/${p.id}`)}
           emptyMessage="No partners found"
           emptySubtext={
-            activeTab !== "all" ? `No ${TAB_LABELS[activeTab] ?? partnerListTypeLabel(activeTab)} partners yet` : undefined
+            activeTab !== "all"
+              ? `No ${TAB_LABELS[activeTab] ?? partnerListTypeLabel(activeTab)} partners yet`
+              : undefined
           }
         />
       )}
@@ -424,7 +506,9 @@ export default function AllPartnersClient() {
           // Refresh partner list after onboarding
           fetch("/api/admin/partners/list")
             .then((r) => r.json())
-            .then((d) => { if (Array.isArray(d.partners)) setPartners(d.partners); })
+            .then((d) => {
+              if (Array.isArray(d.partners)) setPartners(d.partners);
+            })
             .catch(() => {});
         }}
       />

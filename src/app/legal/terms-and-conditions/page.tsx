@@ -21,7 +21,7 @@ export default async function TermsAndConditionsPage() {
     <main style={{ minHeight: "100vh", background: "#FDFCFA", fontFamily: "'DM Sans', sans-serif", color: "#1A1714" }}>
       <header style={{ borderBottom: "1px solid #E8E4DC", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, background: "#FDFCFA", zIndex: 10 }}>
         <Link href="/" style={{ textDecoration: "none" }}>
-          <YugoLogo size={20} variant="gold" onLightBackground />
+          <YugoLogo size={20} variant="wine" onLightBackground />
         </Link>
         <nav style={{ display: "flex", gap: 20, fontSize: 12, color: "#4F4B47" }}>
           <Link href="/legal/privacy-policy" style={{ color: "#4F4B47", textDecoration: "none" }}>Privacy Policy</Link>

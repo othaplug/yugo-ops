@@ -78,7 +78,7 @@ export default function InboxClient({ messages }: { messages: Message[] }) {
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-semibold text-[var(--tx1)]">Inbox</h1>
           {unreadCount > 0 && (
-            <span className="rounded-full bg-[var(--red)]/15 px-2.5 py-0.5 text-xs font-medium text-[var(--red)]">
+            <span className="dt-badge tracking-[0.04em] text-[var(--red)]">
               {unreadCount} unread
             </span>
           )}
@@ -107,10 +107,10 @@ export default function InboxClient({ messages }: { messages: Message[] }) {
             <button
               key={f.value}
               onClick={() => setFilter(f.value)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors border ${
                 filter === f.value
-                  ? "bg-[var(--gold)]/15 text-[var(--gold)]"
-                  : "text-[var(--tx3)] hover:bg-[var(--bg2)]"
+                  ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                  : "text-[var(--tx3)] border-transparent hover:bg-[var(--bg2)] hover:border-[var(--brd)]"
               }`}
             >
               {f.label}
@@ -161,10 +161,10 @@ export default function InboxClient({ messages }: { messages: Message[] }) {
                     </span>
                   )}
                   <span
-                    className={`ml-auto inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                    className={`ml-auto dt-badge tracking-[0.04em] ${
                       m.sender_type === "client"
-                        ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                        : "bg-[var(--gold)]/10 text-[var(--gold)]"
+                        ? "text-blue-600 dark:text-blue-400"
+                        : "text-[var(--tx3)]"
                     }`}
                   >
                     {m.sender_type === "client" ? "Client" : "Admin"}

@@ -357,16 +357,17 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
 
           {/* Mobile bottom navigation */}
           <nav
-            className={`md:hidden fixed bottom-0 left-0 right-0 z-[var(--z-topbar)] glass-topbar border-t border-[var(--brd)]/50 flex items-stretch safe-area-bottom ${
+            className={`md:hidden fixed bottom-0 left-0 right-0 z-[var(--z-topbar)] glass-topbar border-t border-[var(--brd)]/50 flex items-stretch ${
               immersiveNav ? "hidden" : ""
             }`}
+            style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
             aria-label="Main navigation"
           >
             {navItems.map((item) => {
               const active = isActive(item);
               const key = "navigation" in item && item.navigation ? "navigation" : item.href;
               const disabled = "navigation" in item && item.navigation && !item.href;
-              const tabClass = `flex-1 flex flex-col items-center justify-center px-0.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 min-h-[56px] text-[9px] font-bold uppercase tracking-[0.1em] leading-tight text-center transition-colors touch-manipulation [font-family:var(--font-body)] ${
+              const tabClass = `flex-1 flex flex-col items-center justify-center px-0.5 pb-2.5 pt-2 min-h-[52px] text-[10px] font-bold uppercase tracking-[0.08em] leading-tight text-center transition-colors touch-manipulation [font-family:var(--font-body)] ${
                 active
                   ? "text-[var(--yugo-rose-accent)]"
                   : disabled

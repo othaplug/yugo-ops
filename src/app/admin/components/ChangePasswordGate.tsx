@@ -72,7 +72,7 @@ export default function ChangePasswordGate({ children }: { children: React.React
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/70">
           <div className="w-full max-w-md bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl p-6 animate-fade-up">
             <div className="text-center mb-6">
-              <YugoLogo size={22} variant="gold" className="mb-4 inline-block" />
+              <YugoLogo size={22} variant="auto" className="mb-4 inline-block" />
               <h2 className="font-heading text-[20px] font-bold text-[var(--tx)]">Welcome to Yugo</h2>
               <p className="text-[12px] text-[var(--tx3)] mt-1">For security, please set a new password for your account.</p>
             </div>
@@ -108,7 +108,7 @@ export default function ChangePasswordGate({ children }: { children: React.React
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full py-3 rounded-lg text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+                className="w-full py-3 rounded-lg text-[13px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
               >
                 {saving ? "Updating…" : "Update password"}
               </button>

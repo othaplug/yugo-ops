@@ -127,16 +127,16 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <StatusIcon className={`w-4 h-4 shrink-0 ${statusInfo.color}`} />
-          <span className={`text-[9px] font-bold tracking-wider uppercase ${statusInfo.color}`}>
+          <span className={`text-xs font-bold tracking-wider uppercase ${statusInfo.color}`}>
             {statusInfo.label}
           </span>
-          <span className="text-[11px] font-mono text-[var(--tx2)]">{job.label}</span>
+          <span className="text-sm font-mono text-[var(--tx2)]">{job.label}</span>
           {job.scheduledTime && (
-            <span className="text-[10px] text-[var(--tx3)]">{job.scheduledTime}</span>
+            <span className="text-sm text-[var(--tx3)] tabular-nums">{job.scheduledTime}</span>
           )}
         </div>
         <span
-          className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
+          className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded uppercase tracking-wide ${
             job.type === "move"
               ? "bg-[#3B82F6]/15 text-[#3B82F6]"
               : "bg-[#A855F7]/15 text-[#A855F7]"
@@ -149,27 +149,27 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
       {/* Client + tier/partner */}
       <div className="flex items-center gap-2 flex-wrap">
         <User className="w-3.5 h-3.5 text-[var(--tx3)] shrink-0" />
-        <span className="text-[12px] font-semibold text-[var(--tx)]">{job.client}</span>
+        <span className="text-sm font-semibold text-[var(--tx)]">{job.client}</span>
         {job.tier && (
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--tx3)] uppercase">
+          <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--tx3)] uppercase">
             {job.tier}
           </span>
         )}
         {job.partnerName && job.type === "delivery" && (
-          <span className="text-[10px] text-[var(--tx3)]">{job.partnerName}</span>
+          <span className="text-sm text-[var(--tx3)]">{job.partnerName}</span>
         )}
       </div>
 
       {/* Route */}
       <div className="flex items-start gap-2 min-w-0">
         <MapPin className="w-3.5 h-3.5 text-[var(--tx3)] shrink-0 mt-0.5" />
-        <span className="text-[11px] text-[var(--tx3)] leading-snug break-words">
+        <span className="text-sm text-[var(--tx3)] leading-snug break-words">
           {routeSummary(job.fromAddress, job.toAddress)}
         </span>
       </div>
 
       {/* Crew + truck + ETA */}
-      <div className="flex items-center gap-2 flex-wrap text-[10px]">
+      <div className="flex items-center gap-2 flex-wrap text-sm">
         {job.crewId ? (
           <>
             <Users className="w-3.5 h-3.5 text-[var(--tx3)]" />
@@ -197,7 +197,7 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
       {!compact && (
         <>
           {job.currentStageLabel && (
-            <div className="text-[10px] text-[var(--tx3)]">{job.currentStageLabel}</div>
+            <div className="text-sm text-[var(--tx3)]">{job.currentStageLabel}</div>
           )}
           <div className="flex items-center gap-2">
             <div className="flex-1 h-1.5 rounded-full bg-[var(--gdim)] overflow-hidden">
@@ -206,7 +206,7 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
                 style={{ width: `${Math.min(100, Math.max(0, job.progress))}%` }}
               />
             </div>
-            <span className="text-[9px] text-[var(--tx3)] w-7 text-right">{job.progress}%</span>
+            <span className="text-xs text-[var(--tx3)] w-9 text-right tabular-nums">{job.progress}%</span>
           </div>
         </>
       )}
@@ -215,22 +215,22 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
       <div className="flex items-center gap-2 pt-0.5 flex-wrap">
         <Link
           href={job.href}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-[11px] font-semibold text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-sm font-semibold text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation"
         >
-          <ExternalLink className="w-3.5 h-3.5" />
+          <ExternalLink className="w-4 h-4 shrink-0" />
           View
         </Link>
         {onReassign && canReassign && (
           <button
             type="button"
             onClick={() => onReassign(job)}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-[11px] font-semibold transition-colors touch-manipulation ${
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold transition-colors touch-manipulation ${
               isUnassigned
                 ? "border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
                 : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
             }`}
           >
-            <Users className="w-3.5 h-3.5" />
+            <Users className="w-4 h-4 shrink-0" />
             {isUnassigned ? "Assign Crew" : "Reassign"}
           </button>
         )}
@@ -238,9 +238,9 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
           <button
             type="button"
             onClick={() => onContact(job)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-[11px] font-semibold text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-sm font-semibold text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation"
           >
-            <Phone className="w-3.5 h-3.5" />
+            <Phone className="w-4 h-4 shrink-0" />
             Contact
           </button>
         )}

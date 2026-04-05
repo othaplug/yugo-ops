@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getFeatureConfig } from "@/lib/platform-settings";
 import { runQuoteFollowupCronJob } from "@/lib/quote-followups/engine";
+import { processColdRules } from "@/lib/quote-followups/cold-intelligence";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 
 /**
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
     followup2: 0,
     followup3: 0,
     expired: 0,
+    coldMarked: 0,
     errors: [] as string[],
     skipped: !followupEnabled,
   };
@@ -38,6 +40,10 @@ export async function GET(req: NextRequest) {
   const statusNotAcceptedOrExpired = ["draft", "sent", "viewed", "declined"];
 
   if (!followupEnabled) {
+    const coldRun = await processColdRules(supabase);
+    results.coldMarked = coldRun.marked;
+    for (const e of coldRun.errors) results.errors.push(`cold:${e}`);
+
     const { data: expiredQuotes } = await supabase
       .from("quotes")
       .select("quote_id, hubspot_deal_id")
@@ -109,6 +115,7 @@ export async function GET(req: NextRequest) {
     followup2: job.followup2,
     followup3: job.followup3,
     expired: job.expired,
+    coldMarked: job.coldMarked,
     errors: job.errors.length,
   });
 }

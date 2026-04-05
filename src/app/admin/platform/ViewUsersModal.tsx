@@ -76,10 +76,10 @@ export default function ViewUsersModal({ open, onClose, currentUserId }: ViewUse
                     <div className="text-[11px] text-[var(--tx3)] truncate">{u.email}</div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${u.status === "activated" ? "bg-[rgba(45,159,90,0.15)] text-[var(--grn)]" : "bg-[var(--brd)] text-[var(--tx3)]"}`}>
+                    <span className={`dt-badge tracking-[0.04em] ${u.status === "activated" ? "text-[var(--grn)]" : "text-[var(--tx3)]"}`}>
                       {u.status === "activated" ? "Activated" : "Inactive"}
                     </span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)]">
+                    <span className="dt-badge tracking-[0.04em] text-[var(--gold)]">
                       {u.role === "admin" ? "Admin" : "Dispatcher"}
                     </span>
                     <span className="text-[9px] text-[var(--tx3)]">Email sent</span>

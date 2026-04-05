@@ -1,3 +1,5 @@
+import { resolveFullDocumentDarkLockCss } from "@/lib/email/email-client-dark-lock";
+
 /**
  * Fluid-hybrid responsive helpers for table-based HTML emails.
  *
@@ -117,7 +119,9 @@ export function wrapOutlookBodyIfNeeded(html: string): string {
 /** Insert responsive + Outlook head CSS into a full HTML document (before `</head>`). */
 export function injectEmailResponsiveCssIntoFullDocument(html: string): string {
   if (html.includes(EMAIL_RESPONSIVE_MARKER)) return html;
-  const block = `<style type="text/css">\n${getEmailResponsiveCss()}\n</style>\n${getOutlookMsoHeadBlock()}\n`;
+  const darkLock = resolveFullDocumentDarkLockCss(html);
+  const cssChunks = [darkLock, getEmailResponsiveCss()].filter(Boolean).join("\n");
+  const block = `<style type="text/css">\n${cssChunks}\n</style>\n${getOutlookMsoHeadBlock()}\n`;
   const lower = html.toLowerCase();
   const headClose = lower.indexOf("</head>");
   let out: string;

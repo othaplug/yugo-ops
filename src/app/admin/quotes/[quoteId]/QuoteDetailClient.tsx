@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowLeft,
   ArrowSquareOut as ExternalLink,
@@ -16,7 +16,13 @@ import {
   DeviceMobile as Smartphone,
   Trash as Trash2,
   CaretDown as ChevronDown,
+  PencilSimple as Pencil,
 } from "@phosphor-icons/react";
+import {
+  ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS,
+  ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS,
+} from "../../components/admin-toolbar-action-classes";
+import { formatPlatformDisplay } from "@/lib/date-format";
 import { toTitleCase } from "@/lib/format-text";
 import { displayLabel } from "@/lib/displayLabels";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -47,16 +53,30 @@ interface Props {
   engagement: EngagementEvent[];
   legacyEvents: LegacyEvent[];
   isSuperAdmin?: boolean;
+  followupsSentCount?: number;
+  followupMaxAttempts?: number;
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: "bg-[var(--brd)] text-[var(--tx3)]",
-  sent: "bg-amber-500/15 text-amber-400",
-  viewed: "bg-blue-500/15 text-blue-400",
-  accepted: "bg-green-500/15 text-green-400",
-  expired: "bg-red-500/15 text-red-400",
-  declined: "bg-red-500/15 text-red-400",
+  draft: "text-[var(--tx3)]",
+  sent: "text-amber-400",
+  viewed: "text-blue-400",
+  accepted: "text-green-400",
+  expired: "text-red-400",
+  declined: "text-red-400",
+  cold: "text-cyan-400",
+  lost: "text-red-400",
+  reactivated: "text-purple-400",
+  superseded: "text-[var(--tx3)]",
 };
+
+const LOSS_REASON_OPTIONS: { value: string; label: string }[] = [
+  { value: "competitor", label: "Went with competitor" },
+  { value: "postponed", label: "Move postponed" },
+  { value: "budget", label: "Over budget" },
+  { value: "no_response", label: "No response" },
+  { value: "other", label: "Other" },
+];
 
 const EVENT_CONFIG: Record<
   string,
@@ -176,6 +196,8 @@ export default function QuoteDetailClient({
   engagement,
   legacyEvents,
   isSuperAdmin = false,
+  followupsSentCount = 0,
+  followupMaxAttempts = 3,
 }: Props) {
   const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -185,6 +207,74 @@ export default function QuoteDetailClient({
   const [recoveringMove, setRecoveringMove] = useState(false);
   const [recoverError, setRecoverError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const [pipelineStatus, setPipelineStatus] = useState(String(quote.status || "draft"));
+  const [lossReasonKey, setLossReasonKey] = useState<string>("competitor");
+  const [lossOtherNote, setLossOtherNote] = useState("");
+  const [autoFollowup, setAutoFollowup] = useState(
+    quote.auto_followup_active !== false,
+  );
+  const [pipelineSaving, setPipelineSaving] = useState(false);
+  const [pipelineMsg, setPipelineMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPipelineStatus(String(quote.status || "draft"));
+    setAutoFollowup(quote.auto_followup_active !== false);
+    const lr = String(quote.loss_reason || "");
+    if (lr.toLowerCase().startsWith("other:")) {
+      setLossReasonKey("other");
+      setLossOtherNote(lr.replace(/^other:\s*/i, "").trim());
+    } else if (LOSS_REASON_OPTIONS.some((o) => o.value === lr)) {
+      setLossReasonKey(lr);
+      setLossOtherNote("");
+    } else {
+      setLossReasonKey("competitor");
+      setLossOtherNote("");
+    }
+  }, [quote.status, quote.auto_followup_active, quote.loss_reason]);
+
+  async function patchQuote(payload: Record<string, unknown>) {
+    setPipelineSaving(true);
+    setPipelineMsg(null);
+    try {
+      const res = await fetch(`/api/admin/quotes/${quote.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Update failed");
+      router.refresh();
+      setPipelineMsg("Saved.");
+    } catch (e) {
+      setPipelineMsg(e instanceof Error ? e.message : "Update failed");
+    } finally {
+      setPipelineSaving(false);
+    }
+  }
+
+  async function savePipelineStatus() {
+    if (pipelineStatus === "lost") {
+      const lr =
+        lossReasonKey === "other"
+          ? lossOtherNote.trim()
+            ? `other: ${lossOtherNote.trim()}`
+            : "other"
+          : lossReasonKey;
+      await patchQuote({ status: "lost", loss_reason: lr });
+      return;
+    }
+    if (pipelineStatus === "cold") {
+      await patchQuote({ status: "cold", cold_reason: "coordinator_marked" });
+      return;
+    }
+    await patchQuote({ status: pipelineStatus });
+  }
+
+  async function saveAutoFollowupToggle(next: boolean) {
+    setAutoFollowup(next);
+    await patchQuote({ auto_followup_active: next });
+  }
 
   async function handleRecoverMove() {
     setRecoverError(null);
@@ -288,7 +378,7 @@ export default function QuoteDetailClient({
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
-            <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">
+            <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82">
               Sales · Quote
             </p>
           </div>
@@ -299,7 +389,7 @@ export default function QuoteDetailClient({
               {quote.quote_id}
             </h1>
             <span
-              className={`text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full shrink-0 ${STATUS_COLORS[quote.status] ?? STATUS_COLORS.draft}`}
+              className={`dt-badge tracking-[0.04em] shrink-0 ${STATUS_COLORS[quote.status] ?? STATUS_COLORS.draft}`}
             >
               {toTitleCase(quote.status)}
             </span>
@@ -310,10 +400,9 @@ export default function QuoteDetailClient({
             {displayLabel(quote.service_type) ||
               toTitleCase(quote.service_type?.split("_").join(" ") || "")}{" "}
             &middot; Created{" "}
-            {new Date(quote.created_at).toLocaleDateString("en-CA", {
+            {formatPlatformDisplay(quote.created_at, {
               month: "short",
               day: "numeric",
-              year: "numeric",
             })}
           </p>
 
@@ -324,8 +413,9 @@ export default function QuoteDetailClient({
               onClick={() =>
                 router.push(`/admin/quotes/${quote.quote_id}/edit`)
               }
-              className="text-[11px] font-semibold text-[var(--gold)] hover:text-[var(--gold)]/80 px-3 py-1.5 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)]/40 transition-colors"
+              className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
             >
+              <Pencil weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
               Edit all details
             </button>
             {quote.quote_url && (
@@ -333,8 +423,9 @@ export default function QuoteDetailClient({
                 href={quote.quote_url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] px-3 py-1.5 rounded-lg border border-[var(--brd)] transition-colors"
+                className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
               >
+                <ExternalLink weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
                 Client view
               </a>
             )}
@@ -344,7 +435,7 @@ export default function QuoteDetailClient({
                   type="button"
                   onClick={() => setShowRecoverConfirm(true)}
                   disabled={recoveringMove}
-                  className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--grn)] px-3 py-1.5 rounded-lg border border-[var(--grn)]/40 hover:border-[var(--grn)] bg-[var(--grn)]/10 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 min-h-[30px] px-3 py-1.5 rounded-lg text-[10px] font-semibold text-[var(--grn)] border-2 border-[color-mix(in_srgb,var(--grn)_45%,transparent)] bg-[color-mix(in_srgb,var(--grn)_12%,transparent)] hover:border-[var(--grn)] disabled:opacity-50 transition-colors"
                 >
                   {recoveringMove ? "Creating…" : "Create Move"}
                 </button>
@@ -359,15 +450,127 @@ export default function QuoteDetailClient({
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(true)}
-                className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1 rounded bg-[var(--red)] text-white hover:opacity-90 transition-all"
+                className={ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS}
               >
-                <Trash2 className="w-3 h-3" /> Delete
+                <Trash2 weight="regular" className="w-3 h-3 shrink-0" aria-hidden /> Delete
               </button>
             )}
             {deleting && (
               <span className="text-[11px] text-[var(--tx3)]">Deleting…</span>
             )}
           </div>
+        </div>
+
+        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 md:p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+            <div>
+              <h2 className="admin-section-h2 mb-0">Status &amp; follow-ups</h2>
+              <p className="text-[11px] text-[var(--tx3)] mt-1">
+                Automated emails sent: {followupsSentCount} of {followupMaxAttempts}
+              </p>
+            </div>
+            {quote.status === "accepted" && (
+              <span className="dt-badge tracking-[0.04em] text-green-400 shrink-0">
+                Won
+              </span>
+            )}
+          </div>
+
+          {quote.status !== "accepted" && (
+            <>
+              <div className="grid sm:grid-cols-2 gap-4 items-end">
+                <div>
+                  <label className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] block mb-1.5">
+                    Pipeline
+                  </label>
+                  <select
+                    value={pipelineStatus}
+                    onChange={(e) => setPipelineStatus(e.target.value)}
+                    disabled={pipelineSaving}
+                    className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[12px] text-[var(--tx)]"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="sent">Sent</option>
+                    <option value="viewed">Viewed</option>
+                    <option value="cold">Cold (follow-ups paused)</option>
+                    <option value="lost">Lost</option>
+                    <option value="declined">Declined (client)</option>
+                    <option value="expired">Expired</option>
+                    <option value="reactivated">Reactivated</option>
+                    <option value="superseded">Superseded</option>
+                  </select>
+                </div>
+                <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)] cursor-pointer select-none pb-1">
+                  <input
+                    type="checkbox"
+                    checked={autoFollowup}
+                    disabled={pipelineSaving}
+                    onChange={(e) => void saveAutoFollowupToggle(e.target.checked)}
+                    className="accent-[#2C3E2D]"
+                  />
+                  Auto follow-up emails
+                </label>
+              </div>
+
+              {pipelineStatus === "lost" && (
+                <div className="space-y-2">
+                  <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]">
+                    Loss reason
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {LOSS_REASON_OPTIONS.map((o) => (
+                      <label
+                        key={o.value}
+                        className="flex items-center gap-2 text-[12px] text-[var(--tx)] cursor-pointer"
+                      >
+                        <input
+                          type="radio"
+                          name="loss_reason_admin"
+                          value={o.value}
+                          checked={lossReasonKey === o.value}
+                          onChange={() => setLossReasonKey(o.value)}
+                          className="accent-[#2C3E2D]"
+                        />
+                        {o.label}
+                      </label>
+                    ))}
+                  </div>
+                  {lossReasonKey === "other" && (
+                    <input
+                      type="text"
+                      value={lossOtherNote}
+                      onChange={(e) => setLossOtherNote(e.target.value)}
+                      placeholder="Brief details"
+                      className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[12px] text-[var(--tx)]"
+                    />
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  disabled={pipelineSaving}
+                  onClick={() => void savePipelineStatus()}
+                  className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
+                >
+                  Save status
+                </button>
+                {!autoFollowup && (
+                  <span className="text-[11px] text-[var(--tx3)]">
+                    Follow-ups paused
+                  </span>
+                )}
+              </div>
+              {pipelineMsg && (
+                <p
+                  className={`text-[11px] ${pipelineMsg === "Saved." ? "text-[var(--grn)]" : "text-[var(--red)]"}`}
+                >
+                  {pipelineMsg}
+                </p>
+              )}
+            </>
+          )}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -379,7 +582,7 @@ export default function QuoteDetailClient({
               <div className="grid sm:grid-cols-2 gap-x-8 gap-y-5">
                 {/* Client */}
                 <div>
-                  <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50 mb-1.5">
+                  <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)] mb-1.5">
                     Client
                   </p>
                   {quote.service_type === "b2b_delivery" &&
@@ -409,7 +612,7 @@ export default function QuoteDetailClient({
                 </div>
                 {quote.service_type === "b2b_delivery" && factors && (
                   <div className="sm:col-span-2 space-y-2 pt-1 border-t border-[var(--brd)]/40">
-                    <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50">
+                    <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]">
                       Delivery
                     </p>
                     <div className="grid sm:grid-cols-2 gap-3 text-[12px] text-[var(--tx)]">
@@ -496,25 +699,22 @@ export default function QuoteDetailClient({
                 )}
                 {/* Move Date */}
                 <div>
-                  <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50 mb-1.5">
+                  <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)] mb-1.5">
                     Move Date
                   </p>
                   <p className="text-[15px] font-semibold text-[var(--tx)] leading-tight">
                     {quote.move_date
-                      ? new Date(
-                          quote.move_date + "T00:00:00",
-                        ).toLocaleDateString("en-CA", {
+                      ? formatPlatformDisplay(new Date(quote.move_date + "T00:00:00"), {
                           weekday: "short",
                           month: "short",
                           day: "numeric",
-                          year: "numeric",
                         })
                       : "TBD"}
                   </p>
                 </div>
                 {/* Route */}
                 <div>
-                  <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50 mb-1.5">
+                  <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)] mb-1.5">
                     Route
                   </p>
                   <p className="text-[12px] font-medium text-[var(--tx)] leading-snug">
@@ -524,14 +724,14 @@ export default function QuoteDetailClient({
                     → {quote.to_address}
                   </p>
                   {quote.distance_km && (
-                    <p className="text-[10px] text-[var(--tx3)]/50 mt-1">
+                    <p className="text-[10px] text-[var(--tx3)] mt-1">
                       {quote.distance_km} km
                     </p>
                   )}
                 </div>
                 {/* Amount */}
                 <div>
-                  <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50 mb-1.5">
+                  <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)] mb-1.5">
                     Amount
                   </p>
                   {(() => {
@@ -548,7 +748,7 @@ export default function QuoteDetailClient({
                           <p className="text-[22px] font-bold text-[var(--gold)] font-heading leading-tight">
                             {fmtCurrency(lo)}–{fmtCurrency(hi)}
                           </p>
-                          <p className="text-[10px] text-[var(--tx3)]/60 mt-0.5">
+                          <p className="text-[10px] text-[var(--tx3)]/82 mt-0.5">
                             +{fmtCurrency(Math.round(lo * HST))}–
                             {fmtCurrency(Math.round(hi * HST))} HST (13%)
                           </p>
@@ -561,7 +761,7 @@ export default function QuoteDetailClient({
                         <p className="text-[22px] font-bold text-[var(--gold)] font-heading leading-tight">
                           {fmtCurrency(base)}
                         </p>
-                        <p className="text-[10px] text-[var(--tx3)]/60 mt-0.5">
+                        <p className="text-[10px] text-[var(--tx3)]/82 mt-0.5">
                           +{fmtCurrency(Math.round(base * HST))} HST (13%)
                         </p>
                       </>
@@ -577,7 +777,7 @@ export default function QuoteDetailClient({
                 <div className="mt-3 flex flex-wrap gap-4">
                   {quote.truck_primary && (
                     <div>
-                      <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
+                      <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/88">
                         Vehicle
                       </span>
                       <p className="text-[11px] font-medium text-[var(--tx)] mt-0.5">
@@ -591,7 +791,7 @@ export default function QuoteDetailClient({
                   )}
                   {(quote.est_crew_size ?? factors?.est_crew_size) && (
                     <div>
-                      <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
+                      <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/88">
                         Crew
                       </span>
                       <p className="text-[11px] font-medium text-[var(--tx)] mt-0.5">
@@ -602,7 +802,7 @@ export default function QuoteDetailClient({
                   )}
                   {quote.est_hours && (
                     <div>
-                      <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
+                      <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/88">
                         Est. Hours
                       </span>
                       <p className="text-[11px] font-medium text-[var(--tx)] mt-0.5">
@@ -679,11 +879,11 @@ export default function QuoteDetailClient({
                                 )}
                               </div>
                               <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[9px] text-[var(--tx3)]/60">
+                                <span className="text-[9px] text-[var(--tx3)]/82">
                                   {timeAgo(ev.at)}
                                 </span>
                                 {ev.duration != null && (
-                                  <span className="text-[9px] text-[var(--tx3)]/60">
+                                  <span className="text-[9px] text-[var(--tx3)]/82">
                                     · {fmtDuration(ev.duration)} on page
                                   </span>
                                 )}
@@ -735,7 +935,7 @@ export default function QuoteDetailClient({
                   <div className="w-1.5 h-1.5 rounded-full bg-[var(--tx3)]" />
                   <span className="text-[var(--tx3)] flex-1">Created</span>
                   <span className="text-[var(--tx)] font-medium">
-                    {new Date(quote.created_at).toLocaleDateString("en-CA", {
+                    {formatPlatformDisplay(quote.created_at, {
                       month: "short",
                       day: "numeric",
                       hour: "2-digit",
@@ -745,10 +945,10 @@ export default function QuoteDetailClient({
                 </div>
                 {quote.sent_at && (
                   <div className="flex items-center gap-2.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--gold)]" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--admin-primary-fill)]" />
                     <span className="text-[var(--tx3)] flex-1">Sent</span>
                     <span className="text-[var(--tx)] font-medium">
-                      {new Date(quote.sent_at).toLocaleDateString("en-CA", {
+                      {formatPlatformDisplay(quote.sent_at, {
                         month: "short",
                         day: "numeric",
                         hour: "2-digit",
@@ -764,7 +964,7 @@ export default function QuoteDetailClient({
                       First Viewed
                     </span>
                     <span className="text-blue-400 font-medium">
-                      {new Date(quote.viewed_at).toLocaleDateString("en-CA", {
+                      {formatPlatformDisplay(quote.viewed_at, {
                         month: "short",
                         day: "numeric",
                         hour: "2-digit",
@@ -778,7 +978,7 @@ export default function QuoteDetailClient({
                     <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
                     <span className="text-[var(--tx3)] flex-1">Accepted</span>
                     <span className="text-green-400 font-medium">
-                      {new Date(quote.accepted_at).toLocaleDateString("en-CA", {
+                      {formatPlatformDisplay(quote.accepted_at, {
                         month: "short",
                         day: "numeric",
                         hour: "2-digit",
@@ -796,7 +996,7 @@ export default function QuoteDetailClient({
                     <span
                       className={`font-medium ${new Date(quote.expires_at) < new Date() ? "text-red-400" : "text-[var(--tx)]"}`}
                     >
-                      {new Date(quote.expires_at).toLocaleDateString("en-CA", {
+                      {formatPlatformDisplay(quote.expires_at, {
                         month: "short",
                         day: "numeric",
                       })}

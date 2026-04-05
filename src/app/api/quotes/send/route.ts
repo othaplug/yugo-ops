@@ -14,6 +14,7 @@ import { updateLeadAfterQuoteSent } from "@/lib/leads/update-from-quote";
 import { pickupLocationsFromQuote, dropoffLocationsFromQuote } from "@/lib/quotes/quote-address-display";
 import { normalizePhone } from "@/lib/phone";
 import { getQuoteIdPrefix, quoteNumericSuffixForHubSpot } from "@/lib/quotes/quote-id";
+import { randomBytes } from "crypto";
 
 const SERVICE_TO_TEMPLATE: Record<string, string> = {
   local_move: "quote-residential",
@@ -342,6 +343,9 @@ export async function POST(req: NextRequest) {
     }
 
     const now = new Date();
+    const hasToken = Boolean(
+      (quote as { public_action_token?: string | null }).public_action_token?.trim(),
+    );
     await supabase
       .from("quotes")
       .update({
@@ -349,6 +353,7 @@ export async function POST(req: NextRequest) {
         sent_at: now.toISOString(),
         quote_url: quoteUrl,
         expires_at: new Date(now.getTime() + expiryDays * 86_400_000).toISOString(),
+        ...(!hasToken ? { public_action_token: randomBytes(24).toString("hex") } : {}),
       })
       .eq("quote_id", quoteId);
 

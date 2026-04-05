@@ -55,10 +55,10 @@ function isPdf(url: string, type?: string) {
 }
 
 const BADGE_STYLES: Record<string, string> = {
-  pod:    "bg-[#2C3E2D]/15 text-[#7A5C00] border border-[#2C3E2D]/30",
-  photo:  "bg-[#2D6A4F]/10 text-[#1B4332] border border-[#2D6A4F]/25",
-  doc:    "bg-blue-50 text-blue-700 border border-blue-200",
-  upload: "bg-[var(--gdim)] text-[var(--tx2)] border border-[var(--brd)]",
+  pod:    "text-[#2C3E2D] dark:text-[#A8C4A9]",
+  photo:  "text-[#1B4332] dark:text-emerald-300",
+  doc:    "text-blue-700 dark:text-sky-300",
+  upload: "text-[var(--tx2)]",
 };
 
 const BADGE_LABELS: Record<string, string> = {
@@ -152,14 +152,14 @@ function FileGroup({
                   {/* Badge + date tooltip */}
                   <div className="mt-1 space-y-0.5">
                     <div className="flex items-center gap-1 flex-wrap">
-                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${BADGE_STYLES[f.badge]}`}>
+                      <span className={`text-[10px] font-bold uppercase tracking-[0.04em] ${BADGE_STYLES[f.badge]}`}>
                         {BADGE_LABELS[f.badge]}
                       </span>
                     </div>
                     <p className="text-[9px] text-[var(--tx3)] truncate" title={f.name}>
                       {f.caption || f.name}
                     </p>
-                    <p className="text-[9px] text-[var(--tx3)]/70">{formatShort(f.date)}</p>
+                    <p className="text-[9px] text-[var(--tx3)]/88">{formatShort(f.date)}</p>
                   </div>
                 </div>
               ))}
@@ -377,7 +377,7 @@ export default function MoveFilesSection({ moveId, moveStatus }: { moveId: strin
               {regenerating ? "Regenerating…" : "Regenerate Documents"}
             </button>
           )}
-          <label className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] cursor-pointer transition-colors ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
+          <label className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] cursor-pointer transition-colors ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
             <Upload className="w-[11px] h-[11px]" />
             {uploading ? "Uploading…" : "Upload File"}
             <input

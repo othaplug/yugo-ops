@@ -110,7 +110,7 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
         <GlobalModal open={showModal} onClose={() => {}} title="" noHeader>
           <div className="p-6">
             <div className="text-center mb-6">
-              <YugoLogo size={22} variant="gold" className="mb-4 inline-block" />
+              <YugoLogo size={22} variant="auto" className="mb-4 inline-block" />
               <h2 className="admin-section-h2">Two-factor verification</h2>
               <p className="text-[12px] text-[var(--tx3)] mt-1">Enter the 6-digit code sent to your email</p>
             </div>
@@ -143,7 +143,7 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
                 <button
                   type="submit"
                   disabled={verifying || code.length !== 6}
-                  className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50"
                 >
                   {verifying ? "Verifying…" : "Verify"}
                 </button>

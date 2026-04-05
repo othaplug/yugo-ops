@@ -322,7 +322,7 @@ export default function DeliveryDayForm({
       <div className="flex gap-1.5">
         {stepLabels.map((label, i) => (
           <div key={i} className="flex-1">
-            <div className={`h-1 rounded-full transition-all ${i < step ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`} />
+            <div className={`h-1 rounded-full transition-all ${i < step ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`} />
             <span className={`text-[10px] mt-1 block ${i === step - 1 ? "text-[var(--gold)] font-semibold" : "text-[var(--tx3)]"}`}>{label}</span>
           </div>
         ))}
@@ -400,7 +400,7 @@ export default function DeliveryDayForm({
             <div key={stop.id} className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 space-y-3 shadow-sm">
               <div className="flex items-center justify-between">
                 <h4 className="text-[13px] font-bold text-[var(--tx)] flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-full bg-[var(--gold)] text-white text-[10px] font-bold flex items-center justify-center">{idx + 1}</span>
+                  <span className="w-5 h-5 rounded-full bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[10px] font-bold flex items-center justify-center">{idx + 1}</span>
                   Stop {idx + 1}
                 </h4>
                 {stops.length > MIN_STOPS && (
@@ -459,7 +459,7 @@ export default function DeliveryDayForm({
                           key={cat}
                           type="button"
                           onClick={() => setItemCategory(cat)}
-                          className={`px-2.5 py-1 text-[10px] font-semibold rounded-full transition-colors ${itemCategory === cat ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--card)] text-[var(--tx2)] border border-[var(--brd)] hover:border-[var(--gold)]/40"}`}
+                          className={`px-2.5 py-1 text-[10px] font-semibold rounded-full transition-colors ${itemCategory === cat ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : "bg-[var(--card)] text-[var(--tx2)] border border-[var(--brd)] hover:border-[var(--gold)]/40"}`}
                         >
                           {SIZE_LABELS[cat]}
                         </button>
@@ -669,7 +669,7 @@ export default function DeliveryDayForm({
           {stops.map((stop, idx) => (
             <div key={stop.id} className="rounded-xl border border-[var(--brd)] p-4 space-y-1.5">
               <h4 className="text-[12px] font-bold text-[var(--tx)] flex items-center gap-1.5">
-                <span className="w-4 h-4 rounded-full bg-[var(--gold)] text-white text-[9px] font-bold flex items-center justify-center">{idx + 1}</span>
+                <span className="w-4 h-4 rounded-full bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[9px] font-bold flex items-center justify-center">{idx + 1}</span>
                 Stop {idx + 1}
               </h4>
               <p className="text-[12px] text-[var(--tx2)] truncate">{stop.address || "-"}</p>
@@ -719,7 +719,7 @@ export default function DeliveryDayForm({
               setStep((s) => s + 1);
             }}
             disabled={step === 1 ? !canStep1 : step === 2 ? !canStep2 : false}
-            className="flex-1 py-3 rounded-xl text-[13px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 py-3 rounded-xl text-[13px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             Continue <ChevronRight className="w-4 h-4" />
           </button>

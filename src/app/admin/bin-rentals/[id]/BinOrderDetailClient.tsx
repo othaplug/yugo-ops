@@ -14,6 +14,7 @@ import {
   XCircle,
 } from "@phosphor-icons/react";
 import PageContent from "@/app/admin/components/PageContent";
+import { formatPlatformDisplay } from "@/lib/date-format";
 
 const STATUS_LABELS: Record<string, string> = {
   confirmed: "Confirmed",
@@ -28,15 +29,15 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  confirmed: "bg-blue-500/15 text-blue-400",
-  drop_off_scheduled: "bg-purple-500/15 text-purple-400",
-  bins_delivered: "bg-emerald-500/15 text-emerald-400",
-  in_use: "bg-amber-500/15 text-amber-400",
-  pickup_scheduled: "bg-sky-500/15 text-sky-400",
-  bins_collected: "bg-teal-500/15 text-teal-400",
-  completed: "bg-green-500/15 text-green-400",
-  overdue: "bg-red-500/15 text-red-400",
-  cancelled: "bg-neutral-500/15 text-neutral-400",
+  confirmed: "text-blue-400",
+  drop_off_scheduled: "text-purple-400",
+  bins_delivered: "text-emerald-400",
+  in_use: "text-amber-400",
+  pickup_scheduled: "text-sky-400",
+  bins_collected: "text-teal-400",
+  completed: "text-green-400",
+  overdue: "text-red-400",
+  cancelled: "text-neutral-400",
 };
 
 const BUNDLE_LABELS: Record<string, string> = {
@@ -72,8 +73,11 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
 
   const fmtDate = (d: string | null) => {
     if (!d) return "-";
-    return new Date(d + (d.includes("T") ? "" : "T12:00:00"))
-      .toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+    return formatPlatformDisplay(new Date(d + (d.includes("T") ? "" : "T12:00:00")), {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    }, "-");
   };
 
   const fmtMoney = (n: number | null) =>
@@ -156,7 +160,7 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-bold text-[var(--tx)]">{order.order_number}</h1>
-              <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide ${STATUS_STYLES[order.status] || "bg-[var(--gdim)] text-[var(--tx3)]"}`}>
+              <span className={`dt-badge tracking-[0.04em] ${STATUS_STYLES[order.status] || "text-[var(--tx3)]"}`}>
                 {STATUS_LABELS[order.status] || order.status}
               </span>
               {order.status === "overdue" && (

@@ -8,6 +8,7 @@ import {
   fmtPrice,
   calculateDeposit,
 } from "../quote-shared";
+import { formatPlatformDisplay } from "@/lib/date-format";
 
 interface Props {
   quote: Quote;
@@ -17,19 +18,18 @@ interface Props {
 
 function fmtDate(d: string | null | undefined): string {
   if (!d) return "TBD";
-  return new Date(d + "T00:00:00").toLocaleDateString("en-CA", {
+  return formatPlatformDisplay(new Date(d + "T00:00:00"), {
     month: "long",
     day: "numeric",
-    year: "numeric",
-  });
+  }, "TBD");
 }
 
 function fmtShort(d: string | null | undefined): string {
   if (!d) return "TBD";
-  return new Date(d + "T00:00:00").toLocaleDateString("en-CA", {
+  return formatPlatformDisplay(new Date(d + "T00:00:00"), {
     month: "short",
     day: "numeric",
-  });
+  }, "TBD");
 }
 
 type EventLegFactor = {

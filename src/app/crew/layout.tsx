@@ -23,7 +23,7 @@ export default function CrewLayout({ children }: { children: ReactNode }) {
   return (
     <CrewThemeProvider>
       <CrewCssVarsBridge />
-      <div className="crew-app min-h-dvh">
+      <div className="crew-app min-h-dvh w-full max-w-full min-w-0 overflow-x-clip">
         <CrewRouteLightLock />
         <CrewLocalPreferencesHydration />
         <CrewAlwaysOnLocation />

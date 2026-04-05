@@ -55,7 +55,7 @@ const dropoffIcon = L.divIcon({
   iconAnchor: [9, 9],
 });
 
-/** Directional arrow marker for delivery crew — rotated to heading. Bright on dark map. */
+/** Directional arrow marker for delivery crew — rotated to heading. */
 function crewArrowIcon(bearing: number | null = null) {
   const rot = bearing != null ? bearing : 0;
   return L.divIcon({
@@ -234,13 +234,13 @@ export default function DeliveryTrackMap({
       <MapController center={center} pickup={pickup ?? null} dropoff={dropoff ?? null} crew={crew} />
       {USE_MAPBOX ? (
         <TileLayer
-          url={`https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/512/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`}
+          url={`https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/512/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`}
           tileSize={512}
           zoomOffset={-1}
           attribution=""
         />
       ) : (
-        <TileLayer attribution="" url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+        <TileLayer attribution="" url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
       )}
       {purpleLinePositions.length >= 2 && (
         <Polyline positions={purpleLinePositions} color="#2C3E2D" weight={4} opacity={0.9} lineCap="round" lineJoin="round" />

@@ -14,9 +14,10 @@ import {
   STATUS_DOT_COLORS,
   JOB_COLORS,
 } from "@/lib/calendar/types";
-import { CALENDAR_PILL_TEXT } from "@/lib/calendar/calendar-job-styles";
+import { calendarPillTextForBackground } from "@/lib/calendar/calendar-job-styles";
 import PartnerDeliveriesTab from "./PartnerDeliveriesTab";
 import { normalizeDeliveryItem } from "@/lib/delivery-items";
+import { formatPlatformDisplay } from "@/lib/date-format";
 
 const DELIVERY_STATUS_LABELS: Record<string, string> = {
   scheduled: "Scheduled",
@@ -321,28 +322,25 @@ export default function PartnerCalendarTab({
   const headerLabel = useMemo(() => {
     if (view === "year") return String(yearView);
     if (view === "month")
-      return new Date(monthYear.year, monthYear.month, 1).toLocaleDateString(
-        "en-US",
-        { month: "long", year: "numeric" },
-      );
+      return formatPlatformDisplay(new Date(monthYear.year, monthYear.month, 1), {
+        month: "long",
+      });
     if (view === "week") {
       const days = getWeekDays(weekAnchor);
-      const fm = days[0].date.toLocaleDateString("en-US", {
+      const fm = formatPlatformDisplay(days[0].date, {
         month: "short",
         day: "numeric",
       });
-      const lm = days[6].date.toLocaleDateString("en-US", {
+      const lm = formatPlatformDisplay(days[6].date, {
         month: "short",
         day: "numeric",
-        year: "numeric",
       });
       return `${fm} – ${lm}`;
     }
-    return new Date(selectedDate + "T12:00:00").toLocaleDateString("en-US", {
+    return formatPlatformDisplay(new Date(selectedDate + "T12:00:00"), {
       weekday: "long",
       month: "long",
       day: "numeric",
-      year: "numeric",
     });
   }, [view, yearView, monthYear, weekAnchor, selectedDate]);
 
@@ -595,7 +593,9 @@ export default function PartnerCalendarTab({
                     className="w-full text-left px-1.5 py-0.5 rounded text-[9px] font-medium truncate transition-colors hover:opacity-80"
                     style={{
                       backgroundColor: e.color || JOB_COLORS.project,
-                      color: CALENDAR_PILL_TEXT,
+                      color: calendarPillTextForBackground(
+                        e.color || JOB_COLORS.project,
+                      ),
                       borderLeft: "3px solid rgba(15,23,42,0.28)",
                       boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
                     }}
@@ -773,7 +773,9 @@ export default function PartnerCalendarTab({
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold"
                     style={{
                       backgroundColor: e.color || JOB_COLORS.project,
-                      color: CALENDAR_PILL_TEXT,
+                      color: calendarPillTextForBackground(
+                        e.color || JOB_COLORS.project,
+                      ),
                       borderLeft: "3px solid rgba(15,23,42,0.28)",
                     }}
                   >
@@ -1027,7 +1029,9 @@ export default function PartnerCalendarTab({
                         top: 2 + idx * 18,
                         height: 16,
                         backgroundColor: e.color || JOB_COLORS.project,
-                        color: CALENDAR_PILL_TEXT,
+                        color: calendarPillTextForBackground(
+                          e.color || JOB_COLORS.project,
+                        ),
                         borderLeft: "2px solid rgba(15,23,42,0.28)",
                       }}
                     >

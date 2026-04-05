@@ -78,13 +78,13 @@ export default function UserRow({ user, roleLabel, onSelect, onDeleted, onResend
           <div className="text-[9px] text-[var(--tx3)]">{user.email}</div>
         </td>
         <td className="px-3 py-2 border-b border-[var(--brd)]">
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)]">{roleLabel}</span>
+          <span className="dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">{roleLabel}</span>
         </td>
         <td className="px-3 py-2 border-b border-[var(--brd)]">
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-            user.status === "activated" ? "bg-[rgba(45,159,90,0.15)] text-[var(--grn)]" :
-            user.status === "pending" ? "bg-[rgba(201,169,98,0.15)] text-[var(--gold)]" :
-            "bg-[var(--brd)] text-[var(--tx3)]"
+          <span className={`dt-badge tracking-[0.04em] ${
+            user.status === "activated" ? "text-[var(--grn)]" :
+            user.status === "pending" ? "text-amber-700 dark:text-amber-300" :
+            "text-[var(--tx3)]"
           }`}>
             {user.status === "activated" ? "Active" : user.status === "pending" ? "Pending" : "Inactive"}
           </span>

@@ -100,9 +100,12 @@ export default function DispatchBoardClient({ today }: Props) {
             : "Failed to load dispatch data.";
         throw new Error(msg);
       }
-      if (!res.ok) throw new Error((json as { error?: string }).error || "Failed to load");
+      if (!res.ok)
+        throw new Error((json as { error?: string }).error || "Failed to load");
       const prevIds = prevEventIdsRef.current;
-      const newEventIds = new Set(((json.events as DispatchEvent[]) || []).map((e) => e.id));
+      const newEventIds = new Set(
+        ((json.events as DispatchEvent[]) || []).map((e) => e.id),
+      );
       const unseen = new Set<string>();
       if (prevIds.size > 0) {
         for (const id of newEventIds) {
@@ -139,7 +142,11 @@ export default function DispatchBoardClient({ today }: Props) {
         const res = await fetch("/api/dispatch/assign", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ jobId: job.id, jobType: job.type, crewId: crewId || null }),
+          body: JSON.stringify({
+            jobId: job.id,
+            jobType: job.type,
+            crewId: crewId || null,
+          }),
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "Failed to assign");
@@ -152,7 +159,7 @@ export default function DispatchBoardClient({ today }: Props) {
         setReassigning(false);
       }
     },
-    [load, toast]
+    [load, toast],
   );
 
   const handleContact = useCallback((job: DispatchJob) => {
@@ -162,7 +169,11 @@ export default function DispatchBoardClient({ today }: Props) {
   const prevDate = addCalendarDaysYmd(date, -1);
   const nextDate = addCalendarDaysYmd(date, 1);
   const isToday = date === today;
-  const shortDate = formatDateYmd(date, { weekday: "short", month: "short", day: "numeric" });
+  const shortDate = formatDateYmd(date, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 
   const filteredJobs = useMemo(() => {
     if (!data?.jobs) return [];
@@ -171,11 +182,11 @@ export default function DispatchBoardClient({ today }: Props) {
         return data.jobs.filter((j) => !j.crewId);
       case "active":
         return data.jobs.filter((j) =>
-          ACTIVE_STATUSES_F.includes((j.status || "").toLowerCase())
+          ACTIVE_STATUSES_F.includes((j.status || "").toLowerCase()),
         );
       case "completed":
         return data.jobs.filter((j) =>
-          COMPLETED_STATUSES_F.includes((j.status || "").toLowerCase())
+          COMPLETED_STATUSES_F.includes((j.status || "").toLowerCase()),
         );
       default:
         return data.jobs;
@@ -194,13 +205,19 @@ export default function DispatchBoardClient({ today }: Props) {
             </div>
             <div className="flex gap-1.5 mb-0.5">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-7 w-16 rounded-lg bg-[var(--gdim)] animate-pulse" />
+                <div
+                  key={i}
+                  className="h-7 w-16 rounded-lg bg-[var(--gdim)] animate-pulse"
+                />
               ))}
             </div>
           </div>
           <div className="flex gap-2.5 overflow-hidden">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-[76px] w-[96px] shrink-0 rounded-2xl bg-[var(--gdim)] animate-pulse" />
+              <div
+                key={i}
+                className="h-[76px] w-[96px] shrink-0 rounded-2xl bg-[var(--gdim)] animate-pulse"
+              />
             ))}
           </div>
           <div className="h-px bg-[var(--brd)]/30" />
@@ -208,12 +225,18 @@ export default function DispatchBoardClient({ today }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(320px,45%)_1fr] gap-8 lg:gap-10">
           <div className="space-y-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-28 rounded-xl bg-[var(--gdim)]/80 animate-pulse" />
+              <div
+                key={i}
+                className="h-28 rounded-xl bg-[var(--gdim)]/80 animate-pulse"
+              />
             ))}
           </div>
           <div className="space-y-3 pl-0 lg:pl-2 lg:border-l lg:border-[var(--brd)]/20">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-12 rounded-lg bg-[var(--gdim)]/70 animate-pulse" />
+              <div
+                key={i}
+                className="h-12 rounded-lg bg-[var(--gdim)]/70 animate-pulse"
+              />
             ))}
           </div>
         </div>
@@ -227,11 +250,16 @@ export default function DispatchBoardClient({ today }: Props) {
         <div className="w-12 h-12 rounded-full bg-[var(--red)]/10 flex items-center justify-center">
           <AlertTriangle className="w-6 h-6 text-[var(--red)]" />
         </div>
-        <p className="text-[var(--tx2)] text-[var(--text-base)] font-medium text-center">{error}</p>
+        <p className="text-[var(--tx2)] text-[var(--text-base)] font-medium text-center">
+          {error}
+        </p>
         <button
           type="button"
-          onClick={() => { setLoading(true); load(); }}
-          className="px-4 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors touch-manipulation"
+          onClick={() => {
+            setLoading(true);
+            load();
+          }}
+          className="px-4 py-2.5 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--admin-primary-fill-hover)] transition-colors touch-manipulation"
         >
           Try again
         </button>
@@ -240,45 +268,76 @@ export default function DispatchBoardClient({ today }: Props) {
   }
 
   const scheduleTitle =
-    filterStatus === "unassigned" ? "Unassigned Jobs" :
-    filterStatus === "active" ? "Active Jobs" :
-    filterStatus === "completed" ? "Completed Jobs" :
-    "Today's Schedule";
+    filterStatus === "unassigned"
+      ? "Unassigned Jobs"
+      : filterStatus === "active"
+        ? "Active Jobs"
+        : filterStatus === "completed"
+          ? "Completed Jobs"
+          : "Today's Schedule";
 
   const statCards = [
-    { key: "all" as FilterStatus, label: "Jobs Today", value: data?.stats.jobsToday ?? 0, color: "text-[var(--tx)]" },
-    ...(((data?.stats.unassigned ?? 0) > 0 || filterStatus === "unassigned")
-      ? [{ key: "unassigned" as FilterStatus, label: "Unassigned", value: data?.stats.unassigned ?? 0, color: "text-amber-500" }]
+    {
+      key: "all" as FilterStatus,
+      label: "Jobs Today",
+      value: data?.stats.jobsToday ?? 0,
+      color: "text-[var(--tx)]",
+    },
+    ...((data?.stats.unassigned ?? 0) > 0 || filterStatus === "unassigned"
+      ? [
+          {
+            key: "unassigned" as FilterStatus,
+            label: "Unassigned",
+            value: data?.stats.unassigned ?? 0,
+            color: "text-amber-500",
+          },
+        ]
       : []),
-    { key: "active" as FilterStatus, label: "Active Crews", value: data?.stats.activeCrews ?? 0, color: "text-[#3B82F6]" },
-    { key: "completed" as FilterStatus, label: "Completed", value: data?.stats.completed ?? 0, color: "text-[var(--grn)]" },
-    { key: null as null, label: "Assigned", value: data?.stats.assigned ?? 0, color: "text-[var(--tx2)]" },
+    {
+      key: "active" as FilterStatus,
+      label: "Active Crews",
+      value: data?.stats.activeCrews ?? 0,
+      color: "text-[#3B82F6]",
+    },
+    {
+      key: "completed" as FilterStatus,
+      label: "Completed",
+      value: data?.stats.completed ?? 0,
+      color: "text-[var(--grn)]",
+    },
+    {
+      key: null as null,
+      label: "Assigned",
+      value: data?.stats.assigned ?? 0,
+      color: "text-[var(--tx2)]",
+    },
   ];
 
   return (
     <div className="flex flex-col min-h-[calc(100dvh-3.5rem-56px)] md:min-h-[calc(100dvh-3.5rem)] h-auto md:h-[calc(100dvh-3.5rem)] animate-fade-up px-5 sm:px-6 md:px-8 lg:px-10 py-6 md:py-8 max-w-[1800px] mx-auto w-full">
-
       {/* ── Header ── */}
       <div className="mb-6 space-y-3">
-
         {/* Row 1: Title + primary CTA */}
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/50 leading-none mb-1.5">Operations</p>
+            <p className="text-xs font-bold tracking-[0.14em] uppercase text-[var(--tx3)] leading-snug mb-1.5">
+              Operations
+            </p>
             <h1 className="admin-page-hero text-[var(--tx)]">Dispatch</h1>
           </div>
-          <Link
-            href="/admin/crew"
-            className="admin-btn admin-btn-primary"
-          >
-            <Crosshair size={12} weight="regular" className="text-current shrink-0" aria-hidden />
+          <Link href="/admin/crew" className="admin-btn admin-btn-primary">
+            <Crosshair
+              size={14}
+              weight="regular"
+              className="text-current shrink-0"
+              aria-hidden
+            />
             Live Map
           </Link>
         </div>
 
         {/* Row 2: Date navigator + secondary controls */}
         <div className="flex items-center justify-between gap-2 w-full min-w-0">
-
           {/* Date nav — full width on mobile (center control grows), compact from md */}
           <div className="flex flex-1 min-w-0 items-center gap-1 md:flex-initial">
             <button
@@ -293,18 +352,31 @@ export default function DispatchBoardClient({ today }: Props) {
             <div className="relative min-w-0 flex-1 md:flex-initial md:w-auto">
               <button
                 type="button"
-                onClick={() => { if (dateInputRef.current?.showPicker) { dateInputRef.current.showPicker(); } else { dateInputRef.current?.click(); } }}
+                onClick={() => {
+                  if (dateInputRef.current?.showPicker) {
+                    dateInputRef.current.showPicker();
+                  } else {
+                    dateInputRef.current?.click();
+                  }
+                }}
                 className="admin-btn admin-btn-ghost w-full min-w-0 justify-center md:w-auto"
               >
-                <CalendarDays weight="regular" className="w-3 h-3 shrink-0 opacity-70" />
+                <CalendarDays
+                  weight="regular"
+                  className="w-3 h-3 shrink-0 opacity-70"
+                />
                 <span className="hidden sm:inline">{shortDate}</span>
-                <span className="sm:hidden">{formatDateYmd(date, { month: "short", day: "numeric" })}</span>
+                <span className="sm:hidden">
+                  {formatDateYmd(date, { month: "short", day: "numeric" })}
+                </span>
               </button>
               <input
                 ref={dateInputRef}
                 type="date"
                 value={date}
-                onChange={(e) => { if (e.target.value) setDate(e.target.value); }}
+                onChange={(e) => {
+                  if (e.target.value) setDate(e.target.value);
+                }}
                 className="absolute inset-0 opacity-0 w-full cursor-pointer"
                 aria-label="Select date"
               />
@@ -333,7 +405,7 @@ export default function DispatchBoardClient({ today }: Props) {
 
           {/* Secondary: auto-refresh (desktop only) + refresh */}
           <div className="flex shrink-0 items-center gap-2">
-            <label className="hidden md:flex items-center gap-1.5 text-[10px] font-medium text-[var(--tx3)] cursor-pointer select-none">
+            <label className="hidden md:flex items-center gap-1.5 text-xs font-medium text-[var(--tx3)] cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={autoRefresh}
@@ -349,10 +421,13 @@ export default function DispatchBoardClient({ today }: Props) {
               className={`admin-btn admin-btn-ghost ${loading ? "opacity-50" : ""}`}
               aria-label="Refresh"
             >
-              <RefreshCw weight="regular" className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw
+                weight="regular"
+                className={`w-3 h-3 ${loading ? "animate-spin" : ""}`}
+              />
               <span className="hidden sm:inline">Refresh</span>
               {lastFetch > 0 && (
-                <span className="hidden sm:inline text-[9px] text-[var(--tx3)]/60 font-normal tabular-nums">
+                <span className="hidden sm:inline text-xs text-[var(--tx3)]/82 font-normal tabular-nums">
                   {formatLastUpdated(Date.now() - lastFetch)}
                 </span>
               )}
@@ -368,7 +443,11 @@ export default function DispatchBoardClient({ today }: Props) {
                 <button
                   key={stat.key}
                   type="button"
-                  onClick={() => setFilterStatus(filterStatus === stat.key ? "all" : stat.key!)}
+                  onClick={() =>
+                    setFilterStatus(
+                      filterStatus === stat.key ? "all" : stat.key!,
+                    )
+                  }
                   aria-pressed={filterStatus === stat.key}
                   className={`admin-kpi-card group transition-all duration-200 ${
                     filterStatus === stat.key
@@ -382,14 +461,22 @@ export default function DispatchBoardClient({ today }: Props) {
                     }`}
                     style={{ background: "var(--gold)" }}
                   />
-                  <p className={`admin-kpi-label transition-colors ${
-                    filterStatus === stat.key ? "text-[var(--gold)]" : "text-[var(--tx3)]/60"
-                  }`}>
+                  <p
+                    className={`admin-kpi-label transition-colors ${
+                      filterStatus === stat.key
+                        ? "text-[var(--gold)]"
+                        : "text-[var(--tx3)]/82"
+                    }`}
+                  >
                     {stat.label}
                   </p>
-                  <p className={`admin-kpi-value transition-colors ${
-                    filterStatus === stat.key ? "text-[var(--gold)]" : stat.color
-                  }`}>
+                  <p
+                    className={`admin-kpi-value transition-colors ${
+                      filterStatus === stat.key
+                        ? "text-[var(--gold)]"
+                        : stat.color
+                    }`}
+                  >
                     {stat.value}
                   </p>
                 </button>
@@ -399,10 +486,14 @@ export default function DispatchBoardClient({ today }: Props) {
                   className="admin-kpi-card border-[var(--brd)]/50 bg-[var(--card)]/20"
                   style={{ cursor: "default" }}
                 >
-                  <p className="admin-kpi-label text-[var(--tx3)]/60">{stat.label}</p>
-                  <p className={`admin-kpi-value ${stat.color}`}>{stat.value}</p>
+                  <p className="admin-kpi-label text-[var(--tx3)]/82">
+                    {stat.label}
+                  </p>
+                  <p className={`admin-kpi-value ${stat.color}`}>
+                    {stat.value}
+                  </p>
                 </div>
-              )
+              ),
             )}
           </div>
         )}
@@ -434,26 +525,29 @@ export default function DispatchBoardClient({ today }: Props) {
                 <button
                   type="button"
                   onClick={() => setFilterStatus("all")}
-                  className="text-[9px] text-[var(--gold)] hover:underline mt-0.5 touch-manipulation block"
+                  className="inline-flex items-center gap-1 mt-1 text-sm font-semibold text-[var(--yugo-primary-text)] hover:underline touch-manipulation text-left"
                 >
-                  ← Show all
+                  <ChevronLeft className="w-4 h-4 shrink-0" weight="bold" aria-hidden />
+                  Show all
                 </button>
               )}
             </div>
-            <span className="text-[10px] text-[var(--tx3)]/60 tabular-nums shrink-0 mt-0.5">
+            <span className="text-sm text-[var(--tx3)]/82 tabular-nums shrink-0 mt-0.5">
               {filteredJobs.length} job{filteredJobs.length !== 1 ? "s" : ""}
             </span>
           </div>
           {filteredJobs.length === 0 && data && (
             <div className="flex flex-col items-center justify-center py-14 text-center">
-              <p className="text-[13px] text-[var(--tx2)]">
-                {filterStatus === "all" ? "No jobs scheduled for today" : `No ${filterStatus} jobs`}
+              <p className="text-base text-[var(--tx2)] leading-snug">
+                {filterStatus === "all"
+                  ? "No jobs scheduled for today"
+                  : `No ${filterStatus} jobs`}
               </p>
               {filterStatus !== "all" && (
                 <button
                   type="button"
                   onClick={() => setFilterStatus("all")}
-                  className="mt-2 text-[11px] text-[var(--gold)] hover:underline"
+                  className="mt-3 text-sm font-semibold text-[var(--yugo-primary-text)] hover:underline touch-manipulation"
                 >
                   Show all jobs
                 </button>
@@ -480,9 +574,9 @@ export default function DispatchBoardClient({ today }: Props) {
               <button
                 type="button"
                 onClick={() => setUnseenEventIds(new Set())}
-                className="flex items-center gap-1 text-[9px] font-semibold text-[var(--gold)] hover:underline touch-manipulation"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--yugo-primary-text)] hover:underline touch-manipulation"
               >
-                <CheckCircle2 className="w-3 h-3" />
+                <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden />
                 Mark all read ({unseenEventIds.size})
               </button>
             )}
@@ -509,11 +603,15 @@ export default function DispatchBoardClient({ today }: Props) {
             <div className="sm:hidden w-9 h-1 rounded-full bg-[var(--brd)] mx-auto mb-4" />
             <div className="flex items-start justify-between mb-5">
               <div>
-                <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-0.5">
+                <p className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/82 mb-0.5">
                   Contact Client
                 </p>
-                <h3 className="font-semibold text-[var(--tx)] text-[15px]">{contactJob.client}</h3>
-                <p className="text-[10px] text-[var(--tx3)] mt-0.5">{contactJob.label}</p>
+                <h3 className="font-semibold text-[var(--tx)] text-[15px]">
+                  {contactJob.client}
+                </h3>
+                <p className="text-sm text-[var(--tx3)] mt-0.5">
+                  {contactJob.label}
+                </p>
               </div>
               <button
                 type="button"
@@ -531,11 +629,16 @@ export default function DispatchBoardClient({ today }: Props) {
                     className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-colors touch-manipulation"
                   >
                     <div className="w-9 h-9 rounded-full bg-[var(--grn)]/15 flex items-center justify-center shrink-0">
-                      <Phone weight="regular" className="w-4 h-4 text-[var(--grn)]" />
+                      <Phone
+                        weight="regular"
+                        className="w-4 h-4 text-[var(--grn)]"
+                      />
                     </div>
                     <div>
-                      <p className="text-[13px] font-semibold">Call</p>
-                      <p className="text-[10px] text-[var(--tx3)]">{contactJob.clientPhone}</p>
+                      <p className="text-[15px] font-semibold">Call</p>
+                      <p className="text-sm text-[var(--tx3)] tabular-nums">
+                        {contactJob.clientPhone}
+                      </p>
                     </div>
                   </a>
                   <a
@@ -543,11 +646,16 @@ export default function DispatchBoardClient({ today }: Props) {
                     className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-colors touch-manipulation"
                   >
                     <div className="w-9 h-9 rounded-full bg-[#3B82F6]/15 flex items-center justify-center shrink-0">
-                      <MessageSquare weight="regular" className="w-4 h-4 text-[#3B82F6]" />
+                      <MessageSquare
+                        weight="regular"
+                        className="w-4 h-4 text-[#3B82F6]"
+                      />
                     </div>
                     <div>
-                      <p className="text-[13px] font-semibold">SMS</p>
-                      <p className="text-[10px] text-[var(--tx3)]">{contactJob.clientPhone}</p>
+                      <p className="text-[15px] font-semibold">SMS</p>
+                      <p className="text-sm text-[var(--tx3)] tabular-nums">
+                        {contactJob.clientPhone}
+                      </p>
                     </div>
                   </a>
                 </>
@@ -558,23 +666,31 @@ export default function DispatchBoardClient({ today }: Props) {
                   className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-colors touch-manipulation"
                 >
                   <div className="w-9 h-9 rounded-full bg-[var(--gold)]/15 flex items-center justify-center shrink-0">
-                    <Mail weight="regular" className="w-4 h-4 text-[var(--gold)]" />
+                    <Mail
+                      weight="regular"
+                      className="w-4 h-4 text-[var(--gold)]"
+                    />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold">Email</p>
-                    <p className="text-[10px] text-[var(--tx3)] truncate">{contactJob.clientEmail}</p>
+                    <p className="text-[15px] font-semibold">Email</p>
+                    <p className="text-sm text-[var(--tx3)] truncate break-all">
+                      {contactJob.clientEmail}
+                    </p>
                   </div>
                 </a>
               )}
               {!contactJob.clientPhone && !contactJob.clientEmail && (
                 <div className="px-4 py-6 text-center">
-                  <p className="text-[12px] text-[var(--tx3)]">No contact info on file.</p>
+                  <p className="text-sm text-[var(--tx3)]">
+                    No contact info on file.
+                  </p>
                   <Link
                     href={contactJob.href}
-                    className="text-[11px] text-[var(--gold)] hover:underline mt-1 block touch-manipulation"
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--yugo-primary-text)] hover:underline mt-2 touch-manipulation"
                     onClick={() => setContactJob(null)}
                   >
-                    Edit job to add contact info →
+                    Edit job to add contact info
+                    <ChevronRight className="w-4 h-4 shrink-0" weight="bold" aria-hidden />
                   </Link>
                 </div>
               )}
@@ -597,11 +713,15 @@ export default function DispatchBoardClient({ today }: Props) {
             <div className="sm:hidden w-9 h-1 rounded-full bg-[var(--brd)] mx-auto mb-4" />
             <div className="flex items-start justify-between mb-5">
               <div>
-                <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-0.5">
+                <p className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/82 mb-0.5">
                   Reassign Crew
                 </p>
-                <h3 className="font-semibold text-[var(--tx)] text-[15px]">{reassignJob.label}</h3>
-                <p className="text-[10px] text-[var(--tx3)] mt-0.5">{reassignJob.client}</p>
+                <h3 className="font-semibold text-[var(--tx)] text-[15px]">
+                  {reassignJob.label}
+                </h3>
+                <p className="text-sm text-[var(--tx3)] mt-0.5">
+                  {reassignJob.client}
+                </p>
               </div>
               <button
                 type="button"
@@ -619,9 +739,14 @@ export default function DispatchBoardClient({ today }: Props) {
                 className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-colors text-left touch-manipulation disabled:opacity-60"
               >
                 <div className="w-9 h-9 rounded-full bg-[var(--gdim)] flex items-center justify-center shrink-0">
-                  <Users weight="regular" className="w-4 h-4 text-[var(--tx3)]" />
+                  <Users
+                    weight="regular"
+                    className="w-4 h-4 text-[var(--tx3)]"
+                  />
                 </div>
-                <span className="text-[13px] font-semibold text-[var(--tx2)]">Remove crew assignment</span>
+                <span className="text-[15px] font-semibold text-[var(--tx2)]">
+                  Remove crew assignment
+                </span>
               </button>
               {(data?.crews ?? []).map((c) => (
                 <button
@@ -637,7 +762,9 @@ export default function DispatchBoardClient({ today }: Props) {
                 >
                   <div
                     className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                      reassignJob.crewId === c.id ? "bg-[var(--gold)]/20" : "bg-[var(--gdim)]"
+                      reassignJob.crewId === c.id
+                        ? "bg-[var(--gold)]/20"
+                        : "bg-[var(--gdim)]"
                     }`}
                   >
                     <Users
@@ -646,12 +773,14 @@ export default function DispatchBoardClient({ today }: Props) {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p
-                      className={`text-[13px] font-semibold ${reassignJob.crewId === c.id ? "text-[var(--gold)]" : ""}`}
+                      className={`text-[15px] font-semibold ${reassignJob.crewId === c.id ? "text-[var(--gold)]" : ""}`}
                     >
                       {c.name}
                     </p>
                     {reassignJob.crewId === c.id && (
-                      <p className="text-[9px] text-[var(--gold)]/70">Currently assigned</p>
+                      <p className="text-xs text-[var(--tx3)]">
+                        Currently assigned
+                      </p>
                     )}
                   </div>
                   {reassignJob.crewId === c.id && (

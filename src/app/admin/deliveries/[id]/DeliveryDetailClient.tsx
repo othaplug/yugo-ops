@@ -10,6 +10,10 @@ import {
   Envelope as Mail, Shield, ArrowSquareOut as ExternalLink, Folder, ArrowRight, Check,
 } from "@phosphor-icons/react";
 import BackButton from "../../components/BackButton";
+import {
+  ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS,
+  ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS,
+} from "../../components/admin-toolbar-action-classes";
 import EditDeliveryModal from "./EditDeliveryModal";
 import DownloadPDFButton from "./DownloadPDFButton";
 import GenerateInvoiceButton from "./GenerateInvoiceButton";
@@ -27,6 +31,7 @@ import { formatCurrency, calcHST } from "@/lib/format-currency";
 import { toTitleCase } from "@/lib/format-text";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
+import { formatPlatformDisplay } from "@/lib/date-format";
 
 /* ═══════════════════════════════════════════════════
    Constants
@@ -44,23 +49,24 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: "Cancelled",
 };
 
+/** Status label colours: light = saturated (readable on cream); dark = lighter (readable on wine / glass). */
 const STATUS_COLORS: Record<string, { dot: string; bg: string; text: string }> = {
-  pending:          { dot: "bg-amber-500",   bg: "bg-amber-500/10",   text: "text-amber-600" },
-  pending_approval: { dot: "bg-amber-500",   bg: "bg-amber-500/10",   text: "text-amber-600" },
-  scheduled:        { dot: "bg-blue-500",    bg: "bg-blue-500/10",    text: "text-blue-600" },
-  confirmed:        { dot: "bg-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-600" },
-  "in-transit":     { dot: "bg-[var(--gold)]", bg: "bg-[var(--gdim)]", text: "text-[var(--gold)]" },
-  delivered:        { dot: "bg-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-600" },
-  completed:        { dot: "bg-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-600" },
-  cancelled:        { dot: "bg-red-500",     bg: "bg-red-500/10",     text: "text-red-500" },
+  pending:          { dot: "bg-amber-500",   bg: "bg-amber-500/10",   text: "text-amber-900 dark:text-amber-200" },
+  pending_approval: { dot: "bg-amber-500",   bg: "bg-amber-500/10",   text: "text-amber-900 dark:text-amber-200" },
+  scheduled:        { dot: "bg-blue-500",    bg: "bg-blue-500/10",    text: "text-blue-900 dark:text-blue-300" },
+  confirmed:        { dot: "bg-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-900 dark:text-emerald-300" },
+  "in-transit":     { dot: "bg-[var(--admin-primary-fill)]", bg: "bg-[var(--gdim)]", text: "text-[var(--gold)]" },
+  delivered:        { dot: "bg-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-900 dark:text-emerald-300" },
+  completed:        { dot: "bg-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-900 dark:text-emerald-300" },
+  cancelled:        { dot: "bg-red-500",     bg: "bg-red-500/10",     text: "text-red-800 dark:text-red-300" },
 };
 
-const CATEGORY_BADGE: Record<string, { bg: string; text: string; label: string; accent: string }> = {
-  retail:      { bg: "bg-[var(--gold)]/10", text: "text-[var(--gold)]", label: "Retail", accent: "var(--gold)" },
-  designer:    { bg: "bg-[#B8860B]/10",     text: "text-[#B8860B]",     label: "Designer", accent: "#B8860B" },
-  hospitality: { bg: "bg-[#D48A29]/10",     text: "text-[#D48A29]",     label: "Hospitality", accent: "#D48A29" },
-  gallery:     { bg: "bg-[#4A7CE5]/10",     text: "text-[#4A7CE5]",     label: "Gallery", accent: "#4A7CE5" },
-  b2c:         { bg: "bg-[#2D9F5A]/10",     text: "text-[#2D9F5A]",     label: "B2C", accent: "#2D9F5A" },
+const CATEGORY_BADGE: Record<string, { text: string; label: string; accent: string }> = {
+  retail:      { text: "text-[var(--gold)]", label: "Retail", accent: "var(--gold)" },
+  designer:    { text: "text-[#B8860B]",     label: "Designer", accent: "#B8860B" },
+  hospitality: { text: "text-[#D48A29]",     label: "Hospitality", accent: "#D48A29" },
+  gallery:     { text: "text-[#4A7CE5]",     label: "Gallery", accent: "#4A7CE5" },
+  b2c:         { text: "text-[#2D9F5A]",     label: "B2C", accent: "#2D9F5A" },
 };
 
 /* ═══════════════════════════════════════════════════
@@ -85,8 +91,11 @@ function isDeliveryInProgress(status: string | null | undefined, stage: string |
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "Not set";
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  return formatPlatformDisplay(new Date(dateStr + "T00:00:00"), {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }, "Not set");
 }
 
 /* ═══════════════════════════════════════════════════
@@ -100,9 +109,8 @@ function StatusDot({ status }: { status: string }) {
 
 function ProgressBar({ status }: { status: string }) {
   const idx = STATUS_FLOW.indexOf(status as typeof STATUS_FLOW[number]);
-  const pct = idx < 0 ? 0 : Math.round(((idx + 1) / STATUS_FLOW.length) * 100);
   return (
-    <div className="flex gap-1 h-1.5 w-full mt-3">
+    <div className="flex gap-1 h-2 w-full mt-3">
       {STATUS_FLOW.map((step, i) => {
         const filled = i <= idx;
         const isCurrent = i === idx;
@@ -115,7 +123,7 @@ function ProgressBar({ status }: { status: string }) {
                 ? isCurrent && status !== "delivered"
                   ? "var(--gold)"
                   : "var(--grn)"
-                : "rgba(255,255,255,0.08)",
+                : "color-mix(in srgb, var(--tx) 28%, transparent)",
             }}
           />
         );
@@ -131,7 +139,7 @@ function MetricPill({ icon: Icon, label, value, accent }: { icon: React.ElementT
         <Icon className={`w-3.5 h-3.5 ${accent ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`} />
       </div>
       <div className="min-w-0">
-        <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60 leading-none">{label}</div>
+        <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/82 leading-none">{label}</div>
         <div className={`text-[12px] font-semibold mt-0.5 truncate ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"}`}>{value}</div>
       </div>
     </div>
@@ -433,7 +441,7 @@ export default function DeliveryDetailClient({
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 animate-fade-up">
       <div className="flex items-center gap-2 mb-1">
         <BackButton label="Back" />
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">B2B Operations · Delivery</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82">B2B Operations · Delivery</p>
       </div>
 
       {/* ─── PROJECT CONTEXT BANNER ─── */}
@@ -448,7 +456,7 @@ export default function DeliveryDetailClient({
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[12px] font-semibold text-[var(--tx)]">{linkedProject.project_number}, {linkedProject.project_name}</span>
               {linkedProject.phase_name && (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--gold)]/10 text-[var(--gold)]">{linkedProject.phase_name}</span>
+                <span className="dt-badge tracking-[0.04em] text-[var(--gold)]">{linkedProject.phase_name}</span>
               )}
             </div>
           </div>
@@ -494,12 +502,12 @@ export default function DeliveryDetailClient({
               </div>
               {Array.isArray(delivery.pricing_breakdown) && delivery.pricing_breakdown.length > 0 && (
                 <div className="rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/30 p-3 text-[11px]">
-                  <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/70 mb-2">Price breakdown</div>
+                  <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/88 mb-2">Price breakdown</div>
                   <div className="space-y-1">
                     {delivery.pricing_breakdown.map((b: { label: string; amount: number; detail?: string }, i: number) => (
                       <div key={i} className="flex justify-between text-[var(--tx)]">
                         <span>{b.label}{b.detail ? ` (${b.detail})` : ""}</span>
-                        <span className={b.amount < 0 ? "text-emerald-600" : ""}>{formatCurrency(b.amount)}</span>
+                        <span className={b.amount < 0 ? "text-emerald-800 dark:text-emerald-300" : ""}>{formatCurrency(b.amount)}</span>
                       </div>
                     ))}
                   </div>
@@ -553,7 +561,7 @@ export default function DeliveryDetailClient({
       {isB2BOneOff && (
         <div className="mt-3 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 space-y-3">
           <p className="text-[11px] font-bold text-[var(--tx)]">B2B one-off · Payment and tracking</p>
-          <p className="text-[11px] text-[var(--tx3)]">
+          <p className="text-[12px] leading-relaxed text-[var(--tx2)] font-medium">
             Send a Square invoice so the business contact can pay by card. When Square marks the invoice paid, this job is recorded as prepaid and tracking links go out automatically. Or, if payment was collected outside Square, record it here to issue tracking links (email + SMS to the business contact).
           </p>
           <div className="flex flex-wrap gap-2">
@@ -568,7 +576,7 @@ export default function DeliveryDetailClient({
               type="button"
               onClick={handleRecordPayment}
               disabled={recordPaymentLoading}
-              className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+              className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
             >
               {recordPaymentLoading ? "Saving…" : delivery.payment_received_at ? "Re-send tracking setup" : "Record full payment"}
             </button>
@@ -577,7 +585,7 @@ export default function DeliveryDetailClient({
                 href={`${typeof window !== "undefined" ? window.location.origin : ""}/delivery/track/${encodeURIComponent(delivery.tracking_token)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:bg-[var(--bg)]"
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-semibold border-2 border-[color-mix(in_srgb,var(--tx)_34%,transparent)] text-[var(--tx)] hover:bg-[color-mix(in_srgb,var(--tx)_8%,transparent)]"
               >
                 <ExternalLink className="w-3 h-3" /> Open business track link
               </a>
@@ -620,7 +628,10 @@ export default function DeliveryDetailClient({
       )}
 
       {/* ─── HEADER ─── */}
-      <div className="mt-3 glass rounded-xl overflow-hidden" style={{ borderLeft: `3px solid ${cat.accent}` }}>
+      <div
+        className="mt-3 rounded-xl overflow-hidden border border-[color-mix(in_srgb,var(--tx)_22%,transparent)] bg-[color-mix(in_srgb,var(--card)_96%,transparent)] backdrop-blur-md shadow-[inset_0_1px_0_color-mix(in_srgb,var(--tx)_08%,transparent)]"
+        style={{ borderLeft: `3px solid ${cat.accent}` }}
+      >
         <div className="p-4 sm:p-5">
           {/* Top: Name + badges + actions */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -641,35 +652,35 @@ export default function DeliveryDetailClient({
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wide bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/20">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
+                <span className="dt-badge tracking-[0.04em] text-[var(--tx)] font-mono normal-case">
                   {delivery.delivery_number}
                 </span>
                 {delivery.booking_type === "day_rate" && (
-                  <span className="px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wide bg-amber-500/10 text-amber-700 border border-amber-500/30">
+                  <span className="dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">
                     Day Rate{delivery.num_stops != null ? ` · ${delivery.num_stops} stops` : ""}
                   </span>
                 )}
-                <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wide ${cat.bg} ${cat.text}`}>{cat.label}</span>
+                <span className={`dt-badge tracking-[0.04em] ${cat.text}`}>{cat.label}</span>
                 {delivery.special_handling && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/30">
-                    <AlertTriangle className="w-2.5 h-2.5" /> Special Handling
+                  <span className="inline-flex items-center gap-1 dt-badge tracking-[0.04em] text-amber-600 dark:text-amber-400">
+                    <AlertTriangle className="w-2.5 h-2.5" weight="bold" /> Special Handling
                   </span>
                 )}
                 {isPartnerRequest && (
-                  <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">Partner Portal</span>
+                  <span className="dt-badge tracking-[0.04em] text-blue-600 dark:text-sky-400">Partner Portal</span>
                 )}
               </div>
             </div>
 
             {/* Actions */}
             <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-              <button type="button" onClick={() => setEditModalOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all">
-                <Pencil weight="regular" className="w-3 h-3" /> Edit
+              <button type="button" onClick={() => setEditModalOpen(true)} className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}>
+                <Pencil weight="regular" className="w-3 h-3 shrink-0" aria-hidden /> Edit
               </button>
-              <DownloadPDFButton delivery={delivery} />
-              <button type="button" onClick={() => setDeleteConfirmOpen(true)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all">
-                <Trash2 weight="regular" className="w-3 h-3" /> Delete
+              <DownloadPDFButton delivery={delivery} className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS} />
+              <button type="button" onClick={() => setDeleteConfirmOpen(true)} className={ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS}>
+                <Trash2 weight="regular" className="w-3 h-3 shrink-0" aria-hidden /> Delete
               </button>
             </div>
           </div>
@@ -678,7 +689,7 @@ export default function DeliveryDetailClient({
           <div className="mt-4 pt-3 border-t border-[var(--brd)]/30">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
               {isB2BOneOff && delivery.payment_received_at ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wide bg-emerald-500/15 text-emerald-600 border border-emerald-500/25">
+                <span className="dt-badge tracking-[0.04em] text-emerald-700 dark:text-emerald-300">
                   Paid (prepaid)
                 </span>
               ) : null}
@@ -699,7 +710,9 @@ export default function DeliveryDetailClient({
                   </select>
                 ) : (
                   <button type="button" onClick={() => setEditingStatus(true)} className="group inline-flex items-center gap-1">
-                    <span className={`text-[12px] font-bold ${sc.text}`}>{STATUS_LABELS[delivery.status] || toTitleCase(delivery.status)}</span>
+                    <span className={`dt-badge tracking-[0.04em] text-[11px] ${sc.text}`}>
+                      {STATUS_LABELS[delivery.status] || toTitleCase(delivery.status)}
+                    </span>
                     <ChevronDown weight="regular" className="w-3 h-3 text-[var(--tx3)] opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 )}
@@ -762,7 +775,7 @@ export default function DeliveryDetailClient({
                 </div>
                 <p className="text-[11px] text-[var(--tx3)]">
                   {displayCrew ? `Completed by ${displayCrew.name}` : ""}
-                  {delivery.updated_at ? ` · ${new Date(delivery.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })} at ${new Date(delivery.updated_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""}
+                  {delivery.updated_at ? ` · ${formatPlatformDisplay(delivery.updated_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }, "")}` : ""}
                 </p>
               </div>
             </div>
@@ -803,7 +816,7 @@ export default function DeliveryDetailClient({
                   <p className="text-[12px] font-medium text-[var(--tx2)]">No crew assigned</p>
                   <p className="text-[10px] text-[var(--tx3)] mt-1 mb-3">Assign a crew to enable live GPS tracking</p>
                   {!deliveryInProgress && (
-                    <button type="button" onClick={() => setCrewModalOpen(true)} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
+                    <button type="button" onClick={() => setCrewModalOpen(true)} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors">
                       Assign Crew
                     </button>
                   )}
@@ -817,7 +830,7 @@ export default function DeliveryDetailClient({
 
             {/* Route / Day rate stops */}
             <div className="pb-5">
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-4">
                 {delivery.booking_type === "day_rate" && stops && stops.length > 0 ? `Route · ${stops.length} stop${stops.length !== 1 ? "s" : ""}` : "Route"}
               </div>
               <div className="space-y-0">
@@ -859,7 +872,7 @@ export default function DeliveryDetailClient({
                               Stop {stop.stop_number}
                             </div>
                             {stop.stop_type && (
-                              <span className="text-[9px] uppercase font-semibold text-[var(--tx3)]/60">
+                              <span className="text-[9px] uppercase font-semibold text-[var(--tx3)]/82">
                                 {stop.stop_type}
                               </span>
                             )}
@@ -898,7 +911,7 @@ export default function DeliveryDetailClient({
             {itemsDisplay.length > 0 && (
               <div className="border-t border-[var(--brd)]/30 py-5">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Items</span>
+                  <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Items</span>
                   <span className="text-[10px] font-semibold text-[var(--gold)]">{totalItems} item{totalItems !== 1 ? "s" : ""}</span>
                 </div>
                 <div className="space-y-1.5">
@@ -924,21 +937,21 @@ export default function DeliveryDetailClient({
 
             {/* Crew photos (actual photos taken by crew) */}
             <div className="border-t border-[var(--brd)]/30 pt-5">
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Crew Photos</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3">Crew Photos</div>
               <DeliveryCrewPhotosSection deliveryId={delivery.id} />
             </div>
 
             {/* Proof of Delivery */}
             {isDone(delivery.status) && (
               <div className="border-t border-[var(--brd)]/30 pt-5">
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Proof of Delivery</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3">Proof of Delivery</div>
                 <ProofOfDeliverySection jobId={delivery.id} jobType="delivery" />
               </div>
             )}
 
             {/* Instructions, seamless */}
             <div className="border-t border-[var(--brd)]/30 py-5">
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Instructions & Notes</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Instructions & Notes</div>
               <p className="text-[11px] text-[var(--tx2)] leading-relaxed whitespace-pre-wrap">
                 {delivery.instructions || delivery.notes || "No instructions added."}
               </p>
@@ -953,7 +966,7 @@ export default function DeliveryDetailClient({
 
             {/* Schedule */}
             <div className="pb-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3 pt-3">Schedule</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3 pt-3">Schedule</div>
               <div className="space-y-1.5 text-[12px]">
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)] text-[11px]">Date</span>
@@ -977,7 +990,7 @@ export default function DeliveryDetailClient({
             {/* Crew */}
             <div className="border-t border-[var(--brd)]/30 py-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Crew</span>
+                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Crew</span>
                 {!deliveryInProgress && (
                   <button type="button" onClick={() => setCrewModalOpen(true)} className="text-[9px] font-semibold text-[var(--gold)] hover:underline">
                     {delivery.crew_id ? "Change" : "Assign"}
@@ -987,7 +1000,7 @@ export default function DeliveryDetailClient({
               {displayCrew ? (
                 <div>
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-full bg-[var(--gold)]/10 flex items-center justify-center text-[11px] font-bold text-[var(--gold)]">
+                    <div className="w-7 h-7 rounded-md border border-[var(--brd)] flex items-center justify-center text-[11px] font-bold text-[#2C3E2D] dark:text-[var(--tx2)]">
                       {displayCrew.name.charAt(0).toUpperCase()}
                     </div>
                     <span className="text-[13px] font-semibold text-[var(--tx)]">{displayCrew.name}</span>
@@ -1008,7 +1021,7 @@ export default function DeliveryDetailClient({
             {/* Customer */}
             <div className="border-t border-[var(--brd)]/30 py-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Customer</span>
+                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Customer</span>
                 <button type="button" onClick={() => setContactModalOpen(true)} className="text-[9px] font-semibold text-[var(--gold)] hover:underline">Details</button>
               </div>
               <div className="text-[13px] font-semibold text-[var(--tx)]">{delivery.customer_name || "-"}</div>
@@ -1135,7 +1148,7 @@ export default function DeliveryDetailClient({
                 )}
               </div>
               {delivery.crew_id === c.id && (
-                <span className="px-2 py-0.5 rounded text-[9px] font-bold text-emerald-600 bg-emerald-500/10">Active</span>
+                <span className="dt-badge tracking-[0.04em] text-emerald-600 dark:text-emerald-400">Active</span>
               )}
             </button>
           ))}

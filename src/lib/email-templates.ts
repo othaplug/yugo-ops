@@ -18,6 +18,7 @@ import {
 import { emailNestedKvRow } from "@/lib/email/email-kv-layout";
 import { emailMapLinkHtml, escapeHtmlEmail } from "@/lib/email/email-link-utils";
 import { EMAIL_FLUID_MAX_WIDTH_PX } from "@/lib/email/email-responsive-css";
+import { YUGO_EMAIL_DOC_SURFACE_ESTATE_WINE_MARKER } from "@/lib/email/finalize-client-html";
 import { getEmailBaseUrl } from "./email-base-url";
 import { formatCurrencyEmail } from "./format-currency";
 import { formatPhone, normalizePhone } from "./phone";
@@ -168,16 +169,27 @@ function emailCardLogoCreamLegacy(): string {
 </table>`;
 }
 
-/** Estate: wine wordmark in light mode; cream on dark (prefers-color-scheme: dark). */
+/** Estate cream layouts: wine wordmark on ivory (fragment dark-lock keeps shell from inverting). */
 function emailCardLogoEstate(): string {
   const wineUrl = getEmailLogoWineUrl();
-  const onDarkUrl = getEmailLogoOnDarkUrl();
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 20px;">
   <tr>
     <td align="center" style="padding:0;">
-      <img src="${wineUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" class="estate-email-logo-light" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;margin:0 auto;" />
-      <img src="${onDarkUrl}" alt="" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" class="estate-email-logo-dark" style="display:none;border:0;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;margin:0 auto;" />
+      <img src="${wineUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;margin:0 auto;" />
+    </td>
+  </tr>
+</table>`;
+}
+
+/** Cream / off-white wordmark for Estate wine confirmation (single asset; no dark-mode swap). */
+function emailCardLogoEstateWine(): string {
+  const logoUrl = getEmailLogoOnDarkUrl();
+  return `
+<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 20px;">
+  <tr>
+    <td align="center" style="padding:0;background-color:${ESTATE_WINE_SURFACE_PAGE};">
+      <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;margin:0 auto;" />
     </td>
   </tr>
 </table>`;
@@ -226,12 +238,12 @@ function premiumEmailWrapper(
   footerWhy: EmailFooterWhy,
 ): string {
   return `
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PREMIUM_PAGE}" style="background-color:${PREMIUM_PAGE};color-scheme:light;">
+<table class="yugo-cream-email-shell" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PREMIUM_PAGE}" style="background-color:${PREMIUM_PAGE};color-scheme:light;">
   <tr>
     <td class="email-outer-gutter" align="center" bgcolor="${PREMIUM_PAGE}" style="padding:36px 20px 48px;background-color:${PREMIUM_PAGE};color-scheme:light;">
       <table class="email-fluid-inner" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${PREMIUM_PAGE}" style="max-width:${EMAIL_FLUID_MAX_WIDTH_PX}px;width:100%;background-color:${PREMIUM_PAGE};">
         <tr>
-          <td bgcolor="${PREMIUM_PAGE}" style="padding:0;font-family:${PREMIUM_FONT};color:${PREMIUM_BODY};-webkit-text-fill-color:${PREMIUM_BODY};font-size:15px;line-height:1.62;">
+          <td class="yugo-cream-email-inner" bgcolor="${PREMIUM_PAGE}" style="padding:0;font-family:${PREMIUM_FONT};color:${PREMIUM_BODY};-webkit-text-fill-color:${PREMIUM_BODY};font-size:15px;line-height:1.62;">
             ${emailCardLogoWinePremiumRule()}
             ${innerHtml}
           </td>
@@ -333,6 +345,17 @@ const ESTATE_BODY_MUTED = "#6B635C";
 const ESTATE_DM_SANS = "'DM Sans',Helvetica Neue,Helvetica,Arial,sans-serif";
 const ESTATE_GEORGIA = "'Instrument Serif',Georgia,'Times New Roman',serif";
 
+/** Estate booking confirmation (wine shell only): locked palette, cream type, sage CTA. */
+const ESTATE_WINE_SURFACE_PAGE = "#2B0416";
+const ESTATE_WINE_SURFACE_INK = "#F9EDE4";
+const ESTATE_WINE_SURFACE_MUTED = "rgba(249,237,228,0.72)";
+const ESTATE_WINE_SURFACE_ROSE = "#E8C4D0";
+const ESTATE_WINE_SURFACE_BORDER = "rgba(249,237,228,0.24)";
+const ESTATE_WINE_SAGE_CTA_BG = "#B5C9B6";
+const ESTATE_WINE_SAGE_CTA_TX = "#1A2518";
+const ESTATE_WINE_BULLET = "#A3C4A6";
+const ESTATE_WINE_DEPOSIT_GREEN = "#9FD4B0";
+
 /** Thin wine rule with generous breathing room — replaces ━━━━ dividers. */
 function estateDivider(): string {
   return `<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td style="padding:36px 0 32px;border-top:1px solid rgba(92,26,51,0.14);font-size:0;line-height:0;">&nbsp;</td></tr></table>`;
@@ -347,16 +370,8 @@ function estateLabel(text: string): string {
  * Estate luxury wrapper: warm cream page, ivory card with wine-tint border (logo + hairline inside card).
  * Completely distinct from the dark promo shell.
  */
-const ESTATE_EMAIL_DARK_MODE_CSS = `
+const ESTATE_CREAM_EMAIL_MOBILE_CSS = `
 <style type="text/css">
-@media (prefers-color-scheme: dark) {
-  .estate-email-logo-light { display: none !important; }
-  .estate-email-logo-dark { display: block !important; }
-  .estate-email-logo-rule {
-    background: #2B3927 !important;
-    background-image: linear-gradient(90deg, #2B3927, #EDE6DC, #2B3927) !important;
-  }
-}
 @media only screen and (max-width: 600px) {
   .estate-email-outer {
     padding-left: 0 !important;
@@ -379,7 +394,7 @@ const ESTATE_EMAIL_DARK_MODE_CSS = `
 
 export function estateLuxuryCreamLayout(innerHtml: string): string {
   return `
-${ESTATE_EMAIL_DARK_MODE_CSS}
+${ESTATE_CREAM_EMAIL_MOBILE_CSS}
 <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${ESTATE_CREAM_PAGE}" style="background-color:${ESTATE_CREAM_PAGE};color-scheme:light;">
   <tr>
     <td class="estate-email-outer email-outer-gutter" align="center" bgcolor="${ESTATE_CREAM_PAGE}" style="padding:36px 20px 60px;background-color:${ESTATE_CREAM_PAGE};color-scheme:light;">
@@ -391,7 +406,7 @@ ${ESTATE_EMAIL_DARK_MODE_CSS}
               <tr>
                 <td align="center" style="padding:0;">
                   <table width="72" cellpadding="0" cellspacing="0" border="0" role="presentation">
-                    <tr><td class="estate-email-logo-rule" style="height:2px;background:linear-gradient(90deg,${ESTATE_WINE},${EMAIL_FOREST},${ESTATE_WINE});font-size:0;line-height:0;">&nbsp;</td></tr>
+                    <tr><td style="height:2px;background:linear-gradient(90deg,${ESTATE_WINE},${EMAIL_FOREST},${ESTATE_WINE});font-size:0;line-height:0;">&nbsp;</td></tr>
                   </table>
                 </td>
               </tr>
@@ -405,6 +420,68 @@ ${ESTATE_EMAIL_DARK_MODE_CSS}
   ${getClientEmailFooterTrs({
     whyReceiving: "booking",
     spacerBackground: ESTATE_CREAM_PAGE,
+  })}
+</table>
+  `;
+}
+
+const ESTATE_WINE_MOBILE_CSS = `
+<style type="text/css">
+@media only screen and (max-width: 600px) {
+  .estate-email-outer {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 20px !important;
+    padding-bottom: 48px !important;
+  }
+  .estate-email-inner {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .estate-email-content {
+    padding: 28px 16px 36px !important;
+  }
+}
+</style>
+`.trim();
+
+function estateWineDivider(): string {
+  return `<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td style="padding:36px 0 32px;border-top:1px solid rgba(249,237,228,0.14);font-size:0;line-height:0;background-color:${ESTATE_WINE_SURFACE_PAGE};">&nbsp;</td></tr></table>`;
+}
+
+function estateWineLabel(text: string): string {
+  return `<p style="font-family:${ESTATE_GEORGIA};font-size:11px;font-weight:700;letter-spacing:0.1em;color:${ESTATE_WINE_SURFACE_ROSE} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_ROSE};text-transform:uppercase;margin:0 0 22px;line-height:1.45;">${escapeHtmlEmail(text)}</p>`;
+}
+
+/** Estate booking confirmation only: full wine bleed, locked colours (see finalize-client-html wine surface). */
+function estateWineConfirmationLayout(innerHtml: string): string {
+  return `
+${ESTATE_WINE_MOBILE_CSS}
+<table class="yugo-estate-wine-shell" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${ESTATE_WINE_SURFACE_PAGE}" style="background-color:${ESTATE_WINE_SURFACE_PAGE};color-scheme:only light;">
+  <tr>
+    <td class="estate-email-outer email-outer-gutter" align="center" bgcolor="${ESTATE_WINE_SURFACE_PAGE}" style="padding:36px 20px 60px;background-color:${ESTATE_WINE_SURFACE_PAGE};color-scheme:only light;">
+      <table class="estate-email-inner email-fluid-inner yugo-estate-wine-shell" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${ESTATE_WINE_SURFACE_PAGE}" style="max-width:${EMAIL_FLUID_MAX_WIDTH_PX}px;width:100%;background-color:${ESTATE_WINE_SURFACE_PAGE};">
+        <tr>
+          <td class="estate-email-content" bgcolor="${ESTATE_WINE_SURFACE_PAGE}" style="padding:48px 40px 56px;background-color:${ESTATE_WINE_SURFACE_PAGE};font-family:${ESTATE_DM_SANS};color:${ESTATE_WINE_SURFACE_INK};font-size:15px;line-height:1.78;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};">
+            ${emailCardLogoEstateWine()}
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 28px;background-color:${ESTATE_WINE_SURFACE_PAGE};">
+              <tr>
+                <td align="center" style="padding:0;background-color:${ESTATE_WINE_SURFACE_PAGE};">
+                  <table width="72" cellpadding="0" cellspacing="0" border="0" role="presentation" style="background-color:${ESTATE_WINE_SURFACE_PAGE};">
+                    <tr><td style="height:2px;background:linear-gradient(90deg,transparent,${ESTATE_WINE_SURFACE_ROSE},transparent);font-size:0;line-height:0;background-color:${ESTATE_WINE_SURFACE_PAGE};">&nbsp;</td></tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+            ${innerHtml}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  ${getClientEmailFooterTrs({
+    whyReceiving: "booking",
+    spacerBackground: ESTATE_WINE_SURFACE_PAGE,
   })}
 </table>
   `;
@@ -496,12 +573,12 @@ export function statusUpdateEmailHtml(params: {
     </tr>`
       : "";
   return `
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PREMIUM_PAGE}" style="background-color:${PREMIUM_PAGE};color-scheme:light;">
+<table class="yugo-cream-email-shell" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PREMIUM_PAGE}" style="background-color:${PREMIUM_PAGE};color-scheme:light;">
   <tr>
     <td class="email-outer-gutter" align="center" bgcolor="${PREMIUM_PAGE}" style="padding:24px 16px ${bottomPad};background-color:${PREMIUM_PAGE};color-scheme:light;">
       <table class="email-fluid-inner" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${PREMIUM_PAGE}" style="max-width:${EMAIL_FLUID_MAX_WIDTH_PX}px;width:100%;background-color:${PREMIUM_PAGE};">
         <tr>
-          <td bgcolor="${PREMIUM_PAGE}" style="padding:0;font-family:${PREMIUM_FONT};background-color:${PREMIUM_PAGE};color:${tdBaseColor};">
+          <td class="yugo-cream-email-inner" bgcolor="${PREMIUM_PAGE}" style="padding:0;font-family:${PREMIUM_FONT};background-color:${PREMIUM_PAGE};color:${tdBaseColor};">
             ${emailCardLogoWinePremiumRule()}
             <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
               ${eyebrowBlock}
@@ -1721,7 +1798,7 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
   const dateStr = confirmDateDisplay(p.moveDate);
   const coordName = p.coordinatorName || "your coordinator";
   const firstName = (p.clientName || "").split(" ")[0];
-  const estateCoordLinkStyle = `color:${ESTATE_WINE} !important;-webkit-text-fill-color:${ESTATE_WINE};text-decoration:underline;font-weight:600;`;
+  const estateCoordLinkStyle = `color:${ESTATE_WINE_SURFACE_ROSE} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_ROSE};text-decoration:underline;font-weight:600;`;
   const coordDigits = p.coordinatorPhone
     ? normalizePhone(p.coordinatorPhone)
     : "";
@@ -1740,8 +1817,11 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
     : "";
   const coordContactLine =
     coordPhoneHtml && coordEmailHtml
-      ? `${coordPhoneHtml}<span style="color:${ESTATE_BODY_MUTED};">&nbsp;&middot;&nbsp;</span>${coordEmailHtml}`
+      ? `${coordPhoneHtml}<span style="color:${ESTATE_WINE_SURFACE_MUTED};">&nbsp;&middot;&nbsp;</span>${coordEmailHtml}`
       : `${coordPhoneHtml}${coordEmailHtml}`;
+
+  const wineTrackCta = `display:inline-block;background-color:${ESTATE_WINE_SAGE_CTA_BG};color:${ESTATE_WINE_SAGE_CTA_TX} !important;-webkit-text-fill-color:${ESTATE_WINE_SAGE_CTA_TX};padding:12px 28px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-decoration:none;border-radius:0;text-transform:uppercase;font-family:${ESTATE_DM_SANS};border:1px solid rgba(255,255,255,0.22);`;
+  const wineWelcomeGuideCta = `display:inline-block;background-color:transparent;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};padding:12px 28px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-decoration:none;border:1px solid rgba(249,237,228,0.55);text-transform:uppercase;font-family:${ESTATE_DM_SANS};`;
 
   const canonicalIncludes = [
     `Dedicated crew of ${p.crewSize} - hand-selected for your move`,
@@ -1769,47 +1849,47 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
   ]
     .map(
       (inc) =>
-        `<tr><td style="padding:10px 0;vertical-align:top;width:20px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:10px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.65;">${escapeHtmlEmail(inc)}</td></tr>`,
+        `<tr><td style="padding:10px 0;vertical-align:top;width:20px;font-size:14px;color:${ESTATE_WINE_BULLET};">&#10022;</td><td style="padding:10px 0;font-size:14px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};line-height:1.65;">${escapeHtmlEmail(inc)}</td></tr>`,
     )
     .join("");
 
-  const eTableOuter = `1px solid rgba(92,26,51,0.16)`;
-  const eDiv = `1px solid rgba(92,26,51,0.12)`;
-  const eLbl = `padding:12px 14px 12px 16px;font-size:11px;font-weight:700;color:${ESTATE_BODY_MUTED} !important;-webkit-text-fill-color:${ESTATE_BODY_MUTED};text-transform:uppercase;letter-spacing:0.08em;width:38%;vertical-align:top;font-family:${ESTATE_DM_SANS};line-height:1.4`;
-  const eVal = `padding:12px 16px 12px 8px;font-size:14px;color:${ESTATE_BODY} !important;-webkit-text-fill-color:${ESTATE_BODY};font-weight:600;text-align:right;vertical-align:top;font-family:${ESTATE_DM_SANS};line-height:1.45`;
-  const ePayDiv = `1px solid rgba(92,26,51,0.12)`;
-  const ePayLbl = `padding:12px 16px;font-size:11px;font-weight:700;color:${ESTATE_BODY_MUTED} !important;-webkit-text-fill-color:${ESTATE_BODY_MUTED};text-transform:uppercase;letter-spacing:0.08em;width:58%;vertical-align:middle;font-family:${ESTATE_DM_SANS}`;
-  const ePayValGr = `padding:12px 16px;font-size:14px;color:#2D7A4F;font-weight:600;text-align:right;vertical-align:middle;white-space:nowrap;font-family:${ESTATE_DM_SANS}`;
-  const ePayValFs = `padding:12px 16px;font-size:14px;color:${EMAIL_FOREST};font-weight:600;text-align:right;vertical-align:middle;white-space:nowrap;font-family:${ESTATE_DM_SANS}`;
+  const eTableOuter = `1px solid ${ESTATE_WINE_SURFACE_BORDER}`;
+  const eDiv = `1px solid rgba(249,237,228,0.16)`;
+  const eLbl = `padding:12px 14px 12px 16px;font-size:11px;font-weight:700;color:${ESTATE_WINE_SURFACE_MUTED} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_MUTED};text-transform:uppercase;letter-spacing:0.08em;width:38%;vertical-align:top;font-family:${ESTATE_DM_SANS};line-height:1.4;background-color:${ESTATE_WINE_SURFACE_PAGE};`;
+  const eVal = `padding:12px 16px 12px 8px;font-size:14px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};font-weight:600;text-align:right;vertical-align:top;font-family:${ESTATE_DM_SANS};line-height:1.45;background-color:${ESTATE_WINE_SURFACE_PAGE};`;
+  const ePayDiv = `1px solid rgba(249,237,228,0.16)`;
+  const ePayLbl = `padding:12px 16px;font-size:11px;font-weight:700;color:${ESTATE_WINE_SURFACE_MUTED} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_MUTED};text-transform:uppercase;letter-spacing:0.08em;width:58%;vertical-align:middle;font-family:${ESTATE_DM_SANS};background-color:${ESTATE_WINE_SURFACE_PAGE};`;
+  const ePayValGr = `padding:12px 16px;font-size:14px;color:${ESTATE_WINE_DEPOSIT_GREEN} !important;-webkit-text-fill-color:${ESTATE_WINE_DEPOSIT_GREEN};font-weight:600;text-align:right;vertical-align:middle;white-space:nowrap;font-family:${ESTATE_DM_SANS};background-color:${ESTATE_WINE_SURFACE_PAGE};`;
+  const ePayValFs = `padding:12px 16px;font-size:14px;color:${ESTATE_WINE_SURFACE_ROSE} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_ROSE};font-weight:600;text-align:right;vertical-align:middle;white-space:nowrap;font-family:${ESTATE_DM_SANS};background-color:${ESTATE_WINE_SURFACE_PAGE};`;
 
-  return estateLuxuryCreamLayout(`
-    <p style="font-family:${ESTATE_DM_SANS};font-size:15px;color:${ESTATE_BODY_MUTED};margin:0 0 36px;line-height:1.6;">Dear ${firstName || p.clientName || ""},</p>
+  return `${YUGO_EMAIL_DOC_SURFACE_ESTATE_WINE_MARKER}${estateWineConfirmationLayout(`
+    <p style="font-family:${ESTATE_DM_SANS};font-size:15px;color:${ESTATE_WINE_SURFACE_MUTED} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_MUTED};margin:0 0 36px;line-height:1.6;">Dear ${firstName || p.clientName || ""},</p>
 
-    <h1 style="font-family:${ESTATE_GEORGIA};font-size:30px;font-weight:700;color:${ESTATE_WINE} !important;-webkit-text-fill-color:${ESTATE_WINE};margin:0 0 22px;line-height:1.32;letter-spacing:0;">Welcome to your<br/>Yugo Estate experience.</h1>
+    <h1 style="font-family:${ESTATE_GEORGIA};font-size:30px;font-weight:700;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 22px;line-height:1.32;letter-spacing:0;">Welcome to your<br/>Yugo Estate experience.</h1>
 
-    <p style="font-size:15px;color:${ESTATE_BODY} !important;-webkit-text-fill-color:${ESTATE_BODY};margin:0 0 24px;line-height:1.78;">
+    <p style="font-size:15px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 24px;line-height:1.78;">
       Thank you for entrusting Yugo with your move. Your date is reserved, your crew is assigned, and your Estate experience is fully in our hands.
     </p>
 
     ${
       p.welcomePackageUrl
         ? `
-    ${estateLabel("Your welcome guide")}
-    <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 18px;line-height:1.78;">Timelines, packing guidance, and how to reach your coordinator &mdash; in one calm, mobile-friendly place.</p>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 8px;">
-      <tr><td>
-        <a href="${p.welcomePackageUrl.replace(/&/g, "&amp;")}" style="display:inline-block;background-color:transparent;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};padding:12px 28px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-decoration:none;border:1px solid ${EMAIL_FOREST};text-transform:uppercase;font-family:${ESTATE_DM_SANS};">VIEW WELCOME GUIDE&nbsp;&nbsp;&#8250;</a>
+    ${estateWineLabel("Your welcome guide")}
+    <p style="font-size:15px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 18px;line-height:1.78;">Timelines, packing guidance, and how to reach your coordinator &mdash; in one calm, mobile-friendly place.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 8px;background-color:${ESTATE_WINE_SURFACE_PAGE};">
+      <tr><td style="background-color:${ESTATE_WINE_SURFACE_PAGE};">
+        <a href="${p.welcomePackageUrl.replace(/&/g, "&amp;")}" style="${wineWelcomeGuideCta}">VIEW WELCOME GUIDE&nbsp;&nbsp;&#8250;</a>
       </td></tr>
     </table>
     `
         : ""
     }
 
-    ${estateDivider()}
+    ${estateWineDivider()}
 
-    ${estateLabel("Your estate move")}
+    ${estateWineLabel("Your estate move")}
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="font-size:14px;border-collapse:collapse;border:${eTableOuter};margin:0 0 4px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="font-size:14px;border-collapse:collapse;border:${eTableOuter};margin:0 0 4px;background-color:${ESTATE_WINE_SURFACE_PAGE};">
       ${emailNestedKvRow({
         borderTop: "none",
         labelStyle: eLbl,
@@ -1831,14 +1911,14 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
         labelStyle: eLbl,
         valueStyle: eVal,
         label: "Origin",
-        valueHtml: emailMapLinkHtml(p.fromAddress, ESTATE_WINE),
+        valueHtml: emailMapLinkHtml(p.fromAddress, ESTATE_WINE_SURFACE_ROSE),
       })}
       ${emailNestedKvRow({
         borderTop: eDiv,
         labelStyle: eLbl,
         valueStyle: eVal,
         label: "Destination",
-        valueHtml: emailMapLinkHtml(p.toAddress, ESTATE_WINE),
+        valueHtml: emailMapLinkHtml(p.toAddress, ESTATE_WINE_SURFACE_ROSE),
       })}
       ${
         p.crewNames
@@ -1867,66 +1947,66 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
       })}
     </table>
 
-    ${estateDivider()}
+    ${estateWineDivider()}
 
-    ${estateLabel("Your estate experience includes")}
+    ${estateWineLabel("Your estate experience includes")}
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;margin:0 0 4px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;margin:0 0 4px;background-color:${ESTATE_WINE_SURFACE_PAGE};">
       ${includesRows}
     </table>
 
-    ${estateDivider()}
+    ${estateWineDivider()}
 
-    ${estateLabel("What happens next")}
+    ${estateWineLabel("What happens next")}
 
-    <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 20px;line-height:1.78;">
-      Within the next 24 hours, ${p.coordinatorName ? `<strong>${p.coordinatorName}</strong>` : "your coordinator"} will reach out personally to:
+    <p style="font-size:15px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 20px;line-height:1.78;">
+      Within the next 24 hours, ${p.coordinatorName ? `<strong style="color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};">${p.coordinatorName}</strong>` : "your coordinator"} will reach out personally to:
     </p>
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;margin-bottom:28px;">
-      <tr><td style="padding:10px 16px 10px 20px;vertical-align:top;width:20px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:10px 20px 10px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.65;">Schedule your pre-move walkthrough (in-person or virtual)</td></tr>
-      <tr><td style="padding:10px 16px 10px 20px;vertical-align:top;width:20px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:10px 20px 10px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.65;">Confirm any items requiring special handling</td></tr>
-      <tr><td style="padding:10px 16px 10px 20px;vertical-align:top;width:20px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:10px 20px 10px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.65;">Review your timeline and any access requirements</td></tr>
-      <tr><td style="padding:10px 16px 10px 20px;vertical-align:top;width:20px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:10px 20px 10px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.65;">Answer every question you have</td></tr>
-      <tr><td style="padding:10px 16px 10px 20px;vertical-align:top;width:20px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:10px 20px 10px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.65;">${
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;margin-bottom:28px;background-color:${ESTATE_WINE_SURFACE_PAGE};">
+      <tr><td style="padding:10px 10px 10px 0;vertical-align:top;width:1%;font-size:14px;white-space:nowrap;color:${ESTATE_WINE_BULLET};background-color:${ESTATE_WINE_SURFACE_PAGE};">&#10022;</td><td style="padding:10px 0;font-size:14px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};line-height:1.65;background-color:${ESTATE_WINE_SURFACE_PAGE};">Schedule your pre-move walkthrough (in-person or virtual)</td></tr>
+      <tr><td style="padding:10px 10px 10px 0;vertical-align:top;width:1%;font-size:14px;white-space:nowrap;color:${ESTATE_WINE_BULLET};background-color:${ESTATE_WINE_SURFACE_PAGE};">&#10022;</td><td style="padding:10px 0;font-size:14px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};line-height:1.65;background-color:${ESTATE_WINE_SURFACE_PAGE};">Confirm any items requiring special handling</td></tr>
+      <tr><td style="padding:10px 10px 10px 0;vertical-align:top;width:1%;font-size:14px;white-space:nowrap;color:${ESTATE_WINE_BULLET};background-color:${ESTATE_WINE_SURFACE_PAGE};">&#10022;</td><td style="padding:10px 0;font-size:14px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};line-height:1.65;background-color:${ESTATE_WINE_SURFACE_PAGE};">Review your timeline and any access requirements</td></tr>
+      <tr><td style="padding:10px 10px 10px 0;vertical-align:top;width:1%;font-size:14px;white-space:nowrap;color:${ESTATE_WINE_BULLET};background-color:${ESTATE_WINE_SURFACE_PAGE};">&#10022;</td><td style="padding:10px 0;font-size:14px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};line-height:1.65;background-color:${ESTATE_WINE_SURFACE_PAGE};">Answer every question you have</td></tr>
+      <tr><td style="padding:10px 10px 10px 0;vertical-align:top;width:1%;font-size:14px;white-space:nowrap;color:${ESTATE_WINE_BULLET};background-color:${ESTATE_WINE_SURFACE_PAGE};">&#10022;</td><td style="padding:10px 0;font-size:14px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};line-height:1.65;background-color:${ESTATE_WINE_SURFACE_PAGE};">${
         p.welcomePackageUrl
           ? "Share your digital welcome guide (link above) with anyone helping you prepare"
           : "Send your welcome package"
       }</td></tr>
     </table>
 
-    <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 16px;line-height:1.78;">
+    <p style="font-size:15px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 16px;line-height:1.78;">
       72 hours before your move, you&apos;ll receive a detailed itinerary with crew names, vehicle details, and your move-day timeline.
     </p>
-    <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 16px;line-height:1.78;">
-      On move day, ${p.coordinatorName ? `<strong>${p.coordinatorName}</strong>` : "your coordinator"} will be available by phone throughout the entire process.
+    <p style="font-size:15px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 16px;line-height:1.78;">
+      On move day, ${p.coordinatorName ? `<strong style="color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};">${p.coordinatorName}</strong>` : "your coordinator"} will be available by phone throughout the entire process.
     </p>
-    <p style="font-size:14px;color:${ESTATE_BODY_MUTED};margin:0;line-height:1.72;font-family:${ESTATE_DM_SANS};">
-      <strong style="color:${ESTATE_BODY};">Single point of contact:</strong> the same coordinator guides you from confirmation through move day and our 30-day concierge window.
+    <p style="font-size:14px;color:${ESTATE_WINE_SURFACE_MUTED} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_MUTED};margin:0;line-height:1.72;font-family:${ESTATE_DM_SANS};">
+      <strong style="color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};">Single point of contact:</strong> the same coordinator guides you from confirmation through move day and our 30-day concierge window.
     </p>
 
-    ${estateDivider()}
+    ${estateWineDivider()}
 
-    ${estateLabel("Your move tracker")}
+    ${estateWineLabel("Your move tracker")}
 
-    <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 24px;line-height:1.78;">Follow every step in real-time:</p>
+    <p style="font-size:15px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 24px;line-height:1.78;">Follow every step in real-time:</p>
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-bottom:8px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-bottom:8px;background-color:${ESTATE_WINE_SURFACE_PAGE};">
       <tr>
-        <td>
-          <a href="${p.trackingUrl.replace(/&/g, "&amp;")}" style="${emailPrimaryCtaStyle(ESTATE_DM_SANS, "inline-block")}">${PREMIUM_TRACK_CTA_LABEL}</a>
+        <td style="background-color:${ESTATE_WINE_SURFACE_PAGE};">
+          <a href="${p.trackingUrl.replace(/&/g, "&amp;")}" style="${wineTrackCta}">${PREMIUM_TRACK_CTA_LABEL}</a>
         </td>
       </tr>
     </table>
 
-    ${estateDivider()}
+    ${estateWineDivider()}
 
-    ${estateLabel("Investment")}
+    ${estateWineLabel("Investment")}
 
-    <p style="font-family:${ESTATE_GEORGIA};font-size:28px;color:${ESTATE_WINE};margin:0 0 10px;line-height:1.2;letter-spacing:0;">${formatCurrencyEmail(p.totalWithTax)}</p>
-    <p style="font-size:13px;color:${ESTATE_BODY_MUTED};margin:0 0 20px;line-height:1.65;">This is your guaranteed rate. No hourly charges. No surprises. No hidden fees.</p>
+    <p style="font-family:${ESTATE_GEORGIA};font-size:28px;color:${ESTATE_WINE_SURFACE_ROSE} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_ROSE};margin:0 0 10px;line-height:1.2;letter-spacing:0;">${formatCurrencyEmail(p.totalWithTax)}</p>
+    <p style="font-size:13px;color:${ESTATE_WINE_SURFACE_MUTED} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_MUTED};margin:0 0 20px;line-height:1.65;">This is your guaranteed rate. No hourly charges. No surprises. No hidden fees.</p>
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="font-size:14px;border-collapse:collapse;table-layout:fixed;width:100%;border:${eTableOuter};">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="font-size:14px;border-collapse:collapse;table-layout:fixed;width:100%;border:${eTableOuter};background-color:${ESTATE_WINE_SURFACE_PAGE};">
       ${emailNestedKvRow({
         borderTop: "none",
         labelStyle: ePayLbl,
@@ -1943,33 +2023,24 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
       })}
     </table>
 
-    ${estateDivider()}
+    ${estateWineDivider()}
 
-    <p style="font-family:${ESTATE_GEORGIA};font-size:16px;font-style:italic;color:${ESTATE_BODY_MUTED};margin:0 0 28px;line-height:1.6;">It&apos;s our privilege to handle your move.</p>
+    <p style="font-family:${ESTATE_GEORGIA};font-size:16px;font-style:italic;color:${ESTATE_WINE_SURFACE_MUTED} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_MUTED};margin:0 0 28px;line-height:1.6;">It&apos;s our privilege to handle your move.</p>
 
     ${
       p.coordinatorName
         ? `
-    <p style="font-size:16px;font-weight:700;color:${ESTATE_BODY};margin:0 0 4px;font-family:${ESTATE_DM_SANS};">${p.coordinatorName}</p>
-    <p style="font-size:13px;color:${ESTATE_BODY_MUTED};margin:0 0 8px;font-family:${ESTATE_DM_SANS};">Move Coordinator, Yugo</p>
-    <p style="font-size:13px;color:${ESTATE_BODY};margin:0;font-family:${ESTATE_DM_SANS};">
+    <p style="font-size:16px;font-weight:700;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0 0 4px;font-family:${ESTATE_DM_SANS};">${p.coordinatorName}</p>
+    <p style="font-size:13px;color:${ESTATE_WINE_SURFACE_MUTED} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_MUTED};margin:0 0 8px;font-family:${ESTATE_DM_SANS};">Move Coordinator, Yugo</p>
+    <p style="font-size:13px;color:${ESTATE_WINE_SURFACE_INK} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_INK};margin:0;font-family:${ESTATE_DM_SANS};">
       ${coordContactLine}
     </p>
     `
         : `
-    <p style="font-size:13px;color:${ESTATE_BODY_MUTED};margin:0;font-family:${ESTATE_DM_SANS};">Yugo Estate Team</p>
+    <p style="font-size:13px;color:${ESTATE_WINE_SURFACE_MUTED} !important;-webkit-text-fill-color:${ESTATE_WINE_SURFACE_MUTED};margin:0;font-family:${ESTATE_DM_SANS};">Yugo Estate Team</p>
     `
     }
-
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:32px 0 0;">
-      <tr>
-        <td align="center" style="padding:0;">
-          <img src="${getEmailLogoWineUrl().replace(/&/g, "&amp;")}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" class="estate-email-logo-light" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;margin:0 auto;" />
-          <img src="${getEmailLogoOnDarkUrl().replace(/&/g, "&amp;")}" alt="" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" class="estate-email-logo-dark" style="display:none;border:0;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;margin:0 auto;" />
-        </td>
-      </tr>
-    </table>
-  `);
+  `)}`;
 }
 
 export interface Estate30DayCheckinEmailParams {

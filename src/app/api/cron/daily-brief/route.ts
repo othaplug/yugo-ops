@@ -201,7 +201,7 @@ export async function GET(req: NextRequest) {
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="background:#0d0b08;margin:0;padding:0;font-family:'Inter',sans-serif;">
+<body class="yugo-dark-ops-email" style="background:#0d0b08;margin:0;padding:0;font-family:'Inter',sans-serif;">
   <div style="max-width:600px;margin:0 auto;padding:24px 16px;">
     <div style="border-bottom:1px solid #2a2318;padding-bottom:16px;margin-bottom:20px;">
       <p style="font-size:10px;letter-spacing:2px;text-transform:none;color:#2C3E2D;margin:0 0 4px;">Yugo</p>

@@ -3,7 +3,14 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { createButtonBaseClass } from "./CreateButton";
-import { BookOpen, CalendarBlank, Handshake, Plus, Truck, UsersThree } from "@phosphor-icons/react";
+import {
+  BookOpen,
+  CalendarBlank,
+  Handshake,
+  Plus,
+  Truck,
+  UsersThree,
+} from "@phosphor-icons/react";
 
 interface CreateDeliveryDropdownProps {
   /** Partner type for URL param (designer, hospitality, retail, gallery) */
@@ -17,13 +24,20 @@ interface CreateDeliveryDropdownProps {
   className?: string;
 }
 
-export default function CreateDeliveryDropdown({ type, createProjectHref, createProjectOnClick, addPartnerHref, className = "" }: CreateDeliveryDropdownProps) {
+export default function CreateDeliveryDropdown({
+  type,
+  createProjectHref,
+  createProjectOnClick,
+  addPartnerHref,
+  className = "",
+}: CreateDeliveryDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -62,7 +76,12 @@ export default function CreateDeliveryDropdown({ type, createProjectHref, create
             className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
           >
             <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
-              <Truck size={14} weight="regular" className="text-current" aria-hidden />
+              <Truck
+                size={14}
+                weight="regular"
+                className="text-current"
+                aria-hidden
+              />
             </span>
             Delivery
           </Link>
@@ -71,7 +90,12 @@ export default function CreateDeliveryDropdown({ type, createProjectHref, create
             className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
           >
             <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
-              <CalendarBlank size={14} weight="regular" className="text-current" aria-hidden />
+              <CalendarBlank
+                size={14}
+                weight="regular"
+                className="text-current"
+                aria-hidden
+              />
             </span>
             Day Rate
           </Link>
@@ -80,19 +104,32 @@ export default function CreateDeliveryDropdown({ type, createProjectHref, create
             className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
           >
             <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
-              <Handshake size={14} weight="regular" className="text-current" aria-hidden />
+              <Handshake
+                size={14}
+                weight="regular"
+                className="text-current"
+                aria-hidden
+              />
             </span>
             B2B One-Off
           </Link>
-          {(createProjectHref || createProjectOnClick) && (
-            createProjectOnClick ? (
+          {(createProjectHref || createProjectOnClick) &&
+            (createProjectOnClick ? (
               <button
                 type="button"
-                onClick={() => { createProjectOnClick(); setOpen(false); }}
+                onClick={() => {
+                  createProjectOnClick();
+                  setOpen(false);
+                }}
                 className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors w-full text-left first:rounded-t-xl last:rounded-b-xl"
               >
                 <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
-                  <BookOpen size={14} weight="regular" className="text-current" aria-hidden />
+                  <BookOpen
+                    size={14}
+                    weight="regular"
+                    className="text-current"
+                    aria-hidden
+                  />
                 </span>
                 Project
               </button>
@@ -102,19 +139,28 @@ export default function CreateDeliveryDropdown({ type, createProjectHref, create
                 className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
               >
                 <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
-                  <BookOpen size={14} weight="regular" className="text-current" aria-hidden />
+                  <BookOpen
+                    size={14}
+                    weight="regular"
+                    className="text-current"
+                    aria-hidden
+                  />
                 </span>
                 Project
               </Link>
-            )
-          )}
+            ))}
           {addPartnerHref && (
             <Link
               href={addPartnerHref}
               className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
             >
               <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
-                <UsersThree size={14} weight="regular" className="text-current" aria-hidden />
+                <UsersThree
+                  size={14}
+                  weight="regular"
+                  className="text-current"
+                  aria-hidden
+                />
               </span>
               Add Partner
             </Link>

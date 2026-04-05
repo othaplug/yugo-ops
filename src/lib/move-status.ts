@@ -94,26 +94,27 @@ export const MOVE_STATUS_COLORS: Record<string, string> = {
   delivered: "bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30",
   pending: "bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30",
   "in-transit": "bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30",
-  confirmed_pending_schedule: "bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30",
+  confirmed_pending_schedule:
+    "bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30",
   confirmed_unassigned: "bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30",
 };
 
-/** Admin dark theme status colors */
+/** Admin status — text color only (no pill backgrounds; use with .dt-badge uppercase) */
 export const MOVE_STATUS_COLORS_ADMIN: Record<string, string> = {
-  confirmed: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]",
-  quoted: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]",
-  quote: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]",
-  scheduled: "text-[#3B82F6] bg-[rgba(59,130,246,0.12)]",
-  paid: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]",
-  final_payment_received: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]", // legacy
-  in_progress: "text-[var(--org)] bg-[rgba(212,138,41,0.12)]",
-  completed: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]",
-  cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.12)]",
-  delivered: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]",
-  pending: "text-[var(--org)] bg-[rgba(212,138,41,0.12)]",
-  "in-transit": "text-[var(--gold)] bg-[var(--gdim)]",
-  confirmed_pending_schedule: "text-[var(--gold)] bg-[var(--gdim)]",
-  confirmed_unassigned: "text-[var(--red)] bg-[rgba(209,67,67,0.12)]",
+  confirmed: "text-[#A8D4B8]",
+  quoted: "text-[#A8D4B8]",
+  quote: "text-[#A8D4B8]",
+  scheduled: "text-[#E8B4C8]",
+  paid: "text-[#A8D4B8]",
+  final_payment_received: "text-[#A8D4B8]", // legacy
+  in_progress: "text-[#E8B4C8]",
+  completed: "text-[#A8D4B8]",
+  cancelled: "text-[#E87070]",
+  delivered: "text-[#A8D4B8]",
+  pending: "text-[#E8B4C8]",
+  "in-transit": "text-[#E8B4C8]",
+  confirmed_pending_schedule: "text-[#E8B4C8]",
+  confirmed_unassigned: "text-[#E87070]",
 };
 
 /** Timeline/line color by move status (CSS var or hex for the vertical line next to time) */
@@ -166,7 +167,10 @@ export function getStatusLabel(status: string | null): string {
     confirmed_unassigned: "Needs Scheduling",
   };
   if (legacy[status]) return legacy[status];
-  return status.replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return status
+    .replace(/_/g, " ")
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /** Normalize legacy status to new status value for DB updates */

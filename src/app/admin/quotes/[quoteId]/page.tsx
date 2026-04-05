@@ -41,6 +41,22 @@ export default async function QuoteDetailPage({ params }: Props) {
     .eq("quote_id", quote.quote_id)
     .order("created_at", { ascending: true });
 
+  const { count: followupsSentCount } = await db
+    .from("quote_followups")
+    .select("id", { count: "exact", head: true })
+    .eq("quote_id", quote.id);
+
+  const { data: maxFuRow } = await db
+    .from("platform_config")
+    .select("value")
+    .eq("key", "followup_max_attempts")
+    .maybeSingle();
+
+  const followupMaxAttempts = Math.max(
+    0,
+    parseInt(maxFuRow?.value || "3", 10) || 3,
+  );
+
   return (
     <div className="max-w-[1400px] mx-auto px-5 md:px-6 py-5 md:py-6">
       <QuoteDetailClient
@@ -48,6 +64,8 @@ export default async function QuoteDetailPage({ params }: Props) {
         engagement={engagementRows ?? []}
         legacyEvents={legacyEvents ?? []}
         isSuperAdmin={isSuperAdmin}
+        followupsSentCount={followupsSentCount ?? 0}
+        followupMaxAttempts={followupMaxAttempts}
       />
     </div>
   );

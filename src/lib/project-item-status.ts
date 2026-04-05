@@ -32,20 +32,21 @@ export const PROJECT_ITEM_STATUS_LABELS: Record<ProjectItemStatus, string> = {
   issue_reported: "Issue Reported",
 };
 
-export const PROJECT_ITEM_STATUS_UI: Record<ProjectItemStatus, { label: string; color: string; bg: string }> = {
-  spec_selected: { label: "Spec'd", color: "text-[#4F4B47]", bg: "bg-[#4F4B47]/12" },
-  ordered: { label: "Ordered", color: "text-blue-500", bg: "bg-blue-500/10" },
-  in_production: { label: "In Production", color: "text-blue-500", bg: "bg-blue-500/10" },
-  ready_for_pickup: { label: "Ready for Pickup", color: "text-amber-500", bg: "bg-amber-500/10" },
-  shipped: { label: "Shipped", color: "text-sky-500", bg: "bg-sky-500/10" },
-  in_transit: { label: "In Transit", color: "text-sky-500", bg: "bg-sky-500/10" },
-  received_warehouse: { label: "Received", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-  inspected: { label: "Inspected", color: "text-emerald-600", bg: "bg-emerald-500/10" },
-  stored: { label: "Stored", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-  scheduled_delivery: { label: "Delivery Scheduled", color: "text-amber-500", bg: "bg-amber-500/10" },
-  delivered: { label: "Delivered", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-  installed: { label: "Installed", color: "text-emerald-600", bg: "bg-emerald-600/10" },
-  issue_reported: { label: "Issue Reported", color: "text-red-500", bg: "bg-red-500/10" },
+/** Text-only status chrome (no pill backgrounds) — use with `.dt-badge` in admin UI */
+export const PROJECT_ITEM_STATUS_UI: Record<ProjectItemStatus, { label: string; color: string }> = {
+  spec_selected: { label: "Spec'd", color: "text-[#4F4B47]" },
+  ordered: { label: "Ordered", color: "text-blue-500" },
+  in_production: { label: "In Production", color: "text-blue-500" },
+  ready_for_pickup: { label: "Ready for Pickup", color: "text-amber-500" },
+  shipped: { label: "Shipped", color: "text-sky-500" },
+  in_transit: { label: "In Transit", color: "text-sky-500" },
+  received_warehouse: { label: "Received", color: "text-emerald-500" },
+  inspected: { label: "Inspected", color: "text-emerald-600" },
+  stored: { label: "Stored", color: "text-emerald-500" },
+  scheduled_delivery: { label: "Delivery Scheduled", color: "text-amber-500" },
+  delivered: { label: "Delivered", color: "text-emerald-500" },
+  installed: { label: "Installed", color: "text-emerald-600" },
+  issue_reported: { label: "Issue Reported", color: "text-red-500" },
 };
 
 export const DELIVERY_METHOD_LABELS: Record<string, string> = {

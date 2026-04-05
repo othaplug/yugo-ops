@@ -19,15 +19,15 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  confirmed: "bg-blue-500/15 text-blue-400",
-  drop_off_scheduled: "bg-purple-500/15 text-purple-400",
-  bins_delivered: "bg-emerald-500/15 text-emerald-400",
-  in_use: "bg-amber-500/15 text-amber-400",
-  pickup_scheduled: "bg-sky-500/15 text-sky-400",
-  bins_collected: "bg-teal-500/15 text-teal-400",
-  completed: "bg-green-500/15 text-green-400",
-  overdue: "bg-red-500/15 text-red-400",
-  cancelled: "bg-neutral-500/15 text-neutral-400",
+  confirmed: "text-blue-400",
+  drop_off_scheduled: "text-purple-400",
+  bins_delivered: "text-emerald-400",
+  in_use: "text-amber-400",
+  pickup_scheduled: "text-sky-400",
+  bins_collected: "text-teal-400",
+  completed: "text-green-400",
+  overdue: "text-red-400",
+  cancelled: "text-neutral-400",
 };
 
 const BUNDLE_LABELS: Record<string, string> = {
@@ -75,7 +75,7 @@ function SectionDivider({ label }: { label: string }) {
         <div className="w-full border-t border-[var(--brd)]" />
       </div>
       <div className="relative flex justify-start">
-        <span className="bg-[var(--bg)] pr-4 text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 select-none">
+        <span className="bg-[var(--bg)] pr-4 text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 select-none">
           {label}
         </span>
       </div>
@@ -96,7 +96,7 @@ function KpiBlock({
 }) {
   return (
     <div className="cursor-default">
-      <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-2">{label}</p>
+      <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/82 mb-2">{label}</p>
       <p
         className={`text-[28px] font-bold font-heading leading-none ${
           accent ? "text-[var(--grn)]" : "text-[var(--tx)]"
@@ -140,12 +140,12 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
       </div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/50 mb-1">Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-1">Operations</p>
           <h1 className="admin-page-hero text-[var(--tx)]">Bin Rentals</h1>
         </div>
         <Link
           href="/admin/quotes/new"
-          className="group inline-flex items-center gap-2 shrink-0 rounded-full border border-[var(--gold)]/45 bg-[var(--gold)]/[0.09] px-4 py-2.5 text-[10px] font-bold tracking-wide text-[var(--gold)] shadow-[0_1px_0_rgba(0,0,0,0.35)] transition-all hover:border-[var(--gold)]/70 hover:bg-[var(--gold)]/[0.16] hover:shadow-[0_2px_8px_rgba(201,169,98,0.12)] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold)]"
+          className="group inline-flex items-center gap-2 shrink-0 rounded-lg border border-[var(--brd)] px-4 py-2.5 text-[10px] font-bold tracking-wide text-[#2C3E2D] dark:text-[var(--tx2)] shadow-sm transition-all hover:border-[#2C3E2D]/35 hover:bg-[var(--bg2)] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C3E2D]/40"
         >
           Generate quote
         </Link>
@@ -208,8 +208,8 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
                   <p className="text-[12px] text-[var(--tx3)] truncate">{o.client_email}</p>
                 </div>
                 <span
-                  className={`shrink-0 inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-                    STATUS_STYLES[o.status] || "bg-[var(--gdim)] text-[var(--tx3)]"
+                  className={`shrink-0 dt-badge tracking-[0.04em] ${
+                    STATUS_STYLES[o.status] || "text-[var(--tx3)]"
                   }`}
                 >
                   {STATUS_LABELS[o.status] || o.status}
@@ -295,8 +295,8 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
                 <td className="py-3 pr-4 text-[var(--tx2)] whitespace-nowrap">{fmtDate(o.pickup_date)}</td>
                 <td className="py-3 pr-4">
                   <span
-                    className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                      STATUS_STYLES[o.status] || "bg-[var(--gdim)] text-[var(--tx3)]"
+                    className={`dt-badge tracking-[0.04em] ${
+                      STATUS_STYLES[o.status] || "text-[var(--tx3)]"
                     }`}
                   >
                     {STATUS_LABELS[o.status] || o.status}

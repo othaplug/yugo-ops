@@ -97,7 +97,7 @@ export default function TipsClient({
 
   return (
     <div className="max-w-[1000px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
-      <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance</p>
+      <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Finance</p>
       <h1 className="admin-page-hero text-[var(--tx)] mb-8">Tips</h1>
 
       <div className="grid grid-cols-3 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
@@ -119,7 +119,7 @@ export default function TipsClient({
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
                     style={{
-                      background: i === 0 ? "rgba(201,169,98,0.15)" : "var(--bg)",
+                      background: i === 0 ? "var(--gdim)" : "var(--bg)",
                       color: i === 0 ? "var(--gold)" : "var(--tx3)",
                       border: "1px solid var(--brd)",
                     }}

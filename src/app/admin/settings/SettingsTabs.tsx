@@ -55,7 +55,7 @@ export default function SettingsTabs({ isPartner }: { isPartner: boolean }) {
                   {tab.desc}
                 </div>
               </div>
-              {active && <span className="ml-0.5 w-1 h-1 rounded-full bg-[var(--gold)] shrink-0 self-start mt-1.5" />}
+              {active && <span className="ml-0.5 w-1 h-1 rounded-full bg-[var(--admin-primary-fill)] shrink-0 self-start mt-1.5" />}
             </Link>
           );
         })}

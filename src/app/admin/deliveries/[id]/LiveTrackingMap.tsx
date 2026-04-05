@@ -11,8 +11,11 @@ import { CornersIn, CornersOut } from "@phosphor-icons/react";
 import { TrackingFreshness } from "@/components/tracking/TrackingFreshness";
 
 const LiveTrackingMapLeaflet = dynamic(
-  () => import("./LiveTrackingMapLeaflet").then((mod) => mod.LiveTrackingMapLeaflet),
-  { ssr: false }
+  () =>
+    import("./LiveTrackingMapLeaflet").then(
+      (mod) => mod.LiveTrackingMapLeaflet,
+    ),
+  { ssr: false },
 );
 
 /** GeoJSON LineString feature for the driving route */
@@ -22,115 +25,146 @@ type RouteGeoJson = {
   geometry: { type: "LineString"; coordinates: [number, number][] };
 } | null;
 
-function calcBearing(from: { lat: number; lng: number }, to: { lat: number; lng: number }): number {
+function calcBearing(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+): number {
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLng = toRad(to.lng - from.lng);
   const lat1 = toRad(from.lat);
   const lat2 = toRad(to.lat);
   const y = Math.sin(dLng) * Math.cos(lat2);
-  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  const x =
+    Math.cos(lat1) * Math.sin(lat2) -
+    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
 const MapboxMap = dynamic(
-  () => import("react-map-gl/mapbox").then((mod) => {
-    const M = mod.default;
-    const Marker = mod.Marker;
-    const Nav = mod.NavigationControl;
-    const Source = mod.Source;
-    const Layer = mod.Layer;
-    return function MapWithControls({
-      center,
-      hasPosition,
-      crew,
-      crewName,
-      crewBearing,
-      token,
-      mapStyle,
-      pickup,
-      dropoff,
-      routeLineColor,
-      routeGeoJson,
-    }: {
-      center: { longitude: number; latitude: number };
-      hasPosition: boolean;
-      crew: { current_lat: number; current_lng: number; name?: string } | null;
-      crewName?: string;
-      crewBearing: number | null;
-      token: string;
-      mapStyle: string;
-      pickup?: { lat: number; lng: number };
-      dropoff?: { lat: number; lng: number };
-      routeLineColor?: string;
-      routeGeoJson?: RouteGeoJson;
-    }) {
-      const lineGeoJson = routeGeoJson ?? null;
+  () =>
+    import("react-map-gl/mapbox").then((mod) => {
+      const M = mod.default;
+      const Marker = mod.Marker;
+      const Nav = mod.NavigationControl;
+      const Source = mod.Source;
+      const Layer = mod.Layer;
+      return function MapWithControls({
+        center,
+        hasPosition,
+        crew,
+        crewName,
+        crewBearing,
+        token,
+        mapStyle,
+        pickup,
+        dropoff,
+        routeLineColor,
+        routeGeoJson,
+      }: {
+        center: { longitude: number; latitude: number };
+        hasPosition: boolean;
+        crew: {
+          current_lat: number;
+          current_lng: number;
+          name?: string;
+        } | null;
+        crewName?: string;
+        crewBearing: number | null;
+        token: string;
+        mapStyle: string;
+        pickup?: { lat: number; lng: number };
+        dropoff?: { lat: number; lng: number };
+        routeLineColor?: string;
+        routeGeoJson?: RouteGeoJson;
+      }) {
+        const lineGeoJson = routeGeoJson ?? null;
 
-      return (
-        <M
-          mapboxAccessToken={token}
-          initialViewState={{ ...center, zoom: hasPosition ? 14 : 10 }}
-          style={{ width: "100%", height: "100%" }}
-          mapStyle={mapStyle}
-        >
-          {lineGeoJson && (
-            <Source id="route-tracking" type="geojson" data={lineGeoJson}>
-              <Layer
-                id="route-tracking-layer"
-                type="line"
-                paint={{
-                  "line-color": routeLineColor ?? "#2C3E2D",
-                  "line-width": 5,
-                  "line-opacity": 1,
-                }}
-              />
-            </Source>
-          )}
-          {pickup && (
-            <Marker longitude={pickup.lng} latitude={pickup.lat} anchor="center">
-              <div className="w-4 h-4 rounded-full border-2 border-white shadow-md bg-[#22C55E]" title="Pickup" />
-            </Marker>
-          )}
-          {dropoff && (
-            <Marker longitude={dropoff.lng} latitude={dropoff.lat} anchor="center">
-              <div className="w-4 h-4 rounded-full border-2 border-white shadow-md bg-[#2C3E2D]" title="Drop-off" />
-            </Marker>
-          )}
-          {hasPosition && crew && (
-            <Marker longitude={crew.current_lng} latitude={crew.current_lat} anchor="center">
-              <div
-                className="relative flex items-center justify-center"
-                style={{ width: 40, height: 40 }}
-                title={crewName || crew.name || "Crew"}
-              >
-                <svg
-                  width="36"
-                  height="36"
-                  viewBox="0 0 44 44"
-                  style={{
-                    transform: crewBearing != null ? `rotate(${crewBearing}deg)` : "none",
-                    transition: "transform 0.8s ease-out",
-                    filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.55))",
+        return (
+          <M
+            mapboxAccessToken={token}
+            initialViewState={{ ...center, zoom: hasPosition ? 14 : 10 }}
+            style={{ width: "100%", height: "100%" }}
+            mapStyle={mapStyle}
+          >
+            {lineGeoJson && (
+              <Source id="route-tracking" type="geojson" data={lineGeoJson}>
+                <Layer
+                  id="route-tracking-layer"
+                  type="line"
+                  paint={{
+                    "line-color": routeLineColor ?? "#2C3E2D",
+                    "line-width": 5,
+                    "line-opacity": 1,
                   }}
-                  aria-hidden
+                />
+              </Source>
+            )}
+            {pickup && (
+              <Marker
+                longitude={pickup.lng}
+                latitude={pickup.lat}
+                anchor="center"
+              >
+                <div
+                  className="w-4 h-4 rounded-full border-2 border-white shadow-md bg-[#22C55E]"
+                  title="Pickup"
+                />
+              </Marker>
+            )}
+            {dropoff && (
+              <Marker
+                longitude={dropoff.lng}
+                latitude={dropoff.lat}
+                anchor="center"
+              >
+                <div
+                  className="w-4 h-4 rounded-full border-2 border-white shadow-md bg-[#2C3E2D]"
+                  title="Drop-off"
+                />
+              </Marker>
+            )}
+            {hasPosition && crew && (
+              <Marker
+                longitude={crew.current_lng}
+                latitude={crew.current_lat}
+                anchor="center"
+              >
+                <div
+                  className="relative flex items-center justify-center"
+                  style={{ width: 40, height: 40 }}
+                  title={crewName || crew.name || "Crew"}
                 >
-                  <polygon
-                    points="22,5 34,36 22,29 10,36"
-                    fill={routeLineColor ?? "#2C3E2D"}
-                    stroke="white"
-                    strokeWidth="2.5"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            </Marker>
-          )}
-          <Nav position="bottom-right" showCompass showZoom />
-        </M>
-      );
-    };
-  }),
-  { ssr: false }
+                  <svg
+                    width="36"
+                    height="36"
+                    viewBox="0 0 44 44"
+                    style={{
+                      transform:
+                        crewBearing != null
+                          ? `rotate(${crewBearing}deg)`
+                          : "none",
+                      transition: "transform 0.8s ease-out",
+                      filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.55))",
+                    }}
+                    aria-hidden
+                  >
+                    <polygon
+                      points="22,5 34,36 22,29 10,36"
+                      fill={routeLineColor ?? "#2C3E2D"}
+                      stroke="white"
+                      strokeWidth="2.5"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              </Marker>
+            )}
+            <Nav position="bottom-right" showCompass showZoom />
+          </M>
+        );
+      };
+    }),
+  { ssr: false },
 );
 
 const DEFAULT_CENTER = { longitude: -79.385, latitude: 43.665 };
@@ -188,19 +222,28 @@ export default function LiveTrackingMap({
   const [crew, setCrew] = useState<Crew | null>(null);
   const [loading, setLoading] = useState(true);
   const [liveStage, setLiveStage] = useState<string | null>(null);
-  const [hasActiveSession, setHasActiveSession] = useState<boolean | null>(null);
+  const [hasActiveSession, setHasActiveSession] = useState<boolean | null>(
+    null,
+  );
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [routeGeoJson, setRouteGeoJson] = useState<RouteGeoJson>(null);
   const [routePositions, setRoutePositions] = useState<[number, number][]>([]);
-  const [resolvedPickup, setResolvedPickup] = useState<{ lat: number; lng: number } | null>(null);
-  const [resolvedDropoff, setResolvedDropoff] = useState<{ lat: number; lng: number } | null>(null);
+  const [resolvedPickup, setResolvedPickup] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [resolvedDropoff, setResolvedDropoff] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [crewBearing, setCrewBearing] = useState<number | null>(null);
   const prevCrewPosRef = useRef<{ lat: number; lng: number } | null>(null);
   const supabase = createClient();
   const { theme } = useTheme();
-  const mapStyle = theme === "light"
-    ? "mapbox://styles/mapbox/light-v11"
-    : "mapbox://styles/mapbox/dark-v11";
+  const mapStyle =
+    theme === "light"
+      ? "mapbox://styles/mapbox/light-v11"
+      : "mapbox://styles/mapbox/dark-v11";
   const routeLineColor = "#2C3E2D";
 
   // When deliveryId is set and parent didn't pass coords, fetch delivery and geocode so we can draw the route
@@ -209,37 +252,55 @@ export default function LiveTrackingMap({
     let cancelled = false;
     supabase
       .from("deliveries")
-      .select("pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng")
+      .select(
+        "pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng",
+      )
       .eq("id", deliveryId)
       .single()
       .then(({ data: d }) => {
         if (cancelled || !d) return;
         if (!pickup) {
           if (d.pickup_lat != null && d.pickup_lng != null)
-            setResolvedPickup({ lat: Number(d.pickup_lat), lng: Number(d.pickup_lng) });
+            setResolvedPickup({
+              lat: Number(d.pickup_lat),
+              lng: Number(d.pickup_lng),
+            });
           else if (d.pickup_address?.trim())
-            fetch(`/api/mapbox/geocode?q=${encodeURIComponent(d.pickup_address.trim())}&limit=1`, { credentials: "include" })
+            fetch(
+              `/api/mapbox/geocode?q=${encodeURIComponent(d.pickup_address.trim())}&limit=1`,
+              { credentials: "include" },
+            )
               .then((r) => r.json())
               .then((data) => {
                 if (cancelled) return;
                 const c = data?.features?.[0]?.geometry?.coordinates;
-                if (Array.isArray(c) && c.length >= 2) setResolvedPickup({ lng: c[0], lat: c[1] });
+                if (Array.isArray(c) && c.length >= 2)
+                  setResolvedPickup({ lng: c[0], lat: c[1] });
               });
         }
         if (!dropoff) {
           if (d.delivery_lat != null && d.delivery_lng != null)
-            setResolvedDropoff({ lat: Number(d.delivery_lat), lng: Number(d.delivery_lng) });
+            setResolvedDropoff({
+              lat: Number(d.delivery_lat),
+              lng: Number(d.delivery_lng),
+            });
           else if (d.delivery_address?.trim())
-            fetch(`/api/mapbox/geocode?q=${encodeURIComponent(d.delivery_address.trim())}&limit=1`, { credentials: "include" })
+            fetch(
+              `/api/mapbox/geocode?q=${encodeURIComponent(d.delivery_address.trim())}&limit=1`,
+              { credentials: "include" },
+            )
               .then((r) => r.json())
               .then((data) => {
                 if (cancelled) return;
                 const c = data?.features?.[0]?.geometry?.coordinates;
-                if (Array.isArray(c) && c.length >= 2) setResolvedDropoff({ lng: c[0], lat: c[1] });
+                if (Array.isArray(c) && c.length >= 2)
+                  setResolvedDropoff({ lng: c[0], lat: c[1] });
               });
         }
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [deliveryId, pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng]);
 
   const effectivePickup = pickup ?? resolvedPickup;
@@ -250,7 +311,9 @@ export default function LiveTrackingMap({
     PICKUP_STAGES.includes(liveStage || "") || !(liveStage ?? "").trim();
   const effectiveDestination =
     (deliveryId || moveId) && (effectivePickup || effectiveDropoff)
-      ? (headingToPickup ? (effectivePickup ?? effectiveDropoff) : (effectiveDropoff ?? effectivePickup))
+      ? headingToPickup
+        ? (effectivePickup ?? effectiveDropoff)
+        : (effectiveDropoff ?? effectivePickup)
       : destination;
 
   // Initial fetch + realtime subscription for crew position
@@ -272,11 +335,16 @@ export default function LiveTrackingMap({
       .channel(`crew-${crewId}`)
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "crews", filter: `id=eq.${crewId}` },
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "crews",
+          filter: `id=eq.${crewId}`,
+        },
         (payload) => {
           const row = payload.new as Crew;
           if (row) setCrew(row);
-        }
+        },
       )
       .subscribe();
 
@@ -299,7 +367,9 @@ export default function LiveTrackingMap({
   }, [crew?.current_lat, crew?.current_lng]);
 
   // Fetch and subscribe to live stage when moveId OR deliveryId provided
-  const sessionChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const sessionChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(
+    null,
+  );
   const subscribedSessionIdRef = useRef<string | null>(null);
   const jobId = moveId || deliveryId;
   const jobApiPath = moveId
@@ -322,12 +392,17 @@ export default function LiveTrackingMap({
         .channel(`tracking-session-${sessionId}`)
         .on(
           "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "tracking_sessions", filter: `id=eq.${sessionId}` },
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "tracking_sessions",
+            filter: `id=eq.${sessionId}`,
+          },
           (payload) => {
             const row = payload.new as { status?: string; is_active?: boolean };
             if (row?.status) setLiveStage(row.status);
             if (row?.is_active != null) setHasActiveSession(row.is_active);
-          }
+          },
         )
         .subscribe();
       sessionChannelRef.current = ch;
@@ -381,14 +456,17 @@ export default function LiveTrackingMap({
         return res.json();
       })
       .then((data) => {
-        const coordsList = data?.coordinates ?? data?.routes?.[0]?.geometry?.coordinates;
+        const coordsList =
+          data?.coordinates ?? data?.routes?.[0]?.geometry?.coordinates;
         if (Array.isArray(coordsList) && coordsList.length > 0) {
           setRouteGeoJson({
             type: "Feature",
             properties: {},
             geometry: { type: "LineString", coordinates: coordsList },
           });
-          setRoutePositions(coordsList.map((c: [number, number]) => [c[1], c[0]]));
+          setRoutePositions(
+            coordsList.map((c: [number, number]) => [c[1], c[0]]),
+          );
         } else {
           setRouteGeoJson(null);
           setRoutePositions([]);
@@ -398,11 +476,18 @@ export default function LiveTrackingMap({
         setRouteGeoJson(null);
         setRoutePositions([]);
       });
-  }, [hasPosition, crew?.current_lat, crew?.current_lng, effectiveDestination?.lat, effectiveDestination?.lng]);
+  }, [
+    hasPosition,
+    crew?.current_lat,
+    crew?.current_lng,
+    effectiveDestination?.lat,
+    effectiveDestination?.lng,
+  ]);
 
   // When directions API fails, show straight line so route is always visible
   const fallbackRouteGeoJson = useMemo((): RouteGeoJson => {
-    if (routeGeoJson || !hasPosition || !crew || !effectiveDestination) return null;
+    if (routeGeoJson || !hasPosition || !crew || !effectiveDestination)
+      return null;
     return {
       type: "Feature",
       properties: {},
@@ -414,7 +499,14 @@ export default function LiveTrackingMap({
         ],
       },
     };
-  }, [routeGeoJson, hasPosition, crew?.current_lat, crew?.current_lng, effectiveDestination?.lat, effectiveDestination?.lng]);
+  }, [
+    routeGeoJson,
+    hasPosition,
+    crew?.current_lat,
+    crew?.current_lng,
+    effectiveDestination?.lat,
+    effectiveDestination?.lng,
+  ]);
 
   const isDeliveryMode = !!deliveryId;
   const sessionActive = hasActiveSession === true;
@@ -423,9 +515,12 @@ export default function LiveTrackingMap({
   if (isDeliveryMode && !sessionActive && !loading) {
     return (
       <div className="px-6 py-8 text-center">
-        <p className="text-[12px] font-medium text-[var(--tx2)]">Crew assigned, waiting to start</p>
+        <p className="text-[12px] font-medium text-[var(--tx2)]">
+          Crew assigned, waiting to start
+        </p>
         <p className="text-[10px] text-[var(--tx3)] mt-1">
-          Live tracking will activate when {crewName || "the crew"} starts this job and their GPS goes live
+          Live tracking will activate when {crewName || "the crew"} starts this
+          job and their GPS goes live
         </p>
       </div>
     );
@@ -436,18 +531,27 @@ export default function LiveTrackingMap({
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
         {!hideHeader && (
           <>
-            <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-2">Live Crew Tracking</h3>
+            <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-2">
+              Live Crew Tracking
+            </h3>
             <p className="text-[11px] text-[var(--tx3)] mb-3">
-              {crewName || crew?.name || "Crew"} • {hasPosition ? "Live position updating" : "Waiting for GPS..."}
+              {crewName || crew?.name || "Crew"} •{" "}
+              {hasPosition ? "Live position updating" : "Waiting for GPS..."}
               {crew?.updated_at ? (
                 <span className="block mt-1 text-[10px]">
-                  <TrackingFreshness crewOnJob={sessionActive} lastUpdate={crew.updated_at} />
+                  <TrackingFreshness
+                    crewOnJob={sessionActive}
+                    lastUpdate={crew.updated_at}
+                  />
                 </span>
               ) : null}
             </p>
           </>
         )}
-        <div className={`relative rounded-lg border border-[var(--brd)] overflow-hidden ${isFullscreen ? "map-fullscreen" : ""}`} style={isFullscreen ? undefined : { height: 320 }}>
+        <div
+          className={`relative rounded-lg border border-[var(--brd)] overflow-hidden ${isFullscreen ? "map-fullscreen" : ""}`}
+          style={isFullscreen ? undefined : { height: 320 }}
+        >
           {/* Fullscreen toggle */}
           <button
             type="button"
@@ -492,16 +596,27 @@ export default function LiveTrackingMap({
           ) : (
             <LiveTrackingMapLeaflet
               center={center}
-              crew={hasPosition && crew && crew.current_lat != null && crew.current_lng != null
-                ? { current_lat: crew.current_lat, current_lng: crew.current_lng, name: crew.name }
-                : null}
+              crew={
+                hasPosition &&
+                crew &&
+                crew.current_lat != null &&
+                crew.current_lng != null
+                  ? {
+                      current_lat: crew.current_lat,
+                      current_lng: crew.current_lng,
+                      name: crew.name,
+                    }
+                  : null
+              }
               crewName={crewName}
               crewBearing={crewBearing}
               pickup={effectivePickup ?? undefined}
               dropoff={effectiveDropoff ?? undefined}
               destination={effectiveDestination ?? undefined}
               mapTheme={theme}
-              routePositions={routePositions.length > 0 ? routePositions : undefined}
+              routePositions={
+                routePositions.length > 0 ? routePositions : undefined
+              }
             />
           )}
         </div>
@@ -513,18 +628,27 @@ export default function LiveTrackingMap({
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
       {!hideHeader && (
         <>
-          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-2">Live Crew Tracking</h3>
+          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-2">
+            Live Crew Tracking
+          </h3>
           <p className="text-[11px] text-[var(--tx3)] mb-3">
-            {crewName || crew?.name || "Crew"} • {hasPosition ? "Live position updating" : "Waiting for GPS..."}
+            {crewName || crew?.name || "Crew"} •{" "}
+            {hasPosition ? "Live position updating" : "Waiting for GPS..."}
             {crew?.updated_at ? (
               <span className="block mt-1 text-[10px]">
-                <TrackingFreshness crewOnJob={sessionActive} lastUpdate={crew.updated_at} />
+                <TrackingFreshness
+                  crewOnJob={sessionActive}
+                  lastUpdate={crew.updated_at}
+                />
               </span>
             ) : null}
           </p>
         </>
       )}
-      <div className={`relative rounded-lg border border-[var(--brd)] overflow-hidden ${isFullscreen ? "map-fullscreen" : ""}`} style={isFullscreen ? undefined : { height: 320 }}>
+      <div
+        className={`relative rounded-lg border border-[var(--brd)] overflow-hidden ${isFullscreen ? "map-fullscreen" : ""}`}
+        style={isFullscreen ? undefined : { height: 320 }}
+      >
         {/* Fullscreen toggle */}
         <button
           type="button"
@@ -548,32 +672,41 @@ export default function LiveTrackingMap({
               <div className="text-[13px] font-bold text-[var(--tx)]">
                 {CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)}
               </div>
-                <div className="text-[11px] text-[var(--tx3)]">
-                  {liveStage === "loading"
-                    ? "Crew is loading items"
-                    : liveStage === "unloading"
-                      ? "Crew is unloading items"
-                      : liveStage === "completed"
-                        ? "Move is complete"
-                        : liveStage === "scheduled"
-                          ? "Crew hasn't departed yet"
-                          : "Crew is on the way"}
-                </div>
+              <div className="text-[11px] text-[var(--tx3)]">
+                {liveStage === "loading"
+                  ? "Crew is loading items"
+                  : liveStage === "unloading"
+                    ? "Crew is unloading items"
+                    : liveStage === "completed"
+                      ? "Move is complete"
+                      : liveStage === "scheduled"
+                        ? "Crew hasn't departed yet"
+                        : "Crew is on the way"}
               </div>
             </div>
-          )}
-          {loading ? (
-            <div className="w-full h-full flex items-center justify-center bg-[var(--bg)] text-[var(--tx3)] text-[12px]">
-              Loading map...
-            </div>
-          ) : (
-            <MapboxMap
+          </div>
+        )}
+        {loading ? (
+          <div className="w-full h-full flex items-center justify-center bg-[var(--bg)] text-[var(--tx3)] text-[12px]">
+            Loading map...
+          </div>
+        ) : (
+          <MapboxMap
             token={MAPBOX_TOKEN}
             center={center}
             hasPosition={hasPosition}
-            crew={hasPosition && crew && crew.current_lat != null && crew.current_lng != null
-              ? { current_lat: crew.current_lat, current_lng: crew.current_lng, name: crew.name }
-              : null}
+            crew={
+              hasPosition &&
+              crew &&
+              crew.current_lat != null &&
+              crew.current_lng != null
+                ? {
+                    current_lat: crew.current_lat,
+                    current_lng: crew.current_lng,
+                    name: crew.name,
+                  }
+                : null
+            }
             crewName={crewName}
             crewBearing={crewBearing}
             mapStyle={mapStyle}

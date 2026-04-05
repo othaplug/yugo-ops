@@ -394,7 +394,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
         <>
           {canEditInventory && itemWeights.length > 0 && (
             <div className="mb-4 pb-4 border-b border-[var(--brd)]/40">
-              <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/70 mb-2">Quick add from catalog</p>
+              <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/88 mb-2">Quick add from catalog</p>
               <InventoryInput
                 itemWeights={itemWeights as ItemWeightRow[]}
                 value={[]}
@@ -554,14 +554,14 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
               <button
                 type="button"
                 onClick={() => setBulkMode(false)}
-                className={`text-[10px] font-semibold px-2.5 py-1 rounded-md transition-colors ${!bulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                className={`text-[10px] font-semibold px-2.5 py-1 rounded-md transition-colors ${!bulkMode ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
               >
                 Single
               </button>
               <button
                 type="button"
                 onClick={() => setBulkMode(true)}
-                className={`text-[10px] font-semibold px-2.5 py-1 rounded-md transition-colors ${bulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                className={`text-[10px] font-semibold px-2.5 py-1 rounded-md transition-colors ${bulkMode ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] shadow-sm" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
               >
                 Bulk add
               </button>
@@ -618,7 +618,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                   type="button"
                   onClick={handleBulkAdd}
                   disabled={adding || parsedBulkItems.length === 0 || !newRoom || bulkSelectedCount === 0}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors self-start"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50 transition-colors self-start"
                 >
                   <Plus className="w-[11px] h-[11px]" /> Add {bulkSelectedCount > 0 ? `${bulkSelectedCount} selected` : "all"}
                 </button>
@@ -664,7 +664,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                   type="button"
                   onClick={handleAdd}
                   disabled={adding || !newItemName.trim() || !newRoom}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50 transition-colors"
                 >
                   <Plus className="w-[11px] h-[11px]" /> Add
                 </button>

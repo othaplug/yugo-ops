@@ -2211,7 +2211,7 @@ export default function B2BJobsDeliveryForm({
             type="button"
             onClick={addLine}
             disabled={!newDesc.trim()}
-            className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50 sm:col-span-2"
+            className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50 sm:col-span-2"
           >
             <Plus className="w-4 h-4" />
             Add
@@ -2950,7 +2950,7 @@ export default function B2BJobsDeliveryForm({
           type="button"
           disabled={loading}
           onClick={() => void postCreateDelivery("confirmed")}
-          className="px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-90 disabled:opacity-50"
+          className="px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:opacity-90 disabled:opacity-50"
         >
           Create and schedule
         </button>

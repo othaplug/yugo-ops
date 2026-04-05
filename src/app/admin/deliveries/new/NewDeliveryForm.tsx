@@ -716,7 +716,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
                     type="button"
                     onClick={addFromProjectInventory}
                     disabled={selectedProjectItemIds.size === 0}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
                   >
                     <Plus className="w-[12px] h-[12px]" /> Add selected
                   </button>
@@ -740,10 +740,10 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
             </ul>
           )}
           <div className="flex items-center gap-2 mb-2">
-            <button type="button" onClick={() => setBulkMode(false)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${!bulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]"}`}>
+            <button type="button" onClick={() => setBulkMode(false)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${!bulkMode ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]"}`}>
               Single add
             </button>
-            <button type="button" onClick={() => setBulkMode(true)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${bulkMode ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]"}`}>
+            <button type="button" onClick={() => setBulkMode(true)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${bulkMode ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]"}`}>
               Bulk add
             </button>
           </div>
@@ -754,7 +754,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
                 {DEFAULT_ROOMS.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
               <textarea value={bulkText} onChange={(e) => setBulkText(e.target.value)} placeholder="One item per line, e.g. Couch x2" rows={3} className={`${fieldInput} resize-y`} />
-              <button type="button" onClick={addBulkItems} disabled={!bulkText.trim() || !newRoom} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+              <button type="button" onClick={addBulkItems} disabled={!bulkText.trim() || !newRoom} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
                 <Plus className="w-[14px] h-[14px]" /> Add all
               </button>
             </div>
@@ -766,7 +766,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
               </select>
               <input type="text" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addInventoryItem())} placeholder="Item name" className={`${fieldInput} flex-1 min-w-[120px]`} />
               <input type="number" min={1} max={99} value={newItemQty} onChange={(e) => setNewItemQty(Math.max(1, parseInt(e.target.value, 10) || 1))} className={`${fieldInput} w-16`} />
-              <button type="button" onClick={addInventoryItem} disabled={!newItemName.trim() || !newRoom} className="flex-none inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+              <button type="button" onClick={addInventoryItem} disabled={!newItemName.trim() || !newRoom} className="flex-none inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
                 <Plus className="w-[14px] h-[14px]" /> Add
               </button>
             </div>
@@ -784,10 +784,10 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
                 key={p}
                 type="button"
                 onClick={() => toggleComplexity(p)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-colors ${
+                className={`px-3 py-1.5 rounded-md text-[11px] font-semibold border transition-colors ${
                   complexityIndicators.includes(p)
-                    ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
-                    : "bg-[var(--bg)] text-[var(--tx3)] border-[var(--brd)] hover:border-[var(--gold)]/50"
+                    ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                    : "bg-[var(--bg)] text-[var(--tx3)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/50"
                 }`}
               >
                 {p}
@@ -818,7 +818,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-4 py-3 rounded-xl text-[12px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+          className="w-full px-4 py-3 rounded-xl text-[12px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
         >
           {loading ? "Creating…" : "Create Delivery"}
         </button>

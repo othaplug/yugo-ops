@@ -709,7 +709,7 @@ export default function DataTable<T>({
   return (
     <div className="space-y-0 w-full min-w-0 max-w-full">
       {/* ── Toolbar ── */}
-      <div className="flex flex-col gap-2 mb-4">
+      <div className="flex flex-col gap-2 mb-4 relative">
         <div className="flex items-center gap-2 w-full min-w-0">
           {/* Search, full width on mobile (no dead space on the right) */}
           {searchable && (
@@ -720,7 +720,7 @@ export default function DataTable<T>({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="w-full rounded-full border border-[var(--brd)] bg-[var(--card)] py-2.5 pl-10 pr-3 text-[13px] text-[var(--tx)] outline-none transition-colors placeholder:text-[var(--tx3)]/60 focus:border-[var(--gold)]/40"
+                className="w-full min-h-11 rounded-full border border-[var(--brd)] bg-[var(--card)] py-2.5 pl-10 pr-3 text-[13px] text-[var(--tx)] outline-none transition-colors placeholder:text-[var(--tx3)]/60 focus:border-[var(--gold)]/40 touch-manipulation"
               />
             </div>
           )}
@@ -729,9 +729,21 @@ export default function DataTable<T>({
               type="button"
               onClick={handleExport}
               title="Export CSV"
-              className="md:hidden inline-flex items-center justify-center shrink-0 w-11 h-11 rounded-full border border-[var(--brd)] bg-[var(--card)] text-[var(--tx)] active:scale-[0.98] touch-manipulation"
+              className="md:hidden inline-flex items-center justify-center shrink-0 w-11 h-11 min-w-11 min-h-11 rounded-full border border-[var(--brd)] bg-[var(--card)] text-[var(--tx)] active:scale-[0.98] touch-manipulation"
             >
               <Download className="w-5 h-5" weight="regular" />
+            </button>
+          )}
+          {columnToggle && (
+            <button
+              type="button"
+              onClick={() => setShowColMenu((v) => !v)}
+              title="Choose columns"
+              aria-expanded={showColMenu}
+              aria-label="Choose visible columns"
+              className="md:hidden inline-flex items-center justify-center shrink-0 w-11 h-11 min-w-11 min-h-11 rounded-full border border-[var(--brd)] bg-[var(--card)] text-[var(--tx)] active:scale-[0.98] touch-manipulation"
+            >
+              <Columns3 className="w-5 h-5" weight="regular" />
             </button>
           )}
         </div>
@@ -746,41 +758,15 @@ export default function DataTable<T>({
               <Download className="w-3 h-3 shrink-0" /> Export
             </button>
           )}
-          {/* Column toggle */}
+          {/* Column toggle (desktop) */}
           {columnToggle && (
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowColMenu((v) => !v)}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-[var(--brd)] text-[10px] font-semibold leading-none text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--tx3)]/40 transition-colors"
-              >
-                <Columns3 className="w-3 h-3 shrink-0" /> Columns
-              </button>
-              {showColMenu && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowColMenu(false)}
-                  />
-                  <div className="absolute right-0 top-full mt-1 z-50 w-48 bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-xl py-1.5">
-                    {columns.filter((col) => !col.alwaysHidden).map((col) => (
-                      <label
-                        key={col.id}
-                        className="flex items-center gap-2.5 px-3 py-1.5 text-[11px] text-[var(--tx2)] hover:bg-[var(--bg)]/50 cursor-pointer transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={!hiddenCols.has(col.id)}
-                          onChange={() => toggleCol(col.id)}
-                          className="w-3.5 h-3.5 rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--brd)] accent-[var(--gold)]"
-                        />
-                        {col.label}
-                      </label>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowColMenu((v) => !v)}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-[var(--brd)] text-[10px] font-semibold leading-none text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--tx3)]/40 transition-colors"
+            >
+              <Columns3 className="w-3 h-3 shrink-0" /> Columns
+            </button>
           )}
 
           {/* Save View / Reset */}
@@ -816,6 +802,40 @@ export default function DataTable<T>({
             </button>
           </div>
         </div>
+
+        {showColMenu && columnToggle && (
+          <>
+            <div
+              className="fixed inset-0 z-40 bg-black/25 md:bg-black/0"
+              onClick={() => setShowColMenu(false)}
+              aria-hidden
+            />
+            <div
+              className="fixed z-50 left-3 right-3 max-h-[min(320px,50vh)] overflow-y-auto overscroll-contain rounded-xl border border-[var(--brd)] bg-[var(--card)] shadow-2xl py-2 bottom-[max(0.75rem,calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px)+8px))] md:absolute md:left-auto md:right-0 md:top-full md:mt-1.5 md:bottom-auto md:w-52 md:max-h-[min(70vh,420px)] md:py-1.5"
+              style={{ WebkitOverflowScrolling: "touch" }}
+            >
+              <p className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] md:hidden">
+                Visible columns
+              </p>
+              {columns
+                .filter((col) => !col.alwaysHidden)
+                .map((col) => (
+                  <label
+                    key={col.id}
+                    className="flex items-center gap-3 px-3 py-2.5 md:py-1.5 text-[13px] md:text-[11px] text-[var(--tx2)] hover:bg-[var(--bg)]/50 cursor-pointer transition-colors touch-manipulation"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={!hiddenCols.has(col.id)}
+                      onChange={() => toggleCol(col.id)}
+                      className="w-4 h-4 md:w-3.5 md:h-3.5 shrink-0 rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--brd)] accent-[var(--gold)]"
+                    />
+                    {col.label}
+                  </label>
+                ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Bulk action bar (desktop/tablet only when selectableDesktopOnly) ── */}
@@ -866,7 +886,7 @@ export default function DataTable<T>({
 
       {/* ── Table header (desktop only) ── */}
       <div
-        className={`hidden md:block w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain pr-1 ${stickyHeader ? "max-h-[calc(100vh-240px)] overflow-y-auto" : ""}`}
+        className={`hidden md:block w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain pr-1 [-webkit-overflow-scrolling:touch] ${stickyHeader ? "max-h-[calc(100dvh-240px)] overflow-y-auto" : ""}`}
       >
         <table
           className={`border-collapse w-full min-w-[600px] ${striped ? "dt-striped" : ""}`}

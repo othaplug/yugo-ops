@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ToastProvider } from "./Toast";
@@ -28,6 +28,7 @@ import {
   House,
   List,
   MapPin,
+  Path,
   Plus,
   Receipt,
   Shield,
@@ -291,16 +292,16 @@ function SidebarNavItem({
         href={href}
         onClick={onNavigate}
         title={label}
-        className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-colors mx-auto ${
+        className={`relative flex items-center justify-center w-10 h-10 mx-auto rounded-r-[2px] rounded-l-none border-l-2 transition-colors ${
           active
-            ? "bg-[var(--gdim)] text-[var(--gold)]"
-            : "text-[var(--tx3)] hover:bg-[var(--gdim)]/60 hover:text-[var(--tx2)]"
+            ? "border-l-[var(--yu-accent)] bg-[color-mix(in_srgb,var(--yu-accent)_20%,transparent)] text-[var(--tx)]"
+            : "border-l-transparent text-[var(--tx2)] hover:bg-[color-mix(in_srgb,var(--yu-accent)_12%,transparent)] hover:text-[var(--tx)]"
         }`}
       >
         <ItemIcon />
         {showBadge && (
           <span
-            className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[var(--gold)] ring-2 ring-[var(--bg2)]"
+            className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[var(--yu-accent)] ring-2 ring-[var(--bg2)]"
             aria-hidden
           />
         )}
@@ -312,19 +313,19 @@ function SidebarNavItem({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`sidebar-nav-lift flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-[12px] font-medium border-l-2 -ml-px ${
+      className={`sidebar-nav-lift flex items-center gap-3 px-4 py-2.5 mx-2 text-[13px] font-medium border-l-2 -ml-px rounded-none ${
         active
-          ? "bg-[var(--gdim)] text-[var(--gold)] border-l-[var(--gold)] font-semibold"
-          : "text-[var(--tx2)] hover:bg-[var(--gdim)]/60 hover:text-[var(--tx)] border-l-transparent"
+          ? "bg-[color-mix(in_srgb,var(--yu-accent)_22%,transparent)] text-[var(--tx)] border-l-[var(--yu-accent)] font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+          : "text-[var(--tx2)] border-l-transparent hover:bg-[color-mix(in_srgb,var(--yu-accent)_12%,transparent)] hover:text-[var(--tx)]"
       }`}
     >
       <span
-        className={`relative shrink-0 ${active ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}
+        className={`relative shrink-0 ${active ? "text-[var(--tx)]" : "text-[var(--tx2)]"}`}
       >
         <ItemIcon />
         {showBadge && (
           <span
-            className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--gold)] ring-2 ring-[var(--bg2)]"
+            className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--yu-accent)] ring-2 ring-[var(--bg2)]"
             aria-hidden
           />
         )}
@@ -334,7 +335,7 @@ function SidebarNavItem({
       >
         <span className="truncate">{label}</span>
         {showBadge && (
-          <span className="shrink-0 min-w-[18px] h-[18px] px-1.5 rounded-full bg-[var(--gold)]/20 text-[var(--gold)] text-[10px] font-bold flex items-center justify-center">
+          <span className="shrink-0 min-w-[18px] h-[18px] px-1.5 rounded text-[var(--tx)] bg-[rgba(139,26,58,0.25)] text-[10px] font-bold flex items-center justify-center">
             {count > 99 ? "99+" : count}
           </span>
         )}
@@ -343,14 +344,21 @@ function SidebarNavItem({
   );
 }
 
-const QUICK_ACTIONS = [
+const QUICK_ACTIONS: {
+  label: string;
+  href: string;
+  icon: ReactNode;
+  iconColor: string;
+  iconBg: string;
+}[] = [
   {
     label: "New Move",
     href: "/admin/moves/new",
     icon: (
       <Truck size={18} weight="regular" className="text-current" aria-hidden />
     ),
-    color: "var(--gold)",
+    iconColor: "var(--yu-accent)",
+    iconBg: "color-mix(in srgb, var(--yu-accent) 16%, transparent)",
   },
   {
     label: "New Quote",
@@ -363,7 +371,8 @@ const QUICK_ACTIONS = [
         aria-hidden
       />
     ),
-    color: "var(--grn)",
+    iconColor: "var(--grn)",
+    iconBg: "var(--grdim)",
   },
   {
     label: "New Contact",
@@ -376,7 +385,8 @@ const QUICK_ACTIONS = [
         aria-hidden
       />
     ),
-    color: "#7C9FD4",
+    iconColor: "#7C9FD4",
+    iconBg: "rgba(124, 159, 212, 0.14)",
   },
   {
     label: "New Partner",
@@ -389,7 +399,8 @@ const QUICK_ACTIONS = [
         aria-hidden
       />
     ),
-    color: "#B07FD4",
+    iconColor: "#B07FD4",
+    iconBg: "rgba(176, 127, 212, 0.14)",
   },
   {
     label: "New Delivery",
@@ -397,7 +408,8 @@ const QUICK_ACTIONS = [
     icon: (
       <MapPin size={18} weight="regular" className="text-current" aria-hidden />
     ),
-    color: "#D4A07F",
+    iconColor: "#D4A07F",
+    iconBg: "rgba(212, 160, 127, 0.16)",
   },
   {
     label: "New Invoice",
@@ -410,7 +422,8 @@ const QUICK_ACTIONS = [
         aria-hidden
       />
     ),
-    color: "#7FD4C1",
+    iconColor: "#7FD4C1",
+    iconBg: "rgba(127, 212, 193, 0.16)",
   },
 ];
 
@@ -545,6 +558,7 @@ export default function AdminShell({
 
   const MOBILE_NAV = [
     { href: "/admin", label: "Home", Icon: House, exact: true as const },
+    { href: "/admin/moves", label: "Moves", Icon: Path },
   ].filter((item) => {
     const needed =
       ROLE_LEVEL[(item as { minRole?: string }).minRole ?? "viewer"] ?? 0;
@@ -582,21 +596,21 @@ export default function AdminShell({
         <PendingChangeRequestsProvider>
           <ToastProvider>
             <NextTopLoader
-              color="#C9A962"
+              color="#8B1A3A"
               height={2}
               showSpinner={false}
               easing="ease"
               speed={300}
-              shadow="0 0 8px rgba(201,169,98,0.5)"
+              shadow="0 0 0 transparent"
             />
             <RealtimeListener />
             <SessionTimeout />
             <OfflineBanner />
-            <div className="admin-app flex min-h-screen max-w-full overflow-x-clip bg-[var(--bg)]">
+            <div className="admin-app flex min-h-screen max-w-full overflow-x-clip">
               {/* Skip to main content for keyboard users */}
               <a
                 href="#admin-main"
-                className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-[var(--gold)] focus:text-white focus:font-semibold focus:outline-none"
+                className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-[var(--admin-primary-fill)] focus:text-[var(--btn-text-on-accent)] focus:font-semibold focus:outline-none"
               >
                 Skip to main content
               </a>
@@ -628,7 +642,7 @@ export default function AdminShell({
                   >
                     <button
                       onClick={() => setSidebarCollapsed(false)}
-                      className="p-2.5 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx3)] hover:text-[var(--tx2)]"
+                      className="p-2.5 rounded-[2px] hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)] hover:text-[var(--tx)]"
                       title="Expand sidebar"
                       aria-label="Expand sidebar"
                     >
@@ -651,7 +665,7 @@ export default function AdminShell({
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setSidebarCollapsed(true)}
-                        className="hidden md:flex p-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx3)] hover:text-[var(--tx2)]"
+                        className="hidden md:flex p-2 rounded-[2px] hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)] hover:text-[var(--tx)]"
                         aria-label="Collapse sidebar"
                         title="Collapse sidebar"
                       >
@@ -664,7 +678,7 @@ export default function AdminShell({
                       </button>
                       <button
                         onClick={() => setSidebarOpen(false)}
-                        className="md:hidden p-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)]"
+                        className="md:hidden p-2 rounded-[2px] hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)]"
                       >
                         <X
                           size={15}
@@ -695,7 +709,7 @@ export default function AdminShell({
                               [section.label]: !prev[section.label],
                             }))
                           }
-                          className="sidebar-nav-lift w-full flex items-center justify-between text-[11px] font-bold tracking-wide normal-case text-[var(--tx2)] px-4 py-2.5 mx-2 rounded-lg font-heading hover:bg-[var(--gdim)]/60 hover:text-[var(--tx)] active:bg-[var(--gdim)] transition-colors min-h-[40px]"
+                          className="sidebar-nav-lift w-full flex items-center justify-between admin-eyebrow normal-case px-4 py-2.5 mx-2 rounded-[2px] font-heading text-[var(--tx2)] hover:bg-[rgba(139,26,58,0.12)] hover:text-[var(--tx)] active:bg-[rgba(139,26,58,0.08)] transition-colors min-h-[40px]"
                           aria-expanded={!isCollapsed}
                         >
                           {section.label}
@@ -790,7 +804,7 @@ export default function AdminShell({
                 >
                   <button
                     onClick={() => setSidebarOpen(true)}
-                    className={`size-10 items-center justify-center rounded-lg hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0 -ml-0.5 ${sidebarCollapsed ? "flex md:hidden" : "hidden"}`}
+                    className="size-10 min-h-11 min-w-11 items-center justify-center rounded-[2px] hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0 -ml-0.5 flex md:hidden"
                     aria-label="Open menu"
                   >
                     <List
@@ -814,7 +828,7 @@ export default function AdminShell({
                 {role === "owner" &&
                   !twoFactorEnabled &&
                   !owner2faBannerDismissed && (
-                    <div className="sticky top-14 z-20 relative px-4 py-2.5 pr-11 sm:pr-12 text-center text-[12px] font-medium bg-amber-500/10 border-b border-amber-500/20 text-amber-400">
+                    <div className="sticky top-14 z-20 relative pl-4 pr-11 sm:pr-12 py-2.5 text-center text-[12px] font-medium bg-[rgba(180,100,20,0.12)] border-b border-[var(--brd)]/35 border-l-2 border-l-[#B46414] text-[var(--tx)]">
                       <Shield
                         weight="regular"
                         className="inline w-3.5 h-3.5 mr-1.5 -mt-0.5"
@@ -823,7 +837,7 @@ export default function AdminShell({
                       Two-factor authentication is required for owner accounts.{" "}
                       <Link
                         href="/admin/settings/security"
-                        className="underline font-bold hover:text-amber-300"
+                        className="underline font-bold hover:opacity-90"
                       >
                         Enable 2FA
                       </Link>
@@ -842,7 +856,7 @@ export default function AdminShell({
                           }
                           setOwner2faBannerDismissed(true);
                         }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 flex size-8 items-center justify-center rounded-lg text-amber-400 hover:bg-amber-500/15 hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400/60"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 flex size-8 items-center justify-center rounded-[2px] text-[var(--tx2)] hover:bg-[rgba(180,100,20,0.15)] hover:text-[var(--tx)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B46414]/50"
                         aria-label="Dismiss reminder"
                       >
                         <X
@@ -875,14 +889,14 @@ export default function AdminShell({
                       onClick={() => setQuickActionsOpen(false)}
                     />
                     <div
-                      className="absolute bottom-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px))] left-0 right-0 mx-3 mb-2 glass-topbar border border-[var(--brd)]/60 rounded-2xl overflow-hidden shadow-2xl"
+                      className="absolute bottom-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px))] left-0 right-0 mx-3 mb-2 glass-topbar border border-[var(--brd)]/60 rounded-sm overflow-hidden"
                       style={{
                         animation:
                           "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1) both",
                       }}
                     >
                       <div className="px-4 pt-4 pb-1">
-                        <p className="text-[10px] font-bold tracking-[1.4px] uppercase text-[var(--tx3)]">
+                        <p className="admin-eyebrow px-4 pt-4 pb-1 text-[var(--tx2)]">
                           Quick Create
                         </p>
                       </div>
@@ -894,13 +908,13 @@ export default function AdminShell({
                               setQuickActionsOpen(false);
                               router.push(action.href);
                             }}
-                            className="flex flex-col items-center gap-2 py-3.5 px-2 rounded-xl hover:bg-[var(--card)] active:scale-95 transition-all touch-manipulation"
+                            className="flex flex-col items-center gap-2 py-3.5 px-2 rounded-sm hover:bg-[var(--card)] active:scale-95 transition-all touch-manipulation"
                           >
                             <span
-                              className="w-10 h-10 rounded-xl flex items-center justify-center"
+                              className="w-10 h-10 rounded-[2px] flex items-center justify-center border border-[var(--brd)]/40"
                               style={{
-                                background: `${action.color}18`,
-                                color: action.color,
+                                background: action.iconBg,
+                                color: action.iconColor,
                               }}
                             >
                               {action.icon}
@@ -921,7 +935,7 @@ export default function AdminShell({
                   style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
                 >
                   <div
-                    className="grid items-end min-h-[56px] w-full max-w-full min-w-0 px-0.5"
+                    className="grid items-end min-h-[60px] w-full max-w-full min-w-0 px-0.5"
                     style={{
                       gridTemplateColumns: "minmax(0,1fr) 4.5rem minmax(0,1fr)",
                     }}
@@ -949,7 +963,7 @@ export default function AdminShell({
                               className="shrink-0 text-current"
                               aria-hidden
                             />
-                            <span className="text-[11px] font-bold tracking-wide uppercase leading-none">
+                            <span className="text-[10px] font-bold tracking-[0.06em] uppercase leading-none">
                               {item.label}
                             </span>
                           </Link>
@@ -964,15 +978,11 @@ export default function AdminShell({
                         onClick={() => setQuickActionsOpen((v) => !v)}
                         aria-label="Quick create"
                         aria-expanded={quickActionsOpen}
-                        className={`h-11 w-11 rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all duration-300 touch-manipulation ${
+                        className={`h-11 w-11 rounded-[2px] flex items-center justify-center border border-[var(--admin-primary-fill-hover)] active:scale-95 transition-all duration-300 touch-manipulation ${
                           quickActionsOpen
-                            ? "bg-[var(--gold2)]"
-                            : "bg-[var(--gold)]"
+                            ? "bg-[var(--admin-primary-fill-hover)]"
+                            : "bg-[var(--admin-primary-fill)]"
                         }`}
-                        style={{
-                          boxShadow:
-                            "0 2px 10px rgba(201,169,98,0.22), 0 1px 2px rgba(0,0,0,0.06)",
-                        }}
                       >
                         {quickActionsOpen ? (
                           <X size={20} weight="bold" color="#fff" aria-hidden />
@@ -985,7 +995,7 @@ export default function AdminShell({
                           />
                         )}
                       </button>
-                      <span className="mt-1 text-[11px] font-bold tracking-wide uppercase leading-none text-[var(--tx2)]">
+                      <span className="mt-1 text-[10px] font-bold tracking-[0.06em] uppercase leading-none text-[var(--tx2)]">
                         Create
                       </span>
                     </div>
@@ -1013,7 +1023,7 @@ export default function AdminShell({
                               className="shrink-0 text-current"
                               aria-hidden
                             />
-                            <span className="text-[11px] font-bold tracking-wide uppercase leading-none">
+                            <span className="text-[10px] font-bold tracking-[0.06em] uppercase leading-none">
                               {item.label}
                             </span>
                           </Link>
@@ -1031,7 +1041,7 @@ export default function AdminShell({
                           className="shrink-0 text-current"
                           aria-hidden
                         />
-                        <span className="text-[11px] font-bold tracking-wide uppercase leading-none">
+                        <span className="text-[10px] font-bold tracking-[0.06em] uppercase leading-none">
                           More
                         </span>
                       </button>

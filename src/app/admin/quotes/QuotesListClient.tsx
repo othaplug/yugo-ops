@@ -47,11 +47,11 @@ const STATUS_OPTIONS = [
 
 function statusBadge(status: string): string {
   switch (status) {
-    case "sent": return "bg-[var(--gold)]/15 text-[var(--gold)]";
-    case "viewed": return "bg-[#3B82F6]/15 text-blue-700 dark:text-sky-300 ring-1 ring-inset ring-[#3B82F6]/25";
-    case "accepted": return "bg-[var(--grn)]/15 text-[var(--grn)]";
-    case "expired": case "declined": return "bg-[var(--red)]/15 text-[var(--red)]";
-    default: return "bg-[var(--brd)] text-[var(--tx3)]";
+    case "sent": return "text-[var(--gold)]";
+    case "viewed": return "text-blue-700 dark:text-sky-300";
+    case "accepted": return "text-[var(--grn)]";
+    case "expired": case "declined": return "text-[var(--red)]";
+    default: return "text-[var(--tx3)]";
   }
 }
 
@@ -314,7 +314,7 @@ export default function QuotesListClient({
           return (
             <span className="inline-flex items-center gap-1.5 flex-wrap">
               <span
-                className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${statusBadge(q.status)}`}
+                className={`dt-badge tracking-[0.04em] ${statusBadge(q.status)}`}
               >
                 {toTitleCase(q.status)}
               </span>
@@ -376,7 +376,7 @@ export default function QuotesListClient({
                   <button
                     type="button"
                     onClick={() => setConfirmId(null)}
-                    className="w-full min-h-[32px] px-2 rounded-full text-[10px] font-medium text-[var(--tx3)] hover:bg-[var(--brd)]/30 transition-colors"
+                    className="w-full min-h-[32px] px-2 rounded-md text-[10px] font-medium text-[var(--tx3)] hover:bg-[var(--brd)]/30 transition-colors"
                   >
                     Cancel
                   </button>
@@ -386,7 +386,7 @@ export default function QuotesListClient({
                   type="button"
                   onClick={() => setConfirmId(q.id)}
                   title={q.status === "draft" ? "Delete draft" : "Delete quote (superadmin)"}
-                  className="inline-flex items-center justify-center min-h-[40px] min-w-[40px] rounded-full text-[var(--tx3)] hover:text-[var(--red)] hover:bg-[var(--red)]/10 transition-colors border border-transparent hover:border-[var(--red)]/20"
+                  className="inline-flex items-center justify-center min-h-[40px] min-w-[40px] rounded-md text-[var(--tx3)] hover:text-[var(--red)] hover:bg-[var(--red)]/10 transition-colors border border-transparent hover:border-[var(--red)]/20"
                 >
                   <Trash2 className="w-[18px] h-[18px]" />
                 </button>
@@ -409,7 +409,7 @@ export default function QuotesListClient({
       <div className="mb-6 space-y-3 min-w-0">
         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 min-w-0">
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales</p>
+            <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Sales</p>
             <h1 className="admin-page-hero text-[var(--tx)]">Quotes</h1>
           </div>
           <div className="flex items-center gap-2 shrink-0 ml-auto">
@@ -419,9 +419,9 @@ export default function QuotesListClient({
               disabled={followupLoading}
               aria-busy={followupLoading}
               title="Preview quotes due for follow-up and send the batch (same rules as cron)"
-              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gold)]/40 bg-[var(--gold)]/[0.07] px-2.5 py-1.5 text-[10px] font-semibold tracking-wide text-[var(--tx2)] shadow-sm hover:bg-[var(--gold)]/12 hover:border-[var(--gold)]/55 disabled:opacity-50 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--brd)] px-2.5 py-1.5 text-[10px] font-semibold tracking-wide text-[#2C3E2D] dark:text-[var(--tx2)] shadow-sm hover:bg-[var(--bg2)] hover:border-[#2C3E2D]/35 disabled:opacity-50 transition-colors"
             >
-              <PaperPlaneTilt className="w-3.5 h-3.5 shrink-0 text-[var(--gold)]" aria-hidden />
+              <PaperPlaneTilt className="w-3.5 h-3.5 shrink-0 text-[#2C3E2D] dark:text-[var(--tx2)]" aria-hidden />
               <span className="whitespace-nowrap">{followupLoading ? "Loading…" : "Due follow-ups"}</span>
             </button>
             <CreateButton href="/admin/quotes/new" title="New Quote" />
@@ -491,7 +491,7 @@ export default function QuotesListClient({
                   type="button"
                   disabled={followupSending || followupPreview.length === 0}
                   onClick={confirmSendDueFollowups}
-                  className="px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+                  className="px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
                 >
                   {followupSending ? "Sending…" : "Send"}
                 </button>
@@ -516,9 +516,9 @@ export default function QuotesListClient({
             key={o.value}
             type="button"
             onClick={() => setFilter(o.value)}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-semibold border transition-colors touch-manipulation ${
+            className={`shrink-0 px-3 py-1.5 rounded-md text-[10px] font-semibold border transition-colors touch-manipulation ${
               filter === o.value
-                ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold)]"
+                ? "border-[var(--admin-primary-fill)] bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
                 : "border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--tx2)]"
             }`}
           >
@@ -557,8 +557,8 @@ export default function QuotesListClient({
       <div className="sm:hidden fixed bottom-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px)+16px)] right-4 z-[50]">
         <Link
           href="/admin/quotes/new"
-          className="flex items-center justify-center h-11 w-11 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-md active:scale-95 transition-all duration-300 touch-manipulation"
-          style={{ boxShadow: "0 2px 10px rgba(201,169,98,0.22), 0 1px 2px rgba(0,0,0,0.06)" }}
+          className="flex items-center justify-center h-11 w-11 rounded-full bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] shadow-md active:scale-95 transition-all duration-300 touch-manipulation"
+          style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.28), 0 1px 2px rgba(0,0,0,0.06)" }}
           aria-label="New quote"
         >
           <Plus size={20} weight="regular" className="text-current" aria-hidden />

@@ -345,7 +345,7 @@ export default function TrackTipClient({
           >
             ← Back to delivery
           </Link>
-          <YugoLogo size={20} variant="gold" />
+          <YugoLogo size={20} variant="wine" />
         </header>
 
         <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">

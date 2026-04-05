@@ -25,7 +25,7 @@ type AreaPayload = {
 export default function CrewAreaWeather() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AreaPayload | null>(null);
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;

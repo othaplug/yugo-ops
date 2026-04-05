@@ -64,7 +64,7 @@ export default async function GalleryPage() {
       <div className="mb-6"><BackButton label="Partners" href="/admin/platform?tab=partners" /></div>
 
       <div className="mb-8">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Partners</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Partners</p>
         <h1 className="admin-page-hero text-[var(--tx)]">Gallery</h1>
       </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatPlatformDisplay } from "@/lib/date-format";
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { formatTime12, TIME_SLOTS_15MIN, STATUS_DOT_COLORS } from "@/lib/calendar/types";
 import { toTitleCase, formatAddressForDisplay } from "@/lib/format-text";
@@ -106,17 +107,17 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: event.color }} />
-              <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50">
+              <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
                 {TYPE_LABELS[event.type] || event.type}
               </span>
               <span
-                className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase"
-                style={{ backgroundColor: `${dotColor}20`, color: dotColor }}
+                className="dt-badge tracking-[0.04em]"
+                style={{ color: dotColor }}
               >
                 {toTitleCase(event.calendarStatus)}
               </span>
               {event.isRecurring && (
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-500/10 text-teal-400">
+                <span className="dt-badge tracking-[0.04em] text-[var(--admin-primary-fill)]">
                   RECURRING
                 </span>
               )}
@@ -135,7 +136,7 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
         <div className="px-5 py-4 space-y-5">
           {/* Time */}
           <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1">
+            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">
               Time
             </div>
             <div className="text-[var(--text-base)] font-semibold text-[var(--tx)]">{timeStr}</div>
@@ -143,11 +144,10 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
               <div className="text-[11px] text-[var(--tx3)]">{event.durationHours} hours estimated</div>
             )}
             <div className="text-[11px] text-[var(--tx3)]">
-              {new Date(event.date + "T12:00:00").toLocaleDateString("en-US", {
+              {formatPlatformDisplay(new Date(event.date + "T12:00:00"), {
                 weekday: "long",
                 month: "long",
                 day: "numeric",
-                year: "numeric",
               })}
             </div>
           </div>
@@ -155,7 +155,7 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
           {/* Team & Truck */}
           {(event.crewName || event.truckName) && (
             <div>
-              <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1">
+              <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">
                 Assignment
               </div>
               {event.crewName && (
@@ -176,7 +176,7 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
           {/* Addresses */}
           {(event.fromAddress || event.toAddress || event.deliveryAddress) && (
             <div>
-              <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1">
+              <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">
                 Location
               </div>
               {event.fromAddress && (
@@ -202,7 +202,7 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
 
           {/* Details */}
           <div>
-            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1">
+            <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">
               Details
             </div>
             {event.moveSize && (
@@ -252,7 +252,7 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
                   )}
                   {/* Team */}
                   <div>
-                    <label className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1 block">
+                    <label className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1 block">
                       Team
                     </label>
                     <select
@@ -271,7 +271,7 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
 
                   {/* Date */}
                   <div>
-                    <label className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1 block">
+                    <label className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1 block">
                       Date
                     </label>
                     <input
@@ -285,7 +285,7 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
                   {/* Start / End */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1 block">
+                      <label className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1 block">
                         Start
                       </label>
                       <select
@@ -301,7 +301,7 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
                       </select>
                     </div>
                     <div>
-                      <label className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1 block">
+                      <label className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1 block">
                         End
                       </label>
                       <select
@@ -328,7 +328,7 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
                     type="button"
                     onClick={handleSaveReassign}
                     disabled={saving || !reassignCrewId || !reassignDate}
-                    className="w-full py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {saving ? (
                       <>

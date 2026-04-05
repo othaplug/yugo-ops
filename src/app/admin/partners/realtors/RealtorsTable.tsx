@@ -38,12 +38,12 @@ const STATUS_OPTIONS = [
 const STATUS_STAGE_OPTIONS = STATUS_OPTIONS.filter((o) => o.value !== "");
 
 const STATUS_STYLES: Record<string, string> = {
-  new:       "bg-[var(--brd)] text-[var(--tx3)]",
-  lead:      "bg-[var(--gdim)] text-[var(--gold)] border border-[var(--gold)]/25",
-  quoted:    "bg-[var(--ordim)] text-[var(--org)] border border-[var(--org)]/25",
-  booked:    "bg-[var(--bldim)] text-sky-400 border border-sky-500/25",
-  scheduled: "bg-[var(--bldim)] text-sky-400 border border-sky-500/25",
-  completed: "bg-[var(--grdim)] text-[var(--grn)] border border-[var(--grn)]/25",
+  new:       "text-[var(--tx3)]",
+  lead:      "text-amber-700 dark:text-amber-300",
+  quoted:    "text-[var(--org)]",
+  booked:    "text-sky-600 dark:text-sky-400",
+  scheduled: "text-sky-600 dark:text-sky-400",
+  completed: "text-[var(--grn)]",
 };
 
 const TIER_OPTIONS = [
@@ -56,12 +56,12 @@ const TIER_OPTIONS = [
 ];
 
 const TIER_STYLES: Record<string, string> = {
-  essential:  "bg-[var(--brd)] text-[var(--tx3)]",
-  curated:    "bg-[var(--brd)] text-[var(--tx3)]",
-  essentials: "bg-[var(--brd)] text-[var(--tx3)]",
-  premier:    "bg-[var(--gdim)] text-[var(--gold)]",
-  signature:  "bg-[var(--bldim)] text-sky-400",
-  estate:     "bg-[rgba(212,138,41,0.12)] text-[var(--org)]",
+  essential:  "text-[var(--tx3)]",
+  curated:    "text-[var(--tx3)]",
+  essentials: "text-[var(--tx3)]",
+  premier:    "text-amber-700 dark:text-amber-300",
+  signature:  "text-sky-600 dark:text-sky-400",
+  estate:     "text-[var(--org)]",
 };
 
 function initials(name: string | null) {
@@ -93,7 +93,7 @@ function StatusSelect({
         value={key}
         onChange={(e) => onUpdate(referralId, e.target.value)}
         disabled={isUpdating}
-        className={`appearance-none pl-2.5 pr-6 py-1 rounded-full text-[10px] font-bold cursor-pointer outline-none transition-opacity border-0 disabled:opacity-40 ${style}`}
+        className={`appearance-none pl-2.5 pr-6 py-1 rounded-md text-[10px] font-bold cursor-pointer outline-none transition-opacity border-0 disabled:opacity-40 dt-badge tracking-[0.04em] ${style}`}
         style={{ background: "inherit" }}
       >
         {[
@@ -221,7 +221,7 @@ export default function RealtorsTable({
         <div className="px-5 py-4 border-b border-[var(--brd)] flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <h3 className="font-heading text-[var(--text-base)] font-bold text-[var(--tx)]">Referral Pipeline</h3>
-            <span className="text-[10px] font-semibold text-[var(--tx3)] bg-[var(--brd)] px-2 py-0.5 rounded-full">
+            <span className="dt-badge tracking-[0.04em] text-[var(--tx3)]">
               {all.length} {all.length === 1 ? "entry" : "entries"}
             </span>
           </div>
@@ -276,7 +276,7 @@ export default function RealtorsTable({
               )}
               {all.map((r) => {
                 const tierKey = (r.tier || "").toLowerCase();
-                const tierStyle = TIER_STYLES[tierKey] ?? "bg-[var(--brd)] text-[var(--tx3)]";
+                const tierStyle = TIER_STYLES[tierKey] ?? "text-[var(--tx3)]";
                 return (
                   <tr
                     key={r.id}
@@ -286,7 +286,7 @@ export default function RealtorsTable({
                     {/* Agent */}
                     <td className="pl-5 pr-4 py-3.5">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-[var(--brd)] flex items-center justify-center text-[9px] font-bold text-[var(--tx3)] shrink-0 group-hover:bg-[var(--gdim)] transition-colors">
+                        <div className="w-7 h-7 rounded-md bg-[var(--brd)] flex items-center justify-center text-[9px] font-bold text-[var(--tx3)] shrink-0 group-hover:bg-[var(--gdim)] transition-colors">
                           {initials(r.agent_name)}
                         </div>
                         <div>
@@ -311,7 +311,7 @@ export default function RealtorsTable({
                     {/* Tier */}
                     <td className="px-4 py-3.5">
                       {r.tier ? (
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold ${tierStyle}`}>
+                        <span className={`dt-badge tracking-[0.04em] ${tierStyle}`}>
                           {r.tier}
                         </span>
                       ) : (

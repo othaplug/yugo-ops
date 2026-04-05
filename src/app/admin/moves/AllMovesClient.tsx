@@ -81,7 +81,7 @@ const STATUS_FILTERS = [
 const MARGIN_FILTERS = [
   { value: "", label: "All Margins", dot: null },
   { value: "red", label: "Red (<25%)", dot: "bg-red-400" },
-  { value: "yellow", label: "Yellow (25–34%)", dot: "bg-[var(--gold)]" },
+  { value: "yellow", label: "Yellow (25–34%)", dot: "bg-[var(--admin-primary-fill)]" },
   { value: "green", label: "Green (≥35%)", dot: "bg-emerald-400" },
 ];
 
@@ -119,26 +119,26 @@ function statusBarColor(status: string): string {
   const s = (status || "").toLowerCase().replace(/\s+/g, "_");
   if (["confirmed", "completed", "paid"].includes(s)) return "bg-[var(--grn)]";
   if (["scheduled", "in_progress"].includes(s)) return "bg-[#3B82F6]";
-  if (["quoted", "quote"].includes(s)) return "bg-[var(--gold)]";
+  if (["quoted", "quote"].includes(s)) return "bg-[var(--admin-primary-fill)]";
   if (s === "cancelled") return "bg-[var(--red)]";
-  return "bg-[var(--gold)]";
+  return "bg-[var(--admin-primary-fill)]";
 }
 
 function statusBadgeStyle(status: string): string {
   const s = (status || "").toLowerCase().replace(/\s+/g, "_");
   if (["confirmed", "completed", "paid"].includes(s))
-    return "bg-[var(--grn)]/15 text-[var(--grn)]";
-  if (["scheduled", "in_progress"].includes(s)) return "bg-[#3B82F6]/15 text-[#3B82F6]";
-  if (["quoted", "quote"].includes(s)) return "bg-[var(--gold)]/15 text-[var(--gold)]";
-  if (s === "cancelled") return "bg-[var(--red)]/15 text-[var(--red)]";
-  return "bg-[var(--gold)]/15 text-[var(--gold)]";
+    return "text-[var(--grn)]";
+  if (["scheduled", "in_progress"].includes(s)) return "text-[#3B82F6]";
+  if (["quoted", "quote"].includes(s)) return "text-[var(--gold)]";
+  if (s === "cancelled") return "text-[var(--red)]";
+  return "text-[var(--gold)]";
 }
 
 function tierBadgeStyle(tier: string): string {
   const t = (tier || "").toLowerCase();
-  if (t.includes("estate")) return "bg-[#7C3AED]/15 text-[#7C3AED]";
-  if (t.includes("signature") || t.includes("premier")) return "bg-[var(--gold)]/15 text-[var(--gold)]";
-  return "bg-[var(--brd)] text-[var(--tx3)]";
+  if (t.includes("estate")) return "text-[#7C3AED]";
+  if (t.includes("signature") || t.includes("premier")) return "text-[var(--gold)]";
+  return "text-[var(--tx3)]";
 }
 
 function tierDisplayLabel(tier: string): string {
@@ -153,19 +153,19 @@ function tierDisplayLabel(tier: string): string {
   return map[t] ?? (t.charAt(0).toUpperCase() + t.slice(1));
 }
 
-function quoteStatusBadge(status: string): { bg: string; text: string } {
+function quoteStatusBadgeClass(status: string): string {
   switch (status) {
     case "sent":
-      return { bg: "bg-[var(--gold)]/15", text: "text-[var(--gold)]" };
+      return "text-[var(--gold)]";
     case "viewed":
-      return { bg: "bg-[#3B82F6]/15", text: "text-[#3B82F6]" };
+      return "text-[#3B82F6]";
     case "accepted":
-      return { bg: "bg-[var(--grn)]/15", text: "text-[var(--grn)]" };
+      return "text-[var(--grn)]";
     case "expired":
     case "declined":
-      return { bg: "bg-[var(--red)]/15", text: "text-[var(--red)]" };
+      return "text-[var(--red)]";
     default:
-      return { bg: "bg-[var(--brd)]", text: "text-[var(--tx3)]" };
+      return "text-[var(--tx3)]";
   }
 }
 
@@ -239,7 +239,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
     },
     {
       id: "date",
-      label: "Date",
+      label: "Service date",
       accessor: (m) => m.scheduled_date || "",
       render: (m) => (
         <span className="dt-text-date whitespace-nowrap">
@@ -287,7 +287,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       label: "Status",
       accessor: (m) => m.status || "",
       render: (m) => (
-        <span className={`inline-flex items-center px-1.5 py-0.5 rounded dt-badge ${statusBadgeStyle(m.status || "")}`}>
+        <span className={`inline-flex items-center dt-badge tracking-[0.04em] ${statusBadgeStyle(m.status || "")}`}>
           {getStatusLabel(m.status ?? null)}
         </span>
       ),
@@ -297,12 +297,12 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       label: "Type",
       accessor: (m) => m._type || "",
       render: (m) => (
-        <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded dt-pill bg-[var(--bg2)] text-[var(--tx3)] border border-[var(--brd)]/50">
+        <div className="flex items-center gap-2">
+          <span className="dt-badge tracking-[0.04em] text-[var(--tx3)]">
             {typeLabel(m._type)}
           </span>
           {m._type === "residential" && m.tier_selected && (
-            <span className={`inline-flex items-center px-1.5 py-0.5 rounded dt-pill font-bold tracking-wide ${tierBadgeStyle(m.tier_selected)}`}>
+            <span className={`dt-badge tracking-[0.04em] ${tierBadgeStyle(m.tier_selected)}`}>
               {tierDisplayLabel(m.tier_selected)}
             </span>
           )}
@@ -349,7 +349,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
         const dotColor = flag === "green"
           ? "bg-emerald-400"
           : flag === "yellow"
-            ? "bg-[var(--gold)]"
+            ? "bg-[var(--admin-primary-fill)]"
             : "bg-red-400";
         const textColor = flag === "green"
           ? "text-emerald-400"
@@ -532,7 +532,7 @@ export default function AllMovesClient({
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-6">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Operations</p>
           <h1 className="admin-page-hero text-[var(--tx)]">All Moves</h1>
         </div>
         <div className="hidden sm:flex items-center gap-2">
@@ -559,14 +559,14 @@ export default function AllMovesClient({
                 key={f.value}
                 type="button"
                 onClick={() => setFilter("type", f.value)}
-                className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-semibold border transition-all duration-150 touch-manipulation ${
+                className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[10px] font-semibold border transition-all duration-150 touch-manipulation ${
                   isActive
-                    ? "border-[var(--gold)] bg-[var(--gold)]/15 text-[var(--gold)] shadow-[0_0_0_1px_rgba(201,169,98,0.25)]"
-                    : "border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)]/50 hover:text-[var(--tx)] hover:bg-[var(--gdim)]"
+                    ? "border-[var(--admin-primary-fill)] bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] shadow-sm"
+                    : "border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--tx2)] hover:bg-[var(--bg2)]"
                 }`}
               >
                 {f.label}
-                <span className={`tabular-nums ${isActive ? "text-[var(--gold)]" : "text-[var(--tx3)]/60"}`}>
+                <span className={`tabular-nums ${isActive ? "text-[var(--btn-text-on-accent)]/90" : "text-[var(--tx3)]/82"}`}>
                   {count}
                 </span>
               </button>
@@ -584,15 +584,15 @@ export default function AllMovesClient({
                 key={f.value}
                 type="button"
                 onClick={() => setFilter("status", f.value)}
-                className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-medium border transition-all duration-150 touch-manipulation ${
+                className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[10px] font-medium border transition-all duration-150 touch-manipulation ${
                   isActive
-                    ? "border-[var(--tx3)]/60 bg-[var(--bg2)] text-[var(--tx)] shadow-[0_0_0_1px_rgba(255,255,255,0.08)]"
-                    : "border-transparent text-[var(--tx3)] hover:border-[var(--brd)] hover:bg-[var(--bg2)] hover:text-[var(--tx2)]"
+                    ? "border-[var(--admin-primary-fill)] bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] shadow-sm"
+                    : "border-[var(--brd)] text-[var(--tx3)] hover:bg-[var(--bg2)] hover:text-[var(--tx2)]"
                 }`}
               >
                 {f.label}
                 {f.value && count > 0 && (
-                  <span className="text-[var(--tx3)]/50 tabular-nums">{count}</span>
+                  <span className={`tabular-nums ${isActive ? "text-[var(--btn-text-on-accent)]/85" : "text-[var(--tx3)]"}`}>{count}</span>
                 )}
               </button>
             );
@@ -608,10 +608,10 @@ export default function AllMovesClient({
                 key={f.value}
                 type="button"
                 onClick={() => setFilter("margin", f.value)}
-                className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-medium border transition-all duration-150 touch-manipulation ${
+                className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[10px] font-medium border transition-all duration-150 touch-manipulation ${
                   isActive
-                    ? "border-[var(--tx3)]/60 bg-[var(--bg2)] text-[var(--tx)] shadow-[0_0_0_1px_rgba(255,255,255,0.08)]"
-                    : "border-transparent text-[var(--tx3)] hover:border-[var(--brd)] hover:bg-[var(--bg2)] hover:text-[var(--tx2)]"
+                    ? "border-[var(--admin-primary-fill)] bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] shadow-sm"
+                    : "border-[var(--brd)] text-[var(--tx3)] hover:bg-[var(--bg2)] hover:text-[var(--tx2)]"
                 }`}
               >
                 {f.dot && <span className={`w-2 h-2 rounded-full shrink-0 ${f.dot}`} />}
@@ -660,17 +660,17 @@ export default function AllMovesClient({
           </div>
           <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-[var(--brd)] scrollbar-track-transparent">
             {recentQuotes.map((q) => {
-              const badge = quoteStatusBadge(q.status);
+              const quoteStatusCls = quoteStatusBadgeClass(q.status);
               return (
                 <Link
                   key={q.id}
                   href={`/admin/quotes/${q.quote_id || q.id}/edit`}
-                  className="shrink-0 w-[220px] p-3.5 rounded-xl border border-[var(--brd)]/30 bg-[var(--card)] hover:border-[var(--gold)]/40 hover:bg-[var(--card)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.25),0_0_0_1px_rgba(201,169,98,0.18)] hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200 block cursor-pointer"
+                  className="shrink-0 w-[220px] p-3.5 rounded-xl border border-[var(--brd)]/30 bg-[var(--card)] hover:border-[var(--gold)]/40 hover:bg-[var(--card)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.25),0_0_0_1px_var(--gdim)] hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200 block cursor-pointer"
                 >
                   <div className="flex items-center justify-between gap-2 mb-1.5">
                     <span className="text-[10px] font-mono text-[var(--tx3)]">{q.quote_id}</span>
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${badge.bg} ${badge.text}`}
+                      className={`dt-badge tracking-[0.04em] ${quoteStatusCls}`}
                     >
                       {toTitleCase(q.status)}
                     </span>
@@ -704,8 +704,8 @@ export default function AllMovesClient({
       <div className="sm:hidden fixed bottom-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px)+16px)] right-4 z-[50]">
         <Link
           href="/admin/moves/new"
-          className="flex items-center justify-center h-11 w-11 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-md active:scale-95 transition-all duration-300 touch-manipulation"
-          style={{ boxShadow: "0 2px 10px rgba(201,169,98,0.22), 0 1px 2px rgba(0,0,0,0.06)" }}
+          className="flex items-center justify-center h-11 w-11 rounded-full bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] shadow-md active:scale-95 transition-all duration-300 touch-manipulation"
+          style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.28), 0 1px 2px rgba(0,0,0,0.06)" }}
           aria-label="Create new move"
         >
           <Plus size={20} weight="regular" className="text-current" aria-hidden />

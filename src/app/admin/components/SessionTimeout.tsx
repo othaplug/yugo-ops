@@ -125,7 +125,7 @@ export default function SessionTimeout() {
         <div className="flex gap-2">
           <button
             onClick={resetTimer}
-            className="flex-1 py-2 rounded-xl text-[12px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-90 transition-opacity"
+            className="flex-1 py-2 rounded-xl text-[12px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:opacity-90 transition-opacity"
           >
             Stay signed in
           </button>

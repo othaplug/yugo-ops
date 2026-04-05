@@ -6,6 +6,7 @@ import { Plus, X, Gift, Users, Tag, PencilSimple as Pencil, Check, Copy, Trash a
 import { useToast } from "../components/Toast";
 import CreateButton from "../components/CreateButton";
 import YugoLogo from "@/components/YugoLogo";
+import { formatPlatformDisplay } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -78,10 +79,10 @@ const OFFER_TYPE_BADGE: Record<string, string> = {
 };
 
 const REF_STATUS_BADGE: Record<string, string> = {
-  active: "bg-[var(--gdim)] text-[var(--gold)] border border-[var(--gold)]/30",
-  used: "bg-green-50 text-green-700 border border-green-200",
-  expired: "bg-red-50 text-red-600 border border-red-200",
-  credited: "bg-blue-50 text-blue-700 border border-blue-200",
+  active: "text-amber-700 dark:text-amber-300",
+  used: "text-emerald-700 dark:text-emerald-400",
+  expired: "text-red-600 dark:text-red-400",
+  credited: "text-blue-700 dark:text-sky-400",
 };
 
 // ─── Create Perk Modal ────────────────────────────────────────────────────────
@@ -225,7 +226,7 @@ function CreatePerkModal({
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2 rounded-xl text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
-            <button type="button" onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-xl text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-60">
+            <button type="button" onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-xl text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-60">
               {saving ? "Saving…" : "Save Perk"}
             </button>
           </div>
@@ -349,7 +350,7 @@ function CreatePromoReferralModal({
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2 rounded-xl text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
-            <button type="button" onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-xl text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-60">
+            <button type="button" onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-xl text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-60">
               {saving ? "Creating…" : "Create Code"}
             </button>
           </div>
@@ -589,7 +590,7 @@ export default function PerksPage() {
     <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-6 animate-fade-up">
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Growth</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Growth</p>
           <h1 className="admin-page-hero text-[var(--tx)]">Perks & Referrals</h1>
         </div>
         {tab === "perks" && (
@@ -602,22 +603,22 @@ export default function PerksPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)] mb-6">
         <div>
-          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-2">Active Perks</p>
+          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/82 mb-2">Active Perks</p>
           <p className="text-[28px] font-bold font-heading leading-none text-[var(--grn)]">{activePerks}</p>
           <p className="text-[9px] text-[var(--tx3)] mt-1.5">{perks.length} total offers</p>
         </div>
         <div>
-          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-2">Referrals</p>
+          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/82 mb-2">Referrals</p>
           <p className="text-[28px] font-bold font-heading leading-none text-[var(--tx)]">{referrals.length}</p>
           <p className="text-[9px] text-[var(--tx3)] mt-1.5">{activeReferrals} active codes</p>
         </div>
         <div>
-          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-2">Used (30d)</p>
+          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/82 mb-2">Used (30d)</p>
           <p className="text-[28px] font-bold font-heading leading-none text-[var(--tx)]">{usedThisMonth}</p>
           <p className="text-[9px] text-[var(--tx3)] mt-1.5">redemptions</p>
         </div>
         <div>
-          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-2">Conversion</p>
+          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/82 mb-2">Conversion</p>
           <p className="text-[28px] font-bold font-heading leading-none text-[var(--tx)]">{convRate}%</p>
           <p className="text-[9px] text-[var(--tx3)] mt-1.5">referral rate</p>
         </div>
@@ -663,7 +664,7 @@ export default function PerksPage() {
                       ];
                       const theme = themes[idx % themes.length];
                       const expiry = perk.valid_until
-                        ? new Date(perk.valid_until).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                        ? formatPlatformDisplay(perk.valid_until, { month: "short", day: "numeric" })
                         : null;
                       return (
                         <div
@@ -689,7 +690,7 @@ export default function PerksPage() {
                             </div>
                             <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                               {perk.redemption_code && (
-                                <span className="text-[9px] font-mono font-bold text-white/90 bg-white/15 border border-white/25 px-1.5 py-0.5 rounded">
+                                <span className="text-[9px] font-mono font-bold text-white/90 border border-white/25 px-1.5 py-0.5 rounded-md">
                                   Code: {perk.redemption_code}
                                 </span>
                               )}
@@ -697,7 +698,7 @@ export default function PerksPage() {
                                 <span className="text-[9px] text-white/45">Ends {expiry}</span>
                               )}
                               <span
-                                className="ml-auto shrink-0 bg-white text-[10px] font-bold px-3 py-1.5 rounded-full opacity-90 cursor-default"
+                                className="ml-auto shrink-0 bg-white text-[10px] font-bold px-3 py-1.5 rounded-md border border-black/10 opacity-90 cursor-default"
                                 style={{ color: theme.stamp }}
                               >
                                 {perk.redemption_code ? "Order now" : "Redeem"}
@@ -735,7 +736,7 @@ export default function PerksPage() {
                       {perks.map((perk) => {
                         const expired = perk.valid_until && new Date(perk.valid_until) < new Date();
                         const status = !perk.is_active ? "Paused" : expired ? "Expired" : "Active";
-                        const statusCls = !perk.is_active ? "text-[var(--tx3)] bg-[var(--bg)]" : expired ? "text-red-600 bg-red-50" : "text-[#2D9F5A] bg-green-50";
+                        const statusCls = !perk.is_active ? "text-[var(--tx3)]" : expired ? "text-red-600 dark:text-red-400" : "text-[#2D9F5A]";
                         return (
                           <tr key={perk.id} className="hover:bg-[var(--bg)]/40">
                             <td className="px-4 py-3 text-[var(--tx3)]">{perk.organizations?.name || "Yugo"}</td>
@@ -761,13 +762,13 @@ export default function PerksPage() {
                                 perkId={perk.id}
                                 onSaved={onPerkSaved}
                                 type="date"
-                                formatDisplay={(v) => (v && String(v).length >= 10) ? new Date(String(v) + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "No expiry"}
+                                formatDisplay={(v) => (v && String(v).length >= 10) ? formatPlatformDisplay(String(v) + "T00:00:00", { month: "short", day: "numeric" }) : "No expiry"}
                               />
                             </td>
                             <td className="px-4 py-3 text-[var(--tx3)]">
                               {perk.current_redemptions}{perk.max_redemptions != null ? ` / ${perk.max_redemptions}` : " / ∞"}
                             </td>
-                            <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-[9px] font-semibold ${statusCls}`}>{status}</span></td>
+                            <td className="px-4 py-3"><span className={`dt-badge tracking-[0.04em] ${statusCls}`}>{status}</span></td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
                                 <button onClick={() => togglePerk(perk)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
@@ -830,7 +831,7 @@ export default function PerksPage() {
                           <tr key={ref.id} className="hover:bg-[var(--bg)]/40">
                             <td className="px-4 py-3">
                               <span className="inline-flex items-center gap-1.5">
-                                <code className="bg-[var(--gdim)] text-[var(--gold)] px-2 py-0.5 rounded text-[11px] font-mono">{ref.referral_code}</code>
+                                <code className="text-[var(--gold)] border border-[var(--brd)] px-2 py-0.5 rounded-md text-[11px] font-mono">{ref.referral_code}</code>
                                 <button
                                   onClick={() => {
                                     navigator.clipboard.writeText(ref.referral_code).then(() => toast("Code copied", "check"));
@@ -848,16 +849,16 @@ export default function PerksPage() {
                             </td>
                             <td className="px-4 py-3 text-[var(--tx3)]">{referredDisplay}</td>
                             <td className="px-4 py-3">
-                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase ${REF_STATUS_BADGE[ref.status] || ""}`}>{ref.status}</span>
+                              <span className={`dt-badge tracking-[0.04em] ${REF_STATUS_BADGE[ref.status] || "text-[var(--tx3)]"}`}>{ref.status}</span>
                             </td>
                             <td className="px-4 py-3 text-[var(--tx3)]">
                               {ref.status === "credited"
-                                ? <span className="text-blue-600">Credited {creditStr}{ref.credited_at ? ` · ${new Date(ref.credited_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}</span>
+                                ? <span className="text-blue-600">Credited {creditStr}{ref.credited_at ? ` · ${formatPlatformDisplay(ref.credited_at, { month: "short", day: "numeric" })}` : ""}</span>
                                 : ref.status === "used"
                                   ? <span>Pending {creditStr}</span>
                                   : <span>{creditStr}</span>}
                             </td>
-                            <td className="px-4 py-3 text-[var(--tx3)]">{new Date(ref.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
+                            <td className="px-4 py-3 text-[var(--tx3)]">{formatPlatformDisplay(ref.created_at, { month: "short", day: "numeric" })}</td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2 flex-wrap">
                                 {ref.status === "used" && (
@@ -911,7 +912,7 @@ export default function PerksPage() {
                           </td>
                           <td className="px-4 py-3 text-[var(--gold)] font-semibold">{formatCurrency(c.lifetime_value)}</td>
                           <td className="px-4 py-3 text-[var(--tx3)]">{c.referral_count}</td>
-                          <td className="px-4 py-3 text-[var(--tx3)]">{new Date(c.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</td>
+                          <td className="px-4 py-3 text-[var(--tx3)]">{formatPlatformDisplay(c.created_at, { month: "short" })}</td>
                         </tr>
                       ))}
                     </tbody>

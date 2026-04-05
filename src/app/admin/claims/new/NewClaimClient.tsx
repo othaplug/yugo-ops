@@ -170,7 +170,7 @@ export default function NewClaimClient({
             onClick={() => { setJobType("move"); setSelectedJobId(""); }}
             className={`px-3.5 py-1.5 rounded-lg text-[12px] font-semibold transition-colors ${
               jobType === "move"
-                ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+                ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
                 : "bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]"
             }`}
           >
@@ -181,7 +181,7 @@ export default function NewClaimClient({
             onClick={() => { setJobType("delivery"); setSelectedJobId(""); }}
             className={`px-3.5 py-1.5 rounded-lg text-[12px] font-semibold transition-colors ${
               jobType === "delivery"
-                ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+                ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
                 : "bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]"
             }`}
           >
@@ -385,7 +385,7 @@ export default function NewClaimClient({
           type="button"
           onClick={handleSubmit}
           disabled={saving}
-          className="w-full py-3 rounded-lg text-[var(--text-base)] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
+          className="w-full py-3 rounded-lg text-[var(--text-base)] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors disabled:opacity-50"
         >
           {saving ? "Creating Claim..." : "Create Claim & Notify Client"}
         </button>

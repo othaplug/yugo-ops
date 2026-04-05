@@ -249,7 +249,7 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
       </div>
 
       <div className="mb-2">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/50 mb-1">Partners</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-1">Partners</p>
         <h1 className="admin-page-hero text-[var(--tx)]">
           Create inbound shipment
         </h1>
@@ -513,7 +513,7 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
                     setCustomerAddress(r.fullAddress);
                     setCustomerPostal((p) => (!p.trim() && r.postalCode ? r.postalCode : p));
                   }}
-                  className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:outline-none focus:ring-1 focus:ring-[var(--gold)]/30"
+                  className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)] text-[var(--tx)] placeholder:text-[var(--tx3)]/82 focus:outline-none focus:ring-1 focus:ring-[var(--gold)]/30"
                 />
               </div>
               <input

@@ -214,21 +214,21 @@ function getJobLineColor(job: Job): string {
 function getJobStatusStyle(job: Job): string {
   if (job.type === "delivery") {
     const map: Record<string, string> = {
-      pending: "text-[var(--tx2)] bg-[var(--hover)]",
-      scheduled: "text-[#3B82F6] bg-[rgba(59,130,246,0.1)]",
-      confirmed: "text-[#3B82F6] bg-[rgba(59,130,246,0.1)]",
-      dispatched: "text-[var(--org)] bg-[rgba(212,138,41,0.1)]",
-      "in-transit": "text-[var(--org)] bg-[rgba(212,138,41,0.1)]",
-      delivered: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
-      cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.1)]",
+      pending: "text-[var(--tx2)]",
+      scheduled: "text-[#3B82F6]",
+      confirmed: "text-[#3B82F6]",
+      dispatched: "text-[var(--org)]",
+      "in-transit": "text-[var(--org)]",
+      delivered: "text-[var(--grn)]",
+      cancelled: "text-[var(--red)]",
     };
-    return map[job.status] || "text-[var(--tx3)] bg-[var(--hover)]";
+    return map[job.status] || "text-[var(--tx3)]";
   }
   const n = normalizeStatus(job.status) || "";
   return (
     MOVE_STATUS_COLORS_ADMIN[job.status] ||
     MOVE_STATUS_COLORS_ADMIN[n] ||
-    "text-[var(--tx3)] bg-[var(--hover)]"
+    "text-[var(--tx3)]"
   );
 }
 
@@ -600,7 +600,7 @@ export default function AdminPageClient({
       {/* Pull-to-refresh indicator */}
       {(pullDistance > 0 || refreshing) && (
         <div
-          className="fixed left-1/2 z-[100] flex items-center justify-center w-9 h-9 rounded-full shadow-lg"
+          className="fixed left-1/2 z-[100] flex items-center justify-center w-9 h-9 rounded-sm border border-[var(--brd)] shadow-md"
           style={{
             top: "calc(3.5rem + env(safe-area-inset-top, 0px) + 8px)",
             transform: `translate(-50%, ${pullDistance}px)`,
@@ -630,8 +630,8 @@ export default function AdminPageClient({
         <div className="mb-8 min-w-0">
           <div className="flex items-start justify-between gap-3 sm:gap-4 min-w-0 w-full">
             <div className="min-w-0 flex-1">
-              <h1 className="admin-page-hero text-[var(--tx)]">{greeting}</h1>
-              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--tx3)] font-medium">
+              <h1 className="admin-page-hero">{greeting}</h1>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--tx2)] [font-family:var(--font-body)] leading-snug">
                 <span>{dateStr}</span>
                 {hqWeatherLoading && (
                   <span
@@ -654,7 +654,7 @@ export default function AdminPageClient({
                         weight="duotone"
                         aria-hidden
                       />
-                      <span className="truncate">
+                      <span className="truncate normal-case font-medium tracking-normal">
                         {formatAdminHeaderWeather(hqWeather.brief)}
                       </span>
                     </span>
@@ -675,8 +675,8 @@ export default function AdminPageClient({
                   <Plus size={15} weight="regular" className="text-current" />
                 </button>
                 {quickActionsOpen && (
-                  <div className="absolute right-0 top-full mt-2 z-50 w-52 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl py-1.5 overflow-hidden">
-                    <p className="text-[10px] font-bold tracking-wide text-[var(--tx3)]/50 px-4 pt-2 pb-1.5">
+                  <div className="absolute right-0 top-full mt-2 z-50 w-52 bg-[var(--card)] border border-[var(--brd)] rounded-sm shadow-2xl py-1.5 overflow-hidden">
+                    <p className="admin-eyebrow px-4 pt-2 pb-1.5 opacity-90">
                       Create
                     </p>
                     {[
@@ -694,7 +694,7 @@ export default function AdminPageClient({
                       </Link>
                     ))}
                     <div className="border-t border-[var(--brd)]/50 my-1" />
-                    <p className="text-[10px] font-bold tracking-wide text-[var(--tx3)]/50 px-4 pt-1.5 pb-1.5">
+                    <p className="admin-eyebrow px-4 pt-1.5 pb-1.5 opacity-90">
                       Navigate
                     </p>
                     {[
@@ -722,7 +722,7 @@ export default function AdminPageClient({
               {summaryParts.map((part) => (
                 <span
                   key={part}
-                  className="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold bg-[var(--card)] border border-[var(--brd)]/60 text-[var(--tx3)]"
+                  className="inline-flex items-center px-2.5 py-1 rounded-sm text-[11px] font-bold uppercase tracking-[0.06em] bg-[var(--card)] border border-[var(--brd)] text-[var(--tx2)]"
                 >
                   {part}
                 </span>
@@ -739,9 +739,7 @@ export default function AdminPageClient({
               onClick={() => setBriefOpen((v) => !v)}
               className="flex items-center gap-2 group w-full text-left"
             >
-              <span className="text-[10px] font-bold tracking-wide text-[var(--tx2)]">
-                Daily Brief
-              </span>
+              <span className="admin-eyebrow text-[var(--tx2)]">Daily Brief</span>
               <CaretRight
                 weight="regular"
                 className={`w-2.5 h-2.5 text-[var(--tx3)] transition-transform duration-200 ${briefOpen ? "rotate-90" : ""}`}
@@ -781,7 +779,7 @@ export default function AdminPageClient({
                     ? `/admin/moves/${s.jobId}`
                     : `/admin/deliveries/${s.jobId}`
                 }
-                className="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--brd)] bg-[var(--hover)] hover:bg-[var(--card)] transition-colors"
+                className="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-sm border border-[var(--brd)] bg-[var(--hover)] hover:bg-[var(--card)] transition-colors"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                 <span className="text-[11px] font-semibold text-[var(--tx)] whitespace-nowrap">
@@ -811,25 +809,25 @@ export default function AdminPageClient({
           <div className="min-w-0">
             {/* ── Unassigned Jobs Alert ── */}
             {unassignedJobs.length > 0 && (
-              <div className="mb-6 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] overflow-hidden">
-                <div className="flex items-center gap-2 px-4 py-3 border-b border-amber-500/10">
+              <div className="mb-6 rounded-sm border border-[var(--org)]/35 bg-[var(--org)]/[0.06] overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--org)]/20">
                   <Warning
                     size={14}
-                    className="text-amber-400"
+                    className="text-[var(--org)]"
                     weight="duotone"
                     aria-hidden
                   />
-                  <span className="text-[11px] font-bold text-amber-400">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--org)]">
                     {unassignedJobs.length} unassigned job
                     {unassignedJobs.length > 1 ? "s" : ""} in the next 72h
                   </span>
                 </div>
-                <div className="divide-y divide-amber-500/10">
+                <div className="divide-y divide-[var(--org)]/15">
                   {unassignedJobs.slice(0, 5).map((job) => (
                     <Link
                       key={`unassigned-${job.id}`}
                       href={job.href}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-amber-500/[0.04] transition-colors"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--org)]/[0.06] transition-colors"
                     >
                       <span className="text-[10px] font-medium text-[var(--tx3)] tabular-nums w-[52px] text-right shrink-0">
                         {formatMoveDate(job.date)}
@@ -875,13 +873,13 @@ export default function AdminPageClient({
                     <h2 className="admin-section-h2 text-[var(--tx2)] group-hover:text-[var(--tx)] transition-colors">
                       Tasks
                     </h2>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--hover)] text-[var(--tx)] border border-[var(--brd)]/60">
+                    <span className="text-[9px] font-bold uppercase tracking-[0.05em] px-1.5 py-0.5 rounded-sm bg-[var(--hover)] text-[var(--tx)] border border-[var(--brd)]/60">
                       {actionTasks.length}
                     </span>
                   </div>
                 </button>
                 {tasksOpen && (
-                  <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] divide-y divide-[var(--brd)]/30 overflow-hidden">
+                  <div className="rounded-sm border border-[var(--brd)] bg-[var(--card)] divide-y divide-[var(--brd)]/30 overflow-hidden">
                     {actionTasks
                       .slice(0, showAllTasks ? undefined : 5)
                       .map((task) => (
@@ -976,12 +974,12 @@ export default function AdminPageClient({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <span
-                            className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight ${statusStyle}`}
+                            className={`dt-badge tracking-[0.04em] ${statusStyle}`}
                           >
                             {statusLabel}
                           </span>
                           <span
-                            className={`text-[9px] font-semibold capitalize tracking-wide ${tagColor}`}
+                            className={`dt-badge tracking-[0.04em] ${tagColor}`}
                           >
                             {job.tag}
                           </span>
@@ -1045,7 +1043,7 @@ export default function AdminPageClient({
             {todayJobs.length > 0 && upcomingJobs.length > 0 && (
               <div className="mt-6 pt-5 border-t border-[var(--brd)]/30">
                 <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
-                  <h3 className="text-[10px] font-bold tracking-wide text-[var(--tx3)]/50 min-w-0 flex-1 basis-0 truncate pr-1">
+                  <h3 className="text-[10px] font-bold tracking-wide text-[var(--tx3)] min-w-0 flex-1 basis-0 truncate pr-1">
                     Coming up
                   </h3>
                   <Link
@@ -1124,7 +1122,7 @@ export default function AdminPageClient({
                         return (
                           <div
                             key={`wx-${id}`}
-                            className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)]/60 px-4 py-3"
+                            className="rounded-sm border border-[var(--brd)]/40 bg-[var(--card)] px-4 py-3"
                           >
                             <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
                               <span className="text-[11px] font-bold text-[var(--tx)] font-mono tracking-wide">
@@ -1253,7 +1251,7 @@ export default function AdminPageClient({
                                       )}
                                     </p>
                                     {tr.brief.closureNotes.length > 0 && (
-                                      <ul className="pl-3 list-disc text-[9px] text-amber-200/90 space-y-0.5">
+                                      <ul className="pl-3 list-disc text-[9px] text-[var(--org)] space-y-0.5 opacity-95">
                                         {tr.brief.closureNotes.map(
                                           (note, i) => (
                                             <li key={i}>{note}</li>
@@ -1276,7 +1274,7 @@ export default function AdminPageClient({
                       .map((row) => (
                         <div
                           key={`tr-${row.id}`}
-                          className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)]/60 px-4 py-3"
+                          className="rounded-sm border border-[var(--brd)]/40 bg-[var(--card)] px-4 py-3"
                         >
                           <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
                             <span className="text-[11px] font-bold text-[var(--tx)] font-mono tracking-wide">
@@ -1323,7 +1321,7 @@ export default function AdminPageClient({
                                 )}
                               </p>
                               {row.brief.closureNotes.length > 0 && (
-                                <ul className="pl-3 list-disc text-[9px] text-amber-200/90 space-y-0.5">
+                                <ul className="pl-3 list-disc text-[9px] text-[var(--org)] space-y-0.5 opacity-95">
                                   {row.brief.closureNotes.map((note, i) => (
                                     <li key={i}>{note}</li>
                                   ))}
@@ -1340,7 +1338,7 @@ export default function AdminPageClient({
                   trafficRows.length === 0 &&
                   !weatherLoading &&
                   !trafficLoading && (
-                    <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
+                    <p className="text-[11px] text-[var(--tx2)] leading-relaxed">
                       Forecasts and route conditions appear when jobs have
                       pickup addresses. Ensure moves have a street address for
                       the best intel.
@@ -1366,20 +1364,20 @@ export default function AdminPageClient({
                     Today&apos;s Earnings
                   </h2>
                 </div>
-                <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4">
+                <div className="rounded-sm border border-[var(--brd)]/40 bg-[var(--card)] p-4">
                   <div className="flex items-baseline gap-2 mb-3">
                     <span className="text-[22px] font-bold font-heading text-[var(--tx)] tabular-nums">
                       {formatCurrency(todayEarnings.potential)}
                     </span>
-                    <span className="text-[10px] text-[var(--tx3)]">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--tx2)]">
                       potential
                     </span>
                   </div>
 
                   {/* Progress bar */}
-                  <div className="h-2 rounded-full bg-[var(--brd)]/30 overflow-hidden mb-2">
+                  <div className="h-1.5 rounded-sm bg-[var(--brd)]/35 overflow-hidden mb-2">
                     <div
-                      className="h-full rounded-full transition-all duration-500"
+                      className="h-full rounded-sm transition-all duration-500"
                       style={{
                         width: `${todayEarnings.potential > 0 ? Math.round((todayEarnings.collected / todayEarnings.potential) * 100) : 0}%`,
                         background: "var(--grn)",
@@ -1392,7 +1390,7 @@ export default function AdminPageClient({
                       <CheckCircle size={11} weight="duotone" aria-hidden />
                       {formatCurrency(todayEarnings.collected)} collected
                     </span>
-                    <span className="flex items-center gap-1.5 text-[var(--tx3)]">
+                    <span className="flex items-center gap-1.5 text-[var(--tx2)]">
                       <Clock size={11} weight="duotone" aria-hidden />
                       {formatCurrency(todayEarnings.pending)} pending
                     </span>
@@ -1435,7 +1433,7 @@ export default function AdminPageClient({
                 )}
               </div>
               {currentMonthRevenue > 0 && (
-                <div className="text-[9px] text-[var(--tx3)] mb-1">
+                <div className="text-[9px] font-medium text-[var(--tx2)] mb-1">
                   Before HST (13%)
                 </div>
               )}
@@ -1444,7 +1442,7 @@ export default function AdminPageClient({
               {currentMonthRevenue > 0 && (
                 <div className="flex flex-wrap gap-x-3 gap-y-1 mb-3">
                   {revenueBreakdown.moves > 0 && (
-                    <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx3)]">
+                    <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx2)]">
                       <span
                         className="w-1.5 h-1.5 rounded-full"
                         style={{ background: "var(--org)" }}
@@ -1453,7 +1451,7 @@ export default function AdminPageClient({
                     </span>
                   )}
                   {revenueBreakdown.deliveries > 0 && (
-                    <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx3)]">
+                    <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx2)]">
                       <span
                         className="w-1.5 h-1.5 rounded-full"
                         style={{ background: "#3B82F6" }}
@@ -1463,10 +1461,10 @@ export default function AdminPageClient({
                     </span>
                   )}
                   {revenueBreakdown.invoices > 0 && (
-                    <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx3)]">
+                    <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx2)]">
                       <span
                         className="w-1.5 h-1.5 rounded-full"
-                        style={{ background: "#22C55E" }}
+                        style={{ background: "var(--grn)" }}
                       />
                       Invoices{" "}
                       {formatCompactCurrency(revenueBreakdown.invoices)}
@@ -1513,8 +1511,8 @@ export default function AdminPageClient({
                               style={{
                                 height: `${invPct}%`,
                                 background: isNow
-                                  ? "#22C55E"
-                                  : "rgba(34,197,94,0.25)",
+                                  ? "var(--grn)"
+                                  : "color-mix(in srgb, var(--grn) 28%, transparent)",
                               }}
                             />
                           )}
@@ -1547,7 +1545,7 @@ export default function AdminPageClient({
                         </div>
                       </div>
                       <span
-                        className={`text-[8px] font-medium ${isNow ? "text-[var(--tx)]" : "text-[var(--tx3)]"}`}
+                        className={`text-[9px] font-semibold tabular-nums ${isNow ? "text-[var(--tx)]" : "text-[var(--tx2)]"}`}
                       >
                         {d.m}
                       </span>
@@ -1569,7 +1567,7 @@ export default function AdminPageClient({
                             </p>
                           )}
                           {d.invoices > 0 && (
-                            <p className="text-[8px] text-[#22C55E]">
+                            <p className="text-[8px] text-[var(--grn)]">
                               Invoices ${d.invoices.toFixed(1)}K
                             </p>
                           )}
@@ -1586,7 +1584,7 @@ export default function AdminPageClient({
               <div className="pt-6 border-t border-[var(--brd)]/30">
                 <Link
                   href="/admin/invoices"
-                  className="group flex items-center justify-between gap-2 py-3 px-4 rounded-xl border border-[var(--red)]/15 bg-[var(--red)]/5 hover:bg-[var(--red)]/10 hover:border-[var(--red)]/30 transition-all cursor-pointer min-w-0 w-full"
+                  className="group flex items-center justify-between gap-2 py-3 px-4 rounded-sm border border-[var(--red)]/15 bg-[var(--red)]/5 hover:bg-[var(--red)]/10 hover:border-[var(--red)]/30 transition-all cursor-pointer min-w-0 w-full"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="text-[10px] font-bold tracking-wide text-[var(--red)]/80">
@@ -1642,7 +1640,7 @@ export default function AdminPageClient({
                     return (
                       <div
                         key={day.date}
-                        className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] px-3 py-3 text-center"
+                        className="rounded-sm border border-[var(--brd)]/40 bg-[var(--card)] px-3 py-3 text-center"
                       >
                         <div className="text-[9px] font-bold tracking-wide text-[var(--tx3)] mb-2">
                           {day.label}
@@ -1716,7 +1714,7 @@ export default function AdminPageClient({
                       />
                     </Link>
                   </div>
-                  <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4 space-y-2">
+                  <div className="rounded-sm border border-[var(--brd)]/40 bg-[var(--card)] p-4 space-y-2">
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-[var(--tx3)]">Needs attention</span>
                       <span
@@ -1853,7 +1851,7 @@ export default function AdminPageClient({
                     />
                   </Link>
                 </div>
-                <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4 space-y-3">
+                <div className="rounded-sm border border-[var(--brd)]/40 bg-[var(--card)] p-4 space-y-3">
                   {/* Funnel rows */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -1953,7 +1951,7 @@ export default function AdminPageClient({
                     Customer Satisfaction
                   </h2>
                 </div>
-                <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4 min-w-0">
+                <div className="rounded-sm border border-[var(--brd)]/40 bg-[var(--card)] p-4 min-w-0">
                   <div className="flex items-center gap-4 mb-3 min-w-0 w-full">
                     <div className="text-center shrink-0">
                       <div className="text-[28px] font-bold font-heading text-[var(--tx)] tabular-nums leading-none">

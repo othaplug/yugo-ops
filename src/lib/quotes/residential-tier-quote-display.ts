@@ -52,7 +52,7 @@ const RESOLVED_ESSENTIAL_MOVE_INCLUDES: TierFeature[] = [
     key: "truck",
     card: "Dedicated moving truck",
     title: "Dedicated moving truck",
-    desc: "Climate-protected, equipped for your move",
+    desc: "Fully equipped for your move",
     iconName: "Truck",
   },
   {
@@ -91,6 +91,13 @@ const RESOLVED_ESSENTIAL_MOVE_INCLUDES: TierFeature[] = [
     iconName: "Toolbox",
   },
   {
+    key: "placement_standard",
+    card: "Standard placement (entry point only)",
+    title: "Standard placement (entry point only)",
+    desc: "Items placed at the main entry or threshold; room-by-room placement is included on higher tiers.",
+    iconName: "MapPin",
+  },
+  {
     key: "valuation",
     card: "Standard valuation coverage",
     title: "Standard valuation coverage",
@@ -125,7 +132,7 @@ const RESOLVED_SIGNATURE_MOVE_INCLUDES: TierFeature[] = [
     key: "truck",
     card: "Dedicated moving truck",
     title: "Dedicated moving truck",
-    desc: "Climate-protected, equipped for your move",
+    desc: "Fully equipped for your move",
     iconName: "Truck",
   },
   {
@@ -226,7 +233,7 @@ const RESOLVED_ESTATE_MOVE_INCLUDES: TierFeature[] = [
     key: "truck",
     card: "Dedicated moving truck",
     title: "Dedicated moving truck",
-    desc: "Climate-protected, equipped for your move",
+    desc: "Fully equipped for your move",
     iconName: "Truck",
   },
   {
@@ -506,7 +513,7 @@ const DEFAULT_ESSENTIAL: TierFeature[] = [
     key: "truck",
     card: "Dedicated Moving Truck",
     title: "Dedicated Moving Truck",
-    desc: "Climate-protected, equipped for your move",
+    desc: "Fully equipped for your move",
     iconName: "Truck",
   },
   {
@@ -543,6 +550,13 @@ const DEFAULT_ESSENTIAL: TierFeature[] = [
     title: "All standard equipment included",
     desc: "Dollies, straps, tools — nothing extra to rent",
     iconName: "Toolbox",
+  },
+  {
+    key: "placement_standard",
+    card: "Standard placement (entry point only)",
+    title: "Standard placement (entry point only)",
+    desc: "Items placed at the main entry or threshold; room-by-room placement is included on higher tiers.",
+    iconName: "MapPin",
   },
   {
     key: "valuation",
@@ -603,6 +617,14 @@ export function inferFeatureKeyFromContent(f: TierFeature): string {
   if (blob.includes("mattress") && blob.includes("tv")) return "mattress_tv";
   if (blob.includes("wardrobe")) return "wardrobe";
   if (blob.includes("debris") || blob.includes("packaging removal")) return "debris";
+
+  if (
+    blob.includes("entry point") ||
+    blob.includes("entry-point") ||
+    (blob.includes("standard placement") && blob.includes("entry"))
+  ) {
+    return "placement_standard";
+  }
 
   if (
     blob.includes("room-of-choice") ||

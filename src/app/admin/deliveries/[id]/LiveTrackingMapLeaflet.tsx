@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Polyline,
+  useMap,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -93,15 +100,28 @@ export function LiveTrackingMapLeaflet({
 }) {
   const centerArr: [number, number] = [center.latitude, center.longitude];
   const hasPosition = crew != null;
-  const routeDestArr: [number, number] | undefined =
-    destination ? [destination.lat, destination.lng] : (pickup ?? dropoff) ? [(pickup ?? dropoff)!.lat, (pickup ?? dropoff)!.lng] : undefined;
+  const routeDestArr: [number, number] | undefined = destination
+    ? [destination.lat, destination.lng]
+    : (pickup ?? dropoff)
+      ? [(pickup ?? dropoff)!.lat, (pickup ?? dropoff)!.lng]
+      : undefined;
   const boundsPoints = useMemo((): [number, number][] => {
     const pts: [number, number][] = [centerArr];
     if (hasPosition && crew) pts.push([crew.current_lat, crew.current_lng]);
     if (pickup) pts.push([pickup.lat, pickup.lng]);
     if (dropoff) pts.push([dropoff.lat, dropoff.lng]);
     return pts;
-  }, [centerArr[0], centerArr[1], hasPosition, crew?.current_lat, crew?.current_lng, pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng]);
+  }, [
+    centerArr[0],
+    centerArr[1],
+    hasPosition,
+    crew?.current_lat,
+    crew?.current_lng,
+    pickup?.lat,
+    pickup?.lng,
+    dropoff?.lat,
+    dropoff?.lng,
+  ]);
   const tileUrl =
     mapTheme === "dark"
       ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
@@ -122,7 +142,11 @@ export function LiveTrackingMapLeaflet({
       scrollWheelZoom
       className="track-live-map"
     >
-      <MapController center={centerArr} hasPosition={hasPosition} points={boundsPoints} />
+      <MapController
+        center={centerArr}
+        hasPosition={hasPosition}
+        points={boundsPoints}
+      />
       <TileLayer attribution="" url={tileUrl} />
       {linePositions.length >= 2 && (
         <Polyline
@@ -141,7 +165,10 @@ export function LiveTrackingMapLeaflet({
         </Marker>
       )}
       {!pickup && !dropoff && destination && (
-        <Marker position={[destination.lat, destination.lng]} icon={makePickupIcon()}>
+        <Marker
+          position={[destination.lat, destination.lng]}
+          icon={makePickupIcon()}
+        >
           <Popup>Destination</Popup>
         </Marker>
       )}
@@ -150,7 +177,9 @@ export function LiveTrackingMapLeaflet({
           position={[crew.current_lat, crew.current_lng]}
           icon={makeCrewArrowIcon(crewBearing ?? null)}
         >
-          <Popup>{(crewName || crew.name || "Crew").replace("Team ", "")}</Popup>
+          <Popup>
+            {(crewName || crew.name || "Crew").replace("Team ", "")}
+          </Popup>
         </Marker>
       )}
     </MapContainer>

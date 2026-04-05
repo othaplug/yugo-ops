@@ -161,7 +161,7 @@ export default function PortalAccessSection({
         </div>
         <button
           onClick={() => setInviteOpen(true)}
-          className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+          className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all"
         >
           + Invite Portal User
         </button>
@@ -188,8 +188,8 @@ export default function PortalAccessSection({
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span
-                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                      u.status === "activated" ? "bg-[rgba(45,159,90,0.15)] text-[var(--grn)]" : "bg-[rgba(201,169,98,0.15)] text-[var(--gold)]"
+                    className={`dt-badge tracking-[0.04em] ${
+                      u.status === "activated" ? "text-[var(--grn)]" : "text-amber-700 dark:text-amber-300"
                     }`}
                   >
                     {u.status === "activated" ? "Activated" : "Pending"}
@@ -247,7 +247,7 @@ export default function PortalAccessSection({
               <button type="button" onClick={() => { setResetUser(null); setResetPassword(""); }} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">
                 Cancel
               </button>
-              <button type="submit" disabled={resetLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+              <button type="submit" disabled={resetLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
                 {resetLoading ? "Sending…" : "Set password & send email"}
               </button>
             </div>
@@ -302,7 +302,7 @@ export default function PortalAccessSection({
             <button type="button" onClick={() => setInviteOpen(false)} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">
               Cancel
             </button>
-            <button type="submit" disabled={inviteLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+            <button type="submit" disabled={inviteLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
               {inviteLoading ? "Sending…" : "Send Invitation"}
             </button>
           </div>

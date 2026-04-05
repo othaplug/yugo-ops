@@ -51,7 +51,7 @@ export default async function ClientRevenuePage({ params }: { params: Promise<{ 
       </div>
 
       <div className="mb-2">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance · Client Revenue</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Finance · Client Revenue</p>
         <h1 className="admin-page-hero text-[var(--tx)]">{org.name}</h1>
       </div>
       <p className="text-[12px] text-[var(--tx3)] mb-6">Revenue and invoices for this client</p>
@@ -99,8 +99,8 @@ export default async function ClientRevenuePage({ params }: { params: Promise<{ 
                 <div className="flex items-center gap-3">
                   <span className="text-[12px] font-bold text-[var(--tx)]">{formatCurrency(Number(inv.amount || 0))}</span>
                   <span
-                    className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold ${
-                      inv.status === "paid" ? "bg-[var(--grdim)] text-[var(--grn)]" : inv.status === "overdue" ? "bg-[var(--rdim)] text-[var(--red)]" : "bg-[var(--gdim)] text-[var(--gold)]"
+                    className={`dt-badge ${
+                      inv.status === "paid" ? "text-[var(--grn)]" : inv.status === "overdue" ? "text-[var(--red)]" : "text-[var(--gold)]"
                     }`}
                   >
                     {inv.status || "-"}

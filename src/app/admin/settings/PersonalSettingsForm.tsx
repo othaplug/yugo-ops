@@ -138,7 +138,7 @@ export default function PersonalSettingsForm({
       <div>
         <label className={labelClass}>Role</label>
         <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg">
-          <span className="w-2 h-2 bg-[var(--gold)] rounded-full" />
+          <span className="w-2 h-2 bg-[var(--admin-primary-fill)] rounded-full" />
           <span className="text-[13px] text-[var(--tx)]">{roleLabel}</span>
           <span className="ml-auto text-[10px] text-[var(--tx3)]">Managed by administrator</span>
         </div>
@@ -147,7 +147,7 @@ export default function PersonalSettingsForm({
       <button
         onClick={handleSave}
         disabled={loading}
-        className="w-full px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+        className="w-full px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
       >
         {loading ? "Saving…" : saved ? "Saved ✓" : "Save Profile"}
       </button>

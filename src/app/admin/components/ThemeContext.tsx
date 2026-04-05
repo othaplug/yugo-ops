@@ -33,7 +33,8 @@ export function ThemeProvider({
   /** Crew portal: always light; do not persist or read `yugo-theme` so admin prefs stay independent. */
   lockTheme?: "light";
 }) {
-  const [theme, setThemeState] = useState<Theme>(lockTheme === "light" ? "light" : "dark");
+  /** Admin default is light; persisted `yugo-theme` (light | dark) overrides after mount. */
+  const [theme, setThemeState] = useState<Theme>("light");
 
   useEffect(() => {
     if (lockTheme === "light") {
@@ -41,7 +42,9 @@ export function ThemeProvider({
       return;
     }
     const saved = localStorage.getItem("yugo-theme") as Theme;
-    if (saved === "light" || saved === "dark") setThemeState(saved);
+    if (saved === "dark") setThemeState("dark");
+    else if (saved === "light") setThemeState("light");
+    /* missing or invalid key → keep light */
   }, [lockTheme]);
 
   useLayoutEffect(() => {

@@ -197,7 +197,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
       />
 
       <div
-        className="relative z-10 w-full max-w-[560px] max-h-[min(85dvh,720px)] bg-[var(--card)] border border-[var(--brd)] rounded-2xl shadow-2xl overflow-hidden flex flex-col pointer-events-auto modal-card"
+        className="relative z-10 w-full max-w-[560px] max-h-[min(85dvh,720px)] bg-[var(--card)] border border-[var(--brd)] rounded-sm shadow-xl overflow-hidden flex flex-col pointer-events-auto modal-card"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search input */}
@@ -233,7 +233,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
                   className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors border-b border-[var(--brd)]/30 last:border-0 ${idx === selectedIdx ? "bg-[var(--gdim)]" : "hover:bg-[var(--gdim)]/60"}`}
                 >
                   <span
-                    className="w-6 h-6 rounded-md shrink-0 flex items-center justify-center text-[11px]"
+                    className="w-6 h-6 rounded-[2px] shrink-0 flex items-center justify-center text-[11px]"
                     style={{ background: `${TYPE_COLORS[r.type] ?? "var(--tx3)"}18`, color: TYPE_COLORS[r.type] ?? "var(--tx3)" }}
                   >
                     {r.type === "Client" ? <User weight="regular" className="w-3 h-3 text-current" /> :
@@ -244,10 +244,10 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="text-[12px] font-semibold text-[var(--tx)] truncate">{r.name}</div>
-                    {r.sub && <div className="text-[10px] text-[var(--tx3)] truncate">{r.sub}</div>}
+                    {r.sub && <div className="text-[10px] text-[var(--tx2)] truncate">{r.sub}</div>}
                   </div>
                   <span
-                    className="shrink-0 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+                    className="shrink-0 text-[9px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 rounded-sm border border-[var(--brd)]/50"
                     style={{ color: TYPE_COLORS[r.type] ?? "var(--tx3)", backgroundColor: `${TYPE_COLORS[r.type] ?? "var(--tx3)"}18` }}
                   >
                     {r.type}
@@ -255,7 +255,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
                 </div>
               ))
             ) : !searching ? (
-              <div className="px-4 py-10 text-center text-[12px] text-[var(--tx3)]">
+              <div className="px-4 py-10 text-center text-[12px] text-[var(--tx2)]">
                 No results for &ldquo;{query}&rdquo;
               </div>
             ) : null
@@ -264,7 +264,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
             <div className="p-2">
               {QUICK_NAV.map((group) => (
                 <div key={group.group} className="mb-3 last:mb-1">
-                  <div className="px-2 py-1 text-[9px] font-bold tracking-[1.2px] uppercase text-[var(--tx3)]">
+                  <div className="px-2 py-1 text-[9px] font-bold tracking-[0.06em] uppercase text-[var(--tx2)]">
                     {group.group}
                   </div>
                   {group.items.map((item) => {
@@ -276,7 +276,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
                         key={item.href}
                         data-idx={flatIdx}
                         onClick={() => navigate(item.href)}
-                        className={`flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer transition-colors ${isSelected ? "bg-[var(--gdim)] text-[var(--gold)]" : "text-[var(--tx2)] hover:bg-[var(--gdim)]/60"}`}
+                        className={`flex items-center gap-2.5 px-2 py-2 rounded-sm cursor-pointer transition-colors ${isSelected ? "bg-[var(--gdim)] text-[var(--gold)]" : "text-[var(--tx2)] hover:bg-[var(--gdim)]/60"}`}
                       >
                         <span className={isSelected ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
                           <ItemIcon />

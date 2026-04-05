@@ -13,6 +13,7 @@ import {
 import QuotePageClient from "./QuotePageClient";
 import QuoteExpired from "./QuoteExpired";
 import { isQuoteExpiredForBooking } from "@/lib/quote-expiry";
+import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +22,24 @@ export async function generateMetadata({ params }: { params: Promise<{ quoteId: 
   return { title: `Quote ${quoteId}` };
 }
 
-export default async function QuotePage({ params }: { params: Promise<{ quoteId: string }> }) {
+export default async function QuotePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ quoteId: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { quoteId } = await params;
+  const sp = (await searchParams) ?? {};
+  const actionRaw = sp.action;
+  const action = Array.isArray(actionRaw) ? actionRaw[0] : actionRaw;
+  const tokenParam = sp.token;
+  const declineTokenFromUrl =
+    typeof tokenParam === "string"
+      ? tokenParam.trim() || null
+      : Array.isArray(tokenParam) && typeof tokenParam[0] === "string"
+        ? tokenParam[0].trim() || null
+        : null;
   const [supportPhone, brandingEarly] = await Promise.all([getCompanyPhone(), getLegalBranding()]);
   // Use admin client so the quote is found by link regardless of RLS (anon can only see sent/viewed/accepted).
   const admin = createAdminClient();
@@ -44,6 +61,28 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
   }
 
   const st = (quote.status || "").toLowerCase();
+  if (st === "declined") {
+    return (
+      <QuoteExpired
+        quoteId={quoteId}
+        reason="declined"
+        expiresAt={quote.expires_at}
+        supportEmail={brandingEarly.email}
+        supportTel={supportPhone}
+      />
+    );
+  }
+  if (st === "lost") {
+    return (
+      <QuoteExpired
+        quoteId={quoteId}
+        reason="lost"
+        expiresAt={quote.expires_at}
+        supportEmail={brandingEarly.email}
+        supportTel={supportPhone}
+      />
+    );
+  }
   if (st === "expired") {
     return (
       <QuoteExpired
@@ -65,6 +104,17 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
         supportTel={supportPhone}
       />
     );
+  }
+
+  let publicActionToken = (
+    quote as { public_action_token?: string | null }
+  ).public_action_token?.trim();
+  if (!publicActionToken) {
+    publicActionToken = randomBytes(24).toString("hex");
+    await admin
+      .from("quotes")
+      .update({ public_action_token: publicActionToken })
+      .eq("id", quote.id);
   }
 
   // Mark as viewed + record event (server-side, fire-and-forget)
@@ -182,6 +232,9 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
       residentialTierCardAdditions={residentialTierBundle.cardAdditions}
       residentialTierUseAdditiveCards={residentialTierBundle.useAdditiveCards}
       residentialTierMeta={residentialTierMeta}
+      publicActionToken={publicActionToken}
+      openDeclineModalOnLoad={action === "decline"}
+      declineTokenFromUrl={declineTokenFromUrl}
     />
   );
 }

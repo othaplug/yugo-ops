@@ -159,6 +159,11 @@ function quoteEmailLayout(innerHtml: string): string {
       td.yugo-tier-est {
         background-color: ${EMAIL_TIER_ESTATE_BG} !important;
       }
+      .yugo-quote-body img,
+      table.yugo-quote-page img {
+        filter: none !important;
+        -webkit-filter: none !important;
+      }
     }
     ${getEmailResponsiveCss()}
   </style>

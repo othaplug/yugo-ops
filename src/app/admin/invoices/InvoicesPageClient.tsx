@@ -70,7 +70,7 @@ export default function InvoicesPageClient({ invoices }: InvoicesPageClientProps
               type="button"
               onClick={runBackfill}
               disabled={backfilling}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
             >
               {backfilling ? "Generating…" : "Generate Invoices"}
             </button>
@@ -85,10 +85,10 @@ export default function InvoicesPageClient({ invoices }: InvoicesPageClientProps
               key={f.value}
               type="button"
               onClick={() => setStatusFilter(f.value)}
-              className={`px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-md text-[10px] font-semibold transition-all border ${
                 statusFilter === f.value
-                  ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
-                  : "bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:bg-[var(--bg2)] hover:border-[var(--brd)]"
+                  ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                  : "bg-[var(--bg)] text-[var(--tx)] border-[var(--brd)] hover:bg-[var(--bg2)]"
               }`}
             >
               {f.label}

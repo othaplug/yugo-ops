@@ -45,7 +45,7 @@ export default function InvoiceDetailModal({ open, onClose, invoice }: InvoiceDe
         </div>
         <Link
           href="/admin/invoices"
-          className="mt-4 inline-block w-full text-center py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+          className="mt-4 inline-block w-full text-center py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all"
         >
           View all invoices →
         </Link>

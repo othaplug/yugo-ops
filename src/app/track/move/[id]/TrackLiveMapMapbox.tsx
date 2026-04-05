@@ -222,11 +222,13 @@ export function TrackLiveMapMapbox({
   isNavigating?: boolean;
   etaOverlayMinutes?: number | null;
   distanceRemainingM?: number | null;
-  /** Dark Mapbox style for Estate live tracking */
+  /** Estate tier: route/marker accent only; basemap follows app light mode (light Mapbox style on client track). */
   isEstate?: boolean;
 }) {
   const routeColor = isEstate ? ROUTE_ESTATE : ROUTE_GOLD;
   const accentPin = isEstate ? ROUTE_ESTATE : YUGO_GOLD;
+  /** Client track shell is light (`data-theme="light"`); keep basemap readable on cream UI. */
+  const mapBasemapStyle = "mapbox://styles/mapbox/light-v11";
   const hasPosition = crew != null;
   const animatedCrew = useAnimatedPosition(
     crew ? { lat: crew.current_lat, lng: crew.current_lng } : null,
@@ -369,11 +371,7 @@ export function TrackLiveMapMapbox({
       reuseMaps
       initialViewState={{ ...center, zoom: hasPosition ? 14 : 10 }}
       style={{ width: "100%", height: "100%" }}
-      mapStyle={
-        isEstate
-          ? "mapbox://styles/mapbox/dark-v11"
-          : "mapbox://styles/mapbox/light-v11"
-      }
+      mapStyle={mapBasemapStyle}
     >
       <FitBoundsController
         crew={crew}
@@ -456,17 +454,17 @@ export function TrackLiveMapMapbox({
         </Marker>
       )}
 
-      {/* Destination, Home icon (dark, pin-style); dimmed during pickup phase */}
+      {/* Destination, Home pin; dimmed during pickup phase */}
       {dropoff && (
         <Marker longitude={dropoff.lng} latitude={dropoff.lat} anchor="bottom">
           <div
             className="flex flex-col items-center"
             style={{ opacity: isPickupPhase ? 0.45 : 1 }}
           >
-            <div className="w-9 h-9 rounded-full bg-[#1A1A1A] border-2 border-white shadow-lg flex items-center justify-center">
+            <div className="w-9 h-9 rounded-full bg-[#5C1A33] border-2 border-white shadow-lg flex items-center justify-center">
               <House size={16} color="#FFFFFF" aria-hidden />
             </div>
-            <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#1A1A1A] -mt-0.5" />
+            <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#5C1A33] -mt-0.5" />
           </div>
         </Marker>
       )}
@@ -527,13 +525,13 @@ export function TrackLiveMapMapbox({
             </svg>
             {/* Speed badge */}
             {speed != null && speed > 0 && !isLocationStale && (
-              <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+              <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[#CBC4B8] bg-white/95 px-1.5 py-0.5 text-[10px] font-bold text-[#1A1816] shadow-sm">
                 {Math.round(speed)} km/h
               </div>
             )}
             {/* Stale label */}
             {isLocationStale && lastSeenLabel && (
-              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/75 text-[#2C3E2D] text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
+              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[#CBC4B8] bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold text-[#4F4B47] shadow-sm">
                 {lastSeenLabel}
               </div>
             )}
@@ -554,12 +552,9 @@ export function TrackLiveMapMapbox({
           }}
         >
           <div
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold"
+            className="flex items-center gap-1.5 rounded-full border border-[#E8E4DF] bg-white/95 px-3 py-1.5 text-[12px] font-semibold text-[#1A1816] shadow-sm backdrop-blur-sm"
             style={{
-              background: "rgba(20,20,20,0.82)",
-              backdropFilter: "blur(8px)",
-              color: accentPin,
-              border: `1px solid ${accentPin}40`,
+              borderColor: `${accentPin}55`,
             }}
           >
             Last known location · {lastSeenLabel}
@@ -577,23 +572,18 @@ export function TrackLiveMapMapbox({
             pointerEvents: "none",
           }}
         >
-          <div
-            className="rounded-lg px-3 py-2 shadow-lg text-white max-w-[220px]"
-            style={{ background: "rgba(74, 21, 40, 0.92)" }}
-          >
-            <span className="text-lg font-bold tabular-nums">
+          <div className="max-w-[220px] rounded-lg border border-[#E8E4DF] bg-white/95 px-3 py-2 text-[#1A1816] shadow-lg backdrop-blur-sm">
+            <span className="text-lg font-bold tabular-nums text-[#2C3E2D]">
               {etaOverlayMinutes} min
             </span>
-            <span className="text-[12px] ml-1.5 opacity-85">
-              estimated arrival
-            </span>
+            <span className="ml-1.5 text-[12px] text-[#4F4B47]">estimated arrival</span>
             {distanceRemainingM != null && distanceRemainingM > 0 && (
-              <p className="text-[11px] opacity-80 mt-0.5">
+              <p className="mt-0.5 text-[11px] text-[#4F4B47]">
                 {formatDistClientM(distanceRemainingM)} remaining
               </p>
             )}
             {isNavigating && (
-              <p className="text-[10px] opacity-70 mt-1">
+              <p className="mt-1 text-[10px] text-[#6B6560]">
                 Crew is navigating in the Yugo app
               </p>
             )}

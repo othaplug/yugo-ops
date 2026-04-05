@@ -2,9 +2,8 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowRight } from "@phosphor-icons/react";
 import { formatCurrency } from "@/lib/format-currency";
-import KpiCard from "@/components/ui/KpiCard";
-import SectionDivider from "@/components/ui/SectionDivider";
 
 interface Lead {
   id: string;
@@ -41,19 +40,21 @@ const STATUS_OPTIONS = [
   { value: "lost", label: "Lost" },
 ];
 
-function statusBadge(status: string): string {
+function statusSelectClass(status: string): string {
   switch (status) {
-    case "new": return "bg-[var(--gold)]/15 text-[var(--gold)]";
-    case "contacted": return "bg-[#3B82F6]/15 text-[#3B82F6]";
-    case "quote_sent": return "bg-purple-500/15 text-purple-500";
-    case "booked": return "bg-[var(--grn)]/15 text-[var(--grn)]";
-    case "lost": return "bg-[var(--red)]/15 text-[var(--red)]";
-    default: return "bg-[var(--brd)] text-[var(--tx3)]";
+    case "new":
+      return "text-[#2C3E2D] dark:text-[var(--tx2)]";
+    case "contacted":
+      return "text-[var(--blue)]";
+    case "quote_sent":
+      return "text-purple-500 dark:text-[var(--pur)]";
+    case "booked":
+      return "text-[var(--grn)]";
+    case "lost":
+      return "text-[var(--red)]";
+    default:
+      return "text-[var(--tx3)]";
   }
-}
-
-function statusLabel(s: string): string {
-  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
@@ -96,102 +97,216 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
   const contactedCount = leads.filter((l) => l.status === "contacted" || l.status === "quote_sent").length;
   const bookedCount = leads.filter((l) => l.status === "booked").length;
 
-  return (
-    <div className="p-4 sm:p-6 max-w-[1200px] mx-auto">
-      <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales</p>
-      <h1 className="admin-page-hero text-[var(--tx)] mb-8">Widget Leads</h1>
+  const kpiItems: {
+    key: string;
+    label: string;
+    sub: string;
+    value: number;
+    emphasize?: boolean;
+    accent?: boolean;
+  }[] = [
+    { key: "total", label: "Total", sub: "All time", value: leads.length },
+    {
+      key: "new",
+      label: "New",
+      sub: "Awaiting contact",
+      value: newCount,
+      emphasize: newCount > 0,
+    },
+    {
+      key: "progress",
+      label: "In progress",
+      sub: "Contacted or quoted",
+      value: contactedCount,
+    },
+    {
+      key: "booked",
+      label: "Booked",
+      sub: "Converted",
+      value: bookedCount,
+      accent: bookedCount > 0,
+    },
+  ];
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
-        <KpiCard label="Total Leads" value={String(leads.length)} sub="all time" />
-        <KpiCard label="New" value={String(newCount)} sub="awaiting contact" warn={newCount > 0} />
-        <KpiCard label="In Progress" value={String(contactedCount)} sub="contacted or quoted" />
-        <KpiCard label="Booked" value={String(bookedCount)} sub="converted" accent={bookedCount > 0} />
+  return (
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6">
+      <header className="mb-10 space-y-2 sm:mb-12">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--tx3)]/55">
+          Sales
+        </p>
+        <h1 className="admin-page-hero text-[var(--tx)]">Widget Leads</h1>
+      </header>
+
+      <section
+        className="mb-10 overflow-hidden rounded-2xl bg-[var(--brd)]/[0.28] p-px shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:bg-[var(--brd)]/35 dark:shadow-none"
+        aria-label="Lead summary"
+      >
+        <dl className="grid grid-cols-2 gap-px sm:grid-cols-4">
+          {kpiItems.map(({ key, label, sub, value, emphasize, accent }) => (
+            <div key={key} className="bg-[var(--card)] px-4 py-4 sm:px-5 sm:py-5">
+              <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/65">
+                {label}
+              </dt>
+              <dd
+                className={`mt-1.5 font-heading text-2xl font-semibold tabular-nums tracking-tight ${
+                  emphasize
+                    ? "text-[var(--red)]"
+                    : accent
+                      ? "text-[var(--grn)]"
+                      : "text-[var(--tx)]"
+                }`}
+              >
+                {value}
+              </dd>
+              <p className="mt-1 text-[10px] text-[var(--tx3)]/75">{sub}</p>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--tx3)]/55">
+          Leads
+        </p>
+        <input
+          type="search"
+          placeholder="Search name, email, or lead #"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full max-w-md rounded-lg border-0 bg-[var(--bg2)] px-3.5 py-2.5 text-[13px] text-[var(--tx)] shadow-[inset_0_0_0_1px_var(--brd)] placeholder:text-[var(--tx3)]/55 focus:shadow-[inset_0_0_0_1px_#2C3E2D33] focus:outline-none dark:focus:shadow-[inset_0_0_0_1px_var(--brd)]"
+        />
       </div>
 
-      <SectionDivider label="Leads" />
-
-      {/* Filters */}
-      <div className="flex gap-2 mb-5 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+      <div
+        className="-mx-4 mb-6 flex gap-1.5 overflow-x-auto px-4 pb-1 scrollbar-hide sm:mx-0 sm:flex-wrap sm:gap-2 sm:px-0 sm:pb-0"
+        role="toolbar"
+        aria-label="Filter by status"
+      >
         {STATUS_OPTIONS.map((o) => (
           <button
             key={o.value}
             type="button"
             onClick={() => setStatusFilter(o.value)}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all touch-manipulation ${
+            className={`shrink-0 rounded-lg px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] transition-colors ${
               statusFilter === o.value
-                ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
-                : "bg-[var(--bg)] text-[var(--tx)] border border-[var(--brd)] hover:bg-[var(--bg2)]"
+                ? "bg-[var(--tx)] text-[var(--bg2)] dark:bg-[var(--tx2)] dark:text-[var(--bg)]"
+                : "bg-transparent text-[var(--tx2)] shadow-[inset_0_0_0_1px_var(--brd)] hover:bg-[var(--hover)]"
             }`}
           >
             {o.label}
           </button>
         ))}
       </div>
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <input
-          type="text"
-          placeholder="Search leads..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none"
-        />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] outline-none"
-        >
-          {STATUS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-      </div>
 
-      {/* Table */}
-      <div className="bg-[var(--card)] rounded-xl border border-[var(--brd)] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
+      <section aria-label="Lead list">
+        <div className="overflow-x-auto rounded-2xl bg-[var(--card)] shadow-[0_1px_0_rgba(0,0,0,0.04)] ring-1 ring-[var(--brd)]/40 dark:shadow-none dark:ring-[var(--brd)]/50">
+          <table className="w-full min-w-[900px] border-collapse text-[13px]">
             <thead>
-              <tr className="border-b border-[var(--brd)]">
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Lead #</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Name</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Email</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Size</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">From → To</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Estimate</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Status</th>
+              <tr className="border-b border-[var(--brd)]/50 text-left">
+                <th
+                  scope="col"
+                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
+                >
+                  Lead #
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
+                >
+                  Name
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
+                >
+                  Email
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
+                >
+                  Size
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
+                >
+                  <span className="inline-flex items-center gap-1">
+                    From
+                    <ArrowRight size={12} weight="bold" aria-hidden className="opacity-50" />
+                    To
+                  </span>
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
+                >
+                  Estimate
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
+                >
+                  Status
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-[var(--tx2)]">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-[var(--tx3)]">
-                    {leads.length === 0 ? "No widget leads yet" : "No leads match your filters"}
+                  <td
+                    colSpan={7}
+                    className="px-4 py-16 text-center text-[15px] text-[var(--tx3)]/85"
+                  >
+                    {leads.length === 0
+                      ? "No widget leads yet."
+                      : "No leads match your filters."}
                   </td>
                 </tr>
               ) : (
                 filtered.map((l) => (
-                  <tr key={l.id} className="border-b border-[var(--brd)]/50 hover:bg-[var(--bg)] transition-colors">
-                    <td className="px-4 py-3 font-semibold text-[var(--gold)]">{l.lead_number}</td>
-                    <td className="px-4 py-3 text-[var(--tx)] font-medium">{l.name}</td>
-                    <td className="px-4 py-3 text-[var(--tx2)]">{l.email}</td>
-                    <td className="px-4 py-3 text-[var(--tx2)]">{SIZE_LABELS[l.move_size] || l.move_size}</td>
-                    <td className="px-4 py-3 text-[var(--tx2)]">
-                      {l.from_postal?.toUpperCase()} → {l.to_postal?.toUpperCase()}
+                  <tr
+                    key={l.id}
+                    className="border-b border-[var(--brd)]/[0.35] transition-colors last:border-b-0 hover:bg-[var(--hover)]/80"
+                  >
+                    <td className="px-4 py-3.5 font-semibold text-[#2C3E2D] dark:text-[var(--tx2)]">
+                      {l.lead_number}
                     </td>
-                    <td className="px-4 py-3 text-[var(--tx)] font-medium">
+                    <td className="px-4 py-3.5 font-medium text-[var(--tx)]">
+                      {l.name}
+                    </td>
+                    <td className="px-4 py-3.5">{l.email}</td>
+                    <td className="px-4 py-3.5">
+                      {SIZE_LABELS[l.move_size] || l.move_size}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center gap-1.5 tabular-nums">
+                        {l.from_postal?.toUpperCase()}
+                        <ArrowRight
+                          size={12}
+                          weight="bold"
+                          aria-hidden
+                          className="shrink-0 opacity-40"
+                        />
+                        {l.to_postal?.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 font-medium text-[var(--tx)]">
                       {l.widget_estimate_low && l.widget_estimate_high
                         ? `${formatCurrency(l.widget_estimate_low)}–${formatCurrency(l.widget_estimate_high)}`
-                        : "-"}
+                        : "—"}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3.5">
                       <select
                         value={l.status}
                         onChange={(e) => handleStatusUpdate(l.id, e.target.value)}
                         disabled={updatingId === l.id}
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border-0 outline-none cursor-pointer ${statusBadge(l.status)}`}
+                        className={`max-w-[160px] cursor-pointer rounded-md border-0 bg-[var(--bg2)] py-1.5 pl-2 pr-7 text-[11px] font-semibold uppercase tracking-[0.08em] shadow-[inset_0_0_0_1px_var(--brd)] outline-none ${statusSelectClass(l.status)}`}
                       >
                         {STATUS_OPTIONS.filter((o) => o.value).map((o) => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
                         ))}
                       </select>
                     </td>
@@ -201,7 +316,7 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

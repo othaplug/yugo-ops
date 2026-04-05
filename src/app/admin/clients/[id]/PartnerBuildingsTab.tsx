@@ -243,7 +243,7 @@ export default function PartnerBuildingsTab({
         <button
           type="button"
           onClick={openAdd}
-          className="shrink-0 px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-white hover:opacity-90 transition-opacity"
+          className="shrink-0 px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-white hover:opacity-90 transition-opacity"
         >
           + Add Building
         </button>
@@ -497,7 +497,7 @@ export default function PartnerBuildingsTab({
                 type="button"
                 onClick={() => void submit()}
                 disabled={saving}
-                className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-white disabled:opacity-50"
+                className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-white disabled:opacity-50"
               >
                 {saving ? "Saving…" : editingId ? "Save" : "Add building"}
               </button>

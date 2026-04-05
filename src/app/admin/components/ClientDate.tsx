@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatPlatformDisplay } from "@/lib/date-format";
 
 export default function ClientDate() {
   const [date, setDate] = useState<string>("");
 
   useEffect(() => {
-    setDate(new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }));
+    setDate(formatPlatformDisplay(new Date(), { weekday: "long", month: "long", day: "numeric" }, ""));
   }, []);
 
   if (!date) return null;

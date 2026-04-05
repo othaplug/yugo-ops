@@ -323,7 +323,7 @@ export default function AdminInvoiceDetailModal({
                       type="file"
                       accept=".pdf,application/pdf"
                       onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                      className="w-full text-[11px] text-[var(--tx2)] file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-[var(--gold)] file:text-white"
+                      className="w-full text-[11px] text-[var(--tx2)] file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-[var(--admin-primary-fill)] file:text-white"
                     />
                     {file && <p className="mt-1 text-[10px] text-[var(--tx3)]">{file.name}</p>}
                   </div>
@@ -332,7 +332,7 @@ export default function AdminInvoiceDetailModal({
                       type="button"
                       onClick={handleSave}
                       disabled={saving}
-                      className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+                      className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50"
                     >
                       {saving ? "Saving…" : "Save Changes"}
                     </button>

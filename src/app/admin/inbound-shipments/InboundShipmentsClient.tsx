@@ -2,10 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import {
-  Plus,
-  ArrowRight,
-} from "@phosphor-icons/react";
+import { CaretRight, ArrowRight } from "@phosphor-icons/react";
 import { INBOUND_SHIPMENT_STATUS_LABELS } from "@/lib/inbound-shipment-labels";
 
 type Shipment = {
@@ -44,7 +41,9 @@ function itemTitle(items: unknown): string {
 export default function InboundShipmentsClient() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [repeatSenders, setRepeatSenders] = useState<{ email: string; count: number; business_name: string | null }[]>([]);
+  const [repeatSenders, setRepeatSenders] = useState<
+    { email: string; count: number; business_name: string | null }[]
+  >([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -62,114 +61,185 @@ export default function InboundShipmentsClient() {
     load();
   }, [load]);
 
+  const statItems = stats
+    ? [
+        { key: "awaiting", label: "Awaiting", value: stats.awaiting },
+        { key: "in_transit", label: "In transit", value: stats.in_transit },
+        {
+          key: "at_facility",
+          label: "At facility",
+          value: stats.at_facility,
+        },
+        { key: "ready", label: "Ready to deliver", value: stats.ready },
+        { key: "delivered", label: "Delivered", value: stats.delivered },
+      ]
+    : [];
+
   return (
-    <div className="max-w-[1400px] mx-auto px-3 sm:px-5 md:px-6 py-5 md:py-6 w-full">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] text-[var(--tx3)]/60 mb-1.5">B2B</p>
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6">
+      <header className="mb-10 flex flex-col gap-6 sm:mb-12 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--tx3)]/55">
+            B2B
+          </p>
           <h1 className="admin-page-hero text-[var(--tx)]">
             Inbound Shipments
           </h1>
-          <p className="text-sm text-[var(--tx3)] mt-2">Receive, inspect, store & deliver (RISSD)</p>
+          <p className="max-w-md text-sm leading-relaxed text-[var(--tx3)]/90">
+            Receive, inspect, store & deliver (RISSD)
+          </p>
         </div>
         <Link
           href="/admin/inbound-shipments/new"
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--gold)] text-[#1a1a1a] text-sm font-semibold hover:opacity-90"
+          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg border border-[#2C3E2D]/30 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#2C3E2D] transition-colors hover:bg-[#2C3E2D]/[0.06] dark:border-[var(--brd)] dark:text-[var(--tx2)] dark:hover:bg-[var(--hover)] sm:self-auto"
         >
-          <Plus size={18} weight="bold" aria-hidden />
-          New Inbound Shipment
+          New inbound shipment
+          <CaretRight size={14} weight="bold" aria-hidden className="opacity-80" />
         </Link>
-      </div>
+      </header>
 
       {repeatSenders.length > 0 && (
-        <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="flex-1 text-sm">
-            <span className="font-semibold text-[var(--tx)]">Repeat sender</span>
+        <aside className="mb-8 flex flex-col gap-3 rounded-2xl bg-[var(--org)]/[0.06] px-4 py-3.5 ring-1 ring-[var(--org)]/20 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <div className="text-sm text-[var(--tx2)]">
+            <p className="font-semibold text-[var(--tx)]">Repeat sender</p>
             {repeatSenders.map((r) => (
-              <span key={r.email} className="block text-[var(--tx3)] mt-0.5">
-                {r.business_name || r.email} has {r.count} shipments without a partner account. Consider creating a partner for volume pricing.
-              </span>
+              <p key={r.email} className="mt-1 text-[var(--tx3)]">
+                {r.business_name || r.email} has {r.count} shipments without a
+                partner account. Consider creating a partner for volume pricing.
+              </p>
             ))}
           </div>
           <Link
             href="/admin/partners"
-            className="inline-flex items-center gap-1 text-sm font-semibold text-amber-800 hover:underline shrink-0"
+            className="inline-flex shrink-0 items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#2C3E2D] hover:underline dark:text-[var(--tx2)]"
           >
-            Partners <ArrowRight size={16} aria-hidden />
+            Partners
+            <ArrowRight size={14} weight="bold" aria-hidden />
           </Link>
-        </div>
+        </aside>
       )}
 
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
-          {[
-            { key: "awaiting", label: "Awaiting", value: stats.awaiting },
-            { key: "in_transit", label: "In transit", value: stats.in_transit },
-            { key: "at_facility", label: "At facility", value: stats.at_facility },
-            { key: "ready", label: "Ready to deliver", value: stats.ready },
-            { key: "delivered", label: "Delivered", value: stats.delivered },
-          ].map(({ key, label, value }) => (
-            <div
-              key={key}
-              className="rounded-xl border border-[var(--brd)] bg-[var(--card)] px-4 py-3"
-            >
-              <div className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)]">{label}</div>
-              <div className="text-xl font-semibold text-[var(--tx)]">{value}</div>
-            </div>
-          ))}
-        </div>
+        <section
+          className="mb-10 overflow-hidden rounded-2xl bg-[var(--brd)]/[0.28] p-px shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:bg-[var(--brd)]/35 dark:shadow-none"
+          aria-label="Shipment status summary"
+        >
+          <dl className="grid grid-cols-2 gap-px sm:grid-cols-5">
+            {statItems.map(({ key, label, value }) => (
+              <div key={key} className="bg-[var(--card)] px-4 py-4 sm:px-5 sm:py-5">
+                <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/65">
+                  {label}
+                </dt>
+                <dd className="mt-1.5 font-heading text-2xl font-semibold tabular-nums tracking-tight text-[var(--tx)]">
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
       )}
 
-      <div className="rounded-xl border border-[var(--brd)] overflow-hidden bg-[var(--card)]">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      <section aria-label="Inbound shipments list">
+        <div className="overflow-x-auto rounded-2xl bg-[var(--card)] shadow-[0_1px_0_rgba(0,0,0,0.04)] ring-1 ring-[var(--brd)]/40 dark:shadow-none dark:ring-[var(--brd)]/50">
+          <table className="w-full min-w-[720px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-[var(--brd)] text-left text-[var(--tx3)] text-xs uppercase tracking-wide">
-                <th className="px-4 py-3 font-semibold">Reference</th>
-                <th className="px-4 py-3 font-semibold">Item</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Received</th>
-                <th className="px-4 py-3 font-semibold">Delivery</th>
-                <th className="px-4 py-3 font-semibold">Customer</th>
+              <tr className="border-b border-[var(--brd)]/50 text-left">
+                <th
+                  scope="col"
+                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
+                >
+                  Reference
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
+                >
+                  Item
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
+                >
+                  Status
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
+                >
+                  Received
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
+                >
+                  Delivery
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
+                >
+                  Customer
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-[var(--tx2)]">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-[var(--tx3)]">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-16 text-center text-[var(--tx3)]"
+                  >
                     Loading…
                   </td>
                 </tr>
               ) : shipments.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-[var(--tx3)]">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-16 text-center text-[15px] text-[var(--tx3)]/85"
+                  >
                     No inbound shipments yet.
                   </td>
                 </tr>
               ) : (
                 shipments.map((s) => (
-                  <tr key={s.id} className="border-b border-[var(--brd)]/60 hover:bg-[var(--bg2)]/50">
-                    <td className="px-4 py-3">
-                      <Link href={`/admin/inbound-shipments/${s.id}`} className="font-mono text-[var(--gold)] font-semibold hover:underline">
+                  <tr
+                    key={s.id}
+                    className="border-b border-[var(--brd)]/[0.35] transition-colors last:border-b-0 hover:bg-[var(--hover)]/80"
+                  >
+                    <td className="px-4 py-3.5">
+                      <Link
+                        href={`/admin/inbound-shipments/${s.id}`}
+                        className="font-mono text-[0.8125rem] font-semibold text-[#2C3E2D] underline-offset-2 hover:underline dark:text-[var(--tx2)]"
+                      >
                         {s.shipment_number}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-[var(--tx)]">{itemTitle(s.items)}</td>
-                    <td className="px-4 py-3">{INBOUND_SHIPMENT_STATUS_LABELS[s.status] || s.status}</td>
-                    <td className="px-4 py-3 text-[var(--tx3)]">
+                    <td className="px-4 py-3.5 text-[var(--tx)]">
+                      {itemTitle(s.items)}
+                    </td>
+                    <td className="px-4 py-3.5 text-[var(--tx2)]">
+                      {INBOUND_SHIPMENT_STATUS_LABELS[s.status] || s.status}
+                    </td>
+                    <td className="px-4 py-3.5 text-[var(--tx3)]">
                       {s.received_at
-                        ? new Date(s.received_at).toLocaleDateString("en-CA", { month: "short", day: "numeric" })
+                        ? new Date(s.received_at).toLocaleDateString("en-CA", {
+                            month: "short",
+                            day: "numeric",
+                          })
                         : "—"}
                     </td>
-                    <td className="px-4 py-3 text-[var(--tx3)]">
+                    <td className="px-4 py-3.5 text-[var(--tx3)]">
                       {s.delivery_scheduled_date
-                        ? new Date(s.delivery_scheduled_date + "T12:00:00").toLocaleDateString("en-CA", {
+                        ? new Date(
+                            s.delivery_scheduled_date + "T12:00:00",
+                          ).toLocaleDateString("en-CA", {
                             month: "short",
                             day: "numeric",
                           })
                         : "TBD"}
                     </td>
-                    <td className="px-4 py-3 text-[var(--tx3)]">
+                    <td className="px-4 py-3.5 text-[var(--tx3)]">
                       {s.customer_name?.trim()
                         ? s.customer_name
                         : s.organization_id
@@ -182,7 +252,7 @@ export default function InboundShipmentsClient() {
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

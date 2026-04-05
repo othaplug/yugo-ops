@@ -124,7 +124,7 @@ export default function PartnerVerticalRatesEditor({ organizationId }: { organiz
           type="button"
           onClick={save}
           disabled={saving || !selectedCode}
-          className="px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50 shrink-0"
+          className="px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50 shrink-0"
         >
           {saving ? "Saving…" : "Save overrides"}
         </button>

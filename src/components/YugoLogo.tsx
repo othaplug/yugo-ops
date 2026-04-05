@@ -45,7 +45,7 @@ function PlusMark({ size, color }: { size: number; color: string }) {
   );
 }
 
-/** Yugo wordmark. Optional `+` via `hidePlus={false}`. `variant="auto"` defaults to gold. */
+/** Yugo wordmark. Optional `+` via `hidePlus={false}`. `variant="auto"`: cream on dark admin, wine on light. */
 export default function YugoLogo({
   size = 18,
   className = "",
@@ -54,10 +54,14 @@ export default function YugoLogo({
   onLightBackground: _onLightBackground = false,
   hidePlus = true,
 }: YugoLogoProps) {
-  useContext(ThemeContext); // kept for potential future theme-aware overrides
-
+  const themeCtx = useContext(ThemeContext);
+  /* Dark admin: cream wordmark on wine canvas; light admin / no provider: wine wordmark on light */
   const resolvedVariant: Exclude<LogoVariant, "auto"> =
-    variant === "auto" ? "gold" : variant;
+    variant === "auto"
+      ? themeCtx?.theme === "dark"
+        ? "cream"
+        : "wine"
+      : variant;
 
   const src = LOGO_SRC[resolvedVariant];
 
@@ -117,9 +121,15 @@ export default function YugoLogo({
 }
 
 export function BetaBadge({ className = "" }: { className?: string }) {
+  const themeCtx = useContext(ThemeContext);
+  const wineChrome = themeCtx?.theme === "dark";
   return (
     <span
-      className={`text-[7px] font-semibold tracking-[1px] uppercase text-[var(--gold)] opacity-50 ${className}`}
+      className={`text-[7px] font-semibold tracking-[1px] uppercase ${
+        wineChrome
+          ? "text-[var(--btn-text-on-accent)]/58"
+          : "text-[var(--gold)]/50"
+      } ${className}`}
     >
       BETA
     </span>

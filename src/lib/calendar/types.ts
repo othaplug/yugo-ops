@@ -6,9 +6,9 @@ export type BlockType = JobType | "maintenance" | "training" | "break" | "blocke
 
 export type CalendarStatus = "scheduled" | "in_progress" | "completed" | "cancelled" | "rescheduled";
 
-/** Saturated fills for calendar pills — pair with dark text (`#0f172a`) for legibility (Google Calendar–style). */
+/** Saturated fills for calendar pills — move uses wine accent + light ink (see calendar-job-styles). */
 export const JOB_COLORS = {
-  move: "#FBBF24",
+  move: "#8B1A3A",
   delivery: "#38BDF8",
   project_phase: "#C084FC",
   project: "#A78BFA",

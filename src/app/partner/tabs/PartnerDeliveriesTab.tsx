@@ -53,19 +53,19 @@ interface Delivery {
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  draft: "bg-[var(--brd)] text-[var(--tx3)] border border-[var(--brd)]",
-  pending_approval: "bg-amber-500/10 text-amber-600 border border-amber-500/20",
-  scheduled: "bg-blue-500/10 text-blue-500",
-  confirmed: "bg-green-500/10 text-green-600",
-  approved: "bg-green-500/10 text-green-600",
-  dispatched: "bg-amber-500/10 text-amber-500",
-  "in-transit": "bg-amber-500/10 text-amber-600",
-  in_transit: "bg-amber-500/10 text-amber-600",
-  in_progress: "bg-amber-500/10 text-amber-600",
-  delivered: "bg-green-500/10 text-green-600",
-  completed: "bg-green-500/10 text-green-600",
-  pending: "bg-orange-500/10 text-orange-500",
-  cancelled: "bg-red-500/10 text-red-500",
+  draft: "text-[var(--tx3)]",
+  pending_approval: "text-amber-600",
+  scheduled: "text-blue-500",
+  confirmed: "text-green-600",
+  approved: "text-green-600",
+  dispatched: "text-amber-500",
+  "in-transit": "text-amber-600",
+  in_transit: "text-amber-600",
+  in_progress: "text-amber-600",
+  delivered: "text-green-600",
+  completed: "text-green-600",
+  pending: "text-orange-500",
+  cancelled: "text-red-500",
 };
 
 const STATUS_LABEL_OVERRIDE: Record<string, string> = {
@@ -241,7 +241,7 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
 
   const statusKey = (d.status || "").toLowerCase().replace(/ /g, "_");
   const statusLabel = STATUS_LABEL_OVERRIDE[statusKey] || toTitleCase(d.status || "");
-  const badgeClass = STATUS_BADGE[statusKey] || "bg-gray-50 text-gray-600";
+  const badgeClass = STATUS_BADGE[statusKey] || "text-[var(--tx3)]";
 
   const copyTrackingLink = async () => {
     try {
@@ -273,9 +273,9 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
             <h3 className="text-[16px] font-bold text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</h3>
             <span className="text-[11px] text-[var(--tx3)] font-mono flex-shrink-0">{d.delivery_number}</span>
             {d.booking_type === "day_rate" ? (
-              <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">Day Rate</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.04em] text-amber-700">Day Rate</span>
             ) : (
-              <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Delivery</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.04em] text-emerald-700">Delivery</span>
             )}
           </div>
           <p className="text-[13px] text-[var(--tx3)] mt-0.5 truncate">
@@ -287,7 +287,7 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
           </p>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
-          <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${badgeClass}`}>
+          <span className={`text-[10px] font-bold uppercase tracking-[0.04em] ${badgeClass}`}>
             {statusLabel}
           </span>
           {/* Copy tracking link */}

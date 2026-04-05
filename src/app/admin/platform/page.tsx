@@ -12,6 +12,10 @@ import {
   QUOTE_RESIDENTIAL_TIER_FEATURES_KEY,
   QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY,
 } from "@/lib/quotes/residential-tier-quote-display";
+import {
+  normalizeDisplayDateFormatPreset,
+  resolveStoredDateFormat,
+} from "@/lib/display-date-format";
 
 export default async function PlatformPage() {
   const supabase = await createClient();
@@ -32,13 +36,16 @@ export default async function PlatformPage() {
   const { data: reviewConfig } = await db
     .from("platform_config")
     .select("key, value")
-    .in("key", ["auto_review_requests", "google_review_url"]);
+    .in("key", ["auto_review_requests", "google_review_url", "display_date_locale", "display_date_format"]);
   const reviewConfigMap: Record<string, string> = {};
   for (const r of reviewConfig ?? []) reviewConfigMap[r.key] = r.value ?? "";
   const initialReviewConfig = {
     autoReviewRequests: reviewConfigMap.auto_review_requests === "true" || reviewConfigMap.auto_review_requests === "1",
     googleReviewUrl: reviewConfigMap.google_review_url || "https://g.page/r/CU67iDN6TgMIEB0/review/",
   };
+  const initialDisplayDateFormat = normalizeDisplayDateFormatPreset(
+    resolveStoredDateFormat(reviewConfigMap.display_date_format, reviewConfigMap.display_date_locale),
+  );
 
   let crewsResult = await db.from("crews").select("id, name, members, active, phone").order("name");
   if (crewsResult.error && String(crewsResult.error.message).includes("active")) {
@@ -87,13 +94,14 @@ export default async function PlatformPage() {
   return (
     <div className="w-full max-w-[min(100vw-1.25rem,1580px)] 2xl:max-w-[1700px] min-w-0 mx-auto px-3 sm:px-4 md:px-5 lg:px-6 py-6 md:py-8 animate-fade-up">
       <div className="mb-8">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Admin</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Admin</p>
         <h1 className="admin-page-hero text-[var(--tx)]">Platform Settings</h1>
       </div>
       <PlatformSettingsClient
         initialTeams={initialTeams}
         initialToggles={initialToggles}
         initialReviewConfig={initialReviewConfig}
+        initialDisplayDateFormat={initialDisplayDateFormat}
         initialQuoteResidentialDisplay={initialQuoteResidentialDisplay}
         currentUserId={user?.id}
         isSuperAdmin={isSuperAdmin}

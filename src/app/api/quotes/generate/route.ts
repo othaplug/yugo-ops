@@ -1209,7 +1209,7 @@ async function calcResidential(
   const loadedRateForEstateSchedule = crewLoadedHourlyRate(config);
   const ESTATE_SCHEDULE_TRUCK_LABELS: Record<string, string> = {
     sprinter: "Extended Sprinter van",
-    "16ft": "16ft climate-protected truck",
+    "16ft": "16ft fully equipped truck",
     "20ft": "20ft dedicated moving truck",
     "24ft": "24ft full-size moving truck",
     "26ft": "26ft maximum-capacity truck",
@@ -3451,7 +3451,7 @@ export async function POST(req: NextRequest) {
 
   const TRUCK_DISPLAY: Record<string, string> = {
     sprinter: "Extended Sprinter van",
-    "16ft": "16ft climate-protected truck",
+    "16ft": "16ft fully equipped truck",
     "20ft": "20ft dedicated moving truck",
     "24ft": "24ft full-size moving truck",
     "26ft": "26ft maximum-capacity truck",

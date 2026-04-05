@@ -158,7 +158,7 @@ export default function NotificationToggles() {
               onClick={() => masterToggle(ch)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
                 on
-                  ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+                  ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
                   : "border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)]"
               }`}
             >

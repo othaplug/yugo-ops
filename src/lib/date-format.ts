@@ -1,15 +1,20 @@
 import { getAppTimezone } from "@/lib/business-timezone";
+import {
+  formatAppDateWithPreset,
+  getDisplayDateFormatPresetForFormatters,
+  getIntlLocaleForTimeFromPreset,
+} from "@/lib/display-date-format";
 
 /**
  * Format dates consistently across the app (business timezone, default America/Toronto).
- * - Short month + day: "Feb 20", "Mar 15"
- * - If different year, append: "Feb 20, 2027"
- * - Never show ISO or raw values in the UI.
+ * Presentation follows `platform_config.display_date_format` (see `display-date-format.ts`).
  *
  * Date-only strings (YYYY-MM-DD) are parsed as calendar local dates, then formatted in app TZ.
  */
 
 const MONTH_NAMES = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+export { sameCalendarYearInAppTz } from "@/lib/display-date-format";
 
 export function parseDateOnly(value: string | null | undefined): Date | null {
   if (value == null || value === "") return null;
@@ -39,18 +44,48 @@ function toLocalDate(value: string | Date): Date {
   return parsed ?? new Date(value);
 }
 
+function hasTimePortion(options: Intl.DateTimeFormatOptions): boolean {
+  return (
+    options.hour !== undefined ||
+    options.minute !== undefined ||
+    options.second !== undefined
+  );
+}
+
+/**
+ * Platform display in app timezone using the configured date preset. When `options` include
+ * hour/minute/second, the date portion uses the preset and the time uses the preset’s Intl locale.
+ */
+export function formatPlatformDisplay(
+  value: string | Date | null | undefined,
+  options: Intl.DateTimeFormatOptions,
+  empty: string = "—",
+): string {
+  if (value == null || value === "") return empty;
+  const d = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(d.getTime())) return empty;
+  const tz = getAppTimezone();
+  const preset = getDisplayDateFormatPresetForFormatters();
+  const dateStr = formatAppDateWithPreset(d, tz, new Date(), preset);
+  if (!hasTimePortion(options)) return dateStr;
+  const loc = getIntlLocaleForTimeFromPreset(preset);
+  const timeStr = new Intl.DateTimeFormat(loc, {
+    timeZone: tz,
+    hour: options.hour,
+    minute: options.minute,
+    second: options.second,
+    hour12: options.hour12,
+    timeZoneName: options.timeZoneName,
+  }).format(d);
+  return `${dateStr}, ${timeStr}`;
+}
+
 export function formatMoveDate(value: string | Date | null | undefined): string {
   if (value == null || value === "") return "-";
   const d = toLocalDate(value);
   if (Number.isNaN(d.getTime())) return "-";
   const tz = getAppTimezone();
-  const now = new Date();
-  const yNow = new Intl.DateTimeFormat("en-US", { timeZone: tz, year: "numeric" }).format(now);
-  const yD = new Intl.DateTimeFormat("en-US", { timeZone: tz, year: "numeric" }).format(d);
-  const sameYear = yNow === yD;
-  return sameYear
-    ? d.toLocaleDateString("en-US", { timeZone: tz, month: "short", day: "numeric" })
-    : d.toLocaleDateString("en-US", { timeZone: tz, month: "short", day: "numeric", year: "numeric" });
+  return formatAppDateWithPreset(d, tz, new Date(), getDisplayDateFormatPresetForFormatters());
 }
 
 /** Admin tables: created/modified timestamps in app timezone (date + time). */
@@ -58,13 +93,10 @@ export function formatAdminCreatedAt(value: string | null | undefined): string {
   if (value == null || value === "") return "—";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "—";
-  const tz = getAppTimezone();
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: tz,
+  return formatPlatformDisplay(d, {
     month: "short",
     day: "numeric",
-    year: "numeric",
     hour: "numeric",
     minute: "2-digit",
-  }).format(d);
+  });
 }

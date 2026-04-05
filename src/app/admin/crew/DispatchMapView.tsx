@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { fetchIntelligentRoute, type ScoredRouteSummary } from "@/lib/routing/intelligent-directions";
+import { useTheme } from "../components/ThemeContext";
 
 const MAPBOX_TOKEN =
   process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
@@ -27,17 +28,33 @@ const MapboxMap = dynamic(
         markers,
         center,
         routeFeatures,
+        mapStyle,
+        mapStyleIsLight,
       }: {
         markers: { id: string; lat: number; lng: number; name: string }[];
         center: { lat: number; lng: number };
         routeFeatures: { id: string; coordinates: [number, number][] }[];
+        mapStyle: string;
+        mapStyleIsLight: boolean;
       }) {
+        const labelChrome = mapStyleIsLight
+          ? {
+              background: "rgba(255,255,255,0.94)",
+              border: "1px solid rgba(0,0,0,0.1)",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.12)",
+            }
+          : {
+              background: "rgba(8,10,16,0.84)",
+              border: "1px solid rgba(255,255,255,0.10)",
+              boxShadow: "0 2px 14px rgba(0,0,0,0.55)",
+            };
+        const labelText = mapStyleIsLight ? "#1a1816" : "#ffffff";
         return (
           <M
             mapboxAccessToken={MAPBOX_TOKEN}
             initialViewState={{ longitude: center.lng, latitude: center.lat, zoom: markers.length > 1 ? 12 : 14 }}
             style={{ width: "100%", height: "100%" }}
-            mapStyle="mapbox://styles/mapbox/dark-v11"
+            mapStyle={mapStyle}
           >
             {routeFeatures.map((rf) => (
               <Source
@@ -65,16 +82,17 @@ const MapboxMap = dynamic(
               <Marker key={m.id} longitude={m.lng} latitude={m.lat} anchor="center">
                 <div className="relative cursor-pointer hover:scale-110 transition-transform" title={m.name}>
                   <div
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full whitespace-nowrap pointer-events-none"
+                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 flex items-center gap-1.5 px-2.5 py-1 rounded-sm whitespace-nowrap pointer-events-none"
                     style={{
-                      background: "rgba(8,10,16,0.84)",
+                      ...labelChrome,
                       backdropFilter: "blur(10px)",
-                      border: "1px solid rgba(255,255,255,0.10)",
-                      boxShadow: "0 2px 14px rgba(0,0,0,0.55)",
                     }}
                   >
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: "#2C3E2D", boxShadow: "0 0 6px #2C3E2D" }} />
-                    <span className="text-[11px] font-bold tracking-[0.04em] text-white">
+                    <span
+                      className="text-[11px] font-bold tracking-[0.06em]"
+                      style={{ color: labelText }}
+                    >
                       {m.name.replace("Team ", "")}
                     </span>
                   </div>
@@ -84,7 +102,7 @@ const MapboxMap = dynamic(
                     viewBox="0 0 22 40"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
-                    style={{ filter: "drop-shadow(0 0 8px rgba(201,169,98,0.75)) drop-shadow(0 2px 6px rgba(0,0,0,0.75))" }}
+                    style={{ filter: "drop-shadow(0 0 8px rgba(255,255,255,0.55)) drop-shadow(0 2px 6px rgba(0,0,0,0.75))" }}
                   >
                     <rect x="1.5" y="4" width="19" height="32" rx="4" fill="white" fillOpacity="0.96" />
                     <rect x="3" y="5" width="16" height="8" rx="2.5" fill="#2C3E2D" fillOpacity="0.88" />
@@ -156,6 +174,12 @@ const EN_ROUTE_FOR_ROUTE = new Set([
 ]);
 
 export default function DispatchMapView() {
+  const { theme } = useTheme();
+  const mapStyle =
+    theme === "light"
+      ? "mapbox://styles/mapbox/light-v11"
+      : "mapbox://styles/mapbox/dark-v11";
+  const mapStyleIsLight = theme === "light";
   const [sessions, setSessions] = useState<Session[]>([]);
   const [markers, setMarkers] = useState<Marker[]>([]);
   const [routeFeatures, setRouteFeatures] = useState<{ id: string; coordinates: [number, number][] }[]>([]);
@@ -302,7 +326,7 @@ export default function DispatchMapView() {
 
   if (loading) {
     return (
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-8 text-center text-[var(--tx3)]">
+      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-sm p-8 text-center text-[var(--tx2)]">
         Loading...
       </div>
     );
@@ -314,14 +338,16 @@ export default function DispatchMapView() {
         <h2 className="admin-section-h2">Active Operations</h2>
         <div className="flex gap-2">
           <button
+            type="button"
             onClick={() => setView("map")}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold ${view === "map" ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"}`}
+            className={`px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-[0.06em] ${view === "map" ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"}`}
           >
             Map
           </button>
           <button
+            type="button"
             onClick={() => setView("list")}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold ${view === "list" ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"}`}
+            className={`px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-[0.06em] ${view === "list" ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx2)]"}`}
           >
             List
           </button>
@@ -330,28 +356,35 @@ export default function DispatchMapView() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {view === "map" && (
-          <div className="lg:col-span-2 rounded-xl border border-[var(--brd)] overflow-hidden bg-[var(--card)]" style={{ minHeight: 400 }}>
+          <div className="lg:col-span-2 rounded-sm border border-[var(--brd)] overflow-hidden bg-[var(--card)]" style={{ minHeight: 400 }}>
             {HAS_MAPBOX ? (
               <div style={{ height: 400 }}>
-                <MapboxMap markers={markers} center={center} routeFeatures={routeFeatures} />
+                <MapboxMap
+                  key={mapStyle}
+                  markers={markers}
+                  center={center}
+                  routeFeatures={routeFeatures}
+                  mapStyle={mapStyle}
+                  mapStyleIsLight={mapStyleIsLight}
+                />
               </div>
             ) : (
-              <div className="h-[400px] flex items-center justify-center text-[var(--tx3)] text-[12px]">
+              <div className="h-[400px] flex items-center justify-center text-[var(--tx2)] text-[12px]">
                 Add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN for map
               </div>
             )}
           </div>
         )}
         <div className={view === "map" ? "" : "lg:col-span-3"}>
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-[var(--brd)]">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]">
+              <div className="text-[10px] font-bold uppercase tracking-[0.06em] text-[var(--tx2)]">
                 Active Jobs ({sessions.length})
               </div>
             </div>
             <div className="max-h-[400px] overflow-y-auto">
               {sessions.length === 0 ? (
-                <div className="px-4 py-8 text-center text-[12px] text-[var(--tx3)]">
+                <div className="px-4 py-8 text-center text-[12px] text-[var(--tx2)]">
                   No active tracking sessions
                 </div>
               ) : (
@@ -362,7 +395,7 @@ export default function DispatchMapView() {
                     className="block px-4 py-3 border-b border-[var(--brd)] last:border-0 hover:bg-[var(--bg)] transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[var(--gold)] shrink-0" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-[var(--admin-primary-fill)] shrink-0" />
                       <span className="text-[12px] font-semibold text-[var(--tx)] truncate">
                         {s.teamName}
                       </span>
@@ -370,11 +403,11 @@ export default function DispatchMapView() {
                     <div className="text-[11px] text-[var(--tx2)] mt-0.5 truncate">
                       {s.jobName} · {s.jobId}
                     </div>
-                    <div className="text-[10px] text-[var(--tx3)] mt-0.5">
+                    <div className="text-[10px] text-[var(--tx2)] mt-0.5">
                       {CREW_STATUS_TO_LABEL[s.status] || s.status}
                     </div>
                     {s.toAddress && (
-                      <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">
+                      <div className="text-[10px] text-[var(--tx2)] mt-0.5 truncate">
                         At: {s.toAddress}
                       </div>
                     )}
@@ -382,7 +415,7 @@ export default function DispatchMapView() {
                       <div className="text-[10px] text-[var(--gold)] mt-0.5 font-semibold">
                         ETA ~{Math.max(1, Math.round(s.navEtaSeconds / 60))} min
                         {s.navDistanceRemainingM != null && s.navDistanceRemainingM > 0 && (
-                          <span className="text-[var(--tx3)] font-normal">
+                          <span className="text-[var(--tx2)] font-normal">
                             {" "}
                             · {s.navDistanceRemainingM >= 1000 ? `${(s.navDistanceRemainingM / 1000).toFixed(1)} km` : `${Math.round(s.navDistanceRemainingM)} m`}
                           </span>
@@ -397,7 +430,7 @@ export default function DispatchMapView() {
                       </ul>
                     ) : null}
                     {routeInsights[s.id]?.summaries?.length ? (
-                      <div className="text-[9px] text-[var(--tx3)] mt-1.5 leading-snug border-t border-[var(--brd)] pt-1.5">
+                      <div className="text-[9px] text-[var(--tx2)] mt-1.5 leading-snug border-t border-[var(--brd)] pt-1.5">
                         {(() => {
                           const sums = routeInsights[s.id].summaries;
                           const best = sums[0];
@@ -431,7 +464,7 @@ export default function DispatchMapView() {
                         })()}
                       </div>
                     ) : null}
-                    <div className="text-[9px] text-[var(--tx3)] mt-0.5">
+                    <div className="text-[9px] text-[var(--tx2)] mt-0.5">
                       Last update: {formatRelative(s.updatedAt)}
                     </div>
                     <div className="text-[10px] text-[var(--gold)] mt-1">View Job Detail →</div>

@@ -205,8 +205,8 @@ export default function SearchBox() {
       ref={ref}
       className="relative w-full min-w-0 max-w-[200px] sm:max-w-[240px] md:max-w-[280px]"
     >
-      <div className="flex h-9 w-full min-w-0 items-center gap-1.5 rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-2 sm:gap-2 sm:px-3 transition-colors duration-200">
-        <span className="inline-flex shrink-0 items-center justify-center text-[var(--tx3)]">
+      <div className="flex h-9 w-full min-w-0 items-center gap-1.5 rounded-[2px] border border-[var(--brd)] bg-[var(--card)] px-2 sm:gap-2 sm:px-3 transition-colors duration-200 dark:bg-[rgba(139,26,58,0.12)] dark:border-[rgba(139,26,58,0.35)]">
+        <span className="inline-flex shrink-0 items-center justify-center text-[var(--tx2)]">
           <Icon name="search" className="h-[14px] w-[14px]" />
         </span>
         <input
@@ -217,7 +217,7 @@ export default function SearchBox() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.length >= 2 && setOpen(true)}
-          className="min-h-0 flex-1 border-none bg-transparent py-0 font-sans text-[12px] leading-none text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none"
+          className="min-h-0 flex-1 border-none bg-transparent py-0 font-sans text-[12px] leading-none text-[var(--tx)] placeholder:text-[var(--tx3)] placeholder:opacity-80 outline-none"
         />
         {query.length > 0 ? (
           <button
@@ -237,14 +237,14 @@ export default function SearchBox() {
             />
           </button>
         ) : (
-          <kbd className="hidden h-5 shrink-0 select-none items-center justify-center rounded border border-[var(--brd)] bg-transparent px-1.5 font-mono text-[10px] leading-none text-[var(--tx3)] sm:inline-flex">
+          <kbd className="hidden h-5 shrink-0 select-none items-center justify-center rounded-[2px] border border-[var(--brd)] bg-transparent px-1.5 font-mono text-[10px] leading-none text-[var(--tx2)] sm:inline-flex">
             ⌘K
           </kbd>
         )}
       </div>
       {open && results.length > 0 && (
-        <div className="absolute left-0 w-full sm:w-[440px] top-full mt-1 max-h-[420px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-[14px] shadow-xl z-50 animate-fade-up">
-          <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] border-b border-[var(--brd)]">
+        <div className="absolute left-0 w-full sm:w-[440px] top-full mt-1 max-h-[420px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-[2px] z-50 animate-fade-up dark:shadow-none">
+          <div className="px-3 py-2 admin-eyebrow text-[var(--tx2)] border-b border-[var(--brd)]">
             {results.length} result{results.length !== 1 ? "s" : ""}
           </div>
           {results.map((r, idx) => (
@@ -255,7 +255,7 @@ export default function SearchBox() {
                 setOpen(false);
                 setQuery("");
               }}
-              className="flex items-center gap-2.5 px-3 py-2.5 border-b border-[var(--brd)]/40 last:border-0 hover:bg-[var(--gdim)] cursor-pointer transition-colors duration-150"
+              className="flex items-center gap-2.5 px-3 py-2.5 border-b border-[rgba(249,237,228,0.08)] last:border-0 hover:bg-[rgba(139,26,58,0.1)] cursor-pointer transition-colors duration-150"
             >
               <Icon
                 name={TYPE_ICONS[r.type] || "search"}
@@ -267,13 +267,13 @@ export default function SearchBox() {
                   {r.name}
                 </div>
                 {r.sub && (
-                  <div className="text-[9px] text-[var(--tx3)] truncate">
+                  <div className="text-[9px] text-[var(--tx2)] truncate">
                     {r.sub}
                   </div>
                 )}
               </div>
               <span
-                className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full shrink-0"
+                className="text-[9px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 rounded-[2px] shrink-0 border border-[var(--brd)]/50"
                 style={{
                   color: TYPE_COLORS[r.type] || "var(--tx3)",
                   backgroundColor: `${TYPE_COLORS[r.type]}18` || "var(--gdim)",
@@ -286,8 +286,8 @@ export default function SearchBox() {
         </div>
       )}
       {open && query.length >= 2 && results.length === 0 && (
-        <div className="absolute left-0 w-full sm:w-[440px] top-full mt-1 bg-[var(--card)] border border-[var(--brd)] rounded-[14px] shadow-xl z-50 animate-fade-up px-4 py-6 text-center">
-          <div className="text-[12px] text-[var(--tx3)]">
+        <div className="absolute left-0 w-full sm:w-[440px] top-full mt-1 bg-[var(--card)] border border-[var(--brd)] rounded-[2px] z-50 animate-fade-up px-4 py-6 text-center dark:shadow-none">
+          <div className="text-[12px] text-[var(--tx2)]">
             No results for &ldquo;{query}&rdquo;
           </div>
         </div>

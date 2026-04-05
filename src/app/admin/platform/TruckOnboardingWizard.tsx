@@ -311,7 +311,7 @@ export default function TruckOnboardingWizard({ open, onClose, onFinished }: Tru
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold transition-all duration-200 ${
                       step === s.id
-                        ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm shadow-[var(--gold)]/30 scale-110"
+                        ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] shadow-sm shadow-[var(--gold)]/30 scale-110"
                         : step > s.id
                           ? "bg-[var(--grn)]/15 text-[var(--grn)] border border-[var(--grn)]/30"
                           : "bg-[var(--brd)]/60 text-[var(--tx3)] border border-[var(--brd)]"
@@ -370,7 +370,7 @@ export default function TruckOnboardingWizard({ open, onClose, onFinished }: Tru
                 type="button"
                 disabled={loading}
                 onClick={submitVehicle}
-                className="w-full py-3 rounded-xl font-bold text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:opacity-95 disabled:opacity-50"
+                className="w-full py-3 rounded-xl font-bold text-[var(--btn-text-on-accent)] bg-[var(--admin-primary-fill)] hover:opacity-95 disabled:opacity-50"
               >
                 {loading ? "Saving…" : "Create vehicle & continue"}
               </button>
@@ -419,7 +419,7 @@ export default function TruckOnboardingWizard({ open, onClose, onFinished }: Tru
                   type="button"
                   disabled={loading}
                   onClick={submitEquipment}
-                  className="flex-1 py-3 rounded-xl font-bold text-[var(--btn-text-on-accent)] bg-[var(--gold)] disabled:opacity-50"
+                  className="flex-1 py-3 rounded-xl font-bold text-[var(--btn-text-on-accent)] bg-[var(--admin-primary-fill)] disabled:opacity-50"
                 >
                   {loading ? "Saving…" : "Save equipment & continue"}
                 </button>
@@ -451,7 +451,7 @@ export default function TruckOnboardingWizard({ open, onClose, onFinished }: Tru
                   type="button"
                   disabled={loading || !teamId}
                   onClick={submitTeam}
-                  className="flex-1 py-3 rounded-xl font-bold text-[var(--btn-text-on-accent)] bg-[var(--gold)] disabled:opacity-50"
+                  className="flex-1 py-3 rounded-xl font-bold text-[var(--btn-text-on-accent)] bg-[var(--admin-primary-fill)] disabled:opacity-50"
                 >
                   {loading ? "Saving…" : "Link team & continue"}
                 </button>
@@ -487,7 +487,7 @@ export default function TruckOnboardingWizard({ open, onClose, onFinished }: Tru
                   type="button"
                   disabled={loading}
                   onClick={submitCode}
-                  className="flex-1 py-3 rounded-xl font-bold text-[var(--btn-text-on-accent)] bg-[var(--gold)] disabled:opacity-50"
+                  className="flex-1 py-3 rounded-xl font-bold text-[var(--btn-text-on-accent)] bg-[var(--admin-primary-fill)] disabled:opacity-50"
                 >
                   {loading ? "Creating…" : "Generate setup code"}
                 </button>
@@ -516,7 +516,7 @@ export default function TruckOnboardingWizard({ open, onClose, onFinished }: Tru
               <button
                 type="button"
                 onClick={handleClose}
-                className="w-full py-3 rounded-xl font-bold text-[var(--btn-text-on-accent)] bg-[var(--gold)]"
+                className="w-full py-3 rounded-xl font-bold text-[var(--btn-text-on-accent)] bg-[var(--admin-primary-fill)]"
               >
                 Close
               </button>

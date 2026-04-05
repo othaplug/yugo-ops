@@ -64,9 +64,9 @@ export default function LoginHistoryPanel() {
               <div className="text-[var(--tx3)]">{entry.location || "-"}</div>
               <div className="text-right">
                 {entry.status === "success" ? (
-                  <span className="text-[9px] font-semibold px-2 py-0.5 rounded bg-[rgba(45,159,90,0.12)] text-[var(--grn)]">Success</span>
+                  <span className="dt-badge text-[var(--grn)]">Success</span>
                 ) : (
-                  <span className="text-[9px] font-semibold px-2 py-0.5 rounded bg-red-500/12 text-[var(--red)]">Failed</span>
+                  <span className="dt-badge text-[var(--red)]">Failed</span>
                 )}
               </div>
             </div>

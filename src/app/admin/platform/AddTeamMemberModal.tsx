@@ -99,7 +99,7 @@ export default function AddTeamMemberModal({ open, onClose, teams, onTeamsChange
                 onClick={() => setSelectedMember(selectedMember === m ? null : m)}
                 className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
                   selectedMember === m
-                    ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+                    ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
                     : "bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]"
                 }`}
               >
@@ -132,7 +132,7 @@ export default function AddTeamMemberModal({ open, onClose, teams, onTeamsChange
           <button
             type="submit"
             disabled={!selectedMember || !selectedTeamId || saving}
-            className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+            className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
           >
             {saving ? "Adding…" : "Add to Team"}
           </button>

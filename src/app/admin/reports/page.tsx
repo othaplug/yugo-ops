@@ -222,7 +222,7 @@ export default async function ReportsPage({
 
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Operations</p>
           <h1 className="admin-page-hero text-[var(--tx)]">Reports</h1>
         </div>
       </div>

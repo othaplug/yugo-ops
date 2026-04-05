@@ -60,16 +60,16 @@ interface Delivery {
 }
 
 const DELIVERY_STATUS_STYLE: Record<string, string> = {
-  pending: "text-[var(--gold)] bg-[var(--gdim)]",
-  pending_approval: "text-amber-400 bg-amber-500/10",
-  scheduled: "text-[#3B82F6] bg-[rgba(59,130,246,0.1)]",
-  confirmed: "text-[#3B82F6] bg-[rgba(59,130,246,0.1)]",
-  dispatched: "text-[var(--org)] bg-[rgba(212,138,41,0.1)]",
-  in_transit: "text-[var(--org)] bg-[rgba(212,138,41,0.1)]",
-  "in-transit": "text-[var(--org)] bg-[rgba(212,138,41,0.1)]",
-  delivered: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
-  completed: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
-  cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.1)]",
+  pending: "text-[var(--gold)]",
+  pending_approval: "text-amber-400",
+  scheduled: "text-[#3B82F6]",
+  confirmed: "text-[#3B82F6]",
+  dispatched: "text-[var(--org)]",
+  in_transit: "text-[var(--org)]",
+  "in-transit": "text-[var(--org)]",
+  delivered: "text-[var(--grn)]",
+  completed: "text-[var(--grn)]",
+  cancelled: "text-[var(--red)]",
 };
 
 function deliveryDetailsLabel(d: Delivery): string {
@@ -84,7 +84,7 @@ function deliveryDetailsLabel(d: Delivery): string {
 const deliveryColumns: ColumnDef<Delivery>[] = [
   {
     id: "date",
-    label: "Date",
+    label: "Service date",
     accessor: (d) => d.scheduled_date,
     render: (d) => (
       <div className="tabular-nums">
@@ -101,7 +101,7 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
     label: "Create date",
     accessor: (d) => d.created_at || "",
     render: (d) => (
-      <span className="text-[11px] text-[var(--tx2)] tabular-nums whitespace-nowrap">
+      <span className="text-[12px] font-normal text-[var(--tx2)] tabular-nums whitespace-nowrap">
         {d.created_at ? formatAdminCreatedAt(d.created_at) : "—"}
       </span>
     ),
@@ -121,7 +121,11 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
     id: "category",
     label: "Category",
     accessor: (d) => d.category || "Delivery",
-    render: (d) => <span className="text-[var(--tx2)]">{toTitleCase(d.category || "Delivery")}</span>,
+    render: (d) => (
+      <span className="dt-badge tracking-[0.04em] text-[var(--tx2)]">
+        {toTitleCase((d.category || "delivery").replace(/_/g, " "))}
+      </span>
+    ),
     sortable: true,
     searchable: true,
   },
@@ -154,14 +158,12 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
       const prepaid =
         d.booking_type === "one_off" && !d.organization_id && !!d.payment_received_at;
       return (
-        <span className="inline-flex flex-wrap items-center gap-1">
-          <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight ${style}`}>
-            {toTitleCase(d.status || "")}
+        <span className="inline-flex flex-wrap items-center gap-2">
+          <span className={`dt-badge tracking-[0.04em] ${style}`}>
+            {toTitleCase((d.status || "").replace(/_/g, " ").replace(/-/g, " "))}
           </span>
           {prepaid ? (
-            <span className="inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight text-emerald-700 bg-emerald-500/12 border border-emerald-500/20">
-              Paid
-            </span>
+            <span className="dt-badge tracking-[0.04em] text-emerald-600">Paid</span>
           ) : null}
         </span>
       );
@@ -304,7 +306,7 @@ export default function AllDeliveriesView({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">B2B Operations</p>
           <h1 className="admin-page-hero text-[var(--tx)]">All Deliveries</h1>
         </div>
         <div className="relative" ref={createDropRef}>
@@ -348,10 +350,10 @@ export default function AllDeliveriesView({
               </div>
               <Bell size={14} color="#6B8CFF" className="shrink-0 opacity-80" />
               <span className="text-[12px] font-semibold" style={{ color: "#A8BFFF" }}>
-                <span className="font-bold" style={{ color: "#FFFFFF" }}>{pendingApproval.length}</span>
+                <span className="font-bold" style={{ color: "#F9EDE4" }}>{pendingApproval.length}</span>
                 {" "}partner request{pendingApproval.length > 1 ? "s" : ""}
                 {pendingPartnerNames.length > 0 && (
-                  <> from <span style={{ color: "#FFFFFF" }}>{pendingPartnerNames.join(", ")}</span></>
+                  <> from <span style={{ color: "#F9EDE4" }}>{pendingPartnerNames.join(", ")}</span></>
                 )}
                 {" "}awaiting approval
               </span>
@@ -359,7 +361,7 @@ export default function AllDeliveriesView({
             <button
               type="button"
               onClick={() => setStatusFilter("pending_approval")}
-              className="shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-full transition-all hover:opacity-90 active:scale-95"
+              className="shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-md transition-all hover:opacity-90 active:scale-95"
               style={{ backgroundColor: "#6B8CFF", color: "#0D1B3E" }}
             >
               Review
@@ -375,10 +377,10 @@ export default function AllDeliveriesView({
           <button
             key={t.key}
             onClick={() => setPartnerType(t.key)}
-            className={`px-3 py-1.5 rounded-full text-[10px] font-semibold transition-colors ${
+            className={`px-3 py-1.5 rounded-md text-[10px] font-semibold transition-colors border ${
               partnerType === t.key
-                ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
-                : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--card)]/50 border border-[var(--brd)]/50"
+                ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--card)]/50 border-[var(--brd)]/50"
             }`}
           >
             {t.label}
@@ -395,7 +397,7 @@ export default function AllDeliveriesView({
             className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium text-[var(--tx2)] border border-[var(--brd)]/50"
           >
             Filters
-            {activeFilterCount > 0 && <span className="min-w-[16px] h-[16px] rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[9px] font-bold flex items-center justify-center">{activeFilterCount}</span>}
+            {activeFilterCount > 0 && <span className="dt-badge tracking-[0.04em] text-[var(--admin-primary-fill)] tabular-nums">{activeFilterCount}</span>}
           </button>
           <div className="hidden md:flex items-center gap-3 flex-1">
             <select
@@ -417,7 +419,7 @@ export default function AllDeliveriesView({
       {filterOpen && (
         <div className="md:hidden border-t border-[var(--brd)]/30 pt-4 pb-4 space-y-3 mb-5">
           <div className="flex justify-between items-center">
-            <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Filters</span>
+            <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Filters</span>
             <button type="button" onClick={() => setFilterOpen(false)} className="text-[var(--gold)] text-[11px] font-medium">Done</button>
           </div>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5">

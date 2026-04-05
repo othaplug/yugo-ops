@@ -39,7 +39,7 @@ export default function SectionError({ error, reset, section }: SectionErrorProp
         <div className="flex gap-3 justify-center">
           <button
             onClick={reset}
-            className="px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors touch-manipulation"
+            className="px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors touch-manipulation"
           >
             Try again
           </button>

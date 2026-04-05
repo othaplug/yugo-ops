@@ -151,7 +151,7 @@ const DispatchMapInner = dynamic(
                   >
                     <div
                       className={`w-8 h-8 rounded flex items-center justify-center text-[10px] font-bold ${
-                        isSelected ? "bg-[var(--gold)] text-black" : j.type === "move" ? "bg-[#3B82F6] text-white" : "bg-[var(--grn)] text-white"
+                        isSelected ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : j.type === "move" ? "bg-[#3B82F6] text-white" : "bg-[var(--grn)] text-white"
                       }`}
                     >
                       {j.type === "move" ? "M" : "D"}

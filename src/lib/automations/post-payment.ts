@@ -264,7 +264,7 @@ export async function runPostPaymentActions(
 
         const TRUCK_DISPLAY: Record<string, string> = {
           sprinter: "Extended Sprinter Van",
-          "16ft": "16ft Climate-Protected Truck",
+          "16ft": "16ft Fully Equipped Truck",
           "20ft": "20ft Dedicated Moving Truck",
           "24ft": "24ft Full-Size Moving Truck",
           "26ft": "26ft Maximum-Capacity Truck",

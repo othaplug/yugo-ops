@@ -41,14 +41,27 @@ export default function ClientsPageClient({
   moveClientData,
 }: {
   clients: Client[];
-  moveClientData: Map<string, { move_type: string; scheduled_date: string | null; status: string; estimate: number }>;
+  moveClientData: Map<
+    string,
+    {
+      move_type: string;
+      scheduled_date: string | null;
+      status: string;
+      estimate: number;
+    }
+  >;
 }) {
   const [statusFilter, setStatusFilter] = useState("");
   const [balanceFilter, setBalanceFilter] = useState("");
 
   const router = useRouter();
 
-  type MoveClientRow = Client & { move_type: string; move_date: string | null; move_status: string; estimate: number };
+  type MoveClientRow = Client & {
+    move_type: string;
+    move_date: string | null;
+    move_status: string;
+    estimate: number;
+  };
 
   const filteredClients = useMemo((): MoveClientRow[] => {
     let list: MoveClientRow[] = initialClients.map((c) => {
@@ -83,26 +96,39 @@ export default function ClientsPageClient({
       ),
     },
     {
-      id: "name", label: "Client",
+      id: "name",
+      label: "Client",
       accessor: (c) => c.name || "",
       render: (c) => {
         const s = (c.move_status || "").toLowerCase();
         const isActive = ["confirmed", "scheduled", "in_progress"].includes(s);
         return (
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold text-[var(--tx)]">{c.name}</span>
-            {isActive && <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>}
+            <span className="text-[11px] font-semibold text-[var(--tx)]">
+              {c.name}
+            </span>
+            {isActive && (
+              <span className="dt-badge text-[var(--grn)]">
+                Active
+              </span>
+            )}
           </div>
         );
       },
     },
     {
-      id: "move_type", label: "Type",
+      id: "move_type",
+      label: "Type",
       accessor: (c) => c.move_type,
-      render: (c) => <span className="text-[11px] uppercase text-[var(--tx2)]">{c.move_type === "office" ? "Commercial" : "Residential"}</span>,
+      render: (c) => (
+        <span className="text-[11px] uppercase text-[var(--tx2)]">
+          {c.move_type === "office" ? "Commercial" : "Residential"}
+        </span>
+      ),
     },
     {
-      id: "contact", label: "Contact",
+      id: "contact",
+      label: "Contact",
       accessor: (c) => c.contact_name || c.email || "",
       render: (c) => (
         <div>
@@ -112,29 +138,42 @@ export default function ClientsPageClient({
       ),
     },
     {
-      id: "move_date", label: "Move Date",
+      id: "move_date",
+      label: "Move Date",
       accessor: (c) => c.move_date || "",
-      render: (c) => <span className="text-[11px] text-[var(--tx2)]">{c.move_date ? formatMoveDate(c.move_date) : "-"}</span>,
+      render: (c) => (
+        <span className="text-[11px] text-[var(--tx2)]">
+          {c.move_date ? formatMoveDate(c.move_date) : "-"}
+        </span>
+      ),
     },
     {
-      id: "status", label: "Status",
+      id: "status",
+      label: "Status",
       accessor: (c) => c.move_status || "",
       render: (c) => (
-        <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold ${
-          c.move_status === "completed" ? "bg-[var(--grdim)] text-[var(--grn)]" :
-          c.move_status === "cancelled" ? "bg-[var(--rdim)] text-[var(--red)]" :
-          "bg-[var(--gdim)] text-[var(--gold)]"
-        }`}>
+        <span
+          className={`dt-badge ${
+            c.move_status === "completed"
+              ? "text-[var(--grn)]"
+              : c.move_status === "cancelled"
+                ? "text-[var(--red)]"
+                : "text-[var(--gold)]"
+          }`}
+        >
           {(c.move_status || "-").replace("_", " ")}
         </span>
       ),
     },
     {
-      id: "owing", label: "Balance",
+      id: "owing",
+      label: "Balance",
       accessor: (c) => c.outstanding_balance ?? 0,
       render: (c) => (
         <span className="text-[11px] text-[var(--tx)]">
-          {(c.outstanding_balance ?? 0) > 0 ? formatCurrency(c.outstanding_balance) : "-"}
+          {(c.outstanding_balance ?? 0) > 0
+            ? formatCurrency(c.outstanding_balance)
+            : "-"}
         </span>
       ),
       align: "right",
@@ -147,29 +186,65 @@ export default function ClientsPageClient({
     setBalanceFilter("");
   };
 
-  const activeClients = filteredClients.filter((c) => ["confirmed","scheduled","in_progress"].includes(c.move_status)).length;
-  const withBalance = filteredClients.filter((c) => (c.outstanding_balance ?? 0) > 0).length;
+  const activeClients = filteredClients.filter((c) =>
+    ["confirmed", "scheduled", "in_progress"].includes(c.move_status),
+  ).length;
+  const withBalance = filteredClients.filter(
+    (c) => (c.outstanding_balance ?? 0) > 0,
+  ).length;
 
   return (
     <div className="max-w-[1200px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
-      <div className="mb-6"><BackButton label="Back" /></div>
+      <div className="mb-6">
+        <BackButton label="Back" />
+      </div>
 
       <div className="flex items-center justify-between gap-3 mb-6">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">CRM</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">
+            CRM
+          </p>
           <h1 className="admin-page-hero text-[var(--tx)]">Contacts</h1>
         </div>
         <div className="flex gap-1.5 shrink-0">
-          <Link href="/admin/clients/new" className="admin-btn admin-btn-primary">+ Add Client</Link>
-          <Link href="/admin/partners" className="admin-btn admin-btn-ghost hidden sm:inline-flex">Partners</Link>
+          <Link
+            href="/admin/clients/new"
+            className="admin-btn admin-btn-primary"
+          >
+            + Add Client
+          </Link>
+          <Link
+            href="/admin/partners"
+            className="admin-btn admin-btn-ghost hidden sm:inline-flex"
+          >
+            Partners
+          </Link>
         </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
-        <KpiCard label="Total Clients" value={String(initialClients.length)} sub="all time" />
-        <KpiCard label="Active" value={String(activeClients)} sub="move in progress" accent={activeClients > 0} />
-        <KpiCard label="Filtered" value={String(filteredClients.length)} sub="current view" />
-        <KpiCard label="With Balance" value={String(withBalance)} sub="outstanding" warn={withBalance > 0} />
+        <KpiCard
+          label="Total Clients"
+          value={String(initialClients.length)}
+          sub="all time"
+        />
+        <KpiCard
+          label="Active"
+          value={String(activeClients)}
+          sub="move in progress"
+          accent={activeClients > 0}
+        />
+        <KpiCard
+          label="Filtered"
+          value={String(filteredClients.length)}
+          sub="current view"
+        />
+        <KpiCard
+          label="With Balance"
+          value={String(withBalance)}
+          sub="outstanding"
+          warn={withBalance > 0}
+        />
       </div>
 
       <SectionDivider label="Client List" />
@@ -177,8 +252,20 @@ export default function ClientsPageClient({
       <div className="mb-4">
         <FilterBar
           filters={[
-            { key: "status", label: "Status", value: statusFilter, options: MOVE_STATUS_OPTIONS, onChange: setStatusFilter },
-            { key: "balance", label: "Balance", value: balanceFilter, options: BALANCE_OPTIONS, onChange: setBalanceFilter },
+            {
+              key: "status",
+              label: "Status",
+              value: statusFilter,
+              options: MOVE_STATUS_OPTIONS,
+              onChange: setStatusFilter,
+            },
+            {
+              key: "balance",
+              label: "Balance",
+              value: balanceFilter,
+              options: BALANCE_OPTIONS,
+              onChange: setBalanceFilter,
+            },
           ]}
           hasActiveFilters={hasActiveFilters}
           onClear={clearFilters}

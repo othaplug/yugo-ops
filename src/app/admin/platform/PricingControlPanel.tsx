@@ -37,10 +37,10 @@ function currency(n: number | string) {
 }
 
 const TIER_BADGE: Record<string, string> = {
-  A: "bg-[#2C3E2D]/15 text-[#2C3E2D] border-[#2C3E2D]/30",
-  B: "bg-[#2D6A4F]/15 text-[#2D6A4F] border-[#2D6A4F]/30",
-  C: "bg-[var(--tx3)]/10 text-[var(--tx3)] border-[var(--tx3)]/20",
-  D: "bg-[var(--tx3)]/5 text-[var(--tx3)]/60 border-[var(--tx3)]/10",
+  A: "text-[#2C3E2D]",
+  B: "text-[#2D6A4F]",
+  C: "text-[var(--tx3)]",
+  D: "text-[var(--tx3)]/82",
 };
 
 /* ────────── API helpers ────────── */
@@ -147,7 +147,7 @@ function Accordion({ title, subtitle, children, defaultOpen = false }: {
     <div
       className={`rounded-2xl border transition-all duration-200 ${
         open
-          ? "border-[var(--gold)]/40 bg-[var(--card)] shadow-[0_0_0_1px_rgba(201,169,98,0.08),0_4px_24px_rgba(0,0,0,0.18)]"
+          ? "border-[var(--gold)]/40 bg-[var(--card)] shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_4px_24px_rgba(0,0,0,0.18)]"
           : "border-[var(--brd)] bg-[var(--card)] hover:border-[var(--gold)]/20 hover:shadow-md"
       }`}
     >
@@ -160,7 +160,7 @@ function Accordion({ title, subtitle, children, defaultOpen = false }: {
           {/* Gold accent bar */}
           <div
             className={`w-1 h-8 rounded-full shrink-0 transition-all duration-200 ${
-              open ? "bg-[var(--gold)]" : "bg-[var(--brd)]"
+              open ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"
             }`}
           />
           <div>
@@ -286,7 +286,7 @@ function SaveBar({
         type="button"
         disabled={saving}
         onClick={() => void runSave()}
-        className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors disabled:opacity-60 disabled:cursor-wait"
+        className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors disabled:opacity-60 disabled:cursor-wait"
       >
         {saving ? "Saving…" : "Save"}
       </button>
@@ -371,7 +371,7 @@ function BaseRatesSection() {
       {adding ? (
         <div className="flex items-center gap-2 mt-3">
           <input value={newSize} onChange={(e) => setNewSize(e.target.value)} placeholder="e.g. townhouse" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none focus:border-[var(--brd)]" />
-          <button type="button" onClick={async () => { if (newSize.trim()) { await add({ move_size: newSize.trim(), base_price: 0, min_crew: 2, estimated_hours: 0 }); setNewSize(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
+          <button type="button" onClick={async () => { if (newSize.trim()) { await add({ move_size: newSize.trim(), base_price: 0, min_crew: 2, estimated_hours: 0 }); setNewSize(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]">Add</button>
           <button type="button" onClick={() => setAdding(false)} className="text-[11px] text-[var(--tx3)]">Cancel</button>
         </div>
       ) : (
@@ -532,7 +532,7 @@ function NeighbourhoodsSection() {
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search postal code or name…" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none focus:border-[var(--brd)] flex-1 min-w-[180px]" />
         <div className="flex gap-1">
           {["", "A", "B", "C", "D"].map((t) => (
-            <button key={t} type="button" onClick={() => setFilterTier(t)} className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${filterTier === t ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:bg-[var(--bg2)]"}`}>
+            <button key={t} type="button" onClick={() => setFilterTier(t)} className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${filterTier === t ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:bg-[var(--bg2)]"}`}>
               {t || "All"}
             </button>
           ))}
@@ -546,7 +546,7 @@ function NeighbourhoodsSection() {
               <tr key={String(r.id)}>
                 <td className={td}><span className="font-mono text-[11px]">{String(r.postal_prefix)}</span></td>
                 <td className={td}><span className="text-[12px]">{String(r.neighbourhood_name)}</span></td>
-                <td className={td}><span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold border ${TIER_BADGE[String(r.tier)] || TIER_BADGE.C}`}>{String(r.tier)}</span></td>
+                <td className={td}><span className={`dt-badge tracking-[0.04em] ${TIER_BADGE[String(r.tier)] || TIER_BADGE.C}`}>{String(r.tier)}</span></td>
                 <td className={td}><EditCell value={Number(r.multiplier)} onChange={(v) => updateRow(String(r.id), "multiplier", Number(v))} type="number" className="font-semibold text-[var(--gold)]" /></td>
                 <td className={td}><button type="button" onClick={() => remove(String(r.id))} className="text-[var(--tx3)] hover:text-red-400 text-[11px]">×</button></td>
               </tr>
@@ -562,7 +562,7 @@ function NeighbourhoodsSection() {
             <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
           </select>
           <input value={newRow.multiplier} onChange={(e) => setNewRow({ ...newRow, multiplier: e.target.value })} placeholder="1.00" className="w-16 px-2 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none" type="number" step="0.01" />
-          <button type="button" onClick={async () => { await add({ postal_prefix: newRow.postal_prefix, neighbourhood_name: newRow.neighbourhood_name, tier: newRow.tier, multiplier: Number(newRow.multiplier) }); setNewRow({ postal_prefix: "", neighbourhood_name: "", tier: "C", multiplier: "1.00" }); setAdding(false); }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
+          <button type="button" onClick={async () => { await add({ postal_prefix: newRow.postal_prefix, neighbourhood_name: newRow.neighbourhood_name, tier: newRow.tier, multiplier: Number(newRow.multiplier) }); setNewRow({ postal_prefix: "", neighbourhood_name: "", tier: "C", multiplier: "1.00" }); setAdding(false); }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]">Add</button>
           <button type="button" onClick={() => setAdding(false)} className="text-[11px] text-[var(--tx3)]">Cancel</button>
         </div>
       ) : (
@@ -598,7 +598,7 @@ function AccessScoresSection() {
       {adding ? (
         <div className="flex items-center gap-2 mt-3">
           <input value={newType} onChange={(e) => setNewType(e.target.value)} placeholder="e.g. rooftop_access" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none flex-1" />
-          <button type="button" onClick={async () => { if (newType.trim()) { await add({ access_type: newType.trim(), surcharge: 0, notes: "" }); setNewType(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
+          <button type="button" onClick={async () => { if (newType.trim()) { await add({ access_type: newType.trim(), surcharge: 0, notes: "" }); setNewType(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]">Add</button>
           <button type="button" onClick={() => setAdding(false)} className="text-[11px] text-[var(--tx3)]">Cancel</button>
         </div>
       ) : (
@@ -626,7 +626,7 @@ function DateFactorsSection() {
 
   const renderGroup = (title: string, type: string) => (
     <div>
-      <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">{title}</h4>
+      <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">{title}</h4>
       <table className={tbl}>
         <thead><tr><th className={th}>Condition</th><th className={th}>Multiplier</th></tr></thead>
         <tbody>
@@ -674,7 +674,7 @@ function SpecialtySurchargesSection() {
                   role="switch"
                   aria-checked={!!r.requires_specialty_crew}
                   onClick={() => updateRow(String(r.id), "requires_specialty_crew", !r.requires_specialty_crew)}
-                  className={`relative w-9 h-5 rounded-full transition-colors ${r.requires_specialty_crew ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+                  className={`relative w-9 h-5 rounded-full transition-colors ${r.requires_specialty_crew ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
                 >
                   <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${r.requires_specialty_crew ? "translate-x-4" : "translate-x-0"}`} />
                 </button>
@@ -687,7 +687,7 @@ function SpecialtySurchargesSection() {
       {adding ? (
         <div className="flex items-center gap-2 mt-3">
           <input value={newType} onChange={(e) => setNewType(e.target.value)} placeholder="e.g. piano_baby_grand" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none flex-1" />
-          <button type="button" onClick={async () => { if (newType.trim()) { await add({ item_type: newType.trim(), surcharge: 0, requires_specialty_crew: false }); setNewType(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
+          <button type="button" onClick={async () => { if (newType.trim()) { await add({ item_type: newType.trim(), surcharge: 0, requires_specialty_crew: false }); setNewType(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]">Add</button>
           <button type="button" onClick={() => setAdding(false)} className="text-[11px] text-[var(--tx3)]">Cancel</button>
         </div>
       ) : (
@@ -729,7 +729,7 @@ function SingleItemSection() {
       {adding ? (
         <div className="flex items-center gap-2">
           <input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="Category name" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none flex-1" />
-          <button type="button" onClick={async () => { if (newCat.trim()) { await add({ item_category: newCat.trim(), base_price_min: 0, base_price_max: 0, weight_class: "varies" }); setNewCat(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add</button>
+          <button type="button" onClick={async () => { if (newCat.trim()) { await add({ item_category: newCat.trim(), base_price_min: 0, base_price_max: 0, weight_class: "varies" }); setNewCat(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]">Add</button>
           <button type="button" onClick={() => setAdding(false)} className="text-[11px] text-[var(--tx3)]">Cancel</button>
         </div>
       ) : (
@@ -760,7 +760,7 @@ function SingleItemSection() {
           type="button"
           disabled={saving || configSection.saving}
           onClick={() => void save()}
-          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-60 disabled:cursor-wait"
+          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-60 disabled:cursor-wait"
         >
           {saving ? "Saving…" : "Save Rates"}
         </button>
@@ -768,7 +768,7 @@ function SingleItemSection() {
           type="button"
           disabled={saving || configSection.saving}
           onClick={() => void configSection.save()}
-          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-60 disabled:cursor-wait"
+          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-60 disabled:cursor-wait"
         >
           {configSection.saving ? "Saving…" : "Save Config"}
         </button>
@@ -923,13 +923,13 @@ function OfficeRatesSection() {
 
 /* ────────── S10: ADD-ONS ────────── */
 const SERVICE_TYPE_BADGES: Record<string, string> = {
-  local_move: "bg-blue-500/15 text-blue-400 border-blue-400/30",
-  long_distance: "bg-purple-500/15 text-purple-400 border-purple-400/30",
-  office_move: "bg-orange-500/15 text-orange-400 border-orange-400/30",
-  single_item: "bg-teal-500/15 text-teal-400 border-teal-400/30",
-  white_glove: "bg-pink-500/15 text-pink-400 border-pink-400/30",
-  specialty: "bg-indigo-500/15 text-indigo-400 border-indigo-400/30",
-  b2b_delivery: "bg-amber-500/15 text-amber-500 border-amber-500/30",
+  local_move: "text-blue-400",
+  long_distance: "text-purple-400",
+  office_move: "text-orange-400",
+  single_item: "text-teal-400",
+  white_glove: "text-pink-400",
+  specialty: "text-indigo-400",
+  b2b_delivery: "text-amber-500",
 };
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
@@ -1092,7 +1092,7 @@ function ServiceTypeMultiSelect({ selected, onChange }: { selected: string[]; on
       <button type="button" onClick={() => setOpen(!open)} className="flex flex-wrap gap-1 min-h-[24px] cursor-pointer">
         {selected.length === 0 && <span className="text-[9px] text-[var(--tx3)]">None</span>}
         {selected.map((s) => (
-          <span key={s} className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold border ${SERVICE_TYPE_BADGES[s] || "bg-[var(--bg)] text-[var(--tx3)]"}`}>
+          <span key={s} className={`dt-badge ${SERVICE_TYPE_BADGES[s] || "text-[var(--tx3)]"}`}>
             {SERVICE_TYPE_LABELS[s] || s}
           </span>
         ))}
@@ -1126,10 +1126,10 @@ function ExcludedTiersSelect({ selected, onChange }: { selected: string[] | null
           key={t}
           type="button"
           onClick={() => onChange(vals.includes(t) ? vals.filter((v) => v !== t) : [...vals, t])}
-          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border uppercase transition-colors ${
+          className={`dt-badge inline-flex items-center rounded-md px-1.5 py-0.5 border transition-colors ${
             vals.includes(t)
-              ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
-              : "bg-[var(--bg)] text-[var(--tx3)] border-[var(--brd)] hover:border-[var(--gold)]/40"
+              ? "text-[var(--gold)] border-[var(--gold)]"
+              : "text-[var(--tx3)] border-[var(--brd)] hover:border-[var(--gold)]/40"
           }`}
         >
           {t}
@@ -1165,7 +1165,7 @@ function AddOnsSection() {
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search add-ons…" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none focus:border-[var(--brd)] flex-1 min-w-[160px]" />
         <div className="flex gap-1 flex-wrap">
           {FILTER_TABS.map((t) => (
-            <button key={t.key} type="button" onClick={() => setFilter(t.key)} className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${filter === t.key ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:bg-[var(--bg2)]"}`}>
+            <button key={t.key} type="button" onClick={() => setFilter(t.key)} className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${filter === t.key ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:bg-[var(--bg2)]"}`}>
               {t.label}
             </button>
           ))}
@@ -1200,7 +1200,7 @@ function AddOnsSection() {
                 setAdding(false);
               }
             }}
-            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
           >
             Add
           </button>
@@ -1294,7 +1294,7 @@ function AddOnsSection() {
                       />
                     </td>
                     <td className={`${td} text-center`}>
-                      <button type="button" role="switch" aria-checked={!!a.is_popular} onClick={() => updateAddon(a.id, "is_popular", !a.is_popular)} className={`relative w-8 h-4 rounded-full transition-colors ${a.is_popular ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                      <button type="button" role="switch" aria-checked={!!a.is_popular} onClick={() => updateAddon(a.id, "is_popular", !a.is_popular)} className={`relative w-8 h-4 rounded-full transition-colors ${a.is_popular ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                         <span className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${a.is_popular ? "translate-x-4" : ""}`} />
                       </button>
                     </td>
@@ -1350,7 +1350,7 @@ function InventoryVolumeSection() {
     <div className="space-y-6">
       {/* ── Volume Benchmarks ── */}
       <div>
-        <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Volume Benchmarks by Move Size</h4>
+        <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Volume Benchmarks by Move Size</h4>
         <p className="text-[9px] text-[var(--tx3)] mb-3">
           These benchmarks define the &quot;standard&quot; inventory for each move size. The algorithm compares the client&apos;s actual inventory score to the benchmark.
         </p>
@@ -1422,7 +1422,7 @@ function InventoryVolumeSection() {
       {/* ── Item Weight Scores ── */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Item Weight Scores</h4>
+          <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Item Weight Scores</h4>
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-1.5 text-[10px] text-[var(--tx3)] cursor-pointer">
               <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} className="accent-[var(--gold)]" />
@@ -1497,7 +1497,7 @@ function InventoryVolumeSection() {
                         </select>
                       </td>
                       <td className={`${td} text-center`}>
-                        <button type="button" role="switch" aria-checked={!!r.is_common} onClick={() => iw.updateRow(String(r.id), "is_common", !r.is_common)} className={`relative w-8 h-4 rounded-full transition-colors ${r.is_common ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                        <button type="button" role="switch" aria-checked={!!r.is_common} onClick={() => iw.updateRow(String(r.id), "is_common", !r.is_common)} className={`relative w-8 h-4 rounded-full transition-colors ${r.is_common ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                           <span className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${r.is_common ? "translate-x-4" : ""}`} />
                         </button>
                       </td>
@@ -1612,7 +1612,7 @@ function CustomItemsUsedSection({ onAddToMaster }: { onAddToMaster?: () => void 
 
   return (
     <div className="border-t border-[var(--brd)]/30 pt-6">
-      <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Custom Items Used in Quotes/Moves</h4>
+      <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Custom Items Used in Quotes/Moves</h4>
       <p className="text-[9px] text-[var(--tx3)] mb-3">
         Items coordinators entered that are not in the master list. Add popular ones to item_weights.
       </p>
@@ -1743,7 +1743,7 @@ function CustomItemsUsedSection({ onAddToMaster }: { onAddToMaster?: () => void 
                 type="button"
                 onClick={handleAddToMaster}
                 disabled={saving || !addForm.item_name.trim()}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
               >
                 {saving ? "Saving…" : "Save to Master List"}
               </button>
@@ -1766,7 +1766,7 @@ function FleetVehiclesSection() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Vehicle Types</h4>
+          <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Vehicle Types</h4>
           <button type="button" onClick={() => fleet.add({ vehicle_type: `custom-${Date.now()}`, display_name: "New Vehicle", cargo_cubic_ft: 0, capacity_lbs: 0, is_available: true, display_order: 99 })} className="text-[10px] font-bold text-[var(--gold)] hover:text-[var(--gold)]/80 flex items-center gap-0.5">+ Add Vehicle</button>
         </div>
         {fleet.loading ? <p className="text-[11px] text-[var(--tx3)]">Loading…</p> : (
@@ -1807,7 +1807,7 @@ function FleetVehiclesSection() {
       </div>
 
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Allocation Rules</h4>
+        <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Allocation Rules</h4>
         <p className="text-[9px] text-[var(--tx3)] mb-3">Maps move size + inventory level to recommended vehicle(s).</p>
         {rules.loading ? <p className="text-[11px] text-[var(--tx3)]">Loading…</p> : (
           <>
@@ -2223,7 +2223,7 @@ function TierFeaturesSection() {
                   onChange={(e) => setNewFeature((prev) => ({ ...prev, [tier]: e.target.value }))}
                   onKeyDown={(e) => { if (e.key === "Enter") handleAdd(tier); }}
                   placeholder="Add feature…"
-                  className="flex-1 text-[11px] bg-transparent border-none outline-none placeholder:text-[var(--tx3)]/50 text-[var(--tx)]"
+                  className="flex-1 text-[11px] bg-transparent border-none outline-none placeholder:text-[var(--tx3)] text-[var(--tx)]"
                 />
                 <button
                   type="button"
@@ -2847,7 +2847,7 @@ function SpecialtyPricingSection() {
           type="button"
           disabled={configSection.saving || savingJson}
           onClick={() => void configSection.save()}
-          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-60 disabled:cursor-wait"
+          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-60 disabled:cursor-wait"
         >
           {configSection.saving ? "Saving…" : "Save scalars"}
         </button>
@@ -2931,7 +2931,7 @@ function SpecialtyPricingSection() {
             type="button"
             onClick={() => void saveJson()}
             disabled={savingJson || configSection.saving}
-            className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50 disabled:cursor-wait"
+            className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50 disabled:cursor-wait"
           >
             {savingJson ? "Saving…" : "Save specialty tables"}
           </button>
@@ -3471,7 +3471,7 @@ function B2BSurchargesSection() {
           placeholder="Throw cushions / accent pillows"
         />
       </div>
-      <button type="button" onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-90 disabled:opacity-50">
+      <button type="button" onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:opacity-90 disabled:opacity-50">
         {saving ? "Saving…" : "Save B2B Surcharges"}
       </button>
     </div>
@@ -3494,9 +3494,9 @@ interface CalibrationSuggestion {
 }
 
 const CONFIDENCE_BADGE: Record<string, string> = {
-  high:   "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  medium: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  low:    "bg-[var(--tx3)]/10 text-[var(--tx3)] border-[var(--tx3)]/20",
+  high:   "text-emerald-600 dark:text-emerald-400",
+  medium: "text-amber-600 dark:text-amber-400",
+  low:    "text-[var(--tx3)]",
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -3586,7 +3586,7 @@ function CalibrationSection() {
         <p className="text-[12px] text-[var(--tx3)]">
           Based on the last 30 completed jobs per category. Suggestions require 20+ data points to generate.
         </p>
-        <span className="text-[11px] font-bold text-[var(--gold)] bg-[var(--gold)]/10 border border-[var(--gold)]/20 px-2 py-0.5 rounded-full">
+        <span className="dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">
           {suggestions.length} pending
         </span>
       </div>
@@ -3621,7 +3621,7 @@ function CalibrationSection() {
                   <span className="font-semibold text-[var(--gold)]">{s.suggested_value}</span>
                 </td>
                 <td className="py-3 px-4">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${CONFIDENCE_BADGE[s.confidence] ?? CONFIDENCE_BADGE.low}`}>
+                  <span className={`dt-badge tracking-[0.04em] ${CONFIDENCE_BADGE[s.confidence] ?? CONFIDENCE_BADGE.low}`}>
                     {s.confidence.charAt(0).toUpperCase() + s.confidence.slice(1)}
                   </span>
                 </td>
@@ -3633,7 +3633,7 @@ function CalibrationSection() {
                       type="button"
                       disabled={acting === s.id}
                       onClick={() => handleAction(s.id, "apply")}
-                      className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-90 disabled:opacity-50 whitespace-nowrap"
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:opacity-90 disabled:opacity-50 whitespace-nowrap"
                     >
                       {acting === s.id ? "…" : "Apply"}
                     </button>

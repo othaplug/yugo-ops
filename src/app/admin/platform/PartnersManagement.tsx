@@ -8,6 +8,10 @@ import InvitePartnerModal from "./InvitePartnerModal";
 import PartnerVerticalRatesEditor from "./PartnerVerticalRatesEditor";
 import ModalOverlay from "../components/ModalOverlay";
 import { CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
+import {
+  ADMIN_TOOLBAR_PRIMARY_SOLID_CLASS,
+  ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS,
+} from "../components/admin-toolbar-action-classes";
 import { organizationTypeLabel } from "@/lib/partner-type";
 
 interface PortalUser {
@@ -39,25 +43,25 @@ interface PartnerData {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  retail: "bg-[rgba(74,124,229,0.14)] text-[#4A7CE5]",
-  designer: "bg-[rgba(139,92,246,0.14)] text-[#8B5CF6]",
-  gallery: "bg-[rgba(201,169,98,0.16)] text-[var(--gold)]",
-  furniture_retailer: "bg-[rgba(59,130,246,0.14)] text-[#3B82F6]",
-  interior_designer: "bg-[rgba(167,139,250,0.16)] text-[#A78BFA]",
-  cabinetry: "bg-[rgba(180,83,9,0.14)] text-[#B45309]",
-  flooring: "bg-[rgba(13,148,136,0.14)] text-[#0D9488]",
-  art_gallery: "bg-[rgba(201,169,98,0.16)] text-[var(--gold)]",
-  antique_dealer: "bg-[rgba(190,18,60,0.12)] text-[#BE123C]",
-  hospitality: "bg-[rgba(212,138,41,0.14)] text-[var(--org)]",
-  medical_equipment: "bg-[rgba(14,165,233,0.14)] text-[#0EA5E9]",
-  av_technology: "bg-[rgba(99,102,241,0.14)] text-[#6366F1]",
-  appliances: "bg-[rgba(71,85,105,0.16)] text-[#64748B]",
-  realtor: "bg-[rgba(45,159,90,0.14)] text-[var(--grn)]",
-  property_manager: "bg-[rgba(22,163,74,0.14)] text-[#16A34A]",
-  developer: "bg-[rgba(124,58,237,0.14)] text-[#7C3AED]",
-  property_management_residential: "bg-[rgba(201,169,98,0.18)] text-[var(--gold)]",
-  property_management_commercial: "bg-[rgba(201,169,98,0.18)] text-[var(--gold)]",
-  developer_builder: "bg-[rgba(124,58,237,0.14)] text-[#7C3AED]",
+  retail: "text-[#4A7CE5]",
+  designer: "text-[#8B5CF6]",
+  gallery: "text-[var(--gold)]",
+  furniture_retailer: "text-[#3B82F6]",
+  interior_designer: "text-[#A78BFA]",
+  cabinetry: "text-[#B45309]",
+  flooring: "text-[#0D9488]",
+  art_gallery: "text-[var(--gold)]",
+  antique_dealer: "text-[#BE123C]",
+  hospitality: "text-[var(--org)]",
+  medical_equipment: "text-[#0EA5E9]",
+  av_technology: "text-[#6366F1]",
+  appliances: "text-[#64748B]",
+  realtor: "text-[var(--grn)]",
+  property_manager: "text-[#16A34A]",
+  developer: "text-[#7C3AED]",
+  property_management_residential: "text-[var(--gold)]",
+  property_management_commercial: "text-[var(--gold)]",
+  developer_builder: "text-[#7C3AED]",
 };
 
 export default function PartnersManagement() {
@@ -270,7 +274,7 @@ export default function PartnersManagement() {
             </button>
             <button
               onClick={() => setInviteOpen(true)}
-              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all shrink-0"
+              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all shrink-0"
             >
               + Invite New Partner
             </button>
@@ -359,7 +363,7 @@ export default function PartnersManagement() {
               const isExpanded = expandedOrg === partner.id;
               const usersCount = partner.portal_users.length;
               const activeCount = partner.portal_users.filter((u) => u.status === "activated").length;
-              const typeColor = TYPE_COLORS[partner.type] || "bg-[var(--gdim)] text-[var(--gold)]";
+              const typeColor = TYPE_COLORS[partner.type] || "text-[var(--gold)]";
 
               return (
                 <div key={partner.id}>
@@ -381,7 +385,7 @@ export default function PartnersManagement() {
                           {partner.name}
                         </span>
                         <span
-                          className={`inline-flex shrink-0 items-center rounded-md px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider !whitespace-nowrap ${typeColor}`}
+                          className={`dt-badge shrink-0 !whitespace-nowrap ${typeColor}`}
                         >
                           {partner.type === "b2b" ? "Other partner" : organizationTypeLabel(partner.type)}
                         </span>
@@ -409,21 +413,22 @@ export default function PartnersManagement() {
                     <div className="bg-[var(--bg)]/40 border-t border-[var(--brd)]">
                       <div className="px-5 py-3 flex items-center justify-between">
                         <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Portal Users</span>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Link
                             href={`/admin/clients/${partner.id}`}
-                            className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+                            className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
                           >
                             View Details
                           </Link>
                           <button
+                            type="button"
                             onClick={() => {
                               setAddUserOrg(partner);
                               setAddPassword(generatePwd());
                             }}
-                            className="px-2.5 py-1 rounded text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
+                            className={ADMIN_TOOLBAR_PRIMARY_SOLID_CLASS}
                           >
-                            + Add User
+                            Add User
                           </button>
                         </div>
                       </div>
@@ -448,10 +453,10 @@ export default function PartnersManagement() {
                                 <div className="text-[10px] text-[var(--tx3)] truncate">{u.email}</div>
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
-                                <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full ${
+                                <span className={`dt-badge tracking-[0.04em] ${
                                   u.status === "activated"
-                                    ? "bg-[rgba(45,159,90,0.15)] text-[var(--grn)]"
-                                    : "bg-[rgba(201,169,98,0.15)] text-[var(--gold)]"
+                                    ? "text-[var(--grn)]"
+                                    : "text-amber-700 dark:text-amber-300"
                                 }`}>
                                   {u.status === "activated" ? "Active" : "Pending"}
                                 </span>
@@ -462,21 +467,21 @@ export default function PartnersManagement() {
                                 )}
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleResend(partner.id); }}
-                                  className="px-2 py-0.5 rounded text-[9px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+                                  className="px-2 py-0.5 rounded-md text-[9px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
                                   title="Resend welcome email"
                                 >
                                   Resend
                                 </button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setResetTarget({ orgId: partner.id, user: u }); setResetPassword(generatePwd()); }}
-                                  className="px-2 py-0.5 rounded text-[9px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+                                  className="px-2 py-0.5 rounded-md text-[9px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
                                 >
                                   Reset
                                 </button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleRevoke(partner.id, u.user_id); }}
                                   disabled={revoking === u.user_id}
-                                  className="px-2 py-0.5 rounded text-[9px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all disabled:opacity-50"
+                                  className="px-2 py-0.5 rounded-md text-[9px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all disabled:opacity-50"
                                 >
                                   {revoking === u.user_id ? "..." : "Revoke"}
                                 </button>
@@ -533,7 +538,7 @@ export default function PartnersManagement() {
               <button type="button" onClick={() => { setResetTarget(null); setResetPassword(""); }} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">
                 Cancel
               </button>
-              <button type="submit" disabled={resetLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+              <button type="submit" disabled={resetLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
                 {resetLoading ? "Sending..." : "Set Password & Send Email"}
               </button>
             </div>
@@ -595,7 +600,7 @@ export default function PartnersManagement() {
                     <button
                       type="button"
                       onClick={handleRunProvision}
-                      className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
+                      className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)]"
                     >
                       Provision {provisionDryRun.to_provision} Partner{provisionDryRun.to_provision !== 1 ? "s" : ""}
                     </button>
@@ -628,10 +633,10 @@ export default function PartnersManagement() {
                       <div className="text-[10px] text-[var(--tx3)] truncate">{r.email}</div>
                       {r.error && <div className="text-[10px] text-[var(--red)] truncate">{r.error}</div>}
                     </div>
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                      r.status === "error" ? "bg-[var(--rdim)] text-[var(--red)]"
-                      : r.status === "linked_existing" ? "bg-[rgba(74,124,229,0.12)] text-[#4A7CE5]"
-                      : "bg-[rgba(45,159,90,0.12)] text-[var(--grn)]"
+                    <span className={`dt-badge tracking-[0.04em] shrink-0 ${
+                      r.status === "error" ? "text-[var(--red)]"
+                      : r.status === "linked_existing" ? "text-blue-600 dark:text-sky-400"
+                      : "text-[var(--grn)]"
                     }`}>
                       {r.status === "error" ? "Error" : r.status === "linked_existing" ? "Linked" : "Invited"}
                     </span>
@@ -641,7 +646,7 @@ export default function PartnersManagement() {
               <button
                 type="button"
                 onClick={() => { setProvisionOpen(false); setProvisionResults(null); }}
-                className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+                className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
               >
                 Done
               </button>
@@ -704,7 +709,7 @@ export default function PartnersManagement() {
               <button type="button" onClick={() => { setAddUserOrg(null); setAddEmail(""); setAddName(""); setAddPassword(""); }} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">
                 Cancel
               </button>
-              <button type="submit" disabled={addLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+              <button type="submit" disabled={addLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
                 {addLoading ? "Sending..." : "Send Invitation"}
               </button>
             </div>

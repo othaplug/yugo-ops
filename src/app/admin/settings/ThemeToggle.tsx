@@ -9,12 +9,14 @@ export default function ThemeToggle() {
     <div className="flex items-center justify-between py-3 border-b border-[var(--brd)] last:border-0">
       <div>
         <div className="text-[13px] font-semibold text-[var(--tx)]">Theme</div>
-        <div className="text-[11px] text-[var(--tx3)] mt-0.5">Light or dark mode</div>
+        <div className="text-[11px] text-[var(--tx3)] mt-0.5">
+          Light or dark mode
+        </div>
       </div>
       <button
         onClick={toggleTheme}
         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-          theme === "dark" ? "bg-[var(--gold)]" : "bg-[var(--brd)]"
+          theme === "dark" ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"
         }`}
       >
         <span

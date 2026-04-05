@@ -136,7 +136,7 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
     <label className="flex items-center gap-2.5 cursor-pointer select-none">
       <div
         onClick={() => onChange(!checked)}
-        className={`w-9 h-5 rounded-full relative transition-colors ${checked ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+        className={`w-9 h-5 rounded-full relative transition-colors ${checked ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
       >
         <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-4" : ""}`} />
       </div>
@@ -590,7 +590,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   const newPrice = newQuoteResult?.tiers?.essential?.price ?? newQuoteResult?.tiers?.curated?.price ?? newQuoteResult?.tiers?.essentials?.price ?? newQuoteResult?.custom_price?.price ?? null;
   const livePrice = livePreview?.tiers?.essential?.price ?? livePreview?.tiers?.curated?.price ?? livePreview?.tiers?.essentials?.price ?? livePreview?.custom_price?.price ?? null;
 
-  const inputClass = "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
+  const inputClass = "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/82 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
   const labelClass = "block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1";
 
   if (isB2bQuote) {
@@ -619,7 +619,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
           <button onClick={() => router.push(`/admin/quotes/${oq.quote_id}`)} className="px-5 py-2.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] text-sm font-medium hover:bg-[var(--bg)]">
             Back to Quote Details
           </button>
-          <button onClick={() => setDone(false)} className="px-5 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-sm font-semibold hover:bg-[var(--gold)]/90">
+          <button onClick={() => setDone(false)} className="px-5 py-2.5 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-sm font-semibold hover:bg-[var(--admin-primary-fill-hover)] transition-colors">
             Edit Quote
           </button>
         </div>
@@ -641,7 +641,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
             <span className="text-sm font-normal text-[var(--tx3)] ml-2">v{oq.version || 1}</span>
           </h1>
         </div>
-        <span className="ml-auto px-3 py-1 rounded-full text-[10px] font-semibold bg-[var(--gold)]/10 text-[var(--gold)]">
+        <span className="ml-auto dt-badge tracking-[0.04em] text-[#2C3E2D] dark:text-[var(--tx2)]">
           {SERVICE_LABELS[serviceType] || serviceType}
         </span>
       </div>
@@ -935,7 +935,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-[9px] font-bold uppercase text-[var(--tx3)] shrink-0">Stair Carry</span>
-                <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${stairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
+                <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${stairCarry ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}>
                   <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`} />
                 </button>
                 {stairCarry && (
@@ -1087,7 +1087,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                         <div className="flex items-center gap-2">
                           <span className="text-[12px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{addon.name}</span>
                           {addon.is_popular && (
-                            <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
+                            <span className="dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">Popular</span>
                           )}
                           <span className="text-[11px] text-[var(--tx3)] ml-auto shrink-0">{displayPrice}</span>
                         </div>

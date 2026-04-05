@@ -50,8 +50,8 @@ export default function LiveOperationsCard() {
       <div className="sh px-4 pt-4 flex items-center justify-between">
         <div className="sh-t flex items-center gap-2">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gold)] opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--gold)]" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--admin-primary-fill)] opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--admin-primary-fill)]" />
           </span>
           LIVE OPERATIONS
         </div>
@@ -68,7 +68,7 @@ export default function LiveOperationsCard() {
               className="block px-3 py-2.5 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)]/50 transition-colors"
             >
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[var(--gold)] shrink-0" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[var(--admin-primary-fill)] shrink-0" />
                 <span className="text-[12px] font-semibold text-[var(--tx)] truncate">
                   {s.teamName} · {s.jobName} · {CREW_STATUS_TO_LABEL[s.status] || s.status}
                 </span>

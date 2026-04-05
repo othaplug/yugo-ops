@@ -23,7 +23,7 @@ export default function RealtorPartnersSection({ partners }: { partners: Referra
         <div className="flex flex-wrap gap-2">
           <Link
             href={`${ADD_BASE}&partnerType=realtor`}
-            className="inline-flex items-center justify-center px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all whitespace-nowrap"
+            className="inline-flex items-center justify-center px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all whitespace-nowrap"
           >
             Add realtor org
           </Link>

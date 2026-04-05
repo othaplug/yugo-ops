@@ -232,7 +232,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
             {isAdmin ? (
               <div className="px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx2)] flex items-center gap-2">
-                <span className="w-2 h-2 bg-[var(--gold)] rounded-full" />
+                <span className="w-2 h-2 bg-[var(--admin-primary-fill)] rounded-full" />
                 Admin (cannot be changed)
               </div>
             ) : (
@@ -290,7 +290,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
             </div>
           )}
 
-          <button type="submit" disabled={saving} className="px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
+          <button type="submit" disabled={saving} className="px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50">
             {saving ? "Saving…" : "Save changes"}
           </button>
         </form>

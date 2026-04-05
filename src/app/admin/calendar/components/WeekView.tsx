@@ -4,8 +4,8 @@ import { useMemo } from "react";
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { formatTime12, timeToMinutes } from "@/lib/calendar/types";
 import {
-  CALENDAR_PILL_TEXT,
-  CALENDAR_PILL_TEXT_MUTED,
+  calendarPillForeground,
+  calendarPillUsesLightInk,
   jobPillCompactStyle,
   jobPillSurfaceStyle,
   pillStatusDotColor,
@@ -101,7 +101,7 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
               >
                 <div
                   className={`text-[9px] font-bold tracking-wider uppercase mb-0.5 ${
-                    isToday ? "text-blue-500 dark:text-blue-400" : "text-[var(--tx3)]/50"
+                    isToday ? "text-blue-500 dark:text-blue-400" : "text-[var(--tx3)]"
                   }`}
                 >
                   {DAY_NAMES[i]}
@@ -110,7 +110,7 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
                   <span
                     className={`w-7 h-7 flex items-center justify-center rounded-full text-[13px] font-semibold transition-colors ${
                       isToday
-                        ? "bg-blue-600 text-white shadow-md"
+                        ? "bg-blue-600 text-[#F9EDE4]"
                         : "text-[var(--tx2)] hover:text-blue-500 dark:hover:text-blue-400"
                     }`}
                   >
@@ -126,7 +126,7 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
         {hasUnscheduled && (
           <div className="flex border-b border-[var(--brd)] bg-[var(--bg)]/40">
             <div className="w-10 sm:w-14 shrink-0 py-1 flex items-center justify-end pr-1">
-              <span className="text-[7px] font-semibold text-[var(--tx3)]/60 uppercase tracking-wide hidden sm:block">All-day</span>
+              <span className="text-[7px] font-semibold text-[var(--tx3)]/82 uppercase tracking-wide hidden sm:block">All-day</span>
             </div>
             {weekDays.map(({ key }) => {
               const untimedEvents = (eventsByDate[key] || []).filter((ev) => !ev.start);
@@ -187,6 +187,9 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
                     const top = getTopOffset(ev.start);
                     const height = getHeight(ev.start, ev.end, ev.durationHours);
                     const dotColor = pillStatusDotColor(ev.calendarStatus);
+                    const fg = calendarPillForeground(ev);
+                    const lightInk = calendarPillUsesLightInk(ev);
+                    const dotRing = lightInk ? "ring-white/15" : "ring-black/10";
                     const cancelled = ev.calendarStatus === "cancelled";
 
                     return (
@@ -194,7 +197,7 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
                         key={ev.id}
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
-                        className="absolute left-0.5 right-0.5 rounded-md overflow-hidden text-left hover:brightness-[1.02] cursor-pointer transition-all shadow-sm"
+                        className="absolute left-0.5 right-0.5 rounded-md overflow-hidden text-left hover:brightness-[1.02] cursor-pointer transition-all"
                         style={{
                           top,
                           height: Math.max(height, 20),
@@ -203,12 +206,12 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
                       >
                         <div className="p-1 flex items-center gap-0.5">
                           <span
-                            className={`w-1.5 h-1.5 rounded-full shrink-0 ring-1 ring-black/10 ${ev.calendarStatus === "in_progress" ? "animate-pulse" : ""}`}
-                            style={{ backgroundColor: cancelled ? "rgba(248,250,252,0.85)" : dotColor }}
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 ring-1 ${dotRing} ${ev.calendarStatus === "in_progress" ? "animate-pulse" : ""}`}
+                            style={{ backgroundColor: cancelled ? "rgba(249,237,228,0.85)" : dotColor }}
                           />
                           <span
                             className="text-[8px] font-bold truncate"
-                            style={{ color: cancelled ? "inherit" : CALENDAR_PILL_TEXT }}
+                            style={{ color: cancelled ? "inherit" : fg.main }}
                           >
                             {ev.name}
                           </span>
@@ -216,7 +219,7 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
                         {height > 25 && (
                           <div
                             className="flex items-center text-[7px] truncate px-1 pb-0.5"
-                            style={{ color: cancelled ? "rgba(248,250,252,0.85)" : CALENDAR_PILL_TEXT_MUTED }}
+                            style={{ color: cancelled ? "rgba(249,237,228,0.85)" : fg.muted }}
                           >
                             <span className="truncate">{ev.description}</span>
                           </div>

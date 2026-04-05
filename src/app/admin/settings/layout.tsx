@@ -27,7 +27,7 @@ export default async function SettingsLayout({
         <BackButton label="Back" />
       </div>
       <div className="mb-8">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Account</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Account</p>
         <h1 className="admin-page-hero text-[var(--tx)]">Settings</h1>
       </div>
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-5 sm:items-start min-h-0">
