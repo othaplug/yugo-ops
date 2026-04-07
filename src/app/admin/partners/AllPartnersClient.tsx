@@ -10,6 +10,7 @@ import SectionDivider from "@/components/ui/SectionDivider";
 import { Icon } from "@/components/AppIcons";
 import InvitePartnerModal from "@/app/admin/platform/InvitePartnerModal";
 import { organizationTypeLabel } from "@/lib/partner-type";
+import { ReferralPartnersOverviewHint } from "@/components/admin/ReferralPartnersOverviewHint";
 
 interface Partner {
   id: string;
@@ -446,23 +447,52 @@ export default function AllPartnersClient() {
         </div>
       )}
       <div className="flex items-center gap-1 mb-5 overflow-x-auto pb-1 border-b border-[var(--brd)]/30">
-        {typeTabs.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setActiveTab(t.key)}
-            className={`px-4 py-2 text-[12px] font-semibold whitespace-nowrap border-b-2 transition-colors ${
-              activeTab === t.key
-                ? "border-[var(--gold)] text-[var(--gold)]"
-                : "border-transparent text-[var(--tx3)] hover:text-[var(--tx)]"
-            }`}
-          >
-            {t.label}
-            <span className="ml-1.5 text-[10px] opacity-60">
-              ({typeCounts[t.key] || 0})
-            </span>
-          </button>
-        ))}
+        {typeTabs.map((t) =>
+          t.key === "referral" ? (
+            <div
+              key={t.key}
+              className={`inline-flex items-stretch shrink-0 border-b-2 transition-colors ${
+                activeTab === t.key
+                  ? "border-[var(--gold)] text-[var(--gold)]"
+                  : "border-transparent text-[var(--tx3)]"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => setActiveTab(t.key)}
+                className={`px-4 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors ${
+                  activeTab === t.key ? "text-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx)]"
+                }`}
+              >
+                {t.label}
+                <span className="ml-1.5 text-[10px] opacity-60">({typeCounts[t.key] || 0})</span>
+              </button>
+              <div className="flex items-center pr-2 pl-0.5">
+                <ReferralPartnersOverviewHint
+                  iconSize={15}
+                  align="end"
+                  ariaLabel="About referral partners vs service partners"
+                />
+              </div>
+            </div>
+          ) : (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setActiveTab(t.key)}
+              className={`px-4 py-2 text-[12px] font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === t.key
+                  ? "border-[var(--gold)] text-[var(--gold)]"
+                  : "border-transparent text-[var(--tx3)] hover:text-[var(--tx)]"
+              }`}
+            >
+              {t.label}
+              <span className="ml-1.5 text-[10px] opacity-60">
+                ({typeCounts[t.key] || 0})
+              </span>
+            </button>
+          ),
+        )}
       </div>
 
       {activeTab === "referral" ? (

@@ -26,11 +26,12 @@ export type ModalDialogFrameProps = {
 /**
  * Standard portal-style dialog: animated backdrop + animated panel (same motion as GlobalModal / add-partner flow).
  * Renders `data-modal-root` for stacking / reduced-motion rules in globals.css.
+ * `yugoGlassChrome` enables `data-yugo-glass-modal` so `.yugo-glass-light` panels pick up frosted styles.
  */
 export function ModalDialogFrame({
   zClassName = "z-[var(--z-modal)]",
   className = "",
-  yugoGlassChrome = false,
+  yugoGlassChrome = true,
   backdropClassName = "bg-black/60",
   onBackdropClick,
   panelClassName,

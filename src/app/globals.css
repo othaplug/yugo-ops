@@ -739,18 +739,39 @@ html:has(.estate-welcome-root) {
   }
 }
 
-/* Yugo+ modal host — tinted dim (no backdrop blur); panel uses .yugo-glass-light */
-[data-yugo-glass-modal] > .modal-overlay {
-  background: rgba(0, 0, 0, 0.38) !important;
+/* Portaled modals — heavily frosted + tinted scrim (blurs page behind the overlay) */
+[data-modal-root] > .modal-overlay {
+  background:
+    linear-gradient(
+      145deg,
+      rgba(250, 247, 242, 0.5) 0%,
+      rgba(244, 236, 248, 0.35) 42%,
+      rgba(236, 246, 240, 0.4) 100%
+    ),
+    rgba(44, 62, 45, 0.28) !important;
+  backdrop-filter: blur(36px) saturate(1.45);
+  -webkit-backdrop-filter: blur(36px) saturate(1.45);
 }
-[data-theme="light"] [data-yugo-glass-modal] > .modal-overlay {
-  background: rgba(0, 0, 0, 0.42) !important;
+[data-theme="light"] [data-modal-root] > .modal-overlay {
+  background:
+    linear-gradient(
+      155deg,
+      rgba(255, 251, 247, 0.72) 0%,
+      rgba(250, 240, 245, 0.55) 38%,
+      rgba(245, 252, 248, 0.5) 78%,
+      rgba(255, 248, 242, 0.62) 100%
+    ),
+    rgba(92, 26, 51, 0.14),
+    rgba(44, 62, 45, 0.12) !important;
+  backdrop-filter: blur(44px) saturate(1.55);
+  -webkit-backdrop-filter: blur(44px) saturate(1.55);
 }
-
-/* Dark theme: cream-tinted panels are illegible with light ink — wine-tinted modal panels */
-[data-theme="dark"] [data-yugo-glass-modal] .yugo-glass-light {
-  background: rgba(43, 4, 22, 0.94);
-  border: 1px solid rgba(249, 237, 228, 0.1);
+[data-theme="dark"] [data-modal-root] > .modal-overlay {
+  background:
+    linear-gradient(160deg, rgba(43, 4, 22, 0.55) 0%, rgba(20, 12, 18, 0.72) 100%),
+    rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(32px) saturate(1.35);
+  -webkit-backdrop-filter: blur(32px) saturate(1.35);
 }
 
 /* Centre-screen card (desktop modals) */
@@ -886,6 +907,11 @@ html:has(.estate-welcome-root) {
   .enter-up,
   .stagger-item {
     animation: none !important;
+  }
+  [data-modal-root] > .modal-overlay,
+  [data-yugo-glass-modal] .yugo-glass-light {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 }
 
@@ -1595,6 +1621,46 @@ button:focus-visible,
 [data-theme="light"] .yugo-glass-light {
   background: #ffffff;
   border-color: rgba(43, 4, 22, 0.06);
+}
+
+/* Modal / dialog panels: tinted frosted glass (must sit after base .yugo-glass-light) */
+[data-yugo-glass-modal] .yugo-glass-light {
+  background:
+    linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.82) 0%,
+      rgba(255, 251, 247, 0.68) 45%,
+      rgba(250, 245, 252, 0.62) 100%
+    );
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(92, 26, 51, 0.07),
+    0 28px 64px -20px rgba(44, 62, 45, 0.3);
+  backdrop-filter: blur(40px) saturate(1.4);
+  -webkit-backdrop-filter: blur(40px) saturate(1.4);
+}
+[data-theme="light"] [data-yugo-glass-modal] .yugo-glass-light {
+  background:
+    linear-gradient(
+      170deg,
+      rgba(255, 255, 255, 0.88) 0%,
+      rgba(255, 249, 244, 0.72) 40%,
+      rgba(252, 248, 255, 0.65) 100%
+    ),
+    rgba(92, 26, 51, 0.04);
+  border-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(48px) saturate(1.5);
+  -webkit-backdrop-filter: blur(48px) saturate(1.5);
+}
+[data-theme="dark"] [data-yugo-glass-modal] .yugo-glass-light {
+  background:
+    linear-gradient(165deg, rgba(55, 18, 35, 0.88) 0%, rgba(32, 8, 22, 0.82) 100%);
+  border: 1px solid rgba(249, 237, 228, 0.16);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.25),
+    0 28px 64px -16px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(36px) saturate(1.32);
+  -webkit-backdrop-filter: blur(36px) saturate(1.32);
 }
 
 .map-fullscreen {

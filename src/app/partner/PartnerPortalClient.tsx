@@ -369,6 +369,7 @@ function PartnerPortalInner({
           label: `History (${data?.allDeliveries?.filter((d) => ["completed", "delivered"].includes((d.status || "").toLowerCase())).length ?? 0})`,
         },
         { key: "calendar", label: "Calendar" },
+        { key: "coverage", label: "Coverage map", href: "/partner/coverage" },
         { key: "tracking", label: "Live Map" },
         { key: "inbound", label: "Inbound" },
         ...(showProjects
@@ -852,9 +853,24 @@ function PartnerPortalInner({
               >
                 {tabs.map((t) => {
                   const hasCount = /\(\d+\)$/.test(t.label);
+                  const href = "href" in t ? t.href : undefined;
+                  if (href) {
+                    return (
+                      <Link
+                        key={t.key}
+                        href={href}
+                        className={`flex-shrink-0 px-3 sm:px-4 py-3 text-[10px] font-bold tracking-[0.1em] uppercase whitespace-nowrap border-b transition-colors -mb-px ${
+                          hasCount ? "min-w-[6.5rem]" : "min-w-[4.5rem]"
+                        } border-transparent text-[#5A6B5E] hover:text-[var(--tx2)]`}
+                      >
+                        {t.label}
+                      </Link>
+                    );
+                  }
                   return (
                     <button
                       key={t.key}
+                      type="button"
                       onClick={() => setActiveTab(t.key)}
                       className={`flex-shrink-0 px-3 sm:px-4 py-3 text-[10px] font-bold tracking-[0.1em] uppercase whitespace-nowrap border-b transition-colors -mb-px ${
                         hasCount ? "min-w-[6.5rem]" : "min-w-[4.5rem]"

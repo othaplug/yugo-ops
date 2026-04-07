@@ -27,6 +27,7 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { isPreMoveChecklistComplete, preMoveChecklistCounts } from "@/lib/pre-move-checklist";
 import EstateServiceChecklistAdminRow from "./EstateServiceChecklistAdminRow";
 import { formatMoveDate, formatPlatformDisplay, parseDateOnly } from "@/lib/date-format";
+import { ProfitabilityBreakdownHint } from "@/components/admin/AdminContextHints";
 
 function isEstateTierMove(m: {
   tier_selected?: string | null;
@@ -384,10 +385,10 @@ export default function MoveDetailClient({
     ? move.assigned_members.filter((x: unknown) => typeof x === "string" && String(x).trim())
     : [];
   const displayCrewName =
+    selectedCrew?.name?.trim() ||
     (typeof move.assigned_crew_name === "string" && move.assigned_crew_name.trim()
       ? move.assigned_crew_name.trim()
       : "") ||
-    selectedCrew?.name ||
     "";
   const [assignedMembers, setAssignedMembers] = useState<Set<string>>(() => {
     const assigned = Array.isArray(move.assigned_members) ? move.assigned_members : [];
@@ -1915,8 +1916,9 @@ function MoveProfitCard({ move }: { move: any }) {
 
   return (
     <div className="border-t border-[var(--brd)]/30 py-4">
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
         <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Profitability</div>
+        <ProfitabilityBreakdownHint iconSize={14} ariaLabel="What profitability includes" />
         <span className="dt-badge tracking-[0.04em] text-[var(--gold)]">Owner Only</span>
       </div>
       <div className="space-y-1.5 text-[11px]">

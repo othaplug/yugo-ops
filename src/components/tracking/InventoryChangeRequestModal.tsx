@@ -218,10 +218,18 @@ export default function InventoryChangeRequestModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/50 p-3">
+    <div
+      data-modal-root
+      data-yugo-glass-modal
+      className="fixed inset-0 z-[100001] flex items-center justify-center p-3"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={close} />
       <div
-        className="w-full max-w-md rounded-2xl border bg-white shadow-xl flex flex-col"
+        className="relative z-10 w-full max-w-md rounded-2xl border yugo-glass-light shadow-xl flex flex-col modal-card pointer-events-auto"
         style={{ borderColor: `${FOREST}18`, maxHeight: "min(92dvh, 640px)" }}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-2 px-4 py-3 border-b" style={{ borderColor: `${FOREST}10` }}>
           <h3 className="text-[15px] font-bold font-heading" style={{ color: WINE }}>

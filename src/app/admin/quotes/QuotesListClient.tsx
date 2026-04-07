@@ -14,6 +14,7 @@ import { useToast } from "../components/Toast";
 import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
 import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
+import { QuotesFollowupAutomationHint } from "@/components/admin/AdminContextHints";
 
 interface Quote {
   id: string;
@@ -410,7 +411,10 @@ export default function QuotesListClient({
         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 min-w-0">
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Sales</p>
-            <h1 className="admin-page-hero text-[var(--tx)]">Quotes</h1>
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <h1 className="admin-page-hero text-[var(--tx)] mb-0">Quotes</h1>
+              <QuotesFollowupAutomationHint align="start" ariaLabel="Automated quote follow-ups" />
+            </div>
           </div>
           <div className="flex items-center gap-2 shrink-0 ml-auto">
             <button
@@ -427,13 +431,6 @@ export default function QuotesListClient({
             <CreateButton href="/admin/quotes/new" title="New Quote" />
           </div>
         </div>
-        <p className="text-[11px] leading-snug text-[var(--tx3)] px-0.5 font-medium">
-          <strong className="text-[var(--tx2)] font-semibold">Automated:</strong> Vercel runs this job daily at{" "}
-          <span className="whitespace-nowrap">4:00 PM UTC</span> when{" "}
-          <span className="whitespace-nowrap">Auto follow-up emails</span> is enabled in{" "}
-          <span className="whitespace-nowrap">Platform → Business</span>. Manual send uses the same rules (stages 1–3) and
-          shows quote IDs first.
-        </p>
       </div>
 
       {followupModalOpen &&

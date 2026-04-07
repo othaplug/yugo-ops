@@ -33,6 +33,7 @@ import {
   normalizeDisplayDateFormatPreset,
 } from "@/lib/display-date-format";
 import { DEFAULT_GOOGLE_REVIEW_COUNT_LABEL } from "@/lib/google-review-url";
+import { QuotesFollowupAutomationHint } from "@/components/admin/AdminContextHints";
 
 const TABS = [
   { id: "pricing",        label: "Pricing",        desc: "Rates & service fees",      Icon: CurrencyDollar },
@@ -816,8 +817,9 @@ function QuotingDefaultsSection() {
   return (
     <section className="pt-6 border-t border-[var(--brd)]/30">
       <div className="mb-4">
-        <h2 className="admin-section-h2 flex items-center gap-2">
+        <h2 className="admin-section-h2 flex items-center gap-2 flex-wrap">
           <Icon name="fileText" className="w-[14px] h-[14px]" /> Quoting Defaults
+          <QuotesFollowupAutomationHint iconSize={15} ariaLabel="Automated quote follow-ups" />
         </h2>
         <p className="text-[11px] text-[var(--tx3)] mt-1">Default settings for quote generation</p>
       </div>
@@ -1395,10 +1397,18 @@ export default function PlatformSettingsClient({
       const oldName = editingStaff.name;
       setStaffRoster((prev) => prev.map((s) => s.id === editingStaff.id ? data : s));
       if (oldName !== name) {
+        const norm = (s: string) => s.trim().toLowerCase();
         setTeams((prev) => prev.map((t) => ({
           ...t,
-          memberIds: t.memberIds.map((id) => id.trim().toLowerCase() === oldName.trim().toLowerCase() ? name : id),
+          memberIds: t.memberIds.map((id) => (norm(id) === norm(oldName) ? name : id)),
         })));
+        fetch("/api/admin/crew-members")
+          .then((r) => r.json())
+          .then((crewData) => {
+            if (Array.isArray(crewData)) setCrewPortalMembers(crewData);
+          })
+          .catch(() => {});
+        router.refresh();
       }
       toast(`${name} updated`, "check");
       setEditingStaff(null);

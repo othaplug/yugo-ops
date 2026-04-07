@@ -125,8 +125,18 @@ function ScheduleModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5 bg-black/50" onClick={onClose}>
-      <div className="bg-[#FFFBF7] rounded-t-lg sm:rounded-lg w-full sm:max-w-[520px] shadow-[0_24px_80px_rgba(44,62,45,0.14)] border border-[#2C3E2D]/10 max-h-[92dvh] flex flex-col overflow-hidden animate-slide-up sm:animate-none" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} onClick={(e) => e.stopPropagation()}>
+    <div
+      data-modal-root
+      data-yugo-glass-modal
+      className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5"
+      role="presentation"
+    >
+      <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={onClose} />
+      <div
+        className="relative z-10 yugo-glass-light rounded-t-lg sm:rounded-lg w-full sm:max-w-[520px] shadow-[0_24px_80px_rgba(44,62,45,0.14)] border border-[#2C3E2D]/10 max-h-[92dvh] flex flex-col overflow-hidden animate-slide-up sm:animate-none modal-card"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-[#2C3E2D]/10 flex items-center justify-between">
           <h2 className="text-[15px] font-bold font-hero text-[#5C1A33]">{isEdit ? "Edit Schedule" : "Create Recurring Schedule"}</h2>
           <button onClick={onClose} className="text-[var(--tx3)] hover:text-[var(--tx)] p-1">

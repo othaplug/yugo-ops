@@ -8,6 +8,7 @@ import {
   ARRIVAL_CHECKPOINTS_MOVE,
   ARRIVAL_CHECKPOINTS_DELIVERY,
 } from "@/lib/parse-time-window";
+import { normalizeDeliveryStatus } from "@/lib/crew-tracking-status";
 
 type Checkpoint = {
   status: string;
@@ -29,8 +30,8 @@ const STAGE_LABELS: Record<string, string> = {
   en_route_to_pickup: "Travel to Pickup",
   arrived_at_pickup: "At Pickup",
   loading: "Loading",
-  en_route_to_destination: "Transit",
-  arrived_at_destination: "At Destination",
+  en_route_to_destination: "Travel to drop off",
+  arrived_at_destination: "At Drop off",
   unloading: "Unloading",
   completed: "Complete",
   en_route: "En Route",
@@ -52,30 +53,81 @@ function getFirstArrivalMs(checkpoints: Checkpoint[], statuses: readonly string[
   return null;
 }
 
+/**
+ * Time between checkpoint A and B is spent *in* the phase that started at A, not the one reached at B.
+ * (E.g. en_route_to_pickup → arrived_at_pickup is travel time, not "at pickup".)
+ */
+function intervalLabelAndStatus(fromStatus: string): { label: string; status: string } {
+  if (fromStatus === "started") {
+    return { label: STAGE_LABELS.en_route_to_pickup, status: "en_route_to_pickup" };
+  }
+  const s = normalizeDeliveryStatus(fromStatus);
+  if (s === "en_route_to_pickup") {
+    return { label: STAGE_LABELS.en_route_to_pickup, status: "en_route_to_pickup" };
+  }
+  if (s === "arrived_at_pickup" || s === "loading") {
+    return { label: STAGE_LABELS.arrived_at_pickup, status: "arrived_at_pickup" };
+  }
+  if (s === "en_route_to_destination") {
+    return { label: STAGE_LABELS.en_route_to_destination, status: "en_route_to_destination" };
+  }
+  if (s === "arrived_at_destination" || s === "unloading") {
+    return { label: STAGE_LABELS.arrived_at_destination, status: "arrived_at_destination" };
+  }
+  if (s === "completed") {
+    return { label: STAGE_LABELS.completed, status: "completed" };
+  }
+  return {
+    label: STAGE_LABELS[fromStatus] || fromStatus.replace(/_/g, " "),
+    status: fromStatus,
+  };
+}
+
 function buildStages(
   checkpoints: Checkpoint[],
   sessionStart: string,
+  completedAt: string | null | undefined,
 ): Stage[] {
   if (!checkpoints || checkpoints.length === 0) return [];
   const pts: { status: string; timestamp: string }[] = [
     { status: "started", timestamp: sessionStart },
     ...checkpoints,
   ];
-  const stages: Stage[] = [];
+  const lastCp = checkpoints[checkpoints.length - 1];
+  const lastCpMs = new Date(lastCp.timestamp).getTime();
+  const doneMs = completedAt ? new Date(completedAt).getTime() : NaN;
+  if (
+    Number.isFinite(doneMs) &&
+    doneMs > lastCpMs &&
+    lastCp.status !== "completed"
+  ) {
+    pts.push({ status: "completed", timestamp: completedAt! });
+  }
+  const raw: Stage[] = [];
   for (let i = 0; i < pts.length - 1; i++) {
     const from = pts[i];
     const to = pts[i + 1];
-    const label = STAGE_LABELS[to.status] || STAGE_LABELS[from.status] || from.status.replace(/_/g, " ");
+    const { label, status } = intervalLabelAndStatus(from.status);
     const startMs = new Date(from.timestamp).getTime();
     const endMs = new Date(to.timestamp).getTime();
-    const duration = Math.round((endMs - startMs) / 60000);
-    stages.push({
-      status: to.status,
+    const duration = Math.max(0, Math.round((endMs - startMs) / 60000));
+    raw.push({
+      status,
       label,
       startedAt: from.timestamp,
       endedAt: to.timestamp,
       duration,
     });
+  }
+  const stages: Stage[] = [];
+  for (const seg of raw) {
+    const prev = stages[stages.length - 1];
+    if (prev && prev.label === seg.label) {
+      prev.endedAt = seg.endedAt;
+      prev.duration = (prev.duration ?? 0) + (seg.duration ?? 0);
+    } else {
+      stages.push({ ...seg });
+    }
   }
   return stages;
 }
@@ -183,7 +235,11 @@ export async function GET(req: NextRequest) {
 
   const jobs = completedSessions.map((s) => {
     const cps = (s.checkpoints as Checkpoint[]) || [];
-    const stages = buildStages(cps, s.started_at || s.completed_at || new Date().toISOString());
+    const stages = buildStages(
+      cps,
+      s.started_at || s.completed_at || new Date().toISOString(),
+      s.completed_at,
+    );
 
     const startMs = s.started_at ? new Date(s.started_at).getTime() : null;
     const endMs = s.completed_at

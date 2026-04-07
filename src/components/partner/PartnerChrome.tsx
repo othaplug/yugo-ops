@@ -34,7 +34,7 @@ export function PartnerSectionTitle({ children }: { children: ReactNode }) {
 
 /** Modal / sheet panel aligned with PartnerScheduleModal */
 export const partnerModalPanelClass =
-  "bg-[#FFFBF7] rounded-t-lg sm:rounded-lg shadow-[0_24px_80px_rgba(44,62,45,0.14)] border border-[#2C3E2D]/10";
+  "yugo-glass-light rounded-t-lg sm:rounded-lg shadow-[0_24px_80px_rgba(44,62,45,0.14)] border border-[#2C3E2D]/10";
 
 export const partnerForestPrimaryBtn =
   "inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-[10px] font-bold tracking-[0.12em] uppercase bg-[#2C3E2D] text-white hover:bg-[#243828] transition-colors rounded-sm disabled:opacity-50";

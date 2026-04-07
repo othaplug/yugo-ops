@@ -117,6 +117,12 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
         Icon: Icons.shippingContainer,
         minRole: "coordinator",
       },
+      {
+        href: "/admin/sales/pricing-map",
+        label: "Pricing map",
+        Icon: Icons.mapPin,
+        minRole: "sales",
+      },
     ],
   },
   {
@@ -583,7 +589,7 @@ export default function AdminShell({
             <RealtimeListener />
             <SessionTimeout />
             <OfflineBanner />
-            <div className="admin-app flex min-h-screen max-w-full overflow-x-clip">
+            <div className="admin-app flex h-dvh min-h-0 max-w-full overflow-x-clip overflow-y-hidden">
               {/* Skip to main content for keyboard users */}
               <a
                 href="#admin-main"
@@ -593,11 +599,11 @@ export default function AdminShell({
               </a>
               {/* Sidebar column: width animates on mobile (push layout); desktop matches rail / expanded width */}
               <div
-                className={`shrink-0 overflow-hidden transition-[width] duration-300 ease-out ${sidebarOpen ? "max-md:w-[220px]" : "max-md:w-0"} ${sidebarCollapsed ? "md:w-14" : "md:w-[220px]"}`}
+                className={`shrink-0 h-full min-h-0 overflow-hidden transition-[width] duration-300 ease-out ${sidebarOpen ? "max-md:w-[220px]" : "max-md:w-0"} ${sidebarCollapsed ? "md:w-14" : "md:w-[220px]"}`}
               >
               <aside
                 className={`
-                h-dvh h-screen max-h-[100dvh] flex flex-col overflow-hidden
+                h-full min-h-0 flex flex-col overflow-hidden
                 yugo-glass text-[var(--tx)]
                 w-[220px] ${sidebarCollapsed ? "md:w-14" : "md:w-[220px]"}
               `}

@@ -23,6 +23,7 @@ import {
   ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS,
 } from "../../components/admin-toolbar-action-classes";
 import { formatPlatformDisplay } from "@/lib/date-format";
+import { QuotesFollowupAutomationHint } from "@/components/admin/AdminContextHints";
 import { toTitleCase } from "@/lib/format-text";
 import { displayLabel } from "@/lib/displayLabels";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -481,7 +482,10 @@ export default function QuoteDetailClient({
         <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 md:p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
             <div>
-              <h2 className="admin-section-h2 mb-0">Status &amp; follow-ups</h2>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="admin-section-h2 mb-0">Status &amp; follow-ups</h2>
+                <QuotesFollowupAutomationHint iconSize={15} ariaLabel="Automated quote follow-ups" />
+              </div>
               <p className="text-[11px] text-[var(--tx3)] mt-1">
                 Automated emails sent: {followupsSentCount} of {followupMaxAttempts}
               </p>

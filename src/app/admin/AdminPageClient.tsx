@@ -46,6 +46,7 @@ import {
 } from "@phosphor-icons/react";
 import { COMPLETENESS_PATH_LABELS } from "@/lib/leads/admin-labels";
 import RevenueForecastWidget from "@/components/admin/RevenueForecastWidget";
+import { SpeedToLeadHint } from "@/components/admin/AdminContextHints";
 import {
   buildPrecipAlertText,
   type MoveWeatherBrief,
@@ -1701,8 +1702,9 @@ export default function AdminPageClient({
                 leadPulse.avgResponseMin != null) && (
                 <div className="pt-6 border-t border-[var(--brd)]/30">
                   <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <h2 className="admin-section-h2 min-w-0">Leads</h2>
+                    <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
+                      <h2 className="admin-section-h2 min-w-0 mb-0">Leads</h2>
+                      <SpeedToLeadHint iconSize={15} ariaLabel="Speed to lead" />
                     </div>
                     <Link
                       href="/admin/leads"

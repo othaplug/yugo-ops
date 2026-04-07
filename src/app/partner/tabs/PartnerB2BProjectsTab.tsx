@@ -650,9 +650,15 @@ export default function PartnerB2BProjectsTab({
   // ── Modals ────────────────────────────────────────────────────────────────
 
   const NewProjectModal = showNewProject && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 p-4 sm:p-5" onClick={() => setShowNewProject(false)}>
+    <div
+      data-modal-root
+      data-yugo-glass-modal
+      className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center p-4 sm:p-5"
+      role="presentation"
+    >
+      <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={() => setShowNewProject(false)} />
       <div
-        className="bg-[#FFFBF7] rounded-t-lg sm:rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4"
+        className="relative z-10 yugo-glass-light rounded-t-lg sm:rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4 modal-card"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
@@ -714,9 +720,15 @@ export default function PartnerB2BProjectsTab({
   ) : null;
 
   const EditProjectModal = showEditProject && selectedProject && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 p-4 sm:p-5" onClick={() => setShowEditProject(false)}>
+    <div
+      data-modal-root
+      data-yugo-glass-modal
+      className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center p-4 sm:p-5"
+      role="presentation"
+    >
+      <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={() => setShowEditProject(false)} />
       <div
-        className="bg-[#FFFBF7] rounded-t-lg sm:rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4"
+        className="relative z-10 yugo-glass-light rounded-t-lg sm:rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4 modal-card"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
@@ -783,8 +795,24 @@ export default function PartnerB2BProjectsTab({
   ) : null;
 
   const AddItemModal = showAddItem && selectedProject && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 p-4 sm:p-5" onClick={() => { setShowAddItem(false); resetAddItem(); }}>
-      <div className="bg-[#FFFBF7] rounded-t-lg sm:rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[520px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4" onClick={(e) => e.stopPropagation()}>
+    <div
+      data-modal-root
+      data-yugo-glass-modal
+      className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center p-4 sm:p-5"
+      role="presentation"
+    >
+      <div
+        className="fixed inset-0 z-0 modal-overlay"
+        aria-hidden
+        onClick={() => {
+          setShowAddItem(false);
+          resetAddItem();
+        }}
+      />
+      <div
+        className="relative z-10 yugo-glass-light rounded-t-lg sm:rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[520px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4 modal-card"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] flex items-center justify-between px-5 py-4 shrink-0 z-10">
           <h3 className="font-hero text-[20px] sm:text-[22px] font-bold text-[#1A1A1A]">Add Item</h3>
           <button type="button" onClick={() => { setShowAddItem(false); resetAddItem(); }}
@@ -975,8 +1003,17 @@ export default function PartnerB2BProjectsTab({
   ) : null;
 
   const StatusUpdateModal = statusItem && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 p-4 sm:p-5" onClick={() => setStatusItem(null)}>
-      <div className="bg-[#FFFBF7] rounded-t-lg sm:rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[420px] overflow-hidden flex flex-col mx-0 sm:mx-4" onClick={(e) => e.stopPropagation()}>
+    <div
+      data-modal-root
+      data-yugo-glass-modal
+      className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center p-4 sm:p-5"
+      role="presentation"
+    >
+      <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={() => setStatusItem(null)} />
+      <div
+        className="relative z-10 yugo-glass-light rounded-t-lg sm:rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[420px] overflow-hidden flex flex-col mx-0 sm:mx-4 modal-card"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E4DF] shrink-0">
           <div>
             <h3 className="font-hero text-[20px] font-bold text-[#1A1A1A]">Update Status</h3>
@@ -1026,8 +1063,17 @@ export default function PartnerB2BProjectsTab({
   ) : null;
 
   const SchedulePromptModal = scheduleItem && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[99990] flex items-center justify-center bg-black/50 p-4" onClick={() => setScheduleItem(null)}>
-      <div className="bg-[#FFFBF7] rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[380px] p-6 text-center" onClick={(e) => e.stopPropagation()}>
+    <div
+      data-modal-root
+      data-yugo-glass-modal
+      className="fixed inset-0 z-[99990] flex items-center justify-center p-4"
+      role="presentation"
+    >
+      <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={() => setScheduleItem(null)} />
+      <div
+        className="relative z-10 yugo-glass-light rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[380px] p-6 text-center modal-card"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className="text-[18px] font-bold text-[#1A1A1A] mb-2">
           {scheduleMode === "pickup" ? "Ready for pickup!" : "Schedule delivery?"}
         </h3>
@@ -1066,10 +1112,12 @@ export default function PartnerB2BProjectsTab({
 
   // Photo lightbox
   const PhotoLightbox = viewPhotos && viewPhotos.length > 0 ? (
-    <div className="fixed inset-0 z-[99990] flex items-center justify-center bg-black/60" onClick={() => setViewPhotos(null)}>
+    <div data-modal-root className="fixed inset-0 z-[99990]" role="presentation">
+      <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={() => setViewPhotos(null)} />
+      <div className="fixed inset-0 z-10 flex items-center justify-center pointer-events-none p-4">
       <button
         type="button"
-        className="absolute top-4 right-4 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
+        className="absolute top-4 right-4 z-[1] p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors pointer-events-auto"
         onClick={() => setViewPhotos(null)}
       >
         <X className="w-5 h-5" />
@@ -1078,15 +1126,21 @@ export default function PartnerB2BProjectsTab({
         <>
           <button
             type="button"
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
-            onClick={(e) => { e.stopPropagation(); setViewPhotoIdx((i) => Math.max(0, i - 1)); }}
+            className="absolute left-4 top-1/2 z-[1] -translate-y-1/2 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors pointer-events-auto"
+            onClick={(e) => {
+              e.stopPropagation();
+              setViewPhotoIdx((i) => Math.max(0, i - 1));
+            }}
           >
             <CaretLeft size={20} weight="regular" />
           </button>
           <button
             type="button"
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
-            onClick={(e) => { e.stopPropagation(); setViewPhotoIdx((i) => Math.min(viewPhotos.length - 1, i + 1)); }}
+            className="absolute right-4 top-1/2 z-[1] -translate-y-1/2 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors pointer-events-auto"
+            onClick={(e) => {
+              e.stopPropagation();
+              setViewPhotoIdx((i) => Math.min(viewPhotos.length - 1, i + 1));
+            }}
           >
             <CaretRight size={20} weight="regular" />
           </button>
@@ -1096,14 +1150,15 @@ export default function PartnerB2BProjectsTab({
       <img
         src={viewPhotos[viewPhotoIdx]}
         alt="Item photo"
-        className="max-h-[85vh] max-w-[90vw] rounded-xl object-contain"
+        className="max-h-[85vh] max-w-[90vw] rounded-xl object-contain pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
       />
       {viewPhotos.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-2 py-1 rounded-full bg-black/30 text-white text-[11px]">
+        <div className="absolute bottom-4 left-1/2 z-[1] -translate-x-1/2 px-2 py-1 rounded-full bg-black/30 text-white text-[11px] pointer-events-auto">
           {viewPhotoIdx + 1} / {viewPhotos.length}
         </div>
       )}
+      </div>
     </div>
   ) : null;
 

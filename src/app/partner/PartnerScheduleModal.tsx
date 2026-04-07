@@ -598,7 +598,7 @@ export default function PartnerScheduleModal({
       zClassName="z-[99999]"
       backdropClassName="bg-black/45"
       onBackdropClick={onClose}
-      panelClassName="bg-[#FFFBF7] rounded-t-lg sm:rounded-lg shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[640px] overflow-hidden mx-0 sm:mx-4 flex flex-col sheet-card sm:modal-card border border-[#2C3E2D]/10"
+      panelClassName="yugo-glass-light rounded-t-lg sm:rounded-lg shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[640px] overflow-hidden mx-0 sm:mx-4 flex flex-col sheet-card sm:modal-card border border-[#2C3E2D]/10"
       panelStyle={{ maxHeight: "min(92dvh, 92vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
         {/* ── Header ── */}

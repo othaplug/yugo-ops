@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ReferralPartnersOverviewHint } from "@/components/admin/ReferralPartnersOverviewHint";
 import { useToast } from "../../components/Toast";
 
 type CommissionMode = "pct_5" | "pct_10" | "flat_50" | "custom";
@@ -64,7 +65,13 @@ export default function PartnerReferralSection({
 
   return (
     <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
-      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Referral program</div>
+      <div className="flex items-center gap-1.5 mb-2">
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Referral program</div>
+        <ReferralPartnersOverviewHint
+          iconSize={14}
+          ariaLabel="About referral partners vs service partners"
+        />
+      </div>
       <p className="text-[11px] text-[var(--tx3)] mb-4">
         Service partners contract Yugo for on-site moves. Referral partners send personal-move leads for a commission. A PM company can be both — track the referral relationship here separately from the service contract.
       </p>

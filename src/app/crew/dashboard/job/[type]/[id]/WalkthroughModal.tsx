@@ -516,19 +516,20 @@ export default function WalkthroughModal({
     <div
       className="fixed inset-0 z-[99995] flex min-h-0 items-center justify-center p-4 sm:p-5"
       data-modal-root
+      data-yugo-glass-modal
       data-crew-portal
       style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
     >
       <div
-        className="fixed inset-0 z-0 bg-black/80 modal-overlay"
+        className="fixed inset-0 z-0 modal-overlay"
         aria-hidden
       />
       <div
-        className="relative z-10 w-full max-w-[520px] overflow-hidden bg-[#FFFBF7] border border-[#2C3E2D]/10 rounded-t-2xl sm:rounded-2xl shadow-[0_24px_64px_-20px_rgba(44,62,45,0.25)] flex flex-col modal-card"
+        className="relative z-10 w-full max-w-[520px] overflow-hidden yugo-glass-light border border-[#2C3E2D]/10 rounded-t-2xl sm:rounded-2xl shadow-[0_24px_64px_-20px_rgba(44,62,45,0.25)] flex flex-col modal-card"
         data-crew-job-premium
         style={{ maxHeight: "min(92dvh, 92vh)" }}
       >
-        <div className="sticky top-0 bg-[#FFFBF7] border-b border-[#2C3E2D]/10 px-5 py-4 z-10 flex items-start justify-between gap-3">
+        <div className="sticky top-0 bg-[#FFFBF7]/80 backdrop-blur-md border-b border-[#2C3E2D]/10 px-5 py-4 z-10 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="font-hero text-[22px] font-semibold text-[#2b1810] tracking-[-0.02em] leading-tight">
               {modalTitle}

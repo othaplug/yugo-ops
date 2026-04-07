@@ -280,11 +280,18 @@ export default function DeliveryDetailClient({
       ? delivery.assigned_crew_name.trim()
       : "";
   const hasSnapshot = snapName.length > 0 || snapMembers.length > 0;
+  /** Prefer live crew roster/name when the crew still exists so Platform edits show without reassigning. */
+  const liveMembers =
+    linkedCrew && Array.isArray(linkedCrew.members)
+      ? linkedCrew.members.filter((m: unknown) => typeof m === "string" && String(m).trim())
+      : [];
   const displayCrew =
     linkedCrew || hasSnapshot
       ? {
-          name: (snapName || linkedCrew?.name || "Crew (archived)").trim() || "Crew",
-          members: snapMembers.length > 0 ? snapMembers : linkedCrew?.members || [],
+          name: linkedCrew
+            ? (linkedCrew.name || "").trim() || snapName || "Crew"
+            : (snapName || "Crew (archived)").trim() || "Crew",
+          members: linkedCrew ? liveMembers : snapMembers,
         }
       : null;
   const completed = isDone(delivery.status);

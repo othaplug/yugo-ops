@@ -785,14 +785,21 @@ export default function UnifiedTrackingView({
   initialDeliveries,
   todayMoves = [],
   todayDeliveries = [],
+  routeMoves,
+  routeDeliveries,
   office = DEFAULT_OFFICE,
 }: {
   initialCrews: Crew[];
   initialDeliveries: Delivery[];
   todayMoves?: Move[];
   todayDeliveries?: Delivery[];
+  /** When set, used to resolve pickup/delivery coords for polylines (not limited to today's schedule). */
+  routeMoves?: Move[];
+  routeDeliveries?: Delivery[];
   office?: OfficeConfig;
 }) {
+  const movesForRoutes = routeMoves ?? todayMoves;
+  const deliveriesForRoutes = routeDeliveries ?? todayDeliveries;
   const [crews, setCrews] = useState<Crew[]>(initialCrews);
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
   const [selectedCrew, setSelectedCrew] = useState<string | null>(null);
@@ -1001,17 +1008,22 @@ export default function UnifiedTrackingView({
         for (const s of activeSessions) {
           if (!s.jobRecordId) continue;
           const crew = crews.find((c) => c.id === s.teamId);
-          if (!crew?.current_lat || !crew?.current_lng) continue;
+          if (
+            crew == null ||
+            crew.current_lat == null ||
+            crew.current_lng == null
+          )
+            continue;
 
           const loc = crewLocations.get(s.teamId);
           const pickupLeg = routeTargetsPickupLeg(s.status, loc?.status);
           const move =
             s.jobType === "move"
-              ? todayMoves.find((m) => m.id === s.jobRecordId)
+              ? movesForRoutes.find((m) => m.id === s.jobRecordId)
               : undefined;
           const delivery =
             s.jobType === "delivery"
-              ? todayDeliveries.find((d) => d.id === s.jobRecordId)
+              ? deliveriesForRoutes.find((d) => d.id === s.jobRecordId)
               : undefined;
 
           let destLngLat: [number, number] | null = null;
@@ -1093,7 +1105,13 @@ export default function UnifiedTrackingView({
     return () => {
       if (routeFetchDebounceRef.current) clearTimeout(routeFetchDebounceRef.current);
     };
-  }, [activeSessions, crews, crewLocations, todayMoves, todayDeliveries]);
+  }, [
+    activeSessions,
+    crews,
+    crewLocations,
+    movesForRoutes,
+    deliveriesForRoutes,
+  ]);
 
   const crewsWithPosition = crews.filter(
     (c) => c.current_lat != null && c.current_lng != null,

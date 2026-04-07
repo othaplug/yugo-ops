@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import BackButton from "../../components/BackButton";
 import KpiCard from "@/components/ui/KpiCard";
@@ -9,6 +8,7 @@ export const metadata = { title: "Referral Partners" };
 
 import RealtorsTable from "./RealtorsTable";
 import RealtorPartnersSection from "./RealtorPartnersSection";
+import { ReferralPartnersPageHero } from "./ReferralPartnersPageHero";
 
 export default async function RealtorsPage() {
   const db = createAdminClient();
@@ -55,17 +55,7 @@ export default async function RealtorsPage() {
         <BackButton label="Partners" href="/admin/platform?tab=partners" />
       </div>
 
-      <div className="mb-8">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Partners</p>
-        <h1 className="admin-page-hero text-[var(--tx)]">Referral Partners</h1>
-        <p className="mt-2 text-[13px] text-[var(--tx3)] max-w-2xl leading-relaxed">
-          Referral agreements with realtors, property managers, and developers. For property-management service contracts (tenant moves, renovations), manage partners under{" "}
-          <Link href="/admin/partners" className="text-[var(--gold)] font-medium hover:underline">
-            Partners
-          </Link>
-          .
-        </p>
-      </div>
+      <ReferralPartnersPageHero />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)] mb-8">
         <KpiCard label="Total Referrals" value={String(all.length)} sub={`${referralsThisMonth} this month`} />

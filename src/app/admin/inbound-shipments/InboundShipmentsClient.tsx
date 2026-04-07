@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { CaretRight, ArrowRight } from "@phosphor-icons/react";
 import { INBOUND_SHIPMENT_STATUS_LABELS } from "@/lib/inbound-shipment-labels";
+import { RissdWorkflowHint } from "@/components/admin/AdminContextHints";
 
 type Shipment = {
   id: string;
@@ -82,12 +83,10 @@ export default function InboundShipmentsClient() {
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--tx3)]/55">
             B2B
           </p>
-          <h1 className="admin-page-hero text-[var(--tx)]">
-            Inbound Shipments
-          </h1>
-          <p className="max-w-md text-sm leading-relaxed text-[var(--tx3)]/90">
-            Receive, inspect, store & deliver (RISSD)
-          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="admin-page-hero text-[var(--tx)] mb-0">Inbound Shipments</h1>
+            <RissdWorkflowHint ariaLabel="What RISSD means" />
+          </div>
         </div>
         <Link
           href="/admin/inbound-shipments/new"

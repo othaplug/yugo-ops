@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { InfoHint } from "@/components/ui/InfoHint";
 import { organizationTypeLabel } from "@/lib/partner-type";
 
 export type ReferralOrgPartner = {
@@ -17,9 +18,19 @@ export default function RealtorPartnersSection({ partners }: { partners: Referra
   return (
     <div className="mb-8">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
-        <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">
-          Referral partner organizations
-        </h3>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+            Referral partner organizations
+          </h3>
+          <InfoHint variant="admin" ariaLabel="About referral partner organizations" align="start">
+            <p className="text-[12px] leading-relaxed">
+              Organization records for realtors, property managers, and developers (commissions & referral
+              pipeline). Portal access and login invites are managed per organization. Individual realtor contacts for
+              the pipeline are below — use{" "}
+              <span className="font-semibold text-[var(--tx)]">Add Realtor</span> for those.
+            </p>
+          </InfoHint>
+        </div>
         <div className="flex flex-wrap gap-2">
           <Link
             href={`${ADD_BASE}&partnerType=realtor`}
@@ -41,11 +52,6 @@ export default function RealtorPartnersSection({ partners }: { partners: Referra
           </Link>
         </div>
       </div>
-      <p className="text-[11px] text-[var(--tx3)] mb-3 max-w-2xl leading-relaxed">
-        Organization records for realtors, property managers, and developers (commissions &amp; referral pipeline).
-        Portal access and login invites are managed per organization. Individual realtor contacts for the pipeline are
-        below — use <span className="text-[var(--tx2)] font-medium">Add Realtor</span> for those.
-      </p>
       {partners.length === 0 ? (
         <div className="rounded-lg border border-[var(--brd)]/50 bg-[var(--card)]/50 px-4 py-6 text-center">
           <p className="text-[13px] text-[var(--tx3)]">No referral partner organizations yet.</p>

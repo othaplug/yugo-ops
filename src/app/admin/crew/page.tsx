@@ -59,6 +59,9 @@ export default async function CrewPage() {
         initialDeliveries={deliveries || []}
         todayMoves={todayMoves}
         todayDeliveries={todayDeliveries}
+        /** Full rows with lat/lng — route lines must resolve the session job even if not "scheduled today". */
+        routeMoves={moves || []}
+        routeDeliveries={deliveries || []}
         office={office}
       />
     </div>

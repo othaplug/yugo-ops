@@ -28,6 +28,7 @@ import {
   X,
   XCircle,
 } from "@phosphor-icons/react";
+import { SpeedToLeadHint } from "@/components/admin/AdminContextHints";
 
 export type LeadRow = {
   id: string;
@@ -530,11 +531,10 @@ export default function LeadsHubClient({
         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--tx3)]/55">
           Revenue
         </p>
-        <h1 className="admin-page-hero text-[var(--tx)]">Leads</h1>
-        <p className="max-w-xl text-sm leading-relaxed text-[var(--tx3)]/90">
-          Speed to lead: respond in under five minutes when you can — it drives
-          conversion.
-        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="admin-page-hero text-[var(--tx)] mb-0">Leads</h1>
+          <SpeedToLeadHint ariaLabel="Speed to lead" />
+        </div>
       </header>
 
       <div className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
@@ -564,9 +564,12 @@ export default function LeadsHubClient({
       {mode === "dashboard" && metrics && (
         <div className="space-y-10 sm:space-y-12">
           <section aria-label="Speed to lead today">
-            <h2 className={sectionTitle}>
+            <h2 className={`${sectionTitle} flex-wrap`}>
               <Lightning size={14} className="text-[var(--tx2)]" aria-hidden />
-              Speed to lead — today
+              <span className="flex items-center gap-1.5 flex-wrap">
+                Speed to lead — today
+                <SpeedToLeadHint iconSize={14} ariaLabel="Speed to lead" />
+              </span>
             </h2>
             <div className="overflow-hidden rounded-2xl bg-[var(--brd)]/[0.28] p-px shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:bg-[var(--brd)]/35 dark:shadow-none">
               <div className="grid grid-cols-2 gap-px sm:grid-cols-5">

@@ -103,7 +103,7 @@ export function PartnerPortalWelcomeTour({
       zClassName="z-[99999]"
       className="items-center justify-center"
       backdropClassName="bg-black/60"
-      panelClassName="bg-[var(--card)] rounded-2xl shadow-2xl w-full max-w-[520px] mx-4 overflow-hidden modal-card"
+      panelClassName="yugo-glass-light rounded-2xl shadow-2xl w-full max-w-[520px] mx-4 overflow-hidden modal-card border border-[var(--brd)]"
       ariaModal
     >
       <div className="flex justify-center gap-2 pt-6">

@@ -204,10 +204,9 @@ export default function NewClientForm({
         <>
           {referralPartnerHub ? (
             <>
-              <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
-                Creates an organization for commission-based referral partners. Use the{" "}
-                <span className="text-[var(--tx2)]">Referral Partners</span> page for pipeline tracking and individual
-                realtor contacts.
+              <p className="text-[11px] text-[var(--tx3)] leading-relaxed mb-3">
+                Creates an organization for commission-based referral partners. Pipeline tracking and individual realtor
+                contacts live on the Referral Partners page.
               </p>
               <Field label="Referral partner type">
                 <select
