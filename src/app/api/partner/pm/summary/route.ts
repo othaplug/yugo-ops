@@ -1,6 +1,29 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
+import { partnerMoveTrackingUrl } from "@/lib/partner/pm-track-url";
+
+function propertyAccessIncomplete(p: {
+  move_hours?: string | null;
+  building_contact_name?: string | null;
+  building_contact_phone?: string | null;
+}) {
+  const hours = String(p.move_hours || "").trim();
+  const name = String(p.building_contact_name || "").trim();
+  const phone = String(p.building_contact_phone || "").trim();
+  return !hours || !name || !phone;
+}
+
+function invoiceCountsAsOverdue(
+  inv: { status: string | null | undefined; due_date: string | null | undefined },
+  todayYmd: string,
+) {
+  const st = String(inv.status || "").toLowerCase();
+  if (st === "overdue") return true;
+  if (st !== "sent" && st !== "partial") return false;
+  const d = inv.due_date ? String(inv.due_date).slice(0, 10) : "";
+  return Boolean(d && d < todayYmd);
+}
 
 /** Dashboard summary for property-management delivery partners. */
 export async function GET() {
@@ -14,6 +37,9 @@ export async function GET() {
   startOfMonth.setHours(0, 0, 0, 0);
   const startStr = startOfMonth.toISOString().slice(0, 10);
   const todayStr = new Date().toISOString().slice(0, 10);
+  const weekEnd = new Date();
+  weekEnd.setDate(weekEnd.getDate() + 7);
+  const weekEndStr = weekEnd.toISOString().slice(0, 10);
 
   const [
     { data: org },
@@ -23,6 +49,8 @@ export async function GET() {
     { data: upcoming },
     { data: recentCompleted },
     { data: projects },
+    { data: pendingApprovalMoves },
+    { data: partnerInvoices },
     { data: globals },
     { data: customs },
   ] = await Promise.all([
@@ -37,7 +65,9 @@ export async function GET() {
       .maybeSingle(),
     admin
       .from("partner_properties")
-      .select("id, building_name, address, total_units, active, service_region")
+      .select(
+        "id, building_name, address, total_units, active, service_region, move_hours, building_contact_name, building_contact_phone",
+      )
       .eq("partner_id", orgId)
       .eq("active", true),
     admin
@@ -55,7 +85,7 @@ export async function GET() {
       .not("contract_id", "is", null)
       .gte("scheduled_date", todayStr)
       .order("scheduled_date", { ascending: true })
-      .limit(25),
+      .limit(60),
     admin
       .from("moves")
       .select(
@@ -68,16 +98,36 @@ export async function GET() {
       .limit(10),
     admin
       .from("pm_projects")
-      .select("id, project_name, project_type, total_units, start_date, end_date, status")
+      .select("id, project_name, project_type, total_units, start_date, end_date, status, property_id")
       .eq("partner_id", orgId)
       .eq("status", "active")
       .order("created_at", { ascending: false })
       .limit(8),
+    admin
+      .from("moves")
+      .select("id")
+      .eq("organization_id", orgId)
+      .not("contract_id", "is", null)
+      .eq("status", "pending_approval"),
+    admin
+      .from("invoices")
+      .select("id, status, due_date")
+      .eq("organization_id", orgId)
+      .in("status", ["sent", "overdue", "partial"]),
     admin.from("pm_move_reasons").select("reason_code, label").is("partner_id", null),
     admin.from("pm_move_reasons").select("reason_code, label").eq("partner_id", orgId).eq("active", true),
   ]);
 
-  const props = properties ?? [];
+  const propsRaw = properties ?? [];
+  const buildingsIncompleteAccessCount = propsRaw.filter(propertyAccessIncomplete).length;
+  const props = propsRaw.map((p) => ({
+    id: p.id as string,
+    building_name: p.building_name as string,
+    address: p.address as string,
+    total_units: p.total_units as number | null,
+    active: p.active as boolean,
+    service_region: (p.service_region as string | null) ?? null,
+  }));
   const totalUnits = props.reduce((s, p) => s + (Number(p.total_units) || 0), 0);
   const monthRows = movesMonth ?? [];
   const completed = monthRows.filter((m) => ["completed", "paid", "delivered"].includes(String(m.status || "").toLowerCase())).length;
@@ -96,8 +146,56 @@ export async function GET() {
     if (pid) scheduledByProperty[pid] = (scheduledByProperty[pid] ?? 0) + 1;
   }
 
+  const terminal = new Set(["completed", "paid", "delivered", "cancelled"]);
+  const todaysMoves = upcomingList.filter(
+    (m) => String(m.scheduled_date || "") === todayStr && !terminal.has(String(m.status || "").toLowerCase()),
+  );
+
+  const weekMovesByDate: Record<
+    string,
+    {
+      id: string;
+      move_code: string | null;
+      unit_number: string | null;
+      tenant_name: string | null;
+      building_name: string | null;
+      scheduled_time: string | null;
+      status: string | null;
+    }[]
+  > = {};
+  for (const m of upcomingList) {
+    const d = String(m.scheduled_date || "");
+    if (!d || d < todayStr || d > weekEndStr) continue;
+    if (terminal.has(String(m.status || "").toLowerCase())) continue;
+    if (!weekMovesByDate[d]) weekMovesByDate[d] = [];
+    if (weekMovesByDate[d].length < 6) {
+      weekMovesByDate[d].push({
+        id: m.id as string,
+        move_code: m.move_code as string | null,
+        unit_number: m.unit_number as string | null,
+        tenant_name: m.tenant_name as string | null,
+        building_name: m.partner_property_id ? propById.get(m.partner_property_id)?.building_name ?? null : null,
+        scheduled_time: m.scheduled_time as string | null,
+        status: m.status as string | null,
+      });
+    }
+  }
+
+  const activeProjectsCount = (projects ?? []).length;
+  const upcomingScheduledCount = upcomingList.filter(
+    (m) => !terminal.has(String(m.status || "").toLowerCase()),
+  ).length;
+
   const showPropertyStrip = props.length >= 2;
   const showProjects = (projects ?? []).length > 0;
+
+  const pendingApprovalMoveCount = (pendingApprovalMoves ?? []).length;
+  const overdueInvoiceCount = (partnerInvoices ?? []).filter((i) =>
+    invoiceCountsAsOverdue(
+      { status: String(i.status ?? ""), due_date: (i.due_date as string | null) ?? null },
+      todayStr,
+    ),
+  ).length;
 
   return NextResponse.json({
     org: org ?? { id: orgId, name: "", type: "", vertical: null },
@@ -109,15 +207,41 @@ export async function GET() {
       movesThisMonth: monthRows.length,
       movesCompletedThisMonth: completed,
       revenueThisMonth: revenue,
+      upcomingScheduledCount,
     },
-    upcomingMoves: upcomingList.map((m) => ({
-      ...m,
+    upcomingMoves: upcomingList.map((m) => {
+      const st = String(m.status || "").toLowerCase();
+      const open = !terminal.has(st);
+      return {
+        ...m,
+        building_name: m.partner_property_id ? propById.get(m.partner_property_id)?.building_name ?? null : null,
+        move_type_label:
+          reasonLabels[(m.pm_reason_code as string) || ""] ||
+          reasonLabels[(m.pm_move_kind as string) || ""] ||
+          null,
+        tracking_url:
+          open && m.id
+            ? partnerMoveTrackingUrl({ id: m.id as string, move_code: m.move_code as string | null })
+            : null,
+      };
+    }),
+    todaysMoves: todaysMoves.map((m) => ({
+      id: m.id as string,
+      move_code: m.move_code as string | null,
+      scheduled_date: m.scheduled_date as string | null,
+      scheduled_time: m.scheduled_time as string | null,
+      unit_number: m.unit_number as string | null,
+      tenant_name: m.tenant_name as string | null,
+      status: m.status as string | null,
       building_name: m.partner_property_id ? propById.get(m.partner_property_id)?.building_name ?? null : null,
       move_type_label:
         reasonLabels[(m.pm_reason_code as string) || ""] ||
         reasonLabels[(m.pm_move_kind as string) || ""] ||
         null,
+      tracking_url: partnerMoveTrackingUrl({ id: m.id as string, move_code: m.move_code as string | null }),
     })),
+    weekMovesByDate,
+    activeProjectsCount,
     recentCompleted: (recentCompleted ?? []).map((m) => ({
       ...m,
       building_name: m.partner_property_id ? propById.get(m.partner_property_id)?.building_name ?? null : null,
@@ -131,6 +255,11 @@ export async function GET() {
       showPropertyStrip,
       showProjects,
       scheduledByProperty,
+    },
+    overviewAttention: {
+      pendingApprovalMoveCount,
+      overdueInvoiceCount,
+      buildingsIncompleteAccessCount,
     },
     reasonLabels,
   });

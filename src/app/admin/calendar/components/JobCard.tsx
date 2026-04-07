@@ -116,7 +116,9 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
         className="flex items-center gap-1 text-[10px] truncate"
         style={{ color: isCancelled ? "rgba(249,237,228,0.8)" : fg.muted }}
       >
-        <span className="truncate">{toTitleCase(event.description)}</span>
+        <span className="truncate">
+          {event.type === "delivery" ? event.description : toTitleCase(event.description)}
+        </span>
         {event.eventPhase && (
           <span className="shrink-0 font-bold uppercase" style={tagStyle}>
             {event.eventPhase === "delivery"

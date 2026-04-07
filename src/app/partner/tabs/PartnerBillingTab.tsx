@@ -18,6 +18,7 @@ import {
   PartnerSectionEyebrow,
   PARTNER_TABLE_CHROME,
 } from "@/components/partner/PartnerChrome";
+import { InfoHint } from "@/components/ui/InfoHint";
 
 interface DashboardData {
   completedThisMonth: number;
@@ -216,7 +217,7 @@ const monthlyPerformanceColumns: ColumnDef<MonthlyRow>[] = [
     accessor: (r) => r.score,
     render: (r) => (
       <span
-        className={`text-[12px] font-bold ${r.score.startsWith("A") ? "text-emerald-700" : "text-[#2C3E2D]"}`}
+        className={`text-[12px] font-bold ${r.score.startsWith("A") ? "text-emerald-700" : "text-[var(--tx)]"}`}
       >
         {r.score}
       </span>
@@ -438,13 +439,17 @@ export default function PartnerBillingTab({
       {hasNoDeliveries && (
         <div className="py-6 text-center border-b border-[#2C3E2D]/10">
           <PartnerSectionEyebrow>Monthly report</PartnerSectionEyebrow>
-          <p className="text-[15px] font-semibold text-[#1a1f1b]">
-            No deliveries yet
-          </p>
-          <p className="text-[12px] text-[#5A6B5E] mt-2 max-w-md mx-auto leading-relaxed">
-            Performance metrics and monthly data will appear here once you have
-            completed jobs.
-          </p>
+          <div className="flex items-center justify-center gap-2">
+            <p className="text-[15px] font-semibold text-[#1a1f1b]">
+              No deliveries yet
+            </p>
+            <InfoHint ariaLabel="When reporting data appears">
+              <span>
+                Performance metrics and monthly data will appear here once you
+                have completed jobs.
+              </span>
+            </InfoHint>
+          </div>
         </div>
       )}
 
@@ -459,11 +464,16 @@ export default function PartnerBillingTab({
           <button
             type="button"
             onClick={exportReport}
-            className="inline-flex items-center gap-1.5 self-start sm:self-auto text-[10px] font-bold tracking-[0.1em] uppercase text-[#2C3E2D] border border-[#2C3E2D]/20 px-3 py-2 rounded-sm hover:bg-[#2C3E2D]/[0.04] transition-colors"
+            className="inline-flex items-center gap-1.5 self-start sm:self-auto text-[10px] font-bold tracking-[0.1em] uppercase text-[var(--tx)] border border-[#2C3E2D]/20 px-3 py-2 rounded-sm hover:bg-[#2C3E2D]/[0.04] transition-colors"
           >
             <DownloadSimple size={14} weight="bold" />
             Export ({periodLabel})
-            <CaretRight size={12} weight="bold" className="opacity-60" aria-hidden />
+            <CaretRight
+              size={12}
+              weight="bold"
+              className="opacity-60"
+              aria-hidden
+            />
           </button>
         </div>
 
@@ -578,10 +588,15 @@ export default function PartnerBillingTab({
             <button
               type="button"
               onClick={onViewInvoices}
-              className="inline-flex items-center gap-1 self-start text-[10px] font-bold tracking-[0.1em] uppercase text-[#2C3E2D] hover:text-[#5C1A33] transition-colors"
+              className="inline-flex items-center gap-1 self-start text-[10px] font-bold tracking-[0.1em] uppercase text-[var(--tx)] hover:text-[#5C1A33] transition-colors"
             >
               View all invoices
-              <CaretRight size={12} weight="bold" className="opacity-70" aria-hidden />
+              <CaretRight
+                size={12}
+                weight="bold"
+                className="opacity-70"
+                aria-hidden
+              />
             </button>
           )}
         </div>
@@ -649,7 +664,9 @@ function SLACircle({
       >
         {value}
       </div>
-      <div className="text-[11px] text-[#5A6B5E] mt-2 leading-snug">{sublabel}</div>
+      <div className="text-[11px] text-[#5A6B5E] mt-2 leading-snug">
+        {sublabel}
+      </div>
     </div>
   );
 }

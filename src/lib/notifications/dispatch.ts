@@ -3,6 +3,42 @@ import { sendEmail } from "@/lib/email/send";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { adminNotificationLayout } from "@/lib/email/admin-templates";
 
+/** Roles that may receive internal admin/coordinator notification emails (excludes viewer, client, crew, partner). */
+export const STAFF_NOTIFICATION_EMAIL_ROLES = [
+  "owner",
+  "admin",
+  "manager",
+  "coordinator",
+  "dispatcher",
+  "sales",
+] as const;
+
+export type StaffNotificationEmailRole = (typeof STAFF_NOTIFICATION_EMAIL_ROLES)[number];
+
+function isStaffNotificationEmailRole(role: string | null | undefined): role is StaffNotificationEmailRole {
+  return (
+    !!role &&
+    (STAFF_NOTIFICATION_EMAIL_ROLES as readonly string[]).includes(role)
+  );
+}
+
+function normalizeRecipientEmail(raw: string | null | undefined): string | null {
+  const t = (raw || "").trim().toLowerCase();
+  return t.length > 0 ? t : null;
+}
+
+function parseExcludedRecipientEmails(data: NotificationData): Set<string> {
+  const raw = data.excludeRecipientEmails;
+  const out = new Set<string>();
+  if (Array.isArray(raw)) {
+    for (const x of raw) {
+      const n = normalizeRecipientEmail(typeof x === "string" ? x : String(x));
+      if (n) out.add(n);
+    }
+  }
+  return out;
+}
+
 interface NotificationData {
   subject?: string;
   body?: string;
@@ -20,6 +56,8 @@ interface NotificationData {
   amount?: number;
   tierClicked?: string;
   description?: string;
+  /** Lowercased emails that must never receive this notification email (e.g. quote contact). */
+  excludeRecipientEmails?: string[];
   [key: string]: unknown;
 }
 
@@ -30,24 +68,28 @@ export async function sendNotification(
 ) {
   const supabase = createAdminClient();
 
+  const { data: platformUser } = await supabase
+    .from("platform_users")
+    .select("email, name, phone, role")
+    .eq("user_id", recipientUserId)
+    .maybeSingle();
+
+  if (!platformUser || !isStaffNotificationEmailRole(platformUser.role as string)) {
+    return { email: false, sms: false, push: false };
+  }
+
   const { data: prefs } = await supabase
     .from("notification_preferences")
     .select("email_enabled, sms_enabled, push_enabled")
     .eq("user_id", recipientUserId)
     .eq("event_slug", eventSlug)
-    .single();
+    .maybeSingle();
 
   const emailEnabled = prefs?.email_enabled ?? true;
   const smsEnabled = prefs?.sms_enabled ?? false;
   const pushEnabled = prefs?.push_enabled ?? true;
 
-  const { data: platformUser } = await supabase
-    .from("platform_users")
-    .select("email, name, phone")
-    .eq("user_id", recipientUserId)
-    .single();
-
-  let email: string | null = platformUser?.email ?? null;
+  let email: string | null = platformUser.email ?? null;
   if (!email) {
     const { data: authUser } = await supabase.auth.admin.getUserById(
       recipientUserId
@@ -55,9 +97,14 @@ export async function sendNotification(
     email = authUser?.user?.email ?? null;
   }
 
+  const excludedEmails = parseExcludedRecipientEmails(data);
+  const normalizedTo = normalizeRecipientEmail(email);
+  const skipEmailForExcluded =
+    normalizedTo != null && excludedEmails.has(normalizedTo);
+
   const results: { email?: boolean; sms?: boolean; push?: boolean } = {};
 
-  if (emailEnabled && email && data.subject) {
+  if (emailEnabled && email && data.subject && !skipEmailForExcluded) {
     try {
       let html: string;
       if (data.html && typeof data.html === "string" && data.html.trimStart().startsWith("<!DOCTYPE")) {
@@ -161,7 +208,7 @@ export async function notifyAdmins(
   const { data: admins } = await supabase
     .from("platform_users")
     .select("user_id")
-    .in("role", ["owner", "admin", "manager", "coordinator"]);
+    .in("role", [...STAFF_NOTIFICATION_EMAIL_ROLES]);
 
   if (!admins?.length) return;
 
@@ -209,6 +256,7 @@ export function buildNotificationTitle(
     high_value_move: "High-value move flag",
     system_error: "System error",
     crew_gps_offline: "Crew GPS offline",
+    crew_idle_off_route: "Crew idle off job stops",
     lead_new: "New lead",
     partner_pm_booking: "PM booking request",
   };
@@ -243,6 +291,9 @@ export function buildNotificationBody(
   }
   if (slug === "crew_gps_offline") {
     return (data.body as string) || (data.description as string) || "";
+  }
+  if (slug === "crew_idle_off_route") {
+    return (data.description as string) || "";
   }
   if (slug === "partner_pm_booking") {
     return (data.body as string) || "";
@@ -280,6 +331,7 @@ export function getNotificationIcon(slug: string): string {
     high_value_move: "dollar",
     system_error: "alertTriangle",
     crew_gps_offline: "mapPin",
+    crew_idle_off_route: "mapPin",
     lead_new: "lightning",
     partner_pm_booking: "truck",
     quote_comparison_signal: "eye",
@@ -300,10 +352,13 @@ export function buildNotificationLink(
       slug === "crew_checkin" ||
       slug === "crew_no_checkin" ||
       slug === "checklist_incomplete" ||
-      slug === "crew_gps_offline") &&
+      slug === "crew_gps_offline" ||
+      slug === "crew_idle_off_route") &&
     data.moveId
   )
     return `/admin/moves/${data.moveId}`;
+  if (slug === "crew_idle_off_route" && data.deliveryId)
+    return `/admin/deliveries/${data.deliveryId}`;
   if (slug === "claim_submitted" && data.claimId)
     return `/admin/claims/${data.claimId}`;
   if (slug === "payment_failed" && data.quoteId) return `/admin/quotes/${data.quoteId}`;
@@ -334,5 +389,6 @@ export function getSourceType(slug: string): string {
   if (slug === "claim_submitted") return "claim";
   if (slug === "lead_new") return "lead";
   if (slug === "partner_pm_booking") return "move";
+  if (slug === "crew_idle_off_route") return "system";
   return "system";
 }

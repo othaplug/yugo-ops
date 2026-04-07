@@ -1,6 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Read NEXT_PUBLIC_* only here: Edge proxy bundles inline these (see next.config.ts `env`
+// for SUPABASE_* → NEXT_PUBLIC_* at build time). Do not rely on non-public env in this file.
+function supabaseUrlAndAnonFromEnv(): { url: string; anonKey: string } {
+  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+  const anonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "").trim();
+  return { url, anonKey };
+}
+
 const PUBLIC_PATHS = new Set([
   "/login",
   "/partner/login",
@@ -82,22 +90,32 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          for (const { name, value, options } of cookiesToSet) {
-            response.cookies.set(name, value, options);
-          }
-        },
-      },
+  const { url: supabaseUrl, anonKey: supabaseAnonKey } = supabaseUrlAndAnonFromEnv();
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error(
+      "[proxy] Missing Supabase URL or anon key. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY (or SUPABASE_URL and SUPABASE_ANON_KEY)."
+    );
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
     }
-  );
+    return new NextResponse("Server misconfiguration: missing Supabase environment variables.", {
+      status: 500,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  }
+
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        for (const { name, value, options } of cookiesToSet) {
+          response.cookies.set(name, value, options);
+        }
+      },
+    },
+  });
 
   function isRefreshTokenError(err: unknown): boolean {
     if (!err || typeof err !== "object") return false;

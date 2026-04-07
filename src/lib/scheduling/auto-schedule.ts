@@ -9,6 +9,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
 import { recommendCrew } from "@/lib/crew/recommendation";
+import { countMoveProjectTrucksForDate, sumMoveProjectCrewDemandForDate } from "@/lib/scheduling/move-project-capacity";
 
 // ═══════════════════════════════════════════════
 // Types
@@ -90,21 +91,33 @@ export async function checkAvailability(
     );
   }
 
+  const mpCrewDemand = await sumMoveProjectCrewDemandForDate(admin, date);
+  /** Rough labour-pool pressure from multi-day project days (no crew_id on rows yet). */
+  const crewPressureSlots = Math.min(
+    Math.max(0, allTeams.length - 1),
+    Math.floor(Math.max(0, mpCrewDemand - 6) / 8),
+  );
+
   // Check if at least one team has enough members and is free for this window
-  const availableTeams = allTeams.filter(
+  let availableTeams = allTeams.filter(
     (t: { id: string; member_ids?: string[] }) =>
       teamAvailableForWindow(t.id, window) &&
       (t.member_ids?.length ?? 0) >= crewSize
   );
+  if (crewPressureSlots > 0 && availableTeams.length > crewPressureSlots) {
+    availableTeams = availableTeams.slice(crewPressureSlots);
+  }
 
-  // Check truck availability — simple: count trucks of that type not on active moves
+  // Check truck availability — count trucks of that type on active moves
   const trucksInUse = movesOnDate.filter(
     (m) => m.truck_primary === truckType
   ).length;
 
+  const mpTrucks = await countMoveProjectTrucksForDate(admin, date, truckType);
+
   // For now we assume a fleet of 3 of each truck type (can be config-driven later)
   const FLEET_SIZE = 3;
-  const trucksAvailable = FLEET_SIZE - trucksInUse;
+  const trucksAvailable = FLEET_SIZE - trucksInUse - mpTrucks;
 
   if (availableTeams.length > 0 && trucksAvailable > 0) {
     return { status: "available" };
@@ -115,17 +128,20 @@ export async function checkAvailability(
 
   for (const altWindow of WINDOWS) {
     if (altWindow === window) continue;
-    const altTeams = allTeams.filter(
+    let altTeams = allTeams.filter(
       (t: { id: string; member_ids?: string[] }) =>
         teamAvailableForWindow(t.id, altWindow) &&
         (t.member_ids?.length ?? 0) >= crewSize
     );
+    if (crewPressureSlots > 0 && altTeams.length > crewPressureSlots) {
+      altTeams = altTeams.slice(crewPressureSlots);
+    }
     const altTrucksInUse = movesOnDate.filter(
       (m) =>
         m.truck_primary === truckType &&
         windowsOverlap(m.arrival_window ?? "", altWindow)
     ).length;
-    if (altTeams.length > 0 && FLEET_SIZE - altTrucksInUse > 0) {
+    if (altTeams.length > 0 && FLEET_SIZE - altTrucksInUse - mpTrucks > 0) {
       const team = altTeams[0] as { id: string; name: string; member_ids?: string[] };
       alternatives.push({
         date,
@@ -145,7 +161,12 @@ export async function checkAvailability(
     .eq("move_date", nextDay)
     .in("status", ["scheduled", "confirmed", "en_route_to_pickup", "in_progress", "pending_approval"]);
 
-  const nextDayTeams = allTeams.filter(
+  const nextDayMpCrew = await sumMoveProjectCrewDemandForDate(admin, nextDay);
+  const nextCrewPressureSlots = Math.min(
+    Math.max(0, allTeams.length - 1),
+    Math.floor(Math.max(0, nextDayMpCrew - 6) / 8),
+  );
+  let nextDayTeams = allTeams.filter(
     (t: { id: string; member_ids?: string[] }) =>
       !(nextDayMoves ?? []).some(
         (m: { crew_id: string; arrival_window: string | null }) =>
@@ -153,8 +174,15 @@ export async function checkAvailability(
       ) &&
       (t.member_ids?.length ?? 0) >= crewSize
   );
+  if (nextCrewPressureSlots > 0 && nextDayTeams.length > nextCrewPressureSlots) {
+    nextDayTeams = nextDayTeams.slice(nextCrewPressureSlots);
+  }
 
-  if (nextDayTeams.length > 0) {
+  const nextDayTrucksInUse = (nextDayMoves ?? []).filter((m) => m.truck_primary === truckType).length;
+  const nextMpTrucks = await countMoveProjectTrucksForDate(admin, nextDay, truckType);
+  const nextTrucksOk = FLEET_SIZE - nextDayTrucksInUse - nextMpTrucks > 0;
+
+  if (nextDayTeams.length > 0 && nextTrucksOk) {
     const team = nextDayTeams[0] as { id: string; name: string; member_ids?: string[] };
     alternatives.push({
       date: nextDay,

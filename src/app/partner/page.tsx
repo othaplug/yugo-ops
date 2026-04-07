@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import PartnerPortalClient from "./PartnerPortalClient";
+import { isPmTabId } from "@/components/partner/pm/PartnerPmPortalViews";
 
 // Always fetch fresh org so header shows current name (e.g. after Edit Partner saves "Avenue Road")
 export const metadata = { title: "Partner Portal" };
@@ -11,9 +12,10 @@ export const revalidate = 0;
 export default async function PartnerDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ project?: string }>;
+  searchParams: Promise<{ project?: string; pmTab?: string }>;
 }) {
-  const { project: projectId } = await searchParams;
+  const { project: projectId, pmTab: pmTabRaw } = await searchParams;
+  const initialPmTab = pmTabRaw && isPmTabId(pmTabRaw) ? pmTabRaw : undefined;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/partner/login");
@@ -67,6 +69,7 @@ export default async function PartnerDashboardPage({
       userEmail={user.email || ""}
       portalFeatures={org?.portal_features ?? null}
       initialProjectId={projectId || undefined}
+      initialPmTab={initialPmTab}
     />
   );
 }

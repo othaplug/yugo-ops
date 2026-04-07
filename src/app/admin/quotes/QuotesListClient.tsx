@@ -419,9 +419,9 @@ export default function QuotesListClient({
               disabled={followupLoading}
               aria-busy={followupLoading}
               title="Preview quotes due for follow-up and send the batch (same rules as cron)"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--brd)] px-2.5 py-1.5 text-[10px] font-semibold tracking-wide text-[#2C3E2D] dark:text-[var(--tx2)] shadow-sm hover:bg-[var(--bg2)] hover:border-[#2C3E2D]/35 disabled:opacity-50 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--brd)] px-2.5 py-1.5 text-[10px] font-semibold tracking-wide text-[var(--tx)] shadow-sm hover:bg-[var(--bg2)] hover:border-[#2C3E2D]/35 disabled:opacity-50 transition-colors"
             >
-              <PaperPlaneTilt className="w-3.5 h-3.5 shrink-0 text-[#2C3E2D] dark:text-[var(--tx2)]" aria-hidden />
+              <PaperPlaneTilt className="w-3.5 h-3.5 shrink-0 text-[var(--tx)]" aria-hidden />
               <span className="whitespace-nowrap">{followupLoading ? "Loading…" : "Due follow-ups"}</span>
             </button>
             <CreateButton href="/admin/quotes/new" title="New Quote" />
@@ -441,6 +441,7 @@ export default function QuotesListClient({
         createPortal(
           <div
             data-modal-root
+            data-yugo-glass-modal
             className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5"
             role="dialog"
             aria-modal="true"
@@ -454,7 +455,7 @@ export default function QuotesListClient({
                 setFollowupPreview([]);
               }}
             />
-            <div className="relative z-10 w-full max-w-md max-h-[min(90dvh,560px)] flex flex-col rounded-2xl border border-[var(--brd)] bg-[var(--card)] shadow-2xl overflow-hidden modal-card">
+            <div className="relative z-10 w-full max-w-md max-h-[min(90dvh,560px)] flex flex-col rounded-2xl yugo-glass-light shadow-2xl overflow-hidden modal-card">
               <div className="p-4 border-b border-[var(--brd)]/60 shrink-0">
                 <h2 id="due-followups-title" className="text-[var(--text-base)] font-bold text-[var(--tx)]">
                   Send follow-ups to {followupPreview.length} quote{followupPreview.length === 1 ? "" : "s"}?

@@ -10,30 +10,40 @@ import {
   formatActivityDescription,
 } from "./activity-feed-shared";
 
-export default function LiveActivityFeed({ initialEvents }: { initialEvents: ActivityEventRow[] }) {
+export default function LiveActivityFeed({
+  initialEvents,
+}: {
+  initialEvents: ActivityEventRow[];
+}) {
   const [events, setEvents] = useState<ActivityEventRow[]>(initialEvents);
   const [unreadIds, setUnreadIds] = useState<Set<string>>(new Set());
   const [, setTick] = useState(0);
   const seenIds = useRef(new Set(initialEvents.map((e) => e.id)));
   const supabase = createClient();
 
-  const mergeEvents = useCallback((incoming: ActivityEventRow[], onNewIds?: (ids: string[]) => void) => {
-    const newIds: string[] = [];
-    setEvents((prev) => {
-      const merged = [...prev];
-      for (const e of incoming) {
-        if (!seenIds.current.has(e.id)) {
-          seenIds.current.add(e.id);
-          merged.unshift(e);
-          newIds.push(e.id);
+  const mergeEvents = useCallback(
+    (incoming: ActivityEventRow[], onNewIds?: (ids: string[]) => void) => {
+      const newIds: string[] = [];
+      setEvents((prev) => {
+        const merged = [...prev];
+        for (const e of incoming) {
+          if (!seenIds.current.has(e.id)) {
+            seenIds.current.add(e.id);
+            merged.unshift(e);
+            newIds.push(e.id);
+          }
         }
-      }
-      if (newIds.length === 0) return prev;
-      merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      return merged.slice(0, 30);
-    });
-    if (newIds.length > 0 && onNewIds) onNewIds(newIds);
-  }, []);
+        if (newIds.length === 0) return prev;
+        merged.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
+        return merged.slice(0, 30);
+      });
+      if (newIds.length > 0 && onNewIds) onNewIds(newIds);
+    },
+    [],
+  );
 
   useEffect(() => {
     const channel = supabase
@@ -43,7 +53,10 @@ export default function LiveActivityFeed({ initialEvents }: { initialEvents: Act
         { event: "INSERT", schema: "public", table: "status_events" },
         (payload) => {
           const row = payload.new as ActivityEventRow;
-          if (row?.id) mergeEvents([row], (ids) => setUnreadIds((prev) => new Set([...prev, ...ids])));
+          if (row?.id)
+            mergeEvents([row], (ids) =>
+              setUnreadIds((prev) => new Set([...prev, ...ids])),
+            );
         },
       )
       .subscribe();
@@ -58,16 +71,21 @@ export default function LiveActivityFeed({ initialEvents }: { initialEvents: Act
       try {
         const { data } = await supabase
           .from("status_events")
-          .select("id, entity_type, entity_id, event_type, description, icon, created_at")
+          .select(
+            "id, entity_type, entity_id, event_type, description, icon, created_at",
+          )
           .order("created_at", { ascending: false })
           .limit(12);
-        if (data?.length) mergeEvents(data, (ids) => setUnreadIds((prev) => new Set([...prev, ...ids])));
+        if (data?.length)
+          mergeEvents(data, (ids) =>
+            setUnreadIds((prev) => new Set([...prev, ...ids])),
+          );
       } catch {
         /* silent */
       }
     };
 
-    const id = setInterval(poll, 15_000);
+    const id = setInterval(poll, 5_000);
     return () => clearInterval(id);
   }, [supabase, mergeEvents]);
 
@@ -76,9 +94,7 @@ export default function LiveActivityFeed({ initialEvents }: { initialEvents: Act
     return () => clearInterval(id);
   }, []);
 
-  const visible = events
-    .filter((a, i) => i === 0 || events[i - 1].description !== a.description)
-    .slice(0, 8);
+  const visible = events.slice(0, 8);
 
   return (
     <div className="pt-6 border-t border-[var(--brd)]/30">
@@ -97,7 +113,7 @@ export default function LiveActivityFeed({ initialEvents }: { initialEvents: Act
         )}
       </div>
       {visible.length > 0 ? (
-        <div className="max-h-[min(280px,38vh)] min-h-0 overflow-y-auto overscroll-contain divide-y divide-[var(--brd)]/15 bg-transparent border-0 shadow-none ring-0">
+        <div className="max-h-[min(320px,42vh)] min-h-0 overflow-y-auto overscroll-contain flex flex-col gap-2 pr-0.5">
           {visible.map((e, idx) => {
             const isUnread = unreadIds.has(e.id);
             return (
@@ -111,23 +127,42 @@ export default function LiveActivityFeed({ initialEvents }: { initialEvents: Act
                     return n;
                   })
                 }
-                className="group flex items-start gap-2.5 py-3 px-0 sm:px-0"
+                className={`group block rounded-xl border px-3 py-2.5 transition-colors sm:px-3.5 ${
+                  isUnread
+                    ? "border-[var(--admin-primary-fill)]/35 bg-[var(--admin-primary-fill)]/[0.06]"
+                    : "border-[var(--brd)]/25 bg-[var(--card)]/50 hover:bg-[var(--card)]/80"
+                }`}
               >
-                {isUnread && <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[var(--admin-primary-fill)] shrink-0" />}
-                <div className={`flex-1 min-w-0 ${isUnread ? "" : "pl-4"}`}>
+                <div className="flex items-start gap-2.5 min-w-0">
+                  {isUnread && (
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[var(--admin-primary-fill)] shrink-0" />
+                  )}
                   <div
-                    className={`text-[13px] leading-snug truncate font-semibold ${isUnread ? "text-[var(--tx)]" : "text-[var(--tx2)]"}`}
+                    className={`min-w-0 flex-1 ${isUnread ? "" : "pl-0 sm:pl-0"}`}
                   >
-                    {formatActivityDescription(e.description || e.event_type)}
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                      <p
+                        className={`text-[13px] leading-snug font-semibold whitespace-normal line-clamp-4 [overflow-wrap:anywhere] ${isUnread ? "text-[var(--tx)]" : "text-[var(--tx2)]"}`}
+                      >
+                        {formatActivityDescription(
+                          e.description || e.event_type,
+                          { truncateAt: null },
+                        )}
+                      </p>
+                      <span className="text-[10px] font-semibold tabular-nums shrink-0 sm:pt-0.5 text-[var(--tx3)]">
+                        {formatActivityTime(e.created_at)}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-[11px] text-[var(--tx3)] mt-0.5 font-medium">{formatActivityTime(e.created_at)}</div>
                 </div>
               </Link>
             );
           })}
         </div>
       ) : (
-        <p className="text-[13px] text-[var(--tx3)] py-3 font-medium">No recent activity</p>
+        <p className="text-[13px] text-[var(--tx3)] py-3 font-medium">
+          No recent activity
+        </p>
       )}
     </div>
   );

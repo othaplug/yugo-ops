@@ -3,6 +3,7 @@ import { generateDeliveryNumber } from "@/lib/delivery-number";
 import { getActiveRateCardLookup } from "@/lib/partners/calculateDeliveryPrice";
 import type { CreateMoveFromQuoteInput } from "@/lib/automations/create-move-from-quote";
 import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
+import { ensureB2bDeliverySchedule } from "@/lib/calendar/ensure-b2b-delivery-schedule";
 
 export type CreateDeliveryFromB2BQuoteResult = {
   deliveryId: string;
@@ -154,6 +155,10 @@ export async function createDeliveryFromB2BQuote(
   }
 
   const deliveryId = created.id as string;
+
+  await ensureB2bDeliverySchedule(supabase, deliveryId).catch((e) =>
+    console.error("[createDeliveryFromB2BQuote] ensureB2bDeliverySchedule:", e),
+  );
 
   const rawStops = factors.b2b_stops;
   if (Array.isArray(rawStops) && rawStops.length > 0) {

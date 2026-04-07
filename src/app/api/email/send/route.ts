@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getResend } from "@/lib/resend";
 import { requireStaff } from "@/lib/api-auth";
 import { getEmailFrom } from "@/lib/email/send";
+import { serverDebug } from "@/lib/server-log";
 
 export async function POST(req: NextRequest) {
   const { error: authErr } = await requireStaff();
@@ -10,7 +11,7 @@ export async function POST(req: NextRequest) {
     const { to, subject, html } = await req.json();
 
     if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re_your_api_key_here") {
-      console.log("[Email skipped, no Resend API key]", { to, subject });
+      serverDebug("[Email skipped, no Resend API key]", { to, subject });
       return NextResponse.json({ ok: true, skipped: true });
     }
 

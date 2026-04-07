@@ -50,7 +50,7 @@ export default function TrackMessageForm({
     return (
       <p className="text-[13px] text-[#454545] py-3 px-4 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8]">
         This move is complete. For support, contact us at{" "}
-        <a href="mailto:hello@yugo.com" className="text-[#2C3E2D] hover:underline">
+        <a href="mailto:hello@yugo.com" className="text-[var(--tx)] hover:underline">
           hello@yugo.com
         </a>
       </p>

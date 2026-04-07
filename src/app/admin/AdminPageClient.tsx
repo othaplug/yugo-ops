@@ -739,7 +739,9 @@ export default function AdminPageClient({
               onClick={() => setBriefOpen((v) => !v)}
               className="flex items-center gap-2 group w-full text-left"
             >
-              <span className="admin-eyebrow text-[var(--tx2)]">Daily Brief</span>
+              <span className="admin-eyebrow text-[var(--tx2)]">
+                Daily Brief
+              </span>
               <CaretRight
                 weight="regular"
                 className={`w-2.5 h-2.5 text-[var(--tx3)] transition-transform duration-200 ${briefOpen ? "rotate-90" : ""}`}

@@ -55,7 +55,10 @@ function isKnownEntityType(t: string): t is KnownEntityType {
 function getEntityHref(e: ActivityEventRow): string | null {
   const t = normalizeEntityType(e.entity_type);
   if (t === "move" && e.entity_id) return `/admin/moves/${e.entity_id}`;
-  if (t === "delivery") return e.entity_id ? `/admin/deliveries/${e.entity_id}` : "/admin/deliveries";
+  if (t === "delivery")
+    return e.entity_id
+      ? `/admin/deliveries/${e.entity_id}`
+      : "/admin/deliveries";
   if (t === "invoice") return "/admin/invoices";
   if (t === "quote" && e.entity_id) return `/admin/quotes/${e.entity_id}/edit`;
   return null;
@@ -94,12 +97,21 @@ function looksLikeEmojiOrGlyph(icon: string): boolean {
   return true;
 }
 
-function EventGlyph({ icon, entityType }: { icon: string | null; entityType: string }) {
+function EventGlyph({
+  icon,
+  entityType,
+}: {
+  icon: string | null;
+  entityType: string;
+}) {
   const size = 16;
   const cls = "shrink-0 text-[var(--tx3)]";
   if (icon && looksLikeEmojiOrGlyph(icon)) {
     return (
-      <span className="text-[15px] leading-none w-4 h-4 flex items-center justify-center" aria-hidden>
+      <span
+        className="text-[15px] leading-none w-4 h-4 flex items-center justify-center"
+        aria-hidden
+      >
         {icon}
       </span>
     );
@@ -107,47 +119,112 @@ function EventGlyph({ icon, entityType }: { icon: string | null; entityType: str
   const key = (icon || "").toLowerCase().replace(/\s+/g, "_");
   switch (key) {
     case "check":
-      return <CheckCircle size={size} className={cls} weight="duotone" aria-hidden />;
+      return (
+        <CheckCircle size={size} className={cls} weight="duotone" aria-hidden />
+      );
     case "truck":
     case "delivery":
       return <Truck size={size} className={cls} weight="duotone" aria-hidden />;
     case "mail":
-      return <EnvelopeSimple size={size} className={cls} weight="duotone" aria-hidden />;
+      return (
+        <EnvelopeSimple
+          size={size}
+          className={cls}
+          weight="duotone"
+          aria-hidden
+        />
+      );
     case "x":
       return <X size={size} className={cls} weight="duotone" aria-hidden />;
     case "file":
-      return <FileText size={size} className={cls} weight="duotone" aria-hidden />;
+      return (
+        <FileText size={size} className={cls} weight="duotone" aria-hidden />
+      );
     case "dollar":
-      return <CurrencyDollar size={size} className={cls} weight="duotone" aria-hidden />;
+      return (
+        <CurrencyDollar
+          size={size}
+          className={cls}
+          weight="duotone"
+          aria-hidden
+        />
+      );
     case "camera":
-      return <Camera size={size} className={cls} weight="duotone" aria-hidden />;
+      return (
+        <Camera size={size} className={cls} weight="duotone" aria-hidden />
+      );
     case "calendar":
-      return <CalendarBlank size={size} className={cls} weight="duotone" aria-hidden />;
+      return (
+        <CalendarBlank
+          size={size}
+          className={cls}
+          weight="duotone"
+          aria-hidden
+        />
+      );
     case "follow_up":
-      return <ClockClockwise size={size} className={cls} weight="duotone" aria-hidden />;
+      return (
+        <ClockClockwise
+          size={size}
+          className={cls}
+          weight="duotone"
+          aria-hidden
+        />
+      );
     default: {
       const et = normalizeEntityType(entityType);
-      if (et === "move") return <Truck size={size} className={cls} weight="duotone" aria-hidden />;
-      if (et === "delivery") return <Truck size={size} className={cls} weight="duotone" aria-hidden />;
-      if (et === "invoice") return <CurrencyDollar size={size} className={cls} weight="duotone" aria-hidden />;
-      if (et === "quote") return <ChatText size={size} className={cls} weight="duotone" aria-hidden />;
-      return <ListBullets size={size} className={cls} weight="duotone" aria-hidden />;
+      if (et === "move")
+        return (
+          <Truck size={size} className={cls} weight="duotone" aria-hidden />
+        );
+      if (et === "delivery")
+        return (
+          <Truck size={size} className={cls} weight="duotone" aria-hidden />
+        );
+      if (et === "invoice")
+        return (
+          <CurrencyDollar
+            size={size}
+            className={cls}
+            weight="duotone"
+            aria-hidden
+          />
+        );
+      if (et === "quote")
+        return (
+          <ChatText size={size} className={cls} weight="duotone" aria-hidden />
+        );
+      return (
+        <ListBullets size={size} className={cls} weight="duotone" aria-hidden />
+      );
     }
   }
 }
 
-function matchesDatePreset(createdAt: string, preset: (typeof DATE_PRESETS)[number]["key"]): boolean {
+function matchesDatePreset(
+  createdAt: string,
+  preset: (typeof DATE_PRESETS)[number]["key"],
+): boolean {
   if (preset === "all") return true;
   const t = new Date(createdAt).getTime();
   const now = Date.now();
-  const ms = { "24h": 24 * 60 * 60 * 1000, "7d": 7 * 24 * 60 * 60 * 1000, "30d": 30 * 24 * 60 * 60 * 1000 }[preset];
+  const ms = {
+    "24h": 24 * 60 * 60 * 1000,
+    "7d": 7 * 24 * 60 * 60 * 1000,
+    "30d": 30 * 24 * 60 * 60 * 1000,
+  }[preset];
   return now - t <= ms;
 }
 
-export default function AuditLogClient({ events }: { events: ActivityEventRow[] }) {
+export default function AuditLogClient({
+  events,
+}: {
+  events: ActivityEventRow[];
+}) {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
-  const [datePreset, setDatePreset] = useState<(typeof DATE_PRESETS)[number]["key"]>("all");
+  const [datePreset, setDatePreset] =
+    useState<(typeof DATE_PRESETS)[number]["key"]>("all");
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -183,12 +260,13 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
       </div>
 
       <div className="mb-6">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/88 mb-1.5">Operations</p>
-        <h1 className="admin-page-hero text-[var(--tx)]">
-          Audit log
-        </h1>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/88 mb-1.5">
+          Operations
+        </p>
+        <h1 className="admin-page-hero text-[var(--tx)]">Audit log</h1>
         <p className="text-[12px] text-[var(--tx3)] mt-2 font-medium leading-snug max-w-xl">
-          Status and activity events across moves, deliveries, billing, and quotes. Showing the latest 200 entries.
+          Status and activity events across moves, deliveries, billing, and
+          quotes. Showing the latest 200 entries.
         </p>
       </div>
 
@@ -232,7 +310,9 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
               })}
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mr-0.5">When</span>
+              <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mr-0.5">
+                When
+              </span>
               {DATE_PRESETS.map((d) => {
                 const active = datePreset === d.key;
                 return (
@@ -256,8 +336,12 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
 
         {filtered.length === 0 ? (
           <div className="py-16 px-4 text-center">
-            <p className="text-[12px] font-semibold text-[var(--tx2)]">No events match your filters</p>
-            <p className="text-[11px] text-[var(--tx3)] mt-1">Try clearing search or widening the time range.</p>
+            <p className="text-[12px] font-semibold text-[var(--tx2)]">
+              No events match your filters
+            </p>
+            <p className="text-[11px] text-[var(--tx3)] mt-1">
+              Try clearing search or widening the time range.
+            </p>
           </div>
         ) : (
           <>
@@ -285,7 +369,9 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
                 <tbody>
                   {filtered.map((e) => {
                     const href = getEntityHref(e);
-                    const desc = formatActivityDescription(e.description || e.event_type);
+                    const desc = formatActivityDescription(
+                      e.description || e.event_type,
+                    );
                     return (
                       <tr
                         key={e.id}
@@ -293,7 +379,10 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
                       >
                         <td className="px-4 py-3 align-top whitespace-nowrap">
                           <div className="flex items-start gap-2">
-                            <EventGlyph icon={e.icon} entityType={e.entity_type} />
+                            <EventGlyph
+                              icon={e.icon}
+                              entityType={e.entity_type}
+                            />
                             <span
                               className="text-[11px] font-medium text-[var(--tx2)] tabular-nums cursor-default"
                               title={new Date(e.created_at).toLocaleString()}
@@ -313,7 +402,9 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
                           </span>
                         </td>
                         <td className="px-4 py-3 align-top">
-                          <p className="text-[12px] text-[var(--tx2)] leading-snug line-clamp-3">{desc}</p>
+                          <p className="text-[12px] text-[var(--tx2)] leading-snug line-clamp-3">
+                            {desc}
+                          </p>
                         </td>
                         <td className="px-4 py-3 align-top text-right">
                           {href ? (
@@ -322,10 +413,16 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
                               className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--gold)] hover:underline"
                             >
                               Open
-                              <ArrowSquareOut size={14} weight="bold" aria-hidden />
+                              <ArrowSquareOut
+                                size={14}
+                                weight="bold"
+                                aria-hidden
+                              />
                             </Link>
                           ) : (
-                            <span className="text-[11px] text-[var(--tx3)]">-</span>
+                            <span className="text-[11px] text-[var(--tx3)]">
+                              -
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -338,7 +435,9 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
             <ul className="md:hidden divide-y divide-[var(--brd)]">
               {filtered.map((e) => {
                 const href = getEntityHref(e);
-                const desc = formatActivityDescription(e.description || e.event_type);
+                const desc = formatActivityDescription(
+                  e.description || e.event_type,
+                );
                 const inner = (
                   <div className="flex gap-3 py-3.5 px-4">
                     <div className="pt-0.5">
@@ -349,18 +448,30 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
                         <span className="inline-flex items-center rounded-lg border border-[var(--brd)] bg-[var(--bg)]/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--tx2)]">
                           {entityBadgeLabel(e.entity_type)}
                         </span>
-                        <span className="text-[11px] font-semibold text-[var(--tx)]">{humanizeEventType(e.event_type)}</span>
+                        <span className="text-[11px] font-semibold text-[var(--tx)]">
+                          {humanizeEventType(e.event_type)}
+                        </span>
                       </div>
-                      <p className="text-[12px] text-[var(--tx2)] mt-1.5 leading-snug">{desc}</p>
+                      <p className="text-[12px] text-[var(--tx2)] mt-1.5 leading-snug">
+                        {desc}
+                      </p>
                       <div className="flex items-center justify-between gap-2 mt-2">
-                        <span className="text-[11px] text-[var(--tx3)] font-medium">{formatActivityTime(e.created_at)}</span>
+                        <span className="text-[11px] text-[var(--tx3)] font-medium">
+                          {formatActivityTime(e.created_at)}
+                        </span>
                         {href ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--gold)]">
                             View
-                            <ArrowSquareOut size={14} weight="bold" aria-hidden />
+                            <ArrowSquareOut
+                              size={14}
+                              weight="bold"
+                              aria-hidden
+                            />
                           </span>
                         ) : (
-                          <span className="text-[11px] text-[var(--tx3)]">-</span>
+                          <span className="text-[11px] text-[var(--tx3)]">
+                            -
+                          </span>
                         )}
                       </div>
                     </div>
@@ -368,7 +479,10 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
                 );
                 return href ? (
                   <li key={e.id}>
-                    <Link href={href} className="block active:bg-[var(--bg)]/40">
+                    <Link
+                      href={href}
+                      className="block active:bg-[var(--bg)]/40"
+                    >
                       {inner}
                     </Link>
                   </li>

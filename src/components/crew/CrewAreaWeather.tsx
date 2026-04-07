@@ -46,7 +46,7 @@ export default function CrewAreaWeather() {
   }, []);
 
   const shellClass =
-    "rounded-2xl bg-white/80 backdrop-blur-[2px] shadow-[0_2px_22px_rgba(44,62,45,0.07)] overflow-hidden border border-[var(--brd)]/20";
+    "rounded-2xl bg-[#FFFBF7] shadow-[0_2px_22px_rgba(44,62,45,0.07)] overflow-hidden border border-[var(--brd)]/20";
 
   if (loading) {
     return (
@@ -151,7 +151,7 @@ export default function CrewAreaWeather() {
             </p>
             <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-[10px] text-[var(--tx2)]">
               <span className="inline-flex items-center gap-1">
-                <Thermometer size={12} className="text-[#2C3E2D]/75" aria-hidden />
+                <Thermometer size={12} className="text-[var(--tx2)]" aria-hidden />
                 {brief.tempLowC}°–{brief.tempHighC}°C
                 {brief.feelsLikeAvgC != null && (
                   <span className="text-[var(--tx3)]">
@@ -161,7 +161,7 @@ export default function CrewAreaWeather() {
               </span>
               {brief.windMaxKmh != null && (
                 <span className="inline-flex items-center gap-1">
-                  <Wind size={12} className="text-[#2C3E2D]/65" aria-hidden />
+                  <Wind size={12} className="text-[var(--tx2)]" aria-hidden />
                   {brief.windMaxKmh} km/h
                   {brief.windGustMaxKmh != null &&
                   brief.windGustMaxKmh > brief.windMaxKmh

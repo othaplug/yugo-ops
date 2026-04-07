@@ -629,7 +629,7 @@ export default function DeliveryDetailClient({
 
       {/* ─── HEADER ─── */}
       <div
-        className="mt-3 rounded-xl overflow-hidden border border-[color-mix(in_srgb,var(--tx)_22%,transparent)] bg-[color-mix(in_srgb,var(--card)_96%,transparent)] backdrop-blur-md shadow-[inset_0_1px_0_color-mix(in_srgb,var(--tx)_08%,transparent)]"
+        className="mt-3 rounded-xl overflow-hidden border border-[color-mix(in_srgb,var(--tx)_22%,transparent)] bg-[color-mix(in_srgb,var(--card)_100%,transparent)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--tx)_08%,transparent)]"
         style={{ borderLeft: `3px solid ${cat.accent}` }}
       >
         <div className="p-4 sm:p-5">
@@ -1000,7 +1000,7 @@ export default function DeliveryDetailClient({
               {displayCrew ? (
                 <div>
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-md border border-[var(--brd)] flex items-center justify-center text-[11px] font-bold text-[#2C3E2D] dark:text-[var(--tx2)]">
+                    <div className="w-7 h-7 rounded-md border border-[var(--brd)] flex items-center justify-center text-[11px] font-bold text-[var(--tx)]">
                       {displayCrew.name.charAt(0).toUpperCase()}
                     </div>
                     <span className="text-[13px] font-semibold text-[var(--tx)]">{displayCrew.name}</span>

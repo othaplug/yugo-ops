@@ -33,7 +33,12 @@ interface AnalyticsData {
   monthlyCost: { month: string; avgCost: number }[];
   zoneDistribution: { zone: string; count: number; pct: number }[];
   ratingDistribution: { stars: number; count: number }[];
-  recentComments: { name: string; date: string; rating: number; comment: string }[];
+  recentComments: {
+    name: string;
+    date: string;
+    rating: number;
+    comment: string;
+  }[];
   recentDeliveries: {
     date: string;
     type: string;
@@ -66,11 +71,16 @@ const axisTick = { fontSize: 10, fill: "#5A6B5E" };
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h3 className="text-[13px] font-semibold text-[#1a1f1b] tracking-tight">{children}</h3>
+    <h3 className="text-[13px] font-semibold text-[#1a1f1b] tracking-tight">
+      {children}
+    </h3>
   );
 }
 
-export default function PartnerAnalyticsTab({ orgId: _orgId, orgName: _orgName }: Props) {
+export default function PartnerAnalyticsTab({
+  orgId: _orgId,
+  orgName: _orgName,
+}: Props) {
   const [period, setPeriod] = useState(30);
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -127,7 +137,7 @@ export default function PartnerAnalyticsTab({ orgId: _orgId, orgName: _orgName }
               className={`flex-1 sm:flex-none px-3 py-2.5 text-[9px] font-bold tracking-[0.1em] uppercase transition-colors ${
                 period === opt.value
                   ? "bg-[#5C1A33]/[0.08] text-[#5C1A33]"
-                  : "bg-transparent text-[#5A6B5E] hover:bg-[#2C3E2D]/[0.03] hover:text-[#2C3E2D]"
+                  : "bg-transparent text-[#5A6B5E] hover:bg-[#2C3E2D]/[0.03] hover:text-[var(--tx)]"
               }`}
             >
               {opt.label}
@@ -144,11 +154,24 @@ export default function PartnerAnalyticsTab({ orgId: _orgId, orgName: _orgName }
         </p>
         <div className="h-[220px] w-full min-w-0 -mx-1">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data.monthlyVolume} margin={{ top: 4, right: 4, left: -8, bottom: 0 }}>
-              <XAxis dataKey="month" tick={axisTick} axisLine={false} tickLine={false} />
+            <BarChart
+              data={data.monthlyVolume}
+              margin={{ top: 4, right: 4, left: -8, bottom: 0 }}
+            >
+              <XAxis
+                dataKey="month"
+                tick={axisTick}
+                axisLine={false}
+                tickLine={false}
+              />
               <YAxis tick={axisTick} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="count" fill={WINE} radius={[1, 1, 0, 0]} name="Deliveries" />
+              <Bar
+                dataKey="count"
+                fill={WINE}
+                radius={[1, 1, 0, 0]}
+                name="Deliveries"
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -162,8 +185,16 @@ export default function PartnerAnalyticsTab({ orgId: _orgId, orgName: _orgName }
         </p>
         <div className="h-[200px] w-full min-w-0 -mx-1">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data.monthlyCost} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
-              <XAxis dataKey="month" tick={axisTick} axisLine={false} tickLine={false} />
+            <LineChart
+              data={data.monthlyCost}
+              margin={{ top: 4, right: 8, left: -8, bottom: 0 }}
+            >
+              <XAxis
+                dataKey="month"
+                tick={axisTick}
+                axisLine={false}
+                tickLine={false}
+              />
               <YAxis
                 tick={axisTick}
                 axisLine={false}
@@ -206,7 +237,10 @@ export default function PartnerAnalyticsTab({ orgId: _orgId, orgName: _orgName }
                   stroke="none"
                 >
                   {data.zoneDistribution.map((_entry, i) => (
-                    <Cell key={i} fill={CHART_ZONE_COLORS[i % CHART_ZONE_COLORS.length]} />
+                    <Cell
+                      key={i}
+                      fill={CHART_ZONE_COLORS[i % CHART_ZONE_COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={tooltipStyle} />
@@ -222,7 +256,8 @@ export default function PartnerAnalyticsTab({ orgId: _orgId, orgName: _orgName }
                 <span
                   className="w-2 h-2 rounded-sm shrink-0"
                   style={{
-                    backgroundColor: CHART_ZONE_COLORS[i % CHART_ZONE_COLORS.length],
+                    backgroundColor:
+                      CHART_ZONE_COLORS[i % CHART_ZONE_COLORS.length],
                   }}
                 />
                 {z.zone} ({z.pct}%)
@@ -236,8 +271,17 @@ export default function PartnerAnalyticsTab({ orgId: _orgId, orgName: _orgName }
           <SectionTitle>Satisfaction breakdown</SectionTitle>
           <div className="h-[180px] w-full min-w-0 mt-5 -mx-1">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.ratingDistribution} layout="vertical" margin={{ left: 4, right: 8 }}>
-                <XAxis type="number" tick={axisTick} axisLine={false} tickLine={false} />
+              <BarChart
+                data={data.ratingDistribution}
+                layout="vertical"
+                margin={{ left: 4, right: 8 }}
+              >
+                <XAxis
+                  type="number"
+                  tick={axisTick}
+                  axisLine={false}
+                  tickLine={false}
+                />
                 <YAxis
                   type="category"
                   dataKey="stars"
@@ -248,7 +292,12 @@ export default function PartnerAnalyticsTab({ orgId: _orgId, orgName: _orgName }
                   tickFormatter={(v) => `${v} star${v === 1 ? "" : "s"}`}
                 />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="count" fill={WINE} radius={[0, 1, 1, 0]} name="Ratings" />
+                <Bar
+                  dataKey="count"
+                  fill={WINE}
+                  radius={[0, 1, 1, 0]}
+                  name="Ratings"
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -267,7 +316,10 @@ export default function PartnerAnalyticsTab({ orgId: _orgId, orgName: _orgName }
                     <span className="text-[12px] font-semibold text-[#1a1f1b] truncate">
                       {c.name}
                     </span>
-                    <div className="flex gap-0.5 shrink-0" aria-label={`${c.rating} of 5 stars`}>
+                    <div
+                      className="flex gap-0.5 shrink-0"
+                      aria-label={`${c.rating} of 5 stars`}
+                    >
                       {[1, 2, 3, 4, 5].map((n) => (
                         <Star
                           key={n}
@@ -278,9 +330,13 @@ export default function PartnerAnalyticsTab({ orgId: _orgId, orgName: _orgName }
                       ))}
                     </div>
                   </div>
-                  <span className="text-[10px] text-[#5A6B5E] tabular-nums">{c.date}</span>
+                  <span className="text-[10px] text-[#5A6B5E] tabular-nums">
+                    {c.date}
+                  </span>
                 </div>
-                <p className="text-[12px] text-[#5A6B5E] leading-relaxed">&ldquo;{c.comment}&rdquo;</p>
+                <p className="text-[12px] text-[#5A6B5E] leading-relaxed">
+                  &ldquo;{c.comment}&rdquo;
+                </p>
               </li>
             ))}
           </ul>
@@ -295,7 +351,15 @@ export default function PartnerAnalyticsTab({ orgId: _orgId, orgName: _orgName }
             <thead>
               <tr className="border-b border-[#2C3E2D]/10">
                 {(
-                  ["Date", "Type", "Zone", "Time", "On-time", "Rating", "Damage"] as const
+                  [
+                    "Date",
+                    "Type",
+                    "Zone",
+                    "Time",
+                    "On-time",
+                    "Rating",
+                    "Damage",
+                  ] as const
                 ).map((col) => (
                   <th
                     key={col}
@@ -318,17 +382,26 @@ export default function PartnerAnalyticsTab({ orgId: _orgId, orgName: _orgName }
                 </tr>
               ) : (
                 data.recentDeliveries.map((d, i) => (
-                  <tr key={i} className="border-b border-[#2C3E2D]/5 last:border-0">
+                  <tr
+                    key={i}
+                    className="border-b border-[#2C3E2D]/5 last:border-0"
+                  >
                     <td className="py-3 pr-4 text-[#1a1f1b] tabular-nums whitespace-nowrap">
                       {d.date}
                     </td>
                     <td className="py-3 pr-4 text-[#5A6B5E]">{d.type}</td>
-                    <td className="py-3 pr-4 text-[#5A6B5E] tabular-nums">Z{d.zone}</td>
-                    <td className="py-3 pr-4 text-[#5A6B5E] tabular-nums">{d.minutes}m</td>
+                    <td className="py-3 pr-4 text-[#5A6B5E] tabular-nums">
+                      Z{d.zone}
+                    </td>
+                    <td className="py-3 pr-4 text-[#5A6B5E] tabular-nums">
+                      {d.minutes}m
+                    </td>
                     <td className="py-3 pr-4">
                       <span
                         className={
-                          d.onTime ? "text-emerald-700 font-medium" : "text-red-600 font-medium"
+                          d.onTime
+                            ? "text-emerald-700 font-medium"
+                            : "text-red-600 font-medium"
                         }
                       >
                         {d.onTime ? "Yes" : "No"}
@@ -340,7 +413,9 @@ export default function PartnerAnalyticsTab({ orgId: _orgId, orgName: _orgName }
                     <td className="py-3">
                       <span
                         className={
-                          d.hasDamage ? "text-red-600 font-medium" : "text-emerald-700 font-medium"
+                          d.hasDamage
+                            ? "text-red-600 font-medium"
+                            : "text-emerald-700 font-medium"
                         }
                       >
                         {d.hasDamage ? "Yes" : "No"}

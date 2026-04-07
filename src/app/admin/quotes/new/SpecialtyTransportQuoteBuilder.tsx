@@ -345,6 +345,7 @@ export default function SpecialtyTransportQuoteBuilder({
   const modal = (
     <div
       data-modal-root
+      data-yugo-glass-modal
       className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5"
       role="dialog"
       aria-modal="true"
@@ -356,7 +357,7 @@ export default function SpecialtyTransportQuoteBuilder({
         aria-hidden="true"
       />
       <div
-        className="relative z-10 w-full max-w-3xl flex flex-col bg-[var(--card)] border border-[var(--brd)] rounded-2xl shadow-xl overflow-hidden modal-card pointer-events-auto"
+        className="relative z-10 w-full max-w-3xl flex flex-col yugo-glass-light rounded-2xl shadow-xl overflow-hidden modal-card pointer-events-auto"
         style={{
           maxHeight: "min(90dvh, min(92vh, 900px))",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",

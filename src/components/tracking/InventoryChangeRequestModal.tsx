@@ -3,7 +3,13 @@
 import { useState, useMemo, useCallback } from "react";
 import { X, Plus, Minus } from "@phosphor-icons/react";
 import { fuzzyFilterItemWeights } from "@/lib/inventory-search";
-import { calcLineCharge, type CustomWeightClass } from "@/lib/inventory-change-requests";
+import {
+  creditForRemovedLine,
+  surchargeForAddedLine,
+  type CustomWeightClass,
+  type ItemAddedInput,
+  type ItemRemovedInput,
+} from "@/lib/inventory-change-requests";
 import { formatCurrency } from "@/lib/format-currency";
 import { WINE, FOREST, GOLD } from "@/lib/client-theme";
 
@@ -40,7 +46,7 @@ export default function InventoryChangeRequestModal({
   itemWeights,
   inventoryLines,
   currentSubtotal,
-  perScoreRate,
+  perScoreRate: _perScoreRate,
   maxLines,
   onSubmitted,
 }: {
@@ -142,10 +148,29 @@ export default function InventoryChangeRequestModal({
 
   const netDelta = useMemo(() => {
     let d = 0;
-    for (const a of added) d += calcLineCharge(a.weight_score, a.quantity, perScoreRate);
-    for (const r of removed) d -= calcLineCharge(r.weight_score, r.quantity, perScoreRate);
+    for (const a of added) {
+      const row: ItemAddedInput = {
+        item_name: a.item_name,
+        item_slug: a.item_slug,
+        weight_score: a.weight_score,
+        quantity: a.quantity,
+        is_custom: a.is_custom,
+        custom_weight_class: a.custom_weight_class,
+      };
+      d += surchargeForAddedLine(row);
+    }
+    for (const r of removed) {
+      const row: ItemRemovedInput = {
+        move_inventory_id: r.move_inventory_id,
+        item_name: r.item_name,
+        item_slug: null,
+        weight_score: r.weight_score,
+        quantity: r.quantity,
+      };
+      d -= creditForRemovedLine(row);
+    }
     return d;
-  }, [added, removed, perScoreRate]);
+  }, [added, removed]);
 
   const submit = async () => {
     setError(null);

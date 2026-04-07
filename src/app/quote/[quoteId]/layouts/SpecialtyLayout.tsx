@@ -264,7 +264,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
             </table>
           )}
           <div className="border-t-2 pt-4 text-center" style={{ borderColor: `${FOREST}30` }}>
-            <p className="font-hero text-[36px] md:text-[44px]" style={{ color: WINE }}>
+            <p className="text-[36px] md:text-[44px] [font-family:var(--font-body)]" style={{ color: WINE }}>
               {fmtPrice(price)}
             </p>
             <p className="text-[12px] mt-1 mb-5" style={{ color: `${FOREST}70` }}>

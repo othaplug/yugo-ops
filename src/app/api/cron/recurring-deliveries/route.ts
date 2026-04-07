@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { generateDeliveryNumber } from "@/lib/delivery-number";
 import { getTodayString } from "@/lib/business-timezone";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
+import { ensureB2bDeliverySchedule } from "@/lib/calendar/ensure-b2b-delivery-schedule";
 
 /**
  * App table is `recurring_delivery_schedules` (not `recurring_schedules`).
@@ -184,8 +185,18 @@ export async function GET(req: NextRequest) {
         insertPayload.assigned_crew_name = snap.assigned_crew_name;
       }
 
-      const { error: insErr } = await supabase.from("deliveries").insert(insertPayload as never);
+      const { data: inserted, error: insErr } = await supabase
+        .from("deliveries")
+        .insert(insertPayload as never)
+        .select("id")
+        .single();
       if (insErr) throw new Error(insErr.message);
+
+      if (inserted?.id) {
+        await ensureB2bDeliverySchedule(supabase, inserted.id as string).catch((e) =>
+          console.error("[recurring-deliveries] ensureB2bDeliverySchedule:", e),
+        );
+      }
 
       created += 1;
 

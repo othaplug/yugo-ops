@@ -185,6 +185,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
   return createPortal(
     <div
       data-modal-root
+      data-yugo-glass-modal
       className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5"
       role="dialog"
       aria-modal="true"
@@ -197,7 +198,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
       />
 
       <div
-        className="relative z-10 w-full max-w-[560px] max-h-[min(85dvh,720px)] bg-[var(--card)] border border-[var(--brd)] rounded-sm shadow-xl overflow-hidden flex flex-col pointer-events-auto modal-card"
+        className="relative z-10 w-full max-w-[560px] max-h-[min(85dvh,720px)] yugo-glass-light rounded-sm shadow-xl overflow-hidden flex flex-col pointer-events-auto modal-card"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search input */}

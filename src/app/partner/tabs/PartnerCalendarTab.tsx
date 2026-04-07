@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { getPartnerPortalTerminology } from "@/lib/partner-vertical-copy";
 import { CaretLeft, CaretRight, Calendar, Clock } from "@phosphor-icons/react";
 import type {
   CalendarEvent,
@@ -18,6 +19,10 @@ import { calendarPillTextForBackground } from "@/lib/calendar/calendar-job-style
 import PartnerDeliveriesTab from "./PartnerDeliveriesTab";
 import { normalizeDeliveryItem } from "@/lib/delivery-items";
 import { formatPlatformDisplay } from "@/lib/date-format";
+import {
+  parsePartnerWindowLabelEndHHMM,
+  parsePartnerWindowLabelStartHHMM,
+} from "@/lib/time-windows";
 
 const DELIVERY_STATUS_LABELS: Record<string, string> = {
   scheduled: "Scheduled",
@@ -68,6 +73,60 @@ interface Delivery {
   scheduled_end?: string | null;
   estimated_duration_hours?: number | null;
   calendar_status?: string | null;
+  delivery_window?: string | null;
+}
+
+function deliveryTimelineStartHHMM(d: Delivery): string {
+  if (d.scheduled_start) {
+    const m = d.scheduled_start.match(/^(\d{1,2}):(\d{2})/);
+    if (m) return `${m[1].padStart(2, "0")}:${m[2]}`;
+  }
+  const fromLabel =
+    parsePartnerWindowLabelStartHHMM(d.time_slot) ||
+    parsePartnerWindowLabelStartHHMM(d.delivery_window);
+  if (fromLabel) return fromLabel;
+  const ts = (d.time_slot || "").trim().toLowerCase();
+  if (ts === "morning") return "08:00";
+  if (ts === "afternoon") return "13:00";
+  if (ts === "evening") return "17:00";
+  if (ts === "flexible") return "09:00";
+  return "08:00";
+}
+
+function deliverySortTimeKey(d: Delivery): string {
+  if (d.scheduled_start) {
+    const m = d.scheduled_start.match(/^(\d{1,2}):(\d{2})/);
+    if (m) return `${m[1].padStart(2, "0")}:${m[2]}`;
+  }
+  const fromLabel =
+    parsePartnerWindowLabelStartHHMM(d.time_slot) ||
+    parsePartnerWindowLabelStartHHMM(d.delivery_window);
+  if (fromLabel) return fromLabel;
+  const ts = (d.time_slot || "").trim().toLowerCase();
+  if (ts === "morning") return "08:00";
+  if (ts === "afternoon") return "13:00";
+  if (ts === "evening") return "17:00";
+  if (ts === "flexible") return "09:00";
+  return "99:99";
+}
+
+function deliveryTimelineDurationHours(d: Delivery, startHHMM: string): number {
+  const startM = timeToMinutes(startHHMM);
+  if (d.scheduled_end) {
+    const m = d.scheduled_end.match(/^(\d{1,2}):(\d{2})/);
+    if (m) {
+      const endM = timeToMinutes(`${m[1].padStart(2, "0")}:${m[2]}`);
+      if (endM > startM) return Math.max((endM - startM) / 60, 0.5);
+    }
+  }
+  const endLabel =
+    parsePartnerWindowLabelEndHHMM(d.time_slot) ||
+    parsePartnerWindowLabelEndHHMM(d.delivery_window);
+  if (endLabel) {
+    const endM = timeToMinutes(endLabel);
+    if (endM > startM) return Math.max((endM - startM) / 60, 0.5);
+  }
+  return d.estimated_duration_hours || 1.5;
 }
 
 interface Props {
@@ -175,6 +234,10 @@ export default function PartnerCalendarTab({
   onRescheduled,
   orgType = "",
 }: Props) {
+  const portalTerms = useMemo(
+    () => getPartnerPortalTerminology(orgType),
+    [orgType],
+  );
   const [view, setView] = useState<ViewMode>("month");
   const [selectedDate, setSelectedDate] = useState(getToday());
   const [monthYear, setMonthYear] = useState(() => {
@@ -250,9 +313,7 @@ export default function PartnerCalendarTab({
     });
     for (const key of Object.keys(map)) {
       map[key].sort((a, b) =>
-        (a.scheduled_start || a.time_slot || "99:99").localeCompare(
-          b.scheduled_start || b.time_slot || "99:99",
-        ),
+        deliverySortTimeKey(a).localeCompare(deliverySortTimeKey(b)),
       );
     }
     return map;
@@ -368,7 +429,7 @@ export default function PartnerCalendarTab({
       ? d.scheduled_end
         ? `${formatTime12(d.scheduled_start)}-${formatTime12(d.scheduled_end)}`
         : formatTime12(d.scheduled_start)
-      : d.time_slot || null;
+      : d.delivery_window || d.time_slot || null;
 
     const itemCount = Array.isArray(d.items) ? d.items.length : 0;
     const addr = d.delivery_address
@@ -437,8 +498,12 @@ export default function PartnerCalendarTab({
         <div
           className={`text-[13px] font-semibold text-[#1A1A1A] ${isCancelled ? "line-through" : ""}`}
         >
-          {itemCount > 0 ? `${itemCount}pc ` : ""}
-          {d.customer_name || d.delivery_number}
+          {itemCount > 0
+            ? portalTerms.formatItemCountPipe(
+                itemCount,
+                d.customer_name || d.delivery_number,
+              )
+            : d.customer_name || d.delivery_number}
         </div>
         {addr && (
           <div className="text-[11px] text-[#454545] mt-0.5 truncate">
@@ -487,7 +552,7 @@ export default function PartnerCalendarTab({
             </button>
             <button
               onClick={goToday}
-              className="ml-2 px-3 py-1 rounded-lg text-[10px] font-semibold border border-[#E8E4DF] text-[#454545] hover:border-[#2C3E2D] hover:text-[#2C3E2D] transition-colors"
+              className="ml-2 px-3 py-1 rounded-lg text-[10px] font-semibold border border-[#E8E4DF] text-[#454545] hover:border-[#2C3E2D] hover:text-[var(--tx)] transition-colors"
             >
               Today
             </button>
@@ -580,7 +645,7 @@ export default function PartnerCalendarTab({
               <button
                 type="button"
                 onClick={() => switchToDay(dk)}
-                className={`text-[12px] font-medium mb-1 block hover:text-[#2C3E2D] transition-colors ${isToday ? "text-[#2C3E2D] font-bold" : "text-[#1A1A1A]"}`}
+                className={`text-[12px] font-medium mb-1 block hover:text-[var(--tx)] transition-colors ${isToday ? "text-[var(--tx)] font-bold" : "text-[#1A1A1A]"}`}
               >
                 {day}
               </button>
@@ -612,7 +677,7 @@ export default function PartnerCalendarTab({
                   <button
                     type="button"
                     onClick={() => switchToDay(dk)}
-                    className="text-[8px] text-[#2C3E2D] font-semibold pl-1 hover:underline"
+                    className="text-[8px] text-[var(--tx)] font-semibold pl-1 hover:underline"
                   >
                     +{dayDels.length + dayProjects.length - 3} more
                   </button>
@@ -748,7 +813,7 @@ export default function PartnerCalendarTab({
         {dayDels.length === 0 && dayProjects.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-[var(--text-base)] text-[#4F4B47] mb-4">
-              No deliveries or projects scheduled
+              {portalTerms.calendarEmptyNoDeliveries}
             </div>
             <button
               onClick={() => onSelectDate?.(selectedDate)}
@@ -800,12 +865,9 @@ export default function PartnerCalendarTab({
 
             {/* Delivery blocks */}
             {dayDels.map((d) => {
-              const startTime = d.scheduled_start || d.time_slot || "08:00";
-              const hasStructuredTime = !!d.scheduled_start;
-              const startMins = hasStructuredTime
-                ? timeToMinutes(startTime)
-                : 8 * 60;
-              const dur = d.estimated_duration_hours || 1.5;
+              const startHHMM = deliveryTimelineStartHHMM(d);
+              const startMins = timeToMinutes(startHHMM);
+              const dur = deliveryTimelineDurationHours(d, startHHMM);
               const top =
                 ((startMins - DAY_START_HOUR * 60) / 60) * HOUR_HEIGHT;
               const height = Math.max(dur * HOUR_HEIGHT, 60);
@@ -849,7 +911,10 @@ export default function PartnerCalendarTab({
                   <div className="p-3 h-full flex flex-col">
                     <div className="text-[12px] font-bold text-[#1A1A1A]">
                       {Array.isArray(d.items) && d.items.length > 0
-                        ? `${d.items.length}pc ${normalizeDeliveryItem(d.items[0]).name}`
+                        ? portalTerms.formatItemCountPipe(
+                            d.items.length,
+                            normalizeDeliveryItem(d.items[0]).name,
+                          )
                         : d.customer_name || d.delivery_number}
                     </div>
                     {d.delivery_address && (
@@ -915,13 +980,10 @@ export default function PartnerCalendarTab({
               {draggingDelivery.customer_name ||
                 draggingDelivery.delivery_number}
               {(draggingDelivery.scheduled_start ||
-                draggingDelivery.time_slot) && (
+                draggingDelivery.time_slot ||
+                draggingDelivery.delivery_window) && (
                 <span className="ml-1 opacity-70 font-normal">
-                  {formatTime12(
-                    draggingDelivery.scheduled_start ||
-                      draggingDelivery.time_slot ||
-                      "08:00",
-                  )}
+                  {formatTime12(deliveryTimelineStartHHMM(draggingDelivery))}
                 </span>
               )}
             </div>
@@ -972,7 +1034,7 @@ export default function PartnerCalendarTab({
                 className={`flex-1 py-2 text-center border-l border-[#E8E4DF] hover:bg-[#FAF8F5] transition-colors ${isToday ? "bg-[#2C3E2D]/5" : ""}`}
               >
                 <div
-                  className={`text-[9px] font-bold uppercase ${isToday ? "text-[#2C3E2D]" : "text-[#5C5853]"}`}
+                  className={`text-[9px] font-bold uppercase ${isToday ? "text-[var(--tx)]" : "text-[#5C5853]"}`}
                 >
                   {DAY_NAMES[i]} {date.getDate()}
                 </div>

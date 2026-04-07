@@ -719,7 +719,7 @@ function CrewDetailView({
                       key={m}
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--card)] border border-[var(--brd)]/50 text-[11px] font-medium text-[var(--tx2)]"
                     >
-                      <div className="w-4 h-4 rounded-md border border-[var(--brd)] flex items-center justify-center text-[9px] font-bold text-[#2C3E2D] dark:text-[var(--tx2)]">
+                      <div className="w-4 h-4 rounded-md border border-[var(--brd)] flex items-center justify-center text-[9px] font-bold text-[var(--tx)]">
                         {m.charAt(0).toUpperCase()}
                       </div>
                       {m}

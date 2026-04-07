@@ -388,6 +388,12 @@ html {
   scroll-padding-top: 1rem;
 }
 
+/**
+ * Theme ink: use `text-[var(--tx)]`, `text-[var(--tx2)]`, `text-[var(--tx3)]` on surfaces that use
+ * `var(--bg)` / `var(--card)` so light + wine (dark) admin modes stay readable. Hardcoded `#2C3E2D`
+ * text on those surfaces fails in wine mode (forest on burgundy).
+ */
+
 body {
   font-family: var(--font-body);
   font-size: 16px;
@@ -733,6 +739,20 @@ html:has(.estate-welcome-root) {
   }
 }
 
+/* Yugo+ modal host — tinted dim (no backdrop blur); panel uses .yugo-glass-light */
+[data-yugo-glass-modal] > .modal-overlay {
+  background: rgba(0, 0, 0, 0.38) !important;
+}
+[data-theme="light"] [data-yugo-glass-modal] > .modal-overlay {
+  background: rgba(0, 0, 0, 0.42) !important;
+}
+
+/* Dark theme: cream-tinted panels are illegible with light ink — wine-tinted modal panels */
+[data-theme="dark"] [data-yugo-glass-modal] .yugo-glass-light {
+  background: rgba(43, 4, 22, 0.94);
+  border: 1px solid rgba(249, 237, 228, 0.1);
+}
+
 /* Centre-screen card (desktop modals) */
 .modal-card {
   animation: 320ms var(--ease-out-expo) both modal-card-in;
@@ -741,12 +761,10 @@ html:has(.estate-welcome-root) {
   from {
     opacity: 0;
     transform: translateY(20px) scale(0.95);
-    filter: blur(4px);
   }
   to {
     opacity: 1;
     transform: none;
-    filter: blur(0px);
   }
 }
 
@@ -1195,6 +1213,30 @@ textarea.field-input-compact:focus {
   box-shadow: 0 0 0 3px rgba(201, 169, 98, 0.1);
 }
 
+/* Multiline fields that match single-line underline style (no box border) */
+textarea.field-input-compact.field-input-compact--multiline-underline {
+  border: none;
+  border-bottom: 1px solid var(--brd);
+  border-radius: 0;
+  padding: 10px 0;
+  background: transparent;
+  min-height: 4.5rem;
+  resize: vertical;
+  box-shadow: none;
+}
+@media (min-width: 640px) {
+  textarea.field-input-compact.field-input-compact--multiline-underline {
+    font-size: 12px;
+    padding: 8px 0;
+    min-height: 3.75rem;
+  }
+}
+textarea.field-input-compact.field-input-compact--multiline-underline:focus {
+  border-bottom-color: rgba(201, 169, 98, 0.65);
+  box-shadow: none;
+  outline: none;
+}
+
 /* Partner portal (light theme) form inputs */
 .field-input-partner {
   width: 100%;
@@ -1481,12 +1523,10 @@ button:focus-visible,
   from {
     opacity: 0;
     transform: translateY(-12px) scale(0.96);
-    filter: blur(4px);
   }
   to {
     opacity: 1;
     transform: none;
-    filter: blur(0px);
   }
 }
 
@@ -1498,22 +1538,18 @@ button:focus-visible,
   opacity: 0.7;
 }
 
-/* Glass effect - translucent, blurred */
+/* Tinted chrome — solid / high-opacity fills (no frosted backdrop blur) */
 .glass {
-  background: rgba(30, 30, 30, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: #1e1e20;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 [data-theme="light"] .glass {
-  background: rgba(255, 255, 255, 0.5);
+  background: #faf7f2;
   border-color: rgba(0, 0, 0, 0.06);
 }
 
 .glass-sidebar {
-  background: rgba(15, 15, 15, 0.75);
-  backdrop-filter: blur(20px) saturate(1.2);
-  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  background: #151518;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 [data-theme="light"] .glass-sidebar {
@@ -1522,9 +1558,7 @@ button:focus-visible,
 }
 
 .glass-topbar {
-  background: rgba(15, 15, 15, 0.6);
-  backdrop-filter: blur(20px) saturate(1.2);
-  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  background: #151518;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 [data-theme="light"] .glass-topbar {
@@ -1534,16 +1568,33 @@ button:focus-visible,
 }
 
 .glass-card {
-  background: rgba(30, 30, 30, 0.4);
-  backdrop-filter: blur(16px) saturate(1.1);
-  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  background: #2a2228;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 4px;
 }
 [data-theme="light"] .glass-card {
-  background: rgba(255, 255, 255, 0.72);
+  background: #ffffff;
   border-color: rgba(0, 0, 0, 0.08);
   border-radius: 4px;
+}
+
+/* Yugo+ tinted chrome — sidebar, modal stacks, toasts (not for dense tables) */
+.yugo-glass {
+  background: rgba(43, 4, 22, 0.96);
+  border: 1px solid rgba(249, 237, 228, 0.1);
+}
+[data-theme="light"] .yugo-glass {
+  background: #fffbf7;
+  border: 1px solid rgba(43, 4, 22, 0.08);
+}
+
+.yugo-glass-light {
+  background: rgba(249, 237, 228, 0.98);
+  border: 1px solid rgba(43, 4, 22, 0.08);
+}
+[data-theme="light"] .yugo-glass-light {
+  background: #ffffff;
+  border-color: rgba(43, 4, 22, 0.06);
 }
 
 .map-fullscreen {
@@ -1574,9 +1625,7 @@ button:focus-visible,
   cursor: pointer;
   transition: background-color 0.15s ease;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(30, 30, 30, 0.8);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(30, 30, 30, 0.96);
   color: #fff;
 }
 @media (max-width: 767px) {
@@ -1588,7 +1637,7 @@ button:focus-visible,
   }
 }
 [data-theme="light"] .map-fullscreen-btn {
-  background: rgba(255, 255, 255, 0.85);
+  background: #ffffff;
   border-color: rgba(0, 0, 0, 0.1);
   color: #1a1a1a;
 }
@@ -1732,13 +1781,11 @@ button:focus-visible,
   transform: scale(0.99);
 }
 .mc.glass {
-  background: rgba(30, 30, 30, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: #1e1e20;
   border-color: rgba(255, 255, 255, 0.08);
 }
 [data-theme="light"] .mc.glass {
-  background: rgba(255, 255, 255, 0.5);
+  background: #faf7f2;
   border-color: rgba(0, 0, 0, 0.06);
 }
 .mc-l {
@@ -1990,7 +2037,7 @@ button:focus-visible,
   pointer-events: none;
 }
 
-/* Primary - liquid gold glass */
+/* Primary — solid gradient (no backdrop blur) */
 .btn-p {
   background: linear-gradient(135deg, #a68b3c 0%, #8b7332 100%);
   color: #ffffff;
@@ -2000,8 +2047,6 @@ button:focus-visible,
     0 -1px 0 rgba(0, 0, 0, 0.12) inset,
     0 1px 5px rgba(140, 110, 47, 0.18),
     0 1px 2px rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 .btn-p::before {
   content: "";
@@ -2025,16 +2070,14 @@ button:focus-visible,
   transform: translateY(-1px);
 }
 
-/* Secondary - frosted glass */
+/* Secondary — tinted surface */
 .btn-s {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--tx);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.04) inset,
     0 1px 4px rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 .btn-s::before {
   content: "";
@@ -2247,11 +2290,9 @@ div.mapboxgl-ctrl-attrib {
   padding: 0 !important;
 }
 
-/* Mapbox navigation controls — dark glass style */
+/* Mapbox navigation controls — dark tinted (no blur) */
 .mapboxgl-ctrl-group {
-  background: rgba(20, 20, 20, 0.85) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+  background: rgba(28, 28, 30, 0.96) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 12px !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
@@ -2965,17 +3006,9 @@ select:focus-visible {
    CREW SHELL SIDEBAR — light-only crew portal nav tokens
    ═══════════════════════════════════════════════════════ */
 .crew-app .glass-sidebar {
-  --crew-nav-active-bg: color-mix(
-    in srgb,
-    var(--yugo-rose-accent) 12%,
-    transparent
-  );
-  --crew-nav-active-fg: var(--yugo-rose-accent);
-  --crew-nav-active-border: color-mix(
-    in srgb,
-    var(--yugo-rose-accent) 45%,
-    transparent
-  );
+  --crew-nav-active-bg: color-mix(in srgb, #5c1a33 11%, transparent);
+  --crew-nav-active-fg: #5c1a33;
+  --crew-nav-active-border: color-mix(in srgb, #5c1a33 38%, transparent);
   --crew-nav-hover-bg: rgba(44, 62, 45, 0.08);
   --crew-nav-hover-fg: #1a241b;
   --crew-nav-item-fg: #3a3a38;
@@ -3054,6 +3087,17 @@ select:focus-visible {
   opacity: 1;
 }
 
+/* Crew active job detail — warm cream canvas, soft-radius controls */
+.crew-app main#crew-main.tab-content:has(.crew-job-premium) {
+  background:
+    radial-gradient(
+      ellipse 100% 70% at 50% -8%,
+      rgba(92, 26, 51, 0.055) 0%,
+      transparent 52%
+    ),
+    linear-gradient(180deg, #faf8f5 0%, #f4f0ea 50%, #efeae4 100%);
+}
+
 /* ═══════════════════════════════════════════════════════
    CREW PORTAL — rectangular buttons (body portals: data-crew-portal)
    Use .crew-keep-round on rare controls that must stay circular.
@@ -3090,6 +3134,51 @@ select:focus-visible {
   background-color: #243524 !important;
 }
 
+/* Crew job detail premium — after square defaults: soft corners + wine primary CTAs (cream ink).
+   Portaled job modals use [data-crew-job-premium] inside [data-crew-portal] (not under .crew-app). */
+.crew-app .crew-job-premium button:not(.crew-keep-round):not(.crew-job-flat),
+.crew-app .crew-job-premium a.crew-premium-cta:not(.crew-keep-round),
+[data-crew-portal]
+  [data-crew-job-premium]
+  button:not(.crew-keep-round):not(.crew-job-flat),
+[data-crew-portal]
+  [data-crew-job-premium]
+  a.crew-premium-cta:not(.crew-keep-round) {
+  border-radius: 10px !important;
+}
+
+.crew-app .crew-job-premium .crew-premium-cta,
+.crew-app .crew-job-premium a.crew-premium-cta,
+[data-crew-portal] [data-crew-job-premium] .crew-premium-cta,
+[data-crew-portal] [data-crew-job-premium] a.crew-premium-cta {
+  background-color: #5c1a33 !important;
+  color: rgba(255, 251, 247, 0.96) !important;
+  border: 1px solid rgba(61, 18, 36, 0.95) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset !important;
+}
+
+.crew-app .crew-job-premium .crew-premium-cta:hover:not(:disabled),
+.crew-app .crew-job-premium a.crew-premium-cta:hover,
+[data-crew-portal]
+  [data-crew-job-premium]
+  .crew-premium-cta:hover:not(:disabled),
+[data-crew-portal] [data-crew-job-premium] a.crew-premium-cta:hover {
+  background-color: #4a1529 !important;
+  color: #fffbf7 !important;
+  border-color: #2f0e1a !important;
+}
+
+.crew-app .crew-job-premium .crew-premium-cta:disabled,
+[data-crew-portal] [data-crew-job-premium] .crew-premium-cta:disabled {
+  opacity: 0.48 !important;
+}
+
+/* Secondary row on job status (Note / Report / Dispatch) — architectural radius, win over square crew default */
+.crew-app .crew-job-action-chip,
+[data-crew-portal] .crew-job-action-chip {
+  border-radius: 8px !important;
+}
+
 /* ═══════════════════════════════════════════════════════
    CREW LOGIN — shared input/link styles used across all member-select screens
    ═══════════════════════════════════════════════════════ */
@@ -3122,7 +3211,9 @@ main.crew-login-gate .crew-login-panel .crew-login-gate-secondary:hover {
   text-decoration: underline;
 }
 .crew-app .crew-login-panel .crew-login-gate-secondary:focus-visible,
-main.crew-login-gate .crew-login-panel .crew-login-gate-secondary:focus-visible {
+main.crew-login-gate
+  .crew-login-panel
+  .crew-login-gate-secondary:focus-visible {
   outline: 2px solid rgba(255, 250, 245, 0.55);
   outline-offset: 3px;
 }

@@ -5,6 +5,8 @@ import { getActiveRateCardLookup } from "@/lib/partners/calculateDeliveryPrice";
 import { generateDeliveryNumber } from "@/lib/delivery-number";
 import { logActivity } from "@/lib/activity";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
+import { notifyPartnerDeliveryBooked } from "@/lib/partner-job-comms";
+import { ensureB2bDeliverySchedule, isDeliveryB2bCategory } from "@/lib/calendar/ensure-b2b-delivery-schedule";
 
 const VALID_CATEGORIES = new Set(["retail", "b2b", "b2c", "designer", "hospitality", "realtor", "stager", "other"]);
 function normalizeCategory(raw: string): string {
@@ -210,6 +212,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (created) {
+      if (isDeliveryB2bCategory(insertPayload.category as string)) {
+        await ensureB2bDeliverySchedule(admin, created.id).catch((e) =>
+          console.error("[admin-delivery-create] ensureB2bDeliverySchedule:", e),
+        );
+      }
       await logActivity({
         entity_type: "delivery",
         entity_id: created.id,
@@ -217,6 +224,16 @@ export async function POST(req: NextRequest) {
         description: `Delivery created: ${customerName}${scheduledDate ? `, ${scheduledDate}` : ""} (${created.delivery_number})`,
         icon: "delivery",
       });
+    }
+
+    const createdStatus = String(insertPayload.status || "").toLowerCase();
+    if (
+      created &&
+      createdStatus !== "draft" &&
+      createdStatus !== "pending_approval" &&
+      createdStatus !== "pending"
+    ) {
+      notifyPartnerDeliveryBooked(created.id).catch(() => {});
     }
 
     return NextResponse.json({ ok: true, delivery: created });

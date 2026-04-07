@@ -294,8 +294,9 @@ export default function ChangeRequestsClient({
       {approveModal && (
         <ModalDialogFrame
           zClassName="z-[99999]"
+          yugoGlassChrome
           onBackdropClick={() => { setApproveModal(null); setApproveFeeDollars(""); }}
-          panelClassName="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 w-full max-w-sm shadow-xl modal-card"
+          panelClassName="yugo-glass-light rounded-xl p-5 w-full max-w-sm shadow-xl modal-card"
           ariaLabelledBy="approve-modal-title"
         >
             <h2 id="approve-modal-title" className="text-[13px] font-bold text-[var(--tx)] mb-3">Approve change request</h2>

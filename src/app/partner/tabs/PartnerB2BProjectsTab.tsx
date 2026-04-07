@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import type { PartnerPortalTerminology } from "@/lib/partner-vertical-copy";
+import { getPartnerPortalTerminology } from "@/lib/partner-vertical-copy";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
 import { useConfirm } from "@/hooks/useConfirm";
@@ -223,14 +225,23 @@ function toDate(s: string | null | undefined): Date | null {
 
 interface PartnerB2BProjectsTabProps {
   initialProjectId?: string;
+  orgType?: string;
+  portalTerms?: PartnerPortalTerminology;
   onScheduleDelivery?: (suggestedItems?: string) => void;
 }
 
 export default function PartnerB2BProjectsTab({
   initialProjectId,
+  orgType = "",
+  portalTerms: portalTermsProp,
   onScheduleDelivery,
 }: PartnerB2BProjectsTabProps = {}) {
   const { confirm, confirmEl } = useConfirm();
+  const portalTerms = useMemo(
+    () => portalTermsProp ?? getPartnerPortalTerminology(orgType),
+    [orgType, portalTermsProp],
+  );
+  const t = portalTerms;
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<ProjectDetail | null>(null);
@@ -342,7 +353,10 @@ export default function PartnerB2BProjectsTab({
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   const createProject = async () => {
-    if (!npName.trim()) { setNpError("Project name is required"); return; }
+    if (!npName.trim()) {
+      setNpError(`${t.coordinationTitle} name is required`);
+      return;
+    }
     setNpSaving(true);
     setNpError("");
     try {
@@ -359,13 +373,18 @@ export default function PartnerB2BProjectsTab({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create project");
+      if (!res.ok)
+        throw new Error(data.error || `Failed to create ${t.coordinationLower}`);
       setShowNewProject(false);
       setNpName(""); setNpClientName(""); setNpAddress(""); setNpStartDate(""); setNpEndDate("");
       await loadProjects();
       viewProject(data.id);
     } catch (e) {
-      setNpError(e instanceof Error ? e.message : "Failed to create project");
+      setNpError(
+        e instanceof Error
+          ? e.message
+          : `Failed to create ${t.coordinationLower}`,
+      );
     } finally {
       setNpSaving(false);
     }
@@ -551,7 +570,12 @@ export default function PartnerB2BProjectsTab({
 
   const deleteItem = async (itemId: string) => {
     if (!selectedProject || deletingItemId) return;
-    const ok = await confirm({ title: "Remove item?", message: "This item will be removed from the project.", confirmLabel: "Remove", variant: "danger" });
+    const ok = await confirm({
+      title: "Remove item?",
+      message: `This item will be removed from ${t.coordinationPhrase}.`,
+      confirmLabel: "Remove",
+      variant: "danger",
+    });
     if (!ok) return;
     setDeletingItemId(itemId);
     try {
@@ -579,7 +603,10 @@ export default function PartnerB2BProjectsTab({
   };
 
   const updateProject = async () => {
-    if (!selectedProject || !epName.trim()) { setEpError("Project name is required"); return; }
+    if (!selectedProject || !epName.trim()) {
+      setEpError(`${t.coordinationTitle} name is required`);
+      return;
+    }
     setEpSaving(true);
     setEpError("");
     try {
@@ -596,11 +623,16 @@ export default function PartnerB2BProjectsTab({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to update project");
+      if (!res.ok)
+        throw new Error(data.error || `Failed to update ${t.coordinationLower}`);
       setShowEditProject(false);
       await viewProject(selectedProject.id);
     } catch (e) {
-      setEpError(e instanceof Error ? e.message : "Failed to update project");
+      setEpError(
+        e instanceof Error
+          ? e.message
+          : `Failed to update ${t.coordinationLower}`,
+      );
     } finally {
       setEpSaving(false);
     }
@@ -624,7 +656,9 @@ export default function PartnerB2BProjectsTab({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
-          <h2 className="font-hero text-[20px] sm:text-[24px] font-bold text-[#1A1A1A]">New Project</h2>
+          <h2 className="font-hero text-[20px] sm:text-[24px] font-bold text-[#1A1A1A]">
+            New {t.coordinationTitle}
+          </h2>
           <button type="button" onClick={() => setShowNewProject(false)} className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors text-[#454545]" aria-label="Close">
             <X className="w-4 h-4" />
           </button>
@@ -632,7 +666,9 @@ export default function PartnerB2BProjectsTab({
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 space-y-4 min-h-0">
           {npError && <div className="px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-[13px] text-red-700">{npError}</div>}
           <div>
-            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Project Name *</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">
+              {t.coordinationTitle} Name *
+            </label>
             <input value={npName} onChange={(e) => setNpName(e.target.value)} placeholder="e.g. Wilson Residence"
               className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors" autoFocus />
           </div>
@@ -667,8 +703,8 @@ export default function PartnerB2BProjectsTab({
             <button type="button" onClick={() => setShowNewProject(false)}
               className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#454545] hover:bg-[#F5F3F0] transition-colors">Cancel</button>
             <button type="button" onClick={createProject} disabled={npSaving}
-              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#B89952] disabled:opacity-60 transition-colors">
-              {npSaving ? "Creating…" : "Create Project"}
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#243324] disabled:opacity-60 transition-colors">
+              {npSaving ? "Creating…" : `Create ${t.coordinationTitle}`}
             </button>
           </div>
         </div>
@@ -684,7 +720,9 @@ export default function PartnerB2BProjectsTab({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
-          <h2 className="font-hero text-[20px] sm:text-[24px] font-bold text-[#1A1A1A]">Edit Project</h2>
+          <h2 className="font-hero text-[20px] sm:text-[24px] font-bold text-[#1A1A1A]">
+            Edit {t.coordinationTitle}
+          </h2>
           <button type="button" onClick={() => setShowEditProject(false)} className="p-2 rounded-lg hover:bg-[#F5F3F0] transition-colors text-[#454545]" aria-label="Close">
             <X className="w-4 h-4" />
           </button>
@@ -692,7 +730,9 @@ export default function PartnerB2BProjectsTab({
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 space-y-4 min-h-0">
           {epError && <div className="px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-[13px] text-red-700">{epError}</div>}
           <div>
-            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Project Name *</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">
+              {t.coordinationTitle} Name *
+            </label>
             <input value={epName} onChange={(e) => setEpName(e.target.value)} placeholder="e.g. Wilson Residence"
               className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors" autoFocus />
           </div>
@@ -713,7 +753,7 @@ export default function PartnerB2BProjectsTab({
           </div>
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Description</label>
-            <textarea value={epDescription} onChange={(e) => setEpDescription(e.target.value)} placeholder="Project description"
+            <textarea value={epDescription} onChange={(e) => setEpDescription(e.target.value)} placeholder={`${t.coordinationTitle} description`}
               rows={2} className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors resize-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -732,7 +772,7 @@ export default function PartnerB2BProjectsTab({
             <button type="button" onClick={() => setShowEditProject(false)}
               className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#454545] hover:bg-[#F5F3F0] transition-colors">Cancel</button>
             <button type="button" onClick={updateProject} disabled={epSaving}
-              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#B89952] disabled:opacity-60 transition-colors">
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#243324] disabled:opacity-60 transition-colors">
               {epSaving ? "Saving…" : "Save changes"}
             </button>
           </div>
@@ -758,7 +798,7 @@ export default function PartnerB2BProjectsTab({
             <div className="flex items-center justify-between mb-1">
               <label className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Item Name *</label>
               <button type="button" onClick={addItemRow}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2C3E2D] hover:underline">
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--tx)] hover:underline">
                 <Plus className="w-3.5 h-3.5" /> Add item
               </button>
             </div>
@@ -767,7 +807,7 @@ export default function PartnerB2BProjectsTab({
                 <div key={idx} className="space-y-1.5">
                   <div className="grid grid-cols-[1fr_56px_44px] gap-2 items-end">
                     <input value={row.name} onChange={(e) => updateItemRow(idx, "name", e.target.value)}
-                      placeholder="e.g. Cloud Sectional Sofa"
+                      placeholder={t.addItemPlaceholder}
                       className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors"
                       autoFocus={idx === 0} />
                     <input type="number" min="1" value={row.qty} onChange={(e) => updateItemRow(idx, "qty", e.target.value)}
@@ -790,7 +830,7 @@ export default function PartnerB2BProjectsTab({
                     </div>
                   ) : (
                     <button type="button" onClick={() => toggleItemDims(idx)}
-                      className="text-[11px] text-[#2C3E2D] hover:underline">
+                      className="text-[11px] text-[var(--tx)] hover:underline">
                       + Add dimensions (optional)
                     </button>
                   )}
@@ -804,7 +844,7 @@ export default function PartnerB2BProjectsTab({
             <div className="flex items-center justify-between mb-1">
               <label className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Vendor *</label>
               <button type="button" onClick={() => setAiShowContact(!aiShowContact)}
-                className="text-[11px] text-[#2C3E2D] hover:underline">
+                className="text-[11px] text-[var(--tx)] hover:underline">
                 {aiShowContact ? "– Hide contact details" : "+ Add vendor contact"}
               </button>
             </div>
@@ -910,7 +950,7 @@ export default function PartnerB2BProjectsTab({
                 <button type="button" onClick={() => setAiPhoto(null)} className="text-[11px] text-red-500 hover:underline shrink-0">Remove</button>
               </div>
             ) : (
-              <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[#E8E4DF] text-[12px] text-[#5C5853] hover:border-[#2C3E2D] hover:text-[#2C3E2D] transition-colors">
+              <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[#E8E4DF] text-[12px] text-[#5C5853] hover:border-[#2C3E2D] hover:text-[var(--tx)] transition-colors">
                 <Camera className="w-3.5 h-3.5" />
                 Upload photo
                 <input type="file" accept="image/*" className="hidden"
@@ -924,7 +964,7 @@ export default function PartnerB2BProjectsTab({
             <button type="button" onClick={() => { setShowAddItem(false); resetAddItem(); }}
               className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#454545] hover:bg-[#F5F3F0] transition-colors">Cancel</button>
             <button type="button" onClick={addItem} disabled={aiSaving}
-              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#B89952] disabled:opacity-60 transition-colors">
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#243324] disabled:opacity-60 transition-colors">
               {aiSaving ? "Adding…" : "Add Item"}
             </button>
           </div>
@@ -975,7 +1015,7 @@ export default function PartnerB2BProjectsTab({
             <button type="button" onClick={() => setStatusItem(null)}
               className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#454545] hover:bg-[#F5F3F0] transition-colors">Cancel</button>
             <button type="button" onClick={submitStatusUpdate} disabled={statusSaving || !newStatus}
-              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#B89952] disabled:opacity-60 transition-colors">
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#243324] disabled:opacity-60 transition-colors">
               {statusSaving ? "Updating…" : "Update"}
             </button>
           </div>
@@ -1015,7 +1055,7 @@ export default function PartnerB2BProjectsTab({
               }
               setScheduleItem(null);
             }}
-            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#B89952] transition-colors">
+            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#243324] transition-colors">
             Schedule →
           </button>
         </div>
@@ -1446,7 +1486,7 @@ export default function PartnerB2BProjectsTab({
           <button onClick={() => setSelectedProject(null)}
             className="flex items-center gap-1 text-[12px] text-[var(--tx3)] hover:text-[#5C1A33] mb-4 transition-colors">
             <CaretLeft size={14} weight="regular" />
-            Back to Projects
+            Back to {t.coordinationPlural}
           </button>
 
           {/* Header */}
@@ -1659,11 +1699,15 @@ export default function PartnerB2BProjectsTab({
       <>
         {NewProjectModal}
         <div className="text-center py-12">
-          <p className="text-[var(--text-base)] text-[var(--tx3)]">No active projects</p>
-          <p className="text-[12px] text-[var(--tx3)]/60 mt-1">Create your first project to start coordinating multi-vendor deliveries</p>
+          <p className="text-[var(--text-base)] text-[var(--tx3)]">
+            No active {t.coordinationPluralLower}
+          </p>
+          <p className="text-[12px] text-[var(--tx3)]/60 mt-1">
+            Create your first {t.coordinationLower} to start coordinating multi-vendor deliveries
+          </p>
           <button type="button" onClick={() => setShowNewProject(true)}
             className="mt-4 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#243828] transition-colors">
-            <Plus className="w-[14px] h-[14px]" /> New Project
+            <Plus className="w-[14px] h-[14px]" /> New {t.coordinationTitle}
           </button>
         </div>
       </>
@@ -1681,10 +1725,12 @@ export default function PartnerB2BProjectsTab({
       )}
 
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-[var(--text-base)] font-bold font-hero text-[var(--tx)]">Projects ({projects.length})</h2>
+        <h2 className="text-[var(--text-base)] font-bold font-hero text-[var(--tx)]">
+          {t.coordinationPlural} ({projects.length})
+        </h2>
         <button type="button" onClick={() => setShowNewProject(true)}
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#243828] transition-colors">
-          <Plus className="w-[13px] h-[13px]" /> New Project
+          <Plus className="w-[13px] h-[13px]" /> New {t.coordinationTitle}
         </button>
       </div>
 

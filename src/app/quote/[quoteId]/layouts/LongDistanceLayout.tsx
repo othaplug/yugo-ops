@@ -26,16 +26,23 @@ interface Props {
   confirmed: boolean;
 }
 
-export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Props) {
+export default function LongDistanceLayout({
+  quote,
+  onConfirm,
+  confirmed,
+}: Props) {
   const factors = quote.factors_applied as Record<string, unknown> | null;
-  const includes = (factors?.includes as string[] | undefined) ?? DEFAULT_INCLUDES;
+  const includes =
+    (factors?.includes as string[] | undefined) ?? DEFAULT_INCLUDES;
   const ldTruckSur = 0;
   const ldTruckLine: string | null = null;
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
   const deposit = calculateDeposit("long_distance", price);
 
-  const moveDate = quote.move_date ? new Date(quote.move_date + "T00:00:00") : null;
+  const moveDate = quote.move_date
+    ? new Date(quote.move_date + "T00:00:00")
+    : null;
   const transitDays = Math.max(1, Math.ceil((quote.distance_km ?? 500) / 400));
 
   const phases = [
@@ -57,7 +64,9 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
     {
       label: "Arrival & Setup",
       desc: "Unloading, reassembly, placement per your instructions",
-      date: moveDate ? fmtShortDate(addDays(moveDate, transitDays + 1)) : "Delivery day",
+      date: moveDate
+        ? fmtShortDate(addDays(moveDate, transitDays + 1))
+        : "Delivery day",
     },
   ];
 
@@ -74,12 +83,21 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
         <div className="flex items-center gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-start gap-2">
-              <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
+              <MapPin
+                className="w-4 h-4 shrink-0 mt-0.5"
+                style={{ color: WINE }}
+              />
               <div>
-                <p className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}80` }}>
+                <p
+                  className="text-[10px] font-semibold tracking-wider uppercase"
+                  style={{ color: `${FOREST}80` }}
+                >
                   Origin
                 </p>
-                <p className="text-[13px] font-medium" style={{ color: FOREST }}>
+                <p
+                  className="text-[13px] font-medium"
+                  style={{ color: FOREST }}
+                >
                   {quote.from_address}
                 </p>
               </div>
@@ -92,7 +110,10 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
               style={{ backgroundColor: `${FOREST}08` }}
             >
               <Truck className="w-3.5 h-3.5" style={{ color: FOREST }} />
-              <span className="text-[11px] font-semibold" style={{ color: FOREST }}>
+              <span
+                className="text-[11px] font-semibold"
+                style={{ color: FOREST }}
+              >
                 {quote.distance_km ?? "\u2014"} km
               </span>
             </div>
@@ -109,14 +130,23 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
           <div className="flex-1 min-w-0 text-right">
             <div className="flex items-start gap-2 justify-end">
               <div>
-                <p className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}80` }}>
+                <p
+                  className="text-[10px] font-semibold tracking-wider uppercase"
+                  style={{ color: `${FOREST}80` }}
+                >
                   Destination
                 </p>
-                <p className="text-[13px] font-medium" style={{ color: FOREST }}>
+                <p
+                  className="text-[13px] font-medium"
+                  style={{ color: FOREST }}
+                >
                   {quote.to_address}
                 </p>
               </div>
-              <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
+              <MapPin
+                className="w-4 h-4 shrink-0 mt-0.5"
+                style={{ color: FOREST }}
+              />
             </div>
           </div>
         </div>
@@ -131,20 +161,28 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
           All-Inclusive Flat Rate
         </h2>
         {(ldTruckLine || ldTruckSur > 0) && (
-          <p className="text-[11px] mb-3 max-w-md mx-auto leading-relaxed" style={{ color: `${FOREST}75` }}>
+          <p
+            className="text-[11px] mb-3 max-w-md mx-auto leading-relaxed"
+            style={{ color: `${FOREST}75` }}
+          >
             {ldTruckLine ? (
               <span className="font-semibold" style={{ color: FOREST }}>
                 {ldTruckLine}
               </span>
             ) : (
               <>
-                <span className="font-semibold" style={{ color: FOREST }}>Truck sizing: </span>
+                <span className="font-semibold" style={{ color: FOREST }}>
+                  Truck sizing:{" "}
+                </span>
                 +{fmtPrice(ldTruckSur)}
               </>
             )}
           </p>
         )}
-        <p className="font-hero text-[40px] md:text-[48px] my-3" style={{ color: WINE }}>
+        <p
+          className="font-hero text-[40px] md:text-[48px] my-3"
+          style={{ color: WINE }}
+        >
           {fmtPrice(price)}
         </p>
         <p className="text-[12px] mb-5" style={{ color: `${FOREST}70` }}>
@@ -182,8 +220,14 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
         <div className="grid sm:grid-cols-2 gap-2.5">
           {includes.map((item, i) => (
             <div key={i} className="flex items-start gap-2">
-              <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: FOREST }} />
-              <span className="text-[12px] leading-snug" style={{ color: FOREST }}>
+              <Check
+                className="w-3.5 h-3.5 shrink-0 mt-0.5"
+                style={{ color: FOREST }}
+              />
+              <span
+                className="text-[12px] leading-snug"
+                style={{ color: FOREST }}
+              >
                 {item}
               </span>
             </div>
@@ -204,7 +248,9 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
             <div key={i} className="text-center relative">
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2.5 text-[var(--text-base)] font-bold text-white"
-                style={{ backgroundColor: i === 0 ? WINE : i === 3 ? FOREST : FOREST }}
+                style={{
+                  backgroundColor: i === 0 ? WINE : i === 3 ? FOREST : FOREST,
+                }}
               >
                 {i + 1}
               </div>
@@ -219,13 +265,22 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
                   />
                 </div>
               )}
-              <p className="text-[12px] font-bold mb-0.5" style={{ color: FOREST }}>
+              <p
+                className="text-[12px] font-bold mb-0.5"
+                style={{ color: FOREST }}
+              >
                 {phase.label}
               </p>
-              <p className="text-[10px] leading-snug mb-1" style={{ color: `${FOREST}60` }}>
+              <p
+                className="text-[10px] leading-snug mb-1"
+                style={{ color: `${FOREST}60` }}
+              >
                 {phase.desc}
               </p>
-              <p className="text-[10px] font-semibold" style={{ color: FOREST }}>
+              <p
+                className="text-[10px] font-semibold"
+                style={{ color: FOREST }}
+              >
                 {phase.date}
               </p>
             </div>

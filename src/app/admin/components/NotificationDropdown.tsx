@@ -56,7 +56,7 @@ export default function NotificationDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-[9999] mt-2 w-[min(380px,calc(100dvw-1.5rem))] max-w-[380px] overflow-hidden rounded-[2px] border border-[var(--brd)] bg-[var(--bg2)] shadow-lg animate-fade-up">
+        <div className="absolute right-0 top-full z-[9999] mt-2 w-[min(380px,calc(100dvw-1.5rem))] max-w-[380px] overflow-hidden rounded-[2px] yugo-glass shadow-lg animate-fade-up">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--brd)]">
             <div className="font-heading text-[13px] font-bold text-[var(--tx)]">Notifications</div>

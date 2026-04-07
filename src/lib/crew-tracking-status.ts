@@ -94,3 +94,19 @@ export function getFirstStatus(jobType: "move" | "delivery"): TrackingStatus {
 export function getStatusLabel(s: string): string {
   return TRACKING_STATUS_LABELS[s as TrackingStatus] || s.replace(/_/g, " ");
 }
+
+/** Crew job UI: origin/drop-off wording for deliveries and B2B moves (pickup/destination are internal keys). */
+const LOGISTICS_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
+  en_route_to_pickup: "En Route to Origin",
+  arrived_at_pickup: "Arrived at Origin",
+  en_route_to_destination: "En Route to Drop-Off",
+  arrived_at_destination: "Arrived at Drop-Off",
+};
+
+export function getCrewCheckpointDisplayLabel(status: string, useLogisticsCopy: boolean): string {
+  if (useLogisticsCopy) {
+    const mapped = LOGISTICS_CHECKPOINT_LABELS[status as TrackingStatus];
+    if (mapped) return mapped;
+  }
+  return getStatusLabel(status);
+}

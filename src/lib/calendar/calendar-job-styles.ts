@@ -3,6 +3,8 @@ import type { CalendarEvent } from "./types";
 
 /** Wine move / partner-style pill on admin calendar */
 export const CALENDAR_WINE_MOVE_FILL = "#8B1A3A";
+/** B2B delivery — wine rose (replaces bright pink; light ink for contrast). */
+export const CALENDAR_B2B_DELIVERY_FILL = "#7A2848";
 export const CALENDAR_WINE_PILL_TEXT = "#F9EDE4";
 export const CALENDAR_WINE_PILL_TEXT_MUTED = "rgba(249, 237, 228, 0.72)";
 
@@ -11,8 +13,10 @@ export const CALENDAR_PILL_TEXT = "#0f172a";
 export const CALENDAR_PILL_TEXT_MUTED = "#334155";
 
 export function calendarPillUsesLightInk(ev: CalendarEvent): boolean {
+  const c = ev.color.toLowerCase();
   return (
-    ev.color.toLowerCase() === CALENDAR_WINE_MOVE_FILL.toLowerCase() ||
+    c === CALENDAR_WINE_MOVE_FILL.toLowerCase() ||
+    c === CALENDAR_B2B_DELIVERY_FILL.toLowerCase() ||
     ev.type === "move"
   );
 }

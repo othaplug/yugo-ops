@@ -8,7 +8,7 @@ export type PartnerVertical =
   | "furniture_retailer" | "interior_designer" | "cabinetry" | "flooring"
   | "art_gallery" | "antique_dealer"
   | "hospitality"
-  | "medical_equipment" | "av_technology" | "appliances"
+  | "medical_equipment" | "av_technology" | "appliances" | "hvac"
   | "property_management_residential" | "property_management_commercial" | "developer_builder"
   | "realtor" | "property_manager" | "developer";
 
@@ -65,6 +65,7 @@ export const PARTNER_SEGMENT_GROUPS: {
           { value: "medical_equipment", label: "Medical Equipment" },
           { value: "av_technology", label: "AV / Technology" },
           { value: "appliances", label: "Appliances" },
+          { value: "hvac", label: "HVAC" },
         ],
       },
     ],

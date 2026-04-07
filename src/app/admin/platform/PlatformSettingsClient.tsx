@@ -401,6 +401,84 @@ interface CrewPortalMember {
   is_active: boolean;
 }
 
+function TeamCrewNameField({
+  teamId,
+  label,
+  onSaved,
+}: {
+  teamId: string;
+  label: string;
+  onSaved: (newLabel: string) => void;
+}) {
+  const { toast } = useToast();
+  const [value, setValue] = useState(label);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setValue(label);
+  }, [label, teamId]);
+
+  const save = async () => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      toast("Enter a crew name", "x");
+      return;
+    }
+    if (trimmed === label.trim()) return;
+    setSaving(true);
+    try {
+      const r = await fetch("/api/crews/update-name", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ crewId: teamId, name: trimmed }),
+      });
+      const data = (await r.json().catch(() => ({}))) as { error?: string; name?: string };
+      if (!r.ok) {
+        toast(typeof data.error === "string" ? data.error : "Failed to save", "x");
+        return;
+      }
+      onSaved(data.name ?? trimmed);
+      toast("Crew name updated", "check");
+    } catch {
+      toast("Failed to save", "x");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const dirty = value.trim() !== label.trim();
+
+  return (
+    <div>
+      <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Crew name</div>
+      <p className="text-[10px] text-[var(--tx3)] mb-2">
+        This name appears everywhere this crew is shown—calendar, dispatch, live tracking, crew app, and reports.
+      </p>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && dirty && !saving) void save();
+          }}
+          className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[13px] text-[var(--tx)]"
+          autoComplete="off"
+          aria-label="Crew name"
+        />
+        <button
+          type="button"
+          disabled={!dirty || saving}
+          onClick={() => void save()}
+          className="shrink-0 px-3 py-2 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-40 disabled:pointer-events-none transition-all"
+        >
+          {saving ? "Saving…" : "Save name"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 interface AppToggles {
   crewTracking: boolean;
   partnerPortal: boolean;
@@ -1932,6 +2010,13 @@ export default function PlatformSettingsClient({
               </div>
               {editingTeam === team.id && (
                 <div className="px-4 py-3 border-t border-[var(--brd)] bg-[var(--bg)] space-y-4">
+                  <TeamCrewNameField
+                    teamId={team.id}
+                    label={team.label}
+                    onSaved={(newLabel) => {
+                      setTeams((prev) => prev.map((t) => (t.id === team.id ? { ...t, label: newLabel } : t)));
+                    }}
+                  />
                   <div>
                     <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Current Members</div>
                     {(team.memberIds ?? []).length > 0 ? (

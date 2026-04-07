@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { getLocalDateString, getAppTimezone, addCalendarDaysYmd } from "@/lib/business-timezone";
 import { getMoveDetailPath, getDeliveryDetailPath, getMoveCode } from "@/lib/move-code";
+import { deliveryContactEmail, deliveryContactPhone } from "@/lib/calendar/delivery-contact";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
     admin
       .from("deliveries")
       .select(
-        "id, delivery_number, crew_id, client_name, customer_name, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, scheduled_date, time_slot, status, stage, eta_current_minutes, updated_at"
+        "id, delivery_number, crew_id, client_name, customer_name, customer_phone, customer_email, contact_phone, contact_email, end_customer_phone, end_customer_email, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, scheduled_date, time_slot, status, stage, eta_current_minutes, updated_at"
       )
       .eq("scheduled_date", targetDate)
       .not("status", "in", '("cancelled")')
@@ -249,8 +250,8 @@ export async function GET(req: NextRequest) {
       type: "delivery",
       label: d.delivery_number || "Delivery",
       client: d.client_name || d.customer_name || "-",
-      clientPhone: null,
-      clientEmail: null,
+      clientPhone: deliveryContactPhone(d),
+      clientEmail: deliveryContactEmail(d),
       partnerName: d.client_name || undefined,
       fromAddress: d.pickup_address || "",
       toAddress: d.delivery_address || "",

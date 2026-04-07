@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/check-role";
 import { createPartnerNotification } from "@/lib/notifications";
 import { logActivity } from "@/lib/activity";
+import { notifyPartnerDeliveryBooked } from "@/lib/partner-job-comms";
+import { ensureB2bDeliverySchedule } from "@/lib/calendar/ensure-b2b-delivery-schedule";
 
 export async function POST(
   req: NextRequest,
@@ -61,6 +63,12 @@ export async function POST(
     description: `Delivery approved: ${delivery.customer_name || delivery.delivery_number}`,
     icon: "check",
   });
+
+  notifyPartnerDeliveryBooked(id).catch(() => {});
+
+  await ensureB2bDeliverySchedule(db, id).catch((e) =>
+    console.error("[deliveries/approve] ensureB2bDeliverySchedule:", e),
+  );
 
   return NextResponse.json({ ok: true });
 }

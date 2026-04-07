@@ -71,7 +71,7 @@ export default function AlertBar({ alerts }: AlertBarProps) {
         return (
           <div
             key={a.id}
-            className="inline-flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-full border border-white/[0.06] bg-white/[0.04] backdrop-blur-sm"
+            className="inline-flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-full border border-white/[0.06] bg-white/[0.12]"
           >
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />
             <Icon className={`w-4 h-4 shrink-0 ${cfg.iconColor}`} />

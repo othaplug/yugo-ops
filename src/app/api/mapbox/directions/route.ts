@@ -28,11 +28,20 @@ export async function GET(req: NextRequest) {
   try {
     const res = await fetch(url);
     const data = await res.json();
-    const coordsList = data?.routes?.[0]?.geometry?.coordinates;
+    const route = data?.routes?.[0];
+    const coordsList = route?.geometry?.coordinates;
     if (!Array.isArray(coordsList) || coordsList.length === 0) {
-      return NextResponse.json({ coordinates: null });
+      return NextResponse.json({ coordinates: null, duration: null, distance: null });
     }
-    return NextResponse.json({ coordinates: coordsList });
+    const duration =
+      route?.duration != null && Number.isFinite(Number(route.duration))
+        ? Number(route.duration)
+        : null;
+    const distance =
+      route?.distance != null && Number.isFinite(Number(route.distance))
+        ? Number(route.distance)
+        : null;
+    return NextResponse.json({ coordinates: coordsList, duration, distance });
   } catch (e) {
     console.error("[mapbox/directions]", e);
     return NextResponse.json({ error: "Directions failed" }, { status: 502 });

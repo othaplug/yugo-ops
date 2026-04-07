@@ -7,6 +7,10 @@ export type MapboxDirectionRoute = {
     steps?: Array<{
       distance?: number;
       name?: string;
+      intersections?: Array<{
+        location: [number, number];
+        classes?: string[];
+      }>;
       maneuver?: {
         type?: string;
         instruction?: string;

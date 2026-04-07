@@ -178,7 +178,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
                             href={inv.square_invoice_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[#2C3E2D]/10 text-[#2C3E2D] hover:bg-[#2C3E2D]/20 transition-colors"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[#2C3E2D]/10 text-[var(--tx)] hover:bg-[#2C3E2D]/20 transition-colors"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <ArrowSquareOut size={10} />

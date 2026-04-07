@@ -526,7 +526,7 @@ export default function TrackLiveMap({
 
             {!hasActiveTracking && (
               <div
-                className="absolute inset-0 backdrop-blur-md flex flex-col items-center justify-center z-10 pointer-events-none px-4 text-center bg-[#FFFBF7]/85"
+                className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none px-4 text-center bg-[#FFFBF7]/95"
                 aria-hidden="true"
               >
                 <span
@@ -697,7 +697,7 @@ export default function TrackLiveMap({
                   {(displayEta != null || lastLocationAt) && (
                     <div className="flex items-center gap-4 pt-3 text-[12px] text-[#454545]">
                       {displayEta != null && (
-                        <span className="font-semibold text-[#2C3E2D]">
+                        <span className="font-semibold text-[var(--tx)]">
                           ~{displayEta} min ETA
                         </span>
                       )}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createAndPublishSquareInvoice } from "@/lib/square-invoice";
 import { resolveB2BInvoiceCustomerName } from "@/lib/b2b-invoice-customer-name";
+import { serverDebug } from "@/lib/server-log";
 
 /**
  * Internal endpoint — called fire-and-forget by the crew signoff route
@@ -53,7 +54,9 @@ export async function POST(req: NextRequest) {
 
   const { data: org } = await admin
     .from("organizations")
-    .select("name, email, contact_name, type, invoice_due_days, invoice_due_day_of_month")
+    .select(
+      "name, email, contact_name, type, invoice_due_days, invoice_due_day_of_month, billing_method",
+    )
     .eq("id", delivery.organization_id)
     .single();
 
@@ -62,6 +65,13 @@ export async function POST(req: NextRequest) {
   }
   if (org.type === "b2c") {
     return NextResponse.json({ message: "Invoices only for partners", skipped: true });
+  }
+  const billingMethod = (org.billing_method || "per_delivery").trim().toLowerCase();
+  if (billingMethod === "monthly_statement") {
+    return NextResponse.json({
+      message: "Partner billed on monthly statement — per-job invoice skipped",
+      skipped: true,
+    });
   }
 
   const amount = Number(
@@ -100,6 +110,7 @@ export async function POST(req: NextRequest) {
       contactName,
       invoiceDueDays: org.invoice_due_days === 15 ? 15 : 30,
       invoiceDueDayOfMonth: org.invoice_due_day_of_month === 15 || org.invoice_due_day_of_month === 30 ? org.invoice_due_day_of_month : null,
+      jobType: "delivery",
     });
     if (result) {
       squareInvoiceId = result.squareInvoiceId;
@@ -144,9 +155,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: insertErr.message }, { status: 500 });
   }
 
-  console.log(
+  serverDebug(
     `[auto-delivery-invoice] Created invoice ${invoiceNumber} for delivery ${deliveryId}`,
-    { squareInvoiceId, squareInvoiceUrl }
+    { squareInvoiceId, squareInvoiceUrl },
   );
 
   return NextResponse.json({

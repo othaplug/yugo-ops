@@ -6,6 +6,7 @@ import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
 import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
 import { createClientReferralIfNeeded } from "@/lib/client-referral";
 import { generatePostMoveDocuments } from "@/lib/post-move-documents";
+import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
 
 const VALID_SKIP_REASONS = [
   "client_not_home",
@@ -118,6 +119,10 @@ export async function POST(req: NextRequest) {
       createClientReferralIfNeeded(admin, entityId).catch((e) => console.error("[referral] create failed:", e));
       generatePostMoveDocuments(entityId).catch((e) => console.error("[post-move-documents] failed:", e));
     }
+    notifyJobCompletedForCrewProfiles(admin, {
+      jobType: jobType as "move" | "delivery",
+      jobId: entityId,
+    }).catch((e) => console.error("[crew-profile] signoff skip:", e));
   }
 
   return NextResponse.json({ ok: true });

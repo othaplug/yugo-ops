@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight } from "@phosphor-icons/react";
+import { ArrowRight, CaretRight } from "@phosphor-icons/react";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface Lead {
@@ -43,7 +44,7 @@ const STATUS_OPTIONS = [
 function statusSelectClass(status: string): string {
   switch (status) {
     case "new":
-      return "text-[#2C3E2D] dark:text-[var(--tx2)]";
+      return "text-[var(--tx)]";
     case "contacted":
       return "text-[var(--blue)]";
     case "quote_sent":
@@ -130,24 +131,37 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6">
-      <header className="mb-10 space-y-2 sm:mb-12">
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--tx3)]/55">
-          Sales
-        </p>
-        <h1 className="admin-page-hero text-[var(--tx)]">Widget Leads</h1>
+      <header className="mb-10 sm:mb-12">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+          <div className="min-w-0 space-y-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--tx3)]/55">
+              Sales
+            </p>
+            <h1 className="admin-page-hero text-[var(--tx)]">Widget Leads</h1>
+          </div>
+          <Link
+            href="/widget/quote"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex items-center gap-1.5 shrink-0 self-start rounded-lg border border-[var(--brd)] px-3 py-2 text-[10px] font-bold tracking-wide text-[var(--tx)] shadow-sm transition-all hover:border-[#2C3E2D]/35 hover:bg-[var(--bg2)] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C3E2D]/40 sm:mt-0.5"
+          >
+            Quote widget
+            <CaretRight
+              size={12}
+              weight="bold"
+              className="opacity-70 transition-transform group-hover:translate-x-0.5"
+              aria-hidden
+            />
+          </Link>
+        </div>
       </header>
 
-      <section
-        className="mb-10 overflow-hidden rounded-2xl bg-[var(--brd)]/[0.28] p-px shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:bg-[var(--brd)]/35 dark:shadow-none"
-        aria-label="Lead summary"
-      >
-        <dl className="grid grid-cols-2 gap-px sm:grid-cols-4">
+      <section className="mb-10" aria-label="Lead summary">
+        <ul className="list-none grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4 sm:gap-x-10">
           {kpiItems.map(({ key, label, sub, value, emphasize, accent }) => (
-            <div key={key} className="bg-[var(--card)] px-4 py-4 sm:px-5 sm:py-5">
-              <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/65">
-                {label}
-              </dt>
-              <dd
+            <li key={key} className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/65">{label}</p>
+              <p
                 className={`mt-1.5 font-heading text-2xl font-semibold tabular-nums tracking-tight ${
                   emphasize
                     ? "text-[var(--red)]"
@@ -157,11 +171,11 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
                 }`}
               >
                 {value}
-              </dd>
+              </p>
               <p className="mt-1 text-[10px] text-[var(--tx3)]/75">{sub}</p>
-            </div>
+            </li>
           ))}
-        </dl>
+        </ul>
       </section>
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -198,11 +212,10 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
         ))}
       </div>
 
-      <section aria-label="Lead list">
-        <div className="overflow-x-auto rounded-2xl bg-[var(--card)] shadow-[0_1px_0_rgba(0,0,0,0.04)] ring-1 ring-[var(--brd)]/40 dark:shadow-none dark:ring-[var(--brd)]/50">
-          <table className="w-full min-w-[900px] border-collapse text-[13px]">
-            <thead>
-              <tr className="border-b border-[var(--brd)]/50 text-left">
+      <section aria-label="Lead list" className="overflow-x-auto">
+        <table className="w-full min-w-[900px] border-collapse text-[13px]">
+          <thead>
+            <tr className="border-b border-[var(--brd)]/50 text-left">
                 <th
                   scope="col"
                   className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
@@ -269,7 +282,7 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
                     key={l.id}
                     className="border-b border-[var(--brd)]/[0.35] transition-colors last:border-b-0 hover:bg-[var(--hover)]/80"
                   >
-                    <td className="px-4 py-3.5 font-semibold text-[#2C3E2D] dark:text-[var(--tx2)]">
+                    <td className="px-4 py-3.5 font-semibold text-[var(--tx)]">
                       {l.lead_number}
                     </td>
                     <td className="px-4 py-3.5 font-medium text-[var(--tx)]">
@@ -314,8 +327,7 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
                 ))
               )}
             </tbody>
-          </table>
-        </div>
+        </table>
       </section>
     </div>
   );

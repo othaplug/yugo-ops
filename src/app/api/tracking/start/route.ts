@@ -6,7 +6,11 @@ import { getFirstStatus } from "@/lib/crew-tracking-status";
 import { notifyOnCheckpoint } from "@/lib/tracking-notifications";
 import { applyEstateServiceChecklistAutomation } from "@/lib/estate-service-checklist-sync";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
-import { CREW_JOB_UUID_RE, normalizeCrewJobId, selectDeliveryByJobId } from "@/lib/resolve-delivery-by-job-id";
+import {
+  CREW_JOB_UUID_RE,
+  normalizeCrewJobId,
+  selectDeliveryByJobId,
+} from "@/lib/resolve-delivery-by-job-id";
 
 export async function POST(req: NextRequest) {
   // Job sessions always allowed for assigned crew; `crew_tracking` toggle only gates live GPS ingest (see /api/tracking/location).
@@ -22,7 +26,10 @@ export async function POST(req: NextRequest) {
   const { jobType } = body;
   const rawJobId = normalizeCrewJobId(body.jobId);
   if (!rawJobId || !jobType || !["move", "delivery"].includes(jobType)) {
-    return NextResponse.json({ error: "jobId and jobType (move|delivery) required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "jobId and jobType (move|delivery) required" },
+      { status: 400 },
+    );
   }
 
   const admin = createAdminClient();
@@ -44,29 +51,53 @@ export async function POST(req: NextRequest) {
 
   if (jobType === "move") {
     const { data: move } = isUuid
-      ? await admin.from("moves").select("id, move_code, crew_id, assigned_members, assigned_crew_name").eq("id", rawJobId).maybeSingle()
+      ? await admin
+          .from("moves")
+          .select(
+            "id, move_code, crew_id, assigned_members, assigned_crew_name",
+          )
+          .eq("id", rawJobId)
+          .maybeSingle()
       : await admin
           .from("moves")
-          .select("id, move_code, crew_id, assigned_members, assigned_crew_name")
+          .select(
+            "id, move_code, crew_id, assigned_members, assigned_crew_name",
+          )
           .ilike("move_code", rawJobId.replace(/^#/, "").toUpperCase())
           .maybeSingle();
-    if (!move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
-    if (move.crew_id !== payload.teamId) return NextResponse.json({ error: "Job not assigned to your team" }, { status: 403 });
+    if (!move)
+      return NextResponse.json({ error: "Move not found" }, { status: 404 });
+    if (move.crew_id !== payload.teamId)
+      return NextResponse.json(
+        { error: "Job not assigned to your team" },
+        { status: 403 },
+      );
     jobRow = move as JobSnapRow;
     entityId = move.id;
   } else {
     // Do not select assigned_* — older DBs may not have those columns (see migration job_crew_assignment_snapshot).
     const selectCols = "id, delivery_number, crew_id";
-    const { data: deliveryData } = await selectDeliveryByJobId(admin, rawJobId, selectCols);
+    const { data: deliveryData } = await selectDeliveryByJobId(
+      admin,
+      rawJobId,
+      selectCols,
+    );
     const delivery = (deliveryData as unknown as JobSnapRow | null) ?? null;
-    if (!delivery) return NextResponse.json({ error: "Job not found" }, { status: 404 });
-    if (delivery.crew_id !== payload.teamId) return NextResponse.json({ error: "Job not assigned to your team" }, { status: 403 });
+    if (!delivery)
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    if (delivery.crew_id !== payload.teamId)
+      return NextResponse.json(
+        { error: "Job not assigned to your team" },
+        { status: 403 },
+      );
     jobRow = delivery as JobSnapRow;
     entityId = delivery.id;
   }
 
   if (jobRow.crew_id) {
-    const am = Array.isArray(jobRow.assigned_members) ? jobRow.assigned_members : [];
+    const am = Array.isArray(jobRow.assigned_members)
+      ? jobRow.assigned_members
+      : [];
     const nameMissing = !String(jobRow.assigned_crew_name || "").trim();
     const membersMissing = am.length === 0;
     if (membersMissing || nameMissing) {
@@ -76,10 +107,16 @@ export async function POST(req: NextRequest) {
       if (nameMissing) patch.assigned_crew_name = snap.assigned_crew_name;
       if (Object.keys(patch).length) {
         const tbl = jobType === "move" ? "moves" : "deliveries";
-        const { error: patchErr } = await admin.from(tbl).update(patch).eq("id", entityId);
+        const { error: patchErr } = await admin
+          .from(tbl)
+          .update(patch)
+          .eq("id", entityId);
         // Deliveries may not have assigned_* columns until migration is applied (Postgres 42703).
         if (patchErr && String(patchErr.code) !== "42703") {
-          return NextResponse.json({ error: patchErr.message }, { status: 500 });
+          return NextResponse.json(
+            { error: patchErr.message },
+            { status: 500 },
+          );
         }
       }
     }
@@ -100,7 +137,13 @@ export async function POST(req: NextRequest) {
 
   const firstStatus = getFirstStatus(jobType);
   const now = new Date().toISOString();
-  const checkpoint = { status: firstStatus, timestamp: now, lat: null, lng: null, note: null };
+  const checkpoint = {
+    status: firstStatus,
+    timestamp: now,
+    lat: null,
+    lng: null,
+    note: null,
+  };
 
   const { data: session, error } = await admin
     .from("tracking_sessions")
@@ -117,16 +160,20 @@ export async function POST(req: NextRequest) {
     .select("id")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
 
   // Set move/delivery to in_progress and stage so client track page shows live map and progress
   const table = jobType === "move" ? "moves" : "deliveries";
-  await admin.from(table).update({
-    status: "in_progress",
-    stage: firstStatus,
-    updated_at: now,
-    eta_tracking_active: true,
-  }).eq("id", entityId);
+  await admin
+    .from(table)
+    .update({
+      status: "in_progress",
+      stage: firstStatus,
+      updated_at: now,
+      eta_tracking_active: true,
+    })
+    .eq("id", entityId);
 
   if (jobType === "move") {
     applyEstateServiceChecklistAutomation(admin, entityId).catch((e) =>
@@ -149,20 +196,42 @@ export async function POST(req: NextRequest) {
   let jobName = "";
   let fromAddress: string | undefined;
   let toAddress: string | undefined;
-  const { data: crew } = await admin.from("crews").select("name").eq("id", payload.teamId).single();
+  const { data: crew } = await admin
+    .from("crews")
+    .select("name")
+    .eq("id", payload.teamId)
+    .single();
   teamName = crew?.name || "Crew";
   if (jobType === "move") {
-    const { data: m } = await admin.from("moves").select("client_name, from_address, to_address").eq("id", entityId).single();
+    const { data: m } = await admin
+      .from("moves")
+      .select("client_name, from_address, to_address")
+      .eq("id", entityId)
+      .single();
     jobName = m?.client_name || entityId;
     fromAddress = m?.from_address;
     toAddress = m?.to_address;
   } else {
-    const { data: d } = await admin.from("deliveries").select("customer_name, client_name, pickup_address, delivery_address").eq("id", entityId).single();
-    jobName = d ? `${d.customer_name || ""} (${d.client_name || ""})` : entityId;
+    const { data: d } = await admin
+      .from("deliveries")
+      .select("customer_name, client_name, pickup_address, delivery_address")
+      .eq("id", entityId)
+      .single();
+    jobName = d
+      ? `${d.customer_name || ""} (${d.client_name || ""})`
+      : entityId;
     fromAddress = d?.pickup_address;
     toAddress = d?.delivery_address;
   }
-  notifyOnCheckpoint(firstStatus as Parameters<typeof notifyOnCheckpoint>[0], entityId, jobType, teamName, jobName, fromAddress, toAddress).catch(() => {});
+  notifyOnCheckpoint(
+    firstStatus as Parameters<typeof notifyOnCheckpoint>[0],
+    entityId,
+    jobType,
+    teamName,
+    jobName,
+    fromAddress,
+    toAddress,
+  ).catch(() => {});
 
   return NextResponse.json({ sessionId: session.id });
 }

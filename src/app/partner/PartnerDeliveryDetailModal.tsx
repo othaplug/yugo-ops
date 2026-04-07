@@ -311,7 +311,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
               onClick={() => setActiveSection(t.key)}
               className={`px-3 py-2.5 text-[12px] font-semibold border-b-2 transition-colors -mb-px ${
                 activeSection === t.key
-                  ? "border-[#2C3E2D] text-[#2C3E2D]"
+                  ? "border-[#2C3E2D] text-[var(--tx)]"
                   : "border-transparent text-[var(--tx3)] hover:text-[var(--tx)]"
               }`}
             >
@@ -358,7 +358,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                               : null;
                             return (
                               <li key={stop.id} className="flex gap-2">
-                                <span className="text-[10px] font-bold text-[#2C3E2D] shrink-0 pt-0.5">{stop.stop_number}.</span>
+                                <span className="text-[10px] font-bold text-[var(--tx)] shrink-0 pt-0.5">{stop.stop_number}.</span>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-[9px] font-semibold text-[var(--tx3)] flex items-center">
@@ -424,7 +424,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                           <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">
                             {isPending ? "Quoted Price" : "Confirmed Price"}
                           </div>
-                          <div className="text-[18px] font-bold text-[#2C3E2D]">
+                          <div className="text-[18px] font-bold text-[var(--tx)]">
                             ${Number(displayPrice).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                           </div>
                           <div className="text-[10px] text-[var(--tx3)] mt-0.5">
@@ -439,7 +439,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                           </span>
                         )}
                         {!isPending && (
-                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-[#2C3E2D]/10 text-[#2C3E2D]">
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-[#2C3E2D]/10 text-[var(--tx)]">
                             Confirmed
                           </span>
                         )}
@@ -509,7 +509,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                       {!isCompleted &&
                         mapData.navEtaSeconds != null &&
                         mapData.navEtaSeconds > 0 && (
-                          <div className="absolute bottom-2 left-2 z-[500] pointer-events-none rounded-lg border border-[#E8E4DF] bg-white/95 px-2.5 py-1.5 text-[11px] font-semibold text-[#1A1816] shadow-lg backdrop-blur-sm">
+                          <div className="absolute bottom-2 left-2 z-[500] pointer-events-none rounded-lg border border-[#E8E4DF] bg-[#FFFBF7] px-2.5 py-1.5 text-[11px] font-semibold text-[#1A1816] shadow-lg">
                             ~{Math.max(1, Math.round(mapData.navEtaSeconds / 60))} min ETA
                             {mapData.navDistanceRemainingM != null && mapData.navDistanceRemainingM > 0 && (
                               <span className="font-normal opacity-85">

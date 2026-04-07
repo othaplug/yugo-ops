@@ -2,6 +2,12 @@
  * Client inventory change requests — pricing + truck assessment (shared by track API + admin).
  */
 
+import {
+  calculateExtraItemPrice,
+  fragileItemNameHint,
+  weightTierFromLegacyScore,
+} from "@/lib/pricing/extra-item-surcharges";
+
 export const TRUCK_CAPACITIES: Record<string, number> = {
   sprinter: 20,
   "16ft": 35,
@@ -27,6 +33,30 @@ export function scoreForCustomClass(c: string | null | undefined): number {
 export function calcLineCharge(weightScore: number, quantity: number, perScoreRate: number): number {
   const q = Math.max(1, Math.floor(quantity) || 1);
   return Math.round(Number(weightScore) * perScoreRate * q);
+}
+
+/** Dollar surcharge for an extra catalog line (custom items = $0 until coordinator prices). */
+export function surchargeForAddedLine(row: ItemAddedInput): number {
+  if (row.is_custom) return 0;
+  const q = Math.max(1, Math.floor(row.quantity) || 1);
+  const ws = Number(row.weight_score) || 1;
+  return calculateExtraItemPrice(
+    row.item_name,
+    weightTierFromLegacyScore(ws),
+    q,
+    fragileItemNameHint(row.item_name),
+  );
+}
+
+export function creditForRemovedLine(row: ItemRemovedInput): number {
+  const q = Math.max(1, Math.floor(row.quantity) || 1);
+  const ws = Number(row.weight_score) || 1;
+  return calculateExtraItemPrice(
+    row.item_name,
+    weightTierFromLegacyScore(ws),
+    q,
+    fragileItemNameHint(row.item_name),
+  );
 }
 
 export function normalizeTruckKey(raw: string | null | undefined): keyof typeof TRUCK_CAPACITIES {
@@ -106,7 +136,7 @@ export type ItemRemovedInput = {
 export function summarizePricing(
   itemsAdded: ItemAddedInput[],
   itemsRemoved: ItemRemovedInput[],
-  perScoreRate: number,
+  _perScoreRate: number,
 ): { addedLines: ItemAddedInput[]; removedLines: ItemRemovedInput[]; autoDelta: number; addedScore: number; removedScore: number } {
   let autoDelta = 0;
   let addedScore = 0;
@@ -115,23 +145,21 @@ export function summarizePricing(
   for (const row of itemsAdded) {
     const q = Math.max(1, Math.floor(row.quantity) || 1);
     const ws = Number(row.weight_score) || 1;
-    const surcharge = calcLineCharge(ws, q, perScoreRate);
+    const line = { ...row, quantity: q, weight_score: ws };
+    const surcharge = surchargeForAddedLine(line);
     autoDelta += surcharge;
     addedScore += ws * q;
-    addedLines.push({
-      ...row,
-      quantity: q,
-      weight_score: ws,
-    });
+    addedLines.push(line);
   }
   const removedLines: ItemRemovedInput[] = [];
   for (const row of itemsRemoved) {
     const q = Math.max(1, Math.floor(row.quantity) || 1);
     const ws = Number(row.weight_score) || 1;
-    const credit = calcLineCharge(ws, q, perScoreRate);
+    const line = { ...row, quantity: q, weight_score: ws };
+    const credit = creditForRemovedLine(line);
     autoDelta -= credit;
     removedScore += ws * q;
-    removedLines.push({ ...row, quantity: q, weight_score: ws });
+    removedLines.push(line);
   }
   return { addedLines, removedLines, autoDelta, addedScore, removedScore };
 }
@@ -151,7 +179,8 @@ export function formatItemsForStorage(
       item_slug: r.item_slug ?? null,
       weight_score: r.weight_score,
       quantity: r.quantity,
-      surcharge: calcLineCharge(r.weight_score, r.quantity, perScoreRate),
+      surcharge: r.is_custom ? null : surchargeForAddedLine(r),
+      pending_coordinator_pricing: !!r.is_custom,
       is_custom: !!r.is_custom,
       custom_weight_class: r.custom_weight_class ?? null,
     })),
@@ -161,7 +190,7 @@ export function formatItemsForStorage(
       item_slug: r.item_slug ?? null,
       weight_score: r.weight_score,
       quantity: r.quantity,
-      credit: -calcLineCharge(r.weight_score, r.quantity, perScoreRate),
+      credit: -creditForRemovedLine(r),
     })),
   };
 }

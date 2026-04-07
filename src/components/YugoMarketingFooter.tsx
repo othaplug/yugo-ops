@@ -11,15 +11,17 @@ export type YugoMarketingFooterProps = {
   logoVariant: YugoLogoVariant;
   onLightBackground?: boolean;
   logoSize?: number;
-  /** Tagline + separator dots */
+  /** Tagline + separator dots; “Powered by” label uses the same tone. */
   mutedColor: string;
   /** Terms, Privacy, Contact us */
   linkColor: string;
   taglineClassName?: string;
   className?: string;
-  /** When false, omit logo (e.g. page already has a hero mark). */
+  /** When false, omit logo and “Powered by” row (e.g. page already has a hero mark). */
   showLogo?: boolean;
-  /** Override nav row text size (e.g. embedded widget). */
+  /** When false, omit “The Art of Moving” tagline. */
+  showTagline?: boolean;
+  /** Override nav row text size (e.g. embedded widget). Also applied to “Powered by”. */
   navClassName?: string;
 };
 
@@ -33,6 +35,7 @@ export default function YugoMarketingFooter({
   taglineClassName = "text-[11px] font-medium tracking-wide",
   className,
   showLogo = true,
+  showTagline = true,
   navClassName = "",
 }: YugoMarketingFooterProps) {
   const mail = contactEmail?.trim() || "support@helloyugo.com";
@@ -40,20 +43,8 @@ export default function YugoMarketingFooter({
 
   return (
     <div className={className}>
-      {showLogo ? (
-        <div className="flex justify-center mb-1">
-          <YugoLogo
-            size={logoSize}
-            variant={logoVariant}
-            onLightBackground={onLightBackground}
-          />
-        </div>
-      ) : null}
-      <p className={taglineClassName} style={{ color: mutedColor }}>
-        The Art of Moving
-      </p>
       <nav
-        className={`text-[11px] mt-1 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 ${navClassName}`.trim()}
+        className={`text-[11px] mt-0 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 ${navClassName}`.trim()}
         aria-label="Legal and contact"
       >
         <Link
@@ -84,6 +75,34 @@ export default function YugoMarketingFooter({
           Contact us
         </a>
       </nav>
+
+      {showTagline ? (
+        <p
+          className={`${taglineClassName} text-center mt-2`}
+          style={{ color: mutedColor }}
+        >
+          The Art of Moving
+        </p>
+      ) : null}
+
+      {showLogo ? (
+        <div
+          className={`flex flex-wrap items-center justify-center gap-x-2 gap-y-1 ${showTagline ? "mt-2" : "mt-3"}`}
+          aria-label="Powered by Yugo"
+        >
+          <span
+            className={`font-medium tracking-wide ${navClassName || "text-[11px]"}`.trim()}
+            style={{ color: mutedColor }}
+          >
+            Powered by
+          </span>
+          <YugoLogo
+            size={logoSize}
+            variant={logoVariant}
+            onLightBackground={onLightBackground}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

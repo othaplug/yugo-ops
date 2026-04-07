@@ -205,7 +205,7 @@ export default function CrewBinOrdersPage() {
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-[11px] font-semibold text-[#2C3E2D]">{isToday ? "Today" : "Tomorrow"}</p>
+                      <p className="text-[11px] font-semibold text-[var(--tx)]">{isToday ? "Today" : "Tomorrow"}</p>
                       <p className="text-[11px] text-gray-500">{BUNDLE_SHORT[task.bundle_type]} · {task.bin_count} bins</p>
                     </div>
                   </div>
@@ -356,7 +356,7 @@ function DetailRow({
       <span className="text-gray-500 mt-0.5 shrink-0">{icon}</span>
       <div>
         {isPhone ? (
-          <a href={`tel:${sub}`} className="text-[#2C3E2D] hover:underline">
+          <a href={`tel:${sub}`} className="text-[var(--tx)] hover:underline">
             {label}, {sub}
           </a>
         ) : (

@@ -28,7 +28,6 @@ import {
   House,
   List,
   MapPin,
-  Path,
   Plus,
   Receipt,
   Shield,
@@ -71,12 +70,6 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
         minRole: "coordinator",
       },
       {
-        href: "/admin/activity",
-        label: "Activity",
-        Icon: Icons.activity,
-        minRole: "coordinator",
-      },
-      {
         href: "/admin/dispatch",
         label: "Dispatch",
         Icon: Icons.dispatch,
@@ -88,18 +81,11 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
         Icon: Icons.calendar,
         minRole: "sales",
       },
-      { href: "/admin/drafts", label: "Drafts", Icon: Icons.drafts },
       { href: "/admin/crew", label: "Live Tracking", Icon: Icons.mapPin },
       {
         href: "/admin/crew/analytics",
         label: "Crew Analytics",
         Icon: Icons.barChart,
-        minRole: "admin",
-      },
-      {
-        href: "/admin/reports",
-        label: "Reports",
-        Icon: Icons.clipboardList,
         minRole: "admin",
       },
     ],
@@ -111,12 +97,6 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
         href: "/admin/partners",
         label: "All Partners",
         Icon: Icons.handshake,
-        minRole: "coordinator",
-      },
-      {
-        href: "/admin/partners/health",
-        label: "Partner Health",
-        Icon: Icons.barChart,
         minRole: "coordinator",
       },
       {
@@ -469,10 +449,8 @@ export default function AdminShell({
   const quickActionsRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const router = useRouter();
-  /** Align fixed topbar with main column (after admin sidebar only). Platform tab rail lives in page content — do not inset topbar or search + border look centered with a partial underline. */
-  const topbarLeftOffset = sidebarCollapsed
-    ? "left-0 md:left-14"
-    : "left-0 md:left-[220px]";
+  /** Align fixed topbar with main column (after admin sidebar). On mobile, topbar shifts with the push layout when the nav is open. */
+  const topbarLeftOffset = `${sidebarOpen ? "max-md:left-[220px]" : "max-md:left-0"} ${sidebarCollapsed ? "md:left-14" : "md:left-[220px]"}`;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -558,7 +536,6 @@ export default function AdminShell({
 
   const MOBILE_NAV = [
     { href: "/admin", label: "Home", Icon: House, exact: true as const },
-    { href: "/admin/moves", label: "Moves", Icon: Path },
   ].filter((item) => {
     const needed =
       ROLE_LEVEL[(item as { minRole?: string }).minRole ?? "viewer"] ?? 0;
@@ -614,24 +591,15 @@ export default function AdminShell({
               >
                 Skip to main content
               </a>
-              {/* Mobile overlay - subtle dim, no heavy blur */}
-              {sidebarOpen && (
-                <div
-                  className="fixed inset-0 z-40 md:hidden bg-black/35"
-                  style={{ left: "220px" }}
-                  onClick={() => setSidebarOpen(false)}
-                  aria-hidden="true"
-                />
-              )}
-
-              {/* Sidebar - no overflow, seamless on mobile */}
+              {/* Sidebar column: width animates on mobile (push layout); desktop matches rail / expanded width */}
+              <div
+                className={`shrink-0 overflow-hidden transition-[width] duration-300 ease-out ${sidebarOpen ? "max-md:w-[220px]" : "max-md:w-0"} ${sidebarCollapsed ? "md:w-14" : "md:w-[220px]"}`}
+              >
               <aside
                 className={`
-                fixed top-0 left-0 z-50 h-dvh h-screen max-h-[100dvh] flex flex-col overflow-hidden
-                glass-sidebar border-r border-[var(--brd)]/50
-                transition-all duration-300 ease-out
-                ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-                ${sidebarCollapsed ? "md:w-14 w-[220px]" : "w-[220px]"}
+                h-dvh h-screen max-h-[100dvh] flex flex-col overflow-hidden
+                yugo-glass text-[var(--tx)]
+                w-[220px] ${sidebarCollapsed ? "md:w-14" : "md:w-[220px]"}
               `}
               >
                 {/* Logo bar */}
@@ -790,11 +758,7 @@ export default function AdminShell({
                   ))}
                 </nav>
               </aside>
-
-              {/* Spacer for fixed sidebar on desktop */}
-              <div
-                className={`hidden md:block shrink-0 transition-all duration-300 ${sidebarCollapsed ? "w-14" : "w-[220px]"}`}
-              />
+              </div>
 
               {/* Main - .main */}
               <div className="flex-1 flex flex-col min-w-0 min-h-0 max-w-full admin-main-offset">
@@ -931,7 +895,7 @@ export default function AdminShell({
                 )}
 
                 <nav
-                  className="fixed bottom-0 left-0 right-0 z-[60] glass-topbar border-t border-[var(--brd)]/50 isolate w-full max-w-full"
+                  className={`fixed bottom-0 right-0 z-[60] glass-topbar border-t border-[var(--brd)]/50 isolate w-full max-w-full transition-[left] duration-300 ease-out ${sidebarOpen ? "max-md:left-[220px]" : "left-0"}`}
                   style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
                 >
                   <div
@@ -971,33 +935,38 @@ export default function AdminShell({
                       })}
                     </div>
 
-                    {/* Centre quick-create — fixed column width so the FAB does not paint into the side tabs */}
-                    <div className="flex flex-col items-center justify-end pb-1 pt-1 relative z-20 w-full min-w-0">
+                    {/* Centre quick-create — same chrome as side tabs (no FAB box on the icon) */}
+                    <div className="relative z-20 flex w-full min-w-0 flex-col items-center justify-end pb-1 pt-1">
                       <button
                         type="button"
                         onClick={() => setQuickActionsOpen((v) => !v)}
                         aria-label="Quick create"
                         aria-expanded={quickActionsOpen}
-                        className={`h-11 w-11 rounded-[2px] flex items-center justify-center border border-[var(--admin-primary-fill-hover)] active:scale-95 transition-all duration-300 touch-manipulation ${
+                        className={`flex min-h-[48px] min-w-[44px] flex-col items-center justify-center gap-1 px-1 py-1 touch-manipulation transition-colors active:scale-95 ${
                           quickActionsOpen
-                            ? "bg-[var(--admin-primary-fill-hover)]"
-                            : "bg-[var(--admin-primary-fill)]"
+                            ? "text-[var(--gold)]"
+                            : "text-[var(--tx2)]"
                         }`}
                       >
                         {quickActionsOpen ? (
-                          <X size={20} weight="bold" color="#fff" aria-hidden />
+                          <X
+                            size={26}
+                            weight="bold"
+                            className="shrink-0 text-current"
+                            aria-hidden
+                          />
                         ) : (
                           <Plus
-                            size={20}
+                            size={26}
                             weight="bold"
-                            color="#fff"
+                            className="shrink-0 text-current"
                             aria-hidden
                           />
                         )}
+                        <span className="text-[10px] font-bold tracking-[0.06em] uppercase leading-none">
+                          Create
+                        </span>
                       </button>
-                      <span className="mt-1 text-[10px] font-bold tracking-[0.06em] uppercase leading-none text-[var(--tx2)]">
-                        Create
-                      </span>
                     </div>
 
                     {/* Right tab(s) + More */}

@@ -145,9 +145,10 @@ export default function QuoteExpired({
             contactEmail={mail}
             logoVariant="wine"
             onLightBackground
+            logoSize={12}
             mutedColor={TEXT_MUTED_ON_LIGHT}
             linkColor={FOREST}
-            showLogo={false}
+            showTagline={false}
           />
         </div>
       </div>

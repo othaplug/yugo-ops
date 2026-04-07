@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getPlatformToggles } from "@/lib/platform-settings";
 import { PartnerOrgProvider } from "./PartnerOrgContext";
 import PartnerLightTheme from "./PartnerLightTheme";
+import { YugoBetaBanner } from "@/components/YugoBetaBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,7 @@ export default async function PartnerLayout({
     return (
       <>
         <PartnerLightTheme />
+        <YugoBetaBanner />
         {children}
       </>
     );
@@ -86,9 +88,10 @@ export default async function PartnerLayout({
     <PartnerOrgProvider orgDisplayName={orgDisplayName}>
       <PartnerLightTheme />
       <div
-        className="min-h-screen min-h-dvh bg-[#FAF7F2] w-full max-w-full min-w-0 overflow-x-clip"
+        className="min-h-screen min-h-dvh bg-[#FAF7F2] w-full max-w-full min-w-0 overflow-x-clip flex flex-col"
         suppressHydrationWarning
       >
+        <YugoBetaBanner />
         {children}
       </div>
     </PartnerOrgProvider>

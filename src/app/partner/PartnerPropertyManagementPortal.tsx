@@ -3,17 +3,54 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type FormEvent,
+  type ReactNode,
 } from "react";
 import Link from "next/link";
+import {
+  Bell,
+  Calendar,
+  CaretLeft,
+  CaretRight,
+  ChartBar,
+  Check,
+} from "@phosphor-icons/react";
 import YugoLogo from "@/components/YugoLogo";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/client-timezone";
+import { getPartnerGreeting } from "@/lib/partner-type";
+import { WINE } from "@/app/quote/[quoteId]/quote-shared";
 import PartnerChangePasswordGate from "./PartnerChangePasswordGate";
-import { PartnerNotificationProvider } from "./PartnerNotificationContext";
+import PartnerSettingsPanel from "./PartnerSettingsPanel";
+import {
+  PartnerNotificationProvider,
+  usePartnerNotifications,
+} from "./PartnerNotificationContext";
 import { useToast } from "@/app/admin/components/Toast";
+import {
+  PartnerPmOverview,
+  PartnerPmBuildingsTab,
+  PartnerPmProjectsTab,
+  PmPortalKpiStrip,
+  type PmTabId,
+} from "@/components/partner/pm/PartnerPmPortalViews";
+import { COMMERCIAL_ONLY_PM_REASON_CODES, isCommercialPmVertical, PM_PRIMARY_REASON_CODES_ORDERED } from "@/lib/partners/pm-portal-move-types";
+import { PartnerPmAnalyticsTab } from "@/components/partner/pm/PartnerPmAnalyticsTab";
+import { PartnerPmStatementsTab } from "@/components/partner/pm/PartnerPmStatementsTab";
+import { PartnerPmCalendarTab } from "@/components/partner/pm/PartnerPmCalendarTab";
+import PartnerLiveMapTab from "@/app/partner/tabs/PartnerLiveMapTab";
+import { InfoHint } from "@/components/ui/InfoHint";
+import { PartnerPortalWelcomeTour } from "@/components/partner/PartnerPortalWelcomeTour";
+import { partnerWineAccountButtonClass } from "@/components/partner/PartnerChrome";
+import {
+  pmLabelCaps,
+  pmPageSubtitle,
+  pmPageTitle,
+  pmPortalEyebrow,
+} from "@/components/partner/pm/pm-typography";
 
 type MoveReason = {
   reason_code: string;
@@ -44,7 +81,7 @@ export type PmProjectRow = {
 };
 
 export type PmPortalSummary = {
-  org: { name?: string | null };
+  org: { name?: string | null; vertical?: string | null };
   contract: {
     id: string;
     contract_number: string;
@@ -66,6 +103,7 @@ export type PmPortalSummary = {
     movesThisMonth: number;
     movesCompletedThisMonth: number;
     revenueThisMonth: number;
+    upcomingScheduledCount?: number;
   };
   upcomingMoves: {
     id: string;
@@ -77,7 +115,33 @@ export type PmPortalSummary = {
     status: string | null;
     building_name: string | null;
     move_type_label: string | null;
+    tracking_url?: string | null;
   }[];
+  todaysMoves?: {
+    id: string;
+    move_code: string | null;
+    scheduled_date: string | null;
+    scheduled_time: string | null;
+    unit_number: string | null;
+    tenant_name: string | null;
+    status: string | null;
+    building_name: string | null;
+    move_type_label: string | null;
+    tracking_url: string;
+  }[];
+  weekMovesByDate?: Record<
+    string,
+    {
+      id: string;
+      move_code: string | null;
+      unit_number: string | null;
+      tenant_name: string | null;
+      building_name: string | null;
+      scheduled_time: string | null;
+      status: string | null;
+    }[]
+  >;
+  activeProjectsCount?: number;
   recentCompleted?: {
     id: string;
     move_code: string | null;
@@ -95,32 +159,12 @@ export type PmPortalSummary = {
     showProjects: boolean;
     scheduledByProperty: Record<string, number>;
   };
-};
-
-const CONTRACT_LABELS: Record<string, string> = {
-  per_move: "Per Job",
-  fixed_rate: "Fixed rate",
-  day_rate_retainer: "Day-rate retainer",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  pending_approval: "Pending review",
-  scheduled: "Scheduled",
-  confirmed: "Confirmed",
-  completed: "Completed",
-  paid: "Paid",
-  delivered: "Delivered",
-};
-
-const PROJECT_TYPE_LABELS: Record<string, string> = {
-  renovation: "Renovation",
-  building_upgrade: "Building upgrade",
-  tenant_turnover: "Tenant turnover",
-  office_buildout: "Office buildout",
-  flood_remediation: "Flood remediation",
-  staging_campaign: "Staging campaign",
-  lease_up: "Lease-up",
-  other: "Other program",
+  /** Overview “needs attention” strip (counts only; UI caps visible items). */
+  overviewAttention?: {
+    pendingApprovalMoveCount: number;
+    overdueInvoiceCount: number;
+    buildingsIncompleteAccessCount: number;
+  };
 };
 
 const ZONE_LABELS: Record<string, string> = {
@@ -141,30 +185,54 @@ const TIME_WINDOWS = [
 
 /** Align with main partner dashboard (`PartnerPortalClient`): cream cards, forest hairlines, wine focus. */
 const PM_HEADER =
-  "sticky top-0 z-30 bg-[#FFFBF7]/95 backdrop-blur-sm border-b border-[#2C3E2D]/12 px-4 sm:px-6 py-3 flex items-center justify-between gap-3";
-const PM_SUBNAV =
-  "flex flex-wrap gap-1 px-3 sm:px-6 py-2 bg-[#FFFBF7]/90 backdrop-blur-sm border-b border-[#2C3E2D]/10 text-[11px] font-semibold";
+  "bg-[#FFFBF7] border-b border-[#2C3E2D]/12 px-4 sm:px-6 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-3 flex items-center justify-between sticky top-0 z-30";
+const PM_TABS_INNER =
+  "flex items-center justify-start sm:justify-center gap-0 overflow-x-auto overflow-y-hidden scrollbar-hide border-b border-[#2C3E2D]/10 px-0 sm:px-2";
 const PM_CARD =
   "rounded-xl border border-[#2C3E2D]/10 bg-[#FFFBF7] shadow-[0_1px_0_rgba(44,62,45,0.05)]";
 const PM_MAIN =
-  "p-4 sm:px-6 max-w-3xl mx-auto space-y-4 pb-28 text-[#1a1f1b]";
-const PM_TABLE_SHELL =
-  "rounded-xl border border-[#2C3E2D]/10 bg-[#FFFBF7] overflow-hidden";
-const PM_TABLE_HEAD =
-  "bg-[#FAF7F2] text-left text-[10px] font-bold uppercase tracking-wider text-[#2C3E2D]/50";
-const PM_ROW = "border-t border-[#2C3E2D]/10";
-const PM_LABEL =
-  "block text-[10px] font-bold uppercase tracking-[0.12em] text-[#2C3E2D]/50 mb-1";
-const PM_FIELD =
-  "w-full px-3 py-2 rounded-lg border border-[#2C3E2D]/12 bg-white text-[13px] text-[#1a1f1b] placeholder:text-[#2C3E2D]/35 focus:border-[#5C1A33]/40 focus:ring-1 focus:ring-[#5C1A33]/10 outline-none";
+  "max-w-[1100px] mx-auto px-4 sm:px-8 py-5 sm:py-8 pb-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px))] sm:pb-10 text-[#1a1f1b]";
 const PM_INSET =
   "rounded-lg border border-[#2C3E2D]/10 bg-[#FAF7F2]/70 p-3 text-[12px] space-y-1";
-const PM_SECTION_EYE =
-  "text-[10px] font-bold uppercase tracking-[0.14em] text-[#2C3E2D]/50 mb-2";
+const PM_SECTION_EYE = `${pmLabelCaps} mb-2`;
 
-function labelFor(key: string, map: Record<string, string>) {
-  const k = (key || "").toLowerCase();
-  return map[k] ?? key.replace(/_/g, " ");
+function PmContextTabHeader({ tab }: { tab: PmTabId }) {
+  if (tab === "overview" || tab === "calendar" || tab === "live") return null;
+  const copy: Record<
+    Exclude<PmTabId, "overview" | "calendar" | "live">,
+    { title: string; subtitle: string }
+  > = {
+    buildings: {
+      title: "Buildings",
+      subtitle: "Access details, unit mix, and recent moves per property.",
+    },
+    schedule: {
+      title: "Schedule a move",
+      subtitle:
+        "Submit a booking request. Yugo confirms within two hours during business hours.",
+    },
+    projects: {
+      title: "Projects",
+      subtitle: "Renovation programs and portfolio moves.",
+    },
+    analytics: {
+      title: "Analytics",
+      subtitle: "Volume, cost, and performance on your contract.",
+    },
+    statements: {
+      title: "Statements & reports",
+      subtitle: "Billing, statements, and monthly performance.",
+    },
+  };
+  const c = copy[tab as keyof typeof copy];
+  if (!c) return null;
+  return (
+    <div className="mb-6 pt-1">
+      <p className={pmPortalEyebrow}>Partner portal</p>
+      <h1 className={pmPageTitle}>{c.title}</h1>
+      <p className={pmPageSubtitle}>{c.subtitle}</p>
+    </div>
+  );
 }
 
 function unitLine(address: string, unit: string) {
@@ -176,10 +244,13 @@ export default function PartnerPropertyManagementPortal({
   orgName,
   contactName,
   preview,
+  initialTab: initialTabProp,
 }: {
   orgId: string;
   orgName: string;
   contactName: string;
+  /** Deep link from `/partner?pmTab=…` or `/partner/pm-calendar`. */
+  initialTab?: PmTabId;
   /** Static sample data — skips API; booking tab shows a placeholder. */
   preview?: {
     initialSummary: PmPortalSummary;
@@ -187,14 +258,24 @@ export default function PartnerPropertyManagementPortal({
   };
 }) {
   const { toast } = useToast();
-  const [summary, setSummary] = useState<PmPortalSummary | null>(() =>
-    preview?.initialSummary ?? null,
+  const [userEmail, setUserEmail] = useState("");
+  const orgType = "property_management";
+  const [summary, setSummary] = useState<PmPortalSummary | null>(
+    () => preview?.initialSummary ?? null,
   );
   const [loading, setLoading] = useState(() => !preview?.initialSummary);
-  const [tab, setTab] = useState<"dash" | "book" | "programs">("dash");
-  const [programs, setPrograms] = useState<{ projects: PmProjectRow[] } | null>(
-    null,
-  );
+  const [tab, setTab] = useState<PmTabId>(() => initialTabProp ?? "overview");
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  /** Calendar empty-cell → Schedule move tab with this YYYY-MM-DD. */
+  const [schedulePrefillDate, setSchedulePrefillDate] = useState<string | null>(null);
+
+  const today = new Date();
+  const dayStr = formatDate(today, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -216,398 +297,386 @@ export default function PartnerPropertyManagementPortal({
   }, [load, preview]);
 
   useEffect(() => {
-    if (tab !== "programs") return;
-    if (preview) {
-      setPrograms({
-        projects:
-          preview.initialPrograms ??
-          preview.initialSummary.projects ??
-          [],
-      });
-      return;
-    }
-    fetch("/api/partner/pm/projects")
-      .then((r) => r.json())
-      .then((d) => setPrograms(d))
-      .catch(() => setPrograms({ projects: [] }));
-  }, [tab, preview]);
+    if (preview) return;
+    let cancelled = false;
+    fetch("/api/partner/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d?.email) setUserEmail(String(d.email));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [preview]);
 
-  const dash = summary?.dashboard;
-  const showPropStrip =
-    dash?.showPropertyStrip ?? (summary?.properties.length ?? 0) >= 2;
-  const showProjectsOnDash =
-    dash?.showProjects ?? (summary?.projects?.length ?? 0) > 0;
+  const headerOrgName = preview?.initialSummary.org?.name || orgName;
+
+  const pmTabs = [
+    { id: "overview" as const, label: "Overview" },
+    { id: "calendar" as const, label: "Calendar" },
+    { id: "live" as const, label: "Live" },
+    { id: "buildings" as const, label: "Buildings" },
+    { id: "schedule" as const, label: "Schedule move" },
+    { id: "projects" as const, label: "Projects" },
+    { id: "analytics" as const, label: "Analytics" },
+    { id: "statements" as const, label: "Statements" },
+  ] as const;
 
   return (
     <PartnerNotificationProvider orgId={orgId}>
       <PartnerChangePasswordGate>
-        <div className="min-h-screen">
+        <div
+          className="min-h-dvh w-full max-w-full min-w-0 overflow-x-clip bg-[#FAF7F2] text-[#1a1f1b]"
+          data-theme="light"
+        >
+          <PartnerPortalWelcomeTour
+            contactName={contactName}
+            mode="pm"
+            disabled={!!preview}
+          />
           <header className={PM_HEADER}>
             <div className="flex items-center gap-2 min-w-0">
-              <YugoLogo size={18} variant="wine" className="shrink-0" />
+              <YugoLogo size={19} variant="wine" className="shrink-0" />
+              <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] shrink-0">
+                BETA
+              </span>
               <span
                 className="h-3 w-px bg-[#2C3E2D]/12 shrink-0 hidden sm:block"
                 aria-hidden
               />
-              <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-[#2C3E2D]/70 truncate max-w-[200px] sm:ml-1">
-                {orgName}
+              <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-[var(--tx2)] truncate max-w-[200px] sm:ml-1">
+                {headerOrgName}
               </span>
             </div>
-            <span className="text-[11px] text-[#2C3E2D]/55 shrink-0">
-              Hi, {contactName}
-            </span>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <PartnerNotificationBell
+                open={notifOpen}
+                onToggle={() => setNotifOpen(!notifOpen)}
+                onClose={() => setNotifOpen(false)}
+              />
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(true)}
+                aria-label="Account settings"
+                className={partnerWineAccountButtonClass}
+              >
+                {contactName.charAt(0).toUpperCase()}
+                {(contactName.split(" ")[1] || "").charAt(0).toUpperCase() ||
+                  contactName.charAt(1)?.toUpperCase() ||
+                  ""}
+              </button>
+            </div>
           </header>
 
-          <nav className={PM_SUBNAV}>
-            {(
-              [
-                { id: "dash" as const, label: "Overview" },
-                { id: "book" as const, label: "Schedule Move" },
-                { id: "programs" as const, label: "Projects" },
-              ] as const
-            ).map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTab(t.id)}
-                className={`px-3 py-1.5 rounded-lg transition-colors ${
-                  tab === t.id
-                    ? "bg-[#2C3E2D] text-white shadow-sm"
-                    : "text-[#2C3E2D]/72 hover:bg-[#5C1A33]/6"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-            <Link
-              href="/partner/login"
-              className="ml-auto px-2 py-1.5 text-[10px] font-bold tracking-[0.12em] uppercase text-[#2C3E2D]/50 hover:text-[#5C1A33] transition-colors"
-            >
-              Account
-            </Link>
-          </nav>
-
           <main className={PM_MAIN}>
-            {loading && (
-              <p className="text-[13px] text-[#2C3E2D]/55">Loading…</p>
+            {loading && !summary && (
+              <div className="animate-pulse space-y-6 pt-2">
+                <div className="h-9 w-48 bg-[#2C3E2D]/10 rounded-lg" />
+                <div className="h-4 w-64 bg-[#2C3E2D]/10 rounded" />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className="h-[80px] bg-[#2C3E2D]/10 rounded-xl"
+                    />
+                  ))}
+                </div>
+                <div className="flex gap-2 border-b border-[#2C3E2D]/10 pb-0">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="h-10 w-24 bg-[#2C3E2D]/10 rounded-t-lg"
+                    />
+                  ))}
+                </div>
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-16 bg-[#2C3E2D]/10 rounded-xl" />
+                  ))}
+                </div>
+              </div>
             )}
 
-            {!loading && tab === "dash" && summary && (
+            {summary && (
               <>
-                <div className={`${PM_CARD} p-4 sm:p-5`}>
-                  <h1 className="text-[18px] font-bold font-hero text-[#5C1A33]">
-                    Property dashboard
-                  </h1>
-                  <p className="text-[12px] text-[#2C3E2D]/60 mt-1 leading-relaxed">
-                    Contract service, buildings, and upcoming work.
-                  </p>
-                </div>
+                {tab === "overview" ? (
+                  <>
+                    <div className="mb-6 pt-1">
+                      <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
+                        Partner portal
+                      </p>
+                      <h1
+                        className="font-hero text-[28px] sm:text-[34px] md:text-[36px] font-normal leading-[1.08] tracking-tight break-words"
+                        style={{ color: WINE }}
+                      >
+                        {getPartnerGreeting()}, {contactName}
+                      </h1>
+                      <p className="text-[14px] text-[#5A6B5E] mt-2 leading-relaxed max-w-xl">
+                        {summary.todaysMoves && summary.todaysMoves.length > 0
+                          ? `${summary.todaysMoves.length} ${
+                              summary.todaysMoves.length === 1 ? "move" : "moves"
+                            } scheduled today`
+                          : `${dayStr} here are your scheduled moves`}
+                      </p>
+                    </div>
 
-                {summary.contract ? (
-                  <div className="rounded-xl border border-[#5C1A33]/20 bg-[#5C1A33]/5 p-4 space-y-1">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#5C1A33]">
-                      Active contract
-                    </p>
-                    <p className="text-[15px] font-semibold text-[#1a1f1b]">
-                      {summary.contract.contract_number}
-                    </p>
-                    <p className="text-[12px] text-[#2C3E2D]/72">
-                      {formatDate(summary.contract.start_date, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}{" "}
-                      –{" "}
-                      {formatDate(summary.contract.end_date, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                      {" · "}
-                      {CONTRACT_LABELS[summary.contract.contract_type] ??
-                        summary.contract.contract_type}
-                    </p>
-                    <p className="text-[11px] text-[#2C3E2D]/55">
-                      {summary.stats.propertiesCount} buildings ·{" "}
-                      {summary.stats.totalUnits || "—"} units tracked
-                    </p>
-                  </div>
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mb-8">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSchedulePrefillDate(null);
+                          setTab("schedule");
+                        }}
+                        className="inline-flex items-center justify-center px-3 py-1.5 rounded-none bg-[#2D3A26] text-white text-[10px] font-bold tracking-[0.12em] uppercase shadow-sm hover:bg-[#243220] transition-colors"
+                      >
+                        Schedule a move
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTab("calendar")}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-[#E0E0E0] text-[10px] font-bold tracking-[0.12em] uppercase text-[#2D3A26] bg-white hover:bg-[#F9F7F2] transition-colors rounded-none"
+                      >
+                        <Calendar size={14} weight="regular" aria-hidden />
+                        Calendar
+                        <CaretRight
+                          size={12}
+                          weight="bold"
+                          className="opacity-50"
+                          aria-hidden
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTab("statements")}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-[#E0E0E0] text-[10px] font-bold tracking-[0.12em] uppercase text-[#2D3A26] bg-white hover:bg-[#F9F7F2] transition-colors rounded-none"
+                      >
+                        <ChartBar size={14} weight="regular" aria-hidden />
+                        Monthly report
+                        <CaretRight
+                          size={12}
+                          weight="bold"
+                          className="opacity-50"
+                          aria-hidden
+                        />
+                      </button>
+                    </div>
+
+                    <PmPortalKpiStrip summary={summary} />
+                  </>
                 ) : (
+                  <PmContextTabHeader tab={tab} />
+                )}
+
+                <div className="overflow-hidden mb-2">
                   <div
-                    className={`${PM_CARD} p-4 text-[13px] text-[#2C3E2D]/72 leading-relaxed`}
+                    className={PM_TABS_INNER}
+                    style={{
+                      touchAction: "pan-x",
+                      overscrollBehaviorX: "contain",
+                      overscrollBehaviorY: "none",
+                    }}
                   >
-                    No active contract on file yet. Your Yugo account manager
-                    will finalize rates and terms.
+                    {pmTabs.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setTab(t.id)}
+                        className={`shrink-0 px-3 sm:px-4 py-3 text-[10px] font-bold tracking-[0.1em] uppercase whitespace-nowrap border-b transition-colors -mb-px min-w-[4.5rem] active:bg-[#5C1A33]/[0.06] ${
+                          tab === t.id
+                            ? "border-[#5C1A33] text-[#5C1A33]"
+                            : "border-transparent text-[#5A6B5E] hover:text-[var(--tx2)]"
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
                   </div>
-                )}
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div className={`${PM_CARD} p-3`}>
-                    <p className="text-[10px] text-[#2C3E2D]/50 uppercase font-bold tracking-wider">
-                      This month
-                    </p>
-                    <p className="text-[20px] font-bold text-[#1a1f1b]">
-                      {summary.stats.movesThisMonth}
-                    </p>
-                    <p className="text-[10px] text-[#2C3E2D]/55">
-                      Jobs scheduled
-                    </p>
-                  </div>
-                  <div className={`${PM_CARD} p-3`}>
-                    <p className="text-[10px] text-[#2C3E2D]/50 uppercase font-bold tracking-wider">
-                      Completed
-                    </p>
-                    <p className="text-[20px] font-bold text-[#1a1f1b]">
-                      {summary.stats.movesCompletedThisMonth}
-                    </p>
-                    <p className="text-[10px] text-[#2C3E2D]/55">This month</p>
-                  </div>
-                  <div className={`${PM_CARD} p-3 col-span-2`}>
-                    <p className="text-[10px] text-[#2C3E2D]/50 uppercase font-bold tracking-wider">
-                      Revenue
-                    </p>
-                    <p className="text-[18px] font-bold text-[#1a1f1b]">
-                      {formatCurrency(summary.stats.revenueThisMonth)}
-                    </p>
-                    <p className="text-[10px] text-[#2C3E2D]/55">
-                      Quoted / booked (month)
-                    </p>
-                  </div>
-                </div>
+                  <div className="pt-6 sm:pt-8 px-0 sm:px-1 tab-content">
+                    {tab === "overview" && (
+                      <PartnerPmOverview summary={summary} setTab={setTab} />
+                    )}
 
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setTab("book")}
-                    className="px-4 py-2.5 rounded-lg text-[11px] font-bold tracking-[0.12em] uppercase bg-[#2C3E2D] text-white hover:bg-[#243524] transition-colors"
-                  >
-                    Book A Delivery
-                  </button>
-                </div>
+                    {tab === "calendar" && (
+                      <PartnerPmCalendarTab
+                        setTab={setTab}
+                        previewUpcomingMoves={
+                          preview ? summary.upcomingMoves : undefined
+                        }
+                      />
+                    )}
 
-                {showPropStrip && (
-                  <div>
-                    <h2 className={PM_SECTION_EYE}>Properties</h2>
-                    <div className="flex flex-wrap gap-2">
-                      {summary.properties.map((p) => {
-                        const n = dash?.scheduledByProperty?.[p.id] ?? 0;
-                        return (
-                          <div
-                            key={p.id}
-                            className={`${PM_CARD} px-3 py-2 min-w-[140px] shadow-none`}
-                          >
-                            <p className="text-[13px] font-semibold text-[#1a1f1b]">
-                              {p.building_name}
-                            </p>
-                            <p className="text-[10px] text-[#2C3E2D]/55">
-                              {n > 0 ? `${n} scheduled` : "No upcoming"}
-                            </p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                    {tab === "live" && !preview && (
+                      <PartnerLiveMapTab orgId={orgId} variant="pm" />
+                    )}
 
-                {!showPropStrip && summary.properties.length === 1 && (
-                  <div className={`${PM_CARD} p-3`}>
-                    <p className="text-[13px] font-semibold text-[#1a1f1b]">
-                      {summary.properties[0]!.building_name}
-                    </p>
-                    <p className="text-[11px] text-[#2C3E2D]/55">
-                      {summary.properties[0]!.address}
-                    </p>
-                  </div>
-                )}
+                    {tab === "live" && preview && (
+                      <p className="text-[13px] text-[var(--tx2)] leading-relaxed">
+                        Live tracking is available when connected to your organization data.
+                      </p>
+                    )}
 
-                {showProjectsOnDash && (summary.projects?.length ?? 0) > 0 && (
-                  <div>
-                    <h2 className={PM_SECTION_EYE}>Active programs</h2>
-                    <div className="space-y-2">
-                      {summary.projects!.map((p) => (
-                        <div
-                          key={p.id}
-                          className={`${PM_CARD} p-3 shadow-none`}
-                        >
-                          <p className="text-[14px] font-semibold text-[#1a1f1b]">
-                            {p.project_name}
-                          </p>
-                          <p className="text-[11px] text-[#2C3E2D]/55">
-                            {PROJECT_TYPE_LABELS[p.project_type] ??
-                              labelFor(p.project_type, PROJECT_TYPE_LABELS)}
-                            {p.total_units != null
-                              ? ` · ${p.total_units} units planned`
-                              : ""}
-                          </p>
-                        </div>
+                    {tab === "buildings" && (
+                      <PartnerPmBuildingsTab setTab={setTab} />
+                    )}
+
+                    {tab === "schedule" &&
+                      (preview ? (
+                        <PmBookPreviewPlaceholder />
+                      ) : (
+                        <PmBookForm
+                          summary={summary}
+                          initialScheduledDate={schedulePrefillDate}
+                          onConsumeSchedulePrefill={() => setSchedulePrefillDate(null)}
+                          onCancel={() => setTab("overview")}
+                          onBooked={() => {
+                            toast(
+                              "Booking submitted — our team will confirm within two hours during business hours.",
+                              "check",
+                            );
+                            load();
+                            setSchedulePrefillDate(null);
+                            setTab("overview");
+                          }}
+                        />
                       ))}
-                    </div>
-                  </div>
-                )}
 
-                <div>
-                  <h2 className={PM_SECTION_EYE}>Upcoming service</h2>
-                  <div className={PM_TABLE_SHELL}>
-                    <table className="w-full text-[11px] text-[#1a1f1b]">
-                      <thead className={PM_TABLE_HEAD}>
-                        <tr>
-                          <th className="p-2">DATE</th>
-                          <th className="p-2">BUILDING</th>
-                          <th className="p-2">UNIT</th>
-                          <th className="p-2">TYPE</th>
-                          <th className="p-2">TENANT</th>
-                          <th className="p-2">STATUS</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {summary.upcomingMoves.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={6}
-                              className="p-4 text-center text-[#2C3E2D]/55"
-                            >
-                              No upcoming scheduled service
-                            </td>
-                          </tr>
-                        ) : (
-                          summary.upcomingMoves.map((m) => (
-                            <tr
-                              key={m.id}
-                              className={PM_ROW}
-                            >
-                              <td className="p-2 whitespace-nowrap">
-                                {m.scheduled_date
-                                  ? formatDate(m.scheduled_date, {
-                                      month: "short",
-                                      day: "numeric",
-                                    })
-                                  : "—"}
-                              </td>
-                              <td
-                                className="p-2 truncate max-w-[90px]"
-                                title={m.building_name || ""}
-                              >
-                                {m.building_name || "—"}
-                              </td>
-                              <td className="p-2">{m.unit_number || "—"}</td>
-                              <td
-                                className="p-2 truncate max-w-[100px]"
-                                title={m.move_type_label || ""}
-                              >
-                                {m.move_type_label || "—"}
-                              </td>
-                              <td className="p-2 truncate max-w-[80px]">
-                                {m.tenant_name || "—"}
-                              </td>
-                              <td className="p-2">
-                                {labelFor(m.status || "", STATUS_LABELS)}
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
+                    {tab === "projects" && (
+                      <PartnerPmProjectsTab setTab={setTab} />
+                    )}
+
+                    {tab === "analytics" && (
+                      <PartnerPmAnalyticsTab
+                        preview={!!preview}
+                        buildingOptions={summary.properties.map((p) => ({
+                          id: p.id,
+                          building_name: p.building_name,
+                        }))}
+                      />
+                    )}
+
+                    {tab === "statements" && (
+                      <PartnerPmStatementsTab orgName={headerOrgName} />
+                    )}
                   </div>
                 </div>
-
-                {(summary.recentCompleted?.length ?? 0) > 0 && (
-                  <div>
-                    <h2 className={PM_SECTION_EYE}>Recent completed</h2>
-                    <div className={PM_TABLE_SHELL}>
-                      <table className="w-full text-[11px] text-[#1a1f1b]">
-                        <thead className={PM_TABLE_HEAD}>
-                          <tr>
-                            <th className="p-2">DATE</th>
-                            <th className="p-2">UNIT</th>
-                            <th className="p-2">TYPE</th>
-                            <th className="p-2">AMOUNT</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {summary.recentCompleted!.map((m) => (
-                            <tr key={m.id} className={PM_ROW}>
-                              <td className="p-2 whitespace-nowrap">
-                                {m.scheduled_date
-                                  ? formatDate(m.scheduled_date, {
-                                      month: "short",
-                                      day: "numeric",
-                                    })
-                                  : "—"}
-                              </td>
-                              <td className="p-2">{m.unit_number || "—"}</td>
-                              <td className="p-2">
-                                {m.move_type_label || "—"}
-                              </td>
-                              <td className="p-2">
-                                {formatCurrency(
-                                  Number(m.amount ?? m.estimate) || 0,
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
               </>
             )}
 
-            {!loading && tab === "book" && summary && (
-              preview ? (
-                <PmBookPreviewPlaceholder />
-              ) : (
-                <PmBookForm
-                  summary={summary}
-                  onBooked={() => {
-                    toast(
-                      "Booking submitted — our team will confirm shortly.",
-                      "check",
-                    );
-                    load();
-                    setTab("dash");
-                  }}
-                />
-              )
-            )}
-
-            {!loading && tab === "programs" && (
-              <div className="space-y-3">
-                <h2 className="text-[16px] font-bold font-hero text-[#5C1A33]">
-                  Programs & campaigns
-                </h2>
-                {!programs ? (
-                  <p className="text-[13px] text-[#2C3E2D]/55">Loading…</p>
-                ) : programs.projects.length === 0 ? (
-                  <p className="text-[13px] text-[#2C3E2D]/72 leading-relaxed">
-                    No programs yet. Moves can still be booked without a
-                    program. Your coordinator can add a program in Yugo when
-                    needed.
-                  </p>
-                ) : (
-                  programs.projects.map((p) => (
-                    <div key={p.id} className={`${PM_CARD} p-4`}>
-                      <p className="text-[14px] font-semibold text-[#1a1f1b]">
-                        {p.project_name}
-                      </p>
-                      <p className="text-[11px] text-[#2C3E2D]/55">
-                        {PROJECT_TYPE_LABELS[p.project_type] ?? p.project_type}
-                        {p.total_units != null
-                          ? ` · ${p.total_units} units`
-                          : ""}
-                        {p.tracked_units != null
-                          ? ` · ${p.tracked_units} tracked`
-                          : ""}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
+            {!loading && !summary && (
+              <p className="text-[13px] text-[var(--tx3)]">
+                Could not load your portal. Please refresh or sign in again.
+              </p>
             )}
           </main>
+
+          <PartnerSettingsPanel
+            open={settingsOpen}
+            orgName={headerOrgName}
+            contactName={contactName}
+            userEmail={userEmail}
+            orgType={orgType}
+            onClose={() => setSettingsOpen(false)}
+          />
         </div>
       </PartnerChangePasswordGate>
     </PartnerNotificationProvider>
+  );
+}
+
+function PartnerNotificationBell({
+  open,
+  onToggle,
+  onClose,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+}) {
+  const { notifications, unreadCount, markAsRead, markAllAsRead } =
+    usePartnerNotifications();
+  const ref = { current: null as HTMLDivElement | null };
+
+  return (
+    <div
+      className="relative"
+      ref={(el) => {
+        ref.current = el;
+      }}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        className="relative p-2 rounded-sm hover:bg-[#5C1A33]/6 transition-colors"
+        aria-label="Notifications"
+      >
+        <Bell size={18} color="#5C1A33" weight="regular" />
+        {unreadCount > 0 && (
+          <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 rounded-full bg-[#5C1A33] text-white text-[8px] font-bold flex items-center justify-center px-1">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={onClose} />
+          <div className="absolute right-0 top-full mt-2 z-50 w-[340px] bg-(--card) border border-(--brd) rounded-xl shadow-xl overflow-hidden animate-fade-up">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-(--brd)">
+              <h3 className="text-[13px] font-bold text-(--tx)">
+                Notifications
+              </h3>
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={markAllAsRead}
+                  className="text-[10px] font-semibold text-[var(--tx)] hover:underline"
+                >
+                  Mark all read
+                </button>
+              )}
+            </div>
+            <div className="max-h-[420px] overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="px-4 py-8 text-center text-[12px] text-(--tx3)">
+                  All caught up!
+                </div>
+              ) : (
+                notifications.map((notif) => (
+                  <button
+                    key={notif.id}
+                    type="button"
+                    onClick={() => {
+                      markAsRead(notif.id);
+                      if (notif.link) window.location.href = notif.link;
+                      onClose();
+                    }}
+                    className={`flex items-start gap-3 px-4 py-3 border-b border-(--brd) last:border-0 hover:bg-(--bg) cursor-pointer transition-colors w-full text-left ${
+                      notif.read ? "opacity-70" : ""
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-semibold text-(--tx)">
+                        {notif.title}
+                      </div>
+                      {notif.body && (
+                        <div className="text-[11px] text-(--tx3) mt-0.5 leading-snug">
+                          {notif.body}
+                        </div>
+                      )}
+                    </div>
+                    {!notif.read && (
+                      <span className="w-2 h-2 rounded-full bg-[#5C1A33] mt-1.5 shrink-0" />
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -617,10 +686,10 @@ function PmBookPreviewPlaceholder() {
       <h2 className="text-[16px] font-bold font-hero text-[#5C1A33]">
         Schedule a tenant move
       </h2>
-      <p className="text-[13px] text-[#2C3E2D]/72 leading-relaxed">
+      <p className="text-[13px] text-[var(--tx2)] leading-relaxed">
         This sample page shows layout and copy only. Sign in as a
-        property-management partner to load the live booking form and
-        submit requests.
+        property-management partner to load the live booking form and submit
+        requests.
       </p>
       <Link
         href="/partner/login"
@@ -632,12 +701,47 @@ function PmBookPreviewPlaceholder() {
   );
 }
 
+const PM_UNIT_TYPE_LABELS: Record<string, string> = {
+  studio: "Studio",
+  "1br": "1 Bedroom",
+  "2br": "2 Bedroom",
+  "3br": "3 Bedroom",
+  "4br_plus": "4+ Bedroom",
+};
+
+function todayYmdLocal() {
+  const t = new Date();
+  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+}
+
+const PM_SCHEDULE_STEPS = [
+  { id: 1, label: "Move", description: "Building, unit & move type" },
+  { id: 2, label: "Details", description: "Locations, schedule & options" },
+  { id: 3, label: "Review", description: "Confirm & submit" },
+] as const;
+
+function PmScheduleSectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5A6B5E] mb-1.5">
+      {children}
+    </h3>
+  );
+}
+
 function PmBookForm({
   summary,
   onBooked,
+  initialScheduledDate,
+  onConsumeSchedulePrefill,
+  onCancel,
 }: {
   summary: PmPortalSummary;
   onBooked: () => void;
+  /** Pre-fill move date (e.g. from calendar empty cell). */
+  initialScheduledDate?: string | null;
+  onConsumeSchedulePrefill?: () => void;
+  /** Matches schedule modal: Cancel returns to overview. */
+  onCancel?: () => void;
 }) {
   const { toast } = useToast();
   const contract = summary.contract;
@@ -658,7 +762,7 @@ function PmBookForm({
   const [toAddress, setToAddress] = useState("");
   const [suiteFrom, setSuiteFrom] = useState("");
   const [suiteTo, setSuiteTo] = useState("");
-  const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledDate, setScheduledDate] = useState(todayYmdLocal);
   const [returnDate, setReturnDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState(TIME_WINDOWS[0]!);
   const [urgency, setUrgency] = useState<"standard" | "priority" | "emergency">(
@@ -668,10 +772,17 @@ function PmBookForm({
   const [holiday, setHoliday] = useState(false);
   const [weekendOverride, setWeekendOverride] = useState(false);
   const [instructions, setInstructions] = useState("");
+  const [tenantCommsChoice, setTenantCommsChoice] = useState<
+    "use_contract" | "yugo" | "partner"
+  >("use_contract");
   const [selectedAddons, setSelectedAddons] = useState<Record<string, boolean>>(
     {},
   );
   const [saving, setSaving] = useState(false);
+  const [pmStep, setPmStep] = useState(1);
+  const fieldInput = "field-input-compact w-full min-w-0 bg-transparent";
+  const fieldTextareaUnderline =
+    "field-input-compact field-input-compact--multiline-underline w-full min-w-0 bg-transparent";
   const [pricing, setPricing] = useState<{
     zone: string;
     subtotal: number;
@@ -684,6 +795,56 @@ function PmBookForm({
   const prevReasonRef = useRef<string>("");
 
   const prop = summary.properties.find((p) => p.id === propertyId);
+  const partnerVertical = summary.org?.vertical ?? null;
+
+  const visibleReasons = useMemo(() => {
+    return reasons.filter(
+      (r) =>
+        !COMMERCIAL_ONLY_PM_REASON_CODES.has(r.reason_code) ||
+        isCommercialPmVertical(partnerVertical),
+    );
+  }, [reasons, partnerVertical]);
+
+  const primaryReasons = useMemo(() => {
+    const list: MoveReason[] = [];
+    for (const code of PM_PRIMARY_REASON_CODES_ORDERED) {
+      const hit = visibleReasons.find((r) => r.reason_code === code);
+      if (hit) list.push(hit);
+    }
+    return list;
+  }, [visibleReasons]);
+
+  const secondaryReasons = useMemo(() => {
+    const primary = new Set<string>([...PM_PRIMARY_REASON_CODES_ORDERED]);
+    return visibleReasons.filter((r) => !primary.has(r.reason_code));
+  }, [visibleReasons]);
+
+  useEffect(() => {
+    if (!initialScheduledDate) return;
+    setScheduledDate(initialScheduledDate);
+    onConsumeSchedulePrefill?.();
+  }, [initialScheduledDate, onConsumeSchedulePrefill]);
+
+  useEffect(() => {
+    if (visibleReasons.length === 0) return;
+    if (!visibleReasons.some((r) => r.reason_code === reasonCode)) {
+      setReasonCode(visibleReasons[0]!.reason_code);
+    }
+  }, [visibleReasons, reasonCode]);
+
+  const dateIsWeekend = useMemo(() => {
+    if (!scheduledDate) return false;
+    const parts = scheduledDate.split("-").map(Number);
+    const y = parts[0];
+    const m = parts[1];
+    const d = parts[2];
+    if (!y || !m || !d) return false;
+    const dt = new Date(y, m - 1, d);
+    const day = dt.getDay();
+    return day === 0 || day === 6;
+  }, [scheduledDate]);
+
+  const effectiveWeekend = dateIsWeekend || weekendOverride;
 
   useEffect(() => {
     if (!contract?.id) return;
@@ -700,8 +861,6 @@ function PmBookForm({
       .then(([r1, r2, r3]) => {
         if (cancelled) return;
         setReasons(r1.reasons ?? []);
-        if (r1.reasons?.[0]?.reason_code)
-          setReasonCode((c) => c || r1.reasons[0].reason_code);
         setAddons(r2.addons ?? []);
         setProjects(r3.projects ?? []);
       })
@@ -757,13 +916,16 @@ function PmBookForm({
   }, [selectedReason, prop, unitNumber, suiteFrom, suiteTo]);
 
   const runPreview = useCallback(() => {
-    if (
-      !contract?.id ||
-      !reasonCode ||
-      !fromAddress.trim() ||
-      !toAddress.trim() ||
-      !propertyId
-    ) {
+    if (!contract?.id || !reasonCode || !propertyId) {
+      setPricing(null);
+      return;
+    }
+    if (reasonCode === "suite_transfer") {
+      if (!suiteFrom.trim() || !suiteTo.trim()) {
+        setPricing(null);
+        return;
+      }
+    } else if (!fromAddress.trim() && !toAddress.trim() && !unitNumber.trim()) {
       setPricing(null);
       return;
     }
@@ -776,13 +938,14 @@ function PmBookForm({
         partner_property_id: propertyId,
         reason_code: reasonCode,
         unit_type: unitType,
+        unit_number: unitNumber,
         from_address: fromAddress,
         to_address: toAddress,
         scheduled_date: scheduledDate,
         urgency,
         after_hours: afterHours,
         holiday,
-        weekend: weekendOverride,
+        weekend: effectiveWeekend,
       }),
     })
       .then(async (r) => {
@@ -821,11 +984,15 @@ function PmBookForm({
     toAddress,
     propertyId,
     unitType,
+    unitNumber,
+    suiteFrom,
+    suiteTo,
     scheduledDate,
     urgency,
     afterHours,
     holiday,
     weekendOverride,
+    effectiveWeekend,
   ]);
 
   useEffect(() => {
@@ -841,7 +1008,37 @@ function PmBookForm({
   );
   const suiteMode = reasonCode === "suite_transfer";
 
-  const submit = async (e: FormEvent) => {
+  const goNext = () => {
+    if (pmStep === 1) {
+      if (!propertyId || !unitNumber.trim() || !reasonCode) {
+        toast("Choose a building, unit number, and move type.", "x");
+        return;
+      }
+      setPmStep(2);
+      return;
+    }
+    if (pmStep === 2) {
+      if (suiteMode && (!suiteFrom.trim() || !suiteTo.trim())) {
+        toast("Enter both suite units for a suite transfer.", "x");
+        return;
+      }
+      if (!fromAddress.trim() || !toAddress.trim()) {
+        toast("Add origin and destination.", "x");
+        return;
+      }
+      if (!vacantNoTenant && !tenantName.trim()) {
+        toast("Enter the tenant name or mark the unit as vacant.", "x");
+        return;
+      }
+      if (needsReturn && !returnDate) {
+        toast("Return service date is required for this job type.", "x");
+        return;
+      }
+      setPmStep(3);
+    }
+  };
+
+  const submitBooking = async (e: FormEvent) => {
     e.preventDefault();
     if (!contract?.id) {
       toast("No active contract — contact Yugo.", "x");
@@ -886,10 +1083,16 @@ function PmBookForm({
           urgency,
           after_hours: afterHours,
           holiday,
-          weekend: weekendOverride,
+          weekend: effectiveWeekend,
           special_instructions: instructions,
           addon_selections,
           pm_project_id: pmProjectId || null,
+          tenant_comms_mode:
+            tenantCommsChoice === "use_contract"
+              ? ""
+              : tenantCommsChoice === "yugo"
+                ? "yugo"
+                : "partner",
         }),
       });
       const d = await res.json();
@@ -904,34 +1107,156 @@ function PmBookForm({
 
   if (!contract) {
     return (
-      <p className="text-[13px] text-[#2C3E2D]/72 leading-relaxed">
+      <p className="text-[13px] text-[var(--tx2)] leading-relaxed">
         Booking opens once your contract is active.
       </p>
     );
   }
 
+  const estimateSection = (
+    <>
+      {pricingLoading && (
+        <p className="text-[12px] text-[var(--tx3)]">Calculating estimate…</p>
+      )}
+      {!pricingLoading && pricing?.error && (
+        <p className="text-[12px] text-red-700">{pricing.error}</p>
+      )}
+      {!pricingLoading && pricing && !pricing.error && (
+        <div className="rounded-lg border border-[#2C3E2D]/10 bg-[#FAF7F2]/90 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)]">
+                Your rate
+              </p>
+              <p className="text-[22px] font-hero text-[#1a1f1b] mt-1">
+                {formatCurrency(pricing.subtotal)}
+              </p>
+              <p className="text-[11px] text-[var(--tx3)] mt-1 leading-relaxed">
+                {PM_UNIT_TYPE_LABELS[unitType] ?? unitType}
+                {" · "}
+                {selectedReason?.label ?? reasonCode}
+                {pricing.weekend ? " · Weekend" : ""}
+                {urgency !== "standard" ? ` · ${urgency}` : ""}
+              </p>
+              <p className="text-[11px] text-[#1a1f1b] mt-2">
+                Zone: {ZONE_LABELS[pricing.zone] ?? pricing.zone}
+                {pricing.weekend ? " · Weekend surcharges apply" : ""}
+              </p>
+              <p className="text-[11px] text-[#1a1f1b]">
+                Base {formatCurrency(pricing.base_price)} → Total{" "}
+                {formatCurrency(pricing.subtotal)}
+              </p>
+            </div>
+            <p className="text-[10px] text-[var(--tx3)] max-w-[9rem] text-right leading-snug">
+              Your contract rate — refines with dates and options below
+            </p>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
+  const stepMeta = PM_SCHEDULE_STEPS[pmStep - 1]!;
+  const commsLabel =
+    tenantCommsChoice === "use_contract"
+      ? "Use contract default"
+      : tenantCommsChoice === "yugo"
+        ? "Yugo contacts tenant"
+        : "We forward tracking";
+  const selectedProjectName =
+    pmProjectId && projects.find((p) => p.id === pmProjectId)?.project_name;
+
+  const goBack = () => {
+    if (pmStep <= 1) {
+      onCancel?.();
+      return;
+    }
+    setPmStep((s) => s - 1);
+  };
+
   return (
     <form
-      onSubmit={submit}
-      className={`space-y-4 ${PM_CARD} p-4 sm:p-5`}
+      className="w-full flex flex-col min-h-0"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (pmStep === 3) void submitBooking(e);
+      }}
     >
-      <h2 className="text-[16px] font-bold font-hero text-[#5C1A33]">
-        Schedule a tenant move
-      </h2>
+      <div className="shrink-0">
+        <div className="px-0 sm:px-1 pt-2 pb-4 flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5A6B5E]/80 mb-1.5">
+              {pmStep === 1 && "PER MOVE — BUILDING, UNIT & MOVE TYPE"}
+              {pmStep === 2 && "PER MOVE — LOCATIONS, SCHEDULE & OPTIONS"}
+              {pmStep === 3 && "PER MOVE — REVIEW & SUBMIT"}
+            </p>
+            <h2 className="font-hero text-[24px] sm:text-[28px] font-normal text-[#5C1A33] leading-[1.1] tracking-tight">
+              {stepMeta.label}
+            </h2>
+            <p className="text-[11px] text-[#5A6B5E] mt-1">{stepMeta.description}</p>
+          </div>
+          <InfoHint
+            ariaLabel="Booking turnaround"
+            align="end"
+            className="shrink-0 mt-0.5"
+          >
+            <span>
+              Yugo confirms within two hours during business hours. Emergency requests
+              are prioritized sooner.
+            </span>
+          </InfoHint>
+        </div>
+        <div className="px-0 sm:px-1 py-3 border-t border-[#2C3E2D]/10">
+          <nav
+            className="flex flex-wrap items-center gap-x-1.5 gap-y-1.5 text-[9px] font-bold tracking-[0.12em] uppercase"
+            aria-label="Schedule steps"
+          >
+            {PM_SCHEDULE_STEPS.map((s, i) => (
+              <span key={s.id} className="contents">
+                {i > 0 ? (
+                  <span className="text-[var(--tx3)] px-0.5 select-none" aria-hidden>
+                    —
+                  </span>
+                ) : null}
+                <span
+                  className={`inline-flex items-center gap-1 rounded-sm px-2 py-1.5 transition-colors ${
+                    pmStep === s.id
+                      ? "bg-[#5C1A33] text-[#FFFBF7] shadow-sm"
+                      : pmStep > s.id
+                        ? "text-[var(--tx3)]"
+                        : "text-[#5A6B5E]/50"
+                  }`}
+                >
+                  {pmStep > s.id ? (
+                    <Check
+                      size={11}
+                      weight="bold"
+                      className="text-[#5A6B5E] shrink-0"
+                      aria-hidden
+                    />
+                  ) : null}
+                  {s.label}
+                </span>
+              </span>
+            ))}
+          </nav>
+        </div>
+      </div>
 
+      <div className="flex-1 overflow-x-hidden px-0 sm:px-1 py-6 space-y-8 min-h-0">
+        {pmStep === 1 && (
+          <div className="space-y-8">
       <div>
-        <label className={PM_LABEL}>
-          Property
-        </label>
+        <PmScheduleSectionLabel>Building</PmScheduleSectionLabel>
         <select
           value={propertyId}
           onChange={(e) => setPropertyId(e.target.value)}
-          className={PM_FIELD}
+          className={fieldInput}
           required
         >
           {summary.properties.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.building_name}
+              {p.building_name} — {p.address}
             </option>
           ))}
         </select>
@@ -939,83 +1264,124 @@ function PmBookForm({
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className={PM_LABEL}>
-            Unit #
-          </label>
+          <PmScheduleSectionLabel>Unit #</PmScheduleSectionLabel>
           <input
             value={unitNumber}
             onChange={(e) => setUnitNumber(e.target.value)}
-            className={PM_FIELD}
+            className={fieldInput}
             required
           />
         </div>
         <div>
-          <label className={PM_LABEL}>
-            Floor
-          </label>
+          <PmScheduleSectionLabel>Floor</PmScheduleSectionLabel>
           <input
             value={unitFloor}
             onChange={(e) => setUnitFloor(e.target.value)}
             placeholder="Optional"
-            className={PM_FIELD}
+            className={fieldInput}
           />
         </div>
       </div>
 
       <div>
-        <label className={PM_LABEL}>
-          Unit type
-        </label>
+        <PmScheduleSectionLabel>Unit size</PmScheduleSectionLabel>
         <select
           value={unitType}
           onChange={(e) => setUnitType(e.target.value)}
-          className={PM_FIELD}
+          className={fieldInput}
         >
-          {["studio", "1br", "2br", "3br", "4br_plus"].map((u) => (
+          {[
+            ["studio", "Studio"],
+            ["1br", "1 bedroom"],
+            ["2br", "2 bedroom"],
+            ["3br", "3 bedroom"],
+            ["4br_plus", "4+ bedroom"],
+          ].map(([u, lab]) => (
             <option key={u} value={u}>
-              {u.replace("_", " ")}
+              {lab}
             </option>
           ))}
         </select>
       </div>
 
       <div>
-        <label className={PM_LABEL}>
-          Move type
-        </label>
-        <select
-          value={reasonCode}
-          onChange={(e) => setReasonCode(e.target.value)}
-          className={PM_FIELD}
-          required
-        >
-          {reasons.length === 0 ? (
-            <option value="">Loading…</option>
-          ) : (
-            reasons.map((r) => (
-              <option key={r.reason_code} value={r.reason_code}>
-                {r.label}
-                {r.urgency_default === "emergency" ? " · Emergency" : ""}
-              </option>
-            ))
-          )}
-        </select>
-        {selectedReason?.description && (
-          <p className="text-[11px] text-[#2C3E2D]/55 mt-1 leading-relaxed">
-            {selectedReason.description}
-          </p>
+        <PmScheduleSectionLabel>Move type</PmScheduleSectionLabel>
+        {visibleReasons.length === 0 ? (
+          <p className="text-[12px] text-[var(--tx3)]">Loading move types…</p>
+        ) : (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {primaryReasons.map((r) => {
+                const active = reasonCode === r.reason_code;
+                return (
+                  <button
+                    key={r.reason_code}
+                    type="button"
+                    onClick={() => setReasonCode(r.reason_code)}
+                    className={`p-3 rounded-lg border text-left transition-colors active:scale-[0.99] ${
+                      active
+                        ? "border-[#5C1A33] bg-[#5C1A33]/6 ring-1 ring-[#5C1A33]/20"
+                        : "border-[#2C3E2D]/12 hover:border-[#5C1A33]/25 bg-white"
+                    }`}
+                  >
+                    <p className="text-[13px] font-semibold text-[#1a1f1b]">
+                      {r.label}
+                      {r.urgency_default === "emergency" ? " · Emergency" : ""}
+                    </p>
+                    {r.description && (
+                      <p className="text-[11px] text-[var(--tx3)] mt-1 leading-relaxed">
+                        {r.description}
+                      </p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {secondaryReasons.length > 0 && (
+              <details className="rounded-lg border border-[#2C3E2D]/10 bg-white/80 px-3 py-2">
+                <summary className="text-[12px] font-semibold text-[#5C1A33] cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                  More move types
+                </summary>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-3 pb-1">
+                  {secondaryReasons.map((r) => {
+                    const active = reasonCode === r.reason_code;
+                    return (
+                      <button
+                        key={r.reason_code}
+                        type="button"
+                        onClick={() => setReasonCode(r.reason_code)}
+                        className={`p-3 rounded-lg border text-left transition-colors active:scale-[0.99] ${
+                          active
+                            ? "border-[#5C1A33] bg-[#5C1A33]/6 ring-1 ring-[#5C1A33]/20"
+                            : "border-[#2C3E2D]/12 hover:border-[#5C1A33]/25 bg-white"
+                        }`}
+                      >
+                        <p className="text-[13px] font-semibold text-[#1a1f1b]">
+                          {r.label}
+                          {r.urgency_default === "emergency" ? " · Emergency" : ""}
+                        </p>
+                        {r.description && (
+                          <p className="text-[11px] text-[var(--tx3)] mt-1 leading-relaxed">
+                            {r.description}
+                          </p>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </details>
+            )}
+          </div>
         )}
       </div>
 
       {projects.length > 0 && (
         <div>
-          <label className={PM_LABEL}>
-            Program (optional)
-          </label>
+          <PmScheduleSectionLabel>Program (optional)</PmScheduleSectionLabel>
           <select
             value={pmProjectId}
             onChange={(e) => setPmProjectId(e.target.value)}
-            className={PM_FIELD}
+            className={fieldInput}
           >
             <option value="">None — standalone job</option>
             {projects.map((p) => (
@@ -1027,8 +1393,19 @@ function PmBookForm({
         </div>
       )}
 
+      <div className="rounded-sm border border-[#2C3E2D]/10 bg-[#FAF7F2]/60 px-4 py-3">
+        <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5A6B5E] mb-1">Your rate</p>
+        <p className="text-[12px] text-[#5A6B5E] leading-relaxed">
+          Continue to add locations and schedule — your contract estimate appears after origin and destination are set.
+        </p>
+      </div>
+          </div>
+        )}
+
+        {pmStep === 2 && (
+          <div className="space-y-8">
       <div>
-        <label className="flex items-center gap-2 text-[12px] text-[#2C3E2D]/75">
+        <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)]">
           <input
             type="checkbox"
             checked={vacantNoTenant}
@@ -1040,28 +1417,26 @@ function PmBookForm({
 
       {!vacantNoTenant && (
         <div>
-          <label className={PM_LABEL}>
-            Tenant / occupant
-          </label>
+          <PmScheduleSectionLabel>Tenant / occupant</PmScheduleSectionLabel>
           <input
             placeholder="Name"
             value={tenantName}
             onChange={(e) => setTenantName(e.target.value)}
-            className={`${PM_FIELD} mb-2`}
+            className={`${fieldInput} mb-2`}
             required={!vacantNoTenant}
           />
           <input
             placeholder="Phone"
             value={tenantPhone}
             onChange={(e) => setTenantPhone(e.target.value)}
-            className={`${PM_FIELD} mb-2`}
+            className={`${fieldInput} mb-2`}
           />
           <input
             placeholder="Email"
             type="email"
             value={tenantEmail}
             onChange={(e) => setTenantEmail(e.target.value)}
-            className={PM_FIELD}
+            className={fieldInput}
           />
         </div>
       )}
@@ -1069,24 +1444,20 @@ function PmBookForm({
       {suiteMode && (
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className={PM_LABEL}>
-              From unit
-            </label>
+            <PmScheduleSectionLabel>From unit</PmScheduleSectionLabel>
             <input
               value={suiteFrom}
               onChange={(e) => setSuiteFrom(e.target.value)}
-              className={PM_FIELD}
+              className={fieldInput}
               required
             />
           </div>
           <div>
-            <label className={PM_LABEL}>
-              To unit
-            </label>
+            <PmScheduleSectionLabel>To unit</PmScheduleSectionLabel>
             <input
               value={suiteTo}
               onChange={(e) => setSuiteTo(e.target.value)}
-              className={PM_FIELD}
+              className={fieldInput}
               required
             />
           </div>
@@ -1094,69 +1465,59 @@ function PmBookForm({
       )}
 
       <div>
-        <label className={PM_LABEL}>
-          Origin
-        </label>
+        <PmScheduleSectionLabel>Origin</PmScheduleSectionLabel>
         <textarea
           value={fromAddress}
           onChange={(e) => setFromAddress(e.target.value)}
           rows={2}
-          className={PM_FIELD}
+          className={fieldTextareaUnderline}
           required
         />
       </div>
       <div>
-        <label className={PM_LABEL}>
-          Destination
-        </label>
+        <PmScheduleSectionLabel>Destination</PmScheduleSectionLabel>
         <textarea
           value={toAddress}
           onChange={(e) => setToAddress(e.target.value)}
           rows={2}
-          className={PM_FIELD}
+          className={fieldTextareaUnderline}
           required
         />
       </div>
 
       <div>
-        <label className={PM_LABEL}>
-          Move date
-        </label>
+        <PmScheduleSectionLabel>Move date</PmScheduleSectionLabel>
         <input
           type="date"
           value={scheduledDate}
           onChange={(e) => setScheduledDate(e.target.value)}
-          className={PM_FIELD}
+          className={fieldInput}
           required
         />
       </div>
 
       {needsReturn && (
         <div>
-          <label className={PM_LABEL}>
-            Return Date
-          </label>
+          <PmScheduleSectionLabel>Return date</PmScheduleSectionLabel>
           <input
             type="date"
             value={returnDate}
             onChange={(e) => setReturnDate(e.target.value)}
-            className={PM_FIELD}
+            className={fieldInput}
             required
           />
-          <p className="text-[10px] text-[#2C3E2D]/55 mt-1 leading-relaxed">
+          <p className="text-[10px] text-[var(--tx3)] mt-1 leading-relaxed">
             A return leg will be created automatically for ops to confirm.
           </p>
         </div>
       )}
 
       <div>
-        <label className={PM_LABEL}>
-          Time window
-        </label>
+        <PmScheduleSectionLabel>Time window</PmScheduleSectionLabel>
         <select
           value={scheduledTime}
           onChange={(e) => setScheduledTime(e.target.value)}
-          className={PM_FIELD}
+          className={fieldInput}
         >
           {TIME_WINDOWS.map((w) => (
             <option key={w} value={w}>
@@ -1167,15 +1528,13 @@ function PmBookForm({
       </div>
 
       <div>
-        <label className={PM_LABEL}>
-          Urgency
-        </label>
+        <PmScheduleSectionLabel>Urgency</PmScheduleSectionLabel>
         <select
           value={urgency}
           onChange={(e) =>
             setUrgency(e.target.value as "standard" | "priority" | "emergency")
           }
-          className={PM_FIELD}
+          className={fieldInput}
         >
           <option value="standard">Standard</option>
           <option value="priority">Priority (+15%)</option>
@@ -1183,7 +1542,7 @@ function PmBookForm({
         </select>
       </div>
 
-      <div className="space-y-2 text-[12px] text-[#2C3E2D]/75">
+      <div className="space-y-2 text-[12px] text-[var(--tx2)]">
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -1204,9 +1563,13 @@ function PmBookForm({
           <input
             type="checkbox"
             checked={weekendOverride}
+            disabled={dateIsWeekend}
             onChange={(e) => setWeekendOverride(e.target.checked)}
           />
-          Count as weekend pricing
+          <span>
+            Count as weekend pricing
+            {dateIsWeekend ? " (auto-detected from move date)" : ""}
+          </span>
         </label>
       </div>
 
@@ -1242,51 +1605,264 @@ function PmBookForm({
       )}
 
       <div>
-        <label className={PM_LABEL}>
-          Special instructions
-        </label>
+        <PmScheduleSectionLabel>Special instructions</PmScheduleSectionLabel>
         <textarea
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
           rows={3}
-          className={PM_FIELD}
+          className={fieldTextareaUnderline}
         />
       </div>
 
-      <div className={PM_INSET}>
-        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#2C3E2D]/50">
-          Pricing (estimate)
-        </p>
-        {pricingLoading && (
-          <p className="text-[#2C3E2D]/55">Calculating…</p>
+      <div>
+        <PmScheduleSectionLabel>Tenant communication</PmScheduleSectionLabel>
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              ["use_contract", "Use contract default"],
+              ["yugo", "Yugo contacts tenant"],
+              ["partner", "We forward tracking"],
+            ] as const
+          ).map(([id, lab]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTenantCommsChoice(id)}
+              className={`px-3 py-2 rounded-lg text-[12px] font-semibold border transition-colors active:scale-[0.99] ${
+                tenantCommsChoice === id
+                  ? "border-[#5C1A33] bg-[#5C1A33]/6 text-[#5C1A33]"
+                  : "border-[#2C3E2D]/12 bg-white text-[var(--tx2)]"
+              }`}
+            >
+              {lab}
+            </button>
+          ))}
+        </div>
+        {tenantCommsChoice === "yugo" && (
+          <p className="text-[11px] text-[var(--tx3)] mt-2 leading-relaxed">
+            When the booking is approved, Yugo can text the tenant a tracking
+            link for move day (phone required).
+          </p>
         )}
-        {!pricingLoading && pricing?.error && (
-          <p className="text-red-600">{pricing.error}</p>
-        )}
-        {!pricingLoading && pricing && !pricing.error && (
-          <>
-            <p className="text-[#1a1f1b]">
-              Zone: {ZONE_LABELS[pricing.zone] ?? pricing.zone}
-              {pricing.weekend ? " · Weekend surcharges apply" : ""}
-            </p>
-            <p className="text-[#1a1f1b]">
-              Base: {formatCurrency(pricing.base_price)} → Total:{" "}
-              {formatCurrency(pricing.subtotal)}
-            </p>
-          </>
+        {tenantCommsChoice === "partner" && (
+          <p className="text-[11px] text-[var(--tx3)] mt-2 leading-relaxed">
+            You will receive the tracking link by email to share with the
+            tenant.
+          </p>
         )}
       </div>
 
-      <button
-        type="submit"
-        disabled={saving || !propertyId || !reasonCode}
-        className="w-full py-3 rounded-lg text-[11px] font-bold tracking-[0.12em] uppercase bg-[#2C3E2D] text-white hover:bg-[#243524] disabled:opacity-50 transition-colors"
-      >
-        {saving ? "Submitting…" : "Submit booking request"}
-      </button>
-      <p className="text-[10px] text-[#2C3E2D]/55 leading-relaxed">
-        Submissions are reviewed by Yugo operations before confirmation.
-      </p>
+      {estimateSection}
+          </div>
+        )}
+
+        {pmStep === 3 && (
+          <div className="space-y-8">
+            <div className="rounded-sm border border-[#2C3E2D]/10 bg-white/80 px-4 py-4 space-y-4">
+              <PmScheduleSectionLabel>Booking summary</PmScheduleSectionLabel>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-[12px]">
+                <div className="sm:col-span-2">
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                    Building
+                  </dt>
+                  <dd className="text-[var(--tx)] leading-relaxed">
+                    {prop?.building_name ?? "—"}
+                    {prop?.address ? ` — ${prop.address}` : ""}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                    Unit
+                  </dt>
+                  <dd className="text-[var(--tx)]">
+                    {unitNumber || "—"}
+                    {unitFloor ? ` · Floor ${unitFloor}` : ""}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                    Unit size
+                  </dt>
+                  <dd className="text-[var(--tx)]">
+                    {PM_UNIT_TYPE_LABELS[unitType] ?? unitType}
+                  </dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                    Move type
+                  </dt>
+                  <dd className="text-[var(--tx)]">
+                    {selectedReason?.label ?? reasonCode}
+                  </dd>
+                </div>
+                {selectedProjectName ? (
+                  <div className="sm:col-span-2">
+                    <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                      Program
+                    </dt>
+                    <dd className="text-[var(--tx)]">{selectedProjectName}</dd>
+                  </div>
+                ) : null}
+                {suiteMode ? (
+                  <>
+                    <div>
+                      <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                        From unit
+                      </dt>
+                      <dd className="text-[var(--tx)]">{suiteFrom || "—"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                        To unit
+                      </dt>
+                      <dd className="text-[var(--tx)]">{suiteTo || "—"}</dd>
+                    </div>
+                  </>
+                ) : null}
+                <div className="sm:col-span-2">
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                    Tenant
+                  </dt>
+                  <dd className="text-[var(--tx)] leading-relaxed">
+                    {vacantNoTenant
+                      ? "Vacant unit"
+                      : [tenantName, tenantPhone, tenantEmail]
+                          .filter(Boolean)
+                          .join(" · ") || "—"}
+                  </dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                    Origin
+                  </dt>
+                  <dd className="text-[var(--tx)] whitespace-pre-wrap leading-relaxed">
+                    {fromAddress || "—"}
+                  </dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                    Destination
+                  </dt>
+                  <dd className="text-[var(--tx)] whitespace-pre-wrap leading-relaxed">
+                    {toAddress || "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                    Move date
+                  </dt>
+                  <dd className="text-[var(--tx)]">
+                    {scheduledDate ? formatDate(scheduledDate) : "—"}
+                  </dd>
+                </div>
+                {needsReturn ? (
+                  <div>
+                    <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                      Return date
+                    </dt>
+                    <dd className="text-[var(--tx)]">
+                      {returnDate ? formatDate(returnDate) : "—"}
+                    </dd>
+                  </div>
+                ) : null}
+                <div>
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                    Time window
+                  </dt>
+                  <dd className="text-[var(--tx)]">{scheduledTime}</dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                    Urgency
+                  </dt>
+                  <dd className="text-[var(--tx)] capitalize">{urgency}</dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                    Options
+                  </dt>
+                  <dd className="text-[var(--tx)] leading-relaxed">
+                    {[
+                      afterHours ? "After-hours window" : null,
+                      holiday ? "Holiday / statutory day" : null,
+                      weekendOverride && !dateIsWeekend
+                        ? "Weekend pricing override"
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "Standard"}
+                  </dd>
+                </div>
+                {addons.some((a) => selectedAddons[a.addon_code]) ? (
+                  <div className="sm:col-span-2">
+                    <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                      Add-ons
+                    </dt>
+                    <dd className="text-[var(--tx)] leading-relaxed">
+                      {addons
+                        .filter((a) => selectedAddons[a.addon_code])
+                        .map((a) => a.label)
+                        .join(" · ")}
+                    </dd>
+                  </div>
+                ) : null}
+                {instructions.trim() ? (
+                  <div className="sm:col-span-2">
+                    <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                      Special instructions
+                    </dt>
+                    <dd className="text-[var(--tx)] whitespace-pre-wrap leading-relaxed">
+                      {instructions}
+                    </dd>
+                  </div>
+                ) : null}
+                <div className="sm:col-span-2">
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] mb-0.5">
+                    Tenant communication
+                  </dt>
+                  <dd className="text-[var(--tx)]">{commsLabel}</dd>
+                </div>
+              </dl>
+            </div>
+            {estimateSection}
+            <p className="text-[10px] text-[var(--tx3)] leading-relaxed">
+              Yugo confirms within two hours during business hours. Emergency
+              requests are confirmed as soon as possible.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="sticky bottom-0 bg-[#FAF7F2]/95 backdrop-blur-sm border-t border-[#2C3E2D]/10 px-0 sm:px-1 py-3.5 flex items-center gap-3 shrink-0">
+        <button
+          type="button"
+          onClick={goBack}
+          className="inline-flex items-center gap-1.5 px-3 py-2.5 text-[10px] font-bold tracking-[0.12em] uppercase border border-[#2C3E2D]/25 text-[var(--tx)] hover:bg-[#2C3E2D]/[0.04] transition-colors rounded-sm active:bg-[#5C1A33]/10"
+        >
+          <CaretLeft size={14} weight="bold" aria-hidden />
+          {pmStep === 1 ? "Cancel" : "Back"}
+        </button>
+        <div className="flex-1 min-w-2" />
+        {pmStep < 3 ? (
+          <button
+            type="button"
+            onClick={goNext}
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 text-[10px] font-bold tracking-[0.12em] uppercase bg-[#2C3E2D] text-white hover:bg-[#243828] active:scale-[0.98] transition-[transform,colors] rounded-sm"
+          >
+            Continue
+            <CaretRight size={14} weight="bold" aria-hidden />
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={saving || !propertyId || !reasonCode}
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 text-[10px] font-bold tracking-[0.12em] uppercase bg-[#2C3E2D] text-white hover:bg-[#243828] active:scale-[0.98] disabled:opacity-50 transition-[transform,colors] rounded-sm"
+          >
+            {saving ? "Submitting…" : "Submit booking request"}
+            <CaretRight size={14} weight="bold" aria-hidden />
+          </button>
+        )}
+      </div>
     </form>
   );
 }

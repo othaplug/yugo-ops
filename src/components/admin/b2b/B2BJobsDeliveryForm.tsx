@@ -65,6 +65,7 @@ import {
   tierRequiresActualWeight,
   weightTierSelectOptions,
 } from "@/lib/pricing/weight-tiers";
+import { B2B_PARTNER_TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 
 const fieldInput = "field-input-compact w-full";
 
@@ -109,12 +110,6 @@ const ACCESS_OPTIONS = [
   { value: "long_carry", label: "Long Carry" },
   { value: "narrow_stairs", label: "Narrow Stairs" },
   { value: "no_parking_nearby", label: "No Parking Nearby" },
-];
-
-const TIME_WINDOW_OPTIONS = [
-  "Morning (7 AM – 12 PM)",
-  "Afternoon (12 PM – 5 PM)",
-  "Full Day (7 AM – 5 PM)",
 ];
 
 const TRUCK_OPTIONS = ["sprinter", "16ft", "20ft", "24ft", "26ft"] as const;
@@ -2433,7 +2428,7 @@ export default function B2BJobsDeliveryForm({
               className={fieldInput}
             >
               <option value="">Select…</option>
-              {TIME_WINDOW_OPTIONS.map((w) => (
+              {B2B_PARTNER_TIME_WINDOW_OPTIONS.map((w) => (
                 <option key={w} value={w}>
                   {w}
                 </option>

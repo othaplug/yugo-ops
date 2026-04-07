@@ -44,14 +44,42 @@ export async function GET(req: NextRequest) {
     .eq("status", "completed")
     .gte("completed_at", monthStart);
 
+  // Deliveries use assigned_members (JSONB snapshot) and terminal status "delivered" from crew/signoff;
+  // some admin paths use "completed" — count both.
   const { data: monthDeliveries } = await supabase
     .from("deliveries")
     .select("id, status")
-    .contains("crew_members", [crewMember.name])
-    .eq("status", "completed")
+    .contains("assigned_members", [crewMember.name])
+    .in("status", ["completed", "delivered"])
     .gte("completed_at", monthStart);
 
-  const monthJobs = (monthMoves?.length ?? 0) + (monthDeliveries?.length ?? 0);
+  const currentMonth = now.toISOString().slice(0, 7);
+  const jobsFromNameQuery = (monthMoves?.length ?? 0) + (monthDeliveries?.length ?? 0);
+  const jobsFromProfile = (profile?.monthly_jobs as Record<string, number> | null)?.[currentMonth] ?? 0;
+
+  const [{ count: soloMoveCount }, { count: soloDelCount }, { count: activeRoster }] = await Promise.all([
+    supabase
+      .from("moves")
+      .select("id", { count: "exact", head: true })
+      .eq("crew_id", crewMember.teamId)
+      .eq("status", "completed")
+      .gte("completed_at", monthStart),
+    supabase
+      .from("deliveries")
+      .select("id", { count: "exact", head: true })
+      .eq("crew_id", crewMember.teamId)
+      .in("status", ["completed", "delivered"])
+      .gte("completed_at", monthStart),
+    supabase
+      .from("crew_members")
+      .select("id", { count: "exact", head: true })
+      .eq("team_id", crewMember.teamId)
+      .eq("is_active", true),
+  ]);
+  const teamMonthJobs = (soloMoveCount ?? 0) + (soloDelCount ?? 0);
+  const jobsFromTeamWhenSolo = activeRoster === 1 ? teamMonthJobs : 0;
+
+  const monthJobs = Math.max(jobsFromNameQuery, jobsFromProfile, jobsFromTeamWhenSolo);
 
   // Tips: use `tips` rows for this crew this month (same source as /api/crew/tips). Summing only
   // moves.tip_amount for jobs where assigned_members contains this name misses team tips when the
@@ -63,19 +91,215 @@ export async function GET(req: NextRequest) {
     .gte("charged_at", monthStartIso)
     .lt("charged_at", monthEndIso);
 
-  const monthTips = (monthTipRows ?? []).reduce(
+  const monthTipsFromTable = (monthTipRows ?? []).reduce(
     (s, t) => s + Number(t.net_amount ?? t.amount ?? 0),
     0
   );
   const monthTipCount = monthTipRows?.length ?? 0;
+  const monthTipsFromProfile = (profile?.monthly_tips as Record<string, number> | null)?.[currentMonth] ?? 0;
 
   const monthRatings = (monthMoves ?? [])
     .filter((m) => m.satisfaction_rating)
     .map((m) => Number(m.satisfaction_rating));
+  const ratingFromProfileMonth = (profile?.monthly_ratings as Record<string, number> | null)?.[currentMonth];
+  const monthAvgRatingFromMoves =
+    monthRatings.length > 0 ? monthRatings.reduce((a, b) => a + b, 0) / monthRatings.length : null;
+  const monthAvgRatingBase =
+    monthAvgRatingFromMoves ??
+    (ratingFromProfileMonth != null && Number.isFinite(ratingFromProfileMonth) ? ratingFromProfileMonth : null);
+
+  const isSoloTeam = activeRoster === 1;
+
+  const [
+    { count: allTimeMoveCareer },
+    { count: allTimeDelCareer },
+    { count: nameMoveCareer },
+    { count: nameDelCareer },
+    { data: teamMovesThisMonth },
+    { data: teamDelsThisMonth },
+    { data: allTimeRatedMoves },
+    { data: delOnTimeRows },
+    { data: moveIdsForTeam },
+    { data: delIdsForTeam },
+  ] = await Promise.all([
+    supabase
+      .from("moves")
+      .select("id", { count: "exact", head: true })
+      .eq("crew_id", crewMember.teamId)
+      .eq("status", "completed"),
+    supabase
+      .from("deliveries")
+      .select("id", { count: "exact", head: true })
+      .eq("crew_id", crewMember.teamId)
+      .in("status", ["completed", "delivered"]),
+    supabase
+      .from("moves")
+      .select("id", { count: "exact", head: true })
+      .contains("assigned_members", [crewMember.name])
+      .eq("status", "completed"),
+    supabase
+      .from("deliveries")
+      .select("id", { count: "exact", head: true })
+      .contains("assigned_members", [crewMember.name])
+      .in("status", ["completed", "delivered"]),
+    supabase
+      .from("moves")
+      .select("id, satisfaction_rating")
+      .eq("crew_id", crewMember.teamId)
+      .eq("status", "completed")
+      .gte("completed_at", monthStart),
+    supabase
+      .from("deliveries")
+      .select("id, score_arrived_late")
+      .eq("crew_id", crewMember.teamId)
+      .in("status", ["completed", "delivered"])
+      .gte("completed_at", monthStart),
+    isSoloTeam
+      ? supabase
+          .from("moves")
+          .select("satisfaction_rating")
+          .eq("crew_id", crewMember.teamId)
+          .eq("status", "completed")
+          .not("satisfaction_rating", "is", null)
+      : Promise.resolve({ data: null as { satisfaction_rating: number | null }[] | null }),
+    isSoloTeam
+      ? supabase
+          .from("deliveries")
+          .select("score_arrived_late")
+          .eq("crew_id", crewMember.teamId)
+          .in("status", ["completed", "delivered"])
+          .not("completed_at", "is", null)
+          .not("score_arrived_late", "is", null)
+      : Promise.resolve({ data: null as { score_arrived_late: boolean | null }[] | null }),
+    isSoloTeam
+      ? supabase.from("moves").select("id").eq("crew_id", crewMember.teamId).eq("status", "completed")
+      : Promise.resolve({ data: null as { id: string }[] | null }),
+    isSoloTeam
+      ? supabase
+          .from("deliveries")
+          .select("id")
+          .eq("crew_id", crewMember.teamId)
+          .in("status", ["completed", "delivered"])
+      : Promise.resolve({ data: null as { id: string }[] | null }),
+  ]);
+
+  const careerFromTeamAllTime = (allTimeMoveCareer ?? 0) + (allTimeDelCareer ?? 0);
+  const careerFromNameAllTime = (nameMoveCareer ?? 0) + (nameDelCareer ?? 0);
+  const displayTotalJobs = Math.max(
+    profile?.total_jobs ?? 0,
+    careerFromNameAllTime,
+    isSoloTeam ? careerFromTeamAllTime : 0,
+  );
+
+  const moveIdsMonth = new Set((teamMovesThisMonth ?? []).map((m) => m.id));
+  const delIdsMonth = new Set((teamDelsThisMonth ?? []).map((d) => d.id));
+  const monthJobIds = [...moveIdsMonth, ...delIdsMonth];
+
+  let monthAvgRatingFromOps: number | null = null;
+  if (isSoloTeam && monthJobIds.length > 0) {
+    const { data: signoffs } = await supabase
+      .from("client_sign_offs")
+      .select("job_id, job_type, satisfaction_rating")
+      .gte("signed_at", monthStartIso)
+      .lt("signed_at", monthEndIso)
+      .in("job_id", monthJobIds);
+
+    const ratingByJob = new Map<string, number>();
+    for (const s of signoffs ?? []) {
+      const ok =
+        (s.job_type === "move" && moveIdsMonth.has(s.job_id)) ||
+        (s.job_type === "delivery" && delIdsMonth.has(s.job_id));
+      if (!ok) continue;
+      const r = s.satisfaction_rating;
+      if (typeof r === "number" && r >= 1 && r <= 5) ratingByJob.set(`${s.job_type}:${s.job_id}`, r);
+    }
+    for (const m of teamMovesThisMonth ?? []) {
+      const r = m.satisfaction_rating;
+      if (typeof r === "number" && r >= 1 && r <= 5 && !ratingByJob.has(`move:${m.id}`)) {
+        ratingByJob.set(`move:${m.id}`, r);
+      }
+    }
+    const vals = [...ratingByJob.values()];
+    if (vals.length > 0) {
+      monthAvgRatingFromOps = vals.reduce((a, b) => a + b, 0) / vals.length;
+    }
+  }
+
   const monthAvgRating =
-    monthRatings.length > 0
-      ? monthRatings.reduce((a, b) => a + b, 0) / monthRatings.length
-      : null;
+    monthAvgRatingBase ?? (monthAvgRatingFromOps != null ? monthAvgRatingFromOps : null);
+
+  const { data: moveTipsMonth } = isSoloTeam
+    ? await supabase
+        .from("moves")
+        .select("tip_amount, tip_charged_at")
+        .eq("crew_id", crewMember.teamId)
+        .eq("status", "completed")
+        .gte("completed_at", monthStart)
+        .not("tip_charged_at", "is", null)
+    : { data: null as { tip_amount: number | null; tip_charged_at: string | null }[] | null };
+
+  const tipsFromMovesThisMonth =
+    (moveTipsMonth ?? []).reduce((s, m) => {
+      const at = m.tip_charged_at;
+      if (!at || at < monthStartIso || at >= monthEndIso) return s;
+      return s + Number(m.tip_amount ?? 0);
+    }, 0) ?? 0;
+  const monthTips = Math.max(monthTipsFromTable, monthTipsFromProfile, tipsFromMovesThisMonth);
+
+  let onTimeRateDisplay = Number(profile?.on_time_rate) || 0;
+  if ((profile?.total_jobs ?? 0) < 1) {
+    const scored = (delOnTimeRows ?? []).filter(
+      (d) => d.score_arrived_late === true || d.score_arrived_late === false,
+    );
+    if (scored.length > 0) {
+      const onTime = scored.filter((d) => d.score_arrived_late === false).length;
+      onTimeRateDisplay = onTime / scored.length;
+    } else if (displayTotalJobs > 0 && isSoloTeam) {
+      onTimeRateDisplay = 1;
+    } else {
+      onTimeRateDisplay = 0;
+    }
+  }
+
+  const mIdsAll = (moveIdsForTeam ?? []).map((m) => m.id);
+  const dIdsAll = (delIdsForTeam ?? []).map((d) => d.id);
+  let damageFromDb = 0;
+  if (isSoloTeam) {
+    if (mIdsAll.length > 0) {
+      const { count: c } = await supabase
+        .from("incidents")
+        .select("id", { count: "exact", head: true })
+        .eq("job_type", "move")
+        .eq("issue_type", "damage")
+        .in("job_id", mIdsAll);
+      damageFromDb += c ?? 0;
+    }
+    if (dIdsAll.length > 0) {
+      const { count: c } = await supabase
+        .from("incidents")
+        .select("id", { count: "exact", head: true })
+        .eq("job_type", "delivery")
+        .eq("issue_type", "damage")
+        .in("job_id", dIdsAll);
+      damageFromDb += c ?? 0;
+    }
+  } else {
+    const { count: c } = await supabase
+      .from("incidents")
+      .select("id", { count: "exact", head: true })
+      .eq("crew_member_id", crewMember.crewMemberId)
+      .eq("issue_type", "damage");
+    damageFromDb = c ?? 0;
+  }
+  const displayDamageIncidents = Math.max(profile?.damage_incidents ?? 0, damageFromDb);
+
+  const lifetimeRated = (allTimeRatedMoves ?? [])
+    .map((m) => Number(m.satisfaction_rating))
+    .filter((n) => n >= 1 && n <= 5);
+  const displayAvgSatisfaction =
+    lifetimeRated.length > 0
+      ? lifetimeRated.reduce((a, b) => a + b, 0) / lifetimeRated.length
+      : Number(profile?.avg_satisfaction) || 0;
 
   // Leaderboard: all crew this month
   const { data: allProfiles } = await supabase
@@ -84,7 +308,6 @@ export async function GET(req: NextRequest) {
     .order("avg_satisfaction", { ascending: false })
     .limit(10);
 
-  const currentMonth = now.toISOString().slice(0, 7);
   const leaderboardRaw = (allProfiles ?? [])
     .map((p) => {
       const mJobs = (p.monthly_jobs as Record<string, number>)?.[currentMonth] || 0;
@@ -130,10 +353,10 @@ export async function GET(req: NextRequest) {
     crewMemberName: crewMember.name,
     yourRankThisMonth,
     profile: {
-      totalJobs: profile?.total_jobs || 0,
-      avgRating: profile?.avg_satisfaction || 0,
-      damageIncidents: profile?.damage_incidents || 0,
-      onTimeRate: profile?.on_time_rate || 0,
+      totalJobs: displayTotalJobs,
+      avgRating: displayAvgSatisfaction,
+      damageIncidents: displayDamageIncidents,
+      onTimeRate: onTimeRateDisplay,
     },
     thisMonth: {
       jobs: monthJobs,

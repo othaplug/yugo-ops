@@ -544,6 +544,9 @@ export async function runPostPaymentActions(
           moveId: input.moveId,
           clientName,
           amount: totalWithTax,
+          excludeRecipientEmails: clientEmail.trim()
+            ? [clientEmail.trim().toLowerCase()]
+            : [],
           html: estateBookingAdminEmailHtml({
             clientName,
             dateLabel,

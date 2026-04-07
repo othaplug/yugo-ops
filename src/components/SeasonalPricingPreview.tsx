@@ -1,29 +1,25 @@
 "use client";
 
 import { useMemo } from "react";
+import { widgetEmbedMonthMultiplier } from "@/lib/pricing/widget-estimate";
 
-const WINE = "#2B0416";
-const FOREST = "#2B3927";
-const CREAM = "#F9EDE4";
+/** Canonical wine — matches quote widget / quote-shared */
+const WINE = "#5C1A33";
+const FOREST = "#2C3E2D";
+const CREAM = "#FAF7F2";
 
-/**
- * Monthly multipliers relative to base rate (mid-week, mid-month, non-peak).
- * These mirror the SEASON_MODS in the widget estimate API.
- */
-const SEASON_MODS: Record<number, number> = {
-  1: 0.88,
-  2: 0.88,
-  3: 0.92,
-  4: 0.95,
-  5: 1.0,
-  6: 1.1,
-  7: 1.15,
-  8: 1.15,
-  9: 1.05,
-  10: 0.95,
-  11: 0.9,
-  12: 0.88,
-};
+/** Min / max bar height (px) so off-peak months stay visible (no “flat line” bars). */
+function barHeightPx(
+  price: number,
+  minPrice: number,
+  maxPrice: number,
+  minPx: number,
+  maxPx: number,
+): number {
+  if (maxPrice <= minPrice) return Math.round((minPx + maxPx) / 2);
+  const t = (price - minPrice) / (maxPrice - minPrice);
+  return minPx + Math.round(t * (maxPx - minPx));
+}
 
 const MONTH_NAMES = [
   "Jan",
@@ -59,16 +55,13 @@ export default function SeasonalPricingPreview({
   compact = false,
   onDarkBackground = false,
 }: Props) {
-  const currentMonth = new Date().getMonth() + 1;
-
   const months = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => {
       const month = i + 1;
-      const mod = SEASON_MODS[month] ?? 1.0;
+      const mod = widgetEmbedMonthMultiplier(month);
       const price = Math.round((basePrice * mod) / 50) * 50;
       const isPeak = PEAK_MONTHS.includes(month);
       const isOffPeak = OFF_PEAK_MONTHS.includes(month);
-      const isPast = month < currentMonth;
       return {
         month,
         name: MONTH_NAMES[i]!,
@@ -76,14 +69,13 @@ export default function SeasonalPricingPreview({
         mod,
         isPeak,
         isOffPeak,
-        isPast,
       };
     });
-  }, [basePrice, currentMonth]);
+  }, [basePrice]);
 
   const maxPrice = Math.max(...months.map((m) => m.price));
   const minPrice = Math.min(...months.map((m) => m.price));
-  const cheapestMonth = months.find((m) => m.price === minPrice && !m.isPast);
+  const cheapestMonth = months.reduce((a, b) => (a.price <= b.price ? a : b));
   const selectedMonthData = months.find((m) => m.month === selectedMonth);
 
   if (compact) {
@@ -128,36 +120,29 @@ export default function SeasonalPricingPreview({
             display: "flex",
             gap: 4,
             alignItems: "flex-end",
-            height: 40,
+            height: 44,
           }}
         >
-          {months.map(({ month, price, isPeak, isPast }) => {
-            const height =
-              Math.round(
-                ((price - minPrice) / (maxPrice - minPrice + 1)) * 28,
-              ) + 8;
+          {months.map(({ month, price, isPeak }) => {
+            const height = barHeightPx(price, minPrice, maxPrice, 14, 36);
             const isSelected = month === selectedMonth;
             const bg = dark
               ? isSelected
                 ? "#66143D"
                 : isPeak
                   ? "rgba(249,237,228,0.35)"
-                  : isPast
-                    ? "rgba(249,237,228,0.12)"
-                    : "rgba(249,237,228,0.22)"
+                  : "rgba(249,237,228,0.22)"
               : isSelected
-                ? FOREST
+                ? WINE
                 : isPeak
-                  ? `${WINE}30`
-                  : isPast
-                    ? "#e0dcd6"
-                    : `${FOREST}20`;
+                  ? "rgba(92,26,51,0.38)"
+                  : "rgba(92,26,51,0.12)";
             const outline = dark
               ? isSelected
                 ? "2px solid rgba(249,237,228,0.85)"
                 : "none"
               : isSelected
-                ? `2px solid ${FOREST}`
+                ? `2px solid ${WINE}`
                 : "none";
             return (
               <button
@@ -168,11 +153,11 @@ export default function SeasonalPricingPreview({
                 style={{
                   flex: 1,
                   height,
+                  minHeight: 14,
                   borderRadius: 3,
                   border: "none",
                   background: bg,
                   cursor: onSelectMonth ? "pointer" : "default",
-                  opacity: isPast ? 0.4 : 1,
                   transition: "all 0.15s",
                   outline,
                 }}
@@ -209,7 +194,7 @@ export default function SeasonalPricingPreview({
             }}
           >
             Cheapest:{" "}
-            <strong style={{ color: dark ? "#F9EDE4" : FOREST, opacity: 1 }}>
+            <strong style={{ color: dark ? "#F9EDE4" : WINE, opacity: 1 }}>
               {MONTH_NAMES[cheapestMonth.month - 1]}
             </strong>{" "}
             saves ~${(maxPrice - cheapestMonth.price).toLocaleString()}
@@ -308,10 +293,8 @@ export default function SeasonalPricingPreview({
           marginBottom: 6,
         }}
       >
-        {months.map(({ month, price, isPeak, isPast }) => {
-          const height =
-            Math.round(((price - minPrice) / (maxPrice - minPrice + 1)) * 44) +
-            18;
+        {months.map(({ month, price, isPeak }) => {
+          const height = barHeightPx(price, minPrice, maxPrice, 20, 54);
           const isSelected = month === selectedMonth;
           const isCheapest = month === cheapestMonth?.month;
           return (
@@ -332,21 +315,19 @@ export default function SeasonalPricingPreview({
                 style={{
                   width: "100%",
                   height,
+                  minHeight: 20,
                   borderRadius: 4,
                   border: "none",
                   background: isSelected
-                    ? FOREST
+                    ? WINE
                     : isCheapest
-                      ? `${FOREST}40`
+                      ? "rgba(92,26,51,0.28)"
                       : isPeak
-                        ? `${WINE}25`
-                        : isPast
-                          ? "#e8e4de"
-                          : `${FOREST}15`,
+                        ? "rgba(92,26,51,0.35)"
+                        : "rgba(92,26,51,0.14)",
                   cursor: onSelectMonth ? "pointer" : "default",
-                  opacity: isPast ? 0.4 : 1,
                   transition: "all 0.15s",
-                  outline: isSelected ? `2px solid ${FOREST}` : "none",
+                  outline: isSelected ? `2px solid ${WINE}` : "none",
                   position: "relative",
                 }}
               />
@@ -357,14 +338,14 @@ export default function SeasonalPricingPreview({
 
       {/* Month labels */}
       <div style={{ display: "flex", gap: 5 }}>
-        {months.map(({ month, name, isPast }) => (
+        {months.map(({ month, name }) => (
           <div key={month} style={{ flex: 1, textAlign: "center" }}>
             <span
               style={{
                 fontSize: 8,
                 fontWeight: 600,
                 color: FOREST,
-                opacity: isPast ? 0.3 : 0.5,
+                opacity: 0.55,
               }}
             >
               {name}

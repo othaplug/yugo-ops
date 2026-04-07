@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 import { syncDealStageByDeliveryId } from "@/lib/hubspot/sync-deal-stage";
+import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
 
 /** POST /api/admin/deliveries/bulk — Bulk status updates for deliveries */
 export async function POST(req: NextRequest) {
@@ -36,6 +37,9 @@ export async function POST(req: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     for (const id of ids) {
       syncDealStageByDeliveryId(id, "delivered").catch(() => {});
+      notifyJobCompletedForCrewProfiles(admin, { jobType: "delivery", jobId: id }).catch((e) =>
+        console.error("[crew-profile] admin bulk deliver:", e),
+      );
     }
     return NextResponse.json({ ok: true, updated: ids.length });
   }

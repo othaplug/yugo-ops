@@ -68,7 +68,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
   if (loading) {
     return (
       <div className="max-w-[420px] mx-auto border border-[var(--brd)] bg-[var(--card)] p-8 text-center">
-        <p className="text-[13px] text-[rgba(255,255,255,0.55)]">Loading readiness check…</p>
+        <p className="text-[13px] text-[var(--tx2)]">Loading readiness check…</p>
       </div>
     );
   }
@@ -78,7 +78,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
       <div className="border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
           <h2 className="font-hero text-[26px] font-bold text-[var(--tx)]">Pre-Trip Readiness Check</h2>
-          <p className="text-[11px] text-[rgba(255,255,255,0.55)] mt-0.5 leading-relaxed">
+          <p className="text-[11px] text-[var(--tx2)] mt-0.5 leading-relaxed">
             Quick 60-second check before starting the day
           </p>
         </div>
@@ -89,7 +89,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
                 key={item.label}
                 className="flex items-center justify-between gap-3 py-3 px-4 border border-[var(--brd)] bg-[var(--bg)]"
               >
-                <span className="min-w-0 flex-1 text-[13px] leading-snug text-[rgba(255,250,245,0.92)]">
+                <span className="min-w-0 flex-1 text-[13px] leading-snug text-[var(--tx)]">
                   {item.label}
                 </span>
                 <div className="flex shrink-0 gap-2">
@@ -98,8 +98,8 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
                     onClick={() => setItems((p) => p.map((x, j) => (j === i ? { ...x, status: "ok" as const } : x)))}
                     className={`${toggleBase} ${
                       item.status === "ok"
-                        ? "border-[#2C3E2D] bg-[#2C3E2D] text-[rgba(255,250,245,0.96)]"
-                        : "border-[rgba(255,255,255,0.2)] bg-transparent text-[rgba(255,255,255,0.45)] hover:border-[rgba(255,255,255,0.32)] hover:text-[rgba(255,250,245,0.85)]"
+                        ? "border-[#2C3E2D] bg-[#2C3E2D] text-white"
+                        : "border-[var(--brd)] bg-transparent text-[var(--tx2)] hover:border-[#2C3E2D]/45 hover:text-[var(--tx)]"
                     }`}
                   >
                     OK
@@ -109,8 +109,8 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
                     onClick={() => setItems((p) => p.map((x, j) => (j === i ? { ...x, status: "issue" as const } : x)))}
                     className={`${toggleBase} ${
                       item.status === "issue"
-                        ? "border-[#ef4444] bg-[#7f1d1d] text-[rgba(255,250,245,0.96)]"
-                        : "border-[rgba(255,255,255,0.2)] bg-transparent text-[rgba(255,255,255,0.45)] hover:border-[rgba(248,113,113,0.45)] hover:text-[#fca5a5]"
+                        ? "border-[#ef4444] bg-[#7f1d1d] text-white"
+                        : "border-[var(--brd)] bg-transparent text-[var(--tx2)] hover:border-[var(--red)]/40 hover:text-[var(--red)]"
                     }`}
                   >
                     Issue
@@ -120,7 +120,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
             ))}
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[rgba(255,255,255,0.55)] mb-1.5 uppercase tracking-[0.12em] leading-none">
+            <label className="block text-[10px] font-bold text-[var(--tx3)] mb-1.5 uppercase tracking-[0.12em] leading-none">
               Note (optional)
             </label>
             <input
@@ -128,7 +128,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Any notes about today's setup..."
-              className="w-full px-3 py-2.5 border border-[var(--brd)] bg-[var(--bg)] text-[13px] text-[rgba(255,250,245,0.92)] placeholder:text-[rgba(255,255,255,0.38)] outline-none focus-visible:border-[rgba(92,26,51,0.45)] focus-visible:ring-1 focus-visible:ring-[#5C1A33]/35"
+              className="w-full px-3 py-2.5 border border-[var(--brd)] bg-[var(--bg)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus-visible:border-[rgba(92,26,51,0.45)] focus-visible:ring-1 focus-visible:ring-[#5C1A33]/35"
             />
           </div>
           {error && (
@@ -137,7 +137,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
             </div>
           )}
           {flaggedCount > 0 && (
-            <p className="text-[11px] text-[#fca5a5]">
+            <p className="text-[11px] font-medium text-[var(--red)]">
               {flaggedCount} item{flaggedCount > 1 ? "s" : ""} flagged, dispatch will be notified
             </p>
           )}

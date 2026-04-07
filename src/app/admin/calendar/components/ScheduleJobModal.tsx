@@ -146,6 +146,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
   return (
     <div
       data-modal-root
+      data-yugo-glass-modal
       className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5"
       role="dialog"
       aria-modal="true"
@@ -157,7 +158,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
         onClick={onClose}
       />
       <div
-        className="relative z-10 w-full sm:max-w-xl bg-[var(--card)] rounded-2xl shadow-2xl overflow-hidden border border-[var(--brd)] modal-card flex flex-col pointer-events-auto"
+        className="relative z-10 w-full sm:max-w-xl yugo-glass-light rounded-2xl shadow-2xl overflow-hidden modal-card flex flex-col pointer-events-auto"
         style={{ maxHeight: "min(90dvh, 90vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         onClick={(e) => e.stopPropagation()}
       >

@@ -93,6 +93,7 @@ export async function GET(req: NextRequest) {
               return {
                 id: s.id,
                 job_id: s.job_id,
+                jobRecordId: s.job_id,
                 job_type: s.job_type,
                 jobId,
                 jobName,

@@ -57,6 +57,9 @@ export interface CalendarEvent {
   color: string;
   href: string;
   clientName: string | null;
+  /** Tel / SMS / mailto for coordinator contact sheet */
+  clientPhone?: string | null;
+  clientEmail?: string | null;
   fromAddress: string | null;
   toAddress: string | null;
   deliveryAddress: string | null;

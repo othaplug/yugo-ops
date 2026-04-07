@@ -180,6 +180,7 @@ export default function CreateMoveForm({
   const [boxesBins, setBoxesBins] = useState("");
   const [boxCount, setBoxCount] = useState(0);
   const [addOns, setAddOns] = useState<Set<string>>(new Set());
+  const [serviceTier, setServiceTier] = useState<"essential" | "signature" | "estate">("essential");
 
   // Office-only state
   const [companyName, setCompanyName] = useState("");
@@ -270,8 +271,8 @@ export default function CreateMoveForm({
     moveType, clientName, clientEmail, clientPhone,
     fromAddress, toAddress, estimate, scheduledDate, scheduledTime,
     arrivalWindow, accessNotes, internalNotes, crewId,
-    estCrewSize, estHours, moveSize, companyName,
-  }), [moveType, clientName, clientEmail, clientPhone, fromAddress, toAddress, estimate, scheduledDate, scheduledTime, arrivalWindow, accessNotes, internalNotes, crewId, estCrewSize, estHours, moveSize, companyName]);
+    estCrewSize, estHours, moveSize, companyName, serviceTier,
+  }), [moveType, clientName, clientEmail, clientPhone, fromAddress, toAddress, estimate, scheduledDate, scheduledTime, arrivalWindow, accessNotes, internalNotes, crewId, estCrewSize, estHours, moveSize, companyName, serviceTier]);
 
   const draftTitleFn = useCallback((s: typeof draftState) => s.clientName || s.companyName || "Move", []);
 
@@ -285,6 +286,9 @@ export default function CreateMoveForm({
       arrivalWindow: setArrivalWindow, accessNotes: setAccessNotes, internalNotes: setInternalNotes,
       crewId: setCrewId, estCrewSize: setEstCrewSize, estHours: setEstHours,
       moveSize: setMoveSize, companyName: setCompanyName,
+      serviceTier: (v) => {
+        if (v === "essential" || v === "signature" || v === "estate") setServiceTier(v);
+      },
     };
     for (const [key, setter] of Object.entries(setters)) {
       const val = d[key as K];
@@ -464,6 +468,7 @@ export default function CreateMoveForm({
       formData.append("complexity_indicators", JSON.stringify(complexityIndicators));
       formData.append("preferred_contact", preferredContact);
       formData.append("coordinator_name", coordinatorName.trim());
+      formData.append("tier_selected", serviceTier);
       formData.append("crew_id", crewId);
       formData.append("assigned_members", JSON.stringify(Array.from(teamMembers)));
       formData.append("truck_primary", truckPrimary || "");
@@ -1121,6 +1126,20 @@ export default function CreateMoveForm({
                   >
                     <option value="">Select size…</option>
                     {MOVE_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </Field>
+                <Field label="Service Tier *">
+                  <select
+                    value={serviceTier}
+                    onChange={(e) =>
+                      setServiceTier(e.target.value as "essential" | "signature" | "estate")
+                    }
+                    className={fieldInput}
+                    required={moveType === "residential"}
+                  >
+                    <option value="essential">Essential</option>
+                    <option value="signature">Signature</option>
+                    <option value="estate">Estate</option>
                   </select>
                 </Field>
                 <Field label="Packing Service">

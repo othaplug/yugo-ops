@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { getPlatformToggles } from "@/lib/platform-settings";
+import { notifyAdmins } from "@/lib/notifications/dispatch";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const RATE_LIMIT_MS = 2000;
 const RATE_LIMIT_MS_NAVIGATION = 1000;
@@ -46,6 +48,42 @@ const GEOFENCE_TRANSITIONS: Record<
   en_route: { nearField: "pickup", newSessionStatus: "arrived" },
   in_transit: { nearField: "delivery", newSessionStatus: "arrived_at_destination" },
 };
+
+const OFF_JOB_IDLE_MIN = 12;
+const OFF_JOB_MIN_DIST_M = 165;
+
+async function jobAnchorPointsLatLng(
+  admin: SupabaseClient,
+  jobType: string,
+  jobId: string
+): Promise<{ lat: number; lng: number }[]> {
+  const out: { lat: number; lng: number }[] = [];
+  if (jobType === "move") {
+    const { data: m } = await admin
+      .from("moves")
+      .select("from_lat, from_lng, to_lat, to_lng")
+      .eq("id", jobId)
+      .single();
+    if (m?.from_lat != null && m?.from_lng != null)
+      out.push({ lat: Number(m.from_lat), lng: Number(m.from_lng) });
+    if (m?.to_lat != null && m?.to_lng != null) out.push({ lat: Number(m.to_lat), lng: Number(m.to_lng) });
+  } else if (jobType === "delivery") {
+    const { data: d } = await admin
+      .from("deliveries")
+      .select("pickup_lat, pickup_lng, delivery_lat, delivery_lng")
+      .eq("id", jobId)
+      .single();
+    if (d?.pickup_lat != null && d?.pickup_lng != null)
+      out.push({ lat: Number(d.pickup_lat), lng: Number(d.pickup_lng) });
+    if (d?.delivery_lat != null && d?.delivery_lng != null)
+      out.push({ lat: Number(d.delivery_lat), lng: Number(d.delivery_lng) });
+    const { data: stops } = await admin.from("delivery_stops").select("lat, lng").eq("delivery_id", jobId);
+    for (const st of stops || []) {
+      if (st.lat != null && st.lng != null) out.push({ lat: Number(st.lat), lng: Number(st.lng) });
+    }
+  }
+  return out;
+}
 
 function mapSessionStatus(status: string | null, isActive: boolean): string {
   if (!isActive || !status) return "idle";
@@ -222,6 +260,48 @@ export async function POST(req: NextRequest) {
   // ── Determine status + geofencing ──
   let sessionStatus = session.status as string;
   let autoAdvanced = false;
+
+  if (
+    session.is_active &&
+    samePosition &&
+    idleMins >= OFF_JOB_IDLE_MIN &&
+    session.job_id &&
+    (session.job_type === "move" || session.job_type === "delivery")
+  ) {
+    const anchors = await jobAnchorPointsLatLng(admin, session.job_type as string, session.job_id as string);
+    if (anchors.length > 0) {
+      const minD = Math.min(...anchors.map((a) => haversineM(latNum, lngNum, a.lat, a.lng)));
+      if (minD > OFF_JOB_MIN_DIST_M) {
+        const { data: snap } = await admin.from("tracking_sessions").select("checkpoints").eq("id", sessionId).single();
+        const cp = Array.isArray(snap?.checkpoints) ? [...snap.checkpoints] : [];
+        const dup = cp
+          .slice(-10)
+          .some(
+            (x: { note?: string }) =>
+              typeof (x as { note?: string }).note === "string" &&
+              (x as { note: string }).note.includes("Away from scheduled job stops")
+          );
+        if (!dup) {
+          cp.push({
+            status: sessionStatus,
+            timestamp: new Date().toISOString(),
+            lat: latNum,
+            lng: lngNum,
+            note: `Idle away from scheduled job stops (~${Math.round(minD)} m from nearest stop)`,
+          });
+          await admin
+            .from("tracking_sessions")
+            .update({ checkpoints: cp, updated_at: new Date().toISOString() })
+            .eq("id", sessionId);
+          void notifyAdmins("crew_idle_off_route", {
+            description: `Crew stationary ${Math.round(idleMins)}+ min, roughly ${Math.round(minD)} m from pickup, drop-off, and listed stops. Confirm on live map.`,
+            moveId: session.job_type === "move" ? String(session.job_id) : undefined,
+            deliveryId: session.job_type === "delivery" ? String(session.job_id) : undefined,
+          });
+        }
+      }
+    }
+  }
 
   // Move context (only for move jobs)
   let moveId: string | null = null;

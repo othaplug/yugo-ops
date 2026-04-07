@@ -4,6 +4,7 @@ import { requirePartner } from "@/lib/partner-auth";
 import { getDeliveryDetailPath } from "@/lib/move-code";
 import type { CalendarEvent, CalendarStatus, YearHeatData } from "@/lib/calendar/types";
 import { JOB_COLORS } from "@/lib/calendar/types";
+import { formatDeliveryCalendarDescription } from "@/lib/calendar/delivery-event-label";
 import { toTitleCase } from "@/lib/format-text";
 
 export const dynamic = "force-dynamic";
@@ -93,7 +94,10 @@ export async function GET(req: NextRequest) {
       type: "delivery",
       blockType: "delivery",
       name: d.customer_name || d.client_name || d.delivery_number || "Delivery",
-      description: `${itemCount ? itemCount + "pc " : ""}${toTitleCase(d.delivery_type || d.category || "")} Delivery`.trim(),
+      description: formatDeliveryCalendarDescription(
+        itemCount,
+        d.delivery_type || d.category,
+      ),
       date: dk,
       start: d.scheduled_start || d.time_slot || null,
       end: d.scheduled_end || null,

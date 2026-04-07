@@ -21,38 +21,19 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lng: numb
   return null;
 }
 
-export async function GET() {
-  const { orgIds, error } = await requirePartner();
-  if (error) return error;
-  if (!orgIds.length) return NextResponse.json({ deliveries: [] });
+const PICKUP_STAGES = ["en_route_to_pickup", "arrived_at_pickup", "en_route", "on_route", "arrived", "arrived_on_site"];
 
+type CrewRow = { name: string; current_lat: number | null; current_lng: number | null };
+
+function buildCrewMap(crewIds: string[]): Promise<Record<string, CrewRow>> {
+  if (crewIds.length === 0) return Promise.resolve({});
   const admin = createAdminClient();
-
-  const todayStr = getTodayString();
-  const liveStatuses = ["confirmed", "accepted", "approved", "dispatched", "in-transit", "in_transit", "in_progress"];
-
-  const { data: deliveries } = await admin
-    .from("deliveries")
-    .select("id, delivery_number, customer_name, status, delivery_address, pickup_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, crew_id")
-    .in("organization_id", orgIds)
-    .eq("scheduled_date", todayStr)
-    .in("status", liveStatuses)
-    .order("scheduled_date", { ascending: true });
-
-  if (!deliveries || deliveries.length === 0) {
-    return NextResponse.json({ deliveries: [] });
-  }
-
-  const crewIds = [...new Set(deliveries.map((d) => d.crew_id).filter(Boolean))] as string[];
-
-  let crewMap: Record<string, { name: string; current_lat: number | null; current_lng: number | null }> = {};
-  if (crewIds.length > 0) {
+  return (async () => {
     const { data: crews } = await admin
       .from("crews")
       .select("id, name, current_lat, current_lng")
       .in("id", crewIds);
 
-    // Also check crew_locations for fresher GPS data
     const { data: crewLocs } = await admin
       .from("crew_locations")
       .select("crew_id, lat, lng, crew_name")
@@ -65,6 +46,7 @@ export async function GET() {
       }
     });
 
+    const crewMap: Record<string, CrewRow> = {};
     (crews || []).forEach((c) => {
       const freshLoc = locMap[c.id];
       crewMap[c.id] = {
@@ -73,10 +55,59 @@ export async function GET() {
         current_lng: freshLoc?.lng ?? c.current_lng,
       };
     });
-  }
+    return crewMap;
+  })();
+}
 
-  const deliveryIds = deliveries.map((d) => d.id);
-  let sessionMap: Record<string, { live_stage: string | null }> = {};
+export async function GET() {
+  const { orgIds, error } = await requirePartner();
+  if (error) return error;
+  if (!orgIds.length) return NextResponse.json({ deliveries: [], moves: [] });
+
+  const admin = createAdminClient();
+  const todayStr = getTodayString();
+
+  const deliveryStatuses = ["confirmed", "accepted", "approved", "dispatched", "in-transit", "in_transit", "in_progress"];
+  const moveStatuses = ["confirmed", "scheduled", "in_progress"];
+
+  const [{ data: deliveries }, { data: moves }] = await Promise.all([
+    admin
+      .from("deliveries")
+      .select(
+        "id, delivery_number, customer_name, status, delivery_address, pickup_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, crew_id",
+      )
+      .in("organization_id", orgIds)
+      .eq("scheduled_date", todayStr)
+      .in("status", deliveryStatuses)
+      .order("scheduled_date", { ascending: true }),
+    admin
+      .from("moves")
+      .select(
+        "id, move_code, client_name, status, scheduled_date, from_address, to_address, from_lat, from_lng, to_lat, to_lng, crew_id",
+      )
+      .in("organization_id", orgIds)
+      .eq("scheduled_date", todayStr)
+      .in("status", moveStatuses),
+  ]);
+
+  const dRows = deliveries ?? [];
+  const mRows = moves ?? [];
+
+  const crewIdSet = new Set<string>();
+  dRows.forEach((d) => {
+    if (d.crew_id) crewIdSet.add(d.crew_id);
+  });
+  mRows.forEach((m) => {
+    if (m.crew_id) crewIdSet.add(m.crew_id);
+  });
+  const crewIds = [...crewIdSet];
+
+  const crewMap = await buildCrewMap(crewIds);
+
+  const deliveryIds = dRows.map((d) => d.id);
+  const moveIds = mRows.map((m) => m.id);
+
+  const deliverySessionMap: Record<string, { live_stage: string | null }> = {};
   if (deliveryIds.length > 0) {
     const { data: sessions } = await admin
       .from("tracking_sessions")
@@ -86,38 +117,63 @@ export async function GET() {
       .eq("is_active", true);
 
     (sessions || []).forEach((s) => {
-      sessionMap[s.job_id] = { live_stage: s.status };
+      deliverySessionMap[s.job_id] = { live_stage: s.status };
     });
   }
 
-  const PICKUP_STAGES = ["en_route_to_pickup", "arrived_at_pickup", "en_route", "on_route", "arrived", "arrived_on_site"];
+  const moveSessionMap: Record<string, { live_stage: string | null }> = {};
+  if (moveIds.length > 0) {
+    const { data: moveSessions } = await admin
+      .from("tracking_sessions")
+      .select("job_id, status, is_active")
+      .in("job_id", moveIds)
+      .eq("job_type", "move")
+      .eq("is_active", true);
 
-  const coordsPromises = deliveries.map(async (d) => {
-    const pickup =
-      d.pickup_lat != null && d.pickup_lng != null
-        ? { lat: Number(d.pickup_lat), lng: Number(d.pickup_lng) }
-        : (d.pickup_address ? await geocodeAddress(d.pickup_address) : null);
-    const dropoff =
-      d.delivery_lat != null && d.delivery_lng != null
-        ? { lat: Number(d.delivery_lat), lng: Number(d.delivery_lng) }
-        : (d.delivery_address ? await geocodeAddress(d.delivery_address) : null);
-    return { pickup, dropoff };
-  });
-  const allCoords = await Promise.all(coordsPromises);
+    (moveSessions || []).forEach((s) => {
+      moveSessionMap[s.job_id] = { live_stage: s.status };
+    });
+  }
 
-  const enriched = deliveries.map((d, i) => {
+  const deliveryCoords = await Promise.all(
+    dRows.map(async (d) => {
+      const pickup =
+        d.pickup_lat != null && d.pickup_lng != null
+          ? { lat: Number(d.pickup_lat), lng: Number(d.pickup_lng) }
+          : (d.pickup_address ? await geocodeAddress(d.pickup_address) : null);
+      const dropoff =
+        d.delivery_lat != null && d.delivery_lng != null
+          ? { lat: Number(d.delivery_lat), lng: Number(d.delivery_lng) }
+          : (d.delivery_address ? await geocodeAddress(d.delivery_address) : null);
+      return { pickup, dropoff };
+    }),
+  );
+
+  const moveCoords = await Promise.all(
+    mRows.map(async (m) => {
+      const from =
+        m.from_lat != null && m.from_lng != null
+          ? { lat: Number(m.from_lat), lng: Number(m.from_lng) }
+          : (m.from_address ? await geocodeAddress(m.from_address) : null);
+      const to =
+        m.to_lat != null && m.to_lng != null
+          ? { lat: Number(m.to_lat), lng: Number(m.to_lng) }
+          : (m.to_address ? await geocodeAddress(m.to_address) : null);
+      return { from, to };
+    }),
+  );
+
+  const enrichedDeliveries = dRows.map((d, i) => {
     const crew = d.crew_id ? crewMap[d.crew_id] : null;
-    const session = sessionMap[d.id];
-    // is_job_active = true only when this specific delivery has an active tracking session.
-    // crew GPS is only surfaced when is_job_active is true to prevent leaking the crew's
-    // location to partners whose delivery hasn't started yet.
+    const session = deliverySessionMap[d.id];
     const isJobActive = session != null;
     const liveStage = session?.live_stage || "";
     const headingToPickup = PICKUP_STAGES.includes(liveStage) || !liveStage.trim();
-    const { pickup: pickupCoords, dropoff: dropoffCoords } = allCoords[i];
+    const { pickup: pickupCoords, dropoff: dropoffCoords } = deliveryCoords[i]!;
     const destCoords = headingToPickup ? (pickupCoords ?? dropoffCoords) : (dropoffCoords ?? pickupCoords);
 
     return {
+      job_kind: "delivery" as const,
       id: d.id,
       delivery_number: d.delivery_number,
       customer_name: d.customer_name,
@@ -125,7 +181,6 @@ export async function GET() {
       delivery_address: d.delivery_address,
       crew_id: d.crew_id,
       crew_name: crew?.name || null,
-      // Only expose GPS when this delivery's job is active
       crew_lat: isJobActive ? (crew?.current_lat || null) : null,
       crew_lng: isJobActive ? (crew?.current_lng || null) : null,
       dest_lat: destCoords?.lat ?? null,
@@ -135,12 +190,43 @@ export async function GET() {
     };
   });
 
-  // Current delivery first (has active tracking session), then rest in schedule order
-  enriched.sort((a, b) => {
+  const enrichedMoves = mRows.map((m, i) => {
+    const crew = m.crew_id ? crewMap[m.crew_id] : null;
+    const session = moveSessionMap[m.id];
+    const isJobActive = session != null;
+    const liveStage = session?.live_stage || "";
+    const headingToPickup = PICKUP_STAGES.includes(liveStage) || !liveStage.trim();
+    const { from: fromCoords, to: toCoords } = moveCoords[i]!;
+    const destCoords = headingToPickup ? (fromCoords ?? toCoords) : (toCoords ?? fromCoords);
+
+    return {
+      job_kind: "move" as const,
+      id: m.id,
+      delivery_number: m.move_code,
+      customer_name: m.client_name,
+      status: m.status,
+      delivery_address: m.to_address || m.from_address,
+      crew_id: m.crew_id,
+      crew_name: crew?.name || null,
+      crew_lat: isJobActive ? (crew?.current_lat || null) : null,
+      crew_lng: isJobActive ? (crew?.current_lng || null) : null,
+      dest_lat: destCoords?.lat ?? null,
+      dest_lng: destCoords?.lng ?? null,
+      live_stage: session?.live_stage || null,
+      is_job_active: isJobActive,
+    };
+  });
+
+  enrichedDeliveries.sort((a, b) => {
+    const aActive = a.is_job_active ? 1 : 0;
+    const bActive = b.is_job_active ? 1 : 0;
+    return bActive - aActive;
+  });
+  enrichedMoves.sort((a, b) => {
     const aActive = a.is_job_active ? 1 : 0;
     const bActive = b.is_job_active ? 1 : 0;
     return bActive - aActive;
   });
 
-  return NextResponse.json({ deliveries: enriched });
+  return NextResponse.json({ deliveries: enrichedDeliveries, moves: enrichedMoves });
 }

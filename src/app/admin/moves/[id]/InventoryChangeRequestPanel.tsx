@@ -80,14 +80,24 @@ export default function InventoryChangeRequestPanel({
         <div className="mb-3">
           <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">Adding</div>
           <ul className="text-[11px] text-[var(--tx2)] space-y-0.5">
-            {(added as Record<string, unknown>[]).map((row, i) => (
+            {(added as Record<string, unknown>[]).map((row, i) => {
+              const pending =
+                row.pending_coordinator_pricing === true ||
+                row.surcharge === null ||
+                row.surcharge === undefined;
+              return (
               <li key={`a-${i}`}>
                 {(row.item_name as string) || "Item"} ×{Number(row.quantity) || 1}{" "}
                 <span className="text-[var(--gold)]">
-                  +{formatCurrency(Number(row.surcharge) || 0)}
+                  {pending ? (
+                    <span className="text-[var(--tx3)] normal-case">(pending coordinator pricing)</span>
+                  ) : (
+                    <>+{formatCurrency(Number(row.surcharge) || 0)}</>
+                  )}
                 </span>
               </li>
-            ))}
+            );
+            })}
           </ul>
         </div>
       )}

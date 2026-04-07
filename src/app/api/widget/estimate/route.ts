@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { cfgNum, cfgJson } from "@/lib/pricing/engine";
 import { rateLimit } from "@/lib/rate-limit";
+import {
+  estimateDistanceKmFromPostals,
+  widgetEmbedMonthMultiplier,
+  WIDGET_RESIDENTIAL_BASE_RATES,
+} from "@/lib/pricing/widget-estimate";
 
 /**
  * Public widget estimate API.
@@ -27,26 +31,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "moveSize required" }, { status: 400 });
   }
 
-  // Base rates by move size (min hours × essential tier labour rate)
-  const BASE_RATES: Record<string, number> = {
-    studio: 480,
-    "1br": 720,
-    "2br": 1080,
-    "3br": 1620,
-    "4br": 2160,
-    "5br_plus": 2700,
-    partial: 540,
-  };
+  const base = WIDGET_RESIDENTIAL_BASE_RATES[moveSize] || WIDGET_RESIDENTIAL_BASE_RATES["2br"]!;
 
-  const base = BASE_RATES[moveSize] || BASE_RATES["2br"]!;
-
-  // Seasonal modifier
-  const SEASON_MODS: Record<number, number> = {
-    1: 0.88, 2: 0.88, 3: 0.92, 4: 0.95, 5: 1.0, 6: 1.1,
-    7: 1.15, 8: 1.15, 9: 1.05, 10: 0.95, 11: 0.9, 12: 0.88,
-  };
   const monthNum = month ? parseInt(month, 10) : new Date().getMonth() + 1;
-  const seasonMod = SEASON_MODS[monthNum] ?? 1.0;
+  const seasonMod = widgetEmbedMonthMultiplier(monthNum);
 
   // Neighbourhood modifier (rough by FSA prefix)
   const NEIGHBOURHOOD_MOD: Record<string, number> = {
@@ -56,9 +44,9 @@ export async function POST(req: NextRequest) {
   const fromFsa = (fromPostal || "").slice(0, 2).toUpperCase();
   const neighMod = NEIGHBOURHOOD_MOD[fromFsa] ?? 1.0;
 
-  // Distance estimate from postal codes (rough heuristic)
-  const distEstKm = estimateDistance(fromPostal || "", toPostal || "");
-  const distMod = distEstKm <= 15 ? 1.0 : distEstKm <= 30 ? 1.08 : distEstKm <= 50 ? 1.15 : 1.22;
+  const distEstKm = estimateDistanceKmFromPostals(fromPostal || "", toPostal || "");
+  const distMod =
+    distEstKm <= 5 ? 0.95 : distEstKm <= 20 ? 1.0 : distEstKm <= 40 ? 1.08 : distEstKm <= 60 ? 1.15 : 1.25;
 
   // Calculate range
   const midpoint = base * seasonMod * neighMod * distMod;
@@ -90,15 +78,4 @@ export async function OPTIONS() {
       "Access-Control-Allow-Headers": "Content-Type",
     },
   });
-}
-
-function estimateDistance(from: string, to: string): number {
-  const fsaNumbers: Record<string, number> = {
-    M1: 1, M2: 2, M3: 3, M4: 4, M5: 5, M6: 6, M7: 7, M8: 8, M9: 9,
-    L4: 10, L5: 11, L6: 12, L7: 13,
-  };
-  const fromNum = fsaNumbers[(from || "").slice(0, 2).toUpperCase()] ?? 5;
-  const toNum = fsaNumbers[(to || "").slice(0, 2).toUpperCase()] ?? 5;
-  const diff = Math.abs(fromNum - toNum);
-  return Math.max(5, diff * 6);
 }

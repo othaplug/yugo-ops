@@ -12,7 +12,9 @@ export default async function AuditLogPage() {
   try {
     const { data } = await admin
       .from("status_events")
-      .select("id, entity_type, entity_id, event_type, description, icon, created_at")
+      .select(
+        "id, entity_type, entity_id, event_type, description, icon, created_at",
+      )
       .order("created_at", { ascending: false })
       .limit(200);
     events = (data ?? []) as ActivityEventRow[];

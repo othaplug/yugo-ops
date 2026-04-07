@@ -2,7 +2,9 @@
 
 import { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { formatCurrency } from "@/lib/format-currency";
 import KpiCard from "@/components/ui/KpiCard";
+import { InfoHint } from "@/components/ui/InfoHint";
 import CrewReportsTab from "./CrewReportsTab";
 
 /* ── Shared types ── */
@@ -31,25 +33,24 @@ interface EodReport {
   crews?: { name: string } | null;
 }
 
-interface MoveFinancial {
-  id: string;
-  service_type: string;
-  estimate: number;
-  status: string;
-  scheduled_date: string;
-}
-
-interface DeliveryFinancial {
-  id: string;
-  total_price: number;
-  status: string;
-  scheduled_date: string;
-}
-
-interface Invoice {
-  id: string;
-  amount: number;
-  status: string;
+interface CrewFinancialSnapshot {
+  crewHourlyCost: number;
+  totalLabourPay: number;
+  jobCount: number;
+  avgLabourPerJob: number;
+  totalTips: number;
+  tipCount: number;
+  avgTip: number;
+  expenseReimbursements: number;
+  expenseCount: number;
+  monthlyLabour: {
+    month: string;
+    moves: number;
+    deliveries: number;
+    total: number;
+    count: number;
+  }[];
+  teamLabourLeaders: { crewId: string; name: string; labour: number; jobs: number }[];
 }
 
 interface OpsMove {
@@ -70,43 +71,13 @@ interface TrackingSession {
   team_id: string | null;
 }
 
-const SERVICE_LABELS: Record<string, string> = {
-  local_move: "Residential",
-  long_distance: "Long Distance",
-  office_move: "Office",
-  single_item: "Single Item",
-  white_glove: "White Glove",
-  specialty: "Specialty",
-  event: "Event",
-  b2b_delivery: "B2B Delivery",
-  labour_only: "Labour Only",
-};
-
 const TABS = [
   { key: "crew", label: "Crew Reports" },
-  { key: "financial", label: "Financial" },
+  { key: "financial", label: "Crew pay" },
   { key: "operations", label: "Operations" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
-
-function formatCurrency(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
-}
-
-function formatCurrencyFull(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(cents / 100);
-}
 
 function monthLabel(dateStr: string): string {
   const [y, m] = dateStr.split("-");
@@ -117,10 +88,6 @@ function monthLabel(dateStr: string): string {
   return `${months[parseInt(m || "1", 10) - 1]} ${y}`;
 }
 
-function monthKey(dateStr: string): string {
-  return dateStr.slice(0, 7);
-}
-
 export default function ReportsClient({
   eodReports,
   eodKpis,
@@ -128,9 +95,7 @@ export default function ReportsClient({
   initialFrom,
   initialTo,
   initialTab,
-  financialMoves,
-  financialDeliveries,
-  invoices,
+  crewFinancial,
   opsMovesThisMonth,
   trackingSessions,
   crewNames = {},
@@ -141,9 +106,7 @@ export default function ReportsClient({
   initialFrom?: string;
   initialTo?: string;
   initialTab?: string;
-  financialMoves: MoveFinancial[];
-  financialDeliveries: DeliveryFinancial[];
-  invoices: Invoice[];
+  crewFinancial: CrewFinancialSnapshot;
   opsMovesThisMonth: OpsMove[];
   trackingSessions: TrackingSession[];
   crewNames?: Record<string, string>;
@@ -160,60 +123,6 @@ export default function ReportsClient({
     params.set("tab", tab);
     router.replace(`/admin/reports?${params.toString()}`, { scroll: false });
   };
-
-  /* ══════════ Financial computations ══════════ */
-
-  const revenueByServiceType = useMemo(() => {
-    const map = new Map<string, { count: number; total: number }>();
-    financialMoves.forEach((m) => {
-      const key = m.service_type;
-      const cur = map.get(key) || { count: 0, total: 0 };
-      cur.count += 1;
-      cur.total += m.estimate;
-      map.set(key, cur);
-    });
-    return Array.from(map.entries())
-      .map(([type, val]) => ({ type, label: SERVICE_LABELS[type] || type, ...val }))
-      .sort((a, b) => b.total - a.total);
-  }, [financialMoves]);
-
-  const monthlyRevenue = useMemo(() => {
-    const map = new Map<string, { moves: number; deliveries: number; total: number; count: number }>();
-
-    financialMoves.forEach((m) => {
-      const mk = monthKey(m.scheduled_date);
-      const cur = map.get(mk) || { moves: 0, deliveries: 0, total: 0, count: 0 };
-      cur.moves += m.estimate;
-      cur.total += m.estimate;
-      cur.count += 1;
-      map.set(mk, cur);
-    });
-
-    financialDeliveries.forEach((d) => {
-      const mk = monthKey(d.scheduled_date);
-      const cur = map.get(mk) || { moves: 0, deliveries: 0, total: 0, count: 0 };
-      cur.deliveries += d.total_price;
-      cur.total += d.total_price;
-      cur.count += 1;
-      map.set(mk, cur);
-    });
-
-    return Array.from(map.entries())
-      .map(([month, val]) => ({ month, ...val }))
-      .sort((a, b) => b.month.localeCompare(a.month))
-      .slice(0, 6);
-  }, [financialMoves, financialDeliveries]);
-
-  const totalMoveRevenue = financialMoves.reduce((s, m) => s + m.estimate, 0);
-  const totalDeliveryRevenue = financialDeliveries.reduce((s, d) => s + d.total_price, 0);
-  const totalRevenue = totalMoveRevenue + totalDeliveryRevenue;
-  const totalJobsFinancial = financialMoves.length + financialDeliveries.length;
-  const avgJobValue = totalJobsFinancial > 0 ? Math.round(totalRevenue / totalJobsFinancial) : 0;
-
-  const invoicePaid = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
-  const invoiceTotal = invoices.reduce((s, i) => s + i.amount, 0);
-
-  const maxServiceRevenue = revenueByServiceType.length > 0 ? revenueByServiceType[0].total : 1;
 
   /* ══════════ Operations computations ══════════ */
 
@@ -316,25 +225,24 @@ export default function ReportsClient({
 
   return (
     <div className="space-y-0">
-      {/* ── Tab bar ── */}
-      <div className="flex items-center gap-1 border-b border-[var(--brd)] mb-6">
+      {/* ── Tab bar (eyebrow / label styling) ── */}
+      <div className="flex flex-wrap items-center gap-1 mb-6" role="tablist" aria-label="Report sections">
         {TABS.map((tab) => {
           const isActive = activeTab === tab.key;
           return (
             <button
               key={tab.key}
               type="button"
+              role="tab"
+              aria-selected={isActive}
               onClick={() => switchTab(tab.key)}
-              className={`flex items-center px-4 py-3 text-[13px] font-semibold transition-colors relative ${
+              className={`px-4 py-2.5 text-[10px] font-bold tracking-[0.12em] uppercase transition-colors ${
                 isActive
-                  ? "text-[var(--gold)]"
-                  : "text-[var(--tx3)] hover:text-[var(--tx)]"
+                  ? "bg-[var(--card)] text-[var(--tx)]"
+                  : "text-[var(--tx3)]/85 hover:text-[var(--tx)] hover:bg-[var(--card)]/60"
               }`}
             >
               {tab.label}
-              {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--admin-primary-fill)] rounded-t-full" />
-              )}
             </button>
           );
         })}
@@ -357,109 +265,125 @@ export default function ReportsClient({
         </div>
       )}
 
-      {/* ── Financial tab ── */}
+      {/* ── Crew pay tab (labour cost, tips, reimbursements) ── */}
       {activeTab === "financial" && (
         <div className="animate-fade-up space-y-8">
-          {/* KPI row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
-            <KpiCard
-              label="Total Revenue"
-              value={formatCurrency(totalRevenue)}
-              sub="last 6 months"
-            />
-            <KpiCard
-              label="Avg Job Value"
-              value={formatCurrency(avgJobValue)}
-              sub={`${totalJobsFinancial} jobs`}
-            />
-            <KpiCard
-              label="Invoiced"
-              value={formatCurrency(invoiceTotal)}
-              sub={`${invoices.length} invoices`}
-            />
-            <KpiCard
-              label="Collected"
-              value={formatCurrency(invoicePaid)}
-              sub={invoiceTotal > 0 ? `${Math.round((invoicePaid / invoiceTotal) * 100)}% collected` : "-"}
-              accent={invoicePaid > 0}
-            />
+          <div className="relative pb-8 border-b border-[var(--brd)]">
+            <div className="absolute right-0 top-0 z-10">
+              <InfoHint variant="admin" ariaLabel="How crew pay figures are calculated">
+                <span>
+                  Labour pay is modeled as crew headcount × hours × platform crew hourly cost (or stored move labour cost
+                  when present). Tips are net amounts to crew. Reimbursements are approved crew expense claims.
+                </span>
+              </InfoHint>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pr-8 sm:pr-10">
+              <KpiCard
+                label="Est. labour pay"
+                value={formatCurrency(crewFinancial.totalLabourPay)}
+                sub={`${crewFinancial.jobCount} jobs · last 6 mo`}
+              />
+              <KpiCard
+                label="Avg labour / job"
+                value={formatCurrency(crewFinancial.avgLabourPerJob)}
+                sub={`${formatCurrency(crewFinancial.crewHourlyCost)}/hr cost model`}
+              />
+              <KpiCard
+                label="Tips (net)"
+                value={formatCurrency(crewFinancial.totalTips)}
+                sub={`${crewFinancial.tipCount} tip${crewFinancial.tipCount !== 1 ? "s" : ""} · moves`}
+                accent={crewFinancial.totalTips > 0}
+              />
+              <KpiCard
+                label="Expense reimbursements"
+                value={formatCurrency(crewFinancial.expenseReimbursements)}
+                sub={`${crewFinancial.expenseCount} approved`}
+              />
+            </div>
           </div>
 
-          {/* Revenue by service type */}
-          <div>
-            <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82 mb-4">
-              Revenue by Service Type
-            </h2>
-            {revenueByServiceType.length === 0 ? (
-              <p className="text-[13px] text-[var(--tx3)]">No move data in the last 6 months.</p>
-            ) : (
-              <div className="space-y-3">
-                {revenueByServiceType.map((item) => (
-                  <div key={item.type}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[13px] font-medium text-[var(--tx)]">{item.label}</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[11px] text-[var(--tx3)] tabular-nums">{item.count} jobs</span>
-                        <span className="text-[13px] font-heading font-semibold text-[var(--tx)] tabular-nums">
-                          {formatCurrency(item.total)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="h-2 rounded-full bg-[var(--brd)]/40 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-[var(--admin-primary-fill)] transition-all duration-500"
-                        style={{ width: `${Math.max(2, (item.total / maxServiceRevenue) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14">
+            <section>
+              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82 mb-4">
+                Labour pay by team
+              </h2>
+              {crewFinancial.teamLabourLeaders.length === 0 ? (
+                <p className="text-[13px] text-[var(--tx3)]">No crew-assigned jobs in the last 6 months.</p>
+              ) : (
+                <ul className="divide-y divide-[var(--brd)]/50 border-y border-[var(--brd)]/60">
+                  {crewFinancial.teamLabourLeaders.map((row) => {
+                    const maxL = crewFinancial.teamLabourLeaders[0]?.labour || 1;
+                    const pct = maxL > 0 ? (row.labour / maxL) * 100 : 0;
+                    return (
+                      <li key={row.crewId} className="py-3">
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span className="text-[12px] font-medium text-[var(--tx)] truncate">{row.name}</span>
+                          <span className="text-[12px] font-heading font-semibold text-[var(--tx)] tabular-nums shrink-0">
+                            {formatCurrency(row.labour)}
+                            <span className="text-[var(--tx3)] font-normal"> · {row.jobs} job{row.jobs !== 1 ? "s" : ""}</span>
+                          </span>
+                        </div>
+                        <div className="h-1 bg-[var(--brd)]/35 overflow-hidden">
+                          <div
+                            className="h-full bg-[var(--admin-primary-fill)] transition-all duration-500"
+                            style={{ width: `${Math.max(2, pct)}%` }}
+                          />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+            <section>
+              <div className="mb-4 flex items-start gap-2">
+                <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82 flex-1">
+                  Avg tip (when tipped)
+                </h2>
+                <InfoHint variant="admin" ariaLabel="Tip data scope" className="shrink-0">
+                  Moves only. Delivery tips are not tracked in this table yet.
+                </InfoHint>
               </div>
-            )}
+              <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/78 mb-1">Per tip</p>
+              <p className="text-[22px] font-bold font-heading text-[var(--tx)] leading-none">
+                {crewFinancial.tipCount > 0 ? formatCurrency(crewFinancial.avgTip) : "—"}
+              </p>
+            </section>
           </div>
 
-          {/* Monthly revenue table */}
-          <div>
+          <section>
             <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82 mb-4">
-              Monthly Revenue (Last 6 Months)
+              Monthly labour pay (last 6 months)
             </h2>
-            {monthlyRevenue.length === 0 ? (
-              <p className="text-[13px] text-[var(--tx3)]">No revenue data available.</p>
+            {crewFinancial.monthlyLabour.length === 0 ? (
+              <p className="text-[13px] text-[var(--tx3)]">No scheduled jobs in range.</p>
             ) : (
-              <div className="rounded-xl border border-[var(--brd)] overflow-hidden">
-                <table className="w-full text-[13px]">
-                  <thead>
-                    <tr className="bg-[var(--bg)]">
-                      <th className="text-left px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Month</th>
-                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Moves</th>
-                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Deliveries</th>
-                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Total</th>
-                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Jobs</th>
+              <table className="w-full text-[13px] border-collapse border-t border-b border-[var(--brd)]/60">
+                <thead>
+                  <tr className="border-b border-[var(--brd)]/50">
+                    <th className="text-left py-3 pr-4 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Month</th>
+                    <th className="text-right py-3 px-2 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Moves</th>
+                    <th className="text-right py-3 px-2 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Deliveries</th>
+                    <th className="text-right py-3 px-2 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Total</th>
+                    <th className="text-right py-3 pl-2 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">Jobs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {crewFinancial.monthlyLabour.map((row) => (
+                    <tr key={row.month} className="border-t border-[var(--brd)]/35">
+                      <td className="py-3 pr-4 font-medium text-[var(--tx)]">{monthLabel(row.month + "-01")}</td>
+                      <td className="py-3 px-2 text-right tabular-nums text-[var(--tx2)]">{formatCurrency(row.moves)}</td>
+                      <td className="py-3 px-2 text-right tabular-nums text-[var(--tx2)]">{formatCurrency(row.deliveries)}</td>
+                      <td className="py-3 px-2 text-right tabular-nums font-heading font-semibold text-[var(--tx)]">
+                        {formatCurrency(row.total)}
+                      </td>
+                      <td className="py-3 pl-2 text-right tabular-nums text-[var(--tx3)]">{row.count}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {monthlyRevenue.map((row, i) => (
-                      <tr
-                        key={row.month}
-                        className={`border-t border-[var(--brd)]/40 ${i === 0 ? "bg-[var(--gold)]/[0.03]" : ""}`}
-                      >
-                        <td className="px-4 py-3 font-medium text-[var(--tx)]">{monthLabel(row.month + "-01")}</td>
-                        <td className="px-4 py-3 text-right tabular-nums text-[var(--tx2)]">
-                          {formatCurrencyFull(row.moves)}
-                        </td>
-                        <td className="px-4 py-3 text-right tabular-nums text-[var(--tx2)]">
-                          {formatCurrencyFull(row.deliveries)}
-                        </td>
-                        <td className="px-4 py-3 text-right tabular-nums font-heading font-semibold text-[var(--tx)]">
-                          {formatCurrencyFull(row.total)}
-                        </td>
-                        <td className="px-4 py-3 text-right tabular-nums text-[var(--tx3)]">{row.count}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             )}
-          </div>
+          </section>
         </div>
       )}
 
@@ -492,31 +416,30 @@ export default function ReportsClient({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Move status breakdown */}
-            <div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14">
+            <section>
               <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82 mb-4">
                 Move Status Breakdown
               </h2>
               {statusBreakdown.length === 0 ? (
                 <p className="text-[13px] text-[var(--tx3)]">No moves this month.</p>
               ) : (
-                <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 space-y-3">
+                <ul className="divide-y divide-[var(--brd)]/50 border-y border-[var(--brd)]/60">
                   {statusBreakdown.map((item) => {
                     const pct = totalMovesThisMonth > 0 ? (item.count / totalMovesThisMonth) * 100 : 0;
                     return (
-                      <div key={item.status}>
-                        <div className="flex items-center justify-between mb-1">
+                      <li key={item.status} className="py-3">
+                        <div className="flex items-center justify-between mb-1.5 gap-2">
                           <span className="text-[12px] font-medium text-[var(--tx)]">
                             {STATUS_LABELS[item.status] || item.status}
                           </span>
-                          <span className="text-[12px] text-[var(--tx3)] tabular-nums">
+                          <span className="text-[12px] text-[var(--tx3)] tabular-nums shrink-0">
                             {item.count} ({Math.round(pct)}%)
                           </span>
                         </div>
-                        <div className="h-1.5 rounded-full bg-[var(--brd)]/40 overflow-hidden">
+                        <div className="h-1 bg-[var(--brd)]/35 overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all duration-500 ${
+                            className={`h-full transition-all duration-500 ${
                               item.status === "completed" || item.status === "done" || item.status === "paid"
                                 ? "bg-[var(--grn)]"
                                 : item.status === "cancelled" || item.status === "disputed"
@@ -530,22 +453,21 @@ export default function ReportsClient({
                             style={{ width: `${Math.max(2, pct)}%` }}
                           />
                         </div>
-                      </div>
+                      </li>
                     );
                   })}
-                </div>
+                </ul>
               )}
-            </div>
+            </section>
 
-            {/* Tracking sessions by team */}
-            <div>
+            <section>
               <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82 mb-4">
                 Completed Sessions by Team
               </h2>
               {sessionsByTeam.size === 0 ? (
                 <p className="text-[13px] text-[var(--tx3)]">No completed sessions this month.</p>
               ) : (
-                <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 space-y-3">
+                <ul className="divide-y divide-[var(--brd)]/50 border-y border-[var(--brd)]/60">
                   {Array.from(sessionsByTeam.entries())
                     .sort((a, b) => b[1] - a[1])
                     .map(([teamId, count]) => {
@@ -553,57 +475,48 @@ export default function ReportsClient({
                       const pct = maxTeam > 0 ? (count / maxTeam) * 100 : 0;
                       const teamName = crewNames[teamId] || `Crew ${teamId.slice(0, 6)}`;
                       return (
-                        <div key={teamId}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[12px] font-medium text-[var(--tx)] truncate max-w-[200px]">
-                              {teamName}
-                            </span>
-                            <span className="text-[12px] font-heading font-semibold text-[var(--tx)] tabular-nums">
+                        <li key={teamId} className="py-3">
+                          <div className="flex items-center justify-between mb-1.5 gap-2">
+                            <span className="text-[12px] font-medium text-[var(--tx)] truncate min-w-0">{teamName}</span>
+                            <span className="text-[12px] font-heading font-semibold text-[var(--tx)] tabular-nums shrink-0">
                               {count} session{count !== 1 ? "s" : ""}
                             </span>
                           </div>
-                          <div className="h-1.5 rounded-full bg-[var(--brd)]/40 overflow-hidden">
+                          <div className="h-1 bg-[var(--brd)]/35 overflow-hidden">
                             <div
-                              className="h-full rounded-full bg-[var(--admin-primary-fill)] transition-all duration-500"
+                              className="h-full bg-[var(--admin-primary-fill)] transition-all duration-500"
                               style={{ width: `${Math.max(2, pct)}%` }}
                             />
                           </div>
-                        </div>
+                        </li>
                       );
                     })}
-                </div>
+                </ul>
               )}
-            </div>
+            </section>
           </div>
 
-          {/* Session performance */}
-          <div>
+          <section>
             <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/82 mb-4">
               Session Performance
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Total Sessions</div>
-                <div className="text-[22px] font-bold font-heading text-[var(--tx)]">{trackingSessions.length}</div>
-              </div>
-              <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Completed</div>
-                <div className="text-[22px] font-bold font-heading text-[var(--grn)]">{completedSessions.length}</div>
-              </div>
-              <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Active</div>
-                <div className="text-[22px] font-bold font-heading text-[var(--gold)]">
-                  {trackingSessions.filter((s) => s.status === "active" || s.status === "in_progress").length}
-                </div>
-              </div>
-              <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Completion Rate</div>
-                <div className="text-[22px] font-bold font-heading text-[var(--tx)]">
-                  {trackingSessions.length > 0 ? `${Math.round((completedSessions.length / trackingSessions.length) * 100)}%` : "-"}
-                </div>
-              </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8">
+              <KpiCard label="Total Sessions" value={String(trackingSessions.length)} />
+              <KpiCard label="Completed" value={String(completedSessions.length)} accent={completedSessions.length > 0} />
+              <KpiCard
+                label="Active"
+                value={String(trackingSessions.filter((s) => s.status === "active" || s.status === "in_progress").length)}
+              />
+              <KpiCard
+                label="Completion Rate"
+                value={
+                  trackingSessions.length > 0
+                    ? `${Math.round((completedSessions.length / trackingSessions.length) * 100)}%`
+                    : "-"
+                }
+              />
             </div>
-          </div>
+          </section>
         </div>
       )}
     </div>

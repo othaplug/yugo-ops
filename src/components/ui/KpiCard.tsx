@@ -29,13 +29,13 @@ export default function KpiCard({
   const inner = (
     <div className={href ? "group cursor-pointer" : "group cursor-default"}>
       <p
-        className={`text-[9px] font-bold tracking-[0.16em] mb-1 sm:mb-2 transition-colors ${
+        className={`text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/78 mb-1 sm:mb-2 transition-colors ${
           href
-            ? "text-[var(--tx3)]/60 group-hover:text-[var(--tx3)]"
-            : "text-[var(--tx3)]/60"
+            ? "group-hover:text-[var(--tx3)]/90"
+            : ""
         }`}
       >
-        {toSentenceCase(label)}
+        {label}
       </p>
       <p
         className={`text-[20px] sm:text-[28px] font-bold font-heading leading-none transition-opacity ${

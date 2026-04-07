@@ -12,8 +12,18 @@ export default async function CrewPage() {
   const today = getTodayString();
   const [{ data: crews }, { data: deliveries }, { data: moves }, office] = await Promise.all([
     db.from("crews").select("id, name, members, current_lat, current_lng, status, updated_at, delay_minutes").order("name"),
-    db.from("deliveries").select("id, delivery_number, crew_id, scheduled_date, status, delivery_address, pickup_address").order("created_at", { ascending: false }),
-    db.from("moves").select("id, move_code, crew_id, client_name, scheduled_date, status, from_address, to_address").order("created_at", { ascending: false }),
+    db
+      .from("deliveries")
+      .select(
+        "id, delivery_number, crew_id, scheduled_date, status, delivery_address, pickup_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng",
+      )
+      .order("created_at", { ascending: false }),
+    db
+      .from("moves")
+      .select(
+        "id, move_code, crew_id, client_name, scheduled_date, status, from_address, to_address, from_lat, from_lng, to_lat, to_lng",
+      )
+      .order("created_at", { ascending: false }),
     getOfficeLocation(),
   ]);
 
@@ -38,7 +48,7 @@ export default async function CrewPage() {
     >
       {/* Floating header overlay, hidden on mobile where it conflicts with live status chip */}
       <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none hidden sm:flex">
-        <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--card)]/90 backdrop-blur-sm border border-[var(--brd)] shadow-sm">
+        <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--card)] border border-[var(--brd)] shadow-sm">
           <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82">Operations</span>
           <span className="w-px h-3 bg-[var(--brd)]" />
           <span className="text-[11px] font-bold text-[var(--tx)]">Live Crew Map</span>

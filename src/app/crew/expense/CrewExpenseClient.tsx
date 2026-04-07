@@ -81,17 +81,30 @@ export default function CrewExpenseClient() {
   }, [jobFromUrl]);
 
   useEffect(() => {
-    fetch("/api/crew/expenses?today=true")
-      .then((r) => r.json())
-      .then((d) => {
-        setTodayTotal(d.totalTodayCents || 0);
-      })
-      .catch(() => {});
-    loadExpenses();
-    fetch("/api/crew/dashboard")
-      .then((r) => r.json())
-      .then((d) => setJobs(d.jobs || []))
-      .catch(() => {});
+    const refresh = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      fetch("/api/crew/expenses?today=true")
+        .then((r) => r.json())
+        .then((d) => {
+          setTodayTotal(d.totalTodayCents || 0);
+        })
+        .catch(() => {});
+      loadExpenses();
+      fetch("/api/crew/dashboard")
+        .then((r) => r.json())
+        .then((d) => setJobs(d.jobs || []))
+        .catch(() => {});
+    };
+    refresh();
+    const id = setInterval(refresh, 20_000);
+    const onVis = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      clearInterval(id);
+    };
   }, []);
 
   const handleReceiptChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

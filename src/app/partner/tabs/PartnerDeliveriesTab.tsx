@@ -395,7 +395,7 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
         {d.total_price != null && d.total_price > 0 && (
           <div>
             <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Price</div>
-            <div className="text-[#2C3E2D] font-bold mt-0.5">${Number(d.total_price).toLocaleString()}</div>
+            <div className="text-[var(--tx)] font-bold mt-0.5">${Number(d.total_price).toLocaleString()}</div>
           </div>
         )}
         {itemsDisplay && (

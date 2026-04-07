@@ -93,7 +93,7 @@ export default function SurveyClient({
 
         {completed && (
           <div
-            className="mb-6 flex items-center gap-2 rounded-xl border border-[#2C3E2D]/25 bg-[#2C3E2D]/8 px-4 py-3 text-[13px] text-[#2C3E2D]"
+            className="mb-6 flex items-center gap-2 rounded-xl border border-[#2C3E2D]/25 bg-[#2C3E2D]/8 px-4 py-3 text-[13px] text-[var(--tx)]"
             role="status"
           >
             <Check size={20} weight="bold" className="shrink-0" />
@@ -114,7 +114,7 @@ export default function SurveyClient({
               className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4"
             >
               <div className="flex items-center justify-between gap-2 mb-2">
-                <h2 className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#2C3E2D]">
+                <h2 className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--tx)]">
                   {r.label}
                 </h2>
                 {counts[r.id] ? (
@@ -130,8 +130,8 @@ export default function SurveyClient({
                 className="w-full mb-3 px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none"
               />
               <label className="flex items-center justify-center gap-2 w-full py-3 rounded-lg border-2 border-dashed border-[var(--brd)] cursor-pointer hover:border-[#2C3E2D]/40 transition-colors">
-                <Camera size={20} className="text-[#2C3E2D]" />
-                <span className="text-[12px] font-semibold text-[#2C3E2D]">
+                <Camera size={20} className="text-[var(--tx)]" />
+                <span className="text-[12px] font-semibold text-[var(--tx)]">
                   {busyRoom === r.id ? "Uploading…" : "Add photos"}
                 </span>
                 <input
@@ -155,7 +155,7 @@ export default function SurveyClient({
           <button
             type="button"
             onClick={() => void finish()}
-            className="mt-8 w-full py-3.5 rounded-lg border border-[#2C3E2D] text-[10px] font-bold uppercase tracking-[0.12em] text-[#2C3E2D] bg-transparent hover:bg-[#2C3E2D]/6 transition-colors flex items-center justify-center gap-2"
+            className="mt-8 w-full py-3.5 rounded-lg border border-[#2C3E2D] text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx)] bg-transparent hover:bg-[#2C3E2D]/6 transition-colors flex items-center justify-center gap-2"
           >
             Submit photos
             <CaretRight size={16} weight="bold" aria-hidden />

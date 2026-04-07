@@ -4,6 +4,8 @@ import { requirePartner } from "@/lib/partner-auth";
 import { getActiveRateCardLookup } from "@/lib/partners/calculateDeliveryPrice";
 import { generateDeliveryNumber } from "@/lib/delivery-number";
 import { isPropertyManagementDeliveryVertical } from "@/lib/partner-type";
+import { ensureB2bDeliverySchedule, isDeliveryB2bCategory } from "@/lib/calendar/ensure-b2b-delivery-schedule";
+import { serverDebug } from "@/lib/server-log";
 
 export async function POST(req: NextRequest) {
   const { primaryOrgId, userId, error } = await requirePartner();
@@ -110,7 +112,7 @@ export async function POST(req: NextRequest) {
       tracking_code: trackingCode,
     };
 
-    console.log("[delivery-create] inserting for org:", primaryOrgId, "status: pending_approval, date:", scheduledDate);
+    serverDebug("[delivery-create] inserting for org:", primaryOrgId, "status: pending_approval, date:", scheduledDate);
 
     const { data: created, error: dbError } = await admin
       .from("deliveries")
@@ -123,7 +125,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: dbError.message }, { status: 500 });
     }
 
-    console.log("[delivery-create] SUCCESS:", created?.id, created?.delivery_number);
+    serverDebug("[delivery-create] SUCCESS:", created?.id, created?.delivery_number);
+
+    if (created && isDeliveryB2bCategory(String(insertPayload.category || ""))) {
+      await ensureB2bDeliverySchedule(admin, created.id).catch((e) =>
+        console.error("[delivery-create] ensureB2bDeliverySchedule:", e),
+      );
+    }
 
     // If day-rate with stops, insert stop details
     if (body.booking_type === "day_rate" && Array.isArray(body.stops) && created) {

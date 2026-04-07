@@ -8,6 +8,7 @@ import { createClientReferralIfNeeded } from "@/lib/client-referral";
 import { generateMovePDFs } from "@/lib/documents/generateMovePDFs";
 import { maybeNotifyB2BOneOffDelivered } from "@/lib/b2b-delivery-business-notifications";
 import { isEquipmentRelationUnavailable } from "@/lib/supabase-equipment-errors";
+import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
 
 export async function GET(
   req: NextRequest,
@@ -265,6 +266,14 @@ export async function POST(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  const signoffRating =
+    typeof satisfactionRating === "number" && satisfactionRating >= 1 && satisfactionRating <= 5
+      ? satisfactionRating
+      : null;
+  if (jobType === "move" && signoffRating != null) {
+    await admin.from("moves").update({ satisfaction_rating: signoffRating, updated_at: new Date().toISOString() }).eq("id", entityId);
+  }
+
   // Log escalation as a status event so admin dashboard picks it up
   if (escalationTriggered) {
     try {
@@ -417,16 +426,30 @@ export async function POST(
     body: JSON.stringify({ jobId: entityId, jobType }),
   }).catch((e) => console.error("[eta] send-completed failed:", e));
 
-  // Fire-and-forget: auto-generate invoice for deliveries
+  // Fire-and-forget: auto-generate invoice for partner B2B jobs (per-job billing only)
   if (jobType === "delivery") {
     maybeNotifyB2BOneOffDelivered(entityId).catch(() => {});
     fetch(`${origin.replace(/\/$/, "")}/api/invoices/auto-delivery`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ deliveryId: entityId }),
-    }).catch((e) => console.error("[auto-invoice] trigger failed:", e));
+    }).catch((e) => console.error("[auto-invoice] delivery trigger failed:", e));
   }
-}
+  if (jobType === "move") {
+    fetch(`${origin.replace(/\/$/, "")}/api/invoices/auto-move`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ moveId: entityId }),
+    }).catch((e) => console.error("[auto-invoice] move trigger failed:", e));
+  }
+  }
+
+  const signoffHadDamage = !noDamages || !noPropertyDamage || hasNewDamage;
+  notifyJobCompletedForCrewProfiles(admin, {
+    jobType,
+    jobId: entityId,
+    signoff: { clientRating: signoffRating, hadDamage: signoffHadDamage },
+  }).catch((e) => console.error("[crew-profile] signoff:", e));
 
   return NextResponse.json(inserted);
 }

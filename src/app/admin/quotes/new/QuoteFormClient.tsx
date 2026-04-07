@@ -149,7 +149,7 @@ interface EventLegForm {
   event_same_day: boolean;
   event_same_location_onsite: boolean;
   event_leg_truck_type: string;
-  event_return_rate_preset: "auto" | "65" | "85" | "100" | "custom";
+  event_return_rate_preset: "auto" | "60" | "65" | "80" | "85" | "100" | "custom";
   event_return_rate_custom: string;
 }
 
@@ -328,12 +328,52 @@ const EVENT_TRUCK_OPTIONS = [
 ] as const;
 
 const EVENT_LEG_RETURN_RATE_OPTIONS = [
-  { value: "auto", label: "Auto (65% different addresses · 85% same venue)" },
-  { value: "65", label: "65% (standard delivery–return)" },
-  { value: "85", label: "85% (on-site event)" },
+  { value: "auto", label: "Auto (60% different addresses · 80% same venue)" },
+  { value: "60", label: "60% (standard delivery–return)" },
+  { value: "80", label: "80% (same venue / reduced return)" },
+  { value: "65", label: "65% (legacy preset)" },
+  { value: "85", label: "85% (legacy preset)" },
   { value: "100", label: "100% (same effort both days)" },
   { value: "custom", label: "Custom %" },
 ] as const;
+
+type EventItemFormRow = {
+  name: string;
+  quantity: number;
+  weight_category: string;
+  actual_weight_lbs?: number;
+  item_type: string;
+  requires_wrapping: boolean;
+  requires_protection: boolean;
+  notes: string;
+};
+
+const EVENT_ITEM_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: "box_light", label: "Light boxes (books, supplies, decor)" },
+  { value: "box_heavy", label: "Heavy boxes (equipment, materials)" },
+  { value: "furniture", label: "Furniture / tables (standard)" },
+  { value: "fragile", label: "Fragile (glass, porcelain, marble)" },
+  { value: "equipment", label: "AV / equipment" },
+  { value: "custom", label: "Custom / other" },
+];
+
+const EVENT_QUICK_ADD_PRESETS: {
+  name: string;
+  item_type: string;
+  weight_category: string;
+  requires_wrapping: boolean;
+}[] = [
+  { name: "Light boxes (books, supplies, decor)", item_type: "box_light", weight_category: "light", requires_wrapping: false },
+  { name: "Heavy boxes (equipment, materials)", item_type: "box_heavy", weight_category: "standard", requires_wrapping: false },
+  { name: "Tables (standard)", item_type: "furniture", weight_category: "standard", requires_wrapping: false },
+  { name: "Tables (fragile — glass, porcelain, marble)", item_type: "fragile", weight_category: "heavy", requires_wrapping: true },
+  { name: "Chairs", item_type: "furniture", weight_category: "light", requires_wrapping: false },
+  { name: "Display fixtures", item_type: "furniture", weight_category: "standard", requires_wrapping: true },
+  { name: "AV equipment", item_type: "equipment", weight_category: "heavy", requires_wrapping: true },
+  { name: "Staging panels / backdrops", item_type: "furniture", weight_category: "standard", requires_wrapping: false },
+  { name: "Signage / banners", item_type: "box_light", weight_category: "light", requires_wrapping: false },
+  { name: "Custom item", item_type: "custom", weight_category: "standard", requires_wrapping: false },
+];
 
 const SPECIALTY_BUILDING_REQUIREMENTS = [
   { value: "elevator_booking", label: "Elevator booking required" },
@@ -362,7 +402,8 @@ const SPECIALTY_TYPES = [
   { value: "art_sculpture",   label: "Art / Sculpture" },
   { value: "antiques_estate", label: "Antiques / Estate Contents" },
   { value: "safe_vault",      label: "Safe / Vault" },
-  { value: "pool_table",      label: "Pool Table" },
+  { value: "pool_table",      label: "Pool Table (non-slate)" },
+  { value: "pool_table_slate", label: "Pool Table (slate)" },
   { value: "hot_tub",         label: "Hot Tub / Spa" },
   { value: "wine_collection", label: "Wine Collection" },
   { value: "aquarium",        label: "Aquarium" },
@@ -412,12 +453,13 @@ const SPECIALTY_WEIGHT_PREVIEW_MULT: Record<string, number> = {
 };
 
 const ITEM_CATEGORIES = [
-  { value: "standard_furniture", label: "Standard furniture" },
-  { value: "large_heavy", label: "Large / heavy" },
-  { value: "fragile_specialty", label: "Fragile / specialty" },
-  { value: "appliance", label: "Appliance" },
-  { value: "multiple_2_to_5", label: "Multiple (2-5 items)" },
-  { value: "oversized", label: "Oversized" },
+  { value: "small_light", label: "Small / light (lamp, side table, box)" },
+  { value: "standard_furniture", label: "Medium (dresser, bookshelf, desk)" },
+  { value: "large_heavy", label: "Large (sofa, dining table, bed)" },
+  { value: "appliance", label: "Heavy appliance (fridge, washer, dryer)" },
+  { value: "oversized", label: "Extra heavy (piano, safe, pool table)" },
+  { value: "fragile_specialty", label: "Fragile (art, antique, glass)" },
+  { value: "multiple_2_to_5", label: "Multiple (2–5 items)" },
 ];
 
 const WEIGHT_CLASSES = ["Under 50 lbs", "50-150 lbs", "150-300 lbs", "300-500 lbs", "Over 500 lbs"];
@@ -948,10 +990,16 @@ export default function QuoteFormClient({
   const [timingPref, setTimingPref] = useState("");
   const [officeCrewSize, setOfficeCrewSize] = useState(2);
   const [officeEstHours, setOfficeEstHours] = useState(5);
+  const [officeDesks, setOfficeDesks] = useState("");
+  const [officeChairs, setOfficeChairs] = useState("");
+  const [officeFiling, setOfficeFiling] = useState("");
+  const [officeBoardroomCount, setOfficeBoardroomCount] = useState(1);
+  const [officeKitchen, setOfficeKitchen] = useState(false);
+  const [officeTruckCount, setOfficeTruckCount] = useState(1);
 
   // Single item fields
   const [itemDescription, setItemDescription] = useState("");
-  const [itemCategory, setItemCategory] = useState("standard_furniture");
+  const [itemCategory, setItemCategory] = useState("large_heavy");
   const [itemWeight, setItemWeight] = useState("");
   const [assembly, setAssembly] = useState("None");
   const [stairCarry, setStairCarry] = useState(false);
@@ -984,9 +1032,11 @@ export default function QuoteFormClient({
   const [eventSetupInstructions, setEventSetupInstructions] = useState("");
   const [eventSameDay, setEventSameDay] = useState(false);
   const [eventPickupTimeAfter, setEventPickupTimeAfter] = useState("Evening 6–9 PM");
-  const [eventItems, setEventItems] = useState<
-    { name: string; quantity: number; weight_category: string; actual_weight_lbs?: number }[]
-  >([]);
+  const [eventItems, setEventItems] = useState<EventItemFormRow[]>([]);
+  const [eventCrewOverride, setEventCrewOverride] = useState("");
+  const [eventHoursOverride, setEventHoursOverride] = useState("");
+  const [eventPreTaxOverride, setEventPreTaxOverride] = useState("");
+  const [eventOverrideReason, setEventOverrideReason] = useState("");
   const eventWeightTierOpts = useMemo(() => weightTierSelectOptions(), []);
   const [eventAdditionalServices, setEventAdditionalServices] = useState<string[]>([]);
   const [eventMulti, setEventMulti] = useState(false);
@@ -994,7 +1044,9 @@ export default function QuoteFormClient({
   const [eventComplexSetup, setEventComplexSetup] = useState(false);
   const [eventTruckType, setEventTruckType] = useState("sprinter");
   const [eventSameLocationSingle, setEventSameLocationSingle] = useState(false);
-  const [eventReturnRateSingle, setEventReturnRateSingle] = useState<"auto" | "65" | "85" | "100" | "custom">("auto");
+  const [eventReturnRateSingle, setEventReturnRateSingle] = useState<
+    "auto" | "60" | "65" | "80" | "85" | "100" | "custom"
+  >("auto");
   const [eventReturnRateCustomSingle, setEventReturnRateCustomSingle] = useState("");
   const [eventLegs, setEventLegs] = useState<EventLegForm[]>(() => [
     {
@@ -1252,6 +1304,8 @@ export default function QuoteFormClient({
   const [labourStorageNeeded, setLabourStorageNeeded] = useState(false);
   const [labourStorageWeeks, setLabourStorageWeeks] = useState(1);
   const [labourContext, setLabourContext] = useState("");
+  const [labourWeekend, setLabourWeekend] = useState(false);
+  const [labourAfterHours, setLabourAfterHours] = useState(false);
 
   // Bin rental
   const [binPickupSameAsDelivery, setBinPickupSameAsDelivery] = useState(true);
@@ -1270,6 +1324,10 @@ export default function QuoteFormClient({
 
   // Recommended tier (coordinator judgment)
   const [recommendedTier, setRecommendedTier] = useState<"essential" | "signature" | "estate">("signature");
+
+  /** Pre-tax override sent to /api/quotes/generate (not used for B2B / bin rental). */
+  const [quotePreTaxOverride, setQuotePreTaxOverride] = useState("");
+  const [quotePreTaxOverrideReason, setQuotePreTaxOverrideReason] = useState("");
 
   // Add-ons
   const [selectedAddons, setSelectedAddons] = useState<Map<string, AddonSelection>>(new Map());
@@ -1946,6 +2004,10 @@ export default function QuoteFormClient({
     setClientBoxCount("");
     setSpecialtyItems([]);
     setEventItems([]);
+    setEventCrewOverride("");
+    setEventHoursOverride("");
+    setEventPreTaxOverride("");
+    setEventOverrideReason("");
     setB2bLines([]);
     setSqft("");
     setWsCount("");
@@ -1955,8 +2017,14 @@ export default function QuoteFormClient({
     setTimingPref("");
     setOfficeCrewSize(2);
     setOfficeEstHours(5);
+    setOfficeDesks("");
+    setOfficeChairs("");
+    setOfficeFiling("");
+    setOfficeBoardroomCount(1);
+    setOfficeKitchen(false);
+    setOfficeTruckCount(1);
     setItemDescription("");
-    setItemCategory("standard_furniture");
+    setItemCategory("large_heavy");
     setItemWeight("");
     setAssembly("None");
     setStairCarry(false);
@@ -2663,12 +2731,19 @@ export default function QuoteFormClient({
     if (serviceType === "office_move") {
       base.square_footage = Number(sqft) || undefined;
       base.workstation_count = Number(wsCount) || undefined;
+      base.office_desks_count = officeDesks.trim() ? Number(officeDesks) : undefined;
+      base.office_chairs_count = officeChairs.trim() ? Number(officeChairs) : undefined;
+      base.office_filing_cabinets_count = officeFiling.trim() ? Number(officeFiling) : undefined;
       base.has_it_equipment = hasIt;
+      base.office_server_room = hasIt || undefined;
       base.has_conference_room = hasConf;
+      base.office_boardroom_count = hasConf ? officeBoardroomCount : undefined;
+      base.office_kitchen_break_room = officeKitchen || undefined;
       base.has_reception_area = hasReception;
       base.timing_preference = timingPref || undefined;
       base.office_crew_size = officeCrewSize || undefined;
       base.office_estimated_hours = officeEstHours || undefined;
+      base.office_truck_count = officeTruckCount >= 2 ? officeTruckCount : undefined;
       if (inventoryItems.length > 0) {
         base.inventory_items = inventoryItems.map(inventoryItemToPayload);
       }
@@ -2765,6 +2840,8 @@ export default function QuoteFormClient({
       }
     }
     if (serviceType === "labour_only") {
+      base.labour_weekend = labourWeekend || undefined;
+      base.labour_after_hours = labourAfterHours || undefined;
       // from_address = to_address = work address
       base.from_address = workAddress || fromAddress;
       base.to_address = workAddress || fromAddress;
@@ -2877,6 +2954,18 @@ export default function QuoteFormClient({
       base.bin_delivery_notes = binDeliveryNotes.trim() || undefined;
       base.internal_notes = binInternalNotes.trim() || undefined;
     }
+    if (
+      serviceType !== "bin_rental" &&
+      serviceType !== "b2b_delivery" &&
+      serviceType !== "b2b_oneoff"
+    ) {
+      const qo = parsePositivePreTaxOverride(quotePreTaxOverride);
+      if (qo !== undefined) {
+        base.quote_price_override = qo;
+        base.quote_price_override_reason = quotePreTaxOverrideReason.trim();
+      }
+    }
+
     if (opts?.serviceAreaOverride || serviceAreaOverride) base.service_area_override = true;
 
     const plannerActive = movePlannerVisible;
@@ -2892,7 +2981,10 @@ export default function QuoteFormClient({
     serviceType, fromAddress, toAddress, fromAccess, toAccess, moveDate, preferredTime, arrivalWindow, hubspotDealId,
     selectedAddons, recommendedTier, moveSize, clientBoxCount, serviceAreaOverride, specialtyItems, inventoryItems, sqft, wsCount, hasIt, hasConf,
     extraFromStops, extraToStops,
-    hasReception, timingPref, itemDescription, itemCategory, itemWeight, assembly, stairCarry, stairFlights,
+    hasReception, timingPref, officeDesks, officeChairs, officeFiling, officeBoardroomCount, officeKitchen,
+    officeTruckCount, officeCrewSize, officeEstHours,
+    quotePreTaxOverride, quotePreTaxOverrideReason,
+    itemDescription, itemCategory, itemWeight, assembly, stairCarry, stairFlights,
     numItems, declaredValue, specialtyType, specialtyItemDescription, specialtyWeightClass, specialtyRequirements,
     specialtyNotes, specialtyDimL, specialtyDimW, specialtyDimH,
     firstName, lastName, email, phone, cratingRequired, cratingItems,
@@ -2901,8 +2993,10 @@ export default function QuoteFormClient({
     eventLuxury, eventComplexSetup, eventTruckType,
     eventSameDay, eventPickupTimeAfter, eventItems, eventAdditionalServices, eventMulti, eventLegs,
     eventSameLocationSingle, eventReturnRateSingle, eventReturnRateCustomSingle,
+    eventCrewOverride, eventHoursOverride, eventPreTaxOverride, eventOverrideReason,
     workAddress, workAccess, labourDescription, labourCrewSize, labourHours, labourTruckRequired,
     labourVisits, labourSecondVisitDate, labourStorageNeeded, labourStorageWeeks, labourContext,
+    labourWeekend, labourAfterHours,
     b2bBusinessName,
     effectiveB2bVerticalCode,
     b2bPartnerOrgId,
@@ -2960,6 +3054,11 @@ export default function QuoteFormClient({
           return;
         }
       }
+      const preOvCheck = eventPreTaxOverride.trim() ? Number(eventPreTaxOverride) : NaN;
+      if (Number.isFinite(preOvCheck) && preOvCheck > 0 && eventOverrideReason.trim().length < 3) {
+        toast("Event price override requires a reason (at least 3 characters).", "alertTriangle");
+        return;
+      }
     } else if (serviceType === "labour_only") {
       if (!workAddress || !moveDate) {
         toast(
@@ -2996,13 +3095,13 @@ export default function QuoteFormClient({
       );
       return;
     }
-    if (
-      (serviceType === "local_move" ||
-        serviceType === "long_distance" ||
-        serviceType === "white_glove") &&
-      !moveSize.trim()
-    ) {
+    if ((serviceType === "local_move" || serviceType === "long_distance") && !moveSize.trim()) {
       toast("Select a move size or add inventory to auto-detect.", "alertTriangle");
+      return;
+    }
+    const qOv = parsePositivePreTaxOverride(quotePreTaxOverride);
+    if (qOv !== undefined && quotePreTaxOverrideReason.trim().length < 3) {
+      toast("Price override requires a reason (at least 3 characters).", "alertTriangle");
       return;
     }
     setGenerating(true);
@@ -4203,9 +4302,12 @@ export default function QuoteFormClient({
               {/* ── Office fields ── */}
               {serviceType === "office_move" && (
                 <div className="space-y-2">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Office Details</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Office move details</h3>
+                  <p className="text-[10px] text-[var(--tx3)] leading-snug">
+                    Pricing is workstation-based (not residential). Desks/chairs help derive workstation count when the total field is blank.
+                  </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <Field label="Billable hours (crew block)">
+                    <Field label="Billable hours (override, optional)">
                       <input
                         type="number"
                         min={1}
@@ -4214,9 +4316,9 @@ export default function QuoteFormClient({
                         onChange={(e) => setOfficeEstHours(Number(e.target.value) || 5)}
                         className={`${fieldInput} min-w-0`}
                       />
-                      <p className="text-[9px] text-[var(--tx3)] mt-0.5">Hourly rate × hours (default 5). Distance &amp; surcharges added separately.</p>
+                      <p className="text-[9px] text-[var(--tx3)] mt-0.5">Leave default to use hours estimated from workstations and specialty areas.</p>
                     </Field>
-                    <Field label="Crew size (reference)">
+                    <Field label="Crew size (override, optional)">
                       <input
                         type="number"
                         min={1}
@@ -4228,24 +4330,47 @@ export default function QuoteFormClient({
                     </Field>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <Field label="Square Footage">
+                    <Field label="Square footage">
                       <input type="number" min={0} value={sqft} onChange={(e) => setSqft(e.target.value)} placeholder="2500" className={`${fieldInput} min-w-0`} />
                     </Field>
-                    <Field label="Workstations">
+                    <Field label="Workstations (total)">
                       <input type="number" min={0} value={wsCount} onChange={(e) => setWsCount(e.target.value)} placeholder="20" className={`${fieldInput} min-w-0`} />
                     </Field>
-                    <Field label="Timing Preference">
-                      <select value={timingPref} onChange={(e) => setTimingPref(e.target.value)} className={`${fieldInput} min-w-0`}>
-                        <option value="">Select…</option>
-                        {TIMING_PREFS.map((t) => <option key={t} value={t}>{t}</option>)}
-                      </select>
+                    <Field label="Trucks">
+                      <input
+                        type="number"
+                        min={1}
+                        max={5}
+                        value={officeTruckCount}
+                        onChange={(e) => setOfficeTruckCount(Math.max(1, Number(e.target.value) || 1))}
+                        className={`${fieldInput} min-w-0`}
+                      />
                     </Field>
                   </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <Field label="Desks">
+                      <input type="number" min={0} value={officeDesks} onChange={(e) => setOfficeDesks(e.target.value)} placeholder="15" className={`${fieldInput} min-w-0`} />
+                    </Field>
+                    <Field label="Chairs">
+                      <input type="number" min={0} value={officeChairs} onChange={(e) => setOfficeChairs(e.target.value)} placeholder="15" className={`${fieldInput} min-w-0`} />
+                    </Field>
+                    <Field label="Filing cabinets">
+                      <input type="number" min={0} value={officeFiling} onChange={(e) => setOfficeFiling(e.target.value)} placeholder="8" className={`${fieldInput} min-w-0`} />
+                    </Field>
+                  </div>
+                  <Field label="Schedule">
+                    <select value={timingPref} onChange={(e) => setTimingPref(e.target.value)} className={`${fieldInput} min-w-0`}>
+                      <option value="">Select…</option>
+                      {TIMING_PREFS.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    <p className="text-[9px] text-[var(--tx3)] mt-0.5">Evening/night applies after-hours multiplier; weekend adds a flat surcharge.</p>
+                  </Field>
                   <div className="flex flex-wrap gap-x-4 gap-y-2">
                     {[
-                      { label: "IT Equipment", val: hasIt, set: setHasIt },
-                      { label: "Conference Room", val: hasConf, set: setHasConf },
-                      { label: "Reception Area", val: hasReception, set: setHasReception },
+                      { label: "Server room / IT closet", val: hasIt, set: setHasIt },
+                      { label: "Boardroom(s)", val: hasConf, set: setHasConf },
+                      { label: "Kitchen / break room", val: officeKitchen, set: setOfficeKitchen },
+                      { label: "Reception area", val: hasReception, set: setHasReception },
                     ].map((tog) => (
                       <div key={tog.label} className="flex items-center gap-2">
                         <span className="text-[10px] font-medium text-[var(--tx)]">{tog.label}</span>
@@ -4261,6 +4386,18 @@ export default function QuoteFormClient({
                       </div>
                     ))}
                   </div>
+                  {hasConf && (
+                    <Field label="Boardroom count">
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={officeBoardroomCount}
+                        onChange={(e) => setOfficeBoardroomCount(Math.max(1, Number(e.target.value) || 1))}
+                        className={`${fieldInput} w-24 min-w-0`}
+                      />
+                    </Field>
+                  )}
                 </div>
               )}
 
@@ -4317,8 +4454,8 @@ export default function QuoteFormClient({
               {serviceType === "single_item" && (
                 <div className="space-y-3">
                   <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Items</h3>
-                  <div className="rounded-xl border-2 border-[var(--gold)]/40 bg-[var(--gold)]/8 px-3 py-3 space-y-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--gold)]">Special handling instructions</p>
+                  <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] px-3 py-3 space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx)]">Special handling instructions</p>
                     <p className="text-[9px] text-[var(--tx3)] leading-snug">
                       Shown on the client quote and to crew, fragile areas, disassembly, narrow access, orientation, etc.
                     </p>
@@ -4374,7 +4511,10 @@ export default function QuoteFormClient({
               {/* ── White glove fields ── */}
               {serviceType === "white_glove" && (
                 <div className="space-y-2">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">White Glove, Items</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">White glove</h3>
+                  <p className="text-[10px] text-[var(--tx3)] leading-snug">
+                    Priced on premium crew hours plus wrapping and assembly — not residential tier rates. Mark inventory lines as fragile when extra wrapping applies.
+                  </p>
                   <Field label="Item description *">
                     <input
                       value={itemDescription}
@@ -4560,8 +4700,9 @@ export default function QuoteFormClient({
                             onChange={(e) => {
                               const on = e.target.checked;
                               setEventSameLocationSingle(on);
-                              if (on) setEventReturnRateSingle("85");
-                              else if (eventReturnRateSingle === "85") setEventReturnRateSingle("auto");
+                              if (on) setEventReturnRateSingle("80");
+                              else if (eventReturnRateSingle === "80" || eventReturnRateSingle === "85")
+                                setEventReturnRateSingle("auto");
                             }}
                             className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
                           />
@@ -4891,7 +5032,11 @@ export default function QuoteFormClient({
                                           ...L,
                                           event_same_location_onsite: on,
                                           to_address: on ? L.from_address : L.to_address,
-                                          event_return_rate_preset: on ? "85" : L.event_return_rate_preset === "85" ? "auto" : L.event_return_rate_preset,
+                                          event_return_rate_preset: on
+                                            ? "80"
+                                            : L.event_return_rate_preset === "80" || L.event_return_rate_preset === "85"
+                                              ? "auto"
+                                              : L.event_return_rate_preset,
                                         }
                                       : L,
                                   ),
@@ -5081,83 +5226,249 @@ export default function QuoteFormClient({
                     </div>
                   )}
 
+                  <div className="space-y-2 rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Crew & hours</h3>
+                    <p className="text-[10px] text-[var(--tx2)] leading-snug">
+                      Pricing is hours-based: crew × hours × rate, plus truck, distance, and wrapping surcharges. Override crew or hours when you have a better read than the system estimate.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <Field label="Crew override (optional)">
+                        <input
+                          type="number"
+                          min={2}
+                          max={8}
+                          step={1}
+                          value={eventCrewOverride}
+                          onChange={(e) => setEventCrewOverride(e.target.value)}
+                          placeholder="e.g. 3"
+                          className={fieldInput}
+                        />
+                      </Field>
+                      <Field label="Billable hours override (optional)">
+                        <input
+                          type="number"
+                          min={0.5}
+                          max={24}
+                          step={0.5}
+                          value={eventHoursOverride}
+                          onChange={(e) => setEventHoursOverride(e.target.value)}
+                          placeholder="e.g. 3.5"
+                          className={fieldInput}
+                        />
+                      </Field>
+                    </div>
+                  </div>
+
                   {/* Event Items */}
                   <div className="space-y-2">
-                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Event Items</h3>
-                    <div className="space-y-1.5">
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Event items</h3>
+                    <p className="text-[10px] text-[var(--tx2)] leading-snug">
+                      Use item type and &ldquo;Needs wrapping&rdquo; so the engine can price light box runs differently from porcelain or AV that needs protection both ways.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {EVENT_QUICK_ADD_PRESETS.map((p) => (
+                        <button
+                          key={p.name}
+                          type="button"
+                          onClick={() =>
+                            setEventItems((prev) => [
+                              ...prev,
+                              {
+                                name: p.name,
+                                quantity: 1,
+                                weight_category: p.weight_category,
+                                item_type: p.item_type,
+                                requires_wrapping: p.requires_wrapping,
+                                requires_protection: p.requires_wrapping,
+                                notes: "",
+                              },
+                            ])
+                          }
+                          className="inline-flex items-center rounded-md border border-[#2C3E2D]/35 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-[var(--tx)] hover:bg-[#2C3E2D]/8"
+                        >
+                          <Plus className="w-3 h-3 mr-0.5 shrink-0" aria-hidden />
+                          <span className="text-left leading-tight max-w-[11rem]">{p.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="space-y-2">
                       {eventItems.map((item, idx) => (
-                        <div key={idx} className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
-                          <input
-                            type="text"
-                            value={item.name}
-                            onChange={(e) => setEventItems((prev) => prev.map((it, i) => i === idx ? { ...it, name: e.target.value } : it))}
-                            placeholder="e.g. Display tables"
-                            className={`${fieldInput} flex-1 min-w-0`}
-                          />
-                          <input
-                            type="number"
-                            min={1}
-                            value={item.quantity}
-                            onChange={(e) => setEventItems((prev) => prev.map((it, i) => i === idx ? { ...it, quantity: Number(e.target.value) || 1 } : it))}
-                            className="w-14 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-center text-[var(--tx)] shrink-0"
-                          />
-                          <select
-                            value={item.weight_category || "standard"}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setEventItems((prev) =>
-                                prev.map((it, i) =>
-                                  i === idx
-                                    ? {
-                                        ...it,
-                                        weight_category: v,
-                                        ...(!tierRequiresActualWeight(v) ? { actual_weight_lbs: undefined } : {}),
-                                      }
-                                    : it,
-                                ),
-                              );
-                            }}
-                            className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)] min-w-[10rem] sm:max-w-[14rem]"
-                          >
-                            {eventWeightTierOpts.map((o) => (
-                              <option key={o.value} value={o.value}>
-                                {o.label}
-                                {o.shortHint !== "Base" ? ` (${o.shortHint})` : ""}
-                              </option>
-                            ))}
-                          </select>
-                          {tierRequiresActualWeight(item.weight_category || "") ? (
+                        <div
+                          key={idx}
+                          className="rounded-lg border border-[var(--brd)] p-2.5 space-y-2 bg-[var(--card)]/40"
+                        >
+                          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-2">
+                            <input
+                              type="text"
+                              value={item.name}
+                              onChange={(e) =>
+                                setEventItems((prev) =>
+                                  prev.map((it, i) => (i === idx ? { ...it, name: e.target.value } : it)),
+                                )
+                              }
+                              placeholder="Description"
+                              className={`${fieldInput} flex-1 min-w-0`}
+                            />
                             <input
                               type="number"
                               min={1}
-                              placeholder="lbs"
-                              value={item.actual_weight_lbs ?? ""}
-                              onChange={(e) => {
-                                const n = Number(e.target.value);
+                              value={item.quantity}
+                              onChange={(e) =>
                                 setEventItems((prev) =>
                                   prev.map((it, i) =>
-                                    i === idx
-                                      ? {
-                                          ...it,
-                                          actual_weight_lbs:
-                                            Number.isFinite(n) && n > 0 ? Math.round(n) : undefined,
-                                        }
-                                      : it,
+                                    i === idx ? { ...it, quantity: Number(e.target.value) || 1 } : it,
                                   ),
-                                );
-                              }}
-                              className="w-20 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)] shrink-0"
+                                )
+                              }
+                              className="w-16 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-center text-[var(--tx)] shrink-0"
+                              aria-label="Quantity"
                             />
+                            <button
+                              type="button"
+                              onClick={() => setEventItems((prev) => prev.filter((_, i) => i !== idx))}
+                              className="text-[var(--tx3)] hover:text-red-400 text-sm shrink-0 self-start sm:self-center"
+                              aria-label="Remove item"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-2">
+                            <Field label="Item type (handling)">
+                              <select
+                                value={item.item_type || "furniture"}
+                                onChange={(e) =>
+                                  setEventItems((prev) =>
+                                    prev.map((it, i) => (i === idx ? { ...it, item_type: e.target.value } : it)),
+                                  )
+                                }
+                                className={fieldInput}
+                              >
+                                {EVENT_ITEM_TYPE_OPTIONS.map((o) => (
+                                  <option key={o.value} value={o.value}>
+                                    {o.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </Field>
+                            <Field label="Weight tier">
+                              <select
+                                value={item.weight_category || "standard"}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  setEventItems((prev) =>
+                                    prev.map((it, i) =>
+                                      i === idx
+                                        ? {
+                                            ...it,
+                                            weight_category: v,
+                                            ...(!tierRequiresActualWeight(v) ? { actual_weight_lbs: undefined } : {}),
+                                          }
+                                        : it,
+                                    ),
+                                  );
+                                }}
+                                className={fieldInput}
+                              >
+                                {eventWeightTierOpts.map((o) => (
+                                  <option key={o.value} value={o.value}>
+                                    {o.label}
+                                    {o.shortHint !== "Base" ? ` (${o.shortHint})` : ""}
+                                  </option>
+                                ))}
+                              </select>
+                            </Field>
+                          </div>
+                          {tierRequiresActualWeight(item.weight_category || "") ? (
+                            <Field label="Actual weight (lbs)">
+                              <input
+                                type="number"
+                                min={1}
+                                placeholder="lbs"
+                                value={item.actual_weight_lbs ?? ""}
+                                onChange={(e) => {
+                                  const n = Number(e.target.value);
+                                  setEventItems((prev) =>
+                                    prev.map((it, i) =>
+                                      i === idx
+                                        ? {
+                                            ...it,
+                                            actual_weight_lbs:
+                                              Number.isFinite(n) && n > 0 ? Math.round(n) : undefined,
+                                          }
+                                        : it,
+                                    ),
+                                  );
+                                }}
+                                className={fieldInput}
+                              />
+                            </Field>
                           ) : null}
-                          <button type="button" onClick={() => setEventItems((prev) => prev.filter((_, i) => i !== idx))} className="text-[var(--tx3)] hover:text-red-400 text-[var(--text-base)] shrink-0">×</button>
+                          <div className="flex flex-wrap gap-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={item.requires_wrapping}
+                                onChange={(e) =>
+                                  setEventItems((prev) =>
+                                    prev.map((it, i) =>
+                                      i === idx ? { ...it, requires_wrapping: e.target.checked } : it,
+                                    ),
+                                  )
+                                }
+                                className="accent-[#2C3E2D] w-3.5 h-3.5"
+                              />
+                              <span className="text-[11px] text-[var(--tx2)]">Needs wrapping / white-glove handling</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={item.requires_protection}
+                                onChange={(e) =>
+                                  setEventItems((prev) =>
+                                    prev.map((it, i) =>
+                                      i === idx ? { ...it, requires_protection: e.target.checked } : it,
+                                    ),
+                                  )
+                                }
+                                className="accent-[#2C3E2D] w-3.5 h-3.5"
+                              />
+                              <span className="text-[11px] text-[var(--tx2)]">Extra protection (pads / vault)</span>
+                            </label>
+                          </div>
+                          <Field label="Notes (optional)">
+                            <input
+                              type="text"
+                              value={item.notes}
+                              onChange={(e) =>
+                                setEventItems((prev) =>
+                                  prev.map((it, i) => (i === idx ? { ...it, notes: e.target.value } : it)),
+                                )
+                              }
+                              placeholder="Access, dock, client expectations…"
+                              className={fieldInput}
+                            />
+                          </Field>
                         </div>
                       ))}
                       <button
                         type="button"
-                        onClick={() => setEventItems((prev) => [...prev, { name: "", quantity: 1, weight_category: "standard" }])}
-                        className="flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                        onClick={() =>
+                          setEventItems((prev) => [
+                            ...prev,
+                            {
+                              name: "",
+                              quantity: 1,
+                              weight_category: "standard",
+                              item_type: "furniture",
+                              requires_wrapping: false,
+                              requires_protection: false,
+                              notes: "",
+                            },
+                          ])
+                        }
+                        className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--tx)] hover:underline"
                       >
-                        <Plus className="w-3 h-3" /> Add item
+                        <Plus className="w-3 h-3" aria-hidden /> Add blank row
                       </button>
                     </div>
                   </div>
@@ -5183,6 +5494,33 @@ export default function QuoteFormClient({
                         <span className="text-[11px] text-[var(--tx2)]">{svc}</span>
                       </label>
                     ))}
+                  </div>
+
+                  <div className="space-y-2 rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Pricing</h3>
+                    <p className="text-[10px] text-[var(--tx2)] leading-snug">
+                      After you generate, the card shows the system pre-tax total. Use an override only when the model does not match reality — reasons are stored on the quote for reporting.
+                    </p>
+                    <Field label="Admin pre-tax override (optional)">
+                      <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={eventPreTaxOverride}
+                        onChange={(e) => setEventPreTaxOverride(e.target.value)}
+                        placeholder="e.g. 1100"
+                        className={fieldInput}
+                      />
+                    </Field>
+                    <Field label="Override reason (required if overriding)">
+                      <textarea
+                        value={eventOverrideReason}
+                        onChange={(e) => setEventOverrideReason(e.target.value)}
+                        rows={2}
+                        placeholder="e.g. Negotiated rate for repeat client; matching competitor; similar job was 2.5 hrs"
+                        className={`${fieldInput} resize-none`}
+                      />
+                    </Field>
                   </div>
                 </div>
               )}
@@ -5250,6 +5588,27 @@ export default function QuoteFormClient({
                       </select>
                     </Field>
                   </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={labourWeekend}
+                        onChange={(e) => setLabourWeekend(e.target.checked)}
+                        className="accent-[var(--admin-primary-fill)] w-3.5 h-3.5"
+                      />
+                      <span className="text-[11px] text-[var(--tx2)]">Weekend surcharge</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={labourAfterHours}
+                        onChange={(e) => setLabourAfterHours(e.target.checked)}
+                        className="accent-[var(--admin-primary-fill)] w-3.5 h-3.5"
+                      />
+                      <span className="text-[11px] text-[var(--tx2)]">After-hours multiplier</span>
+                    </label>
+                  </div>
+                  <p className="text-[9px] text-[var(--tx3)]">Weekend can also be inferred from the job date when left unchecked.</p>
                   {labourVisits >= 2 && (
                     <Field label="Second Visit Date">
                       <input type="date" value={labourSecondVisitDate} onChange={(e) => setLabourSecondVisitDate(e.target.value)} className={`${fieldInput} w-40`} />
@@ -5609,6 +5968,40 @@ export default function QuoteFormClient({
             </div>
           </div>
 
+          {serviceType !== "bin_rental" &&
+            serviceType !== "b2b_delivery" &&
+            serviceType !== "b2b_oneoff" && (
+              <div className="px-4 sm:px-5 pb-3 space-y-2 border-t border-[var(--brd)]/40 pt-4">
+                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                  Coordinator price override (pre-tax)
+                </h3>
+                <p className="text-[10px] text-[var(--tx3)] leading-snug">
+                  Optional. System price is always stored for reporting. Reason is required when an override amount is set.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <Field label="Override amount ($)">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={quotePreTaxOverride}
+                      onChange={(e) => setQuotePreTaxOverride(e.target.value)}
+                      placeholder="Leave blank for engine price"
+                      className={fieldInput}
+                    />
+                  </Field>
+                  <Field label="Reason (required if overriding)">
+                    <input
+                      type="text"
+                      value={quotePreTaxOverrideReason}
+                      onChange={(e) => setQuotePreTaxOverrideReason(e.target.value)}
+                      placeholder="e.g. Competitive match, stairs not in model…"
+                      className={fieldInput}
+                    />
+                  </Field>
+                </div>
+              </div>
+            )}
+
           {/* ── Sticky bottom button bar ── */}
           <div className="sticky bottom-0 z-10 py-3 px-4 sm:px-5 bg-[var(--card)] border border-[var(--brd)] border-t-[var(--brd)] rounded-b-xl pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-stretch">
@@ -5775,6 +6168,31 @@ export default function QuoteFormClient({
                     ) : quoteResult.custom_price ? (
                       <SinglePriceDisplay price={quoteResult.custom_price} label={toTitleCase(serviceType)} />
                     ) : null}
+
+                    {quoteResult.factors &&
+                      typeof (quoteResult.factors as Record<string, unknown>).system_price === "number" &&
+                      typeof (quoteResult.factors as Record<string, unknown>).override_price_pre_tax === "number" && (
+                        <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2.5 space-y-1 text-[11px]">
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">Pricing override</p>
+                          <div className="flex justify-between gap-2 text-[var(--tx2)]">
+                            <span>System (engine)</span>
+                            <span className="font-medium text-[var(--tx)]">
+                              {fmtPrice((quoteResult.factors as Record<string, unknown>).system_price as number)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-2 text-[var(--tx2)]">
+                            <span>Override (pre-tax)</span>
+                            <span className="font-medium text-[var(--tx)]">
+                              {fmtPrice((quoteResult.factors as Record<string, unknown>).override_price_pre_tax as number)}
+                            </span>
+                          </div>
+                          {(quoteResult.factors as Record<string, unknown>).override_reason ? (
+                            <p className="text-[10px] text-[var(--tx3)] pt-1 border-t border-[var(--brd)]/50">
+                              {(quoteResult.factors as Record<string, unknown>).override_reason as string}
+                            </p>
+                          ) : null}
+                        </div>
+                      )}
 
                     {quoteResult.addons && quoteResult.addons.items.length > 0 && (
                       <div className="space-y-1.5">
@@ -6475,7 +6893,7 @@ function TiersDisplay({
     signature: {
       bg: "bg-[#F9EDE4] dark:bg-[#2A2520]",
       border: "border-2 border-[#2C3E2D]/40 border-l-4 border-l-[var(--gold)]",
-      accent: "text-[#2C3E2D]",
+      accent: "text-[var(--tx)]",
       muted: PRICE_CARD.muted,
       body: PRICE_CARD.body,
       list: PRICE_CARD.list,
@@ -6554,8 +6972,8 @@ function SinglePriceDisplay({ price: t, label }: { price: TierResult; label: str
   return (
     <div className="rounded-xl border-2 border-[#2C3E2D]/40 bg-[#F9EDE4] dark:bg-[#2A2520] p-5 space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold text-[#2C3E2D] uppercase">{label}</span>
-        <span className="text-3xl font-black tabular-nums text-[#2C3E2D]">{fmtPrice(t.price)}</span>
+        <span className="text-[13px] font-bold text-[var(--tx)] uppercase">{label}</span>
+        <span className="text-3xl font-black tabular-nums text-[var(--tx)]">{fmtPrice(t.price)}</span>
       </div>
       <div className={`flex items-center justify-between text-[11px] ${PRICE_CARD.muted}`}>
         <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
@@ -6621,6 +7039,19 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
   const eventHours = factors.event_hours as number | undefined;
   const returnDate = factors.return_date as string | undefined;
   const deliveryDate = factors.delivery_date as string | undefined;
+  const sysEstHours = factors.event_hours_system_estimate as number | undefined;
+  const hoursOv = factors.event_hours_coordinator_override === true;
+  const crewOv = factors.event_crew_coordinator_override === true;
+  const labourLine = factors.event_delivery_labour as number | undefined;
+  const distSur = factors.event_distance_surcharge as number | undefined;
+  const wrapSur = factors.event_wrapping_surcharge as number | undefined;
+  const moverRate = factors.crew_hourly_rate as number | undefined;
+  const overrideApplied = factors.event_pre_tax_override_applied === true;
+  const systemPreTax = factors.event_system_pre_tax_total_before_override as number | undefined;
+  const overrideReason =
+    typeof factors.event_pre_tax_override_reason === "string"
+      ? factors.event_pre_tax_override_reason.trim()
+      : "";
 
   const isMulti =
     factors.event_mode === "multi" && Array.isArray(factors.event_legs);
@@ -6668,19 +7099,19 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
       <div className="rounded-xl border-2 border-[#2C3E2D]/40 bg-[#F9EDE4] dark:bg-[#2A2520] p-5 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <span className="text-[13px] font-bold text-[#2C3E2D]">Event quote</span>
+            <span className="text-[13px] font-bold text-[var(--tx)]">Event quote</span>
             <p className={`text-[9px] mt-0.5 font-medium uppercase tracking-wide ${PRICE_CARD.muted}`}>
               Multi-event bundle, {eventLegs.length} round trip{eventLegs.length === 1 ? "" : "s"}
             </p>
           </div>
-          <span className="text-2xl sm:text-3xl font-black tabular-nums text-[#2C3E2D] shrink-0">
+          <span className="text-2xl sm:text-3xl font-black tabular-nums text-[var(--tx)] shrink-0">
             {fmtPrice(t.price)}
           </span>
         </div>
         <div className="space-y-3 text-[11px]">
           {eventLegs.map((leg, idx) => (
             <div key={idx} className={`p-3 space-y-2 ${PRICE_CARD.legPanel}`}>
-              <p className="text-[9px] font-bold tracking-wider uppercase text-[#2C3E2D]">
+              <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx)]">
                 {leg.label?.trim() || `Event ${idx + 1}`}
               </p>
               {(leg.from_address || leg.to_address) && (
@@ -6741,15 +7172,46 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
   return (
     <div className="rounded-xl border-2 border-[#2C3E2D]/40 bg-[#F9EDE4] dark:bg-[#2A2520] p-5 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold text-[#2C3E2D]">Event Quote</span>
-        <span className="text-3xl font-black tabular-nums text-[#2C3E2D]">{fmtPrice(t.price)}</span>
+        <span className="text-[13px] font-bold text-[var(--tx)]">Event Quote</span>
+        <span className="text-3xl font-black tabular-nums text-[var(--tx)]">{fmtPrice(t.price)}</span>
       </div>
       {/* Breakdown, single round trip */}
       <div className="space-y-1.5 text-[11px]">
+        {typeof sysEstHours === "number" && sysEstHours > 0 && (
+          <p className={`text-[9px] leading-snug ${PRICE_CARD.muted}`}>
+            System hours estimate: {sysEstHours}h
+            {typeof eventHours === "number" ? (
+              <>
+                {" "}
+                · Billed: {eventHours}h{hoursOv ? " (coordinator override)" : ""}
+              </>
+            ) : null}
+            {typeof moverRate === "number" ? ` · $${moverRate}/mover/hr` : null}
+            {crewOv ? " · Crew overridden" : null}
+          </p>
+        )}
+        {typeof labourLine === "number" && labourLine > 0 && (
+          <div className="flex justify-between gap-2">
+            <span className={PRICE_CARD.muted}>Delivery labour (crew × hours × rate)</span>
+            <span className={`font-medium tabular-nums shrink-0 ${PRICE_CARD.body}`}>{fmtPrice(labourLine)}</span>
+          </div>
+        )}
+        {typeof distSur === "number" && distSur > 0 && (
+          <div className="flex justify-between gap-2">
+            <span className={PRICE_CARD.muted}>Distance (over free km)</span>
+            <span className={`font-medium tabular-nums shrink-0 ${PRICE_CARD.body}`}>{fmtPrice(distSur)}</span>
+          </div>
+        )}
+        {typeof wrapSur === "number" && wrapSur > 0 && (
+          <div className="flex justify-between gap-2">
+            <span className={PRICE_CARD.muted}>Wrapping / handling surcharge</span>
+            <span className={`font-medium tabular-nums shrink-0 ${PRICE_CARD.body}`}>{fmtPrice(wrapSur)}</span>
+          </div>
+        )}
         {deliveryCharge !== undefined && (
           <div className="flex justify-between">
             <span className={PRICE_CARD.muted}>
-              Delivery ({deliveryDate ?? "TBD"})
+              Delivery day total ({deliveryDate ?? "TBD"})
               {eventCrew && eventHours ? (
                 <span className="ml-1 opacity-75">{eventCrew}-person crew, {eventHours}hr</span>
               ) : null}
@@ -6775,6 +7237,13 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
           </div>
         )}
       </div>
+      {overrideApplied && typeof systemPreTax === "number" ? (
+        <div className={`rounded-lg border border-[#2C3E2D]/30 px-3 py-2 text-[10px] space-y-1 ${PRICE_CARD.muted}`}>
+          <p className="font-semibold text-[var(--tx)]">Admin pre-tax override applied</p>
+          <p>System total before override: {fmtPrice(systemPreTax)}</p>
+          {overrideReason ? <p className="italic">Reason: {overrideReason}</p> : null}
+        </div>
+      ) : null}
       {totalsFooter}
       {includesBlock}
     </div>
@@ -6818,7 +7287,7 @@ function B2BPriceDisplay({ price: t, factors }: { price: TierResult; factors: Re
       ) : null}
       <div className="space-y-1.5 text-[11px]">
         {usingPartnerRates && dimensional && verticalName ? (
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[#2C3E2D] pb-1">Partner Rate</p>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx)] pb-1">Partner Rate</p>
         ) : null}
         {dimensional && breakdown.length > 0 ? (
           breakdown.map((line, i) => (
@@ -6929,8 +7398,8 @@ function BinRentalPriceDisplay({ price: t, factors }: { price: TierResult; facto
   return (
     <div className="rounded-xl border-2 border-[#2C3E2D]/40 bg-[#F9EDE4] dark:bg-[#2A2520] p-5 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold text-[#2C3E2D]">Bin Rental</span>
-        <span className="text-3xl font-black tabular-nums text-[#2C3E2D]">{fmtPrice(t.total)}</span>
+        <span className="text-[13px] font-bold text-[var(--tx)]">Bin Rental</span>
+        <span className="text-3xl font-black tabular-nums text-[var(--tx)]">{fmtPrice(t.total)}</span>
       </div>
       <div className="space-y-1.5 text-[11px]">
         {lines.map((l, i) => (
@@ -6995,8 +7464,8 @@ function LabourOnlyPriceDisplay({ price: t, factors }: { price: TierResult; fact
   return (
     <div className="rounded-xl border-2 border-[#2C3E2D]/40 bg-[#F9EDE4] dark:bg-[#2A2520] p-5 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold text-[#2C3E2D]">Labour Only</span>
-        <span className="text-3xl font-black tabular-nums text-[#2C3E2D]">{fmtPrice(t.price)}</span>
+        <span className="text-[13px] font-bold text-[var(--tx)]">Labour Only</span>
+        <span className="text-3xl font-black tabular-nums text-[var(--tx)]">{fmtPrice(t.price)}</span>
       </div>
       <div className="space-y-1.5 text-[11px]">
         {crewSize && hours && labourRate && (

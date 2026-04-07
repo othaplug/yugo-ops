@@ -158,14 +158,14 @@ export default function CrewAlwaysOnLocation() {
           </span>
           {status !== "denied" && status !== "unavailable" && (
             <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-[#243524]">
-              <span className="text-[#2C3E2D]/35" aria-hidden>
+              <span className="text-[var(--tx3)]" aria-hidden>
                 ·
               </span>
               Tap to reconnect
               <CaretRight
                 size={12}
                 weight="bold"
-                className="shrink-0 text-[#2C3E2D] opacity-80 transition-transform group-hover:translate-x-0.5"
+                className="shrink-0 text-[var(--tx)] opacity-80 transition-transform group-hover:translate-x-0.5"
                 aria-hidden
               />
             </span>

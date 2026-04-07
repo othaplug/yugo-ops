@@ -80,7 +80,7 @@ export default function ChecklistClient({
         <div className="space-y-8">
           {categories.map((cat) => (
             <section key={cat.category}>
-              <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#2C3E2D] mb-3">
+              <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx)] mb-3">
                 {cat.category}
               </h2>
               <ul className="rounded-xl border border-[var(--brd)] bg-[var(--card)] divide-y divide-[var(--brd)]/60">

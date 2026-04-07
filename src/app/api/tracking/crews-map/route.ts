@@ -67,8 +67,12 @@ export async function GET(req: NextRequest) {
     admin.from("tracking_sessions").select("id, team_id, job_id, job_type, status, last_location, updated_at, started_at").eq("is_active", true),
     admin.from("crew_members").select("id, name, team_id").eq("is_active", true),
     admin.from("deliveries").select("id, delivery_number, crew_id, scheduled_date, status, delivery_address, pickup_address"),
-    admin.from("moves").select("id, move_code, crew_id, stage, status"),
-    admin.from("crew_locations").select("crew_id, lat, lng, status, updated_at, current_move_id, current_client_name, current_from_address, current_to_address"),
+    admin.from("moves").select("id, move_code, crew_id, stage, status, from_address, to_address"),
+    admin
+      .from("crew_locations")
+      .select(
+        "crew_id, crew_name, lat, lng, heading, speed, status, updated_at, current_move_id, current_client_name, current_from_address, current_to_address, nav_eta_seconds, nav_distance_remaining_m, is_navigating"
+      ),
   ]);
 
   type SessionRow = NonNullable<typeof sessions>[number];
@@ -88,6 +92,7 @@ export async function GET(req: NextRequest) {
   }
 
   const locationByCrew = new Map<string, { lat: number; lng: number; status?: string; updated_at?: string }>();
+  const crewLocationsOut: Record<string, unknown>[] = [];
   for (const loc of locations || []) {
     if (loc.crew_id && loc.lat != null && loc.lng != null) {
       locationByCrew.set(loc.crew_id, {
@@ -95,6 +100,24 @@ export async function GET(req: NextRequest) {
         lng: Number(loc.lng),
         status: loc.status ?? undefined,
         updated_at: loc.updated_at ?? undefined,
+      });
+      crewLocationsOut.push({
+        crew_id: loc.crew_id,
+        crew_name: loc.crew_name ?? null,
+        lat: Number(loc.lat),
+        lng: Number(loc.lng),
+        heading: loc.heading != null ? Number(loc.heading) : null,
+        speed: loc.speed != null ? Number(loc.speed) : null,
+        status: loc.status ?? "idle",
+        current_move_id: loc.current_move_id ?? null,
+        current_client_name: loc.current_client_name ?? null,
+        current_from_address: loc.current_from_address ?? null,
+        current_to_address: loc.current_to_address ?? null,
+        updated_at: loc.updated_at,
+        nav_eta_seconds: loc.nav_eta_seconds != null ? Number(loc.nav_eta_seconds) : null,
+        nav_distance_remaining_m:
+          loc.nav_distance_remaining_m != null ? Number(loc.nav_distance_remaining_m) : null,
+        is_navigating: Boolean(loc.is_navigating),
       });
     }
   }
@@ -208,6 +231,7 @@ export async function GET(req: NextRequest) {
       const toAddress = s.job_type === "move" ? null : (job as any).delivery_address;
       return {
         id: s.id,
+        jobRecordId: s.job_id,
         jobId,
         job_type: s.job_type,
         jobType: s.job_type,
@@ -225,7 +249,7 @@ export async function GET(req: NextRequest) {
     .filter(Boolean);
 
   return NextResponse.json(
-    { crews: crewsOut, activeSessions },
+    { crews: crewsOut, activeSessions, crewLocations: crewLocationsOut },
     { headers: { "Cache-Control": "no-store, max-age=0" } }
   );
 }

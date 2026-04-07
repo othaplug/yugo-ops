@@ -70,6 +70,30 @@ function getSpecialtyField(
 // 2A: Update crew profile after completed job
 // ═══════════════════════════════════════════════
 
+function mergeMonthlyJobRating(
+  existingJobs: Record<string, number>,
+  existingRatings: Record<string, number>,
+  monthKey: string,
+  rating: number
+): { monthly_jobs: Record<string, number>; monthly_ratings: Record<string, number> } {
+  const monthly_jobs = { ...existingJobs };
+  const monthly_ratings = { ...existingRatings };
+  const prevCount = monthly_jobs[monthKey] || 0;
+  const newCount = prevCount + 1;
+  monthly_jobs[monthKey] = newCount;
+  const prevAvg = monthly_ratings[monthKey];
+  monthly_ratings[monthKey] =
+    prevAvg === undefined ? rating : (prevAvg * prevCount + rating) / newCount;
+  return { monthly_jobs, monthly_ratings };
+}
+
+export type UpdateCrewProfileOptions = {
+  /** `YYYY-MM` from job completion (business-local month recommended at call site). */
+  monthKey?: string;
+  /** Keeps leaderboard `name` aligned with `crew_members.name`. */
+  displayName?: string | null;
+};
+
 export async function updateCrewProfile(
   userId: string,
   move: {
@@ -80,7 +104,8 @@ export async function updateCrewProfile(
     service_type?: string | null;
     tier_selected?: string | null;
     arrived_on_time?: boolean | null;
-  }
+  },
+  opts?: UpdateCrewProfileOptions
 ) {
   const admin = createAdminClient();
 
@@ -95,44 +120,75 @@ export async function updateCrewProfile(
     move.actual_hours != null && move.est_hours != null
       ? move.actual_hours - move.est_hours
       : 0;
-  const wasOnTime = move.arrived_on_time ?? true;
+  const punctuality = move.arrived_on_time;
+  const hasPunctualityScore = punctuality === true || punctuality === false;
+  const wasOnTime = punctuality === true;
   const hadDamage = move.damage_reported ?? false;
+  const monthKey = opts?.monthKey;
+  const streakNext = rating >= 5 ? 1 : 0;
 
   if (!existing) {
-    // Create initial profile
+    const baseMonthly =
+      monthKey != null ? mergeMonthlyJobRating({}, {}, monthKey, rating) : { monthly_jobs: {}, monthly_ratings: {} };
+    const initialOnTime = hasPunctualityScore ? (wasOnTime ? 1 : 0) : 0;
     await admin.from("crew_profiles").insert({
       user_id: userId,
+      name: opts?.displayName?.trim() || null,
       total_jobs: 1,
       avg_satisfaction: rating,
       avg_hours_vs_estimate: hoursVariance,
       damage_incidents: hadDamage ? 1 : 0,
       damage_rate: hadDamage ? 1 : 0,
-      on_time_rate: wasOnTime ? 1 : 0,
+      on_time_rate: initialOnTime,
+      consecutive_5stars: streakNext,
+      monthly_jobs: baseMonthly.monthly_jobs,
+      monthly_ratings: baseMonthly.monthly_ratings,
+      total_tips_earned: 0,
+      avg_tip_per_job: 0,
+      highest_tip: 0,
+      monthly_tips: {},
     });
     return;
   }
 
   const newTotal = existing.total_jobs + 1;
   const newSatisfaction =
-    (existing.avg_satisfaction * existing.total_jobs + rating) / newTotal;
+    (Number(existing.avg_satisfaction) * existing.total_jobs + rating) / newTotal;
   const newHoursEff =
-    (existing.avg_hours_vs_estimate * existing.total_jobs + hoursVariance) / newTotal;
+    (Number(existing.avg_hours_vs_estimate) * existing.total_jobs + hoursVariance) / newTotal;
   const newDamageIncidents = existing.damage_incidents + (hadDamage ? 1 : 0);
   const newDamageRate = newDamageIncidents / newTotal;
-  const onTimeCount = Math.round(existing.on_time_rate * existing.total_jobs);
-  const newOnTimeRate = (onTimeCount + (wasOnTime ? 1 : 0)) / newTotal;
+  const onTimeCount = Math.round(Number(existing.on_time_rate) * existing.total_jobs);
+  const newOnTimeRate = hasPunctualityScore
+    ? (onTimeCount + (wasOnTime ? 1 : 0)) / newTotal
+    : Number(existing.on_time_rate);
+  const newStreak =
+    rating >= 5 ? (Number(existing.consecutive_5stars) || 0) + 1 : 0;
 
   // Specialty score delta (+5 success, -5 failure)
   const specialtyField = getSpecialtyField(move.service_type ?? null, move.tier_selected ?? null);
-  const updates: Record<string, number | string> = {
+  const updates: Record<string, number | string | Record<string, number>> = {
     total_jobs: newTotal,
     avg_satisfaction: newSatisfaction,
     avg_hours_vs_estimate: newHoursEff,
     damage_incidents: newDamageIncidents,
     damage_rate: newDamageRate,
     on_time_rate: newOnTimeRate,
+    consecutive_5stars: newStreak,
     last_updated: new Date().toISOString(),
   };
+
+  if (opts?.displayName?.trim()) {
+    updates.name = opts.displayName.trim();
+  }
+
+  if (monthKey) {
+    const mj = (existing.monthly_jobs as Record<string, number>) || {};
+    const mr = (existing.monthly_ratings as Record<string, number>) || {};
+    const merged = mergeMonthlyJobRating(mj, mr, monthKey, rating);
+    updates.monthly_jobs = merged.monthly_jobs;
+    updates.monthly_ratings = merged.monthly_ratings;
+  }
 
   if (specialtyField) {
     const current = existing[specialtyField] as number;

@@ -80,7 +80,7 @@ export default function IncidentsSection({
               </p>
             )}
             {i.photo_urls && i.photo_urls.length > 0 && (
-              <p className="text-[10px] text-[#2C3E2D] mb-1">
+              <p className="text-[10px] text-[var(--tx)] mb-1">
                 {i.photo_urls.length} photo(s) on file
               </p>
             )}

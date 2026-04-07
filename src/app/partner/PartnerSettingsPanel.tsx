@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { organizationTypeLabel } from "@/lib/partner-type";
+import { PartnerPmAccountTab } from "@/components/partner/pm/PartnerPmPortalViews";
 import {
   WINE,
   FOREST,
@@ -29,6 +30,7 @@ import {
   PARTNER_SETTINGS_SECTION_LABEL_COLOR,
   PARTNER_SETTINGS_ACCOUNT_NAME_CLASS,
 } from "@/lib/client-theme";
+import { partnerWineAccountAvatarWellClass } from "@/components/partner/PartnerChrome";
 
 const PREMIUM_PREF_CARD =
   "flex items-center justify-between gap-4 rounded-2xl border px-5 py-4 min-h-[4.5rem] shadow-[0_2px_28px_rgba(44,62,45,0.06)]";
@@ -137,8 +139,14 @@ export default function PartnerSettingsPanel({
   const router = useRouter();
   const supabase = createClient();
 
+  const isPmPortal =
+    orgType === "property_management" ||
+    orgType === "property_management_residential" ||
+    orgType === "property_management_commercial" ||
+    orgType === "developer_builder";
+
   const [section, setSection] = useState<
-    "main" | "profile" | "notifications" | "preferences"
+    "main" | "profile" | "notifications" | "preferences" | "pm_account"
   >("main");
   const [profile, setProfile] = useState({
     contact_name: contactName,
@@ -300,9 +308,9 @@ export default function PartnerSettingsPanel({
 
   const panelContent = (
     <>
-      <div className="fixed inset-0 z-[99998] bg-black/45" onClick={onClose} />
+      <div className="fixed inset-0 z-99998 bg-black/45" onClick={onClose} />
       <div
-        className="fixed top-0 right-0 z-[99999] h-full w-full max-w-[400px] border-l shadow-[0_8px_48px_rgba(92,26,51,0.08)] flex flex-col drawer-card"
+        className="fixed top-0 right-0 z-99999 h-full w-full max-w-[400px] border-l shadow-[0_8px_48px_rgba(92,26,51,0.08)] flex flex-col drawer-card"
         style={{
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
           backgroundColor: CREAM,
@@ -336,6 +344,8 @@ export default function PartnerSettingsPanel({
                   ? "Edit Profile"
                   : section === "notifications"
                     ? "Notifications"
+                  : section === "pm_account"
+                    ? "Account"
                     : "Delivery Preferences"}
             </h2>
           </div>
@@ -370,12 +380,7 @@ export default function PartnerSettingsPanel({
                 >
                   <div className="px-4 py-4 flex items-center gap-3.5">
                     <div
-                      className="w-12 h-12 rounded-2xl border-2 flex items-center justify-center text-[11px] font-bold shrink-0 shadow-[0_2px_10px_rgba(92,26,51,0.08)] tracking-[0.06em]"
-                      style={{
-                        borderColor: `${FOREST}28`,
-                        color: WINE,
-                        backgroundColor: "#FFFFFF",
-                      }}
+                      className={partnerWineAccountAvatarWellClass}
                       aria-hidden
                     >
                       {contactName.charAt(0).toUpperCase()}
@@ -438,14 +443,25 @@ export default function PartnerSettingsPanel({
                       key: "notifications" as const,
                       PhIcon: Bell,
                       label: "Notifications",
-                      desc: "Email and delivery alerts",
+                      desc: isPmPortal ? "Email and move alerts" : "Email and delivery alerts",
                     },
-                    {
-                      key: "preferences" as const,
-                      PhIcon: Sliders,
-                      label: "Delivery Preferences",
-                      desc: "Defaults for new deliveries",
-                    },
+                    ...(isPmPortal
+                      ? ([
+                          {
+                            key: "pm_account" as const,
+                            PhIcon: Sliders,
+                            label: "Account",
+                            desc: "Contract, rate card, users",
+                          },
+                        ] as const)
+                      : ([
+                          {
+                            key: "preferences" as const,
+                            PhIcon: Sliders,
+                            label: "Delivery Preferences",
+                            desc: "Defaults for new deliveries",
+                          },
+                        ] as const)),
                   ].map((item) => (
                     <button
                       key={item.key}
@@ -734,13 +750,17 @@ export default function PartnerSettingsPanel({
               {[
                 {
                   key: "email_delivery_updates" as const,
-                  label: "Delivery status updates",
-                  desc: "Get notified when deliveries change status",
+                  label: isPmPortal ? "Move status updates" : "Delivery status updates",
+                  desc: isPmPortal
+                    ? "Get notified when moves change status"
+                    : "Get notified when deliveries change status",
                 },
                 {
                   key: "email_daily_summary" as const,
                   label: "Daily summary",
-                  desc: "Receive a morning digest of today's deliveries",
+                  desc: isPmPortal
+                    ? "Receive a morning digest of today's moves"
+                    : "Receive a morning digest of today's deliveries",
                 },
                 {
                   key: "email_invoice_ready" as const,
@@ -871,7 +891,7 @@ export default function PartnerSettingsPanel({
           )}
 
           {/* Delivery Preferences Section */}
-          {section === "preferences" && (
+          {section === "preferences" && !isPmPortal && (
             <div className="p-5 space-y-5">
               <div>
                 <p
@@ -1040,6 +1060,12 @@ export default function PartnerSettingsPanel({
                 saved={prefsSaved}
                 idleLabel="Save preferences"
               />
+            </div>
+          )}
+
+          {section === "pm_account" && isPmPortal && (
+            <div className="p-5 pb-10">
+              <PartnerPmAccountTab />
             </div>
           )}
         </div>

@@ -41,7 +41,7 @@ export function ScheduleDeliveryItem({
       <div className="flex flex-col items-start shrink-0 w-14">
         <span className="text-[12px] font-semibold text-[var(--tx)]">{timeSlot}</span>
         {pill && (
-          <span className="inline-flex mt-1 px-2 py-0.5 rounded-md text-[9px] font-semibold bg-[var(--bg)]/60 backdrop-blur-sm border border-[var(--brd)]/40 text-[var(--tx2)]">
+          <span className="inline-flex mt-1 px-2 py-0.5 rounded-md text-[9px] font-semibold bg-[var(--bg)]/85 border border-[var(--brd)]/40 text-[var(--tx2)]">
             {pill}
           </span>
         )}
@@ -118,7 +118,7 @@ export function ScheduleDeliveryButton({
       <div className="flex flex-col items-start shrink-0 w-14">
         <span className="text-[12px] font-semibold text-[var(--tx)]">{timeSlot}</span>
         {pill && (
-          <span className="inline-flex mt-1 px-2 py-0.5 rounded-md text-[9px] font-semibold bg-[var(--bg)]/60 backdrop-blur-sm border border-[var(--brd)]/40 text-[var(--tx2)]">
+          <span className="inline-flex mt-1 px-2 py-0.5 rounded-md text-[9px] font-semibold bg-[var(--bg)]/85 border border-[var(--brd)]/40 text-[var(--tx2)]">
             {pill}
           </span>
         )}

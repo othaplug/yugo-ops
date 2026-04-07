@@ -41,7 +41,7 @@ export async function POST(
     const sb = createAdminClient();
     const { data: quote, error: qErr } = await sb
       .from("quotes")
-      .select("id, quote_id, public_action_token, status, hubspot_deal_id, contact_id, contacts:contact_id(name)")
+      .select("id, quote_id, public_action_token, status, hubspot_deal_id, contact_id, contacts:contact_id(name, email)")
       .eq("quote_id", quoteId.trim())
       .single();
 
@@ -81,10 +81,12 @@ export async function POST(
       await syncDealStage(hid, "declined").catch(() => {});
     }
 
-    const contactRaw = (quote as { contacts?: { name?: string } | { name?: string }[] }).contacts;
-    const contactName = Array.isArray(contactRaw)
-      ? contactRaw[0]?.name
-      : contactRaw?.name;
+    const contactRaw = (quote as {
+      contacts?: { name?: string; email?: string | null } | { name?: string; email?: string | null }[];
+    }).contacts;
+    const contactOne = Array.isArray(contactRaw) ? contactRaw[0] : contactRaw;
+    const contactName = contactOne?.name;
+    const contactEmail = (contactOne?.email || "").trim();
     const reasonLabel = DECLINE_REASON_LABEL[reason] ?? reason;
 
     await notifyAdmins("quote_declined", {
@@ -92,6 +94,7 @@ export async function POST(
       sourceId: (quote as { id: string }).id,
       description: `${quoteId}: ${reasonLabel}${comment ? ` — ${comment}` : ""}`,
       clientName: contactName ?? undefined,
+      excludeRecipientEmails: contactEmail ? [contactEmail.toLowerCase()] : [],
     }).catch(() => {});
 
     await scheduleWinBackEmail(sb, (quote as { id: string }).id, reason).catch(() => {});

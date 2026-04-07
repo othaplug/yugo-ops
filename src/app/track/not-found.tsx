@@ -10,7 +10,7 @@ export default function TrackNotFound() {
           If you need help, please{" "}
           <a
             href={`mailto:${process.env.NEXT_PUBLIC_YUGO_EMAIL || "hello@yugo.com"}`}
-            className="text-[#2C3E2D] hover:underline"
+            className="text-[var(--tx)] hover:underline"
           >
             contact us
           </a>.

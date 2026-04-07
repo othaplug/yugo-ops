@@ -83,6 +83,11 @@ interface Move {
   status: string;
   from_address?: string;
   to_address?: string;
+  /** Present when server sends full row (crews-map / page). */
+  from_lat?: number | null;
+  from_lng?: number | null;
+  to_lat?: number | null;
+  to_lng?: number | null;
 }
 
 interface Delivery {
@@ -93,10 +98,16 @@ interface Delivery {
   status: string;
   delivery_address?: string;
   pickup_address?: string;
+  pickup_lat?: number | null;
+  pickup_lng?: number | null;
+  delivery_lat?: number | null;
+  delivery_lng?: number | null;
 }
 
 interface Session {
   id: string;
+  /** UUID of moves.id or deliveries.id — use for matching todayMoves / todayDeliveries. */
+  jobRecordId?: string;
   jobId: string;
   jobType: string;
   status: string;
@@ -121,10 +132,14 @@ interface CrewLocation {
   current_from_address: string | null;
   current_to_address: string | null;
   updated_at: string;
+  nav_eta_seconds?: number | null;
+  nav_distance_remaining_m?: number | null;
+  is_navigating?: boolean;
 }
 
 interface StreamSessionPayload {
   team_id: string;
+  job_id?: string;
   lastLocation?: { lat: number; lng: number } | null;
   status?: string;
   updatedAt?: string;
@@ -194,6 +209,30 @@ function effectiveTrackingStatus(
 function getOfflineMinutes(updatedAt: string | undefined): number {
   if (!updatedAt) return 999;
   return (Date.now() - new Date(updatedAt).getTime()) / 60000;
+}
+
+/** Match LiveTrackingMap: leg toward pickup vs destination. */
+const SESSION_STATUS_HEADING_PICKUP = new Set([
+  "en_route_to_pickup",
+  "arrived_at_pickup",
+  "en_route",
+  "on_route",
+  "arrived",
+  "arrived_on_site",
+  "loading",
+]);
+
+function routeTargetsPickupLeg(
+  sessionStatus: string | undefined,
+  crewLocStatus: string | undefined,
+): boolean {
+  const cl = (crewLocStatus || "").toLowerCase();
+  if (cl === "en_route_delivery" || cl === "at_delivery" || cl === "unloading" || cl === "returning")
+    return false;
+  if (cl === "en_route_pickup" || cl === "at_pickup" || cl === "loading") return true;
+  const s = (sessionStatus || "").trim().toLowerCase();
+  if (!s) return false;
+  return SESSION_STATUS_HEADING_PICKUP.has(s);
 }
 
 /* ── Mapbox Map (dynamic import) ── */
@@ -356,9 +395,8 @@ const GodEyeMap = dynamic(
                     type="line"
                     paint={{
                       "line-color": "#2C3E2D",
-                      "line-width": 3,
-                      "line-opacity": 0.7,
-                      "line-dasharray": [2, 2],
+                      "line-width": 6,
+                      "line-opacity": 0.9,
                     }}
                   />
                 </Source>
@@ -431,10 +469,7 @@ const GodEyeMap = dynamic(
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 flex flex-col items-center gap-0.5 pointer-events-none max-w-[min(200px,70vw)]">
                         <div
                           className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm whitespace-nowrap"
-                          style={{
-                            ...crewLabelChrome,
-                            backdropFilter: "blur(10px)",
-                          }}
+                          style={crewLabelChrome}
                         >
                           <span
                             className="w-2 h-2 rounded-full shrink-0"
@@ -561,16 +596,12 @@ function CrewPopup({
   const toAddr =
     crewLocation?.current_to_address || currentMove?.to_address || null;
 
-  // Estimate ETA based on distance to destination
-  let etaMin: number | null = null;
-  if (
-    crew.current_lat &&
-    crew.current_lng &&
-    toAddr &&
-    currentMove?.to_address
-  ) {
-    // Simple estimate: ~35 km/h average city speed
-  }
+  const navSec = crewLocation?.nav_eta_seconds;
+  const etaMin =
+    navSec != null && Number.isFinite(Number(navSec)) && Number(navSec) >= 0
+      ? Math.max(1, Math.round(Number(navSec) / 60))
+      : null;
+  const navDistM = crewLocation?.nav_distance_remaining_m;
 
   const detailHref =
     session?.detailHref ||
@@ -687,6 +718,14 @@ function CrewPopup({
               {etaMin != null ? `${etaMin}` : "-"}
             </div>
             <div className="text-[8px] text-[var(--tx3)]">min</div>
+            {navDistM != null && Number.isFinite(Number(navDistM)) && (
+              <div className="text-[8px] text-[var(--tx3)] mt-0.5">
+                {Number(navDistM) < 1000
+                  ? `${Math.round(Number(navDistM))} m`
+                  : `${(Number(navDistM) / 1000).toFixed(1)} km`}{" "}
+                left
+              </div>
+            )}
           </div>
           <div className="text-center">
             <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
@@ -794,6 +833,13 @@ export default function UnifiedTrackingView({
         setActiveSessions(
           Array.isArray(d.activeSessions) ? d.activeSessions : [],
         );
+        if (Array.isArray(d.crewLocations)) {
+          setCrewLocations(
+            new Map(
+              (d.crewLocations as CrewLocation[]).map((row) => [row.crew_id, row]),
+            ),
+          );
+        }
       }
     } catch {
       // keep existing
@@ -819,7 +865,16 @@ export default function UnifiedTrackingView({
           if (loc?.crew_id) {
             setCrewLocations((prev) => {
               const next = new Map(prev);
-              next.set(loc.crew_id, loc);
+              next.set(loc.crew_id, {
+                ...loc,
+                nav_eta_seconds:
+                  loc.nav_eta_seconds != null ? Number(loc.nav_eta_seconds) : null,
+                nav_distance_remaining_m:
+                  loc.nav_distance_remaining_m != null
+                    ? Number(loc.nav_distance_remaining_m)
+                    : null,
+                is_navigating: Boolean(loc.is_navigating),
+              });
               return next;
             });
             // Also update crew position for map markers
@@ -870,6 +925,7 @@ export default function UnifiedTrackingView({
             d.sessions.map((s: any) => ({
               // eslint-disable-line @typescript-eslint/no-explicit-any
               id: s.id,
+              jobRecordId: s.jobRecordId || s.job_id,
               jobId: s.jobId,
               jobType: s.job_type,
               status: s.status,
@@ -932,53 +988,112 @@ export default function UnifiedTrackingView({
     };
   }, [eventSourceConnected, load]);
 
-  // Fetch route lines for active sessions
+  const routeFetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Fetch route lines: correct job (UUID), pickup vs delivery leg, moves + deliveries; debounced.
   useEffect(() => {
     if (!HAS_MAPBOX) return;
-    const fetchRoutes = async () => {
-      const newRoutes = new Map<string, [number, number][]>();
-      for (const s of activeSessions) {
-        const crew = crews.find((c) => c.id === s.teamId);
-        if (!crew?.current_lat || !crew?.current_lng) continue;
+    if (routeFetchDebounceRef.current) clearTimeout(routeFetchDebounceRef.current);
+    routeFetchDebounceRef.current = setTimeout(() => {
+      routeFetchDebounceRef.current = null;
+      void (async () => {
+        const newRoutes = new Map<string, [number, number][]>();
+        for (const s of activeSessions) {
+          if (!s.jobRecordId) continue;
+          const crew = crews.find((c) => c.id === s.teamId);
+          if (!crew?.current_lat || !crew?.current_lng) continue;
 
-        const move = todayMoves.find((m) => m.crew_id === s.teamId);
-        const loc = crewLocations.get(s.teamId);
-        const destAddr = loc?.current_to_address || move?.to_address;
-        if (!destAddr) continue;
+          const loc = crewLocations.get(s.teamId);
+          const pickupLeg = routeTargetsPickupLeg(s.status, loc?.status);
+          const move =
+            s.jobType === "move"
+              ? todayMoves.find((m) => m.id === s.jobRecordId)
+              : undefined;
+          const delivery =
+            s.jobType === "delivery"
+              ? todayDeliveries.find((d) => d.id === s.jobRecordId)
+              : undefined;
 
-        try {
-          const from = `${crew.current_lng},${crew.current_lat}`;
-          const geoRes = await fetch(
-            `/api/mapbox/geocode?q=${encodeURIComponent(destAddr)}&limit=1`,
-          );
-          const geoData = await geoRes.json();
-          const feature = geoData?.features?.[0];
-          const coords = feature?.geometry?.coordinates;
-          if (!coords || coords.length < 2) continue;
+          let destLngLat: [number, number] | null = null;
 
-          const res = await fetch(
-            `/api/mapbox/directions?from=${from}&to=${coords[0]},${coords[1]}`,
-          );
-          if (!res.ok) {
-            console.warn("[UnifiedTracking] directions API", res.status);
-            continue;
+          if (s.jobType === "move" && move) {
+            if (pickupLeg && move.from_lat != null && move.from_lng != null) {
+              destLngLat = [Number(move.from_lng), Number(move.from_lat)];
+            } else if (!pickupLeg && move.to_lat != null && move.to_lng != null) {
+              destLngLat = [Number(move.to_lng), Number(move.to_lat)];
+            }
+          } else if (s.jobType === "delivery" && delivery) {
+            if (pickupLeg && delivery.pickup_lat != null && delivery.pickup_lng != null) {
+              destLngLat = [Number(delivery.pickup_lng), Number(delivery.pickup_lat)];
+            } else if (
+              !pickupLeg &&
+              delivery.delivery_lat != null &&
+              delivery.delivery_lng != null
+            ) {
+              destLngLat = [Number(delivery.delivery_lng), Number(delivery.delivery_lat)];
+            }
           }
-          const data = await res.json();
-          if (data?.coordinates && Array.isArray(data.coordinates)) {
-            newRoutes.set(s.teamId, data.coordinates);
-          } else {
-            console.warn("[UnifiedTracking] No route for crew", s.teamId);
+
+          let destAddr: string | null = null;
+          if (!destLngLat) {
+            if (pickupLeg) {
+              destAddr =
+                loc?.current_from_address || move?.from_address || delivery?.pickup_address || null;
+            } else {
+              destAddr =
+                loc?.current_to_address || move?.to_address || delivery?.delivery_address || null;
+            }
           }
-        } catch (err) {
-          console.warn("[UnifiedTracking] route fetch failed", err);
+
+          try {
+            const from = `${crew.current_lng},${crew.current_lat}`;
+            let toParam: string;
+            if (destLngLat) {
+              toParam = `${destLngLat[0]},${destLngLat[1]}`;
+            } else if (destAddr?.trim()) {
+              const geoRes = await fetch(
+                `/api/mapbox/geocode?q=${encodeURIComponent(destAddr.trim())}&limit=1`,
+                { credentials: "include" },
+              );
+              const geoData = await geoRes.json();
+              const feature = geoData?.features?.[0];
+              const coords = feature?.geometry?.coordinates;
+              if (!coords || coords.length < 2) continue;
+              toParam = `${coords[0]},${coords[1]}`;
+            } else {
+              continue;
+            }
+
+            const res = await fetch(
+              `/api/mapbox/directions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(toParam)}`,
+              { credentials: "include" },
+            );
+            if (!res.ok) {
+              console.warn("[UnifiedTracking] directions API", res.status);
+              continue;
+            }
+            const data = await res.json();
+            if (data?.coordinates && Array.isArray(data.coordinates)) {
+              newRoutes.set(s.teamId, data.coordinates);
+            }
+          } catch (err) {
+            console.warn("[UnifiedTracking] route fetch failed", err);
+          }
         }
-      }
-      if (newRoutes.size > 0) {
-        setRouteLines(newRoutes);
-      }
+        setRouteLines((prev) => {
+          if (prev.size !== newRoutes.size) return newRoutes;
+          for (const [k, v] of newRoutes) {
+            const o = prev.get(k);
+            if (!o || o.length !== v.length || JSON.stringify(o) !== JSON.stringify(v)) return newRoutes;
+          }
+          return prev;
+        });
+      })();
+    }, 700);
+    return () => {
+      if (routeFetchDebounceRef.current) clearTimeout(routeFetchDebounceRef.current);
     };
-    fetchRoutes();
-  }, [activeSessions.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeSessions, crews, crewLocations, todayMoves, todayDeliveries]);
 
   const crewsWithPosition = crews.filter(
     (c) => c.current_lat != null && c.current_lng != null,
@@ -1035,7 +1150,7 @@ export default function UnifiedTrackingView({
         </div>
 
         {/* Top-left: connection status */}
-        <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--card)]/95 border border-[var(--brd)] backdrop-blur-sm shadow-sm max-w-[calc(100vw-96px)] sm:max-w-none overflow-hidden">
+        <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--brd)] shadow-sm max-w-[calc(100vw-96px)] sm:max-w-none overflow-hidden">
           <span
             className={`w-2 h-2 rounded-full ${eventSourceConnected ? "bg-[var(--grn)]" : "bg-[var(--red)] animate-pulse"}`}
           />
@@ -1055,7 +1170,7 @@ export default function UnifiedTrackingView({
 
         {/* Bottom panel: Active Jobs + Teams, full-width bottom sheet on mobile, floating card on desktop */}
         <div
-          className={`absolute bottom-0 left-0 right-0 sm:bottom-3 sm:left-3 sm:right-auto z-10 w-full sm:w-[360px] flex flex-col overflow-hidden bg-[var(--card)]/97 border-t sm:border border-[var(--brd)] sm:rounded-xl backdrop-blur-sm shadow-lg rounded-t-2xl sm:rounded-xl transition-[height,max-height] duration-300 ease-out ${
+          className={`absolute bottom-0 left-0 right-0 sm:bottom-3 sm:left-3 sm:right-auto z-10 w-full sm:w-[360px] flex flex-col overflow-hidden bg-[var(--card)] border-t sm:border border-[var(--brd)] sm:rounded-xl shadow-lg rounded-t-2xl sm:rounded-xl transition-[height,max-height] duration-300 ease-out ${
             jobsPanelExpanded ? "max-sm:h-[46vh]" : "max-sm:h-[30vh]"
           } sm:max-h-[55vh] sm:h-auto`}
         >

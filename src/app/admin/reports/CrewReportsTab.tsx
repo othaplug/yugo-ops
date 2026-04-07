@@ -12,6 +12,16 @@ function getCrewName(crews: unknown): string {
   return (crew as { name?: string } | undefined)?.name || "Team";
 }
 
+function formatAvgDriveKmh(summary: Record<string, unknown> | undefined): string {
+  const raw = summary?.avgDrivingSpeedKmh;
+  if (typeof raw === "number" && Number.isFinite(raw)) return String(raw);
+  if (typeof raw === "string" && raw.trim() !== "") {
+    const n = Number(raw);
+    if (Number.isFinite(n)) return String(n);
+  }
+  return "-";
+}
+
 function formatDateShort(d: string) {
   const [y, m, day] = d.split("-");
   const months = [
@@ -186,6 +196,7 @@ export default function CrewReportsTab({
       "Duration (min)",
       "Sign-off",
       "Damage",
+      "Avg drive km/h",
       "Generated",
     ];
     const rows: string[][] = [headers];
@@ -201,6 +212,7 @@ export default function CrewReportsTab({
           String(j.duration ?? 0),
           j.signOff ? "Yes" : "No",
           j.hasDamage ? "Yes" : "No",
+          formatAvgDriveKmh(r.summary as Record<string, unknown> | undefined),
           r.generated_at ? new Date(r.generated_at).toLocaleString() : "-",
         ]);
       });
@@ -519,7 +531,7 @@ export default function CrewReportsTab({
               </div>
               <div className="space-y-5">
                 {r.summary && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
                     <div>
                       <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
                         Jobs
@@ -576,6 +588,15 @@ export default function CrewReportsTab({
                           ? r.summary.averageSatisfaction
                           : "-"}
                       </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+                        Avg drive speed
+                      </div>
+                      <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">
+                        {formatAvgDriveKmh(r.summary)}
+                      </div>
+                      <div className="text-[8px] text-[var(--tx3)]">km/h (moving)</div>
                     </div>
                   </div>
                 )}

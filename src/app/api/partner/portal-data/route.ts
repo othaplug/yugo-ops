@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
 import { getTodayString, getMonthStartString } from "@/lib/business-timezone";
+import { serverDebug } from "@/lib/server-log";
 
 export async function GET() {
   const { orgIds, primaryOrgId, error } = await requirePartner();
@@ -93,7 +94,14 @@ export async function GET() {
   const galleryProjects = galleryProjectsRes.data;
   const partnerStatements = statementsRes.data ?? [];
 
-  console.log("[portal-data] orgIds:", orgIds, "byOrgId count:", byOrgId?.length ?? "null", "byClientName count:", byClientName?.length ?? "null");
+  serverDebug(
+    "[portal-data] orgIds:",
+    orgIds,
+    "byOrgId count:",
+    byOrgId?.length ?? "null",
+    "byClientName count:",
+    byClientName?.length ?? "null",
+  );
 
   // Merge org_id matched + client_name fallback, dedup by id
   const seenIds = new Set<string>();

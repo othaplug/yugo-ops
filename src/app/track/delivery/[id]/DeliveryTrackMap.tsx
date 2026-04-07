@@ -13,7 +13,8 @@ type Coord = { lat: number; lng: number };
 type CrewPos = { current_lat: number; current_lng: number; name?: string } | null;
 
 const GOLD = "#C9A94E";
-const GREEN = "#22C55E";
+/** Yugo forest — crew / client map chrome (not tailwind green). */
+const FOREST_MARKER = "#2C3E2D";
 
 function calcBearing(from: { lat: number; lng: number }, to: { lat: number; lng: number }): number {
   const toRad = (d: number) => (d * Math.PI) / 180;
@@ -29,9 +30,9 @@ function lastKnownIcon() {
   return L.divIcon({
     className: "custom-marker",
     html: `<div style="position:relative;width:36px;height:36px;display:flex;align-items:center;justify-content:center">
-      <span style="position:absolute;inset:0;border-radius:50%;background:#22C55E;opacity:0.18;animation:crew-ring 2.4s ease-out infinite"></span>
-      <span style="position:absolute;inset:4px;border-radius:50%;background:#22C55E;opacity:0.3"></span>
-      <span style="position:relative;width:16px;height:16px;border-radius:50%;background:#22C55E;border:3px solid #fff;box-shadow:0 2px 10px rgba(34,197,94,.5);display:flex;align-items:center;justify-content:center">
+      <span style="position:absolute;inset:0;border-radius:50%;background:#2C3E2D;opacity:0.16;animation:crew-ring 2.4s ease-out infinite"></span>
+      <span style="position:absolute;inset:4px;border-radius:50%;background:#2C3E2D;opacity:0.28"></span>
+      <span style="position:relative;width:16px;height:16px;border-radius:50%;background:#2C3E2D;border:3px solid #fff;box-shadow:0 2px 10px rgba(44,62,45,.45);display:flex;align-items:center;justify-content:center">
         <span style="color:#fff;font-size:7px;font-weight:800;line-height:8px;display:flex;align-items:center;justify-content:center;width:8px;height:8px" aria-hidden="true">✓</span>
       </span>
     </div>`,
@@ -50,7 +51,7 @@ const pickupIcon = L.divIcon({
 
 const dropoffIcon = L.divIcon({
   className: "custom-marker",
-  html: `<div style="width:12px;height:12px;background:${GREEN};border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>`,
+  html: `<div style="width:12px;height:12px;background:${FOREST_MARKER};border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>`,
   iconSize: [18, 18],
   iconAnchor: [9, 9],
 });

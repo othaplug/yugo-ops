@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { syncDealStageByDeliveryId } from "@/lib/hubspot/sync-deal-stage";
+import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
 
 export const dynamic = "force-dynamic";
 
@@ -125,6 +126,9 @@ export async function PATCH(req: NextRequest) {
       if (allDone) {
         await db.from("deliveries").update({ status: "completed", completed_at: now }).eq("id", delivery_id);
         syncDealStageByDeliveryId(delivery_id, "completed").catch(() => {});
+        notifyJobCompletedForCrewProfiles(db, { jobType: "delivery", jobId: delivery_id }).catch((e) =>
+          console.error("[crew-profile] stops completion:", e),
+        );
       }
     }
   }

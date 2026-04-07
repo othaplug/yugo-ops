@@ -5,6 +5,8 @@ import { createPartnerNotification } from "@/lib/notifications";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 import { collectB2BDeliveryCalibrationData } from "@/lib/learning/engine";
 import { syncDealStageByDeliveryId } from "@/lib/hubspot/sync-deal-stage";
+import { ensureB2bDeliverySchedule } from "@/lib/calendar/ensure-b2b-delivery-schedule";
+import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
 
 const STATUS_NOTIFICATIONS: Record<string, { title: (label: string) => string; icon: string }> = {
   confirmed: { title: (l) => `Delivery confirmed: ${l}`, icon: "check" },
@@ -210,9 +212,18 @@ export async function PATCH(
     collectB2BDeliveryCalibrationData(id).catch((e) =>
       console.error("[deliveries/patch] B2B calibration collect failed:", e),
     );
+    notifyJobCompletedForCrewProfiles(admin, { jobType: "delivery", jobId: id }).catch((e) =>
+      console.error("[crew-profile] admin delivery complete:", e),
+    );
   }
 
-  return NextResponse.json({ ok: true, delivery: data });
+  await ensureB2bDeliverySchedule(admin, id).catch((e) =>
+    console.error("[deliveries/patch] ensureB2bDeliverySchedule:", e),
+  );
+
+  const { data: refreshed } = await admin.from("deliveries").select("*").eq("id", id).single();
+
+  return NextResponse.json({ ok: true, delivery: refreshed ?? data });
 }
 
 export async function DELETE(

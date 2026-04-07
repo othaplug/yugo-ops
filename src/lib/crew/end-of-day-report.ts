@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { computeAvgDrivingSpeedKmhFromHistoryRows } from "@/lib/crew/avg-driving-speed";
 import { formatJobId } from "@/lib/move-code";
 
 type AdminClient = SupabaseClient;
@@ -107,6 +108,15 @@ export async function upsertEndOfDayReportForTeam(
   const { data: photos } = await admin.from("job_photos").select("id").in("job_id", jobIds);
   const photosCount = photos?.length ?? 0;
 
+  const { data: speedRows } = await admin
+    .from("crew_location_history")
+    .select("lat, lng, speed, recorded_at")
+    .eq("crew_id", teamId)
+    .gte("recorded_at", `${today}T00:00:00`)
+    .lte("recorded_at", `${today}T23:59:59.999Z`);
+
+  const avgDrivingSpeedKmh = computeAvgDrivingSpeedKmhFromHistoryRows(speedRows || []);
+
   const summary = {
     jobsCompleted: completedSessions.length,
     totalJobTime,
@@ -116,6 +126,8 @@ export async function upsertEndOfDayReportForTeam(
     expensesTotal: expenses.reduce((s, e) => s + (e.amount_cents || 0), 0),
     clientSignOffs: signOffs?.length ?? 0,
     averageSatisfaction: Math.round(averageSatisfaction * 10) / 10,
+    /** Mean GPS speed while moving (2–28 m/s samples), km/h — ops visibility for driving pace. */
+    avgDrivingSpeedKmh,
   };
 
   const expensesJson = expenses.map((e) => ({

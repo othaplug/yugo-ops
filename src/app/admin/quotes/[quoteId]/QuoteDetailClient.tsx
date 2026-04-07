@@ -753,6 +753,10 @@ export default function QuoteDetailClient({
                   </p>
                   {(() => {
                     const HST = 0.13;
+                    const systemPreTax =
+                      typeof quote.system_price === "number" ? quote.system_price : null;
+                    const overridePreTax =
+                      typeof quote.override_price === "number" ? quote.override_price : null;
                     if (quote.tiers) {
                       const t = quote.tiers as Record<string, any>;
                       const prices = Object.values(t).map(
@@ -769,6 +773,28 @@ export default function QuoteDetailClient({
                             +{fmtCurrency(Math.round(lo * HST))}–
                             {fmtCurrency(Math.round(hi * HST))} HST (13%)
                           </p>
+                          {overridePreTax != null ? (
+                            <div className="mt-2 rounded-lg border border-[var(--brd)]/60 bg-[var(--bg)] px-3 py-2 space-y-1">
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-[var(--tx3)]">System (engine)</span>
+                                <span className="font-medium text-[var(--tx)]">
+                                  {systemPreTax != null ? fmtCurrency(systemPreTax) : "—"}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-[var(--tx3)]">Override (pre-tax)</span>
+                                <span className="font-semibold text-[var(--tx)]">
+                                  {fmtCurrency(overridePreTax)}
+                                </span>
+                              </div>
+                              {typeof quote.override_reason === "string" &&
+                              quote.override_reason.trim() ? (
+                                <p className="text-[10px] text-[var(--tx3)] pt-1 border-t border-[var(--brd)]/40">
+                                  {quote.override_reason}
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : null}
                         </>
                       );
                     }
@@ -781,6 +807,28 @@ export default function QuoteDetailClient({
                         <p className="text-[10px] text-[var(--tx3)]/82 mt-0.5">
                           +{fmtCurrency(Math.round(base * HST))} HST (13%)
                         </p>
+                        {overridePreTax != null ? (
+                          <div className="mt-2 rounded-lg border border-[var(--brd)]/60 bg-[var(--bg)] px-3 py-2 space-y-1">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="text-[var(--tx3)]">System (engine)</span>
+                              <span className="font-medium text-[var(--tx)]">
+                                {systemPreTax != null ? fmtCurrency(systemPreTax) : "—"}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="text-[var(--tx3)]">Override (pre-tax)</span>
+                              <span className="font-semibold text-[var(--tx)]">
+                                {fmtCurrency(overridePreTax)}
+                              </span>
+                            </div>
+                            {typeof quote.override_reason === "string" &&
+                            quote.override_reason.trim() ? (
+                              <p className="text-[10px] text-[var(--tx3)] pt-1 border-t border-[var(--brd)]/40">
+                                {quote.override_reason}
+                              </p>
+                            ) : null}
+                          </div>
+                        ) : null}
                       </>
                     );
                   })()}

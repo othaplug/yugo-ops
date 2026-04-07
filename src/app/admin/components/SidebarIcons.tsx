@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * SidebarIcons — Phosphor-backed icon components for the admin sidebar.
  * Icons use weight from PhosphorProvider (regular).

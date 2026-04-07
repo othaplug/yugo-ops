@@ -18,6 +18,14 @@ type DayRow = Record<string, unknown> & {
   date?: string;
   label?: string;
   status?: string;
+  description?: string | null;
+  crew_size?: number | null;
+  truck_type?: string | null;
+  truck_count?: number | null;
+  estimated_hours?: number | null;
+  day_cost_estimate?: number | null;
+  completion_notes?: string | null;
+  issues?: string | null;
 };
 
 type CommRow = {
@@ -113,11 +121,39 @@ export default function MoveProjectDetailClient({
                       ) : (
                         <Circle className="w-5 h-5 shrink-0 text-[var(--tx3)]" aria-hidden />
                       )}
-                      <div className="min-w-0">
+                      <div className="min-w-0 space-y-1">
                         <p className="text-[12px] font-medium text-[var(--tx)]">{String(d.label ?? "Day")}</p>
                         <p className="text-[11px] text-[var(--tx3)]">
                           {d.date ? formatMoveDate(String(d.date)) : ""}
                         </p>
+                        {d.description ? (
+                          <p className="text-[11px] text-[var(--tx2)] leading-snug">{String(d.description)}</p>
+                        ) : null}
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-[var(--tx3)]">
+                          {typeof d.crew_size === "number" ? <span>{d.crew_size} crew</span> : null}
+                          {d.truck_type ? (
+                            <span>
+                              {String(d.truck_type)}
+                              {typeof d.truck_count === "number" && d.truck_count > 1 ? ` ×${d.truck_count}` : ""}
+                            </span>
+                          ) : null}
+                          {typeof d.estimated_hours === "number" ? <span>~{d.estimated_hours} h est.</span> : null}
+                          {d.day_cost_estimate != null && Number(d.day_cost_estimate) > 0 ? (
+                            <span className="tabular-nums">Cost est. ${Number(d.day_cost_estimate).toLocaleString("en-CA")}</span>
+                          ) : null}
+                        </div>
+                        {d.issues ? (
+                          <p className="text-[10px] text-amber-800 dark:text-amber-200/90 mt-1">
+                            <span className="font-semibold">Issues: </span>
+                            {String(d.issues)}
+                          </p>
+                        ) : null}
+                        {d.completion_notes ? (
+                          <p className="text-[10px] text-[var(--tx2)] mt-1">
+                            <span className="font-semibold text-[var(--tx3)]">Completion: </span>
+                            {String(d.completion_notes)}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                     {!done && dayId && (

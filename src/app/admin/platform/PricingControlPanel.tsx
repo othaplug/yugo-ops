@@ -5,6 +5,7 @@ import { toTitleCase } from "@/lib/format-text";
 import { InternalConfigKeyHint } from "@/components/admin/InternalConfigKeyHint";
 import { useToast } from "../components/Toast";
 import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
+import { InfoHint } from "@/components/ui/InfoHint";
 import {
   CaretDown,
   CaretUp,
@@ -37,7 +38,7 @@ function currency(n: number | string) {
 }
 
 const TIER_BADGE: Record<string, string> = {
-  A: "text-[#2C3E2D]",
+  A: "text-[var(--tx)]",
   B: "text-[#2D6A4F]",
   C: "text-[var(--tx3)]",
   D: "text-[var(--tx3)]/82",
@@ -738,11 +739,19 @@ function SingleItemSection() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { key: "single_item_distance_base", label: "Free km included" },
-          { key: "single_item_distance_rate", label: "$/km over base" },
-          { key: "assembly_disassembly", label: "Disassembly ($)" },
-          { key: "assembly_assembly", label: "Assembly ($)" },
-          { key: "assembly_both", label: "Both ($)" },
+          { key: "single_item_small", label: "Small/light base ($)" },
+          { key: "single_item_medium", label: "Medium base ($)" },
+          { key: "single_item_large", label: "Large base ($)" },
+          { key: "single_item_heavy", label: "Heavy base ($)" },
+          { key: "single_item_extra_heavy", label: "Extra heavy base ($)" },
+          { key: "single_item_fragile", label: "Fragile base ($)" },
+          { key: "single_item_additional_item_rate", label: "Additional item rate (0–1)" },
+          { key: "single_item_per_km", label: "$/km over 15km" },
+          { key: "single_item_assembly", label: "Assembly/disassembly ($)" },
+          { key: "single_item_walk_up_2nd", label: "Walk-up 2nd ($)" },
+          { key: "single_item_walk_up_3rd", label: "Walk-up 3rd ($)" },
+          { key: "single_item_walk_up_4th", label: "Walk-up 4th+ ($)" },
+          { key: "single_item_floor", label: "Minimum subtotal ($)" },
           { key: "stair_carry_per_flight", label: "Stair carry/flight ($)" },
         ].map((c) => {
           const row = getConf(c.key);
@@ -1669,8 +1678,9 @@ function CustomItemsUsedSection({ onAddToMaster }: { onAddToMaster?: () => void 
       {addModal && (
         <ModalDialogFrame
           zClassName="z-[99999]"
+          yugoGlassChrome
           onBackdropClick={() => setAddModal(null)}
-          panelClassName="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 w-full max-w-md shadow-xl modal-card"
+          panelClassName="yugo-glass-light rounded-xl p-5 w-full max-w-md shadow-xl modal-card"
           role="dialog"
           ariaModal
         >
@@ -2090,14 +2100,18 @@ function TierFeaturesSection() {
         ))}
       </div>
 
-      <p className="text-[10px] text-[var(--tx2)] leading-relaxed -mt-2 mb-1">
-        <span className="font-semibold text-[var(--tx)]">Delete / reorder:</span> each row shows move arrows and a{" "}
-        <span className="inline-flex align-middle text-red-400/90">
-          <Trash size={11} weight="regular" className="inline" aria-hidden />
-        </span>{" "}
-        remove control on the right (always visible). Changes apply after you click{" "}
-        <span className="font-semibold">Save</span> in the bar at the bottom.
-      </p>
+      <div className="flex items-center gap-2 -mt-2 mb-1">
+        <InfoHint variant="admin" ariaLabel="How to edit tier features">
+          <span>
+            <span className="font-semibold text-[var(--tx)]">Delete / reorder:</span> each row shows move arrows and a{" "}
+            <span className="inline-flex align-middle text-red-400/90">
+              <Trash size={11} weight="regular" className="inline" aria-hidden />
+            </span>{" "}
+            remove control on the right (always visible). Changes apply after you click{" "}
+            <span className="font-semibold">Save</span> in the bar at the bottom.
+          </span>
+        </InfoHint>
+      </div>
 
       {/* Tier columns — stack on small screens; equal fractions on md+ for wide platform layout */}
       <div className={`grid gap-3 md:gap-4 xl:gap-5 ${meta.tiers.length === 3 ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 max-w-md"}`}>
@@ -2239,14 +2253,17 @@ function TierFeaturesSection() {
         })}
       </div>
 
-      {/* Tip about residential dynamic values */}
       {activeSvc === "local_move" && (
-        <p className="text-[10px] text-[var(--tx3)] leading-relaxed">
-          <span className="text-[var(--gold)]">Tip:</span> Use{" "}
-          <code className="bg-[var(--bg)] px-1 py-0.5 rounded text-[10px]">Professional movers</code> and{" "}
-          <code className="bg-[var(--bg)] px-1 py-0.5 rounded text-[10px]">Dedicated moving truck</code>{" "}
-          as placeholders, the system replaces them with the actual crew count and truck size at quote time.
-        </p>
+        <div className="flex items-center gap-2">
+          <InfoHint variant="admin" ariaLabel="Dynamic placeholders for residential quotes">
+            <span>
+              <span className="text-[var(--gold)]">Tip:</span> Use{" "}
+              <code className="bg-[var(--bg)] px-1 py-0.5 rounded text-[10px]">Professional movers</code> and{" "}
+              <code className="bg-[var(--bg)] px-1 py-0.5 rounded text-[10px]">Dedicated moving truck</code> as placeholders;
+              the system replaces them with the actual crew count and truck size at quote time.
+            </span>
+          </InfoHint>
+        </div>
       )}
 
       {dirty && <SaveBar onSave={handleSave} onUndo={() => { undo(); setDirty(false); }} saving={saving} />}
@@ -2675,12 +2692,34 @@ function EventPricingSection() {
 
   const groups: { title: string; keys: { key: string; label: string }[] }[] = [
     {
-      title: "Crew hourly & minimums",
+      title: "Event labour (per mover / hr)",
       keys: [
-        { key: "event_base_hourly_rate", label: "Base hourly rate ($/crew-hr)" },
-        { key: "event_luxury_hourly_rate", label: "Luxury hourly rate ($/crew-hr)" },
+        { key: "event_crew_rate_standard", label: "Standard rate ($/mover/hr)" },
+        { key: "event_crew_rate_luxury", label: "Luxury / white glove ($/mover/hr)" },
         { key: "event_min_hours_standard", label: "Min billable hours (standard)" },
         { key: "event_min_hours_luxury", label: "Min billable hours (luxury)" },
+        { key: "event_min_hours_floor", label: "Soft floor on estimated hours (before min billable)" },
+        { key: "event_hours_buffer_multiplier", label: "Hours buffer multiplier (e.g. 1.15)" },
+      ],
+    },
+    {
+      title: "Distance & minimums",
+      keys: [
+        { key: "event_free_km", label: "Free km included (one-way leg)" },
+        { key: "event_per_km", label: "Surcharge per km over free ($)" },
+        { key: "event_minimum", label: "Minimum pre-tax (delivery + return, before setup)" },
+      ],
+    },
+    {
+      title: "Wrapping & handling time (per item unit)",
+      keys: [
+        { key: "event_wrap_per_item", label: "Wrapping surcharge ($/unit, requires wrapping)" },
+        { key: "event_wrapping_handling_minutes_per", label: "Minutes per unit when wrapping (load+unload in estimate)" },
+        { key: "event_box_light_minutes_per", label: "Light box minutes per unit (one pass)" },
+        { key: "event_box_heavy_minutes_per", label: "Heavy box minutes per unit" },
+        { key: "event_furniture_minutes_per", label: "Furniture / custom minutes per unit" },
+        { key: "event_fragile_minutes_per", label: "Fragile minutes per unit (no wrap flag)" },
+        { key: "event_equipment_minutes_per", label: "Equipment minutes per unit" },
       ],
     },
     {
@@ -2696,8 +2735,17 @@ function EventPricingSection() {
     {
       title: "Return leg & deposit",
       keys: [
-        { key: "event_return_discount", label: "Return leg as fraction of delivery (0–1)" },
+        { key: "event_default_return_rate_different", label: "Auto return rate — different addresses (0–1)" },
+        { key: "event_default_return_rate_same_venue", label: "Auto return rate — same venue / on-site (0–1)" },
+        { key: "event_return_discount", label: "Legacy: used as fallback for old presets (0–1)" },
         { key: "event_min_deposit", label: "Minimum deposit ($)" },
+      ],
+    },
+    {
+      title: "Legacy display (optional)",
+      keys: [
+        { key: "event_base_hourly_rate", label: "Deprecated — old team hourly (not used by new engine)" },
+        { key: "event_luxury_hourly_rate", label: "Deprecated — old luxury hourly" },
       ],
     },
   ];
@@ -2705,7 +2753,7 @@ function EventPricingSection() {
   return (
     <div className="pt-4 space-y-6">
       <p className="text-[11px] text-[var(--tx3)]">
-        Event quotes combine delivery + return legs (with return discount), optional paid setup, truck/parking/long-carry (shared with other services where noted), and add-ons.
+        Event pricing is <strong className="font-semibold text-[var(--tx)]">crew × hours × per-mover rate</strong>, plus truck tier, km over free threshold, wrapping surcharges, parking, access, long carry, optional paid setup, and add-ons. Return day is a percentage of the delivery-day total (auto defaults: different addresses vs same venue).
       </p>
       {groups.map((g) => (
         <div key={g.title}>
@@ -2948,9 +2996,12 @@ function LabourOnlyPricingSection() {
   if (loading) return <Skeleton />;
 
   const fields = [
-    { key: "labour_only_rate", label: "Rate per mover-hour ($)", hint: "Crew × hours × this rate (per mover)." },
+    { key: "labour_only_per_mover_hour", label: "Rate per mover-hour ($)", hint: "Crew × hours × this rate (per mover)." },
     { key: "labour_only_truck_fee", label: "Truck fee when required ($)", hint: "Added when customer selects truck on site." },
     { key: "labour_only_visit2_discount", label: "Visit 2 discount (0–1)", hint: "Second visit labour subtotal multiplier before truck/access." },
+    { key: "labour_only_minimum", label: "Minimum subtotal ($)", hint: "Floor before tax." },
+    { key: "labour_only_weekend", label: "Weekend surcharge ($)", hint: "Flat add-on when weekend is selected or inferred." },
+    { key: "labour_only_after_hours_multiplier", label: "After-hours multiplier (0–2)", hint: "Applied to labour subtotal when after-hours is selected." },
     { key: "storage_weekly_rate", label: "Storage between visits ($/week)", hint: "Used when storage between labour visits is selected." },
   ];
 
@@ -2963,12 +3014,18 @@ function LabourOnlyPricingSection() {
         {fields.map(({ key, label, hint }) => {
           const row = rows.find((r) => r.key === key);
           const fallback =
-            key === "labour_only_rate"
-              ? 85
+            key === "labour_only_per_mover_hour"
+              ? 80
               : key === "labour_only_truck_fee"
                 ? 150
                 : key === "labour_only_visit2_discount"
                   ? 0.85
+                  : key === "labour_only_minimum"
+                    ? 300
+                    : key === "labour_only_weekend"
+                      ? 100
+                      : key === "labour_only_after_hours_multiplier"
+                        ? 1.15
                   : 75;
           const val = Number(row?.value ?? fallback);
           return (

@@ -1,20 +1,35 @@
 "use client";
 
 import { useState, useEffect, useRef, use } from "react";
-import { Star as PhStar, CaretLeft as PhCaretLeft, PencilSimple, Check } from "@phosphor-icons/react";
+import {
+  Star as PhStar,
+  CaretLeft as PhCaretLeft,
+  CaretRight as PhCaretRight,
+  PencilSimple,
+  Check,
+} from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import YugoLogo from "@/components/YugoLogo";
 import { useCrewImmersiveNav } from "@/app/crew/components/CrewImmersiveNavContext";
+import { WINE } from "@/app/quote/[quoteId]/quote-shared";
 
 /** Primary forest accent (CTAs, stars — not legacy gold). */
 const FOREST_PRIMARY = "#2C3E2D";
 const FOREST = "#2A3D2E";
 const INK = "#1A1A1A";
-const MUTED = "#6B7A6E";
-const BG = "#FAF8F4";
-const BORDER = "#E8E4DC";
-const NOTE_FILL = "#F0EDE8";
+const MUTED = "#5A6B5E";
+const BG = "#FAF7F2";
+const BORDER = "rgba(44, 62, 45, 0.12)";
+const NOTE_FILL = "#FFFBF7";
+
+/** Solid wine + cream text — primary forward / submit actions on the sign-off flow. */
+const SIGNOFF_SOLID_WINE_CTA =
+  "w-full inline-flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 border border-[#3d1426] text-[10px] font-bold tracking-[0.12em] uppercase text-[#FFFBF7] bg-[#5C1A33] hover:bg-[#4a1529] transition-colors disabled:opacity-40 disabled:pointer-events-none [font-family:var(--font-body)] leading-none active:scale-[0.99]";
+
+/** Wine text — back navigation (thank-you + already-signed), no border. */
+const SIGNOFF_BACK_LINK =
+  "inline-flex items-center justify-center gap-2 py-2 text-[11px] font-bold tracking-[0.1em] uppercase text-[#5C1A33] hover:text-[#4a1529] transition-colors [font-family:var(--font-body)] leading-none active:scale-[0.99]";
 
 const RATING_LABELS: Record<number, string> = {
   1: "Needs Improvement",
@@ -184,18 +199,24 @@ interface ItemCondition {
 }
 
 const CONDITION_OPTIONS = [
-  { value: "pristine" as const, label: "Pristine", color: "#2C3E2D" },
-  { value: "minor_scuff" as const, label: "Minor Scuff", color: "#B45309" },
-  { value: "pre_existing_damage" as const, label: "Pre-existing", color: "#6B7280" },
-  { value: "new_damage" as const, label: "New Damage", color: "#EF4444" },
+  { value: "pristine" as const, label: "Pristine" },
+  { value: "minor_scuff" as const, label: "Minor Scuff" },
+  { value: "pre_existing_damage" as const, label: "Pre-existing" },
+  { value: "new_damage" as const, label: "New Damage" },
 ];
 
 function StarIcon({ filled, size = 28 }: { filled: boolean; size?: number }) {
-  return <PhStar size={size} color={FOREST_PRIMARY} weight={filled ? "fill" : "regular"} />;
+  return <PhStar size={size} color={WINE} weight={filled ? "fill" : "regular"} />;
 }
 
-function ChevronLeft({ size = 16 }: { size?: number }) {
-  return <PhCaretLeft size={size} />;
+function ChevronLeft({
+  size = 16,
+  color = MUTED,
+}: {
+  size?: number;
+  color?: string;
+}) {
+  return <PhCaretLeft size={size} weight="bold" color={color} />;
 }
 
 function PenLine({ size = 14 }: { size?: number }) {
@@ -208,7 +229,7 @@ function CheckMark({ size = 10 }: { size?: number }) {
 
 function YugoWordmark() {
   return (
-    <span className="font-hero text-[20px] font-semibold tracking-tight" style={{ color: FOREST_PRIMARY }}>
+    <span className="font-hero text-[20px] font-semibold tracking-tight" style={{ color: WINE }}>
       yugo
     </span>
   );
@@ -229,28 +250,33 @@ function ToggleCard({
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`w-full flex items-start gap-3.5 p-4 rounded-2xl text-left transition-all duration-200 ${
+      className={`w-full flex items-start gap-3.5 p-4 border text-left transition-all duration-200 ${
         checked
-          ? "bg-[#2C3E2D]/5 shadow-[0_1px_8px_rgba(201,169,98,0.10)]"
-          : "bg-white hover:bg-[#FAF8F4]"
+          ? "border-[#5C1A33] bg-[#FFFBF7]"
+          : "border-[#5C1A33]/15 bg-[#FFFBF7] hover:bg-[#5C1A33]/[0.03]"
       }`}
     >
-        <div
-          className={`mt-0.5 w-5 h-5 rounded-full shrink-0 flex items-center justify-center transition-all duration-200 ${
-            checked ? "bg-[#2C3E2D] text-[#1A1A1A]" : "bg-[#F0EDE8] text-transparent"
-          }`}
-        >
+      <div
+        className={`mt-0.5 w-5 h-5 shrink-0 flex items-center justify-center border transition-all duration-200 ${
+          checked
+            ? "border-[#5C1A33] bg-[#5C1A33] text-[#FFFBF7]"
+            : "border-[#5C1A33]/28 bg-transparent text-transparent"
+        }`}
+      >
         <CheckMark size={9} />
       </div>
       <div className="min-w-0 flex-1">
         <span
-          className="text-[13px] font-medium leading-snug"
+          className="text-[13px] font-medium leading-snug [font-family:var(--font-body)]"
           style={{ color: checked ? INK : MUTED }}
         >
           {label}
         </span>
         {sublabel && (
-          <p className="text-[11px] mt-0.5 leading-snug" style={{ color: MUTED, opacity: 0.7 }}>
+          <p
+            className="text-[11px] mt-0.5 leading-snug [font-family:var(--font-body)]"
+            style={{ color: MUTED, opacity: 0.85 }}
+          >
             {sublabel}
           </p>
         )}
@@ -543,18 +569,22 @@ export default function ClientSignOffPage({
         <div className="text-center max-w-sm">
           <div
             className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
-            style={{ backgroundColor: `${FOREST_PRIMARY}15` }}
+            style={{ backgroundColor: "rgba(92, 26, 51, 0.12)" }}
           >
-            <Check size={24} color={FOREST_PRIMARY} weight="bold" />
+            <Check size={24} color={WINE} weight="bold" />
           </div>
-          <h1 className="font-hero text-[26px] font-semibold mb-2" style={{ color: INK }}>Already Signed</h1>
-          <p className="text-[var(--text-base)] mb-6" style={{ color: MUTED }}>This job has already been signed off.</p>
+          <h1 className="font-hero text-[26px] sm:text-[28px] font-normal mb-2 tracking-tight" style={{ color: WINE }}>
+            Already signed
+          </h1>
+          <p className="text-[14px] mb-8 leading-relaxed max-w-[280px] mx-auto [font-family:var(--font-body)]" style={{ color: MUTED }}>
+            This job has already been signed off.
+          </p>
           <Link
             href={`/crew/dashboard/job/${jobType}/${id}`}
-            className="inline-flex items-center gap-1 text-[13px] font-medium transition-opacity hover:opacity-70"
-            style={{ color: MUTED }}
+            className={SIGNOFF_BACK_LINK}
           >
-            <ChevronLeft size={14} /> Back to Job
+            <PhCaretLeft size={14} weight="bold" color={WINE} className="shrink-0 opacity-90" aria-hidden />
+            Back to job
           </Link>
         </div>
       </main>
@@ -623,10 +653,9 @@ export default function ClientSignOffPage({
         <div className="flex items-center justify-between mb-6">
           <Link
             href={`/crew/dashboard/job/${jobType}/${id}`}
-            className="flex items-center gap-1 text-[13px] font-medium py-1.5 pr-3 -ml-1 rounded-lg transition-colors hover:opacity-70"
-            style={{ color: MUTED }}
+            className="flex items-center gap-1.5 text-[12px] font-semibold py-1.5 pr-3 -ml-1 text-[#5C1A33] hover:text-[#4a1529] transition-colors [font-family:var(--font-body)]"
           >
-            <ChevronLeft size={15} /> Back
+            <ChevronLeft size={15} color={WINE} /> Back
           </Link>
           <YugoLogo size={22} variant="wine" onLightBackground />
           <div className="w-14" />
@@ -643,19 +672,19 @@ export default function ClientSignOffPage({
                 <div key={label} className="flex items-center gap-1.5 flex-1 last:flex-none">
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
+                      className={`w-6 h-6 flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
                         done
-                          ? "bg-[#2C3E2D] text-[#1A1A1A]"
+                          ? "bg-[#5C1A33] text-[#FFFBF7]"
                           : active
-                          ? "bg-[#1A1A1A] text-white shadow-sm"
-                          : "bg-[#E8E4DC] text-[#AAA]"
+                          ? "bg-[#5C1A33] text-[#FFFBF7] shadow-sm"
+                          : "bg-[#FFFBF7] text-[#5A6B5E] border border-[#5C1A33]/20"
                       }`}
                     >
                       {done ? <CheckMark size={9} /> : step}
                     </div>
                     <span
                       className="text-[9px] mt-1 font-bold tracking-wide uppercase"
-                      style={{ color: active ? INK : "#BBB6AD" }}
+                      style={{ color: active ? WINE : "#BBB6AD" }}
                     >
                       {label}
                     </span>
@@ -663,7 +692,9 @@ export default function ClientSignOffPage({
                   {i < STEP_LABELS.length - 1 && (
                     <div
                       className="flex-1 h-px transition-colors duration-300 mt-[-14px]"
-                      style={{ backgroundColor: phase > step ? `${FOREST_PRIMARY}60` : BORDER }}
+                      style={{
+                        backgroundColor: phase > step ? "rgba(92, 26, 51, 0.35)" : BORDER,
+                      }}
                     />
                   )}
                 </div>
@@ -676,44 +707,93 @@ export default function ClientSignOffPage({
         {phase === 1 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${FOREST_PRIMARY}AA` }}>
+              <p
+                className="text-[9px] font-bold tracking-[0.14em] uppercase mb-2 [font-family:var(--font-body)] leading-none"
+                style={{ color: MUTED }}
+              >
                 Step 1 of 4
               </p>
-              <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
+              <h1
+                className="font-hero text-[26px] sm:text-[28px] font-normal leading-tight tracking-tight"
+                style={{ color: WINE }}
+              >
                 Item Condition
               </h1>
-              <p className="text-[13px] mt-1.5 leading-snug" style={{ color: MUTED }}>
+              <p
+                className="text-[13px] mt-2 leading-relaxed [font-family:var(--font-body)]"
+                style={{ color: MUTED }}
+              >
                 Assess the condition of each item at delivery.
               </p>
             </div>
 
             {itemConditions.length === 0 ? (
               <div className="text-center py-10">
-                <p className="text-[13px]" style={{ color: MUTED }}>No inventory items found for this job.</p>
-                <p className="text-[11px] mt-1" style={{ color: MUTED }}>You can continue to the next step.</p>
+                <p className="text-[13px] [font-family:var(--font-body)]" style={{ color: MUTED }}>
+                  No inventory items found for this job.
+                </p>
+                <p className="text-[11px] mt-1 [font-family:var(--font-body)]" style={{ color: MUTED }}>
+                  You can continue to the next step.
+                </p>
               </div>
             ) : (
               <div className="space-y-3 mb-6">
                 {itemConditions.map((ic, idx) => (
-                  <div key={idx} className="p-4 rounded-2xl border bg-white" style={{ borderColor: ic.condition === "new_damage" ? "#FCA5A5" : BORDER }}>
-                    <div className="text-[13px] font-semibold mb-2.5" style={{ color: INK }}>{ic.item_name}</div>
-                    <div className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: MUTED }}>Condition at delivery</div>
-                    <div className="grid grid-cols-2 gap-1.5 mb-2">
-                      {CONDITION_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => updateItemCondition(idx, "condition", opt.value)}
-                          className="px-3 py-2 rounded-xl text-[11px] font-semibold transition-all border-0"
-                          style={{
-                            backgroundColor:
-                              ic.condition === opt.value ? `${opt.color}18` : NOTE_FILL,
-                            color: ic.condition === opt.value ? opt.color : MUTED,
-                          }}
-                        >
-                          {ic.condition === opt.value ? "● " : "○ "}{opt.label}
-                        </button>
-                      ))}
+                  <div
+                    key={idx}
+                    className="p-4 border bg-[#FFFBF7]"
+                    style={{
+                      borderColor:
+                        ic.condition === "new_damage" ? "#F87171" : BORDER,
+                    }}
+                  >
+                    <div
+                      className="font-hero text-[20px] sm:text-[22px] font-normal leading-snug mb-3 tracking-tight"
+                      style={{ color: WINE }}
+                    >
+                      {ic.item_name}
+                    </div>
+                    <div
+                      className="text-[9px] font-bold uppercase tracking-[0.14em] mb-2.5 [font-family:var(--font-body)] leading-none"
+                      style={{ color: MUTED }}
+                    >
+                      Condition at delivery
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      {CONDITION_OPTIONS.map((opt) => {
+                        const selected = ic.condition === opt.value;
+                        const isNewDamage = opt.value === "new_damage";
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => updateItemCondition(idx, "condition", opt.value)}
+                            className={`px-3 py-2.5 text-left text-[11px] font-semibold transition-colors border flex items-center gap-2 [font-family:var(--font-body)] leading-snug ${
+                              selected
+                                ? isNewDamage
+                                  ? "border-red-600 bg-red-50 text-red-800"
+                                  : "border-[#5C1A33] bg-[#5C1A33]/[0.07] text-[#5C1A33]"
+                                : "border-[#5C1A33]/22 bg-[#FFFBF7] text-[#5A6B5E] hover:border-[#5C1A33]/40"
+                            }`}
+                          >
+                            {selected ? (
+                              <Check
+                                size={14}
+                                weight="bold"
+                                className="shrink-0"
+                                style={{ color: isNewDamage ? "#991B1B" : WINE }}
+                                aria-hidden
+                              />
+                            ) : (
+                              <span
+                                className="w-3.5 h-3.5 shrink-0 border border-[#5C1A33]/28"
+                                aria-hidden
+                              />
+                            )}
+                            {opt.label}
+                          </button>
+                        );
+                      })}
                     </div>
                     {ic.condition === "new_damage" && (
                       <div className="mt-2">
@@ -721,8 +801,12 @@ export default function ClientSignOffPage({
                           value={ic.notes}
                           onChange={(e) => updateItemCondition(idx, "notes", e.target.value)}
                           placeholder="Describe the damage (required)…"
-                          className="w-full p-3 rounded-xl border-0 text-[12px] outline-none"
-                          style={{ color: INK, backgroundColor: "#FEE2E2" }}
+                          className="w-full p-3 border text-[12px] outline-none [font-family:var(--font-body)] focus:border-red-400"
+                          style={{
+                            color: INK,
+                            backgroundColor: "#FEF2F2",
+                            borderColor: "rgba(220, 38, 38, 0.35)",
+                          }}
                           rows={2}
                         />
                       </div>
@@ -733,8 +817,12 @@ export default function ClientSignOffPage({
                         value={ic.notes}
                         onChange={(e) => updateItemCondition(idx, "notes", e.target.value)}
                         placeholder="Optional notes…"
-                        className="w-full px-3 py-2 rounded-xl border-0 text-[12px] outline-none mt-1"
-                        style={{ color: INK, backgroundColor: NOTE_FILL }}
+                        className="w-full px-3 py-2.5 border text-[12px] outline-none mt-1 [font-family:var(--font-body)] focus:border-[#5C1A33]/50"
+                        style={{
+                          color: INK,
+                          backgroundColor: BG,
+                          borderColor: BORDER,
+                        }}
                       />
                     )}
                   </div>
@@ -743,20 +831,29 @@ export default function ClientSignOffPage({
             )}
 
             {hasNewDamage && (
-              <div className="p-3.5 rounded-xl mb-4" style={{ backgroundColor: "#FEF2F2", border: "1px solid #FCA5A5" }}>
-                <p className="text-[11px] font-semibold text-red-700">
+              <div
+                className="p-3.5 mb-4 border border-red-300 bg-red-50"
+              >
+                <p className="text-[11px] font-semibold text-red-800 [font-family:var(--font-body)] leading-snug">
                   New damage detected, this will be flagged for a potential claim.
                 </p>
               </div>
             )}
 
             <button
+              type="button"
               onClick={() => setPhase(2)}
               disabled={!phase1Valid}
-              className="w-full py-2 font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
-              style={{ backgroundColor: FOREST_PRIMARY, color: "#1A1A1A" }}
+              className={SIGNOFF_SOLID_WINE_CTA}
             >
-              Continue to Confirmation
+              Continue to confirmation
+              <PhCaretRight
+                size={14}
+                weight="bold"
+                color="rgba(255, 251, 247, 0.92)"
+                className="shrink-0"
+                aria-hidden
+              />
             </button>
           </div>
         )}
@@ -765,13 +862,22 @@ export default function ClientSignOffPage({
         {phase === 2 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${FOREST_PRIMARY}AA` }}>
+              <p
+                className="text-[9px] font-bold tracking-[0.14em] uppercase mb-2 [font-family:var(--font-body)] leading-none"
+                style={{ color: MUTED }}
+              >
                 Step 2 of 4
               </p>
-              <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
+              <h1
+                className="font-hero text-[26px] sm:text-[28px] font-normal leading-tight tracking-tight"
+                style={{ color: WINE }}
+              >
                 Items Confirmation
               </h1>
-              <p className="text-[13px] mt-1.5 leading-snug" style={{ color: MUTED }}>
+              <p
+                className="text-[13px] mt-2 leading-relaxed [font-family:var(--font-body)]"
+                style={{ color: MUTED }}
+              >
                 {copy?.itemsConfirmSubtitle ?? "Review and confirm all belongings were received in good condition."}
               </p>
             </div>
@@ -784,14 +890,14 @@ export default function ClientSignOffPage({
                 </p>
                 <div className="grid grid-cols-3 gap-1.5 mb-3">
                   {jobPhotos.slice(0, 9).map((p) => (
-                    <div key={p.id} className="aspect-square rounded-xl overflow-hidden" style={{ background: BORDER }}>
+                    <div key={p.id} className="aspect-square overflow-hidden border border-[#5C1A33]/12" style={{ background: NOTE_FILL }}>
                       <img src={p.url} alt={p.category} className="w-full h-full object-cover" />
                     </div>
                   ))}
                   {jobPhotos.length > 9 && (
                     <div
-                      className="aspect-square rounded-xl flex items-center justify-center text-[12px] font-semibold"
-                      style={{ background: BORDER, color: MUTED }}
+                      className="aspect-square flex items-center justify-center text-[12px] font-semibold border border-[#5C1A33]/12"
+                      style={{ background: NOTE_FILL, color: MUTED }}
                     >
                       +{jobPhotos.length - 9}
                     </div>
@@ -824,7 +930,7 @@ export default function ClientSignOffPage({
                     value={itemsLeftBehind}
                     onChange={(e) => setItemsLeftBehind(e.target.value)}
                     placeholder="List any items not received or left behind…"
-                    className="w-full p-3.5 rounded-xl border bg-white text-[13px] outline-none transition-colors"
+                    className="w-full p-3.5 border bg-[#FFFBF7] text-[13px] outline-none transition-colors [font-family:var(--font-body)] focus:border-[#5C1A33]/40"
                     style={{ color: INK, borderColor: BORDER }}
                     rows={3}
                   />
@@ -839,7 +945,7 @@ export default function ClientSignOffPage({
                   value={exceptions}
                   onChange={(e) => setExceptions(e.target.value)}
                   placeholder="Describe any damage or condition issues…"
-                  className="w-full p-3.5 rounded-xl border bg-white text-[13px] outline-none transition-colors"
+                  className="w-full p-3.5 border bg-[#FFFBF7] text-[13px] outline-none transition-colors [font-family:var(--font-body)] focus:border-[#5C1A33]/40"
                   style={{ color: INK, borderColor: BORDER }}
                   rows={3}
                 />
@@ -847,12 +953,19 @@ export default function ClientSignOffPage({
             </div>
 
             <button
+              type="button"
               onClick={() => setPhase(3)}
               disabled={!phase2Valid}
-              className="w-full py-2 font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
-              style={{ backgroundColor: FOREST_PRIMARY, color: "#1A1A1A" }}
+              className={SIGNOFF_SOLID_WINE_CTA}
             >
-              Continue to Rating
+              Continue to rating
+              <PhCaretRight
+                size={14}
+                weight="bold"
+                color="rgba(255, 251, 247, 0.92)"
+                className="shrink-0"
+                aria-hidden
+              />
             </button>
           </div>
         )}
@@ -861,13 +974,22 @@ export default function ClientSignOffPage({
         {phase === 3 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${FOREST_PRIMARY}AA` }}>
+              <p
+                className="text-[9px] font-bold tracking-[0.14em] uppercase mb-2 [font-family:var(--font-body)] leading-none"
+                style={{ color: MUTED }}
+              >
                 Step 3 of 4
               </p>
-              <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
+              <h1
+                className="font-hero text-[26px] sm:text-[28px] font-normal leading-tight tracking-tight"
+                style={{ color: WINE }}
+              >
                 How was your experience?
               </h1>
-              <p className="text-[13px] mt-1.5" style={{ color: MUTED }}>
+              <p
+                className="text-[13px] mt-2 leading-relaxed [font-family:var(--font-body)]"
+                style={{ color: MUTED }}
+              >
                 Your feedback helps us keep our standards high.
               </p>
             </div>
@@ -891,7 +1013,7 @@ export default function ClientSignOffPage({
                 })}
               </div>
               {rating && (
-                <p className="text-center text-[13px] font-semibold pop-in" style={{ color: FOREST_PRIMARY }}>
+                <p className="text-center text-[13px] font-semibold pop-in" style={{ color: WINE }}>
                   {RATING_LABELS[rating]}
                 </p>
               )}
@@ -906,20 +1028,22 @@ export default function ClientSignOffPage({
               <div className="flex flex-nowrap justify-center gap-1">
                 {Array.from({ length: 11 }, (_, i) => i).map((n) => {
                   const isSelected = npsScore === n;
-                  let bg = BORDER;
+                  let bg = NOTE_FILL;
                   let textC = MUTED;
+                  let bd = "1px solid rgba(44, 62, 45, 0.15)";
                   if (isSelected) {
-                    if (n <= 6) { bg = "#EF4444"; textC = "white"; }
-                    else if (n <= 8) { bg = "#B45309"; textC = "white"; }
-                    else { bg = "#2C3E2D"; textC = "white"; }
+                    bd = "1px solid transparent";
+                    if (n <= 6) { bg = "#EF4444"; textC = "#FFFBF7"; }
+                    else if (n <= 8) { bg = "#B45309"; textC = "#FFFBF7"; }
+                    else { bg = WINE; textC = "#FFFBF7"; }
                   }
                   return (
                     <button
                       key={n}
                       type="button"
                       onClick={() => setNpsScore(n)}
-                      className={`shrink-0 w-7 h-7 rounded-full text-[11px] font-bold transition-all ${isSelected ? "scale-110 shadow-sm" : "hover:opacity-80"}`}
-                      style={{ backgroundColor: bg, color: textC }}
+                      className={`shrink-0 w-7 h-7 text-[11px] font-bold transition-all [font-family:var(--font-body)] ${isSelected ? "scale-110 shadow-sm" : "hover:opacity-80"}`}
+                      style={{ backgroundColor: bg, color: textC, border: bd }}
                     >
                       {n}
                     </button>
@@ -929,7 +1053,7 @@ export default function ClientSignOffPage({
               {npsScore !== null && (
                 <p
                   className="text-center text-[11px] mt-2 font-semibold pop-in"
-                  style={{ color: npsScore >= 9 ? "#2C3E2D" : npsScore >= 7 ? "#B45309" : "#EF4444" }}
+                  style={{ color: npsScore >= 9 ? WINE : npsScore >= 7 ? "#B45309" : "#EF4444" }}
                 >
                   {NPS_LABELS[npsScore]}
                 </p>
@@ -972,10 +1096,10 @@ export default function ClientSignOffPage({
                             name="furniture-reassembled"
                             checked={isSelected}
                             onChange={() => setFurnitureReassembled(value)}
-                            className="w-5 h-5 rounded-full appearance-none border-0 outline-none cursor-pointer"
+                            className="w-5 h-5 appearance-none outline-none cursor-pointer border border-[#5C1A33]/28"
                             style={{
-                              backgroundColor: isSelected ? "#2C3E2D" : "#E8E4DC",
-                              boxShadow: isSelected ? "inset 0 0 0 3px white" : "none",
+                              backgroundColor: isSelected ? WINE : NOTE_FILL,
+                              boxShadow: isSelected ? "inset 0 0 0 2px #FFFBF7" : "none",
                             }}
                           />
                           <span className="text-[15px] font-medium" style={{ color: INK }}>{label}</span>
@@ -999,7 +1123,7 @@ export default function ClientSignOffPage({
                   value={feedbackNote}
                   onChange={(e) => setFeedbackNote(e.target.value)}
                   placeholder="Describe what happened so we can follow up (e.g. damage, missing items, walkthrough not done, property not left clean…)"
-                  className="w-full p-3.5 rounded-xl border bg-white text-[13px] outline-none transition-colors"
+                  className="w-full p-3.5 border bg-[#FFFBF7] text-[13px] outline-none transition-colors [font-family:var(--font-body)] focus:border-[#5C1A33]/40"
                   style={{ color: INK, borderColor: BORDER }}
                   rows={3}
                 />
@@ -1009,19 +1133,26 @@ export default function ClientSignOffPage({
                 value={feedbackNote}
                 onChange={(e) => setFeedbackNote(e.target.value)}
                 placeholder="Optional feedback or comments…"
-                className="w-full p-3.5 rounded-xl border bg-white text-[13px] outline-none transition-colors mb-5"
+                className="w-full p-3.5 border bg-[#FFFBF7] text-[13px] outline-none transition-colors mb-5 [font-family:var(--font-body)] focus:border-[#5C1A33]/40"
                 style={{ color: INK, borderColor: BORDER }}
                 rows={2}
               />
             )}
 
             <button
+              type="button"
               onClick={() => setPhase(4)}
               disabled={!phase3Valid}
-              className="w-full py-2 font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
-              style={{ backgroundColor: FOREST_PRIMARY, color: "#1A1A1A" }}
+              className={SIGNOFF_SOLID_WINE_CTA}
             >
-              Continue to Sign
+              Continue to sign
+              <PhCaretRight
+                size={14}
+                weight="bold"
+                color="rgba(255, 251, 247, 0.92)"
+                className="shrink-0"
+                aria-hidden
+              />
             </button>
           </div>
         )}
@@ -1030,13 +1161,22 @@ export default function ClientSignOffPage({
         {phase === 4 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${FOREST_PRIMARY}AA` }}>
+              <p
+                className="text-[9px] font-bold tracking-[0.14em] uppercase mb-2 [font-family:var(--font-body)] leading-none"
+                style={{ color: MUTED }}
+              >
                 Step 4 of 4
               </p>
-              <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
+              <h1
+                className="font-hero text-[26px] sm:text-[28px] font-normal leading-tight tracking-tight"
+                style={{ color: WINE }}
+              >
                 Sign to confirm
               </h1>
-              <p className="text-[13px] mt-1.5" style={{ color: MUTED }}>
+              <p
+                className="text-[13px] mt-2 leading-relaxed [font-family:var(--font-body)]"
+                style={{ color: MUTED }}
+              >
                 Your signature finalizes the sign-off record.
               </p>
             </div>
@@ -1050,7 +1190,7 @@ export default function ClientSignOffPage({
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
                 placeholder="e.g. Jane Smith"
-                className="w-full px-4 py-3 rounded-xl border bg-white text-[var(--text-base)] outline-none transition-colors"
+                className="w-full px-4 py-3 border bg-[#FFFBF7] text-[var(--text-base)] outline-none transition-colors [font-family:var(--font-body)] focus:border-[#5C1A33]/40"
                 style={{ color: INK, borderColor: BORDER }}
               />
             </div>
@@ -1065,15 +1205,15 @@ export default function ClientSignOffPage({
                   type="button"
                   onClick={clearSignature}
                   className="text-[11px] font-semibold transition-opacity hover:opacity-60"
-                  style={{ color: FOREST_PRIMARY }}
+                  style={{ color: WINE }}
                 >
                   Clear
                 </button>
               </div>
               <div
-                className="relative rounded-2xl overflow-hidden"
+                className="relative overflow-hidden border border-[#5C1A33]/15"
                 style={{
-                  backgroundColor: "#FDFCF8",
+                  backgroundColor: "#FFFBF7",
                   boxShadow: "inset 0 1px 6px rgba(0,0,0,0.04)",
                 }}
               >
@@ -1108,8 +1248,7 @@ export default function ClientSignOffPage({
 
             {/* Legal disclosure */}
             <div
-              className="p-4 rounded-2xl mb-5"
-              style={{ backgroundColor: `${FOREST_PRIMARY}08`, border: `1px solid ${FOREST_PRIMARY}28` }}
+              className="p-4 mb-5 border border-[#5C1A33]/18 bg-[#FFFBF7]"
             >
               <p className="text-[11px] leading-relaxed" style={{ color: FOREST }}>
                 {copy?.legalNote
@@ -1120,18 +1259,31 @@ export default function ClientSignOffPage({
             </div>
 
             {error && (
-              <div className="mb-4 p-3.5 rounded-xl bg-red-50 border border-red-200">
+              <div className="mb-4 p-3.5 bg-red-50 border border-red-200">
                 <p className="text-[12px] text-red-700 font-semibold">{error}</p>
               </div>
             )}
 
             <button
+              type="button"
               onClick={handleSubmit}
               disabled={submitting || !clientName.trim()}
-              className="w-full py-2 font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
-              style={{ backgroundColor: FOREST_PRIMARY, color: "#1A1A1A" }}
+              className={SIGNOFF_SOLID_WINE_CTA}
             >
-              {submitting ? "Submitting…" : "Confirm & Sign Off"}
+              {submitting ? (
+                "Submitting…"
+              ) : (
+                <>
+                  Confirm and sign off
+                  <PhCaretRight
+                    size={14}
+                    weight="bold"
+                    color="rgba(255, 251, 247, 0.92)"
+                    className="shrink-0"
+                    aria-hidden
+                  />
+                </>
+              )}
             </button>
           </div>
         )}
@@ -1143,51 +1295,51 @@ export default function ClientSignOffPage({
             <div className="relative inline-flex items-center justify-center mb-7">
               <div
                 className="absolute w-20 h-20 rounded-full"
-                style={{ backgroundColor: `${FOREST_PRIMARY}18`, animation: "sparkleRing 2s ease-out 0.15s infinite" }}
+                style={{ backgroundColor: "rgba(92, 26, 51, 0.14)", animation: "sparkleRing 2s ease-out 0.15s infinite" }}
               />
               <div
                 className="absolute w-20 h-20 rounded-full"
-                style={{ backgroundColor: `${FOREST_PRIMARY}10`, animation: "sparkleRing 2s ease-out 0.7s infinite" }}
+                style={{ backgroundColor: "rgba(92, 26, 51, 0.08)", animation: "sparkleRing 2s ease-out 0.7s infinite" }}
               />
               <div
-                className="w-16 h-16 rounded-full flex items-center justify-center pop-in text-[#1A1A1A]"
-                style={{ backgroundColor: FOREST_PRIMARY }}
+                className="w-16 h-16 rounded-full flex items-center justify-center pop-in"
+                style={{ backgroundColor: WINE }}
               >
-                <Check size={26} color="#1A1A1A" weight="bold" />
+                <Check size={26} color="#FFFBF7" weight="bold" />
               </div>
             </div>
 
-            <h1 className="font-hero text-[32px] font-semibold mb-2" style={{ color: INK }}>
+            <h1 className="font-hero text-[30px] sm:text-[32px] font-normal mb-3 tracking-tight" style={{ color: WINE }}>
               Thank you{clientName ? `, ${clientName.split(" ")[0]}` : ""}!
             </h1>
             {copy ? (
               <>
-                <p className="text-[15px] mb-1" style={{ color: MUTED }}>
+                <p className="text-[15px] mb-1 leading-snug [font-family:var(--font-body)]" style={{ color: MUTED }}>
                   {copy.thankYouSub}
                 </p>
-                <p className="text-[11px] mt-5 mb-8 max-w-[270px] mx-auto leading-relaxed" style={{ color: MUTED }}>
+                <p className="text-[12px] mt-5 mb-8 max-w-[280px] mx-auto leading-relaxed [font-family:var(--font-body)]" style={{ color: MUTED }}>
                   {copy.thankYouNote}
                 </p>
               </>
             ) : (
               <>
-                <p className="text-[15px] mb-1" style={{ color: MUTED }}>
+                <p className="text-[15px] mb-1 leading-snug [font-family:var(--font-body)]" style={{ color: MUTED }}>
                   We hope you love your new space.
                 </p>
-                <p className="text-[var(--text-base)] font-semibold" style={{ color: FOREST }}>
+                <p className="text-[14px] font-semibold [font-family:var(--font-body)]" style={{ color: WINE }}>
                   Welcome home.
                 </p>
-                <p className="text-[11px] mt-5 mb-8 max-w-[270px] mx-auto leading-relaxed" style={{ color: MUTED }}>
+                <p className="text-[12px] mt-5 mb-8 max-w-[280px] mx-auto leading-relaxed [font-family:var(--font-body)]" style={{ color: MUTED }}>
                   A confirmation receipt has been generated. If you notice any concealed damage within 24 hours, please contact us immediately.
                 </p>
               </>
             )}
             <Link
               href={`/crew/dashboard/job/${jobType}/${id}`}
-              className="inline-flex items-center gap-1 text-[13px] font-medium transition-opacity hover:opacity-70"
-              style={{ color: MUTED }}
+              className={SIGNOFF_BACK_LINK}
             >
-              <ChevronLeft size={14} /> Back to Job
+              <PhCaretLeft size={14} weight="bold" color={WINE} className="shrink-0 opacity-90" aria-hidden />
+              Back to job
             </Link>
           </div>
         )}
@@ -1196,14 +1348,19 @@ export default function ClientSignOffPage({
         {phase === 6 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <h1 className="font-hero text-[28px] font-semibold" style={{ color: INK }}>Skip Sign-Off</h1>
-              <p className="text-[13px] mt-1.5" style={{ color: MUTED }}>
+              <h1 className="font-hero text-[26px] sm:text-[28px] font-normal tracking-tight" style={{ color: WINE }}>
+                Skip sign-off
+              </h1>
+              <p className="text-[13px] mt-2 leading-relaxed [font-family:var(--font-body)]" style={{ color: MUTED }}>
                 Please provide a reason for skipping the client sign-off.
               </p>
             </div>
 
             <div className="space-y-2.5 mb-5">
-              <label className="block text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: MUTED }}>
+              <label
+                className="block text-[9px] font-bold uppercase tracking-[0.14em] mb-3 [font-family:var(--font-body)] leading-none"
+                style={{ color: MUTED }}
+              >
                 Reason
               </label>
               {SKIP_REASONS.map((r) => (
@@ -1211,22 +1368,26 @@ export default function ClientSignOffPage({
                   key={r.value}
                   type="button"
                   onClick={() => setSkipReason(r.value)}
-                  className={`w-full flex items-center gap-3.5 p-4 rounded-2xl text-left transition-all ${
+                  className={`w-full flex items-center gap-3.5 p-4 border text-left transition-all [font-family:var(--font-body)] ${
                     skipReason === r.value
-                      ? "bg-red-50"
-                      : "bg-white hover:bg-red-50/30"
+                      ? "border-red-300 bg-red-50"
+                      : "border-[#5C1A33]/12 bg-[#FFFBF7] hover:border-red-200/60"
                   }`}
                 >
                   <div
-                    className={`w-[18px] h-[18px] rounded-full shrink-0 flex items-center justify-center ${
-                      skipReason === r.value ? "bg-red-400" : "bg-[#E8E4DC]"
+                    className={`w-[18px] h-[18px] shrink-0 flex items-center justify-center border ${
+                      skipReason === r.value
+                        ? "border-red-600 bg-red-600"
+                        : "border-[#5C1A33]/25 bg-[#FFFBF7]"
                     }`}
                   >
-                    {skipReason === r.value && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    {skipReason === r.value && (
+                      <Check size={10} weight="bold" color="#FFFBF7" aria-hidden />
+                    )}
                   </div>
                   <span
                     className="text-[13px] font-medium"
-                    style={{ color: skipReason === r.value ? "#DC2626" : INK }}
+                    style={{ color: skipReason === r.value ? "#B91C1C" : INK }}
                   >
                     {r.label}
                   </span>
@@ -1238,30 +1399,37 @@ export default function ClientSignOffPage({
               value={skipNote}
               onChange={(e) => setSkipNote(e.target.value)}
               placeholder="Additional details (required for 'Other')…"
-              className="w-full p-3.5 rounded-xl border bg-white text-[13px] outline-none transition-colors mb-4"
+              className="w-full p-3.5 border bg-[#FFFBF7] text-[13px] outline-none transition-colors mb-4 [font-family:var(--font-body)] focus:border-[#5C1A33]/40"
               style={{ color: INK, borderColor: BORDER }}
               rows={3}
             />
 
             {geoLat && (
-              <p className="text-[10px] mb-4" style={{ color: MUTED }}>
+              <p className="text-[10px] mb-4 [font-family:var(--font-body)]" style={{ color: MUTED }}>
                 Location captured ({geoLat.toFixed(4)}, {geoLng?.toFixed(4)})
               </p>
             )}
 
             <button
+              type="button"
               onClick={handleSkipSubmit}
               disabled={skipSubmitting || !skipReason || (skipReason === "other" && !skipNote.trim())}
-              className="w-full py-2 font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 bg-red-500 text-white mb-3"
+              className="w-full inline-flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 mb-3 border border-red-700/80 text-[10px] font-bold tracking-[0.12em] uppercase text-red-800 bg-[#FFFBF7] hover:bg-red-50 transition-colors disabled:opacity-40 disabled:pointer-events-none [font-family:var(--font-body)] leading-none active:scale-[0.99]"
             >
-              {skipSubmitting ? "Submitting…" : "Confirm Skip"}
+              {skipSubmitting ? (
+                "Submitting…"
+              ) : (
+                <>
+                  Confirm skip
+                  <PhCaretRight size={14} weight="bold" className="shrink-0 opacity-70" aria-hidden />
+                </>
+              )}
             </button>
 
             <button
               type="button"
               onClick={() => setPhase(1)}
-              className="w-full py-2 font-medium text-[13px] border transition-colors"
-              style={{ color: MUTED, borderColor: BORDER }}
+              className="w-full py-2.5 font-medium text-[13px] border border-[#5C1A33]/22 bg-[#FFFBF7] text-[#5A6B5E] hover:text-[#5C1A33] hover:bg-[#5C1A33]/[0.05] transition-colors [font-family:var(--font-body)]"
             >
               Go back
             </button>
@@ -1274,7 +1442,7 @@ export default function ClientSignOffPage({
             <button
               type="button"
               onClick={() => setPhase(6)}
-              className="text-[11px] transition-colors hover:text-[#2C3E2D] underline underline-offset-2"
+              className="text-[11px] transition-colors hover:text-[#5C1A33] underline underline-offset-2"
               style={{ color: MUTED }}
             >
               Client not around? Skip and do another route

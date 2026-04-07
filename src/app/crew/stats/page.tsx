@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Trophy,
@@ -32,9 +32,9 @@ const SECTION_EYEBROW =
   "block pl-0.5 text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx2)] mb-2 [font-family:var(--font-body)]";
 
 const STAT_TILE =
-  "rounded-2xl bg-white/80 backdrop-blur-[2px] p-4 shadow-[0_2px_22px_rgba(44,62,45,0.07)]";
+  "rounded-2xl bg-[#FFFBF7] p-4 shadow-[0_2px_22px_rgba(44,62,45,0.07)]";
 
-const PANEL_SOFT = "rounded-2xl bg-white/75 backdrop-blur-[2px] shadow-[0_2px_28px_rgba(44,62,45,0.06)]";
+const PANEL_SOFT = "rounded-2xl bg-[#FAF7F2] shadow-[0_2px_28px_rgba(44,62,45,0.06)]";
 
 const BADGE_ICONS: Record<string, React.ReactNode> = {
   Trophy: <Trophy size={16} weight="fill" />,
@@ -93,31 +93,51 @@ export default function CrewStatsPage() {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const loadStats = useCallback(
+    async (isInitial: boolean) => {
+      try {
+        const [statsRes, tipsRes] = await Promise.all([fetch("/api/crew/stats"), fetch("/api/crew/tips")]);
+        if (statsRes.status === 401) {
+          router.replace("/crew/login");
+          return;
+        }
+        const statsData = await statsRes.json().catch(() => null);
+        const tipsData = tipsRes.ok ? await tipsRes.json().catch(() => null) : null;
+        if (statsData && !statsData.error) setStats(statsData as Stats);
+        if (tipsData) setTipData(tipsData);
+      } catch {
+        /* ignore */
+      } finally {
+        if (isInitial) setLoading(false);
+      }
+    },
+    [router],
+  );
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/crew/stats").then((r) => {
-        if (r.status === 401) {
-          router.replace("/crew/login");
-          return null;
-        }
-        return r.json();
-      }),
-      fetch("/api/crew/tips").then((r) => (r.ok ? r.json() : null)),
-    ])
-      .then(([statsData, tipsData]) => {
-        if (statsData) setStats(statsData);
-        if (tipsData) setTipData(tipsData);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [router]);
+    loadStats(true);
+    const tick = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      loadStats(false);
+    };
+    intervalRef.current = setInterval(tick, 15_000);
+    const onVis = () => {
+      if (document.visibilityState === "visible") loadStats(false);
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [loadStats]);
 
   const now = new Date();
   const monthLabel = now.toLocaleDateString("en-CA", { month: "long", year: "numeric" });
 
-  const onTimeDisplay = (rate: number) => {
-    if (rate <= 0) return "—";
+  const onTimeDisplay = (rate: number, totalJobs: number) => {
+    if (totalJobs <= 0) return "—";
     const pct = rate > 1 ? Math.round(rate) : Math.round(rate * 100);
     return `${pct}%`;
   };
@@ -174,7 +194,7 @@ export default function CrewStatsPage() {
           {stats.yourRankThisMonth != null && (
             <div className="relative mt-5 flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[#2C3E2D]/[0.08] px-3 py-1.5 text-[11px] font-semibold text-[var(--tx)]">
-                <Ranking size={14} className="text-[#2C3E2D]" weight="duotone" aria-hidden />
+                <Ranking size={14} className="text-[var(--tx)]" weight="duotone" aria-hidden />
                 #{stats.yourRankThisMonth} this month
               </span>
               <span className="text-[11px] text-[var(--tx3)] leading-snug">
@@ -187,7 +207,7 @@ export default function CrewStatsPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-3.5 mb-12">
           <div className={STAT_TILE}>
             <div className="flex items-center gap-1.5 mb-2">
-              <Users size={14} className="text-[#2C3E2D]" weight="duotone" aria-hidden />
+              <Users size={14} className="text-[var(--tx)]" weight="duotone" aria-hidden />
               <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx2)] [font-family:var(--font-body)]">
                 Jobs
               </span>
@@ -197,21 +217,19 @@ export default function CrewStatsPage() {
           </div>
           <div className={STAT_TILE}>
             <div className="flex items-center gap-1.5 mb-2">
-              <Star size={14} className="text-[#2C3E2D]" weight="duotone" aria-hidden />
+              <Star size={14} className="text-[var(--tx)]" weight="duotone" aria-hidden />
               <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx2)] [font-family:var(--font-body)]">
                 Rating
               </span>
             </div>
             <div className="text-[26px] font-bold text-[var(--tx)] tabular-nums leading-none">
-              {stats.thisMonth.avgRating != null
-                ? stats.thisMonth.avgRating.toFixed(1)
-                : stats.profile.avgRating.toFixed(1)}
+              {stats.thisMonth.avgRating != null ? stats.thisMonth.avgRating.toFixed(1) : "—"}
             </div>
             <div className="text-[10px] text-[var(--tx3)] mt-2">Avg this month</div>
           </div>
           <div className={STAT_TILE}>
             <div className="flex items-center gap-1.5 mb-2">
-              <CurrencyDollar size={14} className="text-[#2C3E2D]" weight="duotone" aria-hidden />
+              <CurrencyDollar size={14} className="text-[var(--tx)]" weight="duotone" aria-hidden />
               <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx2)] [font-family:var(--font-body)]">
                 Tips
               </span>
@@ -223,7 +241,7 @@ export default function CrewStatsPage() {
           </div>
           <div className={STAT_TILE}>
             <div className="flex items-center gap-1.5 mb-2">
-              <TrendUp size={14} className="text-[#2C3E2D]" weight="duotone" aria-hidden />
+              <TrendUp size={14} className="text-[var(--tx)]" weight="duotone" aria-hidden />
               <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx2)] [font-family:var(--font-body)]">
                 Career
               </span>
@@ -233,13 +251,13 @@ export default function CrewStatsPage() {
           </div>
           <div className={STAT_TILE}>
             <div className="flex items-center gap-1.5 mb-2">
-              <Clock size={14} className="text-[#2C3E2D]" weight="duotone" aria-hidden />
+              <Clock size={14} className="text-[var(--tx)]" weight="duotone" aria-hidden />
               <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx2)] [font-family:var(--font-body)]">
                 On-time
               </span>
             </div>
             <div className="text-[26px] font-bold text-[var(--tx)] tabular-nums leading-none">
-              {onTimeDisplay(stats.profile.onTimeRate)}
+              {onTimeDisplay(stats.profile.onTimeRate, stats.profile.totalJobs)}
             </div>
             <div className="text-[10px] text-[var(--tx3)] mt-2">Arrival record</div>
           </div>
@@ -247,7 +265,7 @@ export default function CrewStatsPage() {
             <div className="flex items-center gap-1.5 mb-2">
               <ShieldWarning
                 size={14}
-                className={stats.profile.damageIncidents > 0 ? "text-amber-700" : "text-[#2C3E2D]"}
+                className={stats.profile.damageIncidents > 0 ? "text-amber-700" : "text-[var(--tx)]"}
                 weight="duotone"
                 aria-hidden
               />
@@ -282,7 +300,7 @@ export default function CrewStatsPage() {
             </div>
           ) : (
             <div className="rounded-2xl bg-[#2C3E2D]/[0.04] px-5 py-8 text-center">
-              <Medal size={28} className="mx-auto mb-3 text-[#2C3E2D]/35" weight="duotone" aria-hidden />
+              <Medal size={28} className="mx-auto mb-3 text-[var(--tx3)]" weight="duotone" aria-hidden />
               <p className="text-[13px] font-semibold text-[var(--tx)]">No badges yet</p>
               <p className="text-[12px] text-[var(--tx2)] mt-2 leading-relaxed max-w-[34ch] mx-auto">
                 Complete jobs, earn strong ratings, and keep claims low — badges unlock as you hit milestones.
@@ -328,7 +346,7 @@ export default function CrewStatsPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Star size={12} className="text-[#2C3E2D]" weight="fill" aria-hidden />
+                      <Star size={12} className="text-[var(--tx)]" weight="fill" aria-hidden />
                       <span className="text-[12px] font-bold text-[var(--tx)] tabular-nums">
                         {entry.avgRating > 0 ? entry.avgRating.toFixed(1) : "—"}
                       </span>
@@ -339,7 +357,7 @@ export default function CrewStatsPage() {
             </div>
           ) : (
             <div className="rounded-2xl bg-white/70 px-5 py-10 text-center shadow-[0_2px_24px_rgba(44,62,45,0.05)]">
-              <Trophy size={32} className="mx-auto mb-3 text-[#2C3E2D]/30" weight="duotone" aria-hidden />
+              <Trophy size={32} className="mx-auto mb-3 text-[var(--tx3)]" weight="duotone" aria-hidden />
               <p className="text-[13px] font-semibold text-[var(--tx)]">No rankings yet this month</p>
               <p className="text-[12px] text-[var(--tx2)] mt-2 leading-relaxed max-w-[34ch] mx-auto">
                 As soon as crews finish jobs and ratings are in, the board fills up.
@@ -356,7 +374,7 @@ export default function CrewStatsPage() {
             <div className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-5">
               <div className={`${STAT_TILE} p-3 text-center`}>
                 <div className="flex items-center justify-center mb-1">
-                  <Coins size={14} className="text-[#2C3E2D]" weight="duotone" aria-hidden />
+                  <Coins size={14} className="text-[var(--tx)]" weight="duotone" aria-hidden />
                 </div>
                 <div className="text-[17px] font-bold tabular-nums leading-none" style={{ color: MONEY_INK }}>
                   ${Math.round(tipData.summary.totalEarned)}

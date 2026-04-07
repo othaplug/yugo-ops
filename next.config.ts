@@ -1,5 +1,13 @@
 import type { NextConfig } from "next";
 
+// Proxy/middleware runs on Edge: only NEXT_PUBLIC_* (and this `env` map) are inlined at
+// build time. Map SUPABASE_* → public names so hosting setups that omit NEXT_PUBLIC_*
+// still get a working Supabase client in src/proxy.ts.
+const supabaseUrlForEdge =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+const supabaseAnonKeyForEdge =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+
 const baseSecurityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -11,6 +19,10 @@ const baseSecurityHeaders = [
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  env: {
+    NEXT_PUBLIC_SUPABASE_URL: supabaseUrlForEdge,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKeyForEdge,
+  },
   // Never expose source maps to the browser in production
   productionBrowserSourceMaps: false,
   experimental: {

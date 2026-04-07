@@ -229,7 +229,6 @@ export interface SendEmailResult {
   error?: string;
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 function renderTemplate(template: string, data: unknown): string {
   const renderers: Record<string, (d: any) => string> = {
     "pre-move-72hr": preMove72hrEmail,
@@ -282,7 +281,6 @@ function renderTemplate(template: string, data: unknown): string {
 
   throw new Error(`Unknown email template: ${template}`);
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 /**
  * Returns the configured "From" address for outbound emails.

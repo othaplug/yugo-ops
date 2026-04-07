@@ -113,7 +113,7 @@ export default function PrivacyPage() {
           </ul>
           <p className="text-[var(--text-base)] text-[#454545] leading-relaxed">
             To exercise these rights, contact us at{" "}
-            <a href="mailto:hello@yugo.com" className="text-[#2C3E2D] hover:underline">
+            <a href="mailto:hello@yugo.com" className="text-[var(--tx)] hover:underline">
               hello@yugo.com
             </a>
             . Residents of certain jurisdictions (e.g., California, EU) may have additional rights under applicable privacy laws.
@@ -124,7 +124,7 @@ export default function PrivacyPage() {
           <h2 className="text-[18px] font-semibold text-[#1A1A1A] mb-3">6. Cookies and Tracking</h2>
           <p className="text-[var(--text-base)] text-[#454545] leading-relaxed mb-3">
             We use cookies and similar technologies to enhance your experience, analyze usage, and deliver relevant content. For detailed information, please see our{" "}
-            <Link href="/cookies" className="text-[#2C3E2D] hover:underline">
+            <Link href="/cookies" className="text-[var(--tx)] hover:underline">
               Cookie Policy
             </Link>
             .
@@ -159,7 +159,7 @@ export default function PrivacyPage() {
           </p>
           <ul className="list-none text-[var(--text-base)] text-[#454545] leading-relaxed space-y-1">
             <li>Email:{" "}
-              <a href="mailto:hello@yugo.com" className="text-[#2C3E2D] hover:underline">
+              <a href="mailto:hello@yugo.com" className="text-[var(--tx)] hover:underline">
                 hello@yugo.com
               </a>
             </li>
@@ -176,7 +176,7 @@ export default function PrivacyPage() {
         <button
           type="button"
           onClick={() => router.back()}
-          className="inline-block mt-8 text-[var(--text-base)] font-semibold text-[#2C3E2D] hover:underline cursor-pointer"
+          className="inline-block mt-8 text-[var(--text-base)] font-semibold text-[var(--tx)] hover:underline cursor-pointer"
         >
           ← Back
         </button>

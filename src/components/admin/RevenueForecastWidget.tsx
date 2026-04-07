@@ -21,16 +21,34 @@ export default function RevenueForecastWidget() {
     conversionRate: number;
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selected, setSelected] = useState<7 | 14 | 30>(7);
 
   useEffect(() => {
-    fetch("/api/admin/finance/revenue-forecast")
-      .then((r) => (r.ok ? r.json() : null))
+    setLoadError(null);
+    fetch("/api/admin/finance/revenue-forecast", { credentials: "same-origin" })
+      .then(async (r) => {
+        if (!r.ok) {
+          setLoadError(
+            r.status === 401
+              ? "Sign in again to load the forecast."
+              : "Forecast could not be loaded.",
+          );
+          return null;
+        }
+        return r.json() as Promise<{
+          forecasts: ForecastPeriod[];
+          conversionRate: number;
+        }>;
+      })
       .then((d) => {
         if (d?.forecasts) setData(d);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setLoadError("Forecast could not be loaded.");
+        setLoading(false);
+      });
   }, []);
 
   const current = data?.forecasts?.find((f) => f.days === selected);
@@ -70,6 +88,8 @@ export default function RevenueForecastWidget() {
           <div className="h-20 flex items-center justify-center">
             <div className="w-5 h-5 border-2 border-[var(--tx)] border-t-transparent rounded-full animate-spin" />
           </div>
+        ) : loadError ? (
+          <p className="text-[12px] text-[var(--tx2)] leading-relaxed">{loadError}</p>
         ) : !current ? (
           <p className="text-[12px] text-[var(--tx2)] leading-relaxed">
             No forecast data available.

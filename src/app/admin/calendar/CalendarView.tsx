@@ -11,8 +11,10 @@ import WeekView from "./components/WeekView";
 import YearView from "./components/YearView";
 import ScheduleJobModal from "./components/ScheduleJobModal";
 import JobDetailPanel from "./components/JobDetailPanel";
+import { useTheme } from "../components/ThemeContext";
 
 export default function CalendarView() {
+  const { theme } = useTheme();
   const cal = useCalendar({ role: "admin", initialView: "month" });
 
   const [scheduleModal, setScheduleModal] = useState<{
@@ -73,7 +75,7 @@ export default function CalendarView() {
 
       {cal.loading && (
         <div className="px-6 py-12 text-center">
-          <div className="inline-block w-6 h-6 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
+          <div className="inline-block w-6 h-6 border-2 border-[#2C3E2D]/35 border-t-[#2C3E2D] rounded-full animate-spin" />
         </div>
       )}
 
@@ -152,7 +154,13 @@ export default function CalendarView() {
 
           {/* Detail panel, full-screen overlay on mobile, sidebar on sm+ */}
           {detailEvent && (
-            <div className="fixed inset-0 z-50 overflow-y-auto bg-[var(--card)] sm:static sm:inset-auto sm:z-auto sm:w-[380px] sm:shrink-0 sm:border-l sm:border-[var(--brd)] sm:overflow-y-auto sm:bg-transparent">
+            <div
+              className={
+                theme === "dark"
+                  ? "fixed inset-0 z-50 overflow-y-auto bg-[#2B0416] sm:static sm:inset-auto sm:z-auto sm:w-[400px] sm:shrink-0 sm:border-l sm:border-[rgba(201,139,168,0.28)] sm:overflow-y-auto sm:bg-[#2B0416] shadow-[4px_0_32px_rgba(0,0,0,0.35)]"
+                  : "fixed inset-0 z-50 overflow-y-auto bg-[#FAF7F2] sm:static sm:inset-auto sm:z-auto sm:w-[400px] sm:shrink-0 sm:border-l sm:border-[#2C3E2D]/12 sm:overflow-y-auto sm:bg-[#FAF7F2] shadow-[4px_0_24px_rgba(44,62,45,0.06)]"
+              }
+            >
               <JobDetailPanel
                 event={detailEvent}
                 crews={cal.crews}

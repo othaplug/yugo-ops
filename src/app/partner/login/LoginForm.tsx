@@ -620,9 +620,8 @@ export default function PartnerLoginForm({
                 gap: 12,
                 padding: "24px 28px",
                 borderRadius: 16,
-                background: "rgba(255,255,255,0.09)",
-                border: "1px solid rgba(255,255,255,0.18)",
-                backdropFilter: "blur(20px)",
+                background: "rgba(255,255,255,0.14)",
+                border: "1px solid rgba(255,255,255,0.22)",
                 textAlign: "left" as const,
               }}
             >

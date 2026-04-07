@@ -120,7 +120,7 @@ export default function LiveMoveTimeline({
 
   // Colors: light track uses forest accents; Estate uses cream on wine.
   const FOREST_HEX = "#2C3E2D";
-  const GREEN = "#22C55E";
+  const FOREST_SOFT = "rgba(44,62,45,0.14)";
   const FOREST = "#1C3A2B";
   const CREAM = "#EDE6DC";
   const WINE_DEEP = "#321018";
@@ -159,25 +159,24 @@ export default function LiveMoveTimeline({
         </div>
         {isLive && (
           <span
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
-            style={{ background: `${GREEN}14`, border: `1px solid ${GREEN}30` }}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-none border uppercase tracking-[0.08em] text-[10px] font-bold [font-family:var(--font-body)] leading-none"
+            style={{
+              background: isEstate ? `${FOREST_HEX}18` : `${FOREST_HEX}0C`,
+              borderColor: isEstate ? "rgba(237,230,220,0.35)" : `${FOREST_HEX}35`,
+              color: isEstate ? CREAM : FOREST_HEX,
+            }}
           >
-            <span className="relative flex h-1.5 w-1.5">
+            <span className="relative flex h-1.5 w-1.5 shrink-0">
               <span
                 className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                style={{ background: GREEN }}
+                style={{ background: isEstate ? CREAM : FOREST_HEX }}
               />
               <span
                 className="relative inline-flex rounded-full h-1.5 w-1.5"
-                style={{ background: GREEN }}
+                style={{ background: isEstate ? CREAM : FOREST_HEX }}
               />
             </span>
-            <span
-              className="text-[11px] font-semibold"
-              style={{ color: GREEN }}
-            >
-              Live
-            </span>
+            Live
           </span>
         )}
       </div>
@@ -193,18 +192,18 @@ export default function LiveMoveTimeline({
           const isDone = entry.status === "completed";
           const isUpcoming = entry.status === "upcoming";
 
-          // Dot appearance
-          const dotBg = isDone ? GREEN : isCurrent ? accent : "transparent";
+          // Dot appearance (Yugo forest on light; cream on Estate wine card)
+          const doneFill = isEstate ? "rgba(237,230,220,0.85)" : FOREST_HEX;
+          const dotBg = isDone ? doneFill : isCurrent ? accent : "transparent";
           const dotBorder = isDone
-            ? GREEN
+            ? isEstate ? CREAM : FOREST_HEX
             : isCurrent
               ? accent
               : isEstate
                 ? "rgba(237,230,220,0.25)"
                 : `${FOREST}25`;
-          // Connector: gold for completed→current transition, faint for upcoming
           const connectorColor = isDone
-            ? `${GREEN}50`
+            ? isEstate ? "rgba(237,230,220,0.35)" : "rgba(44,62,45,0.35)"
             : isCurrent
               ? isEstate
                 ? "rgba(237,230,220,0.35)"
@@ -233,7 +232,9 @@ export default function LiveMoveTimeline({
                         ? "0 0 0 4px rgba(237,230,220,0.15)"
                         : `0 0 0 4px ${FOREST_HEX}20`
                       : isDone
-                        ? `0 0 0 3px ${GREEN}14`
+                        ? isEstate
+                          ? "0 0 0 3px rgba(237,230,220,0.12)"
+                          : `0 0 0 3px ${FOREST_SOFT}`
                         : "none",
                     display: "flex",
                     alignItems: "center",
@@ -260,8 +261,11 @@ export default function LiveMoveTimeline({
                       style={{
                         width: isDone ? 7 : 6,
                         height: isDone ? 7 : 6,
-                        background: "rgba(255,255,255,0.9)",
-                        opacity: isDone ? 0.85 : 1,
+                        background:
+                          isEstate && isDone
+                            ? WINE_DEEP
+                            : "rgba(255,255,255,0.92)",
+                        opacity: isDone ? 0.9 : 1,
                       }}
                     />
                   )}

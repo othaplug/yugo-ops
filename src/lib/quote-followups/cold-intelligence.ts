@@ -56,14 +56,16 @@ export async function markQuoteCold(
     .in("status", ["sent", "viewed", "draft", "reactivated"]);
 
   const { data: contact } = quote.contact_id
-    ? await sb.from("contacts").select("name").eq("id", quote.contact_id).maybeSingle()
+    ? await sb.from("contacts").select("name, email").eq("id", quote.contact_id).maybeSingle()
     : { data: null };
 
+  const contactEmail = (contact?.email || "").trim();
   await notifyAdmins("quote_cold", {
     quoteId: quote.quote_id,
     sourceId: quote.id,
     description: `${quote.quote_id} went cold (${reason}). ${contact?.name ? `${contact.name} — ` : ""}Consider a quick call.`,
     clientName: contact?.name ?? undefined,
+    excludeRecipientEmails: contactEmail ? [contactEmail.toLowerCase()] : [],
   }).catch(() => {});
 
   const hid = quote.hubspot_deal_id?.trim();

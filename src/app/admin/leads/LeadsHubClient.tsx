@@ -476,7 +476,7 @@ export default function LeadsHubClient({
           </div>
           <Link
             href={`/admin/leads/${lead.id}`}
-            className="inline-flex shrink-0 items-center gap-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#2C3E2D] underline-offset-2 hover:underline dark:text-[var(--tx2)]"
+            className="inline-flex shrink-0 items-center gap-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tx)] underline-offset-2 hover:underline dark:text-[var(--tx2)]"
           >
             Details
             <CaretRight size={12} weight="bold" className="opacity-70" aria-hidden />
@@ -543,7 +543,7 @@ export default function LeadsHubClient({
           <button
             type="button"
             onClick={() => setManualOpen(true)}
-            className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg border border-[#2C3E2D]/30 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#2C3E2D] transition-colors hover:bg-[#2C3E2D]/[0.06] dark:border-[var(--brd)] dark:text-[var(--tx2)] dark:hover:bg-[var(--hover)] sm:self-auto"
+            className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg border border-[#2C3E2D]/30 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx)] transition-colors hover:bg-[#2C3E2D]/[0.06] dark:border-[var(--brd)] dark:text-[var(--tx2)] dark:hover:bg-[var(--hover)] sm:self-auto"
           >
             <Plus size={14} weight="bold" aria-hidden />
             Add lead manually
@@ -832,7 +832,7 @@ export default function LeadsHubClient({
                   >
                     <Link
                       href={`/admin/leads/${a.lead_id}`}
-                      className="font-semibold text-[#2C3E2D] underline-offset-2 hover:underline dark:text-[var(--tx2)]"
+                      className="font-semibold text-[var(--tx)] underline-offset-2 hover:underline dark:text-[var(--tx2)]"
                     >
                       {a.lead_number || "Lead"}
                     </Link>
@@ -891,7 +891,7 @@ export default function LeadsHubClient({
                     key={lead.id}
                     className="border-b border-[var(--brd)]/[0.35] transition-colors last:border-b-0 hover:bg-[var(--hover)]/80"
                   >
-                    <td className="px-4 py-3 font-mono text-[0.8125rem] font-semibold text-[#2C3E2D] dark:text-[var(--tx2)]">
+                    <td className="px-4 py-3 font-mono text-[0.8125rem] font-semibold text-[var(--tx)]">
                       {lead.lead_number}
                     </td>
                     <td className="px-4 py-3">
@@ -950,7 +950,7 @@ export default function LeadsHubClient({
                     <td className="px-4 py-3">
                       <Link
                         href={`/admin/leads/${lead.id}`}
-                        className="inline-flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[#2C3E2D] underline-offset-2 hover:underline dark:text-[var(--tx2)]"
+                        className="inline-flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--tx)] underline-offset-2 hover:underline dark:text-[var(--tx2)]"
                       >
                         Open
                         <CaretRight

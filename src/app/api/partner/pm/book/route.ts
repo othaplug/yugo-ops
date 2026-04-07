@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
+import { sendEmail } from "@/lib/email/send";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
 import { signTrackToken } from "@/lib/track-token";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
@@ -25,7 +26,7 @@ function asUrgency(v: string): Urgency {
 
 /** POST — book a contract move (pending admin approval). Universal reason + zone pricing. */
 export async function POST(req: NextRequest) {
-  const { orgIds, error } = await requirePartner();
+  const { orgIds, userId, error } = await requirePartner();
   if (error) return error;
   const orgId = orgIds[0]!;
   const admin = createAdminClient();
@@ -61,6 +62,8 @@ export async function POST(req: NextRequest) {
   const weekendFlag = !!body.weekend;
 
   const addonSelections = Array.isArray(body.addon_selections) ? body.addon_selections : [];
+  /** Per-request override: `yugo` = text tenant; `partner` = PM receives tracking link; omit = contract default. */
+  const tenantCommsMode = String(body.tenant_comms_mode || "").trim().toLowerCase();
 
   if (!propertyId || !contractId || !unitNumber || !scheduledDate || !fromAddress || !toAddress || !reasonCode) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -264,10 +267,15 @@ export async function POST(req: NextRequest) {
     sourceId: moveId,
   });
 
-  if (contract.tenant_comms_by === "yugo" && tenantPhone && !vacantNoTenant) {
+  const trackUrl = `${getEmailBaseUrl().replace(/\/$/, "")}/track/move/${getTrackMoveSlug({ move_code: moveCode, id: moveId })}?token=${signTrackToken("move", moveId)}`;
+
+  const contractPrefYugo = String(contract.tenant_comms_by || "").toLowerCase() === "yugo";
+  const yugoContactsTenant =
+    tenantCommsMode === "yugo" || (tenantCommsMode !== "partner" && contractPrefYugo);
+
+  if (yugoContactsTenant && tenantPhone && !vacantNoTenant) {
     const digits = tenantPhone.replace(/\D/g, "");
     if (digits.length >= 10) {
-      const trackUrl = `${getEmailBaseUrl()}/track/move/${getTrackMoveSlug({ move_code: moveCode, id: moveId })}?token=${signTrackToken("move", moveId)}`;
       const msg = [
         `Hi ${tenantName},`,
         `Your building has scheduled a move for unit ${unitNumber} on ${scheduledDate} (${scheduledTime}).`,
@@ -276,6 +284,25 @@ export async function POST(req: NextRequest) {
       ].join("\n");
       try {
         await sendSMS(digits.length === 11 && digits.startsWith("1") ? `+${digits}` : `+1${digits.slice(-10)}`, msg);
+      } catch {
+        /* non-fatal */
+      }
+    }
+  }
+
+  const pmShouldGetTrackingEmail =
+    !!userId &&
+    (tenantCommsMode === "partner" || !yugoContactsTenant || vacantNoTenant);
+  if (pmShouldGetTrackingEmail && userId) {
+    const { data: authUser } = await admin.auth.admin.getUserById(userId);
+    const pmEmail = authUser?.user?.email?.trim();
+    if (pmEmail) {
+      try {
+        await sendEmail({
+          to: pmEmail,
+          subject: `Yugo move booked — ${moveCode} (forward to tenant if needed)`,
+          html: `<p style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;color:#1a1f1b">Your booking for unit <strong>${unitNumber}</strong> on <strong>${scheduledDate}</strong> (${scheduledTime}) is pending Yugo confirmation.</p><p style="font-family:system-ui,sans-serif;font-size:15px"><a href="${trackUrl}" style="color:#2C3E2D;font-weight:600">Open tracking link</a> — share with the tenant when you are ready.</p>`,
+        });
       } catch {
         /* non-fatal */
       }

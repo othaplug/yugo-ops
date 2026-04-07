@@ -1695,7 +1695,7 @@ export default function MoveDetailClient({
                   href={photos[0]?.photo_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[10px] font-semibold text-[#2C3E2D] underline"
+                  className="text-[10px] font-semibold text-[var(--tx)] underline"
                 >
                   View
                 </a>

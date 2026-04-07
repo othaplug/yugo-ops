@@ -202,14 +202,14 @@ export default function TruckAssignments({ refreshKey = 0 }: TruckAssignmentsPro
       </div>
 
       {addModalOpen && (
-        <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5" data-modal-root aria-modal="true">
+        <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5" data-modal-root data-yugo-glass-modal aria-modal="true">
           <div
             className="fixed inset-0 z-0 bg-black/60 modal-overlay"
             onClick={() => setAddModalOpen(false)}
             aria-hidden="true"
           />
           <div
-            className="relative z-10 w-full sm:max-w-md bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-xl p-5 shadow-2xl sheet-card sm:modal-card pointer-events-auto"
+            className="relative z-10 w-full sm:max-w-md yugo-glass-light rounded-t-2xl sm:rounded-xl p-5 shadow-2xl sheet-card sm:modal-card pointer-events-auto"
             style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
             onClick={(e) => e.stopPropagation()}
           >

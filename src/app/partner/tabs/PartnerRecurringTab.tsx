@@ -5,6 +5,11 @@ import { X, Plus, PencilSimple, Play, Pause, Trash } from "@phosphor-icons/react
 import { createPortal } from "react-dom";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { useConfirm } from "@/hooks/useConfirm";
+import {
+  B2B_PARTNER_TIME_WINDOW_OPTIONS,
+  formatPartnerRecurringTimeWindow,
+  LEGACY_PARTNER_RECURRING_TIME_WINDOW_OPTIONS,
+} from "@/lib/time-windows";
 
 /* ─── Types ─────────────────────────────────────── */
 interface RecurringSchedule {
@@ -43,13 +48,6 @@ const VEHICLE_LABELS: Record<string, string> = {
   "20ft": "20ft Truck",
   "26ft": "26ft Truck",
 };
-const TIME_LABELS: Record<string, string> = {
-  morning: "Morning (8–12pm)",
-  afternoon: "Afternoon (12–5pm)",
-  evening: "Evening (5–8pm)",
-  flexible: "Flexible",
-};
-
 function formatNextDate(dateStr: string | null): string {
   if (!dateStr) return "TBD";
   const d = new Date(dateStr + "T12:00:00");
@@ -76,7 +74,9 @@ function ScheduleModal({
   const [vehicleType, setVehicleType] = useState(existing?.vehicle_type ?? "sprinter");
   const [dayType, setDayType] = useState(existing?.day_type ?? "full_day");
   const [numStops, setNumStops] = useState(String(existing?.default_num_stops ?? ""));
-  const [timeWindow, setTimeWindow] = useState(existing?.time_window ?? "morning");
+  const [timeWindow, setTimeWindow] = useState(
+    existing?.time_window ?? B2B_PARTNER_TIME_WINDOW_OPTIONS[0] ?? "",
+  );
   const [pickupAddress, setPickupAddress] = useState(existing?.default_pickup_address ?? "");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
@@ -259,8 +259,11 @@ function ScheduleModal({
                 onChange={(e) => setTimeWindow(e.target.value)}
                 className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
               >
-                {Object.entries(TIME_LABELS).map(([v, l]) => (
-                  <option key={v} value={v}>{l}</option>
+                {B2B_PARTNER_TIME_WINDOW_OPTIONS.map((w) => (
+                  <option key={w} value={w}>{w}</option>
+                ))}
+                {LEGACY_PARTNER_RECURRING_TIME_WINDOW_OPTIONS.map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
                 ))}
               </select>
             </div>
@@ -283,7 +286,7 @@ function ScheduleModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[#2C3E2D]/20 text-[#2C3E2D] hover:bg-[#2C3E2D]/5"
+            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[#2C3E2D]/20 text-[var(--tx)] hover:bg-[#2C3E2D]/5"
           >
             Cancel
           </button>
@@ -413,7 +416,9 @@ export default function PartnerRecurringTab({ orgId }: Props) {
                       <span>{VEHICLE_LABELS[s.vehicle_type] || s.vehicle_type} · {s.day_type === "full_day" ? "Full Day" : "Half Day"}</span>
                     )}
                     {s.default_num_stops && <span>{s.default_num_stops} stops</span>}
-                    {s.time_window && <span>{TIME_LABELS[s.time_window] || s.time_window}</span>}
+                    {s.time_window && (
+                      <span>{formatPartnerRecurringTimeWindow(s.time_window)}</span>
+                    )}
                   </div>
                   {s.next_generation_date && !s.is_paused && (
                     <div className="mt-2 text-[11px]">

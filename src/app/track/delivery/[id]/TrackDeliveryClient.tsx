@@ -490,12 +490,12 @@ export default function TrackDeliveryClient({
       <div className="fixed inset-0 z-50 bg-[#FAF7F2]">
         {crewHasStarted && liveStage && (
           <div
-            className="absolute top-4 left-4 z-20 rounded-none bg-white/95 backdrop-blur-sm border px-4 py-3 flex items-center gap-3 shadow-lg"
+            className="absolute top-4 left-4 z-20 rounded-none bg-[#FFFBF7] border px-4 py-3 flex items-center gap-3 shadow-lg"
             style={{ borderColor: `${FOREST}22` }}
           >
             <span className="relative flex h-3 w-3 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-[#22C55E]" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2C3E2D] opacity-75" />
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-[#2C3E2D]" />
             </span>
             <div>
               <div className="text-[13px] font-bold" style={{ color: FOREST }}>
@@ -529,7 +529,7 @@ export default function TrackDeliveryClient({
         <button
           type="button"
           onClick={() => setIsFullscreen(false)}
-          className="absolute top-4 right-4 z-20 flex items-center gap-2 px-4 py-2.5 rounded-none bg-white/95 backdrop-blur-sm border shadow-lg transition-all active:scale-[0.99] hover:bg-white"
+          className="absolute top-4 right-4 z-20 flex items-center gap-2 px-4 py-2.5 rounded-none bg-[#FFFBF7] border shadow-lg transition-all active:scale-[0.99] hover:bg-white"
           style={{ borderColor: `${FOREST}22`, color: FOREST }}
         >
           <CornersIn size={16} className="text-current shrink-0" aria-hidden />
@@ -647,13 +647,13 @@ export default function TrackDeliveryClient({
               {delivery.delivery_number}
             </span>
             {isInProgress && (
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#22C55E]/12 text-[#22C55E]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
-                LIVE
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-none border border-[#2C3E2D]/30 text-[10px] font-bold uppercase tracking-[0.1em] bg-[#2C3E2D]/[0.08] text-[var(--tx)] [font-family:var(--font-body)] leading-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#2C3E2D] animate-pulse shrink-0" />
+                Live
               </span>
             )}
             {isCompleted && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#22C55E]/12 text-[#22C55E]">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-none bg-[#2C3E2D]/[0.08] text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx)] [font-family:var(--font-body)] leading-none">
                 Complete
               </span>
             )}
@@ -1007,13 +1007,13 @@ export default function TrackDeliveryClient({
                   </a>
                 )}
                 {crewHasStarted ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#22C55E]/10 text-[#22C55E]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
-                    LIVE
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-none border border-[#2C3E2D]/30 text-[10px] font-bold uppercase tracking-[0.1em] bg-[#2C3E2D]/[0.08] text-[var(--tx)] [font-family:var(--font-body)] leading-none">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#2C3E2D] animate-pulse shrink-0" />
+                    Live
                   </span>
                 ) : deliveryCrewAssigned ? (
                   <span
-                    className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold"
+                    className="inline-flex items-center px-2.5 py-1 rounded-none border border-[#2C3E2D]/22 text-[10px] font-semibold uppercase tracking-[0.08em] [font-family:var(--font-body)] leading-none"
                     style={{
                       backgroundColor: `${FOREST}08`,
                       color: `${FOREST}70`,
@@ -1153,7 +1153,7 @@ export default function TrackDeliveryClient({
           {!isCompleted && (
             <div className="py-5 anim-slide-up anim-delay-4">
               <div
-                className={`overflow-hidden border border-[#2C3E2D]/16 transition-colors duration-300 ${crewHasStarted ? "border-[#22C55E]/35" : ""}`}
+                className={`overflow-hidden border border-[#2C3E2D]/16 transition-colors duration-300 ${crewHasStarted ? "border-[#2C3E2D]/35" : ""}`}
               >
                 <button
                   type="button"
@@ -1182,18 +1182,18 @@ export default function TrackDeliveryClient({
                       <div className="absolute inset-0 flex items-center justify-center gap-2 z-10">
                         {crewHasStarted ? (
                           <span
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-none border border-[#22C55E]/35 text-[11px] font-bold bg-white/95 backdrop-blur-sm shadow-lg"
-                            style={{ color: "#22C55E" }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-none border border-[#2C3E2D]/35 text-[11px] font-bold bg-[#FFFBF7] shadow-lg"
+                            style={{ color: FOREST }}
                           >
                             <span className="relative flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#22C55E]" />
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2C3E2D] opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#2C3E2D]" />
                             </span>
                             Tap to view live map
                           </span>
                         ) : (
                           <span
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-none border border-white/30 text-[11px] font-semibold bg-white/90 backdrop-blur-sm shadow-lg"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-none border border-white/30 text-[11px] font-semibold bg-[#FFFBF7] shadow-lg"
                             style={{ color: FOREST }}
                           >
                             Tap to preview route
@@ -1213,8 +1213,8 @@ export default function TrackDeliveryClient({
                       >
                         Live Tracking
                         {crewHasStarted && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-none border border-[#22C55E]/25 text-[9px] font-bold bg-[#22C55E]/10 text-[#22C55E]">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-none border border-[#2C3E2D]/25 text-[9px] font-bold bg-[#2C3E2D]/10 text-[var(--tx)]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#2C3E2D] animate-pulse" />
                             ACTIVE
                           </span>
                         )}
@@ -1321,7 +1321,7 @@ export default function TrackDeliveryClient({
 
                     {/* Waiting overlay when crew hasn't started, z-[1000] above Leaflet */}
                     {!crewHasStarted && (
-                      <div className="absolute inset-0 z-[1000] flex flex-col items-center justify-center bg-white/75 backdrop-blur-sm px-4 text-center">
+                      <div className="absolute inset-0 z-[1000] flex flex-col items-center justify-center bg-[#FFFBF7]/95 px-4 text-center">
                         <span className="text-[13px] font-semibold text-[#1A1816] tracking-tight">
                           Waiting for crew
                         </span>
@@ -1336,12 +1336,12 @@ export default function TrackDeliveryClient({
                     {/* Live status badge inside map when active, z-[1000] so it sits above Leaflet map panes */}
                     {crewHasStarted && liveStage && (
                       <div
-                        className="absolute top-3 left-3 z-[1000] rounded-none bg-white/95 backdrop-blur-sm border px-3 py-2 flex items-center gap-2 shadow-lg"
+                        className="absolute top-3 left-3 z-[1000] rounded-none bg-[#FFFBF7] border px-3 py-2 flex items-center gap-2 shadow-lg"
                         style={{ borderColor: `${FOREST}22` }}
                       >
                         <span className="relative flex h-2.5 w-2.5 shrink-0">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#22C55E]" />
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2C3E2D] opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#2C3E2D]" />
                         </span>
                         <span
                           className="text-[11px] font-bold"
@@ -1361,7 +1361,7 @@ export default function TrackDeliveryClient({
                         e.stopPropagation();
                         setIsFullscreen(true);
                       }}
-                      className="absolute bottom-3 right-3 z-[1000] inline-flex items-center gap-1.5 px-3 py-2 rounded-none bg-white/95 backdrop-blur-sm border shadow-lg transition-opacity hover:opacity-90 active:scale-[0.99]"
+                      className="absolute bottom-3 right-3 z-[1000] inline-flex items-center gap-1.5 px-3 py-2 rounded-none bg-[#FFFBF7] border shadow-lg transition-opacity hover:opacity-90 active:scale-[0.99]"
                       style={{ borderColor: `${FOREST}22`, color: FOREST }}
                     >
                       <CornersOut

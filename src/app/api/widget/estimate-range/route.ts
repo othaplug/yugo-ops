@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  calculateWidgetEstimate,
+  WIDGET_OFFICE_BASE_RATES,
+  WIDGET_RESIDENTIAL_BASE_RATES,
+} from "@/lib/pricing/widget-estimate";
 
 export interface DateEstimate {
   date: string;
@@ -11,53 +16,38 @@ export interface DateEstimate {
   available: boolean;
 }
 
-const BASE_RATES: Record<string, number> = {
-  studio: 480, "1br": 720, "2br": 1080, "3br": 1620, "4br": 2160, "5br_plus": 2700, partial: 540,
-};
-
-const OFFICE_BASE_RATES: Record<string, number> = {
-  small: 900, medium: 1800, large: 3200,
-};
-
-const SEASON_MODS: Record<number, number> = {
-  1: 0.88, 2: 0.88, 3: 0.92, 4: 0.95, 5: 1.0, 6: 1.1,
-  7: 1.15, 8: 1.15, 9: 1.05, 10: 0.95, 11: 0.9, 12: 0.88,
-};
-
-const DAY_MODS: Record<number, number> = {
-  0: 1.0, 1: 0.92, 2: 0.92, 3: 0.92, 4: 0.95, 5: 1.05, 6: 1.08,
-};
-
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const DAY_SHORTS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_SHORTS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-function calculateRangePrice(
-  moveType: string, moveSize: string, officeSize: string | undefined,
-  fromPostal: string, toPostal: string, dateStr: string, preferredTime: string,
-): number {
-  const base = moveType === "office"
-    ? (OFFICE_BASE_RATES[officeSize || "medium"] ?? 1800)
-    : (BASE_RATES[moveSize || "2br"] ?? 1080);
-
-  const d = new Date(dateStr + "T12:00:00");
-  const monthNum = d.getMonth() + 1;
-  const dow = d.getDay();
-  const seasonMod = SEASON_MODS[monthNum] ?? 1.0;
-  const dayMod = DAY_MODS[dow] ?? 1.0;
-  const timeMod = preferredTime === "am" ? 1.05 : 1.0;
-
-  return Math.round(base * seasonMod * dayMod * timeMod);
-}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      moveType, moveSize, officeSize,
-      fromPostal, toPostal,
-      startDate, days = 7,
-    } = body;
+      moveType,
+      moveSize,
+      officeSize,
+      fromPostal,
+      toPostal,
+      accessFrom,
+      accessTo,
+      startDate,
+      days = 7,
+      furnitureItems,
+      estimatedBoxes,
+    } = body as {
+      moveType?: string;
+      moveSize?: string;
+      officeSize?: string;
+      fromPostal?: string;
+      toPostal?: string;
+      accessFrom?: string;
+      accessTo?: string;
+      startDate?: string;
+      days?: number;
+      furnitureItems?: Record<string, number>;
+      estimatedBoxes?: number;
+    };
 
     if (!fromPostal || !toPostal) {
       return NextResponse.json({ error: "fromPostal and toPostal are required" }, { status: 400 });
@@ -75,13 +65,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "days must be a positive integer" }, { status: 400 });
     }
 
-    if (moveType === "residential" && moveSize && !BASE_RATES[moveSize]) {
+    const mt = moveType === "office" ? "office" : "residential";
+
+    if (mt === "residential" && moveSize && !WIDGET_RESIDENTIAL_BASE_RATES[moveSize]) {
       return NextResponse.json({ error: "Invalid moveSize" }, { status: 400 });
     }
-
-    if (moveType === "office" && officeSize && !OFFICE_BASE_RATES[officeSize]) {
+    if (mt === "office" && officeSize && !WIDGET_OFFICE_BASE_RATES[officeSize]) {
       return NextResponse.json({ error: "Invalid officeSize" }, { status: 400 });
     }
+    const fRaw = furnitureItems && typeof furnitureItems === "object" && !Array.isArray(furnitureItems) ? furnitureItems : {};
+    const furniture: Record<string, number> = {};
+    for (const [k, v] of Object.entries(fRaw)) {
+      const q = typeof v === "number" && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0;
+      if (q > 0) furniture[k] = q;
+    }
+    const boxes =
+      typeof estimatedBoxes === "number" && Number.isFinite(estimatedBoxes)
+        ? Math.max(0, estimatedBoxes)
+        : 30;
 
     const start = startDate ? new Date(startDate + "T12:00:00") : new Date();
     if (start < new Date(new Date().toDateString())) {
@@ -97,8 +98,21 @@ export async function POST(req: NextRequest) {
       const dateStr = d.toISOString().split("T")[0]!;
       const dow = d.getDay();
 
-      const am = calculateRangePrice(moveType || "residential", moveSize || "2br", officeSize, fromPostal, toPostal, dateStr, "am");
-      const pm = calculateRangePrice(moveType || "residential", moveSize || "2br", officeSize, fromPostal, toPostal, dateStr, "pm");
+      const baseInput = {
+        moveType: mt as "residential" | "office",
+        moveSize: mt === "residential" ? moveSize || "2br" : "2br",
+        officeSize: mt === "office" ? officeSize || "medium" : undefined,
+        fromPostal: String(fromPostal),
+        toPostal: String(toPostal),
+        accessFrom: accessFrom || "ground",
+        accessTo: accessTo || "ground",
+        furnitureItems: furniture,
+        estimatedBoxes: boxes,
+        dateStr,
+      };
+
+      const am = calculateWidgetEstimate({ ...baseInput, timeSlot: "am" });
+      const pm = calculateWidgetEstimate({ ...baseInput, timeSlot: "pm" });
 
       estimates.push({
         date: dateStr,

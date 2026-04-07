@@ -50,6 +50,7 @@ export default function ConfirmDialog({
   const modal = (
     <div
       data-modal-root
+      data-yugo-glass-modal
       className="fixed inset-0 z-[100000] flex min-h-0 items-center justify-center p-4 sm:p-5"
       role="alertdialog"
       aria-modal="true"
@@ -61,7 +62,7 @@ export default function ConfirmDialog({
         onClick={onCancel}
       />
       <div
-        className="relative z-10 w-full max-w-sm bg-[var(--card)] border border-[var(--brd)] rounded-2xl shadow-2xl modal-card overflow-hidden"
+        className="relative z-10 w-full max-w-sm yugo-glass-light rounded-2xl shadow-2xl modal-card overflow-hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)", maxHeight: "min(90dvh, 90vh)" }}
         onClick={(e) => e.stopPropagation()}
       >

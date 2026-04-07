@@ -1542,7 +1542,7 @@ export default function TrackMoveClient({
                   type="button"
                   disabled={bookingModBusy}
                   onClick={() => void respondBookingMod("approve")}
-                  className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg border border-[#2C3E2D] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#2C3E2D] bg-transparent hover:bg-[#2C3E2D]/6 transition-colors disabled:opacity-50 [font-family:var(--font-body)]"
+                  className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg border border-[#2C3E2D] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx)] bg-transparent hover:bg-[#2C3E2D]/6 transition-colors disabled:opacity-50 [font-family:var(--font-body)]"
                 >
                   Approve change
                   <CaretRight size={16} weight="bold" aria-hidden />
@@ -2867,9 +2867,8 @@ export default function TrackMoveClient({
                             href={href}
                             className="group flex items-center justify-between gap-2 rounded-xl px-4 py-3 transition-all hover:scale-[1.015] hover:shadow-md active:scale-[0.99]"
                             style={{
-                              background: "rgba(255, 255, 255, 0.72)",
+                              background: "rgba(255, 255, 255, 0.96)",
                               border: `1px solid ${FOREST}18`,
-                              backdropFilter: "blur(4px)",
                             }}
                           >
                             <div className="min-w-0">
@@ -3136,7 +3135,7 @@ export default function TrackMoveClient({
 
           {/* Tabs (hidden for completed moves, perks hub is the permanent view) */}
           {!isCompleted && (
-            <div className="sticky top-0 z-20 -mx-4 px-4 mb-3 pt-1 pb-0.5 backdrop-blur-md bg-[#F9EDE4]/92 border-b sm:static sm:z-auto sm:mx-0 sm:px-0 sm:mb-3 sm:border-b-0 sm:bg-transparent sm:backdrop-blur-none sm:pt-0 sm:pb-0" style={{ borderColor: `${FOREST}10` }}>
+            <div className="sticky top-0 z-20 -mx-4 px-4 mb-3 pt-1 pb-0.5 bg-[#F9EDE4] border-b sm:static sm:z-auto sm:mx-0 sm:px-0 sm:mb-3 sm:border-b-0 sm:bg-transparent sm:pt-0 sm:pb-0" style={{ borderColor: `${FOREST}10` }}>
               <div
                 className="flex flex-wrap justify-center gap-x-0 overflow-x-auto overflow-y-hidden scrollbar-hide scroll-smooth snap-x snap-mandatory"
                 style={{ WebkitOverflowScrolling: "touch" }}
@@ -4289,7 +4288,7 @@ export default function TrackMoveClient({
                       onRawChange={setChangeAddress}
                       onChange={(r) => setChangeAddress(r.fullAddress)}
                       placeholder="Enter new destination address"
-                      className="w-full rounded-lg border border-[#2C3E2D38] px-3 py-2 text-[12px] sm:text-[13px] leading-tight text-[#2C3E2D] outline-none focus:ring-2 focus:ring-[#2C3E2D]/20 focus:ring-offset-0 bg-[#F9EDE4] [font-family:var(--font-body)]"
+                      className="w-full rounded-lg border border-[#2C3E2D38] px-3 py-2 text-[12px] sm:text-[13px] leading-tight text-[var(--tx)] outline-none focus:ring-2 focus:ring-[#2C3E2D]/20 focus:ring-offset-0 bg-[#F9EDE4] [font-family:var(--font-body)]"
                     />
                   </div>
                 )}

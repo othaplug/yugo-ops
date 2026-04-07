@@ -25,6 +25,19 @@ export async function GET(
     let liveStage: string | null = delivery.stage || null;
     let sessionId: string | null = null;
     let hasActiveTracking = false;
+    let navEtaSeconds: number | null = null;
+    let navDistanceRemainingM: number | null = null;
+
+    if (delivery.crew_id) {
+      const { data: cl } = await admin
+        .from("crew_locations")
+        .select("nav_eta_seconds, nav_distance_remaining_m")
+        .eq("crew_id", delivery.crew_id)
+        .maybeSingle();
+      if (cl?.nav_eta_seconds != null) navEtaSeconds = Math.round(Number(cl.nav_eta_seconds));
+      if (cl?.nav_distance_remaining_m != null)
+        navDistanceRemainingM = Math.round(Number(cl.nav_distance_remaining_m));
+    }
 
     const { data: ts } = await admin
       .from("tracking_sessions")
@@ -43,7 +56,14 @@ export async function GET(
     }
 
     return NextResponse.json(
-      { liveStage, sessionId, hasActiveTracking, crewId: delivery.crew_id },
+      {
+        liveStage,
+        sessionId,
+        hasActiveTracking,
+        crewId: delivery.crew_id,
+        navEtaSeconds,
+        navDistanceRemainingM,
+      },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );
   } catch (err: unknown) {

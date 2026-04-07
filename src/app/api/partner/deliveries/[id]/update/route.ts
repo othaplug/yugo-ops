@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
+import { ensureB2bDeliverySchedule } from "@/lib/calendar/ensure-b2b-delivery-schedule";
 
 export async function PATCH(
   req: NextRequest,
@@ -48,6 +50,11 @@ export async function PATCH(
     .eq("id", id);
 
   if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 });
+
+  const serviceAdmin = createAdminClient();
+  await ensureB2bDeliverySchedule(serviceAdmin, id).catch((e) =>
+    console.error("[partner/deliveries/update] ensureB2bDeliverySchedule:", e),
+  );
 
   return NextResponse.json({ ok: true });
 }

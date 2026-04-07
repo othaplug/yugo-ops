@@ -60,6 +60,8 @@ const MapboxMap = dynamic(
         dropoff,
         routeLineColor,
         routeGeoJson,
+        markerEtaLine,
+        markerEtaLightChrome,
       }: {
         center: { longitude: number; latitude: number };
         hasPosition: boolean;
@@ -76,8 +78,16 @@ const MapboxMap = dynamic(
         dropoff?: { lat: number; lng: number };
         routeLineColor?: string;
         routeGeoJson?: RouteGeoJson;
+        /** ETA + distance chip above crew arrow (admin dispatch) */
+        markerEtaLine?: string | null;
+        markerEtaLightChrome?: boolean;
       }) {
         const lineGeoJson = routeGeoJson ?? null;
+        const etaPillBg = markerEtaLightChrome ? "#2C3E2D" : "rgba(8,10,16,0.92)";
+        const etaPillColor = markerEtaLightChrome ? "#F9EDE4" : "rgba(255,255,255,0.92)";
+        const etaPillBorder = markerEtaLightChrome
+          ? "1px solid rgba(44,62,45,0.35)"
+          : "1px solid rgba(255,255,255,0.12)";
 
         return (
           <M
@@ -93,8 +103,8 @@ const MapboxMap = dynamic(
                   type="line"
                   paint={{
                     "line-color": routeLineColor ?? "#2C3E2D",
-                    "line-width": 5,
-                    "line-opacity": 1,
+                    "line-width": 7,
+                    "line-opacity": 0.92,
                   }}
                 />
               </Source>
@@ -130,32 +140,54 @@ const MapboxMap = dynamic(
                 anchor="center"
               >
                 <div
-                  className="relative flex items-center justify-center"
-                  style={{ width: 40, height: 40 }}
+                  className="relative flex flex-col items-center justify-end pointer-events-none"
+                  style={{ width: 44, minHeight: 40 }}
                   title={crewName || crew.name || "Crew"}
                 >
-                  <svg
-                    width="36"
-                    height="36"
-                    viewBox="0 0 44 44"
-                    style={{
-                      transform:
-                        crewBearing != null
-                          ? `rotate(${crewBearing}deg)`
-                          : "none",
-                      transition: "transform 0.8s ease-out",
-                      filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.55))",
-                    }}
-                    aria-hidden
+                  {markerEtaLine ? (
+                    <div
+                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded-md max-w-[min(200px,70vw)] text-center shadow-md"
+                      style={{
+                        background: etaPillBg,
+                        color: etaPillColor,
+                        border: etaPillBorder,
+                        fontFamily: "var(--font-body), DM Sans, system-ui, sans-serif",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        lineHeight: 1.25,
+                        letterSpacing: "0.04em",
+                      }}
+                    >
+                      {markerEtaLine}
+                    </div>
+                  ) : null}
+                  <div
+                    className="relative flex items-center justify-center shrink-0"
+                    style={{ width: 40, height: 40 }}
                   >
-                    <polygon
-                      points="22,5 34,36 22,29 10,36"
-                      fill={routeLineColor ?? "#2C3E2D"}
-                      stroke="white"
-                      strokeWidth="2.5"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                    <svg
+                      width="36"
+                      height="36"
+                      viewBox="0 0 44 44"
+                      style={{
+                        transform:
+                          crewBearing != null
+                            ? `rotate(${crewBearing}deg)`
+                            : "none",
+                        transition: "transform 0.8s ease-out",
+                        filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.55))",
+                      }}
+                      aria-hidden
+                    >
+                      <polygon
+                        points="22,5 34,36 22,29 10,36"
+                        fill={routeLineColor ?? "#2C3E2D"}
+                        stroke="white"
+                        strokeWidth="2.5"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
                 </div>
               </Marker>
             )}
@@ -195,6 +227,82 @@ const PICKUP_STAGES = [
   "arrived",
   "arrived_on_site",
 ];
+
+function formatAdminNavEta(sec: number | null, distM: number | null): string | null {
+  if (sec == null || !Number.isFinite(sec) || sec < 0) return null;
+  const m = Math.max(1, Math.round(sec / 60));
+  const eta = m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`;
+  if (distM != null && Number.isFinite(distM) && distM >= 0) {
+    const d = distM < 1000 ? `${Math.round(distM)} m` : `${(distM / 1000).toFixed(1)} km`;
+    return `${eta} · ${d} remaining`;
+  }
+  return `${eta} ETA`;
+}
+
+/** Prefer live nav from crew app; fall back to Mapbox route duration/distance. */
+function resolveAdminEtaDisplay(
+  liveStage: string | null,
+  navSec: number | null,
+  navDistM: number | null,
+  dirSec: number | null,
+  dirDistM: number | null,
+): string | null {
+  if (liveStage === "completed") return null;
+  if (navSec != null && Number.isFinite(navSec) && navSec >= 0) {
+    return formatAdminNavEta(navSec, navDistM);
+  }
+  return formatAdminNavEta(dirSec, dirDistM);
+}
+
+function TrackingStatusOverlay({
+  liveStage,
+  sessionActive,
+  displayEtaLine,
+}: {
+  liveStage: string | null;
+  sessionActive: boolean;
+  displayEtaLine: string | null;
+}) {
+  const hasCard =
+    Boolean(liveStage) || (sessionActive && Boolean(displayEtaLine));
+  if (!hasCard) return null;
+
+  return (
+    <div className="absolute top-3 left-3 z-10 rounded-lg border border-[var(--brd)] bg-[var(--card)] px-4 py-3 shadow-md flex items-start gap-3 max-w-[min(280px,calc(100%-24px))]">
+      <span className="relative flex h-3 w-3 shrink-0 mt-0.5">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
+        <span className="relative inline-flex rounded-full h-3 w-3 bg-[#22C55E]" />
+      </span>
+      <div className="min-w-0 flex-1">
+        {liveStage ? (
+          <>
+            <div className="text-[13px] font-bold text-[var(--tx)]">
+              {CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)}
+            </div>
+            <div className="text-[11px] text-[var(--tx3)]">
+              {liveStage === "loading"
+                ? "Crew is loading items"
+                : liveStage === "unloading"
+                  ? "Crew is unloading items"
+                  : liveStage === "completed"
+                    ? "Move is complete"
+                    : liveStage === "scheduled"
+                      ? "Crew hasn't departed yet"
+                      : "Crew is on the way"}
+            </div>
+          </>
+        ) : null}
+        {sessionActive && displayEtaLine ? (
+          <div
+            className={`text-[11px] font-semibold text-[var(--tx)] ${liveStage ? "mt-1.5 pt-1.5 border-t border-[var(--brd)]/40" : ""}`}
+          >
+            {displayEtaLine}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 export default function LiveTrackingMap({
   crewId,
@@ -237,6 +345,15 @@ export default function LiveTrackingMap({
     lng: number;
   } | null>(null);
   const [crewBearing, setCrewBearing] = useState<number | null>(null);
+  const [navEtaSeconds, setNavEtaSeconds] = useState<number | null>(null);
+  const [navDistanceRemainingM, setNavDistanceRemainingM] = useState<number | null>(null);
+  const [directionsEtaSeconds, setDirectionsEtaSeconds] = useState<number | null>(
+    null,
+  );
+  const [directionsDistanceM, setDirectionsDistanceM] = useState<number | null>(
+    null,
+  );
+  const [crewGpsHeading, setCrewGpsHeading] = useState<number | null>(null);
   const prevCrewPosRef = useRef<{ lat: number; lng: number } | null>(null);
   const supabase = createClient();
   const { theme } = useTheme();
@@ -307,8 +424,8 @@ export default function LiveTrackingMap({
   const effectiveDropoff = dropoff ?? resolvedDropoff;
 
   // Current destination: for delivery/move use stage to pick pickup vs dropoff; else use single destination.
-  const headingToPickup =
-    PICKUP_STAGES.includes(liveStage || "") || !(liveStage ?? "").trim();
+  /** Unknown stage → assume en route to destination (not pickup) so the route line shows the forward leg. */
+  const headingToPickup = liveStage ? PICKUP_STAGES.includes(liveStage) : false;
   const effectiveDestination =
     (deliveryId || moveId) && (effectivePickup || effectiveDropoff)
       ? headingToPickup
@@ -351,7 +468,50 @@ export default function LiveTrackingMap({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [crewId]);
+  }, [crewId, supabase]);
+
+  // Fresher GPS + heading from crew_locations (same source as unified tracking)
+  useEffect(() => {
+    const channel = supabase
+      .channel(`admin-live-crew-loc-${crewId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "crew_locations",
+          filter: `crew_id=eq.${crewId}`,
+        },
+        (payload) => {
+          const row = payload.new as {
+            lat?: unknown;
+            lng?: unknown;
+            heading?: unknown;
+            updated_at?: string | null;
+          };
+          if (!row || row.lat == null || row.lng == null) return;
+          const lat = Number(row.lat);
+          const lng = Number(row.lng);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+          setCrew((prev) => {
+            if (!prev || prev.id !== crewId) return prev;
+            return {
+              ...prev,
+              current_lat: lat,
+              current_lng: lng,
+              updated_at: row.updated_at ?? prev.updated_at,
+            };
+          });
+          if (row.heading != null && Number.isFinite(Number(row.heading))) {
+            setCrewGpsHeading(Number(row.heading));
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [crewId, supabase]);
 
   useEffect(() => {
     if (!crew || crew.current_lat == null || crew.current_lng == null) {
@@ -365,6 +525,8 @@ export default function LiveTrackingMap({
     }
     prevCrewPosRef.current = curr;
   }, [crew?.current_lat, crew?.current_lng]);
+
+  const arrowBearing = crewGpsHeading ?? crewBearing;
 
   // Fetch and subscribe to live stage when moveId OR deliveryId provided
   const sessionChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(
@@ -415,6 +577,19 @@ export default function LiveTrackingMap({
         if (data?.liveStage != null) setLiveStage(data.liveStage);
         if (data?.sessionId) subscribeIfNeeded(data.sessionId);
         setHasActiveSession(!!data?.hasActiveTracking);
+        if (data?.navEtaSeconds != null && Number.isFinite(Number(data.navEtaSeconds))) {
+          setNavEtaSeconds(Math.round(Number(data.navEtaSeconds)));
+        } else {
+          setNavEtaSeconds(null);
+        }
+        if (
+          data?.navDistanceRemainingM != null &&
+          Number.isFinite(Number(data.navDistanceRemainingM))
+        ) {
+          setNavDistanceRemainingM(Math.round(Number(data.navDistanceRemainingM)));
+        } else {
+          setNavDistanceRemainingM(null);
+        }
       } catch {
         // ignore
       }
@@ -443,6 +618,8 @@ export default function LiveTrackingMap({
     if (!hasPosition || !crew || !effectiveDestination) {
       setRouteGeoJson(null);
       setRoutePositions([]);
+      setDirectionsEtaSeconds(null);
+      setDirectionsDistanceM(null);
       return;
     }
     const from = `${crew.current_lng},${crew.current_lat}`;
@@ -450,7 +627,7 @@ export default function LiveTrackingMap({
     const url = MAPBOX_TOKEN
       ? `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${from};${to}?geometries=geojson&access_token=${MAPBOX_TOKEN}`
       : `/api/mapbox/directions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
-    fetch(url)
+    fetch(url, MAPBOX_TOKEN ? undefined : { credentials: "include" })
       .then((res) => {
         if (!res.ok) return null;
         return res.json();
@@ -458,6 +635,23 @@ export default function LiveTrackingMap({
       .then((data) => {
         const coordsList =
           data?.coordinates ?? data?.routes?.[0]?.geometry?.coordinates;
+        const route0 = data?.routes?.[0];
+        const durRaw =
+          data?.duration != null
+            ? Number(data.duration)
+            : route0?.duration != null
+              ? Number(route0.duration)
+              : NaN;
+        const distRaw =
+          data?.distance != null
+            ? Number(data.distance)
+            : route0?.distance != null
+              ? Number(route0.distance)
+              : NaN;
+        const dur =
+          Number.isFinite(durRaw) && durRaw >= 0 ? durRaw : null;
+        const distM =
+          Number.isFinite(distRaw) && distRaw >= 0 ? distRaw : null;
         if (Array.isArray(coordsList) && coordsList.length > 0) {
           setRouteGeoJson({
             type: "Feature",
@@ -467,14 +661,20 @@ export default function LiveTrackingMap({
           setRoutePositions(
             coordsList.map((c: [number, number]) => [c[1], c[0]]),
           );
+          setDirectionsEtaSeconds(dur);
+          setDirectionsDistanceM(distM);
         } else {
           setRouteGeoJson(null);
           setRoutePositions([]);
+          setDirectionsEtaSeconds(null);
+          setDirectionsDistanceM(null);
         }
       })
       .catch(() => {
         setRouteGeoJson(null);
         setRoutePositions([]);
+        setDirectionsEtaSeconds(null);
+        setDirectionsDistanceM(null);
       });
   }, [
     hasPosition,
@@ -511,6 +711,28 @@ export default function LiveTrackingMap({
   const isDeliveryMode = !!deliveryId;
   const sessionActive = hasActiveSession === true;
   const gpsLive = hasPosition && sessionActive;
+  const displayEtaLine = useMemo(
+    () =>
+      resolveAdminEtaDisplay(
+        liveStage,
+        navEtaSeconds,
+        navDistanceRemainingM,
+        directionsEtaSeconds,
+        directionsDistanceM,
+      ),
+    [
+      liveStage,
+      navEtaSeconds,
+      navDistanceRemainingM,
+      directionsEtaSeconds,
+      directionsDistanceM,
+    ],
+  );
+  const showMarkerEta =
+    Boolean(displayEtaLine) &&
+    sessionActive &&
+    hasPosition &&
+    liveStage !== "completed";
 
   if (isDeliveryMode && !sessionActive && !loading) {
     return (
@@ -565,30 +787,11 @@ export default function LiveTrackingMap({
               <CornersOut size={16} className="text-current" aria-hidden />
             )}
           </button>
-          {liveStage && (
-            <div className="absolute top-3 left-3 z-10 rounded-lg border border-[var(--brd)] bg-[var(--card)] px-4 py-3 shadow-md flex items-center gap-3">
-              <span className="relative flex h-3 w-3 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#22C55E]" />
-              </span>
-              <div>
-                <div className="text-[13px] font-bold text-[var(--tx)]">
-                  {CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)}
-                </div>
-                <div className="text-[11px] text-[var(--tx3)]">
-                  {liveStage === "loading"
-                    ? "Crew is loading items"
-                    : liveStage === "unloading"
-                      ? "Crew is unloading items"
-                      : liveStage === "completed"
-                        ? "Move is complete"
-                        : liveStage === "scheduled"
-                          ? "Crew hasn't departed yet"
-                          : "Crew is on the way"}
-                </div>
-              </div>
-            </div>
-          )}
+          <TrackingStatusOverlay
+            liveStage={liveStage}
+            sessionActive={sessionActive}
+            displayEtaLine={displayEtaLine}
+          />
           {loading ? (
             <div className="w-full h-full flex items-center justify-center bg-[var(--bg)] text-[var(--tx3)] text-[12px]">
               Loading map...
@@ -609,7 +812,7 @@ export default function LiveTrackingMap({
                   : null
               }
               crewName={crewName}
-              crewBearing={crewBearing}
+              crewBearing={arrowBearing}
               pickup={effectivePickup ?? undefined}
               dropoff={effectiveDropoff ?? undefined}
               destination={effectiveDestination ?? undefined}
@@ -617,6 +820,7 @@ export default function LiveTrackingMap({
               routePositions={
                 routePositions.length > 0 ? routePositions : undefined
               }
+              markerEtaLine={showMarkerEta ? displayEtaLine : null}
             />
           )}
         </div>
@@ -662,30 +866,11 @@ export default function LiveTrackingMap({
             <CornersOut size={16} className="text-current" aria-hidden />
           )}
         </button>
-        {liveStage && (
-          <div className="absolute top-3 left-3 z-10 rounded-lg border border-[var(--brd)] bg-[var(--card)] px-4 py-3 shadow-md flex items-center gap-3">
-            <span className="relative flex h-3 w-3 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-[#22C55E]" />
-            </span>
-            <div>
-              <div className="text-[13px] font-bold text-[var(--tx)]">
-                {CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)}
-              </div>
-              <div className="text-[11px] text-[var(--tx3)]">
-                {liveStage === "loading"
-                  ? "Crew is loading items"
-                  : liveStage === "unloading"
-                    ? "Crew is unloading items"
-                    : liveStage === "completed"
-                      ? "Move is complete"
-                      : liveStage === "scheduled"
-                        ? "Crew hasn't departed yet"
-                        : "Crew is on the way"}
-              </div>
-            </div>
-          </div>
-        )}
+        <TrackingStatusOverlay
+          liveStage={liveStage}
+          sessionActive={sessionActive}
+          displayEtaLine={displayEtaLine}
+        />
         {loading ? (
           <div className="w-full h-full flex items-center justify-center bg-[var(--bg)] text-[var(--tx3)] text-[12px]">
             Loading map...
@@ -708,12 +893,14 @@ export default function LiveTrackingMap({
                 : null
             }
             crewName={crewName}
-            crewBearing={crewBearing}
+            crewBearing={arrowBearing}
             mapStyle={mapStyle}
             pickup={effectivePickup ?? undefined}
             dropoff={effectiveDropoff ?? undefined}
             routeLineColor={routeLineColor}
             routeGeoJson={routeGeoJson ?? fallbackRouteGeoJson ?? undefined}
+            markerEtaLine={showMarkerEta ? displayEtaLine : null}
+            markerEtaLightChrome={theme === "light"}
           />
         )}
       </div>

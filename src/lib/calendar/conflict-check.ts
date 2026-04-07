@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { formatDeliveryCalendarDescription } from "@/lib/calendar/delivery-event-label";
 import type { TimeBlock, ConflictResult } from "./types";
 
 const DAY_START = "06:00";
@@ -54,12 +55,15 @@ export async function checkCrewConflict(
       } else if (c.reference_type === "delivery" && c.reference_id) {
         const { data: del } = await supabase
           .from("deliveries")
-          .select("client_name, customer_name, delivery_type, item_count")
+          .select("client_name, customer_name, delivery_type, category, item_count")
           .eq("id", c.reference_id)
           .single();
         if (del) {
           const name = del.client_name || del.customer_name || "Delivery";
-          label = `${name}, ${del.item_count || ""}pc Delivery`;
+          label = `${name}, ${formatDeliveryCalendarDescription(
+            del.item_count,
+            del.delivery_type || del.category,
+          )}`;
         }
       }
       return {

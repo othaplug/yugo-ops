@@ -9,6 +9,7 @@ import { tipReceivedAdminEmailHtml } from "@/lib/email/admin-templates";
 import { isFeatureEnabled } from "@/lib/platform-settings";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { squarePaymentErrorsToMessage, squareThrownErrorMessage } from "@/lib/square-payment-errors";
+import { notifyTipRecordedForCrewProfiles } from "@/lib/crew/profile-after-job";
 
 export async function POST(req: NextRequest) {
   if (!(await isFeatureEnabled("tipping_enabled"))) {
@@ -142,9 +143,9 @@ export async function POST(req: NextRequest) {
       crewName = crew?.name || null;
     }
 
-    // Store in tips table + update move
-    await Promise.all([
-      admin.from("tips").insert({
+    const { data: tipRow, error: tipInsErr } = await admin
+      .from("tips")
+      .insert({
         move_id: resolvedMoveId,
         crew_id: move.crew_id,
         client_name: move.client_name,
@@ -154,12 +155,29 @@ export async function POST(req: NextRequest) {
         net_amount: Math.round(netAmount * 100) / 100,
         square_payment_id: paymentId,
         charged_at: now,
-      }),
-      admin.from("moves").update({
+      })
+      .select("id")
+      .single();
+
+    if (tipInsErr || !tipRow?.id) {
+      return NextResponse.json({ error: tipInsErr?.message || "Could not record tip" }, { status: 500 });
+    }
+
+    await admin
+      .from("moves")
+      .update({
         tip_amount: amountDollars,
         tip_charged_at: now,
-      }).eq("id", resolvedMoveId),
-    ]);
+      })
+      .eq("id", resolvedMoveId);
+
+    notifyTipRecordedForCrewProfiles(
+      admin,
+      tipRow.id,
+      move.crew_id,
+      resolvedMoveId,
+      Math.round(netAmount * 100) / 100,
+    ).catch((e) => console.error("[crew-profile] tip rollup:", e));
 
     // Log status event
     await admin.from("status_events").insert({

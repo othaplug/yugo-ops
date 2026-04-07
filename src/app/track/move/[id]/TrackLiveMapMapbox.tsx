@@ -552,7 +552,7 @@ export function TrackLiveMapMapbox({
           }}
         >
           <div
-            className="flex items-center gap-1.5 rounded-full border border-[#E8E4DF] bg-white/95 px-3 py-1.5 text-[12px] font-semibold text-[#1A1816] shadow-sm backdrop-blur-sm"
+            className="flex items-center gap-1.5 rounded-full border border-[#E8E4DF] bg-[#FFFBF7] px-3 py-1.5 text-[12px] font-semibold text-[#1A1816] shadow-sm"
             style={{
               borderColor: `${accentPin}55`,
             }}
@@ -572,8 +572,8 @@ export function TrackLiveMapMapbox({
             pointerEvents: "none",
           }}
         >
-          <div className="max-w-[220px] rounded-lg border border-[#E8E4DF] bg-white/95 px-3 py-2 text-[#1A1816] shadow-lg backdrop-blur-sm">
-            <span className="text-lg font-bold tabular-nums text-[#2C3E2D]">
+          <div className="max-w-[220px] rounded-lg border border-[#E8E4DF] bg-[#FFFBF7] px-3 py-2 text-[#1A1816] shadow-lg">
+            <span className="text-lg font-bold tabular-nums text-[var(--tx)]">
               {etaOverlayMinutes} min
             </span>
             <span className="ml-1.5 text-[12px] text-[#4F4B47]">estimated arrival</span>

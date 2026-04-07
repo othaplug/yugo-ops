@@ -3,8 +3,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getMoveDetailPath, getDeliveryDetailPath } from "@/lib/move-code";
 import type { CalendarEvent, YearHeatData, CalendarStatus } from "@/lib/calendar/types";
 import { JOB_COLORS } from "@/lib/calendar/types";
+import { CALENDAR_B2B_DELIVERY_FILL } from "@/lib/calendar/calendar-job-styles";
 import { requireStaff } from "@/lib/api-auth";
+import { formatDeliveryCalendarDescription } from "@/lib/calendar/delivery-event-label";
 import { toTitleCase } from "@/lib/format-text";
+import { deliveryContactEmail, deliveryContactPhone } from "@/lib/calendar/delivery-contact";
 
 export const dynamic = "force-dynamic";
 
@@ -106,14 +109,14 @@ export async function GET(req: NextRequest) {
     const [movesResult, deliveriesResult, phasesResult, projectsResult, blocksResult, crewsResult, recurringResult, benchmarksResult, durationDefaultsResult, binDropResult, binPickResult, moveProjectDaysResult] = await Promise.allSettled([
       db
         .from("moves")
-        .select("id, move_code, client_name, move_type, move_size, est_hours, status, scheduled_date, scheduled_start, scheduled_end, crew_id, from_address, to_address, event_group_id, event_phase, event_name")
+        .select("id, move_code, client_name, client_phone, client_email, move_type, move_size, est_hours, status, scheduled_date, scheduled_start, scheduled_end, crew_id, from_address, to_address, event_group_id, event_phase, event_name")
         .gte("scheduled_date", startDate)
         .lte("scheduled_date", endDate)
         .neq("status", "cancelled"),
       // Scheduled deliveries include B2B (`category`); no separate query.
       db
         .from("deliveries")
-        .select("id, delivery_number, client_name, customer_name, delivery_type, category, status, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_hours, crew_id, pickup_address, delivery_address, items")
+        .select("id, delivery_number, client_name, customer_name, customer_phone, customer_email, contact_phone, contact_email, end_customer_phone, end_customer_email, delivery_type, category, status, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_hours, crew_id, pickup_address, delivery_address, items")
         .gte("scheduled_date", startDate)
         .lte("scheduled_date", endDate)
         .not("status", "eq", "cancelled"),
@@ -261,6 +264,8 @@ export async function GET(req: NextRequest) {
         color: eventGroupId ? JOB_COLORS.project : JOB_COLORS.move,
         href: getMoveDetailPath(m),
         clientName: m.client_name || null,
+        clientPhone: (m.client_phone as string | null) || null,
+        clientEmail: (m.client_email as string | null) || null,
         fromAddress: m.from_address || null,
         toAddress: m.to_address || null,
         deliveryAddress: null,
@@ -304,13 +309,16 @@ export async function GET(req: NextRequest) {
             deliveryDurationByType.get("standard") ??
             1.5;
       const delCat = `${d.category || ""} ${d.delivery_type || ""}`.toLowerCase();
-      const deliveryFill = delCat.includes("b2b") ? "#FB7185" : JOB_COLORS.delivery;
+      const deliveryFill = delCat.includes("b2b") ? CALENDAR_B2B_DELIVERY_FILL : JOB_COLORS.delivery;
       events.push({
         id: d.id,
         type: "delivery",
         blockType: "delivery",
         name: d.client_name || d.customer_name || d.delivery_number || "Delivery",
-        description: `${itemCount ? itemCount + "pc " : ""}${toTitleCase(d.delivery_type || d.category || "")} Delivery`.trim(),
+        description: formatDeliveryCalendarDescription(
+          itemCount,
+          d.delivery_type || d.category,
+        ),
         date: dk,
         start: delStart,
         end: delEnd,
@@ -323,7 +331,9 @@ export async function GET(req: NextRequest) {
         calendarStatus: (d.status || "scheduled") as CalendarStatus,
         color: deliveryFill,
         href: getDeliveryDetailPath(d),
-        clientName: d.client_name || d.customer_name || null,
+        clientName: d.customer_name || d.client_name || null,
+        clientPhone: deliveryContactPhone(d),
+        clientEmail: deliveryContactEmail(d),
         fromAddress: d.pickup_address || null,
         toAddress: null,
         deliveryAddress: d.delivery_address || null,

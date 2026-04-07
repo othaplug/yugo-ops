@@ -5,16 +5,26 @@ import { Check } from "@phosphor-icons/react";
 
 /** Forest + cream accents — no gold chrome (client track / quote system). */
 const FOREST = "#2C3E2D";
+const FOREST_DEEP = "#1C3A2B";
+const WINE = "#5C1A33";
 const CREAM_ON_DARK = "#EDE6DC";
+const FOREST_MUTE = "rgba(44,62,45,0.15)";
+const FOREST_MUTE_BORDER = "rgba(44,62,45,0.45)";
+const FOREST_GLOW = "rgba(44,62,45,0.12)";
+const DARK_DONE_FILL = "rgba(237,230,220,0.2)";
+const DARK_DONE_BORDER = "rgba(237,230,220,0.45)";
 
 export default function StageProgressBar({
   stages,
   currentIndex,
   variant = "dark",
+  /** Light variant only: wine-tinted inactive chrome for crew premium job screen. */
+  lightAccent = "forest",
 }: {
   stages: { label: string }[];
   currentIndex: number; // 0-based; -1 = not started
   variant?: "dark" | "light";
+  lightAccent?: "forest" | "wine";
 }) {
   const total = stages.length;
   const completedCount = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, total);
@@ -28,7 +38,8 @@ export default function StageProgressBar({
   }, []);
 
   const isDark = variant === "dark";
-  const accent = isDark ? CREAM_ON_DARK : FOREST;
+  const lightInk = lightAccent === "wine" ? WINE : FOREST;
+  const accent = isDark ? CREAM_ON_DARK : lightInk;
 
   return (
     <div className="w-full py-5">
@@ -58,7 +69,9 @@ export default function StageProgressBar({
                         height: 36,
                         background: isDark
                           ? "rgba(237,230,220,0.22)"
-                          : "rgba(44,62,45,0.12)",
+                          : lightAccent === "wine"
+                            ? "rgba(92,26,51,0.14)"
+                            : "rgba(44,62,45,0.12)",
                       }}
                     />
                   )}
@@ -69,7 +82,7 @@ export default function StageProgressBar({
                       style={{
                         width: 36,
                         height: 36,
-                        background: "rgba(34,197,94,0.12)",
+                        background: isDark ? "rgba(237,230,220,0.14)" : FOREST_GLOW,
                         animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite",
                       }}
                     />
@@ -82,24 +95,46 @@ export default function StageProgressBar({
                       height: isLast && (isDone || isCurrent) ? 28 : 24,
                       background: isDone
                         ? isLast && isComplete
-                          ? "#22C55E"
-                          : "rgba(34,197,94,0.15)"
+                          ? isDark
+                            ? CREAM_ON_DARK
+                            : FOREST
+                          : isDark
+                            ? DARK_DONE_FILL
+                            : FOREST_MUTE
                         : isCurrent
                         ? accent
                         : isDark
                         ? "rgba(255,255,255,0.04)"
-                        : "rgba(44,62,45,0.06)",
+                        : lightAccent === "wine"
+                          ? "rgba(92,26,51,0.06)"
+                          : "rgba(44,62,45,0.06)",
                       border: isDone
-                        ? `1.5px solid ${isLast && isComplete ? "#22C55E" : "rgba(34,197,94,0.45)"}`
+                        ? `1.5px solid ${
+                            isLast && isComplete
+                              ? isDark
+                                ? "rgba(237,230,220,0.55)"
+                                : FOREST
+                              : isDark
+                                ? DARK_DONE_BORDER
+                                : FOREST_MUTE_BORDER
+                          }`
                         : isCurrent
                         ? "none"
-                        : `1.5px solid ${isDark ? "rgba(255,255,255,0.12)" : `${FOREST}22`}`,
+                        : isDark
+                        ? "1.5px solid rgba(255,255,255,0.12)"
+                        : lightAccent === "wine"
+                          ? "1.5px solid rgba(92,26,51,0.2)"
+                          : `1.5px solid ${FOREST}22`,
                       boxShadow: isComplete && isLast
-                        ? "0 0 0 4px rgba(34,197,94,0.12), 0 2px 8px rgba(34,197,94,0.2)"
+                        ? isDark
+                          ? "0 0 0 4px rgba(237,230,220,0.12), 0 2px 8px rgba(0,0,0,0.2)"
+                          : `0 0 0 4px ${FOREST_GLOW}, 0 2px 8px rgba(44,62,45,0.2)`
                         : isCurrent
                         ? isDark
                           ? "0 0 0 4px rgba(237,230,220,0.2), 0 2px 8px rgba(0,0,0,0.12)"
-                          : "0 0 0 4px rgba(44,62,45,0.12), 0 2px 8px rgba(44,62,45,0.15)"
+                          : lightAccent === "wine"
+                            ? "0 0 0 4px rgba(92,26,51,0.14), 0 2px 10px rgba(92,26,51,0.12)"
+                            : "0 0 0 4px rgba(44,62,45,0.12), 0 2px 8px rgba(44,62,45,0.15)"
                         : "none",
                     }}
                   >
@@ -107,7 +142,13 @@ export default function StageProgressBar({
                       <Check
                         weight="bold"
                         size={isLast && isComplete ? 12 : 9}
-                        color={isLast && isComplete ? "#fff" : "#22C55E"}
+                        color={
+                          isLast && isComplete
+                            ? isDark
+                              ? FOREST
+                              : "#FFFBF7"
+                            : FOREST
+                        }
                         aria-hidden
                       />
                     ) : isCurrent ? (
@@ -126,7 +167,11 @@ export default function StageProgressBar({
                         style={{
                           width: 5,
                           height: 5,
-                          background: isDark ? "rgba(255,255,255,0.15)" : `${FOREST}35`,
+                          background: isDark
+                            ? "rgba(255,255,255,0.15)"
+                            : lightAccent === "wine"
+                              ? "rgba(92,26,51,0.28)"
+                              : `${FOREST}35`,
                         }}
                       />
                     )}
@@ -139,7 +184,9 @@ export default function StageProgressBar({
                   style={{
                     color: isDone
                       ? isComplete
-                        ? "#22C55E"
+                        ? isDark
+                          ? CREAM_ON_DARK
+                          : FOREST
                         : isDark
                           ? "rgba(232,229,224,0.85)"
                           : FOREST
@@ -147,7 +194,9 @@ export default function StageProgressBar({
                       ? accent
                       : isDark
                       ? "rgba(255,255,255,0.22)"
-                      : `${FOREST}55`,
+                      : lightAccent === "wine"
+                        ? "rgba(92,26,51,0.42)"
+                        : `${FOREST}55`,
                   }}
                 >
                   {s.label}
@@ -161,7 +210,11 @@ export default function StageProgressBar({
                   style={{
                     height: 2,
                     marginTop: 11,
-                    background: isDark ? "rgba(255,255,255,0.07)" : `${FOREST}12`,
+                    background: isDark
+                      ? "rgba(255,255,255,0.07)"
+                      : lightAccent === "wine"
+                        ? "rgba(92,26,51,0.1)"
+                        : `${FOREST}12`,
                   }}
                 >
                   <div
@@ -177,10 +230,14 @@ export default function StageProgressBar({
                       transitionDuration: "700ms",
                       transitionDelay: `${i * 80}ms`,
                       background: isComplete
-                        ? "linear-gradient(90deg, #22C55E, #16A34A)"
+                        ? isDark
+                          ? `linear-gradient(90deg, ${CREAM_ON_DARK}, rgba(237,230,220,0.35))`
+                          : `linear-gradient(90deg, ${FOREST}, ${FOREST_DEEP})`
                         : isDark
                         ? `linear-gradient(90deg, ${CREAM_ON_DARK}, rgba(237,230,220,0.35))`
-                        : `linear-gradient(90deg, ${FOREST}, #1C3A2B)`,
+                        : lightAccent === "wine"
+                          ? "linear-gradient(90deg, #5C1A33, #3d1224)"
+                          : `linear-gradient(90deg, ${FOREST}, ${FOREST_DEEP})`,
                     }}
                   />
                 </div>

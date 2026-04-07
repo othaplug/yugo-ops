@@ -13,30 +13,25 @@ import {
 } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
-import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
+import {
+  B2B_PARTNER_TIME_WINDOW_OPTIONS,
+  TIME_WINDOW_OPTIONS,
+} from "@/lib/time-windows";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { Plus, Trash as Trash2 } from "@phosphor-icons/react";
 import type { VehicleType, DayType } from "@/lib/delivery-day-booking";
 import { calcHST } from "@/lib/format-currency";
 import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
+import { InfoHint } from "@/components/ui/InfoHint";
 import { WINE } from "@/lib/client-theme";
-
-const COMPLEXITY_PRESETS = ["White Glove", "High Value", "Fragile", "Artwork", "Antiques", "Storage"];
+import { getPartnerPortalTerminology } from "@/lib/partner-vertical-copy";
 
 const VEHICLE_TYPES: { value: VehicleType; label: string; capacity: string; payload: string }[] = [
   { value: "sprinter", label: "Cargo Van (Sprinter)", capacity: "370 cu ft", payload: "3,500 lbs" },
   { value: "16ft", label: "16ft Truck", capacity: "800 cu ft", payload: "5,000 lbs" },
   { value: "20ft", label: "20ft Truck", capacity: "1,100 cu ft", payload: "7,000 lbs" },
   { value: "26ft", label: "26ft Truck", capacity: "1,600 cu ft", payload: "10,000 lbs" },
-];
-
-const DELIVERY_TYPES = [
-  { value: "single_item", label: "Single Item", desc: "One piece of furniture" },
-  { value: "multi_piece", label: "Multi-Piece", desc: "2–5 items, same drop" },
-  { value: "full_room", label: "Full Room Setup", desc: "Complete room delivery + setup" },
-  { value: "curbside", label: "Curbside Drop", desc: "Drop at building entrance" },
-  { value: "oversized", label: "Oversized / Fragile", desc: "Piano, safe, art, etc." },
 ];
 
 const DAY_RATE_STEPS = [
@@ -54,13 +49,15 @@ interface DayStop {
   instructions: string;
 }
 
-const DAY_TIME_WINDOWS = [
-  { value: "morning",   label: "Morning",   range: "8am – 12pm", Icon: Sun },
-  { value: "afternoon", label: "Afternoon", range: "12pm – 5pm", Icon: Sunset },
-  { value: "full_day",  label: "Full Day",  range: "8am – 5pm",  Icon: Clock },
-] as const;
+const DAY_TIME_WINDOWS = B2B_PARTNER_TIME_WINDOW_OPTIONS.map((value, i) => {
+  const paren = value.match(/\(([^)]+)\)/);
+  const range = paren ? paren[1] : value;
+  const label = value.split(" (")[0]?.trim() || value;
+  const Icon = i <= 2 ? Sun : i <= 4 ? Sunset : Clock;
+  return { value, label, range, Icon };
+});
 
-type DayTimeWindow = "morning" | "afternoon" | "full_day";
+type DayTimeWindow = string;
 
 const PER_DELIVERY_STEPS = [
   { id: 1, label: "Delivery", description: "Type, zone & item details" },
@@ -127,6 +124,12 @@ export default function PartnerScheduleModal({
   initialItems,
   defaultPickupAddress = "",
 }: Props) {
+  const portalTerms = useMemo(
+    () => getPartnerPortalTerminology(orgType),
+    [orgType],
+  );
+  const deliveryTypeOptions = portalTerms.deliveryTypeRows;
+  const complexityPresets = portalTerms.complexityPresetOptions;
   const [bookingType, setBookingType] = useState<"day_rate" | "per_delivery">("day_rate");
   const [dayRateStep, setDayRateStep] = useState(1);
   const [perDeliveryStep, setPerDeliveryStep] = useState(1);
@@ -143,7 +146,9 @@ export default function PartnerScheduleModal({
 
   // Day rate — schedule & stops (steps 3+4)
   const [dayScheduledDate, setDayScheduledDate] = useState(initialDate);
-  const [dayTimeWindow, setDayTimeWindow] = useState<DayTimeWindow>("morning");
+  const [dayTimeWindow, setDayTimeWindow] = useState<DayTimeWindow>(
+    B2B_PARTNER_TIME_WINDOW_OPTIONS[0] ?? "",
+  );
   const [dayPickupAddress, setDayPickupAddress] = useState("");
   const [dayPickupRaw, setDayPickupRaw] = useState("");
   const [dayStops, setDayStops] = useState<DayStop[]>(() =>
@@ -591,7 +596,7 @@ export default function PartnerScheduleModal({
   const modalContent = (
     <ModalDialogFrame
       zClassName="z-[99999]"
-      backdropClassName="bg-black/45 backdrop-blur-[2px]"
+      backdropClassName="bg-black/45"
       onBackdropClick={onClose}
       panelClassName="bg-[#FFFBF7] rounded-t-lg sm:rounded-lg shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[640px] overflow-hidden mx-0 sm:mx-4 flex flex-col sheet-card sm:modal-card border border-[#2C3E2D]/10"
       panelStyle={{ maxHeight: "min(92dvh, 92vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
@@ -602,7 +607,7 @@ export default function PartnerScheduleModal({
             <div className="min-w-0 flex-1">
               <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5A6B5E]/80 mb-1.5">
                 {bookingType === "day_rate" ? "Day booking" : "Per delivery"}
-                <span className="text-[#2C3E2D]/25 mx-1.5" aria-hidden>
+                <span className="text-[var(--tx3)] mx-1.5" aria-hidden>
                   —
                 </span>
                 {currentStep.description}
@@ -613,7 +618,7 @@ export default function PartnerScheduleModal({
             </div>
             <button
               onClick={onClose}
-              className="w-9 h-9 flex items-center justify-center rounded-sm border border-transparent hover:border-[#2C3E2D]/15 hover:bg-[#2C3E2D]/[0.03] text-[#5A6B5E] hover:text-[#2C3E2D] transition-colors shrink-0"
+              className="w-9 h-9 flex items-center justify-center rounded-sm border border-transparent hover:border-[#2C3E2D]/15 hover:bg-[#2C3E2D]/[0.03] text-[#5A6B5E] hover:text-[var(--tx)] transition-colors shrink-0"
               aria-label="Close"
             >
               <X size={18} weight="regular" />
@@ -626,13 +631,13 @@ export default function PartnerScheduleModal({
                 key={tab}
                 type="button"
                 onClick={() => switchTab(tab)}
-                className={`relative pb-3 pt-0 text-[10px] font-bold tracking-[0.12em] uppercase transition-colors ${
-                  bookingType === tab ? "text-[#2C3E2D]" : "text-[#5A6B5E] hover:text-[#2C3E2D]/75"
+                className={`relative pb-3 pt-0 text-[10px] font-bold tracking-[0.12em] uppercase transition-colors active:bg-[#5C1A33]/[0.06] rounded-sm ${
+                  bookingType === tab ? "text-[#5C1A33]" : "text-[#5A6B5E] hover:text-[var(--tx2)]"
                 }`}
               >
                 {tab === "day_rate" ? "Day rate" : "Per delivery"}
                 {bookingType === tab && (
-                  <span className="absolute bottom-0 left-0 right-0 h-px bg-[#2C3E2D]" />
+                  <span className="absolute bottom-0 left-0 right-0 h-px bg-[#5C1A33]" />
                 )}
               </button>
             ))}
@@ -646,7 +651,7 @@ export default function PartnerScheduleModal({
               {steps.map((s, i) => (
                 <span key={s.id} className="contents">
                   {i > 0 ? (
-                    <span className="text-[#2C3E2D]/20 px-0.5 select-none" aria-hidden>
+                    <span className="text-[var(--tx3)] px-0.5 select-none" aria-hidden>
                       —
                     </span>
                   ) : null}
@@ -656,17 +661,17 @@ export default function PartnerScheduleModal({
                       if (bookingType === "day_rate" && s.id < dayRateStep) setDayRateStep(s.id);
                       if (bookingType === "per_delivery" && s.id < perDeliveryStep) setPerDeliveryStep(s.id);
                     }}
-                    className={`inline-flex items-center gap-1 transition-colors ${
+                    className={`inline-flex items-center gap-1 rounded-sm px-2 py-1.5 transition-colors ${
                       step === s.id
-                        ? "text-[#2C3E2D]"
+                        ? "bg-[#5C1A33] text-[#FFFBF7] shadow-sm"
                         : step > s.id
-                          ? "text-[#2C3E2D]/55 hover:text-[#2C3E2D]"
+                          ? "text-[var(--tx3)] hover:text-[#5C1A33]/90"
                           : "text-[#5A6B5E]/50"
                     }`}
                     style={{ cursor: s.id < step ? "pointer" : "default" }}
                   >
                     {step > s.id ? (
-                      <Check size={11} weight="bold" className="text-[#2C3E2D]/70 shrink-0" aria-hidden />
+                      <Check size={11} weight="bold" className="text-[#5A6B5E] shrink-0" aria-hidden />
                     ) : null}
                     {s.label}
                   </button>
@@ -707,17 +712,17 @@ export default function PartnerScheduleModal({
                         key={value}
                         type="button"
                         onClick={() => setDayTimeWindow(value)}
-                        className={`flex flex-col items-center justify-center gap-0.5 py-3 px-1.5 text-center transition-colors ${
-                          active ? "bg-[#2C3E2D]/[0.06]" : "bg-transparent hover:bg-[#2C3E2D]/[0.03]"
+                        className={`flex flex-col items-center justify-center gap-0.5 py-3 px-1.5 text-center transition-colors active:scale-[0.99] ${
+                          active ? "bg-[#5C1A33]/[0.08]" : "bg-transparent hover:bg-[#5C1A33]/[0.04]"
                         }`}
                       >
                         <Icon
                           size={14}
                           weight={active ? "fill" : "regular"}
-                          className={active ? "text-[#2C3E2D]" : "text-[#5A6B5E]"}
+                          className={active ? "text-[#5C1A33]" : "text-[#5A6B5E]"}
                           aria-hidden
                         />
-                        <span className={`text-[10px] font-bold tracking-[0.08em] uppercase ${active ? "text-[#2C3E2D]" : "text-[#5A6B5E]"}`}>
+                        <span className={`text-[10px] font-bold tracking-[0.08em] uppercase ${active ? "text-[#5C1A33]" : "text-[#5A6B5E]"}`}>
                           {label}
                         </span>
                         <span className="text-[9px] font-normal normal-case tracking-normal text-[#5A6B5E]/85 hidden sm:block">
@@ -747,7 +752,7 @@ export default function PartnerScheduleModal({
                 >
                   <div className="flex items-center justify-between">
                     <h4 className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#5A6B5E] flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-sm border border-[#2C3E2D]/30 text-[#2C3E2D] text-[10px] font-bold flex items-center justify-center tabular-nums">
+                      <span className="w-5 h-5 rounded-sm border border-[#2C3E2D]/30 text-[var(--tx)] text-[10px] font-bold flex items-center justify-center tabular-nums">
                         {idx + 1}
                       </span>
                       Stop {idx + 1}
@@ -796,7 +801,7 @@ export default function PartnerScheduleModal({
               <button
                 type="button"
                 onClick={() => setDayStops((p) => [...p, { id: `ds${Date.now()}`, address: "", customerName: "", customerPhone: "", instructions: "" }])}
-                className="w-full py-2 text-[12px] font-semibold text-[var(--tx3)] hover:text-[#2C3E2D] transition-colors flex items-center justify-center gap-1.5"
+                className="w-full py-2 text-[12px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] transition-colors flex items-center justify-center gap-1.5"
               >
                 <Plus className="w-4 h-4" /> Add another stop
               </button>
@@ -825,7 +830,7 @@ export default function PartnerScheduleModal({
               {dayStops.filter((s) => s.address).map((stop, idx) => (
                 <div key={stop.id} className="py-5 space-y-1.5 first:pt-0">
                   <h4 className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#5A6B5E] flex items-center gap-2">
-                    <span className="w-4 h-4 rounded-sm border border-[#2C3E2D]/30 text-[#2C3E2D] text-[9px] font-bold flex items-center justify-center tabular-nums">
+                    <span className="w-4 h-4 rounded-sm border border-[#2C3E2D]/30 text-[var(--tx)] text-[9px] font-bold flex items-center justify-center tabular-nums">
                       {idx + 1}
                     </span>
                     Stop {idx + 1}
@@ -842,9 +847,11 @@ export default function PartnerScheduleModal({
 
               <div className="pt-5 space-y-3">
                 {renderPricePreview()}
-                <p className="text-[11px] text-[#5A6B5E] text-center leading-relaxed">
-                  Your rates are locked in per your partnership agreement.
-                </p>
+                <div className="flex justify-center pt-1">
+                  <InfoHint ariaLabel="Partner pricing">
+                    Your rates are locked in per your partnership agreement.
+                  </InfoHint>
+                </div>
               </div>
             </div>
           )}
@@ -944,7 +951,7 @@ export default function PartnerScheduleModal({
                         >
                           −
                         </button>
-                        <span className="text-[26px] font-normal text-[#2C3E2D] w-10 text-center font-hero tabular-nums">{numStops}</span>
+                        <span className="text-[26px] font-normal text-[var(--tx)] w-10 text-center font-hero tabular-nums">{numStops}</span>
                         <button
                           type="button"
                           onClick={() => setNumStops((n) => n + 1)}
@@ -1069,7 +1076,7 @@ export default function PartnerScheduleModal({
                           { id: `bi${Date.now()}`, description: "", quantity: 1, handling: "threshold" },
                         ])
                       }
-                      className="inline-flex items-center gap-1 text-[10px] font-bold tracking-[0.1em] uppercase text-[#2C3E2D] mt-1"
+                      className="inline-flex items-center gap-1 text-[10px] font-bold tracking-[0.1em] uppercase text-[var(--tx)] mt-1"
                     >
                       <Plus className="w-4 h-4" /> Add item
                     </button>
@@ -1097,7 +1104,7 @@ export default function PartnerScheduleModal({
                         type="checkbox"
                         checked={b2bAssembly}
                         onChange={(e) => setB2bAssembly(e.target.checked)}
-                        className="rounded border-[var(--brd)] text-[#2C3E2D]"
+                        className="rounded border-[var(--brd)] text-[var(--tx)]"
                       />
                       <span className="text-[13px] text-[var(--tx)]">Assembly required (priced per vertical)</span>
                     </label>
@@ -1106,7 +1113,7 @@ export default function PartnerScheduleModal({
                         type="checkbox"
                         checked={b2bDebris}
                         onChange={(e) => setB2bDebris(e.target.checked)}
-                        className="rounded border-[var(--brd)] text-[#2C3E2D]"
+                        className="rounded border-[var(--brd)] text-[var(--tx)]"
                       />
                       <span className="text-[13px] text-[var(--tx)]">Debris / packaging removal</span>
                     </label>
@@ -1121,18 +1128,18 @@ export default function PartnerScheduleModal({
               <section className="space-y-3">
                 <SectionLabel>Delivery Type</SectionLabel>
                 <div className="divide-y divide-[#2C3E2D]/10 border border-[#2C3E2D]/10 rounded-sm overflow-hidden">
-                  {DELIVERY_TYPES.map((dt) => {
+                  {deliveryTypeOptions.map((dt) => {
                     const sel = deliveryType === dt.value;
                     return (
                       <button
                         key={dt.value}
                         type="button"
                         onClick={() => setDeliveryType(dt.value)}
-                        className={`relative w-full text-left px-4 py-3 transition-colors ${
-                          sel ? "bg-[#2C3E2D]/[0.06]" : "bg-[#FFFBF7] hover:bg-[#2C3E2D]/[0.03]"
+                        className={`relative w-full text-left px-4 py-3 transition-colors active:scale-[0.995] ${
+                          sel ? "bg-[#5C1A33]/[0.08]" : "bg-[#FFFBF7] hover:bg-[#5C1A33]/[0.04]"
                         }`}
                       >
-                        <div className={`text-[12px] font-semibold leading-tight ${sel ? "text-[#2C3E2D]" : "text-[#1a1f1b]"}`}>{dt.label}</div>
+                        <div className={`text-[12px] font-semibold leading-tight ${sel ? "text-[#5C1A33]" : "text-[#1a1f1b]"}`}>{dt.label}</div>
                         <div className="text-[10px] mt-1 text-[#5A6B5E]">{dt.desc}</div>
                       </button>
                     );
@@ -1187,7 +1194,7 @@ export default function PartnerScheduleModal({
                         <span className="text-[13px] text-[var(--tx)]">{t.label}</span>
                         <div className="flex items-center gap-2">
                           <button type="button" onClick={() => setHeavyItems((prev) => { const u = prev.filter((h) => h.tier !== t.tier); if (count > 1) u.push({ tier: t.tier, count: count - 1 }); return u; })} disabled={count === 0} className="w-7 h-7 rounded-sm border border-[#2C3E2D]/20 flex items-center justify-center text-[#5A6B5E] hover:bg-[#2C3E2D]/[0.04] disabled:opacity-30">−</button>
-                          <span className="w-6 text-center font-semibold text-[#2C3E2D] tabular-nums">{count}</span>
+                          <span className="w-6 text-center font-semibold text-[var(--tx)] tabular-nums">{count}</span>
                           <button type="button" onClick={() => setHeavyItems((prev) => { const u = prev.filter((h) => h.tier !== t.tier); u.push({ tier: t.tier, count: count + 1 }); return u; })} className="w-7 h-7 rounded-sm border border-[#2C3E2D]/20 flex items-center justify-center text-[#5A6B5E] hover:bg-[#2C3E2D]/[0.04]">+</button>
                         </div>
                       </div>
@@ -1233,7 +1240,7 @@ export default function PartnerScheduleModal({
                           type="checkbox"
                           checked={useDefaultPickup}
                           onChange={(e) => setUseDefaultPickup(e.target.checked)}
-                          className="rounded border-[var(--brd)] text-[#2C3E2D] mt-0.5 shrink-0"
+                          className="rounded border-[var(--brd)] text-[var(--tx)] mt-0.5 shrink-0"
                         />
                         <span>
                           Use default warehouse address
@@ -1272,7 +1279,9 @@ export default function PartnerScheduleModal({
                   <FormField label="Delivery window">
                     <select value={form.delivery_window} onChange={(e) => set("delivery_window", e.target.value)} className={fieldInput}>
                       <option value="">Select window…</option>
-                      {TIME_WINDOW_OPTIONS.map((w) => <option key={w} value={w}>{w}</option>)}
+                      {(b2bActive ? B2B_PARTNER_TIME_WINDOW_OPTIONS : TIME_WINDOW_OPTIONS).map((w) => (
+                        <option key={w} value={w}>{w}</option>
+                      ))}
                     </select>
                   </FormField>
                   <FormField label="Preferred time">
@@ -1296,8 +1305,8 @@ export default function PartnerScheduleModal({
                   </ul>
                 )}
                 <div className="flex items-center gap-0 border border-[#2C3E2D]/15 rounded-sm overflow-hidden w-fit">
-                  <button type="button" onClick={() => setInventoryBulkMode(false)} className={`text-[9px] font-bold tracking-[0.1em] uppercase px-3 py-2 transition-colors ${!inventoryBulkMode ? "bg-[#2C3E2D] text-white" : "bg-transparent text-[#5A6B5E] hover:bg-[#2C3E2D]/[0.04]"}`}>Single</button>
-                  <button type="button" onClick={() => setInventoryBulkMode(true)} className={`text-[9px] font-bold tracking-[0.1em] uppercase px-3 py-2 border-l border-[#2C3E2D]/15 transition-colors ${inventoryBulkMode ? "bg-[#2C3E2D] text-white" : "bg-transparent text-[#5A6B5E] hover:bg-[#2C3E2D]/[0.04]"}`}>Bulk</button>
+                  <button type="button" onClick={() => setInventoryBulkMode(false)} className={`text-[9px] font-bold tracking-[0.1em] uppercase px-3 py-2 transition-colors ${!inventoryBulkMode ? "bg-[#5C1A33] text-white" : "bg-transparent text-[#5A6B5E] hover:bg-[#5C1A33]/[0.06]"}`}>Single</button>
+                  <button type="button" onClick={() => setInventoryBulkMode(true)} className={`text-[9px] font-bold tracking-[0.1em] uppercase px-3 py-2 border-l border-[#2C3E2D]/15 transition-colors ${inventoryBulkMode ? "bg-[#5C1A33] text-white" : "bg-transparent text-[#5A6B5E] hover:bg-[#5C1A33]/[0.06]"}`}>Bulk</button>
                 </div>
                 {inventoryBulkMode ? (
                   <div className="space-y-2">
@@ -1320,8 +1329,8 @@ export default function PartnerScheduleModal({
               <section className="space-y-2">
                 <SectionLabel>Complexity</SectionLabel>
                 <div className="flex flex-wrap gap-2">
-                  {COMPLEXITY_PRESETS.map((preset) => (
-                    <button key={preset} type="button" onClick={() => toggleComplexity(preset)} className={`px-2.5 py-1.5 text-[10px] font-bold tracking-[0.08em] uppercase border transition-colors rounded-sm ${form.complexityIndicators.includes(preset) ? "bg-[#2C3E2D]/[0.08] text-[#2C3E2D] border-[#2C3E2D]/35" : "bg-transparent text-[#5A6B5E] border-[#2C3E2D]/15 hover:border-[#2C3E2D]/30"}`}>
+                  {complexityPresets.map((preset) => (
+                    <button key={preset} type="button" onClick={() => toggleComplexity(preset)} className={`px-2.5 py-1.5 text-[10px] font-bold tracking-[0.08em] uppercase border transition-colors rounded-sm ${form.complexityIndicators.includes(preset) ? "bg-[#5C1A33]/[0.08] text-[#5C1A33] border-[#5C1A33]/35" : "bg-transparent text-[#5A6B5E] border-[#2C3E2D]/15 hover:border-[#5C1A33]/30"}`}>
                       {preset}
                     </button>
                   ))}
@@ -1336,7 +1345,7 @@ export default function PartnerScheduleModal({
                   <textarea value={form.instructions} onChange={(e) => set("instructions", e.target.value)} rows={2} placeholder="Building access, codes, parking…" className={`${fieldInput} resize-y text-[13px]`} />
                 </FormField>
                 <label className="flex items-center gap-2.5 cursor-pointer">
-                  <input type="checkbox" checked={form.special_handling} onChange={(e) => set("special_handling", e.target.checked)} className="rounded border-[var(--brd)] text-[#2C3E2D] focus:ring-[#2C3E2D]" />
+                  <input type="checkbox" checked={form.special_handling} onChange={(e) => set("special_handling", e.target.checked)} className="rounded border-[var(--brd)] text-[var(--tx)] focus:ring-[#2C3E2D]" />
                   <span className="text-[13px] text-[var(--tx)]">Requires special handling (fragile, high-value)</span>
                 </label>
               </section>
@@ -1400,7 +1409,7 @@ export default function PartnerScheduleModal({
                       <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#5A6B5E] mb-3">Delivery</p>
                       <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
                         <span className="text-[#5A6B5E]">Type</span>
-                        <span className="font-medium text-[#1a1f1b] text-right">{DELIVERY_TYPES.find((d) => d.value === deliveryType)?.label}</span>
+                        <span className="font-medium text-[#1a1f1b] text-right">{deliveryTypeOptions.find((d) => d.value === deliveryType)?.label}</span>
                         <span className="text-[#5A6B5E]">Zone</span>
                         <span className="font-medium text-[#1a1f1b] text-right">Zone {zone}</span>
                         <span className="text-[#5A6B5E]">Access</span>
@@ -1436,9 +1445,11 @@ export default function PartnerScheduleModal({
 
               <div className="pt-6 space-y-3">
                 {b2bActive ? renderB2BPricePreview() : renderPricePreview()}
-                <p className="text-[11px] text-[#5A6B5E] text-center leading-relaxed">
-                  Your rates are locked in per your partnership agreement.
-                </p>
+                <div className="flex justify-center pt-1">
+                  <InfoHint ariaLabel="Partner pricing">
+                    Your rates are locked in per your partnership agreement.
+                  </InfoHint>
+                </div>
               </div>
             </div>
           )}
@@ -1449,7 +1460,7 @@ export default function PartnerScheduleModal({
           <button
             type="button"
             onClick={handleBack}
-            className="inline-flex items-center gap-1.5 px-3 py-2.5 text-[10px] font-bold tracking-[0.12em] uppercase border border-[#2C3E2D]/25 text-[#2C3E2D] hover:bg-[#2C3E2D]/[0.04] transition-colors rounded-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-2.5 text-[10px] font-bold tracking-[0.12em] uppercase border border-[#2C3E2D]/25 text-[var(--tx)] hover:bg-[#2C3E2D]/[0.04] transition-colors rounded-sm"
           >
             <CaretLeft size={14} weight="bold" aria-hidden />
             {step === 1 ? "Cancel" : "Back"}
@@ -1465,7 +1476,7 @@ export default function PartnerScheduleModal({
                   onClick={handleSaveDraft}
                   disabled={submitting || savingDraft}
                   title={savingDraft ? "Saving…" : "Save as draft"}
-                  className="w-9 h-9 flex items-center justify-center rounded-sm border border-[#2C3E2D]/20 text-[#5A6B5E] hover:bg-[#2C3E2D]/[0.04] hover:text-[#2C3E2D] transition-colors disabled:opacity-40"
+                  className="w-9 h-9 flex items-center justify-center rounded-sm border border-[#2C3E2D]/20 text-[#5A6B5E] hover:bg-[#2C3E2D]/[0.04] hover:text-[var(--tx)] transition-colors disabled:opacity-40"
                 >
                   <FloppyDisk size={15} weight="regular" />
                 </button>
@@ -1515,11 +1526,11 @@ export default function PartnerScheduleModal({
         <SectionLabel>Surcharges</SectionLabel>
         <div className="flex gap-4">
           <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={isAfterHours} onChange={(e) => setIsAfterHours(e.target.checked)} className="rounded border-[var(--brd)] text-[#2C3E2D] focus:ring-[#2C3E2D]" />
+            <input type="checkbox" checked={isAfterHours} onChange={(e) => setIsAfterHours(e.target.checked)} className="rounded border-[var(--brd)] text-[var(--tx)] focus:ring-[#2C3E2D]" />
             <span className="text-[13px] text-[var(--tx)]">After Hours (+20%)</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={isWeekend} onChange={(e) => setIsWeekend(e.target.checked)} className="rounded border-[var(--brd)] text-[#2C3E2D] focus:ring-[#2C3E2D]" />
+            <input type="checkbox" checked={isWeekend} onChange={(e) => setIsWeekend(e.target.checked)} className="rounded border-[var(--brd)] text-[var(--tx)] focus:ring-[#2C3E2D]" />
             <span className="text-[13px] text-[var(--tx)]">Weekend (+10%)</span>
           </label>
         </div>
@@ -1537,7 +1548,7 @@ export default function PartnerScheduleModal({
           {displayServices.map((svc) => (
             <label key={svc.slug} className="flex items-start justify-between gap-4 py-3 cursor-pointer hover:bg-[#2C3E2D]/[0.02] px-1 -mx-1 transition-colors">
               <div className="flex items-start gap-2.5 min-w-0">
-                <input type="checkbox" checked={!!selectedServices[svc.slug]?.enabled} onChange={() => toggleService(svc.slug)} className="rounded-sm border-[#2C3E2D]/25 text-[#2C3E2D] mt-0.5 shrink-0" />
+                <input type="checkbox" checked={!!selectedServices[svc.slug]?.enabled} onChange={() => toggleService(svc.slug)} className="rounded-sm border-[#2C3E2D]/25 text-[var(--tx)] mt-0.5 shrink-0" />
                 <div className="min-w-0">
                   <div className="text-[13px] text-[#1a1f1b]">{svc.service_name}</div>
                   {svc.slug === "stair_carry" && selectedServices[svc.slug]?.enabled && (
@@ -1548,7 +1559,7 @@ export default function PartnerScheduleModal({
                   )}
                 </div>
               </div>
-              <span className="text-[12px] font-semibold text-[#2C3E2D] shrink-0 tabular-nums">
+              <span className="text-[12px] font-semibold text-[var(--tx)] shrink-0 tabular-nums">
                 {fmtCurrency(svc.price_min)}{svc.price_max ? ` – ${fmtCurrency(svc.price_max)}` : ""}
                 {svc.price_unit === "per_flight" ? "/flight" : svc.price_unit === "per_stop" ? "/stop" : ""}
               </span>
@@ -1605,13 +1616,15 @@ export default function PartnerScheduleModal({
               </div>
               <div className="flex justify-between pt-1 items-baseline">
                 <span className="text-[10px] font-bold tracking-[0.1em] uppercase text-[#5A6B5E]">Total incl. HST</span>
-                <span className="text-[22px] font-normal text-[#2C3E2D] font-hero tabular-nums">{fmtCurrency(totalWithHst)}</span>
+                <span className="text-[22px] font-normal text-[var(--tx)] font-hero tabular-nums">{fmtCurrency(totalWithHst)}</span>
               </div>
             </div>
             {std != null && std > sub ? (
-              <p className="text-[10px] text-[#5A6B5E] leading-relaxed">
-                List pricing for the same job would be about {fmtCurrency(std)} before HST.
-              </p>
+              <div className="flex justify-end pt-0.5">
+                <InfoHint ariaLabel="List pricing comparison">
+                  List pricing for the same job would be about {fmtCurrency(std)} before HST.
+                </InfoHint>
+              </div>
             ) : null}
           </>
         ) : null}
@@ -1624,8 +1637,13 @@ export default function PartnerScheduleModal({
     const totalWithHst = pricing ? pricing.totalPrice + hst : 0;
     return (
       <div className="space-y-3 pt-1">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5A6B5E]">Price preview</h3>
+          {bookingType === "per_delivery" && pricing ? (
+            <InfoHint ariaLabel="What base rates include">
+              Rates shown are base prices for standard access. Walk-up, long carry, and heavy item surcharges may apply.
+            </InfoHint>
+          ) : null}
           {pricingLoading && <span className="text-[10px] text-[#5A6B5E]">Calculating…</span>}
         </div>
         {pricing ? (
@@ -1651,16 +1669,11 @@ export default function PartnerScheduleModal({
               </div>
               <div className="flex justify-between pt-1 items-baseline">
                 <span className="text-[10px] font-bold tracking-[0.1em] uppercase text-[#5A6B5E]">Total incl. HST</span>
-                <span className="text-[22px] font-normal text-[#2C3E2D] font-hero tabular-nums">{fmtCurrency(totalWithHst)}</span>
+                <span className="text-[22px] font-normal text-[var(--tx)] font-hero tabular-nums">{fmtCurrency(totalWithHst)}</span>
               </div>
             </div>
             {pricing.effectivePerStop && bookingType === "day_rate" && (
               <div className="text-[11px] text-[#5A6B5E] text-right">Effective per stop: {fmtCurrency(pricing.effectivePerStop)}</div>
-            )}
-            {bookingType === "per_delivery" && (
-              <p className="text-[10px] text-[#5A6B5E] leading-relaxed pt-1">
-                Rates shown are base prices for standard access. Walk-up, long carry, and heavy item surcharges may apply.
-              </p>
             )}
           </>
         ) : (

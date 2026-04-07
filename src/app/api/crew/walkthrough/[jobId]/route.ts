@@ -12,8 +12,10 @@ import { signTrackToken } from "@/lib/track-token";
 import { getMoveCode, formatJobId } from "@/lib/move-code";
 import {
   buildTruckAssessment,
+  creditForRemovedLine,
   formatItemsForStorage,
   scoreForCustomClass,
+  surchargeForAddedLine,
   summarizePricing,
   type ItemAddedInput,
   type ItemRemovedInput,
@@ -191,8 +193,16 @@ export async function POST(
         const resend = getResend();
         const to = await getAdminNotificationEmail();
         const emailFrom = await getEmailFrom();
-        const extraLines = added.map((a) => `• ${a.item_name} ×${a.quantity} +$${Math.round(a.weight_score * a.quantity * perScoreRate)}`).join("\n");
-        const missingLines = removed.map((r) => `• ${r.item_name} ×${r.quantity} -$${Math.round(r.weight_score * r.quantity * perScoreRate)}`).join("\n");
+        const extraLines = added
+          .map((a) =>
+            a.is_custom
+              ? `• ${a.item_name} ×${a.quantity} (pending coordinator pricing)`
+              : `• ${a.item_name} ×${a.quantity} +$${surchargeForAddedLine(a)}`,
+          )
+          .join("\n");
+        const missingLines = removed
+          .map((r) => `• ${r.item_name} ×${r.quantity} -$${creditForRemovedLine(r)}`)
+          .join("\n");
         const html = `<p>Crew walkthrough complete for <strong>${moveCode}</strong> (${String(move.client_name || "Client")}).</p>
 ${added.length > 0 ? `<p><strong>Extra items found:</strong><br>${extraLines.replace(/\n/g, "<br>")}</p>` : ""}
 ${removed.length > 0 ? `<p><strong>Missing items:</strong><br>${missingLines.replace(/\n/g, "<br>")}</p>` : ""}

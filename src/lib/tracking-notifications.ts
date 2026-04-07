@@ -9,6 +9,13 @@ import {
   PREMIUM_TRACK_DELIVERY_CTA_LABEL,
   statusUpdateEmailHtml,
 } from "@/lib/email-templates";
+import {
+  isPartnerClassDelivery,
+  sendPartnerDeliveryCheckpointSms,
+  sendPartnerMoveCheckpointSms,
+} from "@/lib/partner-job-comms";
+import { deliveryContactEmail } from "@/lib/calendar/delivery-contact";
+import { getFeatureConfig } from "@/lib/platform-settings";
 
 export type TrackingStatus =
   | "en_route_to_pickup"
@@ -29,7 +36,7 @@ const CONFIG: Record<
   en_route_to_pickup: {
     notifyClient: true,
     notifyAdmin: true,
-    notifyPartner: false,
+    notifyPartner: true,
   },
   arrived_at_pickup: {
     notifyClient: true,
@@ -79,7 +86,11 @@ const CONFIG: Record<
 };
 
 function isEstateTier(t: string | null | undefined): boolean {
-  return String(t || "").toLowerCase().trim() === "estate";
+  return (
+    String(t || "")
+      .toLowerCase()
+      .trim() === "estate"
+  );
 }
 
 /** Email headline: move copy never references delivery; delivery copy never references a move. */
@@ -87,7 +98,16 @@ function headlineForTrackingCheckpoint(
   status: TrackingStatus,
   jobType: "move" | "delivery",
   estateMove = false,
+  b2bPartnerJobStart = false,
 ): string {
+  if (
+    b2bPartnerJobStart &&
+    (status === "en_route_to_pickup" || status === "en_route")
+  ) {
+    return jobType === "move"
+      ? "Your crew has started the move. We will keep you updated at every step."
+      : "Your crew has started the job. We will keep you updated at every step.";
+  }
   if (jobType === "move") {
     if (estateMove) {
       switch (status) {
@@ -148,6 +168,34 @@ function headlineForTrackingCheckpoint(
   }
 }
 
+function bodyForTrackingCheckpoint(
+  status: TrackingStatus,
+  jobType: "move" | "delivery",
+  estateMove: boolean,
+  b2bPartnerJobStart: boolean,
+): string {
+  if (
+    b2bPartnerJobStart &&
+    (status === "en_route_to_pickup" || status === "en_route")
+  ) {
+    return jobType === "move"
+      ? "Your move is underway. Track live below, and we will notify you as each milestone is reached."
+      : "Your job is underway. Track live below, and we will notify you as each milestone is reached.";
+  }
+  if (status === "completed") {
+    return jobType === "delivery"
+      ? "It was a pleasure taking care of you today. Thank you for choosing Yugo."
+      : estateMove
+        ? "It was a pleasure caring for your home today. Your documents and receipt remain available in your portal."
+        : "It was a pleasure taking care of you today. Your documents and receipt are available in your portal.";
+  }
+  return jobType === "delivery"
+    ? "Your crew has provided a live update. Track your delivery in real time using the link below."
+    : estateMove
+      ? "Your crew has shared a live update. Follow every step on your Estate tracker below."
+      : "Your crew has provided a live update. Track your move in real time using the link below.";
+}
+
 export async function notifyOnCheckpoint(
   status: TrackingStatus,
   jobId: string,
@@ -157,17 +205,11 @@ export async function notifyOnCheckpoint(
   fromAddress?: string,
   toAddress?: string,
 ): Promise<void> {
-  let cfg = CONFIG[status] || {
+  const cfg = CONFIG[status] || {
     notifyClient: false,
     notifyAdmin: false,
     notifyPartner: false,
   };
-  if (
-    jobType === "delivery" &&
-    (status === "en_route_to_pickup" || status === "en_route")
-  ) {
-    cfg = { ...cfg, notifyClient: false };
-  }
   const admin = createAdminClient();
 
   const adminMessage =
@@ -212,9 +254,7 @@ export async function notifyOnCheckpoint(
   }
 
   if (!cfg.notifyClient && !cfg.notifyPartner) return;
-  if (!process.env.RESEND_API_KEY) return;
 
-  const resend = getResend();
   let clientEmail: string | null = null;
   let partnerEmail: string | null = null;
   let trackUrl: string | undefined;
@@ -224,20 +264,57 @@ export async function notifyOnCheckpoint(
   let moveClientName: string | undefined;
 
   let estateMove = false;
+  let movePartnerEligible = false;
+  let moveRowForSms: {
+    id: string;
+    organization_id?: string | null;
+    client_phone?: string | null;
+  } | null = null;
+  let deliveryRowForSms: {
+    id: string;
+    delivery_number: string;
+    tracking_token?: string | null;
+    recipient_tracking_token?: string | null;
+    organization_id?: string | null;
+    booking_type?: string | null;
+    category?: string | null;
+    contact_phone?: string | null;
+    customer_phone?: string | null;
+    end_customer_phone?: string | null;
+  } | null = null;
 
   if (jobType === "move") {
     const { data: move } = await admin
       .from("moves")
       .select(
-        "id, client_email, move_code, from_address, to_address, client_name, tier_selected",
+        "id, client_email, move_code, from_address, to_address, client_name, tier_selected, organization_id, client_phone",
       )
       .eq("id", jobId)
       .single();
     if (move) {
+      moveRowForSms = {
+        id: move.id,
+        organization_id: (move as { organization_id?: string | null })
+          .organization_id,
+        client_phone: (move as { client_phone?: string | null }).client_phone,
+      };
       estateMove = isEstateTier(
         (move as { tier_selected?: string | null }).tier_selected,
       );
       clientEmail = move.client_email || null;
+      const orgId = (move as { organization_id?: string | null })
+        .organization_id;
+      if (orgId) {
+        const { data: org } = await admin
+          .from("organizations")
+          .select("email, type")
+          .eq("id", orgId)
+          .maybeSingle();
+        if (org && org.type !== "b2c") {
+          movePartnerEligible = true;
+          partnerEmail = (org.email || "").trim() || null;
+        }
+      }
       trackUrl = `${getEmailBaseUrl()}/track/move/${move.move_code || move.id}?token=${signTrackToken("move", move.id)}`;
       moveCode = move.move_code || move.id;
       moveFromAddress = move.from_address || undefined;
@@ -247,26 +324,76 @@ export async function notifyOnCheckpoint(
   } else {
     const { data: delivery } = await admin
       .from("deliveries")
-      .select("id, delivery_number, client_name, customer_email")
+      .select(
+        "id, delivery_number, client_name, customer_email, end_customer_email, contact_email, category, organization_id, booking_type, contact_phone, customer_phone, end_customer_phone, tracking_token, recipient_tracking_token",
+      )
       .eq("id", jobId)
       .single();
     if (delivery) {
-      const custEmail = (delivery.customer_email || "").trim() || null;
-      if (delivery.client_name) {
+      deliveryRowForSms = {
+        id: delivery.id,
+        delivery_number: delivery.delivery_number,
+        tracking_token: (delivery as { tracking_token?: string | null })
+          .tracking_token,
+        recipient_tracking_token: (
+          delivery as { recipient_tracking_token?: string | null }
+        ).recipient_tracking_token,
+        organization_id: (delivery as { organization_id?: string | null })
+          .organization_id,
+        booking_type: (delivery as { booking_type?: string | null })
+          .booking_type,
+        category: (delivery as { category?: string | null }).category,
+        contact_phone: (delivery as { contact_phone?: string | null })
+          .contact_phone,
+        customer_phone: (delivery as { customer_phone?: string | null })
+          .customer_phone,
+        end_customer_phone: (delivery as { end_customer_phone?: string | null })
+          .end_customer_phone,
+      };
+      clientEmail = deliveryContactEmail(
+        delivery as Parameters<typeof deliveryContactEmail>[0],
+      );
+      if (delivery.organization_id) {
+        const { data: org } = await admin
+          .from("organizations")
+          .select("email")
+          .eq("id", delivery.organization_id)
+          .maybeSingle();
+        partnerEmail = (org?.email || "").trim() || null;
+      } else if (
+        String(
+          (delivery as { booking_type?: string | null }).booking_type || "",
+        ) === "one_off"
+      ) {
+        partnerEmail =
+          (
+            (delivery as { contact_email?: string | null }).contact_email || ""
+          ).trim() || null;
+      } else if (delivery.client_name) {
         const { data: org } = await admin
           .from("organizations")
           .select("email")
           .eq("name", delivery.client_name)
           .limit(1)
           .maybeSingle();
-        partnerEmail = org?.email || custEmail;
+        partnerEmail = (org?.email || "").trim() || null;
       } else {
-        partnerEmail = custEmail;
+        partnerEmail = null;
       }
       trackUrl = `${getEmailBaseUrl()}/track/delivery/${delivery.delivery_number}?token=${signTrackToken("delivery", delivery.id)}`;
       moveCode = delivery.delivery_number;
     }
   }
+
+  const isJobStart = status === "en_route_to_pickup" || status === "en_route";
+  const b2bPartnerJobStart =
+    isJobStart &&
+    ((jobType === "delivery" &&
+      deliveryRowForSms &&
+      isPartnerClassDelivery(deliveryRowForSms)) ||
+      (jobType === "move" && movePartnerEligible));
+
+  const resend = process.env.RESEND_API_KEY ? getResend() : null;
 
   const subject =
     status === "completed"
@@ -283,19 +410,15 @@ export async function notifyOnCheckpoint(
     status,
     jobType,
     estateMove && jobType === "move",
+    b2bPartnerJobStart,
   );
-  const body =
-    status === "completed"
-      ? jobType === "delivery"
-        ? "It was a pleasure taking care of you today. Thank you for choosing Yugo."
-        : estateMove
-          ? "It was a pleasure caring for your home today. Your documents and receipt remain available in your portal."
-          : "It was a pleasure taking care of you today. Your documents and receipt are available in your portal."
-      : jobType === "delivery"
-        ? "Your crew has provided a live update. Track your delivery in real time using the link below."
-        : estateMove
-          ? "Your crew has shared a live update. Follow every step on your Estate tracker below."
-          : "Your crew has provided a live update. Track your move in real time using the link below.";
+  const body = bodyForTrackingCheckpoint(
+    status,
+    jobType,
+    estateMove && jobType === "move",
+    b2bPartnerJobStart,
+  );
+  const liveEyebrow = b2bPartnerJobStart ? "Job started" : "Live update";
   const htmlPremium = statusUpdateEmailHtml({
     headline,
     body,
@@ -306,7 +429,7 @@ export async function notifyOnCheckpoint(
         : PREMIUM_TRACK_CTA_LABEL
       : undefined,
     includeFooter: false,
-    eyebrow: status === "completed" ? "Complete" : "Live update",
+    eyebrow: status === "completed" ? "Complete" : liveEyebrow,
     tone: "premium",
   });
   const htmlEstate = statusUpdateEmailHtml({
@@ -319,53 +442,116 @@ export async function notifyOnCheckpoint(
         : PREMIUM_TRACK_CTA_LABEL
       : undefined,
     includeFooter: false,
-    eyebrow: status === "completed" ? "Estate complete" : "Estate live update",
+    eyebrow: status === "completed" ? "Estate complete" : liveEyebrow,
     tone: "estate",
   });
 
   const toSend: string[] = [];
   if (cfg.notifyClient && clientEmail) toSend.push(clientEmail);
-  if (cfg.notifyPartner && partnerEmail && !toSend.includes(partnerEmail))
+  if (
+    cfg.notifyPartner &&
+    partnerEmail &&
+    !toSend.some((e) => e.toLowerCase() === partnerEmail!.toLowerCase())
+  ) {
     toSend.push(partnerEmail);
-  if (toSend.length === 0) return;
-
-  // For move completion, send full "move complete" email (with portal/documents link) to client
-  if (status === "completed" && jobType === "move" && clientEmail && trackUrl) {
-    try {
-      await sendEmail({
-        to: clientEmail,
-        subject: `Your move is complete ${formatJobId(moveCode || jobId, jobType)}`,
-        template: "move-complete",
-        data: {
-          clientName: moveClientName ?? "",
-          moveCode: moveCode || jobId,
-          fromAddress: moveFromAddress ?? "",
-          toAddress: moveToAddress ?? "",
-          completedDate: new Date().toISOString(),
-          trackingUrl: trackUrl,
-        },
-      });
-    } catch {}
   }
 
-  // Generic status email: for moves we already sent move-complete to client, so only send to partner if any
-  const toSendGeneric =
-    status === "completed" && jobType === "move" && clientEmail
-      ? toSend.filter((e) => e !== clientEmail)
-      : toSend;
+  if (resend && toSend.length > 0) {
+    // For move completion, send full "move complete" email (with portal/documents link) to client
+    if (
+      status === "completed" &&
+      jobType === "move" &&
+      clientEmail &&
+      trackUrl
+    ) {
+      try {
+        await sendEmail({
+          to: clientEmail,
+          subject: `Your move is complete ${formatJobId(moveCode || jobId, jobType)}`,
+          template: "move-complete",
+          data: {
+            clientName: moveClientName ?? "",
+            moveCode: moveCode || jobId,
+            fromAddress: moveFromAddress ?? "",
+            toAddress: moveToAddress ?? "",
+            completedDate: new Date().toISOString(),
+            trackingUrl: trackUrl,
+          },
+        });
+      } catch {}
+    }
 
-  const emailFrom = await getEmailFrom();
-  for (const to of toSendGeneric) {
-    try {
-      const useEstateSkin =
-        estateMove && jobType === "move" && to === clientEmail;
-      await resend.emails.send({
-        from: emailFrom,
-        to,
-        subject,
-        html: useEstateSkin ? htmlEstate : htmlPremium,
-        headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
-      });
-    } catch {}
+    // Generic status email: for moves we already sent move-complete to client, so only send to partner if any
+    const toSendGeneric =
+      status === "completed" && jobType === "move" && clientEmail
+        ? toSend.filter((e) => e !== clientEmail)
+        : toSend;
+
+    const emailFrom = await getEmailFrom();
+    for (const to of toSendGeneric) {
+      try {
+        const useEstateSkin =
+          estateMove && jobType === "move" && to === clientEmail;
+        await resend.emails.send({
+          from: emailFrom,
+          to,
+          subject,
+          html: useEstateSkin ? htmlEstate : htmlPremium,
+          headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
+        });
+      } catch {}
+    }
+  }
+
+  const featureCfg = await getFeatureConfig(["sms_eta_enabled"]);
+  const smsEtaEnabled = featureCfg.sms_eta_enabled === "true";
+  const isPartnerDeliveryStart =
+    jobType === "delivery" &&
+    isJobStart &&
+    !!deliveryRowForSms &&
+    isPartnerClassDelivery(deliveryRowForSms);
+  /** Same as `sendPartnerMoveCheckpointSms` eligibility (non–b2c org). */
+  const isOrgB2bMoveStart =
+    jobType === "move" && isJobStart && movePartnerEligible;
+
+  /** Avoid duplicate SMS to the end customer when `/api/eta/send-departure` already ran (same rules as that route). */
+  let partnerSmsNotifyClient = cfg.notifyClient;
+  if (smsEtaEnabled) {
+    if (isPartnerDeliveryStart) {
+      let etaWouldSendToRecipient = true;
+      if (deliveryRowForSms?.organization_id) {
+        const { data: orgForEta } = await admin
+          .from("organizations")
+          .select("customer_notifications_enabled")
+          .eq("id", deliveryRowForSms.organization_id)
+          .maybeSingle();
+        etaWouldSendToRecipient = !!orgForEta?.customer_notifications_enabled;
+      }
+      if (etaWouldSendToRecipient) partnerSmsNotifyClient = false;
+    }
+    if (isOrgB2bMoveStart) partnerSmsNotifyClient = false;
+  }
+
+  if (
+    jobType === "delivery" &&
+    deliveryRowForSms &&
+    isPartnerClassDelivery(deliveryRowForSms)
+  ) {
+    sendPartnerDeliveryCheckpointSms({
+      row: deliveryRowForSms,
+      status,
+      jobType: "delivery",
+      teamName,
+      notifyPartner: cfg.notifyPartner,
+      notifyClient: partnerSmsNotifyClient,
+    }).catch(() => {});
+  } else if (jobType === "move" && moveRowForSms) {
+    sendPartnerMoveCheckpointSms({
+      row: moveRowForSms,
+      status,
+      teamName,
+      notifyPartner: cfg.notifyPartner,
+      notifyClient: partnerSmsNotifyClient,
+    }).catch(() => {});
   }
 }

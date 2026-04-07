@@ -83,10 +83,7 @@ const MapboxMap = dynamic(
                 <div className="relative cursor-pointer hover:scale-110 transition-transform" title={m.name}>
                   <div
                     className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 flex items-center gap-1.5 px-2.5 py-1 rounded-sm whitespace-nowrap pointer-events-none"
-                    style={{
-                      ...labelChrome,
-                      backdropFilter: "blur(10px)",
-                    }}
+                    style={labelChrome}
                   >
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: "#2C3E2D", boxShadow: "0 0 6px #2C3E2D" }} />
                     <span

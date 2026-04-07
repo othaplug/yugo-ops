@@ -36,10 +36,23 @@ export default function CrewEndOfDayPage() {
   const router = useRouter();
 
   useEffect(() => {
-    fetch("/api/crew/reports/end-of-day")
-      .then((r) => r.json())
-      .then((d) => setPreview(d))
-      .catch(() => {});
+    const load = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      fetch("/api/crew/reports/end-of-day")
+        .then((r) => r.json())
+        .then((d) => setPreview(d))
+        .catch(() => {});
+    };
+    load();
+    const id = setInterval(load, 20_000);
+    const onVis = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      clearInterval(id);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -135,7 +148,7 @@ export default function CrewEndOfDayPage() {
             <h2 className="font-hero text-[20px] sm:text-[22px] font-bold text-[var(--tx)] tracking-tight mb-6">
               Summary
             </h2>
-            <div className="rounded-2xl bg-white/75 px-5 py-1 shadow-[0_2px_28px_rgba(44,62,45,0.06)] backdrop-blur-[2px]">
+            <div className="rounded-2xl bg-[#FAF7F2] px-5 py-1 shadow-[0_2px_28px_rgba(44,62,45,0.06)]">
               <dl className="divide-y divide-[var(--brd)]/35">
                 {summaryStats.map(({ label, value }) => (
                   <div key={label} className="flex items-baseline justify-between gap-6 py-3.5 first:pt-4 last:pb-4">
@@ -199,7 +212,7 @@ export default function CrewEndOfDayPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full min-h-[52px] inline-flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] leading-none border-2 border-[#2C3E2D] text-[#2C3E2D] bg-transparent hover:bg-[#2C3E2D]/[0.05] disabled:opacity-45 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5C1A33]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] [font-family:var(--font-body)]"
+              className="w-full min-h-[52px] inline-flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] leading-none border-2 border-[#2C3E2D] text-[var(--tx)] bg-transparent hover:bg-[#2C3E2D]/[0.05] disabled:opacity-45 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5C1A33]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] [font-family:var(--font-body)]"
             >
               {submitting ? (
                 "Updating…"

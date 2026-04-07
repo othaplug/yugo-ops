@@ -481,7 +481,9 @@ export default function QuotePageClient({
   const handleQuoteDecline = useCallback(async () => {
     setDeclineFormError(null);
     if (!declineAuthToken) {
-      setDeclineFormError("This link is missing a security token. Open the quote from your email.");
+      setDeclineFormError(
+        "This link is missing a security token. Open the quote from your email.",
+      );
       return;
     }
     setDeclineSubmitting(true);
@@ -500,7 +502,9 @@ export default function QuotePageClient({
       );
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setDeclineFormError(data.error || "Something went wrong. Please try again.");
+        setDeclineFormError(
+          data.error || "Something went wrong. Please try again.",
+        );
         return;
       }
       setShowDeclineModal(false);
@@ -576,7 +580,8 @@ export default function QuotePageClient({
     const onScroll = () => {
       const doc = document.documentElement;
       const h = doc.scrollHeight - doc.clientHeight;
-      const pct = h > 0 ? Math.min(100, Math.round((doc.scrollTop / h) * 100)) : 0;
+      const pct =
+        h > 0 ? Math.min(100, Math.round((doc.scrollTop / h) * 100)) : 0;
       maxScrollPct = Math.max(maxScrollPct, pct);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -606,7 +611,8 @@ export default function QuotePageClient({
     setCurrentStep(5);
     setFurthestStepReached(5);
     if (!selectedTier) {
-      const rec = (quote as { recommended_tier?: string | null }).recommended_tier;
+      const rec = (quote as { recommended_tier?: string | null })
+        .recommended_tier;
       if (rec && String(rec).trim()) {
         setSelectedTier(String(rec).toLowerCase().trim());
       }
@@ -1395,8 +1401,9 @@ export default function QuotePageClient({
             Thanks for letting us know.
           </p>
           <p className="max-w-lg mx-auto leading-relaxed">
-            We&apos;ve stopped follow-up emails. If your plans change, this quote
-            is still valid until {expiryDateStr || expiresValue(quote.expires_at)}.
+            We&apos;ve stopped follow-up emails. If your plans change, this
+            quote is still valid until{" "}
+            {expiryDateStr || expiresValue(quote.expires_at)}.
           </p>
         </div>
       )}
@@ -1847,7 +1854,7 @@ export default function QuotePageClient({
           )}
 
         {/* ═══ SECTION 2: ADD-ONS ═══ */}
-        {((residentialSectionAtLeast(2) || (!isResidential && isConfirmed))) &&
+        {(residentialSectionAtLeast(2) || (!isResidential && isConfirmed)) &&
           quote.service_type !== "bin_rental" &&
           (applicableAddons.length > 0 ||
             (isResidential && selectedTier === "estate")) &&
@@ -1885,9 +1892,7 @@ export default function QuotePageClient({
                 isProgressive={isResidential}
                 onContinue={handleAddonsComplete}
                 showContinueButton={
-                  isResidential &&
-                  currentStep <= 2 &&
-                  furthestStepReached >= 2
+                  isResidential && currentStep <= 2 && furthestStepReached >= 2
                 }
                 premiumShellKind={shellKind}
                 estateVoiceChrome={isEstateFlow}
@@ -1896,7 +1901,7 @@ export default function QuotePageClient({
           )}
 
         {/* ═══ SECTION 3: VALUATION PROTECTION ═══ */}
-        {((residentialSectionAtLeast(3) || (!isResidential && isConfirmed))) &&
+        {(residentialSectionAtLeast(3) || (!isResidential && isConfirmed)) &&
           quote.service_type !== "bin_rental" &&
           !booked && (
             <section ref={protectionRef} className="scroll-mt-6">
@@ -1930,28 +1935,28 @@ export default function QuotePageClient({
               {isResidential &&
                 currentStep <= 3 &&
                 furthestStepReached >= 3 && (
-                <div className="mt-6 pb-10 flex flex-col items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleProtectionComplete}
-                    className={
-                      premiumShell
-                        ? compactPremiumCtaClass
-                        : residentialSolidCtaClass
-                    }
-                    style={
-                      premiumShell ? undefined : { backgroundColor: FOREST }
-                    }
-                  >
-                    Continue
-                  </button>
-                </div>
-              )}
+                  <div className="mt-6 pb-10 flex flex-col items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleProtectionComplete}
+                      className={
+                        premiumShell
+                          ? compactPremiumCtaClass
+                          : residentialSolidCtaClass
+                      }
+                      style={
+                        premiumShell ? undefined : { backgroundColor: FOREST }
+                      }
+                    >
+                      Continue
+                    </button>
+                  </div>
+                )}
             </section>
           )}
 
         {/* ═══ SECTION 4: CONFIRM DETAILS ═══ */}
-        {((residentialSectionAtLeast(4) || (!isResidential && isConfirmed))) &&
+        {(residentialSectionAtLeast(4) || (!isResidential && isConfirmed)) &&
           !booked && (
             <section ref={confirmRef} className="scroll-mt-6">
               {isResidential && currentStep >= 4 && (
@@ -2048,23 +2053,25 @@ export default function QuotePageClient({
               {isResidential &&
                 currentStep <= 4 &&
                 furthestStepReached >= 4 && (
-                <div className="mb-6 flex flex-col items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleConfirmComplete}
-                    className={
-                      premiumShell
-                        ? compactPremiumCtaClass
-                        : residentialSolidCtaClass
-                    }
-                    style={
-                      premiumShell ? undefined : { backgroundColor: FOREST }
-                    }
-                  >
-                    {isResidential ? "Review & reserve" : "Proceed to payment"}
-                  </button>
-                </div>
-              )}
+                  <div className="mb-6 flex flex-col items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleConfirmComplete}
+                      className={
+                        premiumShell
+                          ? compactPremiumCtaClass
+                          : residentialSolidCtaClass
+                      }
+                      style={
+                        premiumShell ? undefined : { backgroundColor: FOREST }
+                      }
+                    >
+                      {isResidential
+                        ? "Review & reserve"
+                        : "Proceed to payment"}
+                    </button>
+                  </div>
+                )}
             </section>
           )}
 
@@ -2174,7 +2181,7 @@ export default function QuotePageClient({
           )}
 
         {/* ═══ SECTION 5: AGREEMENT + PAYMENT ═══ */}
-        {((residentialSectionAtLeast(5) || (!isResidential && isConfirmed))) &&
+        {(residentialSectionAtLeast(5) || (!isResidential && isConfirmed)) &&
           !booked && (
             <section
               ref={paymentRef}
@@ -2237,7 +2244,7 @@ export default function QuotePageClient({
           )}
 
         {/* ═══ PAYMENT (inside Section 5, after contract signed) ═══ */}
-        {((residentialSectionAtLeast(5) || (!isResidential && isConfirmed))) &&
+        {(residentialSectionAtLeast(5) || (!isResidential && isConfirmed)) &&
           contractSigned &&
           !booked && (
             <section className={`mb-10 pt-6 border-t ${shellBorderTopClass}`}>
@@ -2557,7 +2564,10 @@ export default function QuotePageClient({
             >
               No problem at all.
             </h3>
-            <p className="text-[13px] leading-relaxed mb-5" style={{ color: FOREST_BODY }}>
+            <p
+              className="text-[13px] leading-relaxed mb-5"
+              style={{ color: FOREST_BODY }}
+            >
               If you&apos;d like, tell us why so we can improve. This stops any
               follow-up emails.
             </p>
@@ -2566,7 +2576,10 @@ export default function QuotePageClient({
               {(
                 [
                   { value: "found_another", label: "Found another company" },
-                  { value: "postponed", label: "Move is postponed or cancelled" },
+                  {
+                    value: "postponed",
+                    label: "Move is postponed or cancelled",
+                  },
                   { value: "budget", label: "Over my budget" },
                   { value: "diy", label: "Decided to move myself" },
                   { value: "other", label: "Other reason" },
@@ -4590,88 +4603,94 @@ function ValuationProtectionCard({
         upgradeTierData &&
         dispUpgrade &&
         (!isHighest || upgradeSelected) && (
-        <div
-          className={`mt-10 pt-6 border-t ${premiumChrome ? premiumBorder : "border-[var(--brd)]/25"}`}
-        >
-          <p className={`${QUOTE_EYEBROW_CLASS} mb-2`} style={{ color: ink }}>
-            {upgradeSelected ? "Upgrade added" : "Upgrade available"}
-          </p>
           <div
-            className="text-[15px] font-semibold tracking-tight mb-1"
-            style={{ color: ink }}
+            className={`mt-10 pt-6 border-t ${premiumChrome ? premiumBorder : "border-[var(--brd)]/25"}`}
           >
-            {dispUpgrade.label}
-          </div>
-          <p
-            className="text-[12px] leading-snug mb-2"
-            style={{ color: inkBody }}
-          >
-            {upgradeTierData.rate_description}
-          </p>
-          {upgradeData.assumed_shipment_value > 0 && (
-            <p className="text-[11px]" style={{ color: inkMuted }}>
-              Covers up to {fmtPrice(upgradeData.assumed_shipment_value)} total{" "}
-              {journeyCopy === "delivery" ? "shipment" : "move"} value
+            <p className={`${QUOTE_EYEBROW_CLASS} mb-2`} style={{ color: ink }}>
+              {upgradeSelected ? "Upgrade added" : "Upgrade available"}
             </p>
-          )}
-
-          <hr
-            className="border-0 h-px w-full my-5"
-            style={{ backgroundColor: rule }}
-          />
-
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div
-              className="text-[20px] font-bold tabular-nums tracking-tight"
+              className="text-[15px] font-semibold tracking-tight mb-1"
               style={{ color: ink }}
             >
-              {fmtPrice(upgradeData.price)}
+              {dispUpgrade.label}
             </div>
-            <button
-              type="button"
-              onClick={onToggleUpgrade}
-              aria-label={
-                upgradeSelected
-                  ? "Protection upgrade added. Click to remove upgrade."
-                  : undefined
-              }
-              className="w-full sm:w-auto px-6 py-3 rounded-none text-[11px] font-bold uppercase tracking-[0.14em] transition-opacity hover:opacity-90 inline-flex items-center justify-center gap-2"
-              style={
-                premiumChrome
-                  ? {
-                      backgroundColor: upgradeSelected
-                        ? "transparent"
-                        : valAccent,
-                      color: shellText!.primary,
-                      border: upgradeSelected
-                        ? valAccentBorderSelected
-                        : "1px solid transparent",
-                    }
-                  : {
-                      backgroundColor: upgradeSelected ? "transparent" : FOREST,
-                      color: upgradeSelected ? FOREST : "white",
-                      border: upgradeSelected
-                        ? `1px solid ${FOREST}35`
-                        : "1px solid transparent",
-                    }
-              }
+            <p
+              className="text-[12px] leading-snug mb-2"
+              style={{ color: inkBody }}
             >
-              {upgradeSelected ? (
-                <>
-                  <Check className="w-4 h-4 shrink-0" weight="bold" aria-hidden />
-                  {journeyCopy === "delivery"
-                    ? "Added to delivery"
-                    : "Added to move"}
-                </>
-              ) : journeyCopy === "delivery" ? (
-                "Add to delivery"
-              ) : (
-                "Add to move"
-              )}
-            </button>
+              {upgradeTierData.rate_description}
+            </p>
+            {upgradeData.assumed_shipment_value > 0 && (
+              <p className="text-[11px]" style={{ color: inkMuted }}>
+                Covers up to {fmtPrice(upgradeData.assumed_shipment_value)}{" "}
+                total {journeyCopy === "delivery" ? "shipment" : "move"} value
+              </p>
+            )}
+
+            <hr
+              className="border-0 h-px w-full my-5"
+              style={{ backgroundColor: rule }}
+            />
+
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div
+                className="text-[20px] font-bold tabular-nums tracking-tight"
+                style={{ color: ink }}
+              >
+                {fmtPrice(upgradeData.price)}
+              </div>
+              <button
+                type="button"
+                onClick={onToggleUpgrade}
+                aria-label={
+                  upgradeSelected
+                    ? "Protection upgrade added. Click to remove upgrade."
+                    : undefined
+                }
+                className="w-full sm:w-auto px-6 py-3 rounded-none text-[11px] font-bold uppercase tracking-[0.14em] transition-opacity hover:opacity-90 inline-flex items-center justify-center gap-2"
+                style={
+                  premiumChrome
+                    ? {
+                        backgroundColor: upgradeSelected
+                          ? "transparent"
+                          : valAccent,
+                        color: shellText!.primary,
+                        border: upgradeSelected
+                          ? valAccentBorderSelected
+                          : "1px solid transparent",
+                      }
+                    : {
+                        backgroundColor: upgradeSelected
+                          ? "transparent"
+                          : FOREST,
+                        color: upgradeSelected ? FOREST : "white",
+                        border: upgradeSelected
+                          ? `1px solid ${FOREST}35`
+                          : "1px solid transparent",
+                      }
+                }
+              >
+                {upgradeSelected ? (
+                  <>
+                    <Check
+                      className="w-4 h-4 shrink-0"
+                      weight="bold"
+                      aria-hidden
+                    />
+                    {journeyCopy === "delivery"
+                      ? "Added to delivery"
+                      : "Added to move"}
+                  </>
+                ) : journeyCopy === "delivery" ? (
+                  "Add to delivery"
+                ) : (
+                  "Add to move"
+                )}
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       <div
         className={`mt-10 pt-6 border-t ${premiumChrome ? premiumBorder : "border-[var(--brd)]/25"}`}

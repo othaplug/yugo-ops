@@ -177,7 +177,7 @@ export default function TermsPage() {
           </p>
           <p className="text-[var(--text-base)] text-[#454545] leading-relaxed">
             For questions, contact us at{" "}
-            <a href="mailto:hello@yugo.com" className="text-[#2C3E2D] hover:underline">
+            <a href="mailto:hello@yugo.com" className="text-[var(--tx)] hover:underline">
               hello@yugo.com
             </a>
             .
@@ -187,7 +187,7 @@ export default function TermsPage() {
         <button
           type="button"
           onClick={() => router.back()}
-          className="inline-block mt-8 text-[var(--text-base)] font-semibold text-[#2C3E2D] hover:underline cursor-pointer"
+          className="inline-block mt-8 text-[var(--text-base)] font-semibold text-[var(--tx)] hover:underline cursor-pointer"
         >
           ← Back
         </button>

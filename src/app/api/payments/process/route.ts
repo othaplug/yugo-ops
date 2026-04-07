@@ -216,6 +216,9 @@ export async function POST(req: Request) {
         subject: "Quote payment failed",
         description: `${quoteId} — ${clientEmail}: ${msg}`,
         clientName: clientName,
+        excludeRecipientEmails: clientEmail.trim()
+          ? [clientEmail.trim().toLowerCase()]
+          : [],
       }).catch(() => {});
 
       const firstPayName = clientName.trim().split(/\s+/)[0] || "there";

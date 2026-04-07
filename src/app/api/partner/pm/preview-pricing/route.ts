@@ -29,21 +29,40 @@ export async function POST(req: NextRequest) {
   const contractId = String(body.contract_id || "");
   const unitType = String(body.unit_type || "2br").trim();
   const reasonCode = String(body.reason_code || "").trim();
-  const fromAddress = String(body.from_address || "").trim();
-  const toAddress = String(body.to_address || "").trim();
+  let fromAddress = String(body.from_address || "").trim();
+  let toAddress = String(body.to_address || "").trim();
+  const unitNumber = String(body.unit_number || "").trim();
   const scheduledDate = String(body.scheduled_date || "").slice(0, 10);
   const afterHours = !!body.after_hours;
   const holiday = !!body.holiday;
   let urgency = asUrgency(String(body.urgency || "standard"));
   const weekendFlag = !!body.weekend;
 
-  if (!propertyId || !contractId || !reasonCode || !fromAddress || !toAddress) {
+  if (!propertyId || !contractId || !reasonCode) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  const { data: prop } = await admin.from("partner_properties").select("partner_id, service_region").eq("id", propertyId).single();
+  const { data: prop } = await admin
+    .from("partner_properties")
+    .select("partner_id, service_region, address")
+    .eq("id", propertyId)
+    .single();
   if (!prop || prop.partner_id !== orgId) {
     return NextResponse.json({ error: "Invalid property" }, { status: 403 });
+  }
+
+  const addr = String(prop.address || "").trim();
+  if ((!fromAddress || !toAddress) && addr) {
+    const line = `${addr} (Unit ${unitNumber || "—"})`;
+    if (!fromAddress) fromAddress = line;
+    if (!toAddress) toAddress = line;
+  }
+
+  if (!fromAddress.trim() || !toAddress.trim()) {
+    return NextResponse.json(
+      { error: "Add origin and destination, or unit number for a same-building estimate" },
+      { status: 400 },
+    );
   }
 
   const { data: contract } = await admin.from("partner_contracts").select("partner_id, rate_card, status").eq("id", contractId).single();

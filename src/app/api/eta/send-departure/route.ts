@@ -113,24 +113,31 @@ export async function POST(req: NextRequest) {
     const { data: delivery } = await admin
       .from("deliveries")
       .select(
-        "id, end_customer_name, end_customer_phone, pickup_address, delivery_address, delivery_lat, delivery_lng, tracking_code, organization_id, crew_id"
+        "id, end_customer_name, end_customer_phone, customer_phone, pickup_address, delivery_address, delivery_lat, delivery_lng, tracking_code, organization_id, crew_id"
       )
       .eq("id", jobId)
       .maybeSingle();
 
-    if (!delivery?.end_customer_phone || !delivery.crew_id) {
+    const recipientPhone = (
+      (delivery?.end_customer_phone || delivery?.customer_phone || "") as string
+    ).trim();
+    if (!recipientPhone || !delivery?.crew_id) {
       return NextResponse.json({ ok: false, skipped: "no_phone_or_crew" });
     }
 
-    const { data: org } = await admin
-      .from("organizations")
-      .select("name, customer_notifications_enabled")
-      .eq("id", delivery.organization_id)
-      .maybeSingle();
-
-    if (!org?.customer_notifications_enabled && smsEnabled) {
-      return NextResponse.json({ ok: false, skipped: "partner_disabled" });
+    let org: { name: string | null; customer_notifications_enabled: boolean | null } | null = null;
+    if (delivery.organization_id) {
+      const { data: o } = await admin
+        .from("organizations")
+        .select("name, customer_notifications_enabled")
+        .eq("id", delivery.organization_id)
+        .maybeSingle();
+      org = o;
+      if (!org?.customer_notifications_enabled && smsEnabled) {
+        return NextResponse.json({ ok: false, skipped: "partner_disabled" });
+      }
     }
+    // B2B one-off / no org yet: treat as client-facing job — do not require partner notification toggle
 
     const { data: crewPos } = await admin
       .from("crew_locations")
@@ -151,7 +158,11 @@ export async function POST(req: NextRequest) {
     const trackingLink = `${baseUrl}/track/delivery/${encodeURIComponent(delivery.tracking_code || delivery.id)}?token=${signTrackToken("delivery", delivery.id)}`;
     const partnerName = org?.name || "";
 
-    if (smsEnabled && org?.customer_notifications_enabled) {
+    const canSendDeliveryEta =
+      smsEnabled &&
+      (delivery.organization_id ? !!org?.customer_notifications_enabled : true);
+
+    if (canSendDeliveryEta) {
       const msg = buildETAMessage("crew_departed", {
         recipientName: delivery.end_customer_name || "Customer",
         originAddress: delivery.pickup_address || "",
@@ -160,10 +171,10 @@ export async function POST(req: NextRequest) {
         trackingLink,
         partnerName,
       });
-      const sms = await sendSMS(delivery.end_customer_phone, msg);
+      const sms = await sendSMS(recipientPhone, msg);
       await admin.from("eta_sms_log").insert({
         delivery_id: delivery.id,
-        recipient_phone: delivery.end_customer_phone,
+        recipient_phone: recipientPhone,
         recipient_name: delivery.end_customer_name || "",
         message_type: "crew_departed",
         message_body: msg,

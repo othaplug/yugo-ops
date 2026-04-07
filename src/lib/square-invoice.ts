@@ -4,7 +4,9 @@ import { normalizeDeliveryNumber } from "@/lib/delivery-number";
 import type { Currency } from "square";
 
 export interface CreateSquareInvoiceInput {
+  /** Delivery UUID or move UUID — used for Square idempotency keys */
   deliveryId: string;
+  /** DLV-xxxx or move code for display */
   deliveryNumber: string;
   customerName: string;
   deliveryAddress: string;
@@ -18,6 +20,8 @@ export interface CreateSquareInvoiceInput {
   /** Invoice due on day of month (15 or 30). If set, overrides invoiceDueDays. */
   invoiceDueDayOfMonth?: number | null;
   currency?: Currency;
+  /** Partner B2B move invoice vs delivery invoice (line item + Square copy) */
+  jobType?: "delivery" | "move";
 }
 
 export interface CreateSquareInvoiceResult {
@@ -50,7 +54,12 @@ export async function createAndPublishSquareInvoice(
     invoiceDueDays = 30,
     invoiceDueDayOfMonth = null,
     currency = "CAD" as Currency,
+    jobType = "delivery",
   } = input;
+
+  const jobLabel = jobType === "move" ? "Move" : "Delivery";
+  const idem = (suffix: string) =>
+    jobType === "move" ? `${suffix}-move-${deliveryId}` : `${suffix}-delivery-${deliveryId}`;
 
   const dueDate = (() => {
     const now = new Date();
@@ -88,7 +97,7 @@ export async function createAndPublishSquareInvoice(
     if (!squareCustomerId) {
       const displayCompany = (customerName || orgName || "").trim() || "Partner";
       const customerRes = await squareClient.customers.create({
-        idempotencyKey: `customer-delivery-${deliveryId}`,
+        idempotencyKey: idem("customer"),
         givenName: (contactName || displayCompany).slice(0, 100),
         emailAddress: orgEmail || undefined,
         companyName: displayCompany.slice(0, 255),
@@ -105,7 +114,7 @@ export async function createAndPublishSquareInvoice(
         customerId: squareCustomerId || undefined,
         lineItems: [
           {
-            name: `Delivery ${deliveryNumber}`,
+            name: `${jobLabel} ${deliveryNumber}`,
             quantity: "1",
             basePriceMoney: {
               amount: BigInt(subtotalCents),
@@ -123,7 +132,7 @@ export async function createAndPublishSquareInvoice(
           },
         ],
       },
-      idempotencyKey: `order-delivery-${deliveryId}`,
+      idempotencyKey: idem("order"),
     });
 
     const orderId = orderRes.order?.id;
@@ -148,16 +157,24 @@ export async function createAndPublishSquareInvoice(
           },
         ],
         deliveryMethod: orgEmail ? "EMAIL" : "SHARE_MANUALLY",
-        invoiceNumber: normalizeDeliveryNumber(deliveryNumber),
-        title: "Delivery Service",
-        description: `Delivery for ${customerName}, ${deliveryAddress}`,
+        invoiceNumber:
+          jobType === "move"
+            ? `M-${String(deliveryNumber || deliveryId)
+                .replace(/[^A-Za-z0-9-]/g, "")
+                .slice(0, 24)}`
+            : normalizeDeliveryNumber(deliveryNumber),
+        title: jobType === "move" ? "Move Service" : "Delivery Service",
+        description:
+          jobType === "move"
+            ? `Move for ${customerName}, ${deliveryAddress}`
+            : `Delivery for ${customerName}, ${deliveryAddress}`,
         acceptedPaymentMethods: {
           card: true,
           bankAccount: false,
           squareGiftCard: false,
         },
       },
-      idempotencyKey: `invoice-delivery-${deliveryId}`,
+      idempotencyKey: idem("invoice"),
     });
 
     const squareInvoice = invoiceRes.invoice;
@@ -170,7 +187,7 @@ export async function createAndPublishSquareInvoice(
     await squareClient.invoices.publish({
       invoiceId: squareInvoice.id,
       version: squareInvoice.version ?? 0,
-      idempotencyKey: `publish-delivery-${deliveryId}`,
+      idempotencyKey: idem("publish"),
     });
 
     return {

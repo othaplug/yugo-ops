@@ -91,7 +91,7 @@ export default function InboundShipmentsClient() {
         </div>
         <Link
           href="/admin/inbound-shipments/new"
-          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg border border-[#2C3E2D]/30 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#2C3E2D] transition-colors hover:bg-[#2C3E2D]/[0.06] dark:border-[var(--brd)] dark:text-[var(--tx2)] dark:hover:bg-[var(--hover)] sm:self-auto"
+          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg border border-[#2C3E2D]/30 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx)] transition-colors hover:bg-[#2C3E2D]/[0.06] dark:border-[var(--brd)] dark:text-[var(--tx2)] dark:hover:bg-[var(--hover)] sm:self-auto"
         >
           New inbound shipment
           <CaretRight size={14} weight="bold" aria-hidden className="opacity-80" />
@@ -111,7 +111,7 @@ export default function InboundShipmentsClient() {
           </div>
           <Link
             href="/admin/partners"
-            className="inline-flex shrink-0 items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#2C3E2D] hover:underline dark:text-[var(--tx2)]"
+            className="inline-flex shrink-0 items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx)] hover:underline dark:text-[var(--tx2)]"
           >
             Partners
             <ArrowRight size={14} weight="bold" aria-hidden />
@@ -210,7 +210,7 @@ export default function InboundShipmentsClient() {
                     <td className="px-4 py-3.5">
                       <Link
                         href={`/admin/inbound-shipments/${s.id}`}
-                        className="font-mono text-[0.8125rem] font-semibold text-[#2C3E2D] underline-offset-2 hover:underline dark:text-[var(--tx2)]"
+                        className="font-mono text-[0.8125rem] font-semibold text-[var(--tx)] underline-offset-2 hover:underline dark:text-[var(--tx2)]"
                       >
                         {s.shipment_number}
                       </Link>

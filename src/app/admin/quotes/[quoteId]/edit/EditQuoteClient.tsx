@@ -641,7 +641,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
             <span className="text-sm font-normal text-[var(--tx3)] ml-2">v{oq.version || 1}</span>
           </h1>
         </div>
-        <span className="ml-auto dt-badge tracking-[0.04em] text-[#2C3E2D] dark:text-[var(--tx2)]">
+        <span className="ml-auto dt-badge tracking-[0.04em] text-[var(--tx)]">
           {SERVICE_LABELS[serviceType] || serviceType}
         </span>
       </div>

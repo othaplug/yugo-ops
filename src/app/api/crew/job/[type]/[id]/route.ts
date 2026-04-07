@@ -143,6 +143,24 @@ export async function GET(
       }
     }
 
+    let serviceType: string | null = null;
+    const sourceQuoteId = (d as { source_quote_id?: string | null }).source_quote_id;
+    if (sourceQuoteId) {
+      const { data: quoteRow } = await admin
+        .from("quotes")
+        .select("service_type")
+        .eq("id", sourceQuoteId)
+        .maybeSingle();
+      serviceType = (quoteRow?.service_type as string | null) ?? null;
+    }
+
+    let partnerVertical: string | null = null;
+    const orgId = (d as { organization_id?: string | null }).organization_id;
+    if (orgId) {
+      const { data: org } = await admin.from("organizations").select("type").eq("id", orgId).maybeSingle();
+      partnerVertical = (org?.type as string | null) ?? null;
+    }
+
     return NextResponse.json({
       id: d.id,
       jobId: d.delivery_number || d.id,
@@ -179,6 +197,8 @@ export async function GET(
       toLng,
       truckType: normalizeCrewTruckType((d as { vehicle_type?: string | null }).vehicle_type),
       fuelPriceCadPerLitre,
+      serviceType,
+      partnerVertical,
     });
   }
 

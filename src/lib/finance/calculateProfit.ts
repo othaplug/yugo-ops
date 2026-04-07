@@ -146,7 +146,6 @@ export function calculateMoveProfitability(
  * Distance from delivery.distance_km, zone-based fallback.
  */
 export function calculateDeliveryProfitability(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   d: Record<string, any>,
   revenue: number,
   config: Record<string, string>,

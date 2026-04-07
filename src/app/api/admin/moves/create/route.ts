@@ -131,6 +131,11 @@ export async function POST(req: NextRequest) {
     const moveType = allowedTypes.includes(rawMoveType as (typeof allowedTypes)[number])
       ? rawMoveType
       : "residential";
+    const tierRaw = String(body.tier_selected || "").trim().toLowerCase();
+    const tierSelected =
+      tierRaw === "essential" || tierRaw === "signature" || tierRaw === "estate"
+        ? tierRaw
+        : "essential";
     const clientName = (body.client_name as string)?.trim() || "";
     const clientEmail = (body.client_email as string)?.trim() || null;
     const clientPhone = (body.client_phone as string)?.trim() || null;
@@ -141,7 +146,9 @@ export async function POST(req: NextRequest) {
     const toLat = body.to_lat != null ? Number(body.to_lat) : null;
     const toLng = body.to_lng != null ? Number(body.to_lng) : null;
     const estimate = Number(body.estimate) || 0;
-    let organizationId = (body.organization_id as string)?.trim() || null;
+    const partnerOrganizationIdFromRequest =
+      (body.organization_id as string)?.trim() || null;
+    let organizationId = partnerOrganizationIdFromRequest;
     const fromAccess = (body.from_access as string)?.trim() || null;
     const toAccess = (body.to_access as string)?.trim() || null;
     const accessNotesRaw = (body.access_notes as string)?.trim() || null;
@@ -242,7 +249,7 @@ export async function POST(req: NextRequest) {
             crew: labourCrew ?? 2,
             recommendedTruck: (truckPrimary || "sprinter").toLowerCase().replace(/[^a-z0-9]/g, ""),
             distanceKm: distanceKm ?? 20,
-            tier: (body.tier_selected as string) || "essential",
+            tier: tierSelected,
             moveSize: moveSize || "2br",
           },
           cfg,
@@ -307,6 +314,7 @@ export async function POST(req: NextRequest) {
         preferred_contact: (body.preferred_contact as string)?.trim() || null,
         crew_id: moveCrewId,
         coordinator_name: (body.coordinator_name as string)?.trim() || null,
+        tier_selected: tierSelected,
         assigned_members: moveAssignedMembers,
         assigned_crew_name: moveAssignedCrewName,
         complexity_indicators: Array.isArray(body.complexity_indicators) ? body.complexity_indicators : [],
@@ -504,6 +512,15 @@ export async function POST(req: NextRequest) {
       description: `Move created: ${clientName}, ${moveCodeDisplay}`,
       icon: "move",
     });
+
+    if (partnerOrganizationIdFromRequest) {
+      const { notifyPartnerMoveBooked } = await import("@/lib/partner-job-comms");
+      notifyPartnerMoveBooked({
+        moveId,
+        organizationId: partnerOrganizationIdFromRequest,
+        clientEmail,
+      }).catch(() => {});
+    }
 
     return NextResponse.json({
       ok: true,

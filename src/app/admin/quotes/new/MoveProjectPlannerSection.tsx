@@ -155,6 +155,11 @@ export default function MoveProjectPlannerSection({
       labourRatePerMoverHour: labourRateHint,
       truckDayRate: 135,
       fuelFlat: 45,
+      workstationRatePerSeat: 85,
+      serverRoomFlat: 2500,
+      boardroomFlatEach: 600,
+      breakRoomFlat: 800,
+      receptionFlat: 600,
     });
   }, [p, labourRateHint]);
 

@@ -41,6 +41,70 @@ export function moveProjectMorningClientEmailHtml(opts: {
   );
 }
 
+export function moveProjectPhaseReminderEmailHtml(opts: {
+  clientName: string;
+  projectName: string;
+  phaseName: string;
+  phaseStartDate: string;
+  variant: "estate" | "standard";
+}): string {
+  const isEstate = opts.variant === "estate";
+  const bandBg = isEstate ? "#5C1A33" : "#F9EDE4";
+  const bandInk = isEstate ? "#F9EDE4" : "#2C3E2D";
+  const bodyInk = "#3A3532";
+
+  return emailLayout(
+    `
+    <div style="font-size:9px;font-weight:700;color:${isEstate ? "#F9EDE4" : "#2C3E2D"};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;opacity:0.85">Upcoming phase</div>
+    <h1 style="font-size:20px;font-weight:700;margin:0 0 16px;color:${bodyInk}">Hi ${escapeHtml(opts.clientName || "there")}</h1>
+    <p style="font-size:14px;color:#6B635C;line-height:1.6;margin:0 0 16px">
+      <strong style="color:#2C3E2D">${escapeHtml(opts.projectName)}</strong> — <strong>${escapeHtml(opts.phaseName)}</strong> starts in two days
+      (${escapeHtml(opts.phaseStartDate)}).
+    </p>
+    <div style="background:${bandBg};color:${bandInk};padding:16px 20px;margin:0 0 24px;border-radius:0">
+      <p style="font-size:13px;margin:0;line-height:1.5;opacity:0.95">
+        Your coordinator will confirm access and timing. Reply to this email if anything has changed at the site.
+      </p>
+    </div>
+  `,
+    undefined,
+    "generic",
+  );
+}
+
+export function moveProjectPaymentReminderEmailHtml(opts: {
+  clientName: string;
+  projectName: string;
+  milestoneLabel: string;
+  amount: number;
+  dueDate: string;
+  variant: "estate" | "standard";
+}): string {
+  const isEstate = opts.variant === "estate";
+  const bandBg = isEstate ? "#5C1A33" : "#F9EDE4";
+  const bandInk = isEstate ? "#F9EDE4" : "#2C3E2D";
+  const bodyInk = "#3A3532";
+  const amt = opts.amount.toLocaleString("en-CA", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+  return emailLayout(
+    `
+    <div style="font-size:9px;font-weight:700;color:${isEstate ? "#F9EDE4" : "#2C3E2D"};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;opacity:0.85">Payment schedule</div>
+    <h1 style="font-size:20px;font-weight:700;margin:0 0 16px;color:${bodyInk}">Hi ${escapeHtml(opts.clientName || "there")}</h1>
+    <p style="font-size:14px;color:#6B635C;line-height:1.6;margin:0 0 16px">
+      A payment milestone for <strong style="color:#2C3E2D">${escapeHtml(opts.projectName)}</strong> is coming up:
+      <strong>$${amt}</strong> — ${escapeHtml(opts.milestoneLabel)} (due ${escapeHtml(opts.dueDate)}).
+    </p>
+    <div style="background:${bandBg};color:${bandInk};padding:16px 20px;margin:0 0 24px;border-radius:0">
+      <p style="font-size:13px;margin:0;line-height:1.5;opacity:0.95">
+        If you have already paid, thank you — you can disregard this note.
+      </p>
+    </div>
+  `,
+    undefined,
+    "generic",
+  );
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")

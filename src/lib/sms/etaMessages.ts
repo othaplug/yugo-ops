@@ -18,6 +18,7 @@ export function buildETAMessage(messageType: string, data: ETAMessageData): stri
         `Hi ${firstName},`,
         `Your ${partner}Yugo crew is on the way.`,
         `Estimated arrival in ${data.etaMinutes} minutes.`,
+        `We will keep you updated as your job progresses.`,
         `Track live:\n${data.trackingLink}`,
       ].join("\n\n");
 

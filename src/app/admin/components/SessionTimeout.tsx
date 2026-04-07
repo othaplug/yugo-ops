@@ -93,7 +93,7 @@ export default function SessionTimeout() {
   return (
     <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-4 pointer-events-none">
       <div
-        className="pointer-events-auto w-full max-w-sm bg-[var(--card)] border border-[var(--brd)] rounded-2xl shadow-2xl p-5 animate-fade-up"
+        className="pointer-events-auto w-full max-w-sm yugo-glass rounded-2xl shadow-2xl p-5 animate-fade-up"
         role="alertdialog"
         aria-live="assertive"
       >

@@ -124,7 +124,7 @@ export default function MoveModificationQuickForm({
         type="button"
         disabled={busy}
         onClick={() => void submit()}
-        className="mt-3 w-full sm:w-auto px-4 py-2 rounded-lg border border-[#2C3E2D] text-[10px] font-bold uppercase tracking-[0.1em] text-[#2C3E2D] hover:bg-[#2C3E2D]/6 disabled:opacity-50"
+        className="mt-3 w-full sm:w-auto px-4 py-2 rounded-lg border border-[#2C3E2D] text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tx)] hover:bg-[#2C3E2D]/6 disabled:opacity-50"
       >
         {busy ? "Saving…" : "Save modification"}
       </button>

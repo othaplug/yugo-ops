@@ -1,0 +1,8 @@
+/* Hide native date picker glyph so only the custom calendar control shows (one icon). */
+.quote-widget-date-input::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+.quote-widget-date-input::-moz-calendar-picker-indicator {
+  display: none;
+}

@@ -6,6 +6,8 @@ export type ModalDialogFrameProps = {
   /** z-index for the full-screen host (e.g. z-50, z-[99999]) */
   zClassName?: string;
   className?: string;
+  /** Yugo+ tinted modal host: dim overlay + `yugo-glass-light` panel (see globals.css). */
+  yugoGlassChrome?: boolean;
   /** Backdrop fill (default matches GlobalModal) */
   backdropClassName?: string;
   onBackdropClick?: () => void;
@@ -28,6 +30,7 @@ export type ModalDialogFrameProps = {
 export function ModalDialogFrame({
   zClassName = "z-[var(--z-modal)]",
   className = "",
+  yugoGlassChrome = false,
   backdropClassName = "bg-black/60",
   onBackdropClick,
   panelClassName,
@@ -40,6 +43,7 @@ export function ModalDialogFrame({
   return (
     <div
       data-modal-root
+      {...(yugoGlassChrome ? { "data-yugo-glass-modal": "" } : {})}
       className={`fixed inset-0 ${zClassName} flex min-h-0 items-center justify-center overflow-y-auto overscroll-contain p-4 sm:p-5 ${className}`.trim()}
       role={role}
       aria-modal={ariaModal}

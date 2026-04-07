@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { signCrewToken, hashCrewPin, CREW_COOKIE_NAME, CREW_PIN_LENGTH } from "@/lib/crew-token";
 import { checkLockout, recordFailedAttempt, clearLockout, normalizePhoneForLockout } from "@/lib/crew-lockout";
 import { resolveRegisteredDeviceTeamId } from "@/lib/crew-device-team";
+import { ensureCrewProfileRow } from "@/lib/crew/profile-after-job";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 20;
@@ -125,6 +126,8 @@ export async function POST(req: NextRequest) {
     }
 
     if (!isDeviceFlow) await clearLockout(phone);
+
+    await ensureCrewProfileRow(supabase, member.id, member.name).catch(() => {});
 
     const token = signCrewToken({
       crewMemberId: member.id,

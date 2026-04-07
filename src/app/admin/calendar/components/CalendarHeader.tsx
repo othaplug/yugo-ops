@@ -50,7 +50,7 @@ export default function CalendarHeader({
           <button
             type="button"
             onClick={onToday}
-            className="ml-0.5 min-h-[36px] sm:min-h-0 px-3 py-2 sm:px-2 sm:py-0.5 rounded-md text-xs sm:text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
+            className="ml-0.5 min-h-[36px] sm:min-h-0 px-3 py-2 sm:px-2 sm:py-0.5 rounded-md text-xs sm:text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--brd)] hover:text-[var(--tx)] transition-colors"
           >
             Today
           </button>
@@ -115,7 +115,7 @@ export default function CalendarHeader({
               onClick={() => onViewChange(mode)}
               className={`flex-1 sm:flex-none min-h-[40px] sm:min-h-0 px-2 py-2 sm:py-0.5 rounded-md sm:rounded text-xs sm:text-[10px] font-semibold uppercase transition-colors ${
                 view === mode
-                  ? "bg-[var(--card)] text-[var(--gold)] shadow-sm"
+                  ? "bg-[var(--card)] text-[var(--tx)] shadow-sm border border-[var(--brd)]"
                   : "text-[var(--tx2)] hover:text-[var(--tx)]"
               }`}
             >

@@ -202,12 +202,8 @@ export default function CrewDashboardPage() {
         {/* Header + progress */}
         <header className="pb-2 mb-6 sm:mb-7">
           <div className="min-w-0">
-            <p className="mb-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx3)] [font-family:var(--font-body)]">
-              <span className="tracking-[0.14em]">Crew</span>
-              <span className="text-[var(--tx3)]/40 font-normal select-none" aria-hidden>
-                |
-              </span>
-              <span className="text-[#5C1A33] tracking-[0.12em]">{data.crewMember?.teamName || "Team"}</span>
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[#5C1A33] [font-family:var(--font-body)]">
+              {data.crewMember?.teamName || "Team"}
             </p>
             <h1 className="font-hero text-[26px] sm:text-[28px] font-bold text-[#5C1A33] leading-[1.15] tracking-tight">
               {greeting}, {firstName}
@@ -264,7 +260,7 @@ export default function CrewDashboardPage() {
 
         <div>
           {jobs.length === 0 ? (
-            <div className="rounded-2xl bg-white/75 backdrop-blur-[2px] shadow-[0_2px_28px_rgba(44,62,45,0.06)] border border-[var(--brd)]/25 px-6 py-10 text-center">
+            <div className="rounded-2xl bg-[#FAF7F2] shadow-[0_2px_28px_rgba(44,62,45,0.06)] border border-[var(--brd)]/25 px-6 py-10 text-center">
               <p className="text-[12px] font-bold uppercase tracking-[0.14em] leading-tight text-[var(--tx)] mb-3 [font-family:var(--font-body)]">
                 No jobs on the schedule
               </p>
@@ -275,9 +271,11 @@ export default function CrewDashboardPage() {
           ) : (
             jobs.map((job, index) => {
               const completed = isCompleted(job);
+              const statusKey = (job.status || "").toLowerCase();
+              const forestCompleteBadge = ["completed", "delivered", "done"].includes(statusKey);
               const inProgress = isInProgress(job);
               const canStart = canStartJob(index);
-              const statusInfo = STATUS_MAP[(job.status || "").toLowerCase()];
+              const statusInfo = STATUS_MAP[statusKey];
 
               return (
                 <div key={job.id}>
@@ -286,43 +284,61 @@ export default function CrewDashboardPage() {
                     className={`py-5 sm:py-6${!completed && !inProgress && !canStart ? " opacity-[0.72]" : ""}`}
                   >
                   <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 flex items-start gap-2.5">
                       <div
-                        className="mb-1 flex items-center tabular-nums"
+                        className="shrink-0 w-7 sm:w-8 flex justify-center pt-0.5 tabular-nums"
                         style={{
                           color: completed ? "#243524" : inProgress ? "#B45309" : "#5C1A33",
                         }}
                       >
                         {completed ? (
-                          <Check size={26} weight="bold" aria-hidden />
+                          <Check size={22} weight="bold" className="shrink-0" aria-hidden />
                         ) : (
                           <span className="text-[26px] sm:text-[28px] font-bold leading-none tracking-tight">
                             {index + 1}
                           </span>
                         )}
                       </div>
-                      <span className="text-[15px] font-semibold text-[var(--tx)] truncate block leading-snug">
-                        {job.clientName}
-                      </span>
-                      <span className="text-[10px] text-[var(--tx3)] font-mono tracking-tight block mt-0.5">{job.jobId}</span>
-                      <JobConditionsInline
-                        job={job}
-                        weatherByJobId={weatherByJobId}
-                        trafficByJobId={trafficByJobId}
-                        trafficLoading={trafficLoading}
-                        className="mt-2.5"
-                      />
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[15px] font-semibold text-[var(--tx)] truncate block leading-snug">
+                          {job.clientName}
+                        </span>
+                        <span className="text-[10px] text-[var(--tx3)] font-mono tracking-tight block mt-0.5">
+                          {job.jobId}
+                        </span>
+                        <JobConditionsInline
+                          job={job}
+                          weatherByJobId={weatherByJobId}
+                          trafficByJobId={trafficByJobId}
+                          trafficLoading={trafficLoading}
+                          className="mt-2.5"
+                        />
+                      </div>
                     </div>
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
                       {statusInfo ? (
                         <span
-                          className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider"
-                          style={{ background: statusInfo.bg, color: statusInfo.color }}
+                          className={
+                            forestCompleteBadge
+                              ? "px-2.5 py-1 rounded-none bg-[#2C3E2D]/[0.08] text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--tx)] [font-family:var(--font-body)] leading-none"
+                              : "px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider"
+                          }
+                          style={
+                            forestCompleteBadge
+                              ? undefined
+                              : { background: statusInfo.bg, color: statusInfo.color }
+                          }
                         >
                           {statusInfo.label}
                         </span>
                       ) : job.status ? (
-                        <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-[#2C3E2D]/10 text-[#243524]">
+                        <span
+                          className={
+                            forestCompleteBadge
+                              ? "px-2.5 py-1 rounded-none bg-[#2C3E2D]/[0.08] text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--tx)] [font-family:var(--font-body)] leading-none"
+                              : "px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-[#2C3E2D]/10 text-[#243524]"
+                          }
+                        >
                           {getDisplayLabel(job.status, "status")}
                         </span>
                       ) : null}

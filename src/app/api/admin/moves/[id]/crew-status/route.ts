@@ -16,7 +16,7 @@ export async function GET(
     const admin = createAdminClient();
     const { data: move } = await admin
       .from("moves")
-      .select("id, stage, status")
+      .select("id, stage, status, crew_id")
       .eq("id", moveId)
       .single();
 
@@ -27,6 +27,20 @@ export async function GET(
     let liveStage: string | null = moveCompleted ? "completed" : (move.stage || null);
     let sessionId: string | null = null;
     let hasActiveTracking = false;
+    let navEtaSeconds: number | null = null;
+    let navDistanceRemainingM: number | null = null;
+
+    const crewId = move.crew_id as string | undefined;
+    if (crewId) {
+      const { data: cl } = await admin
+        .from("crew_locations")
+        .select("nav_eta_seconds, nav_distance_remaining_m")
+        .eq("crew_id", crewId)
+        .maybeSingle();
+      if (cl?.nav_eta_seconds != null) navEtaSeconds = Math.round(Number(cl.nav_eta_seconds));
+      if (cl?.nav_distance_remaining_m != null)
+        navDistanceRemainingM = Math.round(Number(cl.nav_distance_remaining_m));
+    }
 
     const { data: ts } = await admin
       .from("tracking_sessions")
@@ -45,7 +59,14 @@ export async function GET(
     }
 
     return NextResponse.json(
-      { liveStage, sessionId, hasActiveTracking },
+      {
+        liveStage,
+        sessionId,
+        hasActiveTracking,
+        crewId: crewId ?? null,
+        navEtaSeconds,
+        navDistanceRemainingM,
+      },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );
   } catch (err: unknown) {

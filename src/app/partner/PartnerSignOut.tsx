@@ -17,7 +17,7 @@ export default function PartnerSignOut() {
     <button
       type="button"
       onClick={handleSignOut}
-      className="text-[11px] text-[#4F4B47] hover:text-[#2C3E2D]"
+      className="text-[11px] text-[#4F4B47] hover:text-[var(--tx)]"
     >
       Sign out
     </button>

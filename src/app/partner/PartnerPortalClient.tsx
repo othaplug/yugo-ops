@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Lock,
   Check,
@@ -20,10 +20,10 @@ import {
   ClipboardText,
   MapPin,
   ArrowsClockwise,
-  HandWaving,
   CaretRight,
 } from "@phosphor-icons/react";
 import { getPartnerFeatures, getPartnerGreeting } from "@/lib/partner-type";
+import { getPartnerPortalTerminology } from "@/lib/partner-vertical-copy";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate, formatDateTime } from "@/lib/client-timezone";
@@ -45,6 +45,7 @@ import PartnerEditDeliveryModal from "./PartnerEditDeliveryModal";
 import PartnerSettingsPanel from "./PartnerSettingsPanel";
 import PartnerChangePasswordGate from "./PartnerChangePasswordGate";
 import PartnerPropertyManagementPortal from "./PartnerPropertyManagementPortal";
+import type { PmTabId } from "@/components/partner/pm/PartnerPmPortalViews";
 import PartnerSignOut from "./PartnerSignOut";
 import {
   PartnerNotificationProvider,
@@ -57,7 +58,8 @@ import Link from "next/link";
 import { applyPartnerPortalLightTheme } from "@/lib/partner-portal-theme";
 import { FOREST, WINE } from "@/app/quote/[quoteId]/quote-shared";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
-import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
+import { PartnerPortalWelcomeTour } from "@/components/partner/PartnerPortalWelcomeTour";
+import { partnerWineAccountButtonClass } from "@/components/partner/PartnerChrome";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
 interface PortalFeatures {
@@ -74,6 +76,8 @@ interface Props {
   userEmail: string;
   portalFeatures?: PortalFeatures | null;
   initialProjectId?: string;
+  /** Property-management portal only: opens the given tab on load (e.g. `calendar`). */
+  initialPmTab?: PmTabId;
 }
 
 interface ProjectData {
@@ -118,6 +122,7 @@ interface Delivery {
   stage: string | null;
   scheduled_date: string | null;
   time_slot: string | null;
+  delivery_window?: string | null;
   delivery_address: string | null;
   pickup_address: string | null;
   items: unknown[] | string[] | null;
@@ -132,6 +137,9 @@ interface Delivery {
   num_stops?: number | null;
   delivery_type?: string | null;
   zone?: number | null;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
+  estimated_duration_hours?: number | null;
   stops_detail?:
     | {
         address: string;
@@ -221,10 +229,15 @@ function PartnerPortalInner({
   userEmail,
   portalFeatures,
   initialProjectId,
+  initialPmTab,
 }: Props) {
   const { toast } = useToast();
   const headerOrgName = usePartnerOrgDisplayName();
   const features = getPartnerFeatures(orgType);
+  const portalTerms = useMemo(
+    () => getPartnerPortalTerminology(orgType),
+    [orgType],
+  );
   // portal_features from DB override legacy type-based feature detection
   const pf: PortalFeatures = portalFeatures ?? {};
   const [data, setData] = useState<DashboardData | null>(null);
@@ -260,8 +273,6 @@ function PartnerPortalInner({
     loginCount: number;
     lastLoginAt: string | null;
   } | null>(null);
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [welcomeStep, setWelcomeStep] = useState(0);
 
   useEffect(() => {
     const fetchLoginInfo = async () => {
@@ -270,12 +281,6 @@ function PartnerPortalInner({
         if (res.ok) {
           const info = await res.json();
           setLoginInfo(info);
-          const welcomeSeen =
-            typeof window !== "undefined" &&
-            localStorage.getItem("yugo-welcome-seen");
-          if (!welcomeSeen && (info.isFirstLogin || info.loginCount <= 1)) {
-            setShowWelcome(true);
-          }
         }
       } catch {
         /* graceful fail */
@@ -366,7 +371,9 @@ function PartnerPortalInner({
         { key: "calendar", label: "Calendar" },
         { key: "tracking", label: "Live Map" },
         { key: "inbound", label: "Inbound" },
-        ...(showProjects ? [{ key: "b2b-projects", label: "Projects" }] : []),
+        ...(showProjects
+          ? [{ key: "b2b-projects", label: portalTerms.coordinationPlural }]
+          : []),
         // Old gallery projects tab: only for art_gallery org type, not designers
         ...(!isDesignerOrg && features.showProjects
           ? [
@@ -421,6 +428,7 @@ function PartnerPortalInner({
         orgId={orgId}
         orgName={headerOrgName}
         contactName={contactName}
+        initialTab={initialPmTab}
       />
     );
   }
@@ -433,17 +441,17 @@ function PartnerPortalInner({
           data-theme="light"
         >
           {/* Header */}
-          <header className="bg-[#FFFBF7]/95 backdrop-blur border-b border-[#2C3E2D]/12 px-4 sm:px-6 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-3 flex items-center justify-between sticky top-0 z-30">
+          <header className="bg-[#FFFBF7] border-b border-[#2C3E2D]/12 px-4 sm:px-6 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-3 flex items-center justify-between sticky top-0 z-30">
             <div className="flex items-center gap-2 min-w-0">
               <YugoLogo size={19} variant="wine" />
-              <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#2C3E2D]/40 shrink-0">
+              <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] shrink-0">
                 BETA
               </span>
               <span
                 className="h-3 w-px bg-[#2C3E2D]/12 shrink-0 hidden sm:block"
                 aria-hidden
               />
-              <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-[#2C3E2D]/70 truncate ml-0 sm:ml-1">
+              <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-[var(--tx2)] truncate ml-0 sm:ml-1">
                 {headerOrgName}
               </span>
             </div>
@@ -457,8 +465,7 @@ function PartnerPortalInner({
                 type="button"
                 onClick={() => setSettingsOpen(true)}
                 aria-label="Account settings"
-                className="min-h-10 min-w-10 h-10 w-10 shrink-0 rounded-sm border border-[#5C1A33]/28 bg-transparent flex items-center justify-center text-[10px] font-bold cursor-pointer transition-colors hover:bg-[#5C1A33]/[0.06] touch-manipulation active:scale-[0.98]"
-                style={{ color: WINE }}
+                className={partnerWineAccountButtonClass}
               >
                 {contactName.charAt(0).toUpperCase()}
                 {(contactName.split(" ")[1] || "").charAt(0).toUpperCase() ||
@@ -468,181 +475,7 @@ function PartnerPortalInner({
             </div>
           </header>
 
-          {/* First-time Welcome Overlay */}
-          {showWelcome && (
-            <ModalDialogFrame
-              zClassName="z-[99999]"
-              className="items-center justify-center"
-              backdropClassName="bg-black/60"
-              panelClassName="bg-[var(--card)] rounded-2xl shadow-2xl w-full max-w-[520px] mx-4 overflow-hidden modal-card"
-              ariaModal
-            >
-              {/* Progress dots */}
-              <div className="flex justify-center gap-2 pt-6">
-                {[0, 1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="rounded-full transition-all duration-300"
-                    style={{
-                      width: i === welcomeStep ? 24 : 8,
-                      height: 8,
-                      background:
-                        i === welcomeStep
-                          ? "#2C3E2D"
-                          : i < welcomeStep
-                            ? "#2C3E2D"
-                            : "rgba(44, 62, 45, 0.2)",
-                    }}
-                  />
-                ))}
-              </div>
-
-              <div className="p-8 pb-6">
-                {welcomeStep === 0 && (
-                  <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#2C3E2D]/6 border border-[#2C3E2D]/15 flex items-center justify-center">
-                      <HandWaving
-                        size={36}
-                        weight="duotone"
-                        color="#2C3E2D"
-                        aria-hidden
-                      />
-                    </div>
-                    <h2 className="font-hero text-[36px] font-semibold text-[var(--tx)] mb-2">
-                      Welcome to Yugo, {contactName}!
-                    </h2>
-                    <p className="text-[var(--text-base)] text-[var(--tx3)] leading-relaxed max-w-[380px] mx-auto">
-                      Your dedicated partner portal is ready. Let&apos;s take a
-                      quick tour of what you can do here.
-                    </p>
-                  </div>
-                )}
-
-                {welcomeStep === 1 && (
-                  <div>
-                    <h3 className="font-hero text-[26px] font-semibold text-[var(--tx)] mb-5">
-                      Here&apos;s what you can do
-                    </h3>
-                    <div className="space-y-3">
-                      {[
-                        {
-                          title: "Track Deliveries Live",
-                          desc: "GPS tracking with real-time crew locations on a map",
-                        },
-                        {
-                          title: "Schedule & Calendar",
-                          desc: "View upcoming deliveries in calendar view, schedule new ones",
-                        },
-                        {
-                          title: "Share Tracking Links",
-                          desc: "Send live tracking links to your end clients via email",
-                        },
-                        {
-                          title: "Invoices & Monthly Report",
-                          desc: "View invoices, monthly performance, and SLA report",
-                        },
-                      ].map((item) => (
-                        <div
-                          key={item.title}
-                          className="p-3 rounded-xl border border-[var(--brd)]/30"
-                        >
-                          <div className="text-[13px] font-semibold text-[var(--tx)]">
-                            {item.title}
-                          </div>
-                          <div className="text-[12px] text-[var(--tx3)] mt-0.5">
-                            {item.desc}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {welcomeStep === 2 && (
-                  <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#FFF5F5] border border-[#FED7D7] flex items-center justify-center">
-                      <Lock size={28} color="#E53E3E" />
-                    </div>
-                    <h3 className="font-hero text-[26px] font-semibold text-[var(--tx)] mb-2">
-                      Secure your account
-                    </h3>
-                    <p className="text-[var(--text-base)] text-[var(--tx3)] leading-relaxed max-w-[360px] mx-auto mb-4">
-                      For your security, we strongly recommend changing your
-                      password to something personal and memorable.
-                    </p>
-                    <a
-                      href="/update-password"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold bg-[#E53E3E] text-white hover:bg-[#C53030] transition-colors"
-                    >
-                      <Lock size={14} />
-                      Change Password Now
-                    </a>
-                    <button
-                      onClick={() => setWelcomeStep(3)}
-                      className="block mx-auto mt-3 text-[12px] text-[#5C5853] hover:text-[#454545] transition-colors"
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        fontFamily: "'DM Sans', sans-serif",
-                      }}
-                    >
-                      I&apos;ll do this later
-                    </button>
-                  </div>
-                )}
-
-                {welcomeStep === 3 && (
-                  <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#F0FFF4] border border-[#C6F6D5] flex items-center justify-center">
-                      <Check size={28} color="#2D6A4F" weight="bold" />
-                    </div>
-                    <h3 className="font-hero text-[26px] font-semibold text-[var(--tx)] mb-2">
-                      You&apos;re all set!
-                    </h3>
-                    <p className="text-[var(--text-base)] text-[var(--tx3)] leading-relaxed max-w-[360px] mx-auto">
-                      Your portal is ready. If you need help at any time, reach
-                      out to your Yugo account manager.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="px-8 pb-8">
-                {welcomeStep < 3 ? (
-                  <div className="flex gap-3">
-                    {welcomeStep > 0 && (
-                      <button
-                        onClick={() => setWelcomeStep(welcomeStep - 1)}
-                        className="flex-1 py-3 rounded-xl text-[13px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:bg-[var(--bg2)] transition-colors"
-                      >
-                        Back
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setWelcomeStep(welcomeStep + 1)}
-                      className="flex-1 py-3 rounded-xl text-[13px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors"
-                    >
-                      {welcomeStep === 0 ? "Get started" : "Next"}
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setShowWelcome(false);
-                      try {
-                        localStorage.setItem("yugo-welcome-seen", "1");
-                      } catch {}
-                    }}
-                    className="w-full py-3 rounded-xl text-[13px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors"
-                  >
-                    Go to Dashboard
-                  </button>
-                )}
-              </div>
-            </ModalDialogFrame>
-          )}
+          <PartnerPortalWelcomeTour contactName={contactName} mode="standard" />
 
           <main
             ref={(el) => {
@@ -729,7 +562,7 @@ function PartnerPortalInner({
 
             {/* Hero + Greeting */}
             <div className="mb-6 pt-1">
-              <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#2C3E2D]/45 mb-2">
+              <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
                 Partner portal
               </p>
               <h1
@@ -747,18 +580,19 @@ function PartnerPortalInner({
                 <p className="text-[14px] text-[#5A6B5E] mt-2 leading-relaxed max-w-xl">
                   {data?.todayDeliveries && data.todayDeliveries.length > 0
                     ? `${data.todayDeliveries.length} ${data.todayDeliveries.length !== 1 ? "deliveries" : "delivery"} scheduled today`
-                    : "Your projects and deliveries dashboard"}
+                    : portalTerms.designerDashboardSubtitle}
                 </p>
               ) : features.showProjects ? (
                 <p className="text-[14px] text-[#5A6B5E] mt-2 leading-relaxed max-w-xl">
-                  {data?.projects?.length ?? 0} active project
-                  {(data?.projects?.length ?? 0) !== 1 ? "s" : ""}
-                  {data &&
-                  data.allDeliveries.some(
-                    (d) => (d.status || "").toLowerCase() === "delayed",
-                  )
-                    ? " · 1 vendor delay requiring attention"
-                    : ""}
+                  {portalTerms.activeCoordinationSummary(
+                    data?.projects?.length ?? 0,
+                    !!(
+                      data &&
+                      data.allDeliveries.some(
+                        (d) => (d.status || "").toLowerCase() === "delayed",
+                      )
+                    ),
+                  )}
                 </p>
               ) : (
                 <p className="text-[14px] text-[#5A6B5E] mt-2 leading-relaxed max-w-xl">
@@ -825,7 +659,7 @@ function PartnerPortalInner({
                         onClick={() =>
                           setBookServiceModalOpen(!bookServiceModalOpen)
                         }
-                        className="w-9 h-9 flex items-center justify-center border border-[#2C3E2D]/35 text-[#2C3E2D] bg-[#FFFBF7] text-[20px] font-light leading-none transition-colors hover:bg-[#2C3E2D]/[0.04] select-none rounded-sm"
+                        className="w-9 h-9 flex items-center justify-center border border-[#2C3E2D]/35 text-[var(--tx)] bg-[#FFFBF7] text-[20px] font-light leading-none transition-colors hover:bg-[#2C3E2D]/[0.04] select-none rounded-sm"
                         title="Book a service"
                         aria-expanded={bookServiceModalOpen}
                       >
@@ -840,7 +674,7 @@ function PartnerPortalInner({
                           />
                           <div className="absolute left-0 top-full mt-2 z-50 w-[min(100vw-2rem,280px)] bg-[#FFFBF7] border border-[#2C3E2D]/12 overflow-hidden shadow-[0_20px_50px_rgba(44,62,45,0.1)] rounded-sm">
                             <div className="px-4 py-3 border-b border-[#2C3E2D]/10">
-                              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#2C3E2D]/50">
+                              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]">
                                 Book a service
                               </p>
                             </div>
@@ -855,8 +689,8 @@ function PartnerPortalInner({
                                 className="w-full flex items-start gap-2 px-4 py-3 text-left border-b border-[#2C3E2D]/8 hover:bg-[#2C3E2D]/[0.03] transition-colors"
                               >
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#2C3E2D] flex items-center gap-1">
-                                    Schedule delivery
+                                  <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--tx)] flex items-center gap-1">
+                                    {portalTerms.scheduleDeliveryTitle}
                                     <CaretRight
                                       className="opacity-60"
                                       size={12}
@@ -865,7 +699,7 @@ function PartnerPortalInner({
                                     />
                                   </div>
                                   <div className="text-[11px] text-[#5A6B5E] mt-0.5 leading-snug font-normal normal-case tracking-normal">
-                                    Single or multi-stop delivery
+                                    {portalTerms.scheduleDeliverySubtitle}
                                   </div>
                                 </div>
                               </button>
@@ -877,7 +711,7 @@ function PartnerPortalInner({
                                   className="flex items-start gap-2 px-4 py-3 text-left border-b border-[#2C3E2D]/8 hover:bg-[#2C3E2D]/[0.03] transition-colors"
                                 >
                                   <div className="flex-1 min-w-0">
-                                    <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#2C3E2D] flex items-center gap-1">
+                                    <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--tx)] flex items-center gap-1">
                                       Book day rate
                                       <CaretRight
                                         className="opacity-60"
@@ -903,8 +737,8 @@ function PartnerPortalInner({
                                   className="w-full flex items-start gap-2 px-4 py-3 text-left hover:bg-[#2C3E2D]/[0.03] transition-colors"
                                 >
                                   <div className="flex-1 min-w-0">
-                                    <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#2C3E2D] flex items-center gap-1">
-                                      New project
+                                    <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--tx)] flex items-center gap-1">
+                                      {portalTerms.newCoordinationCta}
                                       <CaretRight
                                         className="opacity-60"
                                         size={12}
@@ -913,7 +747,7 @@ function PartnerPortalInner({
                                       />
                                     </div>
                                     <div className="text-[11px] text-[#5A6B5E] mt-0.5 leading-snug font-normal normal-case tracking-normal">
-                                      Coordinate multi-vendor items
+                                      {portalTerms.newCoordinationSubtitle}
                                     </div>
                                   </div>
                                 </button>
@@ -929,7 +763,7 @@ function PartnerPortalInner({
                     data.allDeliveries.length > 0 && (
                       <button
                         onClick={() => setShareTarget(data.allDeliveries[0])}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#2C3E2D]/25 text-[10px] font-bold tracking-[0.12em] uppercase text-[#2C3E2D] bg-transparent hover:bg-[#2C3E2D]/[0.04] transition-colors rounded-sm"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#2C3E2D]/25 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx)] bg-transparent hover:bg-[#2C3E2D]/[0.04] transition-colors rounded-sm"
                       >
                         <ShareNetwork size={14} weight="regular" />
                         Share with client
@@ -943,7 +777,7 @@ function PartnerPortalInner({
                     )}
                   <button
                     onClick={() => setActiveTab("calendar")}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#2C3E2D]/25 text-[10px] font-bold tracking-[0.12em] uppercase text-[#2C3E2D] bg-transparent hover:bg-[#2C3E2D]/[0.04] transition-colors rounded-sm"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#2C3E2D]/25 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx)] bg-transparent hover:bg-[#2C3E2D]/[0.04] transition-colors rounded-sm"
                   >
                     <Calendar size={14} weight="regular" />
                     Calendar
@@ -956,7 +790,7 @@ function PartnerPortalInner({
                   </button>
                   <button
                     onClick={() => setActiveTab("billing")}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#2C3E2D]/25 text-[10px] font-bold tracking-[0.12em] uppercase text-[#2C3E2D] bg-transparent hover:bg-[#2C3E2D]/[0.04] transition-colors rounded-sm"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#2C3E2D]/25 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx)] bg-transparent hover:bg-[#2C3E2D]/[0.04] transition-colors rounded-sm"
                   >
                     <ChartBar size={14} weight="regular" />
                     Monthly report
@@ -1026,8 +860,8 @@ function PartnerPortalInner({
                         hasCount ? "min-w-[6.5rem]" : "min-w-[4.5rem]"
                       } ${
                         activeTab === t.key
-                          ? "border-[#2C3E2D] text-[#2C3E2D]"
-                          : "border-transparent text-[#5A6B5E] hover:text-[#2C3E2D]/80"
+                          ? "border-[#2C3E2D] text-[var(--tx)]"
+                          : "border-transparent text-[#5A6B5E] hover:text-[var(--tx2)]"
                       }`}
                     >
                       {t.label}
@@ -1044,6 +878,8 @@ function PartnerPortalInner({
                 {activeTab === "b2b-projects" && (
                   <PartnerB2BProjectsTab
                     initialProjectId={initialProjectId}
+                    orgType={orgType}
+                    portalTerms={portalTerms}
                     onScheduleDelivery={(suggestedItems) => {
                       setScheduleSuggestedItems(suggestedItems || null);
                       setScheduleModalKey((k) => k + 1);
@@ -1053,6 +889,8 @@ function PartnerPortalInner({
                 )}
                 {activeTab === "projects" && data && (
                   <PartnerProjectsTab
+                    orgType={orgType}
+                    portalTerms={portalTerms}
                     projects={(data.projects || []).map((p) => {
                       const projectDeliveries = data.allDeliveries.filter(
                         (d) =>
@@ -1276,7 +1114,7 @@ function PartnerPortalInner({
           {/* Mobile bottom navigation, hidden on sm+ */}
           {!features.showReferrals && (
             <nav
-              className="sm:hidden fixed bottom-0 left-0 right-0 z-[var(--z-topbar)] border-t border-[#2C3E2D]/10 flex items-stretch bg-[#FFFBF7]/98 backdrop-blur-md"
+              className="sm:hidden fixed bottom-0 left-0 right-0 z-[var(--z-topbar)] border-t border-[#2C3E2D]/10 flex items-stretch bg-[#FFFBF7]"
               style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
               aria-label="Main navigation"
             >
@@ -1309,7 +1147,7 @@ function PartnerPortalInner({
                         key: "__schedule__",
                         label: "Book",
                         icon: (_active: boolean) => (
-                          <div className="w-10 h-10 flex items-center justify-center text-[#2C3E2D] bg-[#FFFBF7] border border-[#2C3E2D]/35 -mt-3 rounded-sm">
+                          <div className="w-10 h-10 flex items-center justify-center text-[var(--tx)] bg-[#FFFBF7] border border-[#2C3E2D]/35 -mt-3 rounded-sm">
                             <Plus size={20} color="#2C3E2D" weight="bold" />
                           </div>
                         ),
@@ -1353,7 +1191,7 @@ function PartnerPortalInner({
                       } else setActiveTab(key);
                     }}
                     className={`flex-1 flex flex-col items-center justify-end gap-1 pb-2.5 pt-2 min-h-[52px] text-[10px] font-bold tracking-[0.08em] uppercase transition-colors touch-manipulation ${
-                      isActive ? "text-[#2C3E2D]" : "text-[#5A6B5E]"
+                      isActive ? "text-[var(--tx)]" : "text-[#5A6B5E]"
                     }`}
                     aria-current={isActive ? "page" : undefined}
                   >
@@ -1384,7 +1222,7 @@ function DeliveryKPIs({ data }: { data: DashboardData | null }) {
   const label =
     "text-[9px] font-bold tracking-[0.14em] uppercase text-[#5A6B5E]/70";
   const figure =
-    "text-[24px] sm:text-[28px] font-normal text-[#2C3E2D] mt-1.5 font-hero leading-none";
+    "text-[24px] sm:text-[28px] font-normal text-[var(--tx)] mt-1.5 font-hero leading-none";
   return (
     <div className="border-t border-[#2C3E2D]/10 pt-8">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 md:gap-y-0">
@@ -1594,7 +1432,7 @@ function PartnerNotificationBell({
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
-                  className="text-[10px] font-semibold text-[#2C3E2D] hover:underline"
+                  className="text-[10px] font-semibold text-[var(--tx)] hover:underline"
                 >
                   Mark all read
                 </button>

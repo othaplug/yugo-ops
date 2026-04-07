@@ -34,6 +34,14 @@ export type TrafficRouteFeatureCollection = {
   }>;
 };
 
+/** One Mapbox alternative (same `index` as Directions API `routes[i]`). */
+export type CrewRouteAlternative = {
+  index: number;
+  route: MapboxDirectionRoute;
+  coordinates: [number, number][];
+  trafficRouteGeoJson: TrafficRouteFeatureCollection;
+};
+
 export type IntelligentRouteResult = {
   route: MapboxDirectionRoute;
   coordinates: [number, number][];
@@ -43,6 +51,8 @@ export type IntelligentRouteResult = {
   summaries: ScoredRouteSummary[];
   selectedIndex: number;
   torontoWarnings: string[];
+  /** All alternatives with geometry — crew can switch without refetching. */
+  alternatives: CrewRouteAlternative[];
 };
 
 export type FetchIntelligentRouteOptions = {
@@ -244,6 +254,21 @@ export async function fetchIntelligentRoute(
   const routes = data?.routes;
   if (!routes?.length) return null;
 
+  const alternatives: CrewRouteAlternative[] = [];
+  for (let i = 0; i < routes.length; i++) {
+    const route = routes[i];
+    const coords = route.geometry?.coordinates as [number, number][] | undefined;
+    if (!coords?.length) continue;
+    const cong = route.legs?.[0]?.annotation?.congestion;
+    alternatives.push({
+      index: i,
+      route,
+      coordinates: coords,
+      trafficRouteGeoJson: buildTrafficColoredRouteGeoJson(coords, cong),
+    });
+  }
+  if (!alternatives.length) return null;
+
   const scored = routes.map((route, index) => ({
     route,
     index,
@@ -283,5 +308,6 @@ export async function fetchIntelligentRoute(
     summaries,
     selectedIndex,
     torontoWarnings,
+    alternatives,
   };
 }

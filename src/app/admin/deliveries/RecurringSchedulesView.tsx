@@ -6,6 +6,10 @@ import { toTitleCase } from "@/lib/format-text";
 import CreateButton from "../components/CreateButton";
 import { X, MagnifyingGlass, PencilSimple, Play, Pause, Trash } from "@phosphor-icons/react";
 import { organizationTypeLabel } from "@/lib/partner-type";
+import {
+  B2B_PARTNER_TIME_WINDOW_OPTIONS,
+  LEGACY_PARTNER_RECURRING_TIME_WINDOW_OPTIONS,
+} from "@/lib/time-windows";
 
 /* ─── Types ─────────────────────────────────────── */
 interface RecurringSchedule {
@@ -38,13 +42,6 @@ function formatNextDate(dateStr: string | null) {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
-const TIME_LABELS: Record<string, string> = {
-  morning: "Morning (8–12pm)",
-  afternoon: "Afternoon (12–5pm)",
-  evening: "Evening (5–8pm)",
-  flexible: "Flexible",
-};
-
 /* ─── Create / Edit Modal ───────────────────────── */
 function AdminScheduleModal({
   existing,
@@ -69,7 +66,9 @@ function AdminScheduleModal({
   const [vehicleType, setVehicleType] = useState(existing?.vehicle_type ?? "sprinter");
   const [dayType, setDayType] = useState(existing?.day_type ?? "full_day");
   const [numStops, setNumStops] = useState(String(existing?.default_num_stops ?? ""));
-  const [timeWindow, setTimeWindow] = useState(existing?.time_window ?? "morning");
+  const [timeWindow, setTimeWindow] = useState(
+    existing?.time_window ?? B2B_PARTNER_TIME_WINDOW_OPTIONS[0] ?? "",
+  );
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
@@ -122,8 +121,22 @@ function AdminScheduleModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
-      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[500px] shadow-2xl border border-[var(--brd)] flex flex-col max-h-[90vh]">
+    <div
+      data-modal-root
+      data-yugo-glass-modal
+      className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="fixed inset-0 z-0 bg-black/60 modal-overlay"
+        aria-hidden
+        onClick={onClose}
+      />
+      <div
+        className="relative z-10 w-full max-w-[500px] yugo-glass-light rounded-2xl shadow-2xl flex flex-col max-h-[90vh] modal-card pointer-events-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
           <h2 className="admin-section-h2">{isEdit ? "Edit Schedule" : "New Recurring Schedule"}</h2>
           <button onClick={onClose} className="text-[var(--tx3)] hover:text-[var(--tx)] p-1">
@@ -240,12 +253,17 @@ function AdminScheduleModal({
             <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Time Window</label>
             <select value={timeWindow} onChange={(e) => setTimeWindow(e.target.value)}
               className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none">
-              {Object.entries(TIME_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              {B2B_PARTNER_TIME_WINDOW_OPTIONS.map((w) => (
+                <option key={w} value={w}>{w}</option>
+              ))}
+              {LEGACY_PARTNER_RECURRING_TIME_WINDOW_OPTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
             </select>
           </div>
         </div>
 
-        <div className="flex-shrink-0 px-5 py-4 border-t border-[var(--brd)] flex gap-2 bg-[var(--card)]">
+        <div className="flex-shrink-0 px-5 py-4 border-t border-[var(--brd)] flex gap-2 bg-transparent">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)]">Cancel</button>
           <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50">
             {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Schedule"}

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import type { PartnerPortalTerminology } from "@/lib/partner-vertical-copy";
+import { getPartnerPortalTerminology } from "@/lib/partner-vertical-copy";
 import { Info, ShareNetwork, CaretDown, Check, MapPin, Clock, Warning } from "@phosphor-icons/react";
 
 interface Vendor {
@@ -55,16 +57,27 @@ const VENDOR_STATUS_ICON: Record<string, string> = {
   delayed: "alert",
 };
 
-export default function PartnerProjectsTab({ projects, onShareProject }: {
+export default function PartnerProjectsTab({
+  projects,
+  onShareProject,
+  orgType = "",
+  portalTerms: portalTermsProp,
+}: {
   projects: Project[];
   onShareProject?: (projectId: string) => void;
+  orgType?: string;
+  portalTerms?: PartnerPortalTerminology;
 }) {
+  const portalTerms = useMemo(
+    () => portalTermsProp ?? getPartnerPortalTerminology(orgType),
+    [orgType, portalTermsProp],
+  );
   const [expandedId, setExpandedId] = useState<string | null>(projects.length > 0 ? projects[0].id : null);
 
   if (projects.length === 0) {
     return (
       <div className="bg-white border border-[#E8E4DF] rounded-xl p-8 text-center">
-        <p className="text-[var(--text-base)] text-[#4F4B47]">No active projects.</p>
+        <p className="text-[var(--text-base)] text-[#4F4B47]">{portalTerms.galleryLegacyEmpty}</p>
       </div>
     );
   }
@@ -99,7 +112,7 @@ export default function PartnerProjectsTab({ projects, onShareProject }: {
                   {onShareProject && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onShareProject(project.id); }}
-                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[#E8E4DF] text-[#4F4B47] hover:border-[#2C3E2D] hover:text-[#2C3E2D] transition-colors"
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[#E8E4DF] text-[#4F4B47] hover:border-[#2C3E2D] hover:text-[var(--tx)] transition-colors"
                     >
                       <ShareNetwork size={12} className="inline mr-1" />
                       Share

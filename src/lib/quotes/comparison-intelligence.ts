@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
+import { quoteComparisonSignalAdminEmailHtml } from "@/lib/email/admin-templates";
+import { getEmailBaseUrl } from "@/lib/email-base-url";
 
 export type QuoteEngagementMetrics = {
   pageViewCount: number;
@@ -90,13 +92,45 @@ export async function computeQuoteEngagementMetrics(
   };
 }
 
+function tierPricesFromQuoteRow(q: Record<string, unknown>): {
+  essential: number;
+  signature: number;
+  estate: number;
+} {
+  const tiers = (q.tiers || {}) as Record<string, { price?: unknown } | undefined>;
+  const num = (x: unknown) => {
+    const n = Number(x);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  };
+  const essential =
+    num(tiers.essential?.price) ||
+    num(tiers.curated?.price) ||
+    num(tiers.essentials?.price) ||
+    num(q.essential_price);
+  const signature = num(tiers.signature?.price) || num(tiers.premier?.price);
+  const estate = num(tiers.estate?.price);
+  return { essential, signature, estate };
+}
+
+function formatMoveDateLabel(moveDate: string | null | undefined): string {
+  if (!moveDate || typeof moveDate !== "string") return "";
+  const d = moveDate.slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return moveDate;
+  const [y, m, day] = d.split("-").map(Number);
+  const dt = new Date(y, m - 1, day);
+  if (Number.isNaN(dt.getTime())) return moveDate;
+  return dt.toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
+}
+
 /**
  * Daily cron: notify coordinators when a quote shows comparison shopping patterns.
  */
 export async function runQuoteComparisonCron(sb: SupabaseClient): Promise<{ scanned: number; notified: number }> {
   const { data: quotes } = await sb
     .from("quotes")
-    .select("id, quote_id, comparison_alert_sent_at, contact_id")
+    .select(
+      "id, quote_id, comparison_alert_sent_at, contact_id, tiers, move_date, from_address, to_address, move_size, essential_price",
+    )
     .in("status", ["sent", "viewed", "reactivated"])
     .is("comparison_alert_sent_at", null)
     .limit(80);
@@ -107,23 +141,68 @@ export async function runQuoteComparisonCron(sb: SupabaseClient): Promise<{ scan
     if (!metrics.comparingRecommended) continue;
 
     const { data: contact } = q.contact_id
-      ? await sb.from("contacts").select("name").eq("id", q.contact_id as string).maybeSingle()
+      ? await sb
+          .from("contacts")
+          .select("name, email, phone")
+          .eq("id", q.contact_id as string)
+          .maybeSingle()
       : { data: null };
 
-    const first = (contact?.name || "").trim().split(/\s+/)[0] || "Client";
-    const tierParts = Object.entries(metrics.tierClickCounts)
-      .map(([k, v]) => `${k} ${v}×`)
-      .join(", ");
-    const body = `Viewed ${metrics.pageViewCount} times across ${metrics.distinctViewDays} day(s).${
-      tierParts ? ` Tier clicks: ${tierParts}.` : ""
-    } Max time on page ~${Math.max(metrics.maxSessionSeconds, 0)}s.`;
+    const fullName = (contact?.name || "").trim() || "Client";
+    const first = fullName.split(/\s+/)[0] || "Client";
+    const publicQuoteId = String(q.quote_id);
+    const tierPrices = tierPricesFromQuoteRow(q as Record<string, unknown>);
+    const topTierEntry = Object.entries(metrics.tierClickCounts).sort((a, b) => b[1] - a[1])[0];
+    const topTierShort = topTierEntry?.[0] ?? "";
+
+    const description = [
+      `${metrics.pageViewCount} views · ${metrics.distinctViewDays} day(s) active`,
+      topTierShort ? ` · strongest: ${topTierShort}` : "",
+    ].join("");
+
+    const lastEngagementLabel = metrics.lastEngagementAt
+      ? new Date(metrics.lastEngagementAt).toLocaleString("en-CA", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : "Unknown";
+
+    const baseUrl = getEmailBaseUrl();
+    const adminQuoteUrl = `${baseUrl}/admin/quotes/${encodeURIComponent(publicQuoteId)}`;
+
+    const html = quoteComparisonSignalAdminEmailHtml({
+      clientFirstName: first,
+      clientFullName: fullName,
+      clientEmail: (contact?.email || "").trim(),
+      clientPhone: (contact?.phone || "").trim(),
+      publicQuoteId,
+      moveDateLabel: formatMoveDateLabel(q.move_date as string | null | undefined),
+      moveSizeLabel: String(q.move_size || "").trim(),
+      fromAddress: String(q.from_address || "").trim(),
+      toAddress: String(q.to_address || "").trim(),
+      tierPrices,
+      viewCount: metrics.pageViewCount,
+      uniqueDays: metrics.distinctViewDays,
+      tierClickCounts: metrics.tierClickCounts,
+      maxSessionSeconds: metrics.maxSessionSeconds,
+      lastEngagementLabel,
+      adminQuoteUrl,
+    });
+
+    const contactEmail = (contact?.email || "").trim();
+    const excludeRecipientEmails = contactEmail ? [contactEmail.toLowerCase()] : [];
 
     await notifyAdmins("quote_comparison_signal", {
-      quoteId: String(q.quote_id),
+      quoteId: publicQuoteId,
       sourceId: q.id,
-      subject: `${first} may be comparing quotes`,
-      description: body,
+      subject: `${first} may be comparing quotes · ${publicQuoteId}`,
+      description,
       clientName: first,
+      html,
+      excludeRecipientEmails,
     }).catch(() => {});
 
     await sb

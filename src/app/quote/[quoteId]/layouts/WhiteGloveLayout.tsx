@@ -165,7 +165,7 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
             ) : null}
           </div>
         )}
-        <p className="font-hero text-[40px] md:text-[48px]" style={{ color: WINE }}>
+        <p className="text-[40px] md:text-[48px] [font-family:var(--font-body)]" style={{ color: WINE }}>
           {fmtPrice(price)}
         </p>
         <p className="text-[12px] mt-1 mb-5" style={{ color: `${FOREST}70` }}>

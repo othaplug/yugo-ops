@@ -324,9 +324,10 @@ export default function LeadDetailClient({
       {dismissOpen && (
         <ModalDialogFrame
           zClassName="z-50"
+          yugoGlassChrome
           backdropClassName="bg-black/50"
           onBackdropClick={() => setDismissOpen(false)}
-          panelClassName="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 max-w-md w-full shadow-xl modal-card"
+          panelClassName="yugo-glass-light rounded-xl p-5 max-w-md w-full shadow-xl modal-card"
           ariaLabelledBy="dismiss-lead-title"
         >
             <h2 id="dismiss-lead-title" className="text-[14px] font-bold text-[var(--tx)] mb-3">

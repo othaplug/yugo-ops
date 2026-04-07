@@ -1,8 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CaretDown as ChevronDown } from "@phosphor-icons/react";
+import {
+  CaretDown as ChevronDown,
+  Check as PhCheck,
+  Minus as PhMinus,
+} from "@phosphor-icons/react";
 import { useToast } from "@/app/admin/components/Toast";
+import { WINE } from "@/app/quote/[quoteId]/quote-shared";
+
+const MUTED = "#5A6B5E";
+const INK = "#1a1f1b";
+const CREAM_CARD = "#FFFBF7";
+const CREAM_BAND = "#FAF7F2";
+const FOREST = "#2C3E2D";
 
 interface InventoryRoom {
   room: string;
@@ -18,7 +29,16 @@ interface ExtraItem {
   added_at?: string;
 }
 
-const DEFAULT_ROOMS = ["Living Room", "Bedroom", "Kitchen", "Bathroom", "Office", "Garage", "Basement", "Other"];
+const DEFAULT_ROOMS = [
+  "Living Room",
+  "Bedroom",
+  "Kitchen",
+  "Bathroom",
+  "Office",
+  "Garage",
+  "Basement",
+  "Other",
+];
 
 interface JobInventoryProps {
   jobId: string;
@@ -49,13 +69,25 @@ export default function JobInventory({
   const { toast } = useToast();
   const [verifiedIds, setVerifiedIds] = useState<Set<string>>(new Set());
   const [verifiedRooms, setVerifiedRooms] = useState<Set<string>>(new Set());
-  const [verifiedIdsLoading, setVerifiedIdsLoading] = useState<Set<string>>(new Set());
-  const [verifiedIdsUnloading, setVerifiedIdsUnloading] = useState<Set<string>>(new Set());
-  const [verifiedRoomsLoading, setVerifiedRoomsLoading] = useState<Set<string>>(new Set());
-  const [verifiedRoomsUnloading, setVerifiedRoomsUnloading] = useState<Set<string>>(new Set());
+  const [verifiedIdsLoading, setVerifiedIdsLoading] = useState<Set<string>>(
+    new Set(),
+  );
+  const [verifiedIdsUnloading, setVerifiedIdsUnloading] = useState<Set<string>>(
+    new Set(),
+  );
+  const [verifiedRoomsLoading, setVerifiedRoomsLoading] = useState<Set<string>>(
+    new Set(),
+  );
+  const [verifiedRoomsUnloading, setVerifiedRoomsUnloading] = useState<
+    Set<string>
+  >(new Set());
   const [verifiedKeys, setVerifiedKeys] = useState<Set<string>>(new Set());
-  const [verifiedKeysLoading, setVerifiedKeysLoading] = useState<Set<string>>(new Set());
-  const [verifiedKeysUnloading, setVerifiedKeysUnloading] = useState<Set<string>>(new Set());
+  const [verifiedKeysLoading, setVerifiedKeysLoading] = useState<Set<string>>(
+    new Set(),
+  );
+  const [verifiedKeysUnloading, setVerifiedKeysUnloading] = useState<
+    Set<string>
+  >(new Set());
   const [customRooms, setCustomRooms] = useState<string[]>([]);
   const [addExtraOpen, setAddExtraOpen] = useState(false);
   const [extraDesc, setExtraDesc] = useState("");
@@ -64,82 +96,145 @@ export default function JobInventory({
   const [submitting, setSubmitting] = useState(false);
   const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
 
-  const isUnloading = ["unloading", "arrived_at_destination", "delivering", "completed"].includes(currentStatus);
+  const isUnloading = [
+    "unloading",
+    "arrived_at_destination",
+    "delivering",
+    "completed",
+  ].includes(currentStatus);
   const isCompleted = currentStatus === "completed";
+  /** Job completion implies delivery/unloading — avoid stale UI when crew finished without a separate unload verify row. */
+  const deliveryVerified = (unloadingRecorded: boolean) =>
+    unloadingRecorded || isCompleted;
 
   useEffect(() => {
     if (isCompleted) {
-      fetch(`/api/crew/inventory/${encodeURIComponent(jobId)}/verifications?stage=all`)
+      fetch(
+        `/api/crew/inventory/${encodeURIComponent(jobId)}/verifications?stage=all`,
+      )
         .then((r) => r.json())
         .then((d) => {
-          if (d.verifiedIdsLoading) setVerifiedIdsLoading(new Set(d.verifiedIdsLoading));
-          if (d.verifiedIdsUnloading) setVerifiedIdsUnloading(new Set(d.verifiedIdsUnloading));
-          if (d.verifiedRoomsLoading) setVerifiedRoomsLoading(new Set(d.verifiedRoomsLoading));
-          if (d.verifiedRoomsUnloading) setVerifiedRoomsUnloading(new Set(d.verifiedRoomsUnloading));
-          if (Array.isArray(d.verifiedKeysLoading)) setVerifiedKeysLoading(new Set(d.verifiedKeysLoading));
-          if (Array.isArray(d.verifiedKeysUnloading)) setVerifiedKeysUnloading(new Set(d.verifiedKeysUnloading));
+          if (d.verifiedIdsLoading)
+            setVerifiedIdsLoading(new Set(d.verifiedIdsLoading));
+          if (d.verifiedIdsUnloading)
+            setVerifiedIdsUnloading(new Set(d.verifiedIdsUnloading));
+          if (d.verifiedRoomsLoading)
+            setVerifiedRoomsLoading(new Set(d.verifiedRoomsLoading));
+          if (d.verifiedRoomsUnloading)
+            setVerifiedRoomsUnloading(new Set(d.verifiedRoomsUnloading));
+          if (Array.isArray(d.verifiedKeysLoading))
+            setVerifiedKeysLoading(new Set(d.verifiedKeysLoading));
+          if (Array.isArray(d.verifiedKeysUnloading))
+            setVerifiedKeysUnloading(new Set(d.verifiedKeysUnloading));
         })
         .catch(() => {});
     } else {
-      fetch(`/api/crew/inventory/${encodeURIComponent(jobId)}/verifications?stage=${isUnloading ? "unloading" : "loading"}`)
+      fetch(
+        `/api/crew/inventory/${encodeURIComponent(jobId)}/verifications?stage=${isUnloading ? "unloading" : "loading"}`,
+      )
         .then((r) => r.json())
         .then((d) => {
-          if (Array.isArray(d.verifiedIds)) setVerifiedIds(new Set(d.verifiedIds));
-          if (Array.isArray(d.verifiedRooms)) setVerifiedRooms(new Set(d.verifiedRooms));
-          if (Array.isArray(d.verifiedKeys)) setVerifiedKeys(new Set(d.verifiedKeys));
+          if (Array.isArray(d.verifiedIds))
+            setVerifiedIds(new Set(d.verifiedIds));
+          if (Array.isArray(d.verifiedRooms))
+            setVerifiedRooms(new Set(d.verifiedRooms));
+          if (Array.isArray(d.verifiedKeys))
+            setVerifiedKeys(new Set(d.verifiedKeys));
         })
         .catch(() => {});
     }
   }, [jobId, isUnloading, isCompleted, verificationRefreshEpoch]);
 
-  const isRoomBasedVerification = jobType === "move" && moveType === "residential" && inventory.length === 0;
+  const isRoomBasedVerification =
+    jobType === "move" && moveType === "residential" && inventory.length === 0;
   const roomsToConfirm = [...DEFAULT_ROOMS, ...customRooms];
   const allItemsWithId = inventory.flatMap((r) => {
     const rowItems =
-      r.itemsWithId || r.items.map((name, i) => ({ id: `noid-${r.room}-${i}`, item_name: name, quantity: 1 as const }));
+      r.itemsWithId ||
+      r.items.map((name, i) => ({
+        id: `noid-${r.room}-${i}`,
+        item_name: name,
+        quantity: 1 as const,
+      }));
     return rowItems.map((item) => ({ ...item, room: r.room }));
   });
   const verifiableCount = allItemsWithId.filter((item) => {
     const id = "id" in item ? item.id : "";
     return typeof id === "string" && !id.startsWith("noid-");
   }).length;
-  const lineItemKey = (room: string, itemName: string) => `${room}::${itemName}`;
+  const lineItemKey = (room: string, itemName: string) =>
+    `${room}::${itemName}`;
   const verifiedCount = allItemsWithId.filter((item) => {
     const id = "id" in item ? item.id : "";
     const room = item.room;
     const name = "item_name" in item ? item.item_name : "";
     if (typeof id !== "string" || typeof name !== "string") return false;
     if (!id.startsWith("noid-")) {
-      if (isCompleted) return verifiedIdsLoading.has(id) && verifiedIdsUnloading.has(id);
+      if (isCompleted)
+        return (
+          verifiedIdsLoading.has(id) &&
+          deliveryVerified(verifiedIdsUnloading.has(id))
+        );
       return verifiedIds.has(id);
     }
     const k = lineItemKey(room, name);
-    if (isCompleted) return verifiedKeysLoading.has(k) && verifiedKeysUnloading.has(k);
+    if (isCompleted)
+      return (
+        verifiedKeysLoading.has(k) &&
+        deliveryVerified(verifiedKeysUnloading.has(k))
+      );
     return verifiedKeys.has(k);
   }).length;
-  const totalCount = isRoomBasedVerification ? roomsToConfirm.length : Math.max(verifiableCount, allItemsWithId.length + extraItems.length);
+  const totalCount = isRoomBasedVerification
+    ? roomsToConfirm.length
+    : Math.max(verifiableCount, allItemsWithId.length + extraItems.length);
 
-  const completedFullyVerifiedCount = isCompleted && verifiableCount > 0
-    ? allItemsWithId.filter((item) => {
-        const id = "id" in item ? item.id : "";
-        return typeof id === "string" && !id.startsWith("noid-") && verifiedIdsLoading.has(id) && verifiedIdsUnloading.has(id);
-      }).length
-    : 0;
+  const completedFullyVerifiedCount =
+    isCompleted && verifiableCount > 0
+      ? allItemsWithId.filter((item) => {
+          const id = "id" in item ? item.id : "";
+          return (
+            typeof id === "string" &&
+            !id.startsWith("noid-") &&
+            verifiedIdsLoading.has(id) &&
+            deliveryVerified(verifiedIdsUnloading.has(id))
+          );
+        }).length
+      : 0;
 
   useEffect(() => {
     if (isCompleted && isRoomBasedVerification) {
-      const both = roomsToConfirm.filter((room) => verifiedRoomsLoading.has(room) && verifiedRoomsUnloading.has(room)).length;
+      const both = roomsToConfirm.filter(
+        (room) =>
+          verifiedRoomsLoading.has(room) &&
+          deliveryVerified(verifiedRoomsUnloading.has(room)),
+      ).length;
       onCountChange?.(both, roomsToConfirm.length);
     } else if (isCompleted && verifiableCount > 0) {
       onCountChange?.(completedFullyVerifiedCount, verifiableCount);
     } else if (isRoomBasedVerification) {
       onCountChange?.(verifiedRooms.size, roomsToConfirm.length);
     } else if (verifiableCount > 0 || allItemsWithId.length > 0) {
-      onCountChange?.(verifiedCount, Math.max(verifiableCount, allItemsWithId.length));
+      onCountChange?.(
+        verifiedCount,
+        Math.max(verifiableCount, allItemsWithId.length),
+      );
     } else {
       onCountChange?.(0, totalCount);
     }
-  }, [isRoomBasedVerification, verifiedRooms.size, roomsToConfirm.length, verifiedCount, verifiableCount, totalCount, onCountChange, isCompleted, completedFullyVerifiedCount]);
+  }, [
+    isRoomBasedVerification,
+    verifiedRooms.size,
+    roomsToConfirm.length,
+    verifiedCount,
+    verifiableCount,
+    totalCount,
+    onCountChange,
+    isCompleted,
+    completedFullyVerifiedCount,
+    verifiedRoomsLoading,
+    verifiedRoomsUnloading,
+  ]);
 
   const toggleRoomVerify = async (room: string) => {
     if (verifiedRooms.has(room)) return;
@@ -147,7 +242,11 @@ export default function JobInventory({
       const res = await fetch(`/api/crew/inventory/${jobId}/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ room, itemName: room, stage: isUnloading ? "unloading" : "loading" }),
+        body: JSON.stringify({
+          room,
+          itemName: room,
+          stage: isUnloading ? "unloading" : "loading",
+        }),
       });
       if (!res.ok) throw new Error("Failed");
       setVerifiedRooms((prev) => new Set([...prev, room]));
@@ -161,7 +260,10 @@ export default function JobInventory({
       const res = await fetch(`/api/crew/inventory/${jobId}/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ moveInventoryId, stage: isUnloading ? "unloading" : "loading" }),
+        body: JSON.stringify({
+          moveInventoryId,
+          stage: isUnloading ? "unloading" : "loading",
+        }),
       });
       if (!res.ok) throw new Error("Failed");
       setVerifiedIds((prev) => new Set([...prev, moveInventoryId]));
@@ -173,16 +275,19 @@ export default function JobInventory({
     const k = lineItemKey(room, itemName);
     if (verifiedKeys.has(k)) return;
     try {
-      const res = await fetch(`/api/crew/inventory/${encodeURIComponent(jobId)}/verify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          room,
-          itemName,
-          stage: isUnloading ? "unloading" : "loading",
-        }),
-      });
+      const res = await fetch(
+        `/api/crew/inventory/${encodeURIComponent(jobId)}/verify`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            room,
+            itemName,
+            stage: isUnloading ? "unloading" : "loading",
+          }),
+        },
+      );
       if (!res.ok) throw new Error("Failed");
       setVerifiedKeys((prev) => new Set([...prev, k]));
     } catch {
@@ -207,7 +312,9 @@ export default function JobInventory({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error((data as { error?: string }).error || "Failed to submit request");
+        throw new Error(
+          (data as { error?: string }).error || "Failed to submit request",
+        );
       }
       setAddExtraOpen(false);
       setExtraDesc("");
@@ -221,30 +328,75 @@ export default function JobInventory({
     setSubmitting(false);
   };
 
-  if (jobType === "delivery" && inventory.length === 0 && extraItems.length === 0) return null;
-  if (jobType === "move" && inventory.length === 0 && extraItems.length === 0 && !isRoomBasedVerification) return null;
+  if (
+    jobType === "delivery" &&
+    inventory.length === 0 &&
+    extraItems.length === 0
+  )
+    return null;
+  if (
+    jobType === "move" &&
+    inventory.length === 0 &&
+    extraItems.length === 0 &&
+    !isRoomBasedVerification
+  )
+    return null;
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="admin-section-h2 text-[var(--tx2)]">
-          {isCompleted
-            ? "Inventory verified (pickup & delivery)"
-            : isRoomBasedVerification
-              ? "Room Confirmation"
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <h2
+          className="inline-flex flex-wrap items-center gap-x-1.5 font-hero text-[20px] sm:text-[22px] font-normal leading-tight tracking-tight pr-2"
+          style={{ color: WINE }}
+        >
+          {isCompleted ? (
+            <>
+              <span>Inventory Verified</span>
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase leading-none tracking-[-0.02em] [font-family:var(--font-body)]">
+                PICKUP & DELIVERY
+              </span>
+            </>
+          ) : isRoomBasedVerification
+              ? "Room confirmation"
               : isUnloading
-                ? "Unloading Verification"
+                ? "Unloading verification"
                 : "Inventory"}
         </h2>
         {isCompleted && verifiableCount > 0 ? (
-          <span className="text-[11px] text-[var(--tx3)]">{completedFullyVerifiedCount} of {verifiableCount} verified at both</span>
+          <span
+            className="text-[11px] font-medium shrink-0 text-right leading-snug max-w-[140px] [font-family:var(--font-body)]"
+            style={{ color: MUTED }}
+          >
+            {completedFullyVerifiedCount} of {verifiableCount} verified at both
+          </span>
         ) : isCompleted && isRoomBasedVerification ? (
-          <span className="text-[11px] text-[var(--tx3)]">{roomsToConfirm.filter((r) => verifiedRoomsLoading.has(r) && verifiedRoomsUnloading.has(r)).length} of {roomsToConfirm.length} rooms</span>
+          <span
+            className="text-[11px] font-medium shrink-0 text-right [font-family:var(--font-body)]"
+            style={{ color: MUTED }}
+          >
+            {
+              roomsToConfirm.filter(
+                (r) =>
+                  verifiedRoomsLoading.has(r) &&
+                  deliveryVerified(verifiedRoomsUnloading.has(r)),
+              ).length
+            }{" "}
+            of {roomsToConfirm.length} rooms
+          </span>
         ) : isRoomBasedVerification ? (
-          <span className="text-[11px] text-[var(--tx3)]">{verifiedRooms.size} of {roomsToConfirm.length} rooms</span>
+          <span
+            className="text-[11px] font-medium shrink-0 text-right [font-family:var(--font-body)]"
+            style={{ color: MUTED }}
+          >
+            {verifiedRooms.size} of {roomsToConfirm.length} rooms
+          </span>
         ) : allItemsWithId.length > 0 ? (
-          <span className="text-[11px] text-[var(--tx3)]">
-            {verifiedCount} of {Math.max(verifiableCount, allItemsWithId.length)} verified
+          <span
+            className="text-[11px] font-medium shrink-0 text-right [font-family:var(--font-body)]"
+            style={{ color: MUTED }}
+          >
+            {verifiedCount} of{" "}
+            {Math.max(verifiableCount, allItemsWithId.length)} verified
           </span>
         ) : null}
       </div>
@@ -254,7 +406,8 @@ export default function JobInventory({
             const verified = verifiedRooms.has(room);
             const verifiedAtPickup = verifiedRoomsLoading.has(room);
             const verifiedAtDelivery = verifiedRoomsUnloading.has(room);
-            const bothVerified = verifiedAtPickup && verifiedAtDelivery;
+            const deliveryDone = deliveryVerified(verifiedAtDelivery);
+            const bothVerified = verifiedAtPickup && deliveryDone;
             return (
               <label
                 key={room}
@@ -263,15 +416,42 @@ export default function JobInventory({
                 <input
                   type="checkbox"
                   checked={isCompleted ? bothVerified : verified}
-                  onChange={() => !readOnly && !isCompleted && toggleRoomVerify(room)}
+                  onChange={() =>
+                    !readOnly && !isCompleted && toggleRoomVerify(room)
+                  }
                   disabled={readOnly}
-                  className="rounded border-[var(--brd)] text-[#5C1A33] focus:ring-[#5C1A33]"
+                  className="rounded-sm border-[#5C1A33]/30 accent-[#5C1A33] focus:ring-[#5C1A33]/40"
                 />
-                <span className="text-[13px] text-[var(--tx)] flex-1">{room}</span>
+                <span
+                  className="text-[13px] flex-1 [font-family:var(--font-body)]"
+                  style={{ color: INK }}
+                >
+                  {room}
+                </span>
                 {isCompleted && (
-                  <span className="flex items-center gap-2 text-[10px] font-medium">
-                    <span className={verifiedAtPickup ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>Pickup {verifiedAtPickup ? "✓" : "-"}</span>
-                    <span className={verifiedAtDelivery ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>Delivery {verifiedAtDelivery ? "✓" : "-"}</span>
+                  <span className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-wide [font-family:var(--font-body)]">
+                    <span
+                      className="inline-flex items-center gap-1"
+                      style={{ color: verifiedAtPickup ? FOREST : MUTED }}
+                    >
+                      Pickup
+                      {verifiedAtPickup ? (
+                        <PhCheck size={12} weight="bold" aria-hidden />
+                      ) : (
+                        <PhMinus size={12} weight="bold" aria-hidden />
+                      )}
+                    </span>
+                    <span
+                      className="inline-flex items-center gap-1"
+                      style={{ color: deliveryDone ? FOREST : MUTED }}
+                    >
+                      Delivery
+                      {deliveryDone ? (
+                        <PhCheck size={12} weight="bold" aria-hidden />
+                      ) : (
+                        <PhMinus size={12} weight="bold" aria-hidden />
+                      )}
+                    </span>
                   </span>
                 )}
               </label>
@@ -282,9 +462,11 @@ export default function JobInventory({
               type="button"
               onClick={() => {
                 const r = window.prompt("Add room name");
-                if (r?.trim() && !customRooms.includes(r.trim())) setCustomRooms((prev) => [...prev, r.trim()]);
+                if (r?.trim() && !customRooms.includes(r.trim()))
+                  setCustomRooms((prev) => [...prev, r.trim()]);
               }}
-              className="w-full py-1.5 border border-dashed border-[var(--brd)] text-[12px] text-[var(--tx3)] hover:border-[#5C1A33]"
+              className="w-full py-2 border border-dashed text-[11px] font-semibold uppercase tracking-wide transition-colors [font-family:var(--font-body)]"
+              style={{ borderColor: "rgba(92, 26, 51, 0.22)", color: MUTED }}
             >
               + Add room
             </button>
@@ -292,149 +474,300 @@ export default function JobInventory({
         </div>
       ) : (
         <>
-      {inventory.map((r) => {
-        const expanded = !collapsedRooms.has(r.room);
-        const items = r.itemsWithId || r.items.map((name, i) => ({ id: `noid-${r.room}-${i}`, item_name: name, quantity: 1 }));
-        return (
-        <div key={r.room} className="mb-3 rounded-lg overflow-hidden border border-[var(--brd)]/40 transition-colors hover:border-[var(--brd)]/60">
-          <button
-            type="button"
-            onClick={() => setCollapsedRooms((prev) => {
-              const next = new Set(prev);
-              if (next.has(r.room)) next.delete(r.room);
-              else next.add(r.room);
-              return next;
-            })}
-            className="w-full flex items-center justify-between gap-2 bg-[var(--bg)]/80 px-3 py-2.5 text-left hover:bg-[var(--bg)] transition-colors cursor-pointer group"
-          >
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#5C1A33] group-hover:text-[var(--yugo-rose-accent)] transition-colors">{r.room}</span>
-            <span className="flex items-center gap-1.5">
-              <span className="text-[10px] font-medium text-[var(--tx3)]">{items.length} item{items.length !== 1 ? "s" : ""}</span>
-              <ChevronDown className={`w-[14px] h-[14px] text-[var(--tx3)] transition-transform duration-200 ease-out ${expanded ? "rotate-0" : "-rotate-90"}`} />
-            </span>
-          </button>
-          <div
-            className="grid transition-[grid-template-rows] duration-200 ease-out"
-            style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
-          >
-            <div className="overflow-hidden">
-              <div className="space-y-1.5 px-3 pb-3 pt-0.5">
-                {items.map((item, i) => {
-                  const id = "id" in item ? item.id : `noid-${r.room}-${i}`;
-                  const rawName = "item_name" in item ? item.item_name : String(item);
-                  const qty = "quantity" in item ? (item.quantity ?? 1) : 1;
-                  const hasId = typeof id === "string" && !id.startsWith("noid-");
-                  const lineKey = lineItemKey(r.room, rawName);
-                  const verified = hasId ? verifiedIds.has(id) : verifiedKeys.has(lineKey);
-                  const verifiedAtPickup = hasId ? verifiedIdsLoading.has(id) : verifiedKeysLoading.has(lineKey);
-                  const verifiedAtDelivery = hasId ? verifiedIdsUnloading.has(id) : verifiedKeysUnloading.has(lineKey);
-                  const bothVerified = verifiedAtPickup && verifiedAtDelivery;
-                  const canToggle = !readOnly && !isCompleted;
-                  const checked = isCompleted ? bothVerified : verified;
-                  return (
-                    <label
-                      key={`${r.room}-${i}-${rawName}`}
-                      className={`flex items-center gap-2.5 py-1.5 ${canToggle ? "cursor-pointer" : ""}`}
+          {inventory.map((r) => {
+            const expanded = !collapsedRooms.has(r.room);
+            const items =
+              r.itemsWithId ||
+              r.items.map((name, i) => ({
+                id: `noid-${r.room}-${i}`,
+                item_name: name,
+                quantity: 1,
+              }));
+            return (
+              <div
+                key={r.room}
+                className="mb-3 overflow-hidden"
+                style={{ backgroundColor: CREAM_CARD }}
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCollapsedRooms((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(r.room)) next.delete(r.room);
+                      else next.add(r.room);
+                      return next;
+                    })
+                  }
+                  className="crew-job-flat w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors cursor-pointer group border-b border-[#2C3E2D]/8"
+                  style={{ backgroundColor: CREAM_BAND }}
+                >
+                  <span
+                    className="text-[9px] font-bold uppercase tracking-[0.14em] transition-colors group-hover:opacity-90 [font-family:var(--font-body)] leading-none"
+                    style={{ color: WINE }}
+                  >
+                    {r.room}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className="text-[10px] font-medium [font-family:var(--font-body)]"
+                      style={{ color: MUTED }}
                     >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => {
-                          if (!canToggle) return;
-                          hasId ? toggleVerify(id) : void toggleLineItemVerify(r.room, rawName);
-                        }}
-                        disabled={readOnly}
-                        className="rounded border-[var(--brd)] text-[#5C1A33] focus:ring-[#5C1A33]"
-                      />
-                      <span className="text-[13px] flex-1 text-[var(--tx)]">{rawName}</span>
-                      <span className="text-[11px] text-[var(--tx3)] tabular-nums">{qty}</span>
-                      {isCompleted && (
-                        <span className="flex items-center gap-2 text-[10px] font-medium">
-                          <span className={verifiedAtPickup ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>
-                            Pickup {verifiedAtPickup ? "✓" : "-"}
-                          </span>
-                          <span className={verifiedAtDelivery ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>
-                            Delivery {verifiedAtDelivery ? "✓" : "-"}
-                          </span>
-                        </span>
-                      )}
-                    </label>
-                  );
-                })}
+                      {items.length} item{items.length !== 1 ? "s" : ""}
+                    </span>
+                    <ChevronDown
+                      className={`w-[14px] h-[14px] transition-transform duration-200 ease-out shrink-0 ${expanded ? "rotate-0" : "-rotate-90"}`}
+                      style={{ color: MUTED }}
+                      aria-hidden
+                    />
+                  </span>
+                </button>
+                <div
+                  className="grid transition-[grid-template-rows] duration-200 ease-out"
+                  style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
+                >
+                  <div className="overflow-hidden">
+                    <div className="space-y-1.5 px-3 pb-3 pt-0.5">
+                      {items.map((item, i) => {
+                        const id =
+                          "id" in item ? item.id : `noid-${r.room}-${i}`;
+                        const rawName =
+                          "item_name" in item ? item.item_name : String(item);
+                        const qty =
+                          "quantity" in item ? (item.quantity ?? 1) : 1;
+                        const hasId =
+                          typeof id === "string" && !id.startsWith("noid-");
+                        const lineKey = lineItemKey(r.room, rawName);
+                        const verified = hasId
+                          ? verifiedIds.has(id)
+                          : verifiedKeys.has(lineKey);
+                        const verifiedAtPickup = hasId
+                          ? verifiedIdsLoading.has(id)
+                          : verifiedKeysLoading.has(lineKey);
+                        const verifiedAtDelivery = hasId
+                          ? verifiedIdsUnloading.has(id)
+                          : verifiedKeysUnloading.has(lineKey);
+                        const deliveryDone =
+                          deliveryVerified(verifiedAtDelivery);
+                        const bothVerified = verifiedAtPickup && deliveryDone;
+                        const canToggle = !readOnly && !isCompleted;
+                        const checked = isCompleted ? bothVerified : verified;
+                        return (
+                          <label
+                            key={`${r.room}-${i}-${rawName}`}
+                            className={`flex items-center gap-2.5 py-1.5 ${canToggle ? "cursor-pointer" : ""}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => {
+                                if (!canToggle) return;
+                                hasId
+                                  ? toggleVerify(id)
+                                  : void toggleLineItemVerify(r.room, rawName);
+                              }}
+                              disabled={readOnly}
+                              className="rounded-sm border-[#5C1A33]/30 accent-[#5C1A33] focus:ring-[#5C1A33]/40"
+                            />
+                            <span
+                              className="text-[13px] flex-1 [font-family:var(--font-body)]"
+                              style={{ color: INK }}
+                            >
+                              {rawName}
+                            </span>
+                            <span
+                              className="text-[11px] tabular-nums [font-family:var(--font-body)]"
+                              style={{ color: MUTED }}
+                            >
+                              {qty}
+                            </span>
+                            {isCompleted && (
+                              <span className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-wide [font-family:var(--font-body)]">
+                                <span
+                                  className="inline-flex items-center gap-1"
+                                  style={{
+                                    color: verifiedAtPickup ? FOREST : MUTED,
+                                  }}
+                                >
+                                  Pickup
+                                  {verifiedAtPickup ? (
+                                    <PhCheck
+                                      size={12}
+                                      weight="bold"
+                                      aria-hidden
+                                    />
+                                  ) : (
+                                    <PhMinus
+                                      size={12}
+                                      weight="bold"
+                                      aria-hidden
+                                    />
+                                  )}
+                                </span>
+                                <span
+                                  className="inline-flex items-center gap-1"
+                                  style={{
+                                    color: deliveryDone ? FOREST : MUTED,
+                                  }}
+                                >
+                                  Delivery
+                                  {deliveryDone ? (
+                                    <PhCheck
+                                      size={12}
+                                      weight="bold"
+                                      aria-hidden
+                                    />
+                                  ) : (
+                                    <PhMinus
+                                      size={12}
+                                      weight="bold"
+                                      aria-hidden
+                                    />
+                                  )}
+                                </span>
+                              </span>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
               </div>
+            );
+          })}
+          {extraItems.length > 0 && (
+            <div className="mb-3">
+              <div
+                className="text-[9px] font-bold uppercase tracking-[0.14em] mb-2 [font-family:var(--font-body)] leading-none"
+                style={{ color: MUTED }}
+              >
+                Added on-site
+              </div>
+              {extraItems.map((e) => (
+                <div
+                  key={e.id}
+                  className="py-2 px-3 text-[12px] [font-family:var(--font-body)]"
+                  style={{ backgroundColor: CREAM_BAND, color: INK }}
+                >
+                  {e.description ?? "-"}{" "}
+                  {(e.quantity ?? 1) > 1 && `×${e.quantity}`}{" "}
+                  {e.room && `(${e.room})`}
+                </div>
+              ))}
             </div>
-          </div>
-        </div>
-        );
-      })}
-      {extraItems.length > 0 && (
-        <div className="mb-3">
-          <div className="text-[12px] font-semibold text-[#5C1A33] mb-1.5">Added on-site</div>
-          {extraItems.map((e) => (
-            <div key={e.id} className="py-1.5 px-3 rounded-lg bg-[var(--gdim)]/30 border border-[#5C1A33]/20 text-[12px]">
-              {e.description ?? "-"} {(e.quantity ?? 1) > 1 && `×${e.quantity}`} {e.room && `(${e.room})`}
-            </div>
-          ))}
-        </div>
-      )}
-      {!isRoomBasedVerification && !readOnly && (
-      <button
-        type="button"
-        onClick={() => setAddExtraOpen(true)}
-        className="w-full py-2.5 rounded-xl border border-[#2C3E2D]/25 bg-[#5C1A33]/8 text-[12px] font-medium text-[#f5f0e8] hover:bg-[#5C1A33]/14 transition-colors"
-      >
-        + Add Extra Item
-      </button>
-      )}
+          )}
+          {!isRoomBasedVerification && !readOnly && (
+            <button
+              type="button"
+              onClick={() => setAddExtraOpen(true)}
+              className="w-full py-3 min-h-[48px] border border-[#5C1A33]/30 text-[10px] font-bold tracking-[0.12em] uppercase transition-colors [font-family:var(--font-body)] leading-none hover:bg-[#5C1A33]/[0.06] active:scale-[0.99]"
+              style={{ color: WINE, backgroundColor: CREAM_CARD }}
+            >
+              + Add extra item
+            </button>
+          )}
         </>
       )}
       {addExtraOpen && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[99999] animate-fade-in">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 max-w-[340px] w-full shadow-xl animate-fade-in">
-            <h3 className="font-hero text-[26px] font-bold text-[var(--tx)] mb-4">Add Extra Item</h3>
-            <p className="text-[11px] text-[var(--tx3)] mb-4">Submitted items require admin approval before they appear in the list.</p>
+          <div
+            className="p-5 max-w-[340px] w-full shadow-xl animate-fade-in border border-[#5C1A33]/15"
+            style={{ backgroundColor: CREAM_CARD }}
+          >
+            <h3
+              className="font-hero text-[22px] font-normal tracking-tight mb-2"
+              style={{ color: WINE }}
+            >
+              Add extra item
+            </h3>
+            <p
+              className="text-[12px] mb-4 leading-relaxed [font-family:var(--font-body)]"
+              style={{ color: MUTED }}
+            >
+              Submitted items require admin approval before they appear in the
+              list.
+            </p>
             <form onSubmit={handleAddExtra} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1">Description</label>
+                <label
+                  className="block text-[9px] font-bold uppercase tracking-[0.12em] mb-1.5 [font-family:var(--font-body)]"
+                  style={{ color: MUTED }}
+                >
+                  Description
+                </label>
                 <input
                   value={extraDesc}
                   onChange={(e) => setExtraDesc(e.target.value)}
                   placeholder="e.g. Extra boxes from garage"
-                  className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]"
+                  className="w-full px-3 py-2.5 border text-[13px] outline-none focus:border-[#5C1A33]/40 [font-family:var(--font-body)]"
+                  style={{
+                    backgroundColor: CREAM_BAND,
+                    color: INK,
+                    borderColor: "rgba(44, 62, 45, 0.12)",
+                  }}
                   required
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1">Quantity</label>
+                <label
+                  className="block text-[9px] font-bold uppercase tracking-[0.12em] mb-1.5 [font-family:var(--font-body)]"
+                  style={{ color: MUTED }}
+                >
+                  Quantity
+                </label>
                 <input
                   type="number"
                   min={1}
                   value={extraQty}
-                  onChange={(e) => setExtraQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                  className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]"
+                  onChange={(e) =>
+                    setExtraQty(Math.max(1, parseInt(e.target.value, 10) || 1))
+                  }
+                  className="w-full px-3 py-2.5 border text-[13px] outline-none focus:border-[#5C1A33]/40 [font-family:var(--font-body)]"
+                  style={{
+                    backgroundColor: CREAM_BAND,
+                    color: INK,
+                    borderColor: "rgba(44, 62, 45, 0.12)",
+                  }}
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1">Room (optional)</label>
+                <label
+                  className="block text-[9px] font-bold uppercase tracking-[0.12em] mb-1.5 [font-family:var(--font-body)]"
+                  style={{ color: MUTED }}
+                >
+                  Room (optional)
+                </label>
                 <input
                   value={extraRoom}
                   onChange={(e) => setExtraRoom(e.target.value)}
                   placeholder="e.g. Garage"
-                  className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]"
+                  className="w-full px-3 py-2.5 border text-[13px] outline-none focus:border-[#5C1A33]/40 [font-family:var(--font-body)]"
+                  style={{
+                    backgroundColor: CREAM_BAND,
+                    color: INK,
+                    borderColor: "rgba(44, 62, 45, 0.12)",
+                  }}
                 />
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => setAddExtraOpen(false)}
-                  className="flex-1 py-2 border border-[var(--brd)] text-[var(--tx)] text-[13px]"
+                  className="flex-1 py-2.5 border text-[11px] font-semibold transition-colors [font-family:var(--font-body)]"
+                  style={{
+                    borderColor: "rgba(92, 26, 51, 0.25)",
+                    color: WINE,
+                    backgroundColor: CREAM_CARD,
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting || !extraDesc.trim()}
-                  className="crew-premium-cta flex-1 py-2 text-white font-semibold disabled:opacity-50 border border-[#2C3E2D]/30"
+                  className="flex-1 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] disabled:opacity-50 transition-colors [font-family:var(--font-body)] leading-none border border-[#3d1426]"
+                  style={{ backgroundColor: WINE, color: "#FFFBF7" }}
                 >
                   {submitting ? "Submitting…" : "Submit for approval"}
                 </button>

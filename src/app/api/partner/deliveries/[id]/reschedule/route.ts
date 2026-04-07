@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { ensureB2bDeliverySchedule } from "@/lib/calendar/ensure-b2b-delivery-schedule";
+import { B2B_PARTNER_TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 
 export async function POST(
   req: NextRequest,
@@ -89,6 +91,10 @@ export async function POST(
     icon: "Calendar",
   }).then(() => {});
 
+  await ensureB2bDeliverySchedule(admin, id).catch((e) =>
+    console.error("[partner/reschedule] ensureB2bDeliverySchedule:", e),
+  );
+
   return NextResponse.json({ success: true, newDate, newWindow });
 }
 
@@ -97,16 +103,22 @@ async function getAlternatives(
   date: string,
   excludeWindow: string
 ) {
-  const windows = ["morning", "afternoon", "evening", "flexible"];
+  const windows = B2B_PARTNER_TIME_WINDOW_OPTIONS.filter((w) => w !== excludeWindow);
   const altDate1 = new Date(date);
   altDate1.setDate(altDate1.getDate() + 1);
   const altDate2 = new Date(date);
   altDate2.setDate(altDate2.getDate() + 2);
 
   const candidates = [
-    ...windows.filter((w) => w !== excludeWindow).map((w) => ({ date, window: w })),
-    ...windows.slice(0, 2).map((w) => ({ date: altDate1.toISOString().slice(0, 10), window: w })),
-    ...windows.slice(0, 2).map((w) => ({ date: altDate2.toISOString().slice(0, 10), window: w })),
+    ...windows.map((w) => ({ date, window: w })),
+    ...B2B_PARTNER_TIME_WINDOW_OPTIONS.slice(0, 2).map((w) => ({
+      date: altDate1.toISOString().slice(0, 10),
+      window: w,
+    })),
+    ...B2B_PARTNER_TIME_WINDOW_OPTIONS.slice(2, 4).map((w) => ({
+      date: altDate2.toISOString().slice(0, 10),
+      window: w,
+    })),
   ];
 
   const available: { date: string; window: string }[] = [];
