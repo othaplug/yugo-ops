@@ -8,16 +8,22 @@ export async function GET() {
     if (authError) return authError;
 
     const supabase = createAdminClient();
-    const { data: claims, error } = await supabase
+    const { data: rows, error } = await supabase
       .from("claims")
-      .select("*")
+      .select("*, moves(move_code)")
       .order("created_at", { ascending: false });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ claims: claims || [] });
+    const claims = (rows || []).map((row) => {
+      const m = row.moves as { move_code?: string | null } | null | undefined;
+      const { moves: _drop, ...rest } = row as typeof row & { moves?: unknown };
+      return { ...rest, move_code: m?.move_code ?? null };
+    });
+
+    return NextResponse.json({ claims });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

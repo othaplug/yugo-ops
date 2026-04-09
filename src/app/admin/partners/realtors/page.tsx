@@ -45,8 +45,10 @@ export default async function RealtorsPage() {
   }).length;
 
   const bookedThisMonth = all.filter((r) => {
-    const d = r.created_at ? new Date(r.created_at) : null;
-    return d && (r.status === "booked" || r.status === "completed") && d >= thisMonthStart && d <= now;
+    if (r.status !== "booked" && r.status !== "completed") return false;
+    const raw = (r as { updated_at?: string }).updated_at || r.created_at;
+    const d = raw ? new Date(raw) : null;
+    return d != null && !Number.isNaN(d.getTime()) && d >= thisMonthStart && d <= now;
   }).length;
 
   return (

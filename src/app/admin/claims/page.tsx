@@ -8,10 +8,16 @@ import ClaimsListClient from "./ClaimsListClient";
 export default async function ClaimsPage() {
   const db = createAdminClient();
 
-  const { data: claims } = await db
+  const { data: claimsRaw } = await db
     .from("claims")
-    .select("*")
+    .select("*, moves(move_code)")
     .order("created_at", { ascending: false });
+
+  const claims = (claimsRaw || []).map((row) => {
+    const m = row.moves as { move_code?: string | null } | null | undefined;
+    const { moves: _drop, ...rest } = row as typeof row & { moves?: unknown };
+    return { ...rest, move_code: m?.move_code ?? null };
+  });
 
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();

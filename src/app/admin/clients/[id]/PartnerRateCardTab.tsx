@@ -109,9 +109,11 @@ const BUNDLE_RENO_BASE_BY_UNIT: Record<(typeof PM_UNIT_ORDER)[number], number> =
 const BUNDLE_RENO_WEEKEND_SURCHARGE = 200;
 
 interface PmRateEditState {
-  rowId: string;
+  /** Null when the matrix row was template-only (no pm_rate_cards id yet); save uses POST upsert. */
+  rowId: string | null;
   reasonCode: string;
   unitLabel: string;
+  unitSize: string;
   baseRate: number;
   weekendSurcharge: number;
 }
@@ -375,7 +377,7 @@ function PmRateEditModal({
   useEffect(() => {
     setBaseStr(String(state.baseRate));
     setWkndStr(String(state.weekendSurcharge));
-  }, [state.rowId, state.baseRate, state.weekendSurcharge]);
+  }, [state.rowId, state.unitSize, state.baseRate, state.weekendSurcharge]);
 
   const handleSave = async () => {
     const base = parseFloat(baseStr);
@@ -635,6 +637,37 @@ export default function PartnerRateCardTab({
 
   const handleSavePmRate = async (base: number, weekendSurcharge: number) => {
     if (!pmEdit) return;
+    const contractRow = data?.pmContract as { id?: unknown } | null | undefined;
+    const contractId = typeof contractRow?.id === "string" ? contractRow.id : null;
+
+    if (!pmEdit.rowId) {
+      if (!contractId) {
+        toast("No portfolio contract on file to save this rate", "x");
+        return;
+      }
+      const res = await fetch(`/api/admin/partners/${orgId}/rate-card/pm-rate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contract_id: contractId,
+          reason_code: pmEdit.reasonCode,
+          unit_size: pmEdit.unitSize,
+          zone: "local",
+          base_rate: base,
+          weekend_surcharge: weekendSurcharge,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast(json.error || "Failed to save", "x");
+        return;
+      }
+      toast("Rate saved", "check");
+      setPmEdit(null);
+      fetchData();
+      return;
+    }
+
     const res = await fetch(`/api/admin/partners/${orgId}/rate-card/pm-rate`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -697,6 +730,10 @@ export default function PartnerRateCardTab({
   const pmRates = (data.pmRates || []) as PmRateRow[];
   const pmAddons = data.pmAddons || [];
   const pmContract = data.pmContract;
+  const pmContractId =
+    pmContract && typeof (pmContract as { id?: unknown }).id === "string"
+      ? (pmContract as { id: string }).id
+      : null;
   const templateKind = template?.template_kind || "delivery";
   const templateSlug = template?.template_slug || "";
   const templateExtras = template?.extras ?? null;
@@ -1023,15 +1060,16 @@ export default function PartnerRateCardTab({
                         const rowId = matrixRowIds.get(reason)?.get(u);
                         const canClickPm =
                           canEditRates &&
-                          !!rowId &&
                           v != null &&
-                          !Number.isNaN(v);
+                          !Number.isNaN(v) &&
+                          (!!rowId || (isBundleRow && !!pmContractId));
                         const openPm = () => {
-                          if (!canClickPm || !rowId) return;
+                          if (!canClickPm) return;
                           setPmEdit({
-                            rowId,
+                            rowId: rowId ?? null,
                             reasonCode: reason,
                             unitLabel: pmUnitHeader(u),
+                            unitSize: u,
                             baseRate: v!,
                             weekendSurcharge: wkndSur,
                           });
@@ -1046,16 +1084,9 @@ export default function PartnerRateCardTab({
                         if (isBundleRow) {
                           const we = v + wkndSur;
                           const inner = (
-                            <>
-                              <div className="tabular-nums text-[var(--tx)]">
-                                {formatCurrency(v)}{" "}
-                                <span className="text-[9px] font-normal text-[var(--tx3)]">wkday</span>
-                              </div>
-                              <div className="tabular-nums text-[var(--tx2)]">
-                                {formatCurrency(we)}{" "}
-                                <span className="text-[9px] font-normal text-[var(--tx3)]">wknd</span>
-                              </div>
-                            </>
+                            <div className="tabular-nums font-medium text-[var(--tx)]">
+                              {formatCurrency(we)}
+                            </div>
                           );
                           return (
                             <td key={u} className="px-3 py-2.5 text-right">
@@ -1063,12 +1094,12 @@ export default function PartnerRateCardTab({
                                 <button
                                   type="button"
                                   onClick={openPm}
-                                  className="w-full text-right space-y-0.5 cursor-pointer hover:bg-[var(--bgsub)]/80 rounded-md py-1 -my-1"
+                                  className="w-full text-right cursor-pointer hover:bg-[var(--bgsub)]/80 rounded-md py-1.5 -my-1"
                                 >
                                   {inner}
                                 </button>
                               ) : (
-                                <div className="space-y-0.5">{inner}</div>
+                                inner
                               )}
                             </td>
                           );

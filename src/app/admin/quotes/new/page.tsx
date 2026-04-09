@@ -82,7 +82,7 @@ export default async function NewQuotePage() {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto px-5 md:px-6 py-5 md:py-6">
+    <div className="w-full max-w-none mx-0 px-4 sm:px-5 md:px-8 lg:px-10 py-4 md:py-6">
       <QuoteFormClient
         addons={addons ?? []}
         config={config}

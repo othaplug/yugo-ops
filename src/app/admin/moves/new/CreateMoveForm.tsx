@@ -17,7 +17,7 @@ import {
 import { useFormDraft } from "@/hooks/useFormDraft";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import DraftBanner from "@/components/ui/DraftBanner";
-import { Plus, Trash as Trash2, FileText } from "@phosphor-icons/react";
+import { Plus, Trash as Trash2, FileText, CaretRight, Check } from "@phosphor-icons/react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 import { residentialInventoryLineScore } from "@/lib/pricing/weight-tiers";
 
@@ -89,6 +89,8 @@ const TIME_OPTIONS = (() => {
   return times;
 })();
 
+const CREATE_MOVE_FLOW_STEP_LABELS = ["Service & client", "Locations & job details", "Team, schedule & files", "Notes & create"] as const;
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
@@ -124,6 +126,8 @@ export default function CreateMoveForm({
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [flowStep, setFlowStep] = useState(0);
+  const flowContentRef = useRef<HTMLDivElement>(null);
   const [moveType, setMoveType] = useState<
     | "residential"
     | "office"
@@ -380,6 +384,84 @@ export default function CreateMoveForm({
   const inventoryScore =
     inventoryItems.reduce((sum, i) => sum + residentialInventoryLineScore(i), 0) + boxCount * 0.3;
 
+  useEffect(() => {
+    flowContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [flowStep]);
+
+  const handleFlowBack = () => {
+    setFlowStep((s) => Math.max(0, s - 1));
+  };
+
+  const handleFlowContinue = () => {
+    if (flowStep === 0) {
+      if (!clientName.trim()) {
+        toast("Client name is required", "x");
+        return;
+      }
+      if (moveType === "office" && !companyName.trim()) {
+        toast("Company name is required for office moves", "x");
+        return;
+      }
+      if (moveType === "single_item") {
+        if (!siItemDescription.trim()) {
+          toast("Item description is required", "x");
+          return;
+        }
+        if (!siItemCategory) {
+          toast("Item category is required", "x");
+          return;
+        }
+      }
+      if (moveType === "white_glove" && !wgItemDescription.trim()) {
+        toast("Item description is required for white glove", "x");
+        return;
+      }
+      if (moveType === "specialty") {
+        if (!spProjectType) {
+          toast("Project type is required", "x");
+          return;
+        }
+        if (!spProjectDescription.trim()) {
+          toast("Project description is required", "x");
+          return;
+        }
+      }
+      if (moveType === "labour_only" && !labourDescription.trim()) {
+        toast("Describe what the crew will do", "x");
+        return;
+      }
+      setFlowStep(1);
+      return;
+    }
+    if (flowStep === 1) {
+      if (!fromAddress.trim()) {
+        toast("Pickup (from) address is required", "x");
+        return;
+      }
+      if (!toAddress.trim()) {
+        toast("Delivery (to) address is required", "x");
+        return;
+      }
+      if (moveType === "residential" && !moveSize) {
+        toast("Move size is required for residential moves", "x");
+        return;
+      }
+      setFlowStep(2);
+      return;
+    }
+    if (flowStep === 2) {
+      if (!estCrewSize || Number(estCrewSize) < 1) {
+        toast("Estimated crew size is required", "x");
+        return;
+      }
+      if (!estHours || Number(estHours) < 0.5) {
+        toast("Estimated hours is required (minimum 0.5)", "x");
+        return;
+      }
+      setFlowStep(3);
+    }
+  };
+
   const handleDocChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     setDocFiles((prev) => [...prev, ...files]);
@@ -392,28 +474,32 @@ export default function CreateMoveForm({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (flowStep !== 3) {
+      toast("Use Continue to reach the last step before creating the move", "x");
+      return;
+    }
     if (!clientName.trim()) {
-      alert("Please fill in client name.");
+      toast("Client name is required", "x");
       return;
     }
     if (!fromAddress.trim()) {
-      alert("Please fill in the pickup (from) address.");
+      toast("Pickup (from) address is required", "x");
       return;
     }
     if (!toAddress.trim()) {
-      alert("Please fill in the delivery (to) address.");
+      toast("Delivery (to) address is required", "x");
       return;
     }
     if (moveType === "residential" && !moveSize) {
-      alert("Move size is required for residential moves.");
+      toast("Move size is required for residential moves", "x");
       return;
     }
     if (!estCrewSize || Number(estCrewSize) < 1) {
-      alert("Estimated crew size is required.");
+      toast("Estimated crew size is required", "x");
       return;
     }
     if (!estHours || Number(estHours) < 0.5) {
-      alert("Estimated hours is required (minimum 0.5).");
+      toast("Estimated hours is required (minimum 0.5)", "x");
       return;
     }
 
@@ -588,16 +674,58 @@ export default function CreateMoveForm({
       <div className="mb-3">
         <BackButton label="Back" />
       </div>
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-        <div className="px-4 py-4 border-b border-[var(--brd)]">
+      <div className="w-full">
+        <div className="mb-6 pb-6 border-b border-[var(--brd)]/70">
           <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Operations</p>
           <h1 className="admin-page-hero text-[var(--tx)]">Create New Move</h1>
-          <p className="text-[10px] text-[var(--tx3)] mt-1.5">
-            Choose a service type, then fill in the details. Select a client to auto-fill, or enter details to create a new one.
+          <p className="text-[10px] text-[var(--tx3)] mt-1.5 max-w-2xl leading-relaxed">
+            Move through each step in order. Earlier sections stay saved in the form state while you continue.
           </p>
+          <nav className="mt-5 flex flex-wrap gap-2" aria-label="Create move steps">
+            {CREATE_MOVE_FLOW_STEP_LABELS.map((label, i) => {
+              const done = i < flowStep;
+              const active = i === flowStep;
+              const canJumpBack = i < flowStep;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => {
+                    if (canJumpBack) setFlowStep(i);
+                  }}
+                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition-all duration-300 ease-out ${
+                    active
+                      ? "border-[#2C3E2D] bg-[#2C3E2D]/8 text-[var(--tx)] shadow-sm"
+                      : done
+                        ? "border-[var(--brd)] bg-[var(--bg)] text-[var(--tx2)] hover:border-[#2C3E2D]/40 cursor-pointer"
+                        : "border-[var(--brd)]/60 text-[var(--tx3)] opacity-75 cursor-default"
+                  }`}
+                  disabled={!canJumpBack && !active}
+                  aria-current={active ? "step" : undefined}
+                >
+                  <span
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                      active ? "bg-[#2C3E2D] text-white" : done ? "bg-[#2C3E2D]/85 text-white" : "bg-[var(--brd)] text-[var(--tx3)]"
+                    }`}
+                  >
+                    {done ? <Check className="w-3.5 h-3.5" weight="bold" aria-hidden /> : i + 1}
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] leading-tight max-w-[148px] sm:max-w-[200px]">
+                    {label}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
         </div>
-        <form onSubmit={handleSubmit} className="p-4 space-y-0">
+        <form noValidate onSubmit={handleSubmit} className="space-y-0">
           {hasDraft && <div className="mb-4"><DraftBanner onRestore={handleRestoreDraft} onDismiss={dismissDraft} /></div>}
+          <div
+            ref={flowContentRef}
+            className="space-y-0 motion-safe:transition-opacity motion-safe:duration-300"
+          >
+          {flowStep === 0 && (
+          <>
           {/* Move type selector */}
           <div>
             <label className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Service Type</label>
@@ -1026,6 +1154,10 @@ export default function CreateMoveForm({
             <div className="border-t border-[var(--brd)]/30 pt-3 pb-3" />
           )}
 
+          </>
+          )}
+          {flowStep === 1 && (
+          <>
           <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
           {/* Addresses */}
@@ -1474,6 +1606,10 @@ export default function CreateMoveForm({
             </div>
           </AnimatedSection>
 
+          </>
+          )}
+          {flowStep === 2 && (
+          <>
           <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
           {/* Schedule & estimate */}
@@ -1693,6 +1829,10 @@ export default function CreateMoveForm({
             </div>
           </div>
 
+          </>
+          )}
+          {flowStep === 3 && (
+          <>
           <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
           {/* Complexity indicators */}
@@ -1776,21 +1916,46 @@ export default function CreateMoveForm({
             </Field>
           </div>
 
-          <div className="flex gap-2 pt-4 border-t border-[var(--brd)]/30">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 py-2.5 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50"
-            >
-              {loading ? "Creating…" : "Create Move"}
-            </button>
+          </>
+          )}
+          </div>
+
+          <div className="flex flex-col-reverse sm:flex-row gap-2 pt-6 mt-6 border-t border-[var(--brd)]/50">
+            {flowStep > 0 ? (
+              <button
+                type="button"
+                onClick={handleFlowBack}
+                className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[#2C3E2D]/45 hover:text-[var(--tx)] transition-colors"
+              >
+                Back
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[#2C3E2D]/45 hover:text-[var(--tx)] transition-colors"
+              >
+                Cancel
+              </button>
+            )}
+            {flowStep < 3 ? (
+              <button
+                type="button"
+                onClick={handleFlowContinue}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-[11px] font-bold border border-[#2C3E2D] text-[#2C3E2D] bg-transparent hover:bg-[#2C3E2D]/8 transition-colors"
+              >
+                Continue
+                <CaretRight className="w-3.5 h-3.5" weight="bold" aria-hidden />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 py-2.5 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50 transition-colors"
+              >
+                {loading ? "Creating…" : "Create Move"}
+              </button>
+            )}
           </div>
         </form>
       </div>

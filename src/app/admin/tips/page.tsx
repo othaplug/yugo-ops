@@ -9,11 +9,15 @@ export default async function TipsPage() {
   const db = createAdminClient();
   const { data: tips } = await db
     .from("tips")
-    .select("id, move_id, crew_id, crew_name, client_name, amount, processing_fee, net_amount, charged_at")
+    .select("id, move_id, crew_id, crew_name, client_name, amount, processing_fee, net_amount, charged_at, moves(move_code)")
     .order("charged_at", { ascending: false })
     .limit(200);
 
-  const allTips = tips || [];
+  const allTips = (tips || []).map((row) => {
+    const m = row.moves as { move_code?: string | null } | null | undefined;
+    const { moves: _drop, ...rest } = row as typeof row & { moves?: unknown };
+    return { ...rest, move_code: m?.move_code ?? null };
+  });
   const totalTips = allTips.reduce((s, t) => s + Number(t.amount || 0), 0);
   const tipCount = allTips.length;
   const avgTip = tipCount > 0 ? totalTips / tipCount : 0;

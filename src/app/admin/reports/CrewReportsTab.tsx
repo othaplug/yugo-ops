@@ -12,7 +12,9 @@ function getCrewName(crews: unknown): string {
   return (crew as { name?: string } | undefined)?.name || "Team";
 }
 
-function formatAvgDriveKmh(summary: Record<string, unknown> | undefined): string {
+function formatAvgDriveKmh(
+  summary: Record<string, unknown> | undefined,
+): string {
   const raw = summary?.avgDrivingSpeedKmh;
   if (typeof raw === "number" && Number.isFinite(raw)) return String(raw);
   if (typeof raw === "string" && raw.trim() !== "") {
@@ -596,7 +598,9 @@ export default function CrewReportsTab({
                       <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">
                         {formatAvgDriveKmh(r.summary)}
                       </div>
-                      <div className="text-[8px] text-[var(--tx3)]">km/h (moving)</div>
+                      <div className="text-[8px] text-[var(--tx3)]">
+                        km/h (moving)
+                      </div>
                     </div>
                   </div>
                 )}

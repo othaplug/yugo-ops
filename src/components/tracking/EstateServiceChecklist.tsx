@@ -82,6 +82,8 @@ interface Props {
   initialChecked: Record<string, boolean>;
   moveDateStr?: string;
   automationInputs: EstateChecklistAutomationProps;
+  /** When true (client track), milestones are view-only; staff updates in admin. */
+  readOnly?: boolean;
 }
 
 export default function EstateServiceChecklist({
@@ -91,6 +93,7 @@ export default function EstateServiceChecklist({
   initialChecked,
   moveDateStr,
   automationInputs,
+  readOnly = false,
 }: Props) {
   const items = useMemo(() => buildEstateServiceChecklistItems(plan), [plan]);
 
@@ -119,7 +122,7 @@ export default function EstateServiceChecklist({
 
   const toggle = useCallback(
     async (id: string) => {
-      if (auto[id]) return;
+      if (readOnly || auto[id]) return;
       const newVal = !merged[id];
       setStored((prev) => ({ ...prev, [id]: newVal }));
       setSaving(id);
@@ -141,7 +144,7 @@ export default function EstateServiceChecklist({
         setSaving(null);
       }
     },
-    [auto, merged, moveId, token],
+    [auto, merged, moveId, readOnly, token],
   );
 
   const completedCount = items.filter((i) => merged[i.id]).length;
@@ -186,9 +189,18 @@ export default function EstateServiceChecklist({
           className="mt-4 text-[13px] sm:text-[14px] leading-relaxed max-w-xl [font-family:var(--font-body)]"
           style={{ color: INK_MUTED }}
         >
-          In the days leading up to your move, here is what we handle — so you
+          In the days leading up to your move, here is what we handle, so you
           stay focused on life, not logistics.
         </p>
+        {readOnly ? (
+          <p
+            className="mt-3 text-[12px] sm:text-[13px] leading-snug max-w-xl [font-family:var(--font-body)]"
+            style={{ color: INK_MUTED }}
+          >
+            Your coordinator marks these milestones as they are completed. This
+            view updates automatically.
+          </p>
+        ) : null}
       </div>
 
       <div
@@ -201,6 +213,48 @@ export default function EstateServiceChecklist({
           const isSaving = saving === item.id;
           const locked = !!auto[item.id];
           const isLast = index === items.length - 1;
+          const rowClass = `group min-w-0 flex-1 text-left pl-3 sm:pl-4 pr-1 rounded-lg -outline-offset-2 transition-opacity focus-visible:outline focus-visible:outline-2 ${
+            index < items.length - 1 ? "pb-10" : "pb-6"
+          } ${locked ? "cursor-default opacity-95" : readOnly ? "cursor-default" : "cursor-pointer"} ${
+            !readOnly && !locked && !isSaving ? "hover:opacity-[0.92]" : ""
+          }`;
+
+          const rowBody = (
+            <>
+              <span
+                className={`font-serif text-[1.05rem] sm:text-[1.15rem] leading-snug block transition-colors ${
+                  isChecked ? "line-through decoration-white/35" : ""
+                }`}
+                style={{ color: INK }}
+              >
+                {item.label}
+              </span>
+              <span
+                className="mt-2 block text-[12px] sm:text-[13px] leading-relaxed [font-family:var(--font-body)]"
+                style={{ color: INK_MUTED }}
+              >
+                {item.detail}
+              </span>
+              {item.id === "estate_move" && moveDate ? (
+                <span
+                  className="mt-2 block text-[12px] leading-relaxed [font-family:var(--font-body)]"
+                  style={{ color: INK_MUTED }}
+                >
+                  Calendar date for planning:{" "}
+                  <span style={{ color: INK }}>{moveDate}</span>.
+                </span>
+              ) : null}
+              {locked ? (
+                <span
+                  className="mt-2 inline-flex items-center gap-1.5 text-[11px] leading-snug [font-family:var(--font-body)]"
+                  style={{ color: INK_MUTED }}
+                >
+                  <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  Confirmed from live move progress.
+                </span>
+              ) : null}
+            </>
+          );
 
           return (
             <div key={item.id} className="flex gap-0" role="listitem">
@@ -230,50 +284,24 @@ export default function EstateServiceChecklist({
                 ) : null}
               </div>
 
-              <button
-                type="button"
-                onClick={() => toggle(item.id)}
-                disabled={isSaving || locked}
-                className={`group min-w-0 flex-1 text-left pl-3 sm:pl-4 pr-1 rounded-lg -outline-offset-2 transition-opacity focus-visible:outline focus-visible:outline-2 ${
-                  index < items.length - 1 ? "pb-10" : "pb-6"
-                } ${locked ? "cursor-default opacity-95" : "cursor-pointer"} ${
-                  !locked && !isSaving ? "hover:opacity-[0.92]" : ""
-                }`}
-                style={{ outlineColor: "rgba(249, 237, 228, 0.45)" }}
-              >
-                <span
-                  className={`font-serif text-[1.05rem] sm:text-[1.15rem] leading-snug block transition-colors ${
-                    isChecked ? "line-through decoration-white/35" : ""
-                  }`}
-                  style={{ color: INK }}
+              {readOnly ? (
+                <div
+                  className={rowClass}
+                  style={{ outlineColor: "rgba(249, 237, 228, 0.45)" }}
                 >
-                  {item.label}
-                </span>
-                <span
-                  className="mt-2 block text-[12px] sm:text-[13px] leading-relaxed [font-family:var(--font-body)]"
-                  style={{ color: INK_MUTED }}
+                  {rowBody}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => toggle(item.id)}
+                  disabled={isSaving || locked}
+                  className={rowClass}
+                  style={{ outlineColor: "rgba(249, 237, 228, 0.45)" }}
                 >
-                  {item.detail}
-                </span>
-                {item.id === "estate_move" && moveDate ? (
-                  <span
-                    className="mt-2 block text-[12px] leading-relaxed [font-family:var(--font-body)]"
-                    style={{ color: INK_MUTED }}
-                  >
-                    Calendar date for planning:{" "}
-                    <span style={{ color: INK }}>{moveDate}</span>.
-                  </span>
-                ) : null}
-                {locked ? (
-                  <span
-                    className="mt-2 inline-flex items-center gap-1.5 text-[11px] leading-snug [font-family:var(--font-body)]"
-                    style={{ color: INK_MUTED }}
-                  >
-                    <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                    Confirmed from live move progress.
-                  </span>
-                ) : null}
-              </button>
+                  {rowBody}
+                </button>
+              )}
             </div>
           );
         })}
@@ -288,7 +316,7 @@ export default function EstateServiceChecklist({
             className="text-[13px] sm:text-[14px] font-medium leading-snug [font-family:var(--font-body)]"
             style={{ color: "rgba(209, 250, 229, 0.92)" }}
           >
-            All milestones are aligned — your coordinator and crew can see
+            All milestones are aligned. Your coordinator and crew can see
             you&apos;re on the same page with the plan.
           </p>
         </div>

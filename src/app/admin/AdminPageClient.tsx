@@ -1704,7 +1704,10 @@ export default function AdminPageClient({
                   <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
                     <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
                       <h2 className="admin-section-h2 min-w-0 mb-0">Leads</h2>
-                      <SpeedToLeadHint iconSize={15} ariaLabel="Speed to lead" />
+                      <SpeedToLeadHint
+                        iconSize={15}
+                        ariaLabel="Speed to lead"
+                      />
                     </div>
                     <Link
                       href="/admin/leads"

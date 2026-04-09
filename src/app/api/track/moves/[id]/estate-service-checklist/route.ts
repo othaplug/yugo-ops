@@ -1,8 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  isAllowedEstateServiceChecklistItem,
-} from "@/lib/estate-service-checklist";
-import { deriveEstateServiceChecklistAutomation } from "@/lib/estate-service-checklist-automation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 
@@ -16,31 +12,26 @@ function isEstateMoveRow(move: {
   return t === "estate";
 }
 
+/**
+ * Estate service milestones are staff-controlled only. Clients see live progress on
+ * track; coordinators update checkboxes in admin (same `estate_service_checklist` row).
+ */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const { token, item, checked } = await req.json();
+  const { token } = await req.json().catch(() => ({}));
 
-  if (!token || !item) {
-    return NextResponse.json(
-      { error: "Missing token or item" },
-      { status: 400 },
-    );
-  }
-
-  if (!isAllowedEstateServiceChecklistItem(String(item))) {
-    return NextResponse.json({ error: "Invalid checklist item" }, { status: 400 });
+  if (!token) {
+    return NextResponse.json({ error: "Missing token" }, { status: 400 });
   }
 
   const supabase = createAdminClient();
 
   const { data: move, error: fetchErr } = await supabase
     .from("moves")
-    .select(
-      "id, estate_service_checklist, tier_selected, service_tier, status, stage, scheduled_date, move_size, inventory_score",
-    )
+    .select("id, tier_selected, service_tier")
     .eq("id", id)
     .single();
 
@@ -57,26 +48,11 @@ export async function PATCH(
     );
   }
 
-  const current =
-    (move.estate_service_checklist as Record<string, boolean>) || {};
-  let updated = { ...current, [String(item)]: Boolean(checked) };
-
-  const auto = deriveEstateServiceChecklistAutomation(move);
-  for (const [k, v] of Object.entries(auto)) {
-    if (v) updated[k] = true;
-  }
-
-  const { error: updErr } = await supabase
-    .from("moves")
-    .update({ estate_service_checklist: updated })
-    .eq("id", id);
-
-  if (updErr) {
-    return NextResponse.json(
-      { error: updErr.message || "Update failed" },
-      { status: 500 },
-    );
-  }
-
-  return NextResponse.json({ ok: true, checklist: updated });
+  return NextResponse.json(
+    {
+      error:
+        "Estate milestones can only be updated by your coordinator in our system. Refresh this page to see the latest status.",
+    },
+    { status: 403 },
+  );
 }

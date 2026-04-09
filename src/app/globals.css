@@ -761,14 +761,17 @@ html:has(.estate-welcome-root) {
       rgba(245, 252, 248, 0.5) 78%,
       rgba(255, 248, 242, 0.62) 100%
     ),
-    rgba(92, 26, 51, 0.14),
-    rgba(44, 62, 45, 0.12) !important;
+    rgba(92, 26, 51, 0.14), rgba(44, 62, 45, 0.12) !important;
   backdrop-filter: blur(44px) saturate(1.55);
   -webkit-backdrop-filter: blur(44px) saturate(1.55);
 }
 [data-theme="dark"] [data-modal-root] > .modal-overlay {
   background:
-    linear-gradient(160deg, rgba(43, 4, 22, 0.55) 0%, rgba(20, 12, 18, 0.72) 100%),
+    linear-gradient(
+      160deg,
+      rgba(43, 4, 22, 0.55) 0%,
+      rgba(20, 12, 18, 0.72) 100%
+    ),
     rgba(0, 0, 0, 0.45) !important;
   backdrop-filter: blur(32px) saturate(1.35);
   -webkit-backdrop-filter: blur(32px) saturate(1.35);
@@ -1625,13 +1628,12 @@ button:focus-visible,
 
 /* Modal / dialog panels: tinted frosted glass (must sit after base .yugo-glass-light) */
 [data-yugo-glass-modal] .yugo-glass-light {
-  background:
-    linear-gradient(
-      165deg,
-      rgba(255, 255, 255, 0.82) 0%,
-      rgba(255, 251, 247, 0.68) 45%,
-      rgba(250, 245, 252, 0.62) 100%
-    );
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.82) 0%,
+    rgba(255, 251, 247, 0.68) 45%,
+    rgba(250, 245, 252, 0.62) 100%
+  );
   border: 1px solid rgba(255, 255, 255, 0.55);
   box-shadow:
     0 0 0 1px rgba(92, 26, 51, 0.07),
@@ -1653,8 +1655,11 @@ button:focus-visible,
   -webkit-backdrop-filter: blur(48px) saturate(1.5);
 }
 [data-theme="dark"] [data-yugo-glass-modal] .yugo-glass-light {
-  background:
-    linear-gradient(165deg, rgba(55, 18, 35, 0.88) 0%, rgba(32, 8, 22, 0.82) 100%);
+  background: linear-gradient(
+    165deg,
+    rgba(55, 18, 35, 0.88) 0%,
+    rgba(32, 8, 22, 0.82) 100%
+  );
   border: 1px solid rgba(249, 237, 228, 0.16);
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.25),

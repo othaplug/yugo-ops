@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { cancelOrDeleteSquareInvoice } from "@/lib/square-invoice";
 import { requireAdmin } from "@/lib/api-auth";
 import { squareClient } from "@/lib/square";
 import { getSquarePaymentConfig } from "@/lib/square-config";
@@ -267,7 +268,15 @@ export async function DELETE(
     await admin.from("move_photos").delete().eq("move_id", id);
     await admin.from("move_change_requests").delete().eq("move_id", id);
     await admin.from("proof_of_delivery").delete().eq("move_id", id);
-    await admin.from("invoices").update({ move_id: null }).eq("move_id", id);
+
+    const { data: moveInvoices } = await admin
+      .from("invoices")
+      .select("id, square_invoice_id")
+      .eq("move_id", id);
+    for (const inv of moveInvoices || []) {
+      await cancelOrDeleteSquareInvoice(inv.square_invoice_id);
+    }
+    await admin.from("invoices").delete().eq("move_id", id);
     const { error } = await admin.from("moves").delete().eq("id", id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });

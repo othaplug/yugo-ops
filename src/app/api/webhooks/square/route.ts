@@ -15,7 +15,7 @@ import crypto from "crypto";
  * Handles Square webhook events:
  *  - card.expiring         — card on file about to expire (sent ~30 days out)
  *  - payment.updated       — payment status changes (for reconciliation)
- *  - invoice.updated       — when an invoice is paid, sync DB + B2B one-off delivery prepay flow
+ *  - invoice.updated       — when an invoice is paid, sync DB + B2B one-off delivery prepay flow; when Square no longer has the invoice (removed), delete the local row
  *  - customer.updated      — customer record changes
  *
  * Subscribe `invoice.updated` in Square Developer Dashboard for the same webhook URL.
@@ -120,6 +120,22 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
+function squareInvoiceFetchIndicatesMissing(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as {
+    statusCode?: number;
+    status?: number;
+    errors?: Array<{ code?: string; category?: string }>;
+    message?: string;
+  };
+  if (e.statusCode === 404 || e.status === 404) return true;
+  const code = e.errors?.[0]?.code;
+  if (code === "NOT_FOUND") return true;
+  const msg = String(e.message || "").toLowerCase();
+  if (msg.includes("not found") || msg.includes("404")) return true;
+  return false;
+}
+
 function extractSquareInvoiceIdFromWebhook(event: SquareWebhookEvent): string | null {
   const data = event.data as Record<string, unknown> | undefined;
   if (!data) return null;
@@ -150,6 +166,19 @@ async function handleInvoiceUpdated(
     publicUrl = res.invoice?.publicUrl ?? null;
   } catch (e) {
     console.error("[square webhook] invoices.get failed:", e);
+    if (squareInvoiceFetchIndicatesMissing(e)) {
+      const { error: delErr } = await supabase.from("invoices").delete().eq("square_invoice_id", invoiceId);
+      if (delErr) {
+        console.error("[square webhook] failed to delete local invoice after Square removal:", delErr.message);
+      } else {
+        await supabase.from("webhook_logs").insert({
+          source: "square",
+          event_type: "invoice.updated.local_deleted",
+          payload: { invoice_id: invoiceId, reason: "square_invoice_missing" },
+          status: "processed",
+        });
+      }
+    }
     return;
   }
 

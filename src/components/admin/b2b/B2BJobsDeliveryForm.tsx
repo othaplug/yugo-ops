@@ -1085,7 +1085,9 @@ export default function B2BJobsDeliveryForm({
     const rawItems: B2BQuoteLineItem[] = eff
       .map((l) => {
         const p = toB2bLinePayload(l, handlingType);
-        const wc = normalizeB2bWeightCategory(String(p.weight_category || "standard"));
+        const wc = normalizeB2bWeightCategory(
+          String(p.weight_category || "standard"),
+        );
         return {
           description: String(p.description || "").trim(),
           quantity: Math.max(1, Number(p.quantity) || 1),
@@ -1949,7 +1951,9 @@ export default function B2BJobsDeliveryForm({
                     <div className="min-w-[160px] max-w-[220px]">
                       <Field label="Weight range">
                         <select
-                          value={normalizeB2bWeightCategory(row.weight_category)}
+                          value={normalizeB2bWeightCategory(
+                            row.weight_category,
+                          )}
                           onChange={(e) => {
                             const v = e.target.value;
                             patchLine(idx, {

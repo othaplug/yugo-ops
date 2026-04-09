@@ -299,11 +299,11 @@ export default function LeadsHubClient({
     }`;
 
   const subNav = (
-    <nav
-      className="flex flex-wrap gap-1.5 sm:gap-2"
-      aria-label="Leads views"
-    >
-      <Link href="/admin/leads" className={subNavLinkClass(mode === "dashboard")}>
+    <nav className="flex flex-wrap gap-1.5 sm:gap-2" aria-label="Leads views">
+      <Link
+        href="/admin/leads"
+        className={subNavLinkClass(mode === "dashboard")}
+      >
         <ChartBar size={14} aria-hidden className="opacity-80" />
         Dashboard
       </Link>
@@ -311,7 +311,10 @@ export default function LeadsHubClient({
         <List size={14} aria-hidden className="opacity-80" />
         All leads
       </Link>
-      <Link href="/admin/leads/mine" className={subNavLinkClass(mode === "mine")}>
+      <Link
+        href="/admin/leads/mine"
+        className={subNavLinkClass(mode === "mine")}
+      >
         <User size={14} aria-hidden className="opacity-80" />
         My leads
       </Link>
@@ -480,7 +483,12 @@ export default function LeadsHubClient({
             className="inline-flex shrink-0 items-center gap-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tx)] underline-offset-2 hover:underline dark:text-[var(--tx2)]"
           >
             Details
-            <CaretRight size={12} weight="bold" className="opacity-70" aria-hidden />
+            <CaretRight
+              size={12}
+              weight="bold"
+              className="opacity-70"
+              aria-hidden
+            />
           </Link>
         </div>
         <div className="flex flex-wrap gap-2 border-t border-[var(--brd)]/35 pt-3">
@@ -489,7 +497,12 @@ export default function LeadsHubClient({
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--tx)]/25 text-[11px] font-semibold text-[var(--tx)] tracking-wide uppercase hover:bg-[var(--hover)]"
           >
             Send quote
-            <CaretRight size={14} weight="bold" className="opacity-80" aria-hidden />
+            <CaretRight
+              size={14}
+              weight="bold"
+              className="opacity-80"
+              aria-hidden
+            />
           </Link>
           {(lead.requires_specialty_quote || heavyParsed) && (
             <Link
@@ -497,7 +510,12 @@ export default function LeadsHubClient({
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--brd)] text-[11px] font-semibold text-[var(--tx2)] hover:bg-[var(--hover)]"
             >
               Specialty builder
-              <CaretRight size={14} weight="bold" className="opacity-70" aria-hidden />
+              <CaretRight
+                size={14}
+                weight="bold"
+                className="opacity-70"
+                aria-hidden
+              />
             </Link>
           )}
           {tel ? (
@@ -547,7 +565,12 @@ export default function LeadsHubClient({
           >
             <Plus size={14} weight="bold" aria-hidden />
             Add lead manually
-            <CaretRight size={14} weight="bold" aria-hidden className="opacity-80" />
+            <CaretRight
+              size={14}
+              weight="bold"
+              aria-hidden
+              className="opacity-80"
+            />
           </button>
         )}
       </div>
@@ -612,8 +635,8 @@ export default function LeadsHubClient({
           <section aria-label="Leads needing attention">
             <h2 className={`${sectionTitle} mb-1`}>Needs attention</h2>
             <p className="mb-4 max-w-2xl text-[13px] leading-relaxed text-[var(--tx3)]/85">
-              Open leads without a quote (new, assigned, follow-up sent, awaiting
-              reply), oldest first. Timers update live.
+              Open leads without a quote (new, assigned, follow-up sent,
+              awaiting reply), oldest first. Timers update live.
             </p>
             {attention.length === 0 ? (
               <p className="py-14 text-center text-[15px] text-[var(--tx3)]/85">
@@ -841,8 +864,7 @@ export default function LeadsHubClient({
                     </Link>
                     <span className="text-[var(--tx3)]">·</span>
                     <span>
-                      {LEAD_ACTIVITY_LABELS[a.activity_type] ||
-                        a.activity_type}
+                      {LEAD_ACTIVITY_LABELS[a.activity_type] || a.activity_type}
                     </span>
                     <span className="text-[12px] text-[var(--tx3)]">
                       {new Date(a.created_at).toLocaleString()}

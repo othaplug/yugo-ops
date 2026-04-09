@@ -108,9 +108,7 @@ export default function ClientsPageClient({
               {c.name}
             </span>
             {isActive && (
-              <span className="dt-badge text-[var(--grn)]">
-                Active
-              </span>
+              <span className="dt-badge text-[var(--grn)]">Active</span>
             )}
           </div>
         );

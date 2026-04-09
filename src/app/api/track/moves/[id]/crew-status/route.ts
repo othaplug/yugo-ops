@@ -70,7 +70,9 @@ export async function GET(
     const admin = createAdminClient();
     const { data: move } = await admin
       .from("moves")
-      .select("id, crew_id, from_lat, from_lng, to_lat, to_lng, from_address, to_address, stage, scheduled_date, status, arrival_window, eta_current_minutes")
+      .select(
+        "id, crew_id, from_lat, from_lng, to_lat, to_lng, from_address, to_address, stage, scheduled_date, status, arrival_window, eta_current_minutes, estate_service_checklist",
+      )
       .eq("id", moveId)
       .single();
 
@@ -254,6 +256,9 @@ export async function GET(
         nav_eta_seconds: navEtaSeconds,
         nav_distance_remaining_m: navDistanceRemainingM,
         crew_name: crewDisplayName,
+        estate_service_checklist:
+          (move?.estate_service_checklist as Record<string, boolean> | null) ??
+          null,
       },
       {
         headers: {

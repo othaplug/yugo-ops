@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { Plus, Trash, Sparkle } from "@phosphor-icons/react";
 import BackButton from "@/app/admin/components/BackButton";
 import SectionDivider from "@/components/ui/SectionDivider";
-import AddressAutocomplete, { type AddressResult } from "@/components/ui/AddressAutocomplete";
+import AddressAutocomplete, {
+  type AddressResult,
+} from "@/components/ui/AddressAutocomplete";
 import {
   applyHubSpotSuggestRow,
   useHubSpotContactSuggest,
@@ -30,9 +32,19 @@ type ItemRow = {
   declared_value: string;
 };
 
-const CARRIERS = ["Day and Ross", "FedEx Freight", "Purolator", "UPS Freight", "Other"];
+const CARRIERS = [
+  "Day and Ross",
+  "FedEx Freight",
+  "Purolator",
+  "UPS Freight",
+  "Other",
+];
 
-export default function NewInboundShipmentClient({ partners }: { partners: Partner[] }) {
+export default function NewInboundShipmentClient({
+  partners,
+}: {
+  partners: Partner[];
+}) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -47,7 +59,13 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
   const [carrierTracking, setCarrierTracking] = useState("");
   const [carrierEta, setCarrierEta] = useState("");
   const [items, setItems] = useState<ItemRow[]>([
-    { name: "", boxes: "1", dimensions: "", weight_lbs: "", declared_value: "" },
+    {
+      name: "",
+      boxes: "1",
+      dimensions: "",
+      weight_lbs: "",
+      declared_value: "",
+    },
   ]);
   const [customerLater, setCustomerLater] = useState(false);
   const [customerName, setCustomerName] = useState("");
@@ -63,8 +81,12 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
   const [requiresAssembly, setRequiresAssembly] = useState(false);
   const [requiresDebris, setRequiresDebris] = useState(true);
   const [requiresPod, setRequiresPod] = useState(true);
-  const [receivingTier, setReceivingTier] = useState<"standard" | "detailed">("detailed");
-  const [assemblyComplexity, setAssemblyComplexity] = useState<"" | "simple" | "moderate" | "complex">("");
+  const [receivingTier, setReceivingTier] = useState<"standard" | "detailed">(
+    "detailed",
+  );
+  const [assemblyComplexity, setAssemblyComplexity] = useState<
+    "" | "simple" | "moderate" | "complex"
+  >("");
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [billingMethod, setBillingMethod] = useState("partner");
   const [estimatedStorageDays, setEstimatedStorageDays] = useState("0");
@@ -75,7 +97,8 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
   const [totalPrice, setTotalPrice] = useState("");
   const [suggestLoading, setSuggestLoading] = useState(false);
 
-  const [senderHsActive, setSenderHsActive] = useState<HubSpotSuggestField | null>(null);
+  const [senderHsActive, setSenderHsActive] =
+    useState<HubSpotSuggestField | null>(null);
   const senderHsQuery = useMemo(() => {
     if (senderHsActive === "business") return businessName;
     if (senderHsActive === "email") return businessEmail;
@@ -98,7 +121,9 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
     onPick: onSenderHubSpotPick,
   });
 
-  const [custHsActive, setCustHsActive] = useState<HubSpotSuggestField | null>(null);
+  const [custHsActive, setCustHsActive] = useState<HubSpotSuggestField | null>(
+    null,
+  );
   const custHsQuery = useMemo(() => {
     if (custHsActive === "contact") return customerName;
     if (custHsActive === "email") return customerEmail;
@@ -120,7 +145,8 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
     onPick: onCustHubSpotPick,
   });
 
-  const resolvedCarrier = carrierName === "Other" ? carrierOther.trim() || "Other" : carrierName;
+  const resolvedCarrier =
+    carrierName === "Other" ? carrierOther.trim() || "Other" : carrierName;
 
   const maxWeight = useMemo(() => {
     let m = 0;
@@ -184,7 +210,9 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
           boxes: parseInt(it.boxes, 10) || 1,
           dimensions: it.dimensions.trim() || null,
           weight_lbs: it.weight_lbs ? parseFloat(it.weight_lbs) : null,
-          declared_value: it.declared_value ? parseFloat(it.declared_value) : null,
+          declared_value: it.declared_value
+            ? parseFloat(it.declared_value)
+            : null,
         }));
       if (parsedItems.length === 0) {
         setErr("Add at least one item with a description.");
@@ -193,7 +221,8 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
       }
 
       const body = {
-        organization_id: mode === "partner" && organizationId ? organizationId : null,
+        organization_id:
+          mode === "partner" && organizationId ? organizationId : null,
         business_name: mode === "new" ? businessName : null,
         business_email: mode === "new" ? businessEmail : null,
         business_phone: mode === "new" ? businessPhone : null,
@@ -245,11 +274,16 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
   return (
     <div className="max-w-[900px] mx-auto px-4 sm:px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       <div className="mb-6">
-        <BackButton label="Inbound Shipments" fallback="/admin/inbound-shipments" />
+        <BackButton
+          label="Inbound Shipments"
+          fallback="/admin/inbound-shipments"
+        />
       </div>
 
       <div className="mb-2">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-1">Partners</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-1">
+          Partners
+        </p>
         <h1 className="admin-page-hero text-[var(--tx)]">
           Create inbound shipment
         </h1>
@@ -260,11 +294,19 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
         <div className="space-y-4">
           <div className="flex gap-4">
             <label className="flex items-center gap-2 text-sm">
-              <input type="radio" checked={mode === "partner"} onChange={() => setMode("partner")} />
+              <input
+                type="radio"
+                checked={mode === "partner"}
+                onChange={() => setMode("partner")}
+              />
               Existing partner
             </label>
             <label className="flex items-center gap-2 text-sm">
-              <input type="radio" checked={mode === "new"} onChange={() => setMode("new")} />
+              <input
+                type="radio"
+                checked={mode === "new"}
+                onChange={() => setMode("new")}
+              />
               New sender
             </label>
           </div>
@@ -282,7 +324,10 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
               ))}
             </select>
           ) : (
-            <div ref={senderHs.containerRef} className="grid sm:grid-cols-2 gap-3">
+            <div
+              ref={senderHs.containerRef}
+              className="grid sm:grid-cols-2 gap-3"
+            >
               <div className="relative sm:col-span-2">
                 <input
                   {...senderHs.bindField("business")}
@@ -322,7 +367,9 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
             </div>
           )}
           <label className="block text-sm">
-            <span className="text-[var(--tx3)]">Issue line (call if delivery issues)</span>
+            <span className="text-[var(--tx3)]">
+              Issue line (call if delivery issues)
+            </span>
             <input
               className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
               value={partnerIssuePhone}
@@ -375,7 +422,16 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
             <button
               type="button"
               onClick={() =>
-                setItems((prev) => [...prev, { name: "", boxes: "1", dimensions: "", weight_lbs: "", declared_value: "" }])
+                setItems((prev) => [
+                  ...prev,
+                  {
+                    name: "",
+                    boxes: "1",
+                    dimensions: "",
+                    weight_lbs: "",
+                    declared_value: "",
+                  },
+                ])
               }
               className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-[var(--gold)] hover:opacity-80 transition-opacity"
             >
@@ -392,7 +448,9 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
                 <button
                   type="button"
                   className="absolute top-2 right-2 text-[var(--tx3)] hover:text-red-500"
-                  onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}
+                  onClick={() =>
+                    setItems((prev) => prev.filter((_, i) => i !== idx))
+                  }
                   aria-label="Remove item"
                 >
                   <Trash size={18} />
@@ -405,7 +463,11 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
                 value={it.name}
                 onChange={(e) => {
                   const v = e.target.value;
-                  setItems((prev) => prev.map((row, i) => (i === idx ? { ...row, name: v } : row)));
+                  setItems((prev) =>
+                    prev.map((row, i) =>
+                      i === idx ? { ...row, name: v } : row,
+                    ),
+                  );
                 }}
               />
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -415,7 +477,11 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
                   value={it.boxes}
                   onChange={(e) => {
                     const v = e.target.value;
-                    setItems((prev) => prev.map((row, i) => (i === idx ? { ...row, boxes: v } : row)));
+                    setItems((prev) =>
+                      prev.map((row, i) =>
+                        i === idx ? { ...row, boxes: v } : row,
+                      ),
+                    );
                   }}
                 />
                 <input
@@ -424,7 +490,11 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
                   value={it.dimensions}
                   onChange={(e) => {
                     const v = e.target.value;
-                    setItems((prev) => prev.map((row, i) => (i === idx ? { ...row, dimensions: v } : row)));
+                    setItems((prev) =>
+                      prev.map((row, i) =>
+                        i === idx ? { ...row, dimensions: v } : row,
+                      ),
+                    );
                   }}
                 />
                 <input
@@ -433,7 +503,11 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
                   value={it.weight_lbs}
                   onChange={(e) => {
                     const v = e.target.value;
-                    setItems((prev) => prev.map((row, i) => (i === idx ? { ...row, weight_lbs: v } : row)));
+                    setItems((prev) =>
+                      prev.map((row, i) =>
+                        i === idx ? { ...row, weight_lbs: v } : row,
+                      ),
+                    );
                   }}
                 />
                 <input
@@ -442,7 +516,11 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
                   value={it.declared_value}
                   onChange={(e) => {
                     const v = e.target.value;
-                    setItems((prev) => prev.map((row, i) => (i === idx ? { ...row, declared_value: v } : row)));
+                    setItems((prev) =>
+                      prev.map((row, i) =>
+                        i === idx ? { ...row, declared_value: v } : row,
+                      ),
+                    );
                   }}
                 />
               </div>
@@ -453,19 +531,31 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
         <SectionDivider label="End customer" />
         <div className="space-y-4">
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={!customerLater} onChange={() => setCustomerLater(false)} />
+            <input
+              type="checkbox"
+              checked={!customerLater}
+              onChange={() => setCustomerLater(false)}
+            />
             Customer details available now
           </label>
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={customerLater} onChange={() => setCustomerLater(true)} />
+            <input
+              type="checkbox"
+              checked={customerLater}
+              onChange={() => setCustomerLater(true)}
+            />
             Customer details to be provided later
           </label>
           {customerLater ? (
             <p className="text-sm text-[var(--tx3)]">
-              Partner will provide customer details after the shipment is confirmed received.
+              Partner will provide customer details after the shipment is
+              confirmed received.
             </p>
           ) : (
-            <div ref={custHs.containerRef} className="grid sm:grid-cols-2 gap-3">
+            <div
+              ref={custHs.containerRef}
+              className="grid sm:grid-cols-2 gap-3"
+            >
               <div className="relative">
                 <input
                   {...custHs.bindField("contact")}
@@ -511,7 +601,9 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
                   onRawChange={setCustomerAddress}
                   onChange={(r: AddressResult) => {
                     setCustomerAddress(r.fullAddress);
-                    setCustomerPostal((p) => (!p.trim() && r.postalCode ? r.postalCode : p));
+                    setCustomerPostal((p) =>
+                      !p.trim() && r.postalCode ? r.postalCode : p,
+                    );
                   }}
                   className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)] text-[var(--tx)] placeholder:text-[var(--tx3)]/82 focus:outline-none focus:ring-1 focus:ring-[var(--gold)]/30"
                 />
@@ -556,23 +648,43 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
           </select>
           <div className="grid sm:grid-cols-2 gap-2 text-sm">
             <label className="flex items-center gap-2">
-              <input type="checkbox" checked={requiresMoveInside} onChange={(e) => setRequiresMoveInside(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={requiresMoveInside}
+                onChange={(e) => setRequiresMoveInside(e.target.checked)}
+              />
               Move inside
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" checked={requiresUnboxing} onChange={(e) => setRequiresUnboxing(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={requiresUnboxing}
+                onChange={(e) => setRequiresUnboxing(e.target.checked)}
+              />
               Unboxing
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" checked={requiresAssembly} onChange={(e) => setRequiresAssembly(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={requiresAssembly}
+                onChange={(e) => setRequiresAssembly(e.target.checked)}
+              />
               Assembly
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" checked={requiresDebris} onChange={(e) => setRequiresDebris(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={requiresDebris}
+                onChange={(e) => setRequiresDebris(e.target.checked)}
+              />
               Debris / packaging removal
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" checked={requiresPod} onChange={(e) => setRequiresPod(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={requiresPod}
+                onChange={(e) => setRequiresPod(e.target.checked)}
+              />
               Signed POD required
             </label>
           </div>
@@ -581,18 +693,28 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
             <select
               className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
               value={receivingTier}
-              onChange={(e) => setReceivingTier(e.target.value as "standard" | "detailed")}
+              onChange={(e) =>
+                setReceivingTier(e.target.value as "standard" | "detailed")
+              }
             >
-              <option value="detailed">Detailed (unbox, photograph, document)</option>
+              <option value="detailed">
+                Detailed (unbox, photograph, document)
+              </option>
               <option value="standard">Standard (quick visual)</option>
             </select>
           </label>
           <label className="block text-sm">
-            <span className="text-[var(--tx3)]">Assembly complexity (for pricing)</span>
+            <span className="text-[var(--tx3)]">
+              Assembly complexity (for pricing)
+            </span>
             <select
               className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
               value={assemblyComplexity}
-              onChange={(e) => setAssemblyComplexity(e.target.value as typeof assemblyComplexity)}
+              onChange={(e) =>
+                setAssemblyComplexity(
+                  e.target.value as typeof assemblyComplexity,
+                )
+              }
             >
               <option value="">None</option>
               <option value="simple">Simple</option>
@@ -623,13 +745,17 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
             </button>
           </div>
           <label className="block text-sm">
-            <span className="text-[var(--tx3)]">Estimated storage days (for quote)</span>
+            <span className="text-[var(--tx3)]">
+              Estimated storage days (for quote)
+            </span>
             <input
               className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
               value={estimatedStorageDays}
               onChange={(e) => setEstimatedStorageDays(e.target.value)}
             />
-            <span className="text-xs text-[var(--tx3)]">First 3 days free by default (configurable).</span>
+            <span className="text-xs text-[var(--tx3)]">
+              First 3 days free by default (configurable).
+            </span>
           </label>
           <div className="grid sm:grid-cols-2 gap-3">
             <label className="text-sm">

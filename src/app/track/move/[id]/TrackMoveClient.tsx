@@ -630,6 +630,15 @@ export default function TrackMoveClient({
   );
 
   const [liveStage, setLiveStage] = useState<string | null>(move.stage || null);
+  const [liveEstateServiceChecklist, setLiveEstateServiceChecklist] = useState<
+    Record<string, boolean>
+  >(() => {
+    const c = move.estate_service_checklist as
+      | Record<string, boolean>
+      | null
+      | undefined;
+    return c && typeof c === "object" ? { ...c } : {};
+  });
   const [showNotifyBanner, setShowNotifyBanner] = useState(!!fromNotify);
   const [dashboardInventory, setDashboardInventory] = useState<{
     items: { id: string; room?: string; item_name?: string }[];
@@ -679,6 +688,14 @@ export default function TrackMoveClient({
   useEffect(() => {
     setLiveStage(move.stage || null);
   }, [move.stage]);
+
+  useEffect(() => {
+    const c = move.estate_service_checklist as
+      | Record<string, boolean>
+      | null
+      | undefined;
+    if (c && typeof c === "object") setLiveEstateServiceChecklist({ ...c });
+  }, [move.estate_service_checklist]);
 
   useEffect(() => {
     let cancelled = false;
@@ -802,6 +819,14 @@ export default function TrackMoveClient({
           const eta = data.eta_current_minutes ?? data.etaMinutes;
           if (eta != null) setLiveEtaMinutes(eta);
           else setLiveEtaMinutes(null);
+          if (
+            data.estate_service_checklist &&
+            typeof data.estate_service_checklist === "object"
+          ) {
+            setLiveEstateServiceChecklist(
+              data.estate_service_checklist as Record<string, boolean>,
+            );
+          }
         }
       } catch (err) {
         console.error("Failed to poll move crew status:", err);
@@ -1106,27 +1131,21 @@ export default function TrackMoveClient({
       )
     : null;
 
-  const estateServiceChecklistInitial = React.useMemo(() => {
-    const c = move.estate_service_checklist as
-      | Record<string, boolean>
-      | undefined
-      | null;
-    return c && typeof c === "object" ? c : {};
-  }, [move.estate_service_checklist]);
-
   const estateAutomationInputs = React.useMemo(
     () => ({
-      status: move.status,
-      stage: move.stage,
-      scheduled_date: move.scheduled_date,
+      status: statusVal,
+      stage: liveStage ?? move.stage,
+      scheduled_date: liveScheduledDate ?? move.scheduled_date,
       move_size: move.move_size,
       inventory_score: move.inventory_score,
       tier_selected: move.tier_selected,
       service_tier: move.service_tier,
     }),
     [
-      move.status,
+      statusVal,
+      liveStage,
       move.stage,
+      liveScheduledDate,
       move.scheduled_date,
       move.move_size,
       move.inventory_score,
@@ -3652,11 +3671,14 @@ export default function TrackMoveClient({
               {isEstateTier && estateDayPlan && !isCompleted && (
                 <div className="mt-5">
                   <EstateServiceChecklist
+                    readOnly
                     moveId={move.id}
                     token={token}
                     plan={estateDayPlan}
-                    initialChecked={estateServiceChecklistInitial}
-                    moveDateStr={move.scheduled_date || undefined}
+                    initialChecked={liveEstateServiceChecklist}
+                    moveDateStr={
+                      liveScheduledDate ?? move.scheduled_date ?? undefined
+                    }
                     automationInputs={estateAutomationInputs}
                   />
                 </div>

@@ -103,8 +103,9 @@ export default function EstateServiceChecklistAdminRow({
         Estate service checklist
       </span>
       <p className="text-[11px] text-[var(--tx3)] leading-snug">
-        Same milestones as the client track. Walkthrough and packing can be set
-        here. Move and unpacking follow live crew progress (locked while active).
+        Same milestones as the client track (clients see progress only; only staff
+        can check boxes here). Move and unpacking follow live crew progress
+        (locked while active).
       </p>
       <div className="flex flex-wrap gap-x-4 gap-y-2">
         {items.map((item) => {

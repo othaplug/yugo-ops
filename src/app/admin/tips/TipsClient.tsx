@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { formatCurrency } from "@/lib/format-currency";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import { formatAdminCreatedAt } from "@/lib/date-format";
@@ -16,6 +17,7 @@ interface Tip {
   processing_fee: number | null;
   net_amount: number | null;
   charged_at: string;
+  move_code?: string | null;
 }
 
 interface CrewAllocation {
@@ -48,6 +50,32 @@ export default function TipsClient({
       render: (r) => (
         <span className="font-bold text-[var(--tx)]">{r.client_name || "-"}</span>
       ),
+      searchable: true,
+    },
+    {
+      id: "move",
+      label: "Move",
+      accessor: (r) => r.move_code || r.move_id || "",
+      render: (r) =>
+        r.move_code ? (
+          <Link
+            href={`/admin/moves/${r.move_code}`}
+            className="text-[11px] font-semibold text-[#2C3E2D] hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {r.move_code}
+          </Link>
+        ) : r.move_id ? (
+          <Link
+            href={`/admin/moves/${r.move_id}`}
+            className="text-[11px] font-semibold text-[#2C3E2D] hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            View move
+          </Link>
+        ) : (
+          "-"
+        ),
       searchable: true,
     },
     {

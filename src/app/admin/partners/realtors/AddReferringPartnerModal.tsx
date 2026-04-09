@@ -94,11 +94,16 @@ export default function AddReferringPartnerModal({
   };
 
   return (
-    <ModalOverlay open={open} onClose={handleClose} title="Add referring partner" maxWidth="sm">
+    <ModalOverlay
+      open={open}
+      onClose={handleClose}
+      title="Add referring partner"
+      maxWidth="2xl"
+    >
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
         <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
-          Creates a referral organization record (commission pipeline). This is separate from move clients and
-          delivery partners.
+          Creates a referral organization record (commission pipeline). This is
+          separate from move clients and delivery partners.
         </p>
         <div>
           <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
@@ -146,7 +151,9 @@ export default function AddReferringPartnerModal({
           />
         </div>
         <div>
-          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Email</label>
+          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
+            Email
+          </label>
           <input
             type="email"
             required
@@ -158,7 +165,9 @@ export default function AddReferringPartnerModal({
           />
         </div>
         <div>
-          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Phone</label>
+          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
+            Phone
+          </label>
           <input
             ref={phoneInput.ref}
             type="tel"
@@ -185,10 +194,14 @@ export default function AddReferringPartnerModal({
               onChange={(e) => setSendPortalAccess(e.target.checked)}
               className="accent-[var(--gold)] w-4 h-4 rounded border border-[var(--brd)]"
             />
-            <span className="text-[12px] text-[var(--tx2)]">Send portal access (invite email)</span>
+            <span className="text-[12px] text-[var(--tx2)]">
+              Send portal access (invite email)
+            </span>
           </label>
         ) : (
-          <p className="text-[11px] text-[var(--tx3)]">This partner type does not use a self-serve portal.</p>
+          <p className="text-[11px] text-[var(--tx3)]">
+            This partner type does not use a self-serve portal.
+          </p>
         )}
         <div className="flex gap-2 pt-1">
           <button
@@ -211,7 +224,11 @@ export default function AddReferringPartnerModal({
   );
 }
 
-export function AddReferringPartnerTriggerButton({ onClick }: { onClick: () => void }) {
+export function AddReferringPartnerTriggerButton({
+  onClick,
+}: {
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"

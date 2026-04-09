@@ -17,6 +17,7 @@ interface Claim {
   client_name: string;
   client_email: string;
   move_id: string | null;
+  move_code?: string | null;
   delivery_id: string | null;
   items: { name: string }[];
   total_claimed_value: number;
@@ -105,6 +106,32 @@ const claimColumns: ColumnDef<Claim>[] = [
         <div className="text-[11px] text-[var(--tx3)]">{c.client_email}</div>
       </div>
     ),
+  },
+  {
+    id: "move",
+    label: "Move",
+    accessor: (c) => c.move_code || c.move_id || "",
+    render: (c) =>
+      c.move_code ? (
+        <Link
+          href={`/admin/moves/${c.move_code}`}
+          className="text-[11px] font-semibold text-[#2C3E2D] hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {c.move_code}
+        </Link>
+      ) : c.move_id ? (
+        <Link
+          href={`/admin/moves/${c.move_id}`}
+          className="text-[11px] font-semibold text-[#2C3E2D] hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          View move
+        </Link>
+      ) : (
+        "-"
+      ),
+    searchable: true,
   },
   {
     id: "items",
@@ -272,7 +299,7 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
           primaryColumnId: "client",
           subtitleColumnId: "claim_number",
           amountColumnId: "claimed",
-          metaColumnIds: ["created_at", "date", "status", "items", "approved", "crew"],
+          metaColumnIds: ["created_at", "date", "move", "status", "items", "approved", "crew"],
         }}
         onRowClick={(c) => router.push(`/admin/claims/${c.id}`)}
         emptyMessage={claims.length === 0 ? "No claims yet" : "No claims match your filters"}

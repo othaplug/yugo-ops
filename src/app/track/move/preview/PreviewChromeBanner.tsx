@@ -3,7 +3,8 @@ export type StandardTrackPreviewVariant =
   | "move-day"
   | "completed"
   | "estate"
-  | "estate-walkthrough-done";
+  | "estate-walkthrough-done"
+  | "crew-navigation";
 
 const VARIANT_LABEL: Record<StandardTrackPreviewVariant, string> = {
   active: "Sample: standard track before move day (Signature).",
@@ -12,6 +13,8 @@ const VARIANT_LABEL: Record<StandardTrackPreviewVariant, string> = {
   estate: "Sample: Estate tier track (same layout and chrome as standard).",
   "estate-walkthrough-done":
     "Sample: Estate track with pre-move walkthrough marked complete (timeline styling).",
+  "crew-navigation":
+    "Sample: crew turn-by-turn navigation (Mapbox, no login). Dev or preview env only.",
 };
 
 const ESTATE_TRACK_PREVIEW_LINKS: {
@@ -42,6 +45,11 @@ const STANDARD_LINKS: {
     variant: "completed",
     href: "/track/move/preview/completed",
     label: "Completed",
+  },
+  {
+    variant: "crew-navigation",
+    href: "/track/crew-navigation/preview",
+    label: "Crew nav",
   },
 ];
 
