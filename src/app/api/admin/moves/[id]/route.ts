@@ -266,6 +266,7 @@ export async function DELETE(
     await admin.from("move_documents").delete().eq("move_id", id);
     await admin.from("move_photos").delete().eq("move_id", id);
     await admin.from("move_change_requests").delete().eq("move_id", id);
+    await admin.from("proof_of_delivery").delete().eq("move_id", id);
     await admin.from("invoices").update({ move_id: null }).eq("move_id", id);
     const { error } = await admin.from("moves").delete().eq("id", id);
 

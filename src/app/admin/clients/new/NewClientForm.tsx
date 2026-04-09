@@ -34,10 +34,13 @@ export default function NewClientForm({
   defaultPersona = "client",
   defaultPartnerType = "furniture_retailer",
   referralPartnerHub = false,
+  clientOnly = false,
 }: {
   defaultPersona?: Persona;
   defaultPartnerType?: string;
   referralPartnerHub?: boolean;
+  /** When true (Add Client page), only the move client flow is shown */
+  clientOnly?: boolean;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -175,30 +178,32 @@ export default function NewClientForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Field label="Type">
-        <div className="flex gap-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="persona"
-              checked={persona === "client"}
-              onChange={() => setPersona("client")}
-              className="accent-[var(--gold)]"
-            />
-            <span className="text-sm">Client</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="persona"
-              checked={persona === "partner"}
-              onChange={() => setPersona("partner")}
-              className="accent-[var(--gold)]"
-            />
-            <span className="text-sm">Partner</span>
-          </label>
-        </div>
-      </Field>
+      {!clientOnly ? (
+        <Field label="Type">
+          <div className="flex gap-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="persona"
+                checked={persona === "client"}
+                onChange={() => setPersona("client")}
+                className="accent-[var(--gold)]"
+              />
+              <span className="text-sm">Client</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="persona"
+                checked={persona === "partner"}
+                onChange={() => setPersona("partner")}
+                className="accent-[var(--gold)]"
+              />
+              <span className="text-sm">Partner</span>
+            </label>
+          </div>
+        </Field>
+      ) : null}
 
       {persona === "partner" ? (
         <>

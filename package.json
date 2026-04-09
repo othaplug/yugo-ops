@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
-    "build": "next build",
+    "build": "NODE_OPTIONS=--max-old-space-size=8192 next build",
+    "unlock-next": "node -e \"const fs=require('fs');try{fs.unlinkSync('.next/lock')}catch(e){if(e.code!=='ENOENT')throw e}\"",
+    "build:resume": "npm run unlock-next && npm run build",
     "lint": "eslint .",
     "start": "next start",
     "db:push": "npx supabase db push --include-all",

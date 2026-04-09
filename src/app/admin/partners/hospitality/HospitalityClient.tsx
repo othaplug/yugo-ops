@@ -102,7 +102,7 @@ export default function HospitalityClient({
         <div className="flex items-center gap-2">
           <CreateDeliveryDropdown
             type="hospitality"
-            addPartnerHref="/admin/clients/new?type=partner&partnerType=hospitality"
+            addPartnerHref="/admin/partners/new?partnerType=hospitality"
           />
         </div>
       </div>
@@ -191,7 +191,7 @@ export default function HospitalityClient({
             {clients.length === 0 ? (
               <div className="px-4 py-10 text-center">
                 <p className="text-[13px] text-[var(--tx3)]">No hospitality partners yet.</p>
-                <Link href="/admin/clients/new?type=partner&partnerType=hospitality" className="text-[12px] font-semibold text-[var(--gold)] hover:underline mt-1 inline-block">
+                <Link href="/admin/partners/new?partnerType=hospitality" className="text-[12px] font-semibold text-[var(--gold)] hover:underline mt-1 inline-block">
                   Add your first partner
                 </Link>
               </div>

@@ -193,6 +193,7 @@ export default async function ClientDetailPage({
         partnerDuration={partnerDuration}
         backHref={backHref}
         isAdmin={!!isAdmin}
+        isSuperAdmin={isSuperAdmin}
         squareAppId={squareAppId}
         squareLocationId={squareLocationId}
       />

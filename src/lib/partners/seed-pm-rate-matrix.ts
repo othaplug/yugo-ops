@@ -26,6 +26,7 @@ export async function seedPmRateMatrixFromDefaults(admin: SupabaseClient, contra
     unit_size: string;
     zone: string;
     base_rate: number;
+    weekend_surcharge?: number;
   }[] = [];
 
   const addReason = (reasonCode: string, legacyKey: string, zone: string = "local") => {
@@ -40,6 +41,7 @@ export async function seedPmRateMatrixFromDefaults(admin: SupabaseClient, contra
         unit_size: u,
         zone,
         base_rate: br,
+        ...(reasonCode === "reno_bundle" ? { weekend_surcharge: 200 } : {}),
       });
     }
   };
@@ -48,6 +50,7 @@ export async function seedPmRateMatrixFromDefaults(admin: SupabaseClient, contra
   addReason("tenant_move_in", "tenant_move_in");
   addReason("reno_move_out", "reno_move_out");
   addReason("reno_move_in", "reno_move_in");
+  addReason("reno_bundle", "reno_bundle");
   addReason("suite_transfer", "suite_transfer");
   addReason("emergency_relocation", "emergency_relocation");
   addReason("staging", "staging");

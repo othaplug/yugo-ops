@@ -369,7 +369,6 @@ function PartnerPortalInner({
           label: `History (${data?.allDeliveries?.filter((d) => ["completed", "delivered"].includes((d.status || "").toLowerCase())).length ?? 0})`,
         },
         { key: "calendar", label: "Calendar" },
-        { key: "coverage", label: "Coverage map", href: "/partner/coverage" },
         { key: "tracking", label: "Live Map" },
         { key: "inbound", label: "Inbound" },
         ...(showProjects
@@ -402,7 +401,7 @@ function PartnerPortalInner({
 
   if (!features.hasSelfServePortal) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-[#FAF7F2]">
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-white">
         <div className="max-w-md w-full rounded-2xl border border-[#2C3E2D]/12 bg-white p-8 text-center shadow-sm">
           <div className="flex justify-center mb-4">
             <YugoLogo size={24} variant="wine" />
@@ -438,11 +437,11 @@ function PartnerPortalInner({
     <PartnerNotificationProvider orgId={orgId}>
       <PartnerChangePasswordGate>
         <div
-          className="min-h-screen min-h-dvh w-full max-w-full min-w-0 overflow-x-clip bg-[#FAF7F2] text-[#1a1f1b]"
+          className="min-h-screen min-h-dvh w-full max-w-full min-w-0 overflow-x-clip bg-white text-[#1a1f1b]"
           data-theme="light"
         >
           {/* Header */}
-          <header className="bg-[#FFFBF7] border-b border-[#2C3E2D]/12 px-4 sm:px-6 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-3 flex items-center justify-between sticky top-0 z-30">
+          <header className="bg-white border-b border-[#2C3E2D]/12 px-4 sm:px-6 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-3 flex items-center justify-between sticky top-0 z-30">
             <div className="flex items-center gap-2 min-w-0">
               <YugoLogo size={19} variant="wine" />
               <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] shrink-0">
@@ -660,7 +659,7 @@ function PartnerPortalInner({
                         onClick={() =>
                           setBookServiceModalOpen(!bookServiceModalOpen)
                         }
-                        className="w-9 h-9 flex items-center justify-center border border-[#2C3E2D]/35 text-[var(--tx)] bg-[#FFFBF7] text-[20px] font-light leading-none transition-colors hover:bg-[#2C3E2D]/[0.04] select-none rounded-sm"
+                        className="w-9 h-9 flex items-center justify-center border border-[#2C3E2D]/35 text-[var(--tx)] bg-white text-[20px] font-light leading-none transition-colors hover:bg-[#2C3E2D]/[0.04] select-none rounded-sm"
                         title="Book a service"
                         aria-expanded={bookServiceModalOpen}
                       >
@@ -673,7 +672,7 @@ function PartnerPortalInner({
                             className="fixed inset-0 z-40"
                             onClick={() => setBookServiceModalOpen(false)}
                           />
-                          <div className="absolute left-0 top-full mt-2 z-50 w-[min(100vw-2rem,280px)] bg-[#FFFBF7] border border-[#2C3E2D]/12 overflow-hidden shadow-[0_20px_50px_rgba(44,62,45,0.1)] rounded-sm">
+                          <div className="absolute left-0 top-full mt-2 z-50 w-[min(100vw-2rem,280px)] bg-white border border-[#2C3E2D]/12 overflow-hidden shadow-[0_20px_50px_rgba(44,62,45,0.1)] rounded-sm">
                             <div className="px-4 py-3 border-b border-[#2C3E2D]/10">
                               <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]">
                                 Book a service
@@ -1130,7 +1129,7 @@ function PartnerPortalInner({
           {/* Mobile bottom navigation, hidden on sm+ */}
           {!features.showReferrals && (
             <nav
-              className="sm:hidden fixed bottom-0 left-0 right-0 z-[var(--z-topbar)] border-t border-[#2C3E2D]/10 flex items-stretch bg-[#FFFBF7]"
+              className="sm:hidden fixed bottom-0 left-0 right-0 z-[var(--z-topbar)] border-t border-[#2C3E2D]/10 flex items-stretch bg-white"
               style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
               aria-label="Main navigation"
             >
@@ -1163,7 +1162,7 @@ function PartnerPortalInner({
                         key: "__schedule__",
                         label: "Book",
                         icon: (_active: boolean) => (
-                          <div className="w-10 h-10 flex items-center justify-center text-[var(--tx)] bg-[#FFFBF7] border border-[#2C3E2D]/35 -mt-3 rounded-sm">
+                          <div className="w-10 h-10 flex items-center justify-center text-[var(--tx)] bg-white border border-[#2C3E2D]/35 -mt-3 rounded-sm">
                             <Plus size={20} color="#2C3E2D" weight="bold" />
                           </div>
                         ),
@@ -1241,7 +1240,7 @@ function DeliveryKPIs({ data }: { data: DashboardData | null }) {
     "text-[24px] sm:text-[28px] font-normal text-[var(--tx)] mt-1.5 font-hero leading-none";
   return (
     <div className="border-t border-[#2C3E2D]/10 pt-8">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 md:gap-y-0">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-6 md:gap-y-0">
         <div className={cell}>
           <div className={label}>This month</div>
           <div className={figure}>{data?.completedThisMonth ?? 0}</div>
@@ -1254,13 +1253,6 @@ function DeliveryKPIs({ data }: { data: DashboardData | null }) {
         <div className={cell}>
           <div className={label}>On-time rate</div>
           <div className={figure}>{data?.onTimeRate ?? 100}%</div>
-        </div>
-        <div className={cell}>
-          <div className={label}>Satisfaction</div>
-          <div className={figure}>{data?.satisfactionScore ?? "—"}</div>
-          {data?.satisfactionScore != null && (
-            <div className="text-[11px] text-[#5A6B5E] mt-1">out of 5</div>
-          )}
         </div>
         <div className={cell}>
           <div className={label}>Outstanding</div>

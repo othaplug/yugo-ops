@@ -27,6 +27,7 @@ const REASON_TO_LEGACY_KEY: Record<string, string> = {
   emergency_relocation: "tenant_move_outside",
   common_area: "tenant_move_gta",
   other: "tenant_move_gta",
+  reno_bundle: "tenant_move_gta",
 };
 
 function num(v: unknown): number {

@@ -12,7 +12,7 @@ export function applyDocumentLightTheme(): void {
   const root = el.style;
   /* Mirror `globals.css` `[data-theme="light"]` + same keys as `applyDocumentDarkTheme` so toggling
    * does not leave dark inline vars (e.g. rose `--gold`) on the document root. */
-  root.setProperty("--bg", "#FAF7F2");
+  root.setProperty("--bg", "#FFFFFF");
   root.setProperty("--bg2", "#FFFFFF");
   root.setProperty("--card", "#FFFFFF");
   root.setProperty("--tx", "#141210");

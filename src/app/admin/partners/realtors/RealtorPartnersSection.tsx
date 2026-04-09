@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { InfoHint } from "@/components/ui/InfoHint";
 import { organizationTypeLabel } from "@/lib/partner-type";
+import AddReferringPartnerModal, { AddReferringPartnerTriggerButton } from "./AddReferringPartnerModal";
 
 export type ReferralOrgPartner = {
   id: string;
@@ -12,9 +14,9 @@ export type ReferralOrgPartner = {
   type?: string | null;
 };
 
-const ADD_BASE = "/admin/clients/new?type=partner";
-
 export default function RealtorPartnersSection({ partners }: { partners: ReferralOrgPartner[] }) {
+  const [addOpen, setAddOpen] = useState(false);
+
   return (
     <div className="mb-8">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
@@ -26,41 +28,25 @@ export default function RealtorPartnersSection({ partners }: { partners: Referra
             <p className="text-[12px] leading-relaxed">
               Organization records for realtors, property managers, and developers (commissions & referral
               pipeline). Portal access and login invites are managed per organization. Individual realtor contacts for
-              the pipeline are below — use{" "}
-              <span className="font-semibold text-[var(--tx)]">Add Realtor</span> for those.
+              the pipeline are below. Use{" "}
+              <span className="font-semibold text-[var(--tx)]">Add Realtor</span> for those contacts.
             </p>
           </InfoHint>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={`${ADD_BASE}&partnerType=realtor`}
-            className="inline-flex items-center justify-center px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all whitespace-nowrap"
-          >
-            Add realtor org
-          </Link>
-          <Link
-            href={`${ADD_BASE}&partnerType=property_manager`}
-            className="inline-flex items-center justify-center px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]/50 transition-all whitespace-nowrap"
-          >
-            Add property manager
-          </Link>
-          <Link
-            href={`${ADD_BASE}&partnerType=developer`}
-            className="inline-flex items-center justify-center px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]/50 transition-all whitespace-nowrap"
-          >
-            Add developer
-          </Link>
-        </div>
+        <AddReferringPartnerTriggerButton onClick={() => setAddOpen(true)} />
       </div>
+      <AddReferringPartnerModal open={addOpen} onClose={() => setAddOpen(false)} />
+
       {partners.length === 0 ? (
         <div className="rounded-lg border border-[var(--brd)]/50 bg-[var(--card)]/50 px-4 py-6 text-center">
           <p className="text-[13px] text-[var(--tx3)]">No referral partner organizations yet.</p>
-          <Link
-            href={`${ADD_BASE}&partnerType=realtor`}
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
             className="inline-block mt-2 text-[12px] font-semibold text-[var(--gold)] hover:underline"
           >
-            Add realtor organization
-          </Link>
+            Add referring partner
+          </button>
         </div>
       ) : (
         <div className="rounded-lg border border-[var(--brd)]/50 divide-y divide-[var(--brd)]/30">

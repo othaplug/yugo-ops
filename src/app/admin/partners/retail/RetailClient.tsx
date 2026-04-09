@@ -103,7 +103,7 @@ export default function RetailClient({
         <div className="flex items-center gap-2">
           <CreateDeliveryDropdown
             type="retail"
-            addPartnerHref="/admin/clients/new?type=partner&partnerType=retail"
+            addPartnerHref="/admin/partners/new?partnerType=retail"
           />
         </div>
       </div>
@@ -201,7 +201,7 @@ export default function RetailClient({
             {clients.length === 0 ? (
               <div className="px-4 py-10 text-center">
                 <p className="text-[13px] text-[var(--tx3)]">No retail partners yet.</p>
-                <Link href="/admin/clients/new?type=partner&partnerType=retail" className="text-[12px] font-semibold text-[var(--gold)] hover:underline mt-1 inline-block">
+                <Link href="/admin/partners/new?partnerType=retail" className="text-[12px] font-semibold text-[var(--gold)] hover:underline mt-1 inline-block">
                   Add your first partner
                 </Link>
               </div>

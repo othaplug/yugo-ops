@@ -1,8 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import { isUuid, getDeliveryDetailPath } from "@/lib/move-code";
 import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
 import DeliveryDetailClient from "./DeliveryDetailClient";
+import { canEditFinalJobPrice } from "@/lib/admin-can-edit-final-price";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const slug = decodeURIComponent((await params).id?.trim() || "");
@@ -30,8 +32,22 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
     redirect(getDeliveryDetailPath(delivery));
   }
 
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: pu } = await db.from("platform_users").select("role").eq("user_id", user?.id ?? "").single();
+  const canEditPostCompletionPrice = canEditFinalJobPrice(pu?.role ?? null, user?.email ?? null);
+
   const isDayRate = delivery.booking_type === "day_rate";
-  const [{ data: org }, { data: orgs }, { data: crews }, { data: etaSmsLog }, { data: deliveryInvoice }, stopsResult, projectResult] = await Promise.all([
+  const [
+    { data: org },
+    { data: orgs },
+    { data: crews },
+    { data: etaSmsLog },
+    { data: deliveryInvoice },
+    stopsResult,
+    projectResult,
+    { data: postCompletionPriceEdits },
+  ] = await Promise.all([
     db.from("organizations").select("email").eq("name", delivery.client_name).limit(1).maybeSingle(),
     db.from("organizations").select("id, name, type").not("name", "like", "\\_%").order("name"),
     db.from("crews").select("id, name, members").order("name"),
@@ -41,6 +57,14 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
     delivery.project_id
       ? db.from("projects").select("id, project_number, project_name").eq("id", delivery.project_id).maybeSingle()
       : Promise.resolve({ data: null }),
+    db
+      .from("job_final_price_edits")
+      .select(
+        "id, original_price, new_price, difference, reason, edited_by_name, created_at, invoice_may_need_reissue",
+      )
+      .eq("job_id", delivery.id)
+      .eq("job_type", "delivery")
+      .order("created_at", { ascending: false }),
   ]);
 
   const stops = (stopsResult as { data: Array<{ id: string; stop_number: number; address: string; customer_name: string | null; customer_phone: string | null; items_description: string | null; special_instructions: string | null }> | null })?.data ?? null;
@@ -114,6 +138,8 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
       linkedProject={linkedProject}
       b2bOneOffPriorCount={b2bOneOffPriorCount}
       b2bOneOffCohort={b2bOneOffCohort}
+      canEditPostCompletionPrice={canEditPostCompletionPrice}
+      postCompletionPriceEdits={postCompletionPriceEdits ?? []}
     />
   );
 }

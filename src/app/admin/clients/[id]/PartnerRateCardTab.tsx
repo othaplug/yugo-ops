@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 import { formatCurrency } from "@/lib/format-currency";
+import { PM_PRIMARY_REASON_CODES_ORDERED } from "@/lib/partners/pm-portal-move-types";
 
 /* ─── Types ─── */
 
@@ -38,6 +39,7 @@ interface VolumeBonus { id: string; min_deliveries: number; max_deliveries?: num
 interface Override { id: string; rate_table: string; rate_record_id: string; override_field: string; override_value: number; is_locked: boolean; notes?: string | null; }
 
 interface PmRateRow {
+  id?: string;
   reason_code: string;
   unit_size: string;
   zone: string;
@@ -78,6 +80,7 @@ const PM_REASON_LABELS: Record<string, string> = {
   office_suite_clearout: "Office Suite Clearout",
   common_area: "Common Area",
   other: "Other",
+  reno_bundle: "Bundle Reno (In + Out)",
 };
 
 const PM_UNIT_ORDER = ["studio", "1br", "2br", "3br", "4br_plus"] as const;
@@ -93,6 +96,39 @@ function pmUnitHeader(u: string): string {
 interface EditingCell {
   rateTable: string; rateRecordId: string; field: string; fieldLabel: string;
   templateValue: number; currentOverride: Override | null;
+}
+
+/** Template fallback when pm_rate_cards has no reno_bundle rows yet */
+const BUNDLE_RENO_BASE_BY_UNIT: Record<(typeof PM_UNIT_ORDER)[number], number> = {
+  studio: 799,
+  "1br": 1099,
+  "2br": 1549,
+  "3br": 2149,
+  "4br_plus": 2899,
+};
+const BUNDLE_RENO_WEEKEND_SURCHARGE = 200;
+
+interface PmRateEditState {
+  rowId: string;
+  reasonCode: string;
+  unitLabel: string;
+  baseRate: number;
+  weekendSurcharge: number;
+}
+
+function sortPmMatrixReasonCodes(codes: string[]): string[] {
+  const primary = PM_PRIMARY_REASON_CODES_ORDERED as readonly string[];
+  const idx = (c: string) => {
+    const i = primary.indexOf(c);
+    return i >= 0 ? i : 500;
+  };
+  return [...codes].sort((a, b) => {
+    const d = idx(a) - idx(b);
+    if (d !== 0) return d;
+    const la = PM_REASON_LABELS[a] || a.replace(/_/g, " ");
+    const lb = PM_REASON_LABELS[b] || b.replace(/_/g, " ");
+    return la.localeCompare(lb);
+  });
 }
 
 /* ─── Helper functions ─── */
@@ -323,6 +359,86 @@ function EditOverrideModal({
   );
 }
 
+function PmRateEditModal({
+  state,
+  onSave,
+  onClose,
+}: {
+  state: PmRateEditState;
+  onSave: (base: number, weekendSurcharge: number) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [baseStr, setBaseStr] = useState(String(state.baseRate));
+  const [wkndStr, setWkndStr] = useState(String(state.weekendSurcharge));
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setBaseStr(String(state.baseRate));
+    setWkndStr(String(state.weekendSurcharge));
+  }, [state.rowId, state.baseRate, state.weekendSurcharge]);
+
+  const handleSave = async () => {
+    const base = parseFloat(baseStr);
+    const wknd = parseFloat(wkndStr);
+    if (Number.isNaN(base) || base < 0 || Number.isNaN(wknd) || wknd < 0) return;
+    setSaving(true);
+    try {
+      await onSave(base, wknd);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const reasonLabel = PM_REASON_LABELS[state.reasonCode] || state.reasonCode.replace(/_/g, " ");
+  const title = `${reasonLabel} · ${state.unitLabel}`;
+
+  return (
+    <ModalOverlay open onClose={onClose} title={title} maxWidth="sm">
+      <div className="p-5 space-y-4">
+        <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
+          Weekday rate is the base. Weekend pricing adds the weekend amount on Fri to Sun (same rule as the partner portal).
+        </p>
+        <div>
+          <label className="block text-[10px] font-semibold text-[var(--tx2)] mb-1.5">Weekday base ($)</label>
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={baseStr}
+            onChange={(e) => setBaseStr(e.target.value)}
+            className="w-full px-3 py-2 text-[13px] font-semibold bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)]"
+            autoFocus
+          />
+        </div>
+        <div>
+          <label className="block text-[10px] font-semibold text-[var(--tx2)] mb-1.5">Weekend add-on ($)</label>
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={wkndStr}
+            onChange={(e) => setWkndStr(e.target.value)}
+            className="w-full px-3 py-2 text-[13px] font-semibold bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)]"
+          />
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg text-[11px] border border-[var(--brd)] text-[var(--tx2)]">
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-white disabled:opacity-50"
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+    </ModalOverlay>
+  );
+}
+
 /* ─── Settings Modal ─── */
 
 function RateCardSettingsModal({
@@ -435,11 +551,21 @@ function RateCell({
 
 /* ─── Main Component ─── */
 
-export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; orgName: string }) {
+export default function PartnerRateCardTab({
+  orgId,
+  orgName,
+  canEditRates = false,
+}: {
+  orgId: string;
+  orgName: string;
+  /** Super admin only: template overrides + PM contract matrix */
+  canEditRates?: boolean;
+}) {
   const { toast } = useToast();
   const [data, setData] = useState<RateCardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
+  const [pmEdit, setPmEdit] = useState<PmRateEditState | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [detachConfirm, setDetachConfirm] = useState(false);
   const [detaching, setDetaching] = useState(false);
@@ -466,7 +592,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
   };
 
   const openCell = (table: string, id: string, field: string, label: string, templateVal: number) => {
-    if (!data) return;
+    if (!canEditRates || !data) return;
     const existing = data.overrides.find(
       (o) => o.rate_table === table && o.rate_record_id === id && o.override_field === field
     ) || null;
@@ -504,6 +630,27 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
     if (!res.ok) { toast("Failed to reset", "x"); return; }
     toast("Reset to template", "check");
     setEditingCell(null);
+    fetchData();
+  };
+
+  const handleSavePmRate = async (base: number, weekendSurcharge: number) => {
+    if (!pmEdit) return;
+    const res = await fetch(`/api/admin/partners/${orgId}/rate-card/pm-rate`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        row_id: pmEdit.rowId,
+        base_rate: base,
+        weekend_surcharge: weekendSurcharge,
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      toast(json.error || "Failed to save", "x");
+      return;
+    }
+    toast("Rate updated", "check");
+    setPmEdit(null);
     fetchData();
   };
 
@@ -561,14 +708,31 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
   const showPortfolioMatrix = showContractMatrix || showTemplatePmMatrix;
   const matrixSourceRows = showContractMatrix ? localPmRates : pmFallbackRows;
   const matrixByReason = new Map<string, Map<string, number>>();
+  const matrixWeekendSur = new Map<string, Map<string, number>>();
+  const matrixRowIds = new Map<string, Map<string, string>>();
   for (const r of matrixSourceRows) {
-    if (!matrixByReason.has(r.reason_code)) matrixByReason.set(r.reason_code, new Map());
-    matrixByReason.get(r.reason_code)!.set(r.unit_size, Number(r.base_rate));
+    if ((r.zone || "local") !== "local") continue;
+    const rc = r.reason_code;
+    if (!matrixByReason.has(rc)) matrixByReason.set(rc, new Map());
+    matrixByReason.get(rc)!.set(r.unit_size, Number(r.base_rate));
+    if (!matrixWeekendSur.has(rc)) matrixWeekendSur.set(rc, new Map());
+    matrixWeekendSur.get(rc)!.set(r.unit_size, Number(r.weekend_surcharge ?? 0));
+    if (r.id) {
+      if (!matrixRowIds.has(rc)) matrixRowIds.set(rc, new Map());
+      matrixRowIds.get(rc)!.set(r.unit_size, r.id);
+    }
   }
-  const matrixReasons = [...matrixByReason.keys()].sort(
-    (a, b) =>
-      (PM_REASON_LABELS[a] ? PM_REASON_LABELS[a]! : a).localeCompare(PM_REASON_LABELS[b] ? PM_REASON_LABELS[b]! : b)
-  );
+  if (showPortfolioMatrix && !matrixByReason.has("reno_bundle")) {
+    matrixByReason.set("reno_bundle", new Map());
+    matrixWeekendSur.set("reno_bundle", new Map());
+    for (const u of PM_UNIT_ORDER) {
+      const b = BUNDLE_RENO_BASE_BY_UNIT[u];
+      if (b == null) continue;
+      matrixByReason.get("reno_bundle")!.set(u, b);
+      matrixWeekendSur.get("reno_bundle")!.set(u, BUNDLE_RENO_WEEKEND_SURCHARGE);
+    }
+  }
+  const matrixReasons = sortPmMatrixReasonCodes([...matrixByReason.keys()]);
   const sampleRow = showContractMatrix ? localPmRates[0] : matrixSourceRows[0];
   const showDayRatesSection = dayRates.length > 0 && (!showPortfolioMatrix || isPmTemplate);
   const showVolumeSection = volumeBonuses.length > 0 && (!showPortfolioMatrix || isPmTemplate);
@@ -576,6 +740,8 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
   const discount = partner.global_discount_pct || 0;
   const tierLabel = partner.pricing_tier === "partner" ? "Partner ✦" : "Standard";
   const isDetached = !partner.template_id;
+  const hideStatusColumn = templateSlug === "furniture_design";
+  const showStatusCol = !hideStatusColumn;
 
   /* ─── Section header ─── */
   const SectionHead = ({ label }: { label: string }) => (
@@ -633,22 +799,30 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
               )}
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 shrink-0">
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
-            >
-              {isDetached ? "Assign Template" : "Edit Settings"}
-            </button>
-            {!isDetached && (
+          {canEditRates ? (
+            <div className="flex flex-wrap gap-2 shrink-0">
               <button
-                onClick={() => setDetachConfirm(true)}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--org)] hover:text-[var(--org)] transition-all"
+                type="button"
+                onClick={() => setSettingsOpen(true)}
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
               >
-                Detach from template
+                {isDetached ? "Assign Template" : "Edit Settings"}
               </button>
-            )}
-          </div>
+              {!isDetached && (
+                <button
+                  type="button"
+                  onClick={() => setDetachConfirm(true)}
+                  className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--org)] hover:text-[var(--org)] transition-all"
+                >
+                  Detach from template
+                </button>
+              )}
+            </div>
+          ) : (
+            <p className="text-[10px] text-[var(--tx3)] shrink-0 max-w-[220px] text-right">
+              Rate edits are limited to super admins.
+            </p>
+          )}
         </div>
       </div>
 
@@ -836,6 +1010,8 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
               <tbody className="divide-y divide-[var(--brd)]/30">
                 {matrixReasons.map((reason) => {
                   const row = matrixByReason.get(reason)!;
+                  const wkndRow = matrixWeekendSur.get(reason);
+                  const isBundleRow = reason === "reno_bundle";
                   return (
                     <tr key={reason} className="hover:bg-[var(--bgsub)]/40">
                       <td className="px-3 py-2.5 font-semibold text-[var(--tx)]">
@@ -843,9 +1019,73 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                       </td>
                       {PM_UNIT_ORDER.map((u) => {
                         const v = row.get(u);
+                        const wkndSur = wkndRow?.get(u) ?? 0;
+                        const rowId = matrixRowIds.get(reason)?.get(u);
+                        const canClickPm =
+                          canEditRates &&
+                          !!rowId &&
+                          v != null &&
+                          !Number.isNaN(v);
+                        const openPm = () => {
+                          if (!canClickPm || !rowId) return;
+                          setPmEdit({
+                            rowId,
+                            reasonCode: reason,
+                            unitLabel: pmUnitHeader(u),
+                            baseRate: v!,
+                            weekendSurcharge: wkndSur,
+                          });
+                        };
+                        if (v == null || Number.isNaN(v)) {
+                          return (
+                            <td key={u} className="px-3 py-2.5 text-right tabular-nums text-[var(--tx3)]">
+                              —
+                            </td>
+                          );
+                        }
+                        if (isBundleRow) {
+                          const we = v + wkndSur;
+                          const inner = (
+                            <>
+                              <div className="tabular-nums text-[var(--tx)]">
+                                {formatCurrency(v)}{" "}
+                                <span className="text-[9px] font-normal text-[var(--tx3)]">wkday</span>
+                              </div>
+                              <div className="tabular-nums text-[var(--tx2)]">
+                                {formatCurrency(we)}{" "}
+                                <span className="text-[9px] font-normal text-[var(--tx3)]">wknd</span>
+                              </div>
+                            </>
+                          );
+                          return (
+                            <td key={u} className="px-3 py-2.5 text-right">
+                              {canClickPm ? (
+                                <button
+                                  type="button"
+                                  onClick={openPm}
+                                  className="w-full text-right space-y-0.5 cursor-pointer hover:bg-[var(--bgsub)]/80 rounded-md py-1 -my-1"
+                                >
+                                  {inner}
+                                </button>
+                              ) : (
+                                <div className="space-y-0.5">{inner}</div>
+                              )}
+                            </td>
+                          );
+                        }
                         return (
-                          <td key={u} className="px-3 py-2.5 text-right tabular-nums text-[var(--tx)]">
-                            {v != null && !Number.isNaN(v) ? formatCurrency(v) : "—"}
+                          <td key={u} className="px-3 py-2.5 text-right tabular-nums">
+                            {canClickPm ? (
+                              <button
+                                type="button"
+                                onClick={openPm}
+                                className="w-full text-right font-medium text-[var(--tx)] cursor-pointer hover:bg-[var(--bgsub)]/80 rounded-md py-1.5 -my-1"
+                              >
+                                {formatCurrency(v)}
+                              </button>
+                            ) : (
+                              <span className="font-medium text-[var(--tx)]">{formatCurrency(v)}</span>
+                            )}
                           </td>
                         );
                       })}
@@ -917,7 +1157,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                 <Th right>Half Day</Th>
                 <Th right>Stops (Full)</Th>
                 <Th right>Stops (Half)</Th>
-                <Th>Status</Th>
+                {showStatusCol ? <Th>Status</Th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--brd)]/30">
@@ -931,19 +1171,21 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                       {VEHICLE_LABELS[r.vehicle_type] || r.vehicle_type}
                     </td>
                     <td className="px-3 py-2.5 text-[10px] text-[var(--tx3)]">{pricingTierLabel(r.pricing_tier)}</td>
-                    <RateCell value={fd.value} source={fd.source} override={fd.override} onClick={() => openCell("day_rates", r.id, "full_day_price", `${VEHICLE_LABELS[r.vehicle_type] || r.vehicle_type} Full Day`, r.full_day_price)} />
-                    <RateCell value={hd.value} source={hd.source} override={hd.override} onClick={() => openCell("day_rates", r.id, "half_day_price", `${VEHICLE_LABELS[r.vehicle_type] || r.vehicle_type} Half Day`, r.half_day_price)} />
+                    <RateCell value={fd.value} source={fd.source} override={fd.override} onClick={canEditRates ? () => openCell("day_rates", r.id, "full_day_price", `${VEHICLE_LABELS[r.vehicle_type] || r.vehicle_type} Full Day`, r.full_day_price) : undefined} />
+                    <RateCell value={hd.value} source={hd.source} override={hd.override} onClick={canEditRates ? () => openCell("day_rates", r.id, "half_day_price", `${VEHICLE_LABELS[r.vehicle_type] || r.vehicle_type} Half Day`, r.half_day_price) : undefined} />
                     <td className="px-3 py-2.5 text-right text-[11px] tabular-nums text-[var(--tx)]">{r.stops_included_full}</td>
                     <td className="px-3 py-2.5 text-right text-[11px] tabular-nums text-[var(--tx)]">{r.stops_included_half}</td>
-                    <td className="px-3 py-2.5">
-                      {hasOverride ? (
-                        <StatusBadge source="override" isLocked={[fd.override, hd.override].some((o) => o?.is_locked)} />
-                      ) : (
-                        <span className="text-[9px] text-[var(--tx3)]">
-                          {discount > 0 ? `Template (−${discount}%)` : "Template"}
-                        </span>
-                      )}
-                    </td>
+                    {showStatusCol ? (
+                      <td className="px-3 py-2.5">
+                        {hasOverride ? (
+                          <StatusBadge source="override" isLocked={[fd.override, hd.override].some((o) => o?.is_locked)} />
+                        ) : (
+                          <span className="text-[9px] text-[var(--tx3)]">
+                            {discount > 0 ? `Template (−${discount}%)` : "Template"}
+                          </span>
+                        )}
+                      </td>
+                    ) : null}
                   </tr>
                 );
               })}
@@ -962,7 +1204,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                 <Th>Overage</Th>
                 <Th>Tier</Th>
                 <Th right>Rate</Th>
-                <Th>Status</Th>
+                {showStatusCol ? <Th>Status</Th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--brd)]/30">
@@ -972,10 +1214,12 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                   <tr key={r.id} className="hover:bg-[var(--bgsub)]/50 transition-colors">
                     <td className="px-3 py-2.5 text-[11px] text-[var(--tx)]">{OVERAGE_TIER_LABELS[r.overage_tier] || r.overage_tier}</td>
                     <td className="px-3 py-2.5 text-[10px] text-[var(--tx3)]">{pricingTierLabel(r.pricing_tier)}</td>
-                    <RateCell value={ps.value} source={ps.source} override={ps.override} onClick={() => openCell("overages", r.id, "price_per_stop", `Overage: ${OVERAGE_TIER_LABELS[r.overage_tier] || r.overage_tier}`, r.price_per_stop)} />
-                    <td className="px-3 py-2.5">
-                      <StatusBadge source={ps.source} isLocked={ps.override?.is_locked} />
-                    </td>
+                    <RateCell value={ps.value} source={ps.source} override={ps.override} onClick={canEditRates ? () => openCell("overages", r.id, "price_per_stop", `Overage: ${OVERAGE_TIER_LABELS[r.overage_tier] || r.overage_tier}`, r.price_per_stop) : undefined} />
+                    {showStatusCol ? (
+                      <td className="px-3 py-2.5">
+                        <StatusBadge source={ps.source} isLocked={ps.override?.is_locked} />
+                      </td>
+                    ) : null}
                   </tr>
                 );
               })}
@@ -996,7 +1240,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                 <Th>Zone</Th>
                 <Th right>Price Min</Th>
                 <Th right>Price Max</Th>
-                <Th>Status</Th>
+                {showStatusCol ? <Th>Status</Th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--brd)]/30">
@@ -1017,17 +1261,19 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                       </>
                     ) : (
                       <>
-                        <RateCell value={pm.value} source={pm.source} override={pm.override} onClick={() => openCell("delivery_rates", r.id, "price_min", `${DELIVERY_TYPE_LABELS[r.delivery_type] ?? (r.delivery_type as string).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} Z${r.zone} Min`, r.price_min)} />
+                        <RateCell value={pm.value} source={pm.source} override={pm.override} onClick={canEditRates ? () => openCell("delivery_rates", r.id, "price_min", `${DELIVERY_TYPE_LABELS[r.delivery_type] ?? (r.delivery_type as string).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} Z${r.zone} Min`, r.price_min) : undefined} />
                         {pmx ? (
-                          <RateCell value={pmx.value} source={pmx.source} override={pmx.override} onClick={() => openCell("delivery_rates", r.id, "price_max", `${DELIVERY_TYPE_LABELS[r.delivery_type] ?? (r.delivery_type as string).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} Z${r.zone} Max`, r.price_max!)} />
+                          <RateCell value={pmx.value} source={pmx.source} override={pmx.override} onClick={canEditRates ? () => openCell("delivery_rates", r.id, "price_max", `${DELIVERY_TYPE_LABELS[r.delivery_type] ?? (r.delivery_type as string).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} Z${r.zone} Max`, r.price_max!) : undefined} />
                         ) : (
                           <td className="px-3 py-2.5 text-right text-[11px] text-[var(--tx3)]">-</td>
                         )}
                       </>
                     )}
-                    <td className="px-3 py-2.5">
-                      <StatusBadge source={hasOverride ? "override" : pm.source} isLocked={[pm.override, pmx?.override].some((o) => o?.is_locked)} />
-                    </td>
+                    {showStatusCol ? (
+                      <td className="px-3 py-2.5">
+                        <StatusBadge source={hasOverride ? "override" : pm.source} isLocked={[pm.override, pmx?.override].some((o) => o?.is_locked)} />
+                      </td>
+                    ) : null}
                   </tr>
                 );
               })}
@@ -1049,7 +1295,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                 <Th>Distance</Th>
                 <Th>Description</Th>
                 <Th right>Surcharge</Th>
-                <Th>Status</Th>
+                {showStatusCol ? <Th>Status</Th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--brd)]/30">
@@ -1070,10 +1316,12 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                     <td className="px-3 py-2.5 text-[10px] text-[var(--tx3)]">{pricingTierLabel(r.pricing_tier)}</td>
                     <td className="px-3 py-2.5 text-[10px] text-[var(--tx3)] whitespace-nowrap">{dist}</td>
                     <td className="px-3 py-2.5 text-[10px] text-[var(--tx2)] max-w-[220px]">{r.coverage_areas || "—"}</td>
-                    <RateCell value={sc.value} source={sc.source} override={sc.override} onClick={() => openCell("zones", r.id, "surcharge", `Zone ${r.zone_number} Surcharge`, r.surcharge)} />
-                    <td className="px-3 py-2.5">
-                      <StatusBadge source={sc.source} isLocked={sc.override?.is_locked} />
-                    </td>
+                    <RateCell value={sc.value} source={sc.source} override={sc.override} onClick={canEditRates ? () => openCell("zones", r.id, "surcharge", `Zone ${r.zone_number} Surcharge`, r.surcharge) : undefined} />
+                    {showStatusCol ? (
+                      <td className="px-3 py-2.5">
+                        <StatusBadge source={sc.source} isLocked={sc.override?.is_locked} />
+                      </td>
+                    ) : null}
                   </tr>
                 );
               })}
@@ -1094,7 +1342,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                 <Th>Unit</Th>
                 <Th right>Price Min</Th>
                 <Th right>Price Max</Th>
-                <Th>Status</Th>
+                {showStatusCol ? <Th>Status</Th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--brd)]/30">
@@ -1108,18 +1356,20 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                     <td className="px-3 py-2.5 text-[10px] text-[var(--tx3)]">{pricingTierLabel(r.pricing_tier)}</td>
                     <td className="px-3 py-2.5 text-[10px] text-[var(--tx3)] uppercase">{r.price_unit.replace(/_/g, " ")}</td>
                     {pm ? (
-                      <RateCell value={pm.value} source={pm.source} override={pm.override} onClick={() => openCell("services", r.id, "price_min", `${r.service_name} Min`, r.price_min)} />
+                      <RateCell value={pm.value} source={pm.source} override={pm.override} onClick={canEditRates ? () => openCell("services", r.id, "price_min", `${r.service_name} Min`, r.price_min) : undefined} />
                     ) : (
                       <td className="px-3 py-2.5 text-right text-[11px] text-[var(--tx3)]">Incl.</td>
                     )}
                     {pmx ? (
-                      <RateCell value={pmx.value} source={pmx.source} override={pmx.override} onClick={() => openCell("services", r.id, "price_max", `${r.service_name} Max`, r.price_max!)} />
+                      <RateCell value={pmx.value} source={pmx.source} override={pmx.override} onClick={canEditRates ? () => openCell("services", r.id, "price_max", `${r.service_name} Max`, r.price_max!) : undefined} />
                     ) : (
                       <td className="px-3 py-2.5 text-right text-[11px] text-[var(--tx3)]">-</td>
                     )}
-                    <td className="px-3 py-2.5">
-                      <StatusBadge source={hasOverride ? "override" : (pm?.source ?? "template")} isLocked={[pm?.override, pmx?.override].some((o) => o?.is_locked)} />
-                    </td>
+                    {showStatusCol ? (
+                      <td className="px-3 py-2.5">
+                        <StatusBadge source={hasOverride ? "override" : (pm?.source ?? "template")} isLocked={[pm?.override, pmx?.override].some((o) => o?.is_locked)} />
+                      </td>
+                    ) : null}
                   </tr>
                 );
               })}
@@ -1138,7 +1388,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                 <Th>Surcharge</Th>
                 <Th>Tier</Th>
                 <Th right>Rate (%)</Th>
-                <Th>Status</Th>
+                {showStatusCol ? <Th>Status</Th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--brd)]/30">
@@ -1149,14 +1399,16 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                     <td className="px-3 py-2.5 text-[11px] font-semibold text-[var(--tx)]">{r.service_name}</td>
                     <td className="px-3 py-2.5 text-[10px] text-[var(--tx3)]">{pricingTierLabel(r.pricing_tier)}</td>
                     <td
-                      onClick={() => openCell("services", r.id, "price_min", `${r.service_name} (%)`, r.price_min)}
-                      className="px-3 py-2.5 text-right text-[11px] cursor-pointer hover:bg-[var(--bgsub)] transition-colors"
+                      onClick={canEditRates ? () => openCell("services", r.id, "price_min", `${r.service_name} (%)`, r.price_min) : undefined}
+                      className={`px-3 py-2.5 text-right text-[11px] ${canEditRates ? "cursor-pointer hover:bg-[var(--bgsub)] transition-colors" : ""}`}
                     >
                       <span className={pm.source === "override" ? "text-[var(--gold)] font-bold" : "text-[var(--tx)]"}>
                         {pm.value}%{pm.source === "override" && <span className="ml-0.5 text-[9px]">✦</span>}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5"><StatusBadge source={pm.source} isLocked={pm.override?.is_locked} /></td>
+                    {showStatusCol ? (
+                      <td className="px-3 py-2.5"><StatusBadge source={pm.source} isLocked={pm.override?.is_locked} /></td>
+                    ) : null}
                   </tr>
                 );
               })}
@@ -1210,6 +1462,14 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
           onSave={handleSaveOverride}
           onReset={handleResetOverride}
           onClose={() => setEditingCell(null)}
+        />
+      )}
+
+      {pmEdit && (
+        <PmRateEditModal
+          state={pmEdit}
+          onSave={handleSavePmRate}
+          onClose={() => setPmEdit(null)}
         />
       )}
 

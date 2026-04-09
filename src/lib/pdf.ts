@@ -1031,7 +1031,7 @@ export function generateEODReportPDF(reports: EODReportForPDF[]) {
 
   doc.setFontSize(8);
   doc.setTextColor(...gray);
-  doc.text("Yugo EOD • helloyugo.com", 20, 285);
+  doc.text("Yugo EOD", 20, 285);
 
   return doc;
 }

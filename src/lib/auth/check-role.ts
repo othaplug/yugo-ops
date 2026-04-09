@@ -84,3 +84,21 @@ export async function requireRole(minRole: AppRole) {
 export async function requireOwner() {
   return requireRole("owner");
 }
+
+/**
+ * Super-admin email only (see `isSuperAdminEmail`). Used for partner rate card mutations.
+ */
+export async function requireSuperAdmin() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { user: null, error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
+  if (!isSuperAdminEmail(user.email)) {
+    return { user, error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
+  return { user, error: null };
+}

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireRole } from "@/lib/auth/check-role";
+import { requireSuperAdmin } from "@/lib/auth/check-role";
 
 // POST — upsert an override
 export async function POST(req: NextRequest, { params }: { params: Promise<{ partnerId: string }> }) {
-  const { error: authErr } = await requireRole("admin");
+  const { error: authErr } = await requireSuperAdmin();
   if (authErr) return authErr;
 
   const db = createAdminClient();
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ par
 
 // DELETE — remove an override (reset to template rate)
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ partnerId: string }> }) {
-  const { error: authErr } = await requireRole("admin");
+  const { error: authErr } = await requireSuperAdmin();
   if (authErr) return authErr;
 
   const db = createAdminClient();

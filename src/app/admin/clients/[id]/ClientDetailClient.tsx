@@ -81,6 +81,8 @@ interface ClientDetailClientProps {
   partnerDuration: string | null;
   backHref: string;
   isAdmin?: boolean;
+  /** Super admin email list; rate card mutations require this */
+  isSuperAdmin?: boolean;
   squareAppId?: string;
   squareLocationId?: string;
 }
@@ -102,6 +104,7 @@ export default function ClientDetailClient({
   partnerDuration,
   backHref,
   isAdmin,
+  isSuperAdmin = false,
   squareAppId = "",
   squareLocationId = "",
 }: ClientDetailClientProps) {
@@ -365,7 +368,7 @@ export default function ClientDetailClient({
 
       {/* Rate Card tab content */}
       {!isClient && isAdmin && activeTab === "rate-card" && (
-        <PartnerRateCardTab orgId={client.id} orgName={client.name || ""} />
+        <PartnerRateCardTab orgId={client.id} orgName={client.name || ""} canEditRates={isSuperAdmin} />
       )}
 
       {!isClient && isAdmin && portfolioPartner && activeTab === "buildings" && (

@@ -112,6 +112,11 @@ export async function createAndPublishSquareInvoice(
       order: {
         locationId,
         customerId: squareCustomerId || undefined,
+        /** Yugo+ already includes HST as line items; disable Square catalog auto-tax so HST is not applied twice. */
+        pricingOptions: {
+          autoApplyTaxes: false,
+          autoApplyDiscounts: false,
+        },
         lineItems: [
           {
             name: `${jobLabel} ${deliveryNumber}`,

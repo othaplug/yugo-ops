@@ -1,15 +1,6 @@
-import PartnerPricingMap from "@/components/maps/PartnerPricingMap";
-import { PricingMapPageHeader } from "./PricingMapPageHeader";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Pricing map" };
-export const dynamic = "force-dynamic";
-
-export default function AdminPricingMapPage() {
-  return (
-    <div className="p-5 sm:p-8 max-w-6xl mx-auto">
-      <PricingMapPageHeader />
-
-      <PartnerPricingMap isAdmin />
-    </div>
-  );
+/** Pricing map removed; use Command Center and Jobs. */
+export default function AdminPricingMapRedirectPage() {
+  redirect("/admin");
 }

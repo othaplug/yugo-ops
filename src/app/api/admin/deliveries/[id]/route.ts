@@ -258,6 +258,9 @@ export async function DELETE(
     );
   }
 
+  await admin.from("proof_of_delivery").delete().eq("delivery_id", id);
+  await admin.from("invoices").update({ delivery_id: null }).eq("delivery_id", id);
+
   const { error: deleteErr } = await admin
     .from("deliveries")
     .delete()

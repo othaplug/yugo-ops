@@ -19,7 +19,7 @@ export type YugoMarketingFooterProps = {
   className?: string;
   /** When false, omit logo and “Powered by” row (e.g. page already has a hero mark). */
   showLogo?: boolean;
-  /** When false, omit “The Art of Moving” tagline. */
+  /** When true, show the legacy tagline (default off site-wide). */
   showTagline?: boolean;
   /** Override nav row text size (e.g. embedded widget). Also applied to “Powered by”. */
   navClassName?: string;
@@ -35,7 +35,7 @@ export default function YugoMarketingFooter({
   taglineClassName = "text-[11px] font-medium tracking-wide",
   className,
   showLogo = true,
-  showTagline = true,
+  showTagline = false,
   navClassName = "",
 }: YugoMarketingFooterProps) {
   const mail = contactEmail?.trim() || "support@helloyugo.com";

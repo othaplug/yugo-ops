@@ -2,6 +2,10 @@ import { randomBytes } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { sendEmail } from "@/lib/email/send";
+import {
+  b2bDeliveryConfirmedBusinessEmail,
+  b2bDeliveryRecipientEmail,
+} from "@/lib/email-templates";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { verifyTrackToken } from "@/lib/track-token";
 
@@ -94,20 +98,13 @@ export async function sendB2BTrackingNotifications(
   const brand = (d.business_name || "Your business").trim();
 
   if (audiences.includes("business")) {
-    const subj = "Your Yugo delivery is confirmed";
-    const inner = `
-<div class="email-outer-gutter" style="width:100%;max-width:600px;box-sizing:border-box;padding:40px 24px;font-family:system-ui,sans-serif;color:#F9EDE4;margin:0 auto">
-  <p style="font-size:11px;letter-spacing:0.04em;text-transform:none;opacity:0.7;margin:0 0 12px">Yugo</p>
-  <h1 style="font-size:22px;margin:0 0 16px">Delivery confirmed</h1>
-  <p style="font-size:15px;line-height:1.5;margin:0 0 20px">Your Yugo delivery is confirmed. Track progress anytime.</p>
-  <a href="${bizUrl}" style="display:inline-block;background:#2C3E2D;color:#F9EDE4;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:14px">Track delivery</a>
-  <p style="font-size:13px;margin:28px 0 0;opacity:0.75">Questions? (647) 370-4525</p>
-</div>`;
+    const subj = "Your delivery is confirmed";
+    const html = b2bDeliveryConfirmedBusinessEmail(bizUrl);
     if (d.contact_email) {
       await sendEmail({
         to: d.contact_email,
         subject: subj,
-        html: inner,
+        html,
       }).catch(() => {});
     }
     if (d.contact_phone) {
@@ -124,20 +121,13 @@ export async function sendB2BTrackingNotifications(
     d.customer_phone
   ) {
     const recUrl = `${base}/delivery/track/${encodeURIComponent(d.recipient_tracking_token)}`;
-    const subj = `Your ${brand} delivery by Yugo`;
-    const inner = `
-<div class="email-outer-gutter" style="width:100%;max-width:600px;box-sizing:border-box;padding:40px 24px;font-family:system-ui,sans-serif;color:#F9EDE4;margin:0 auto">
-  <p style="font-size:11px;letter-spacing:0.04em;text-transform:none;opacity:0.7;margin:0 0 12px">${brand} · Yugo</p>
-  <h1 style="font-size:22px;margin:0 0 16px">Track your delivery</h1>
-  <p style="font-size:15px;line-height:1.5;margin:0 0 20px">Your order from <strong>${brand}</strong> is on the way with Yugo.</p>
-  <a href="${recUrl}" style="display:inline-block;background:#2C3E2D;color:#F9EDE4;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:14px">Track delivery</a>
-  <p style="font-size:13px;margin:28px 0 0;opacity:0.75">Questions? (647) 370-4525</p>
-</div>`;
+    const subj = `Your ${brand} delivery with Yugo`;
+    const html = b2bDeliveryRecipientEmail(brand, recUrl);
     if (d.customer_email) {
       await sendEmail({
         to: d.customer_email,
         subject: subj,
-        html: inner,
+        html,
       }).catch(() => {});
     }
     await sendSMS(

@@ -297,6 +297,72 @@ const GodEyeMap = dynamic(
         return null;
       }
 
+      /** While a team stays selected, keep their marker in frame as GPS updates (throttled). */
+      function FollowSelectedCrewOnGps({
+        crews,
+        crewLocations,
+        selectedCrew,
+      }: {
+        crews: Crew[];
+        crewLocations: Map<string, CrewLocation>;
+        selectedCrew: string | null;
+      }) {
+        const { current: mapRef } = useMap();
+        const trackingRef = useRef({ crews, crewLocations });
+        const lastEaseAt = useRef(0);
+        trackingRef.current = { crews, crewLocations };
+
+        useEffect(() => {
+          if (!selectedCrew) return;
+          const map = mapRef?.getMap?.();
+          if (!map) return;
+
+          const { crews: cList, crewLocations: locMap } = trackingRef.current;
+          const loc = locMap.get(selectedCrew);
+          const crew = cList.find((x) => x.id === selectedCrew);
+          const lng =
+            loc != null
+              ? Number(loc.lng)
+              : crew?.current_lng != null
+                ? Number(crew.current_lng)
+                : NaN;
+          const lat =
+            loc != null
+              ? Number(loc.lat)
+              : crew?.current_lat != null
+                ? Number(crew.current_lat)
+                : NaN;
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+          const now = Date.now();
+          if (now - lastEaseAt.current < 1100) return;
+          lastEaseAt.current = now;
+
+          const bottomPad =
+            typeof window !== "undefined"
+              ? Math.min(300, Math.round(window.innerHeight * 0.38))
+              : 200;
+
+          try {
+            map.easeTo({
+              center: [lng, lat],
+              zoom: Math.max(map.getZoom(), 13.5),
+              duration: 600,
+              padding: {
+                top: 72,
+                left: 40,
+                right: 40,
+                bottom: bottomPad,
+              },
+            });
+          } catch {
+            /* map may be tearing down */
+          }
+        }, [selectedCrew, mapRef, crewLocations, crews]);
+
+        return null;
+      }
+
       return function GodEyeMapInner({
         crews,
         crewLocations,
@@ -371,6 +437,11 @@ const GodEyeMap = dynamic(
             mapStyle={mapStyle}
           >
             <FlyToSelectedCrew
+              crews={crews}
+              crewLocations={crewLocations}
+              selectedCrew={selectedCrew}
+            />
+            <FollowSelectedCrewOnGps
               crews={crews}
               crewLocations={crewLocations}
               selectedCrew={selectedCrew}
@@ -828,6 +899,24 @@ export default function UnifiedTrackingView({
     return () => clearInterval(id);
   }, []);
 
+  /** One live job on the map: auto-select that team so the view follows GPS without an extra click. */
+  useEffect(() => {
+    const withPos = activeSessions.filter(
+      (s) =>
+        s.teamId &&
+        crews.some(
+          (c) =>
+            c.id === s.teamId &&
+            c.current_lat != null &&
+            c.current_lng != null,
+        ),
+    );
+    if (withPos.length !== 1) return;
+    const tid = withPos[0].teamId;
+    if (!tid) return;
+    setSelectedCrew((prev) => (prev != null ? prev : tid));
+  }, [activeSessions, crews]);
+
   const supabase = useMemo(() => createClient(), []);
 
   const load = useCallback(async () => {
@@ -1057,12 +1146,9 @@ export default function UnifiedTrackingView({
             }
           }
 
-          try {
-            const from = `${crew.current_lng},${crew.current_lat}`;
-            let toParam: string;
-            if (destLngLat) {
-              toParam = `${destLngLat[0]},${destLngLat[1]}`;
-            } else if (destAddr?.trim()) {
+          let resolvedDest: [number, number] | null = destLngLat;
+          if (!resolvedDest && destAddr?.trim()) {
+            try {
               const geoRes = await fetch(
                 `/api/mapbox/geocode?q=${encodeURIComponent(destAddr.trim())}&limit=1`,
                 { credentials: "include" },
@@ -1070,27 +1156,43 @@ export default function UnifiedTrackingView({
               const geoData = await geoRes.json();
               const feature = geoData?.features?.[0];
               const coords = feature?.geometry?.coordinates;
-              if (!coords || coords.length < 2) continue;
-              toParam = `${coords[0]},${coords[1]}`;
-            } else {
-              continue;
+              if (coords && coords.length >= 2) {
+                resolvedDest = [coords[0], coords[1]];
+              }
+            } catch {
+              /* geocode failed */
             }
+          }
+          if (!resolvedDest) continue;
 
+          const from = `${crew.current_lng},${crew.current_lat}`;
+          const toParam = `${resolvedDest[0]},${resolvedDest[1]}`;
+
+          let lineCoords: [number, number][] | null = null;
+          try {
             const res = await fetch(
               `/api/mapbox/directions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(toParam)}`,
               { credentials: "include" },
             );
-            if (!res.ok) {
+            if (res.ok) {
+              const data = await res.json();
+              if (Array.isArray(data?.coordinates) && data.coordinates.length >= 2) {
+                lineCoords = data.coordinates;
+              }
+            } else {
               console.warn("[UnifiedTracking] directions API", res.status);
-              continue;
-            }
-            const data = await res.json();
-            if (data?.coordinates && Array.isArray(data.coordinates)) {
-              newRoutes.set(s.teamId, data.coordinates);
             }
           } catch (err) {
             console.warn("[UnifiedTracking] route fetch failed", err);
           }
+
+          if (!lineCoords) {
+            lineCoords = [
+              [Number(crew.current_lng), Number(crew.current_lat)],
+              resolvedDest,
+            ];
+          }
+          newRoutes.set(s.teamId, lineCoords);
         }
         setRouteLines((prev) => {
           if (prev.size !== newRoutes.size) return newRoutes;

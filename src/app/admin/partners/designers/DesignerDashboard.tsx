@@ -84,7 +84,7 @@ export default function DesignerDashboard({
           <CreateDeliveryDropdown
             type="designer"
             createProjectHref="/admin/projects/new?partnerType=designer"
-            addPartnerHref="/admin/clients/new?type=partner&partnerType=designer"
+            addPartnerHref="/admin/partners/new?partnerType=designer"
           />
         </div>
       </div>
@@ -192,7 +192,7 @@ export default function DesignerDashboard({
             {orgs.length === 0 ? (
               <div className="px-4 py-10 text-center">
                 <p className="text-[13px] text-[var(--tx3)]">No designer partners yet.</p>
-                <Link href="/admin/clients/new?type=partner&partnerType=designer" className="text-[12px] font-semibold text-[var(--gold)] hover:underline mt-1 inline-block">Add your first partner</Link>
+                <Link href="/admin/partners/new?partnerType=designer" className="text-[12px] font-semibold text-[var(--gold)] hover:underline mt-1 inline-block">Add your first partner</Link>
               </div>
             ) : orgs.map((c: any) => {
               const designerDeliveries = deliveries.filter((d: any) => d.client_name === c.name);

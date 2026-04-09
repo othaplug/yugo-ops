@@ -837,8 +837,13 @@ export function moveNotificationEmail(move: {
   const trackUrl =
     move.trackUrl || `${getEmailBaseUrl()}/track/move/${move.move_id}`;
   const statusBarHtml = moveStatusBarHtml(move.status, move.stage);
+  const firstName =
+    (move.client_name || "").trim().split(/\s+/).filter(Boolean)[0] || "";
+  const greetingHtml = firstName
+    ? `Hello, ${escapeHtmlEmail(firstName)}`
+    : "Hello";
   const inner = `
-    <div style="${PREMIUM_EYEBROW_UPPER};margin-bottom:8px;">Your move was updated</div>
+    <div style="font-size:12px;font-weight:700;color:${PREMIUM_BODY_MUTED};letter-spacing:0.06em;font-family:${PREMIUM_FONT};text-transform:none;margin-bottom:8px;line-height:1.4;">${greetingHtml}</div>
     <div style="font-size:20px;font-weight:700;margin:0 0 8px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};letter-spacing:0;text-transform:none;">Your move was updated</div>
     <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 4px;">We&apos;ve made changes to your move recently.</p>
     ${statusBarHtml}
@@ -849,6 +854,208 @@ export function moveNotificationEmail(move: {
     <p style="font-size:11px;color:${PREMIUM_BODY_MUTED};line-height:1.5;">This link is unique to your move. If you didn&apos;t expect this email, you can safely ignore it.</p>
   `;
   return emailLayout(inner);
+}
+
+function partnerScheduledStageBarHtml(stageLabel: string): string {
+  const pct = 45;
+  const lab = escapeHtmlEmail(stageLabel);
+  return `
+    <div style="margin:20px 0 24px">
+      <div style="font-size:9px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;font-family:${PREMIUM_FONT};">Current stage</div>
+      <div style="height:10px;background:${PREMIUM_MUTED_FILL};border-radius:0;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;min-width:4px;background:linear-gradient(90deg,${EMAIL_FOREST},#5A7A5E);border-radius:0"></div>
+      </div>
+      <div style="font-size:12px;font-weight:600;color:#2D9F5A;margin-top:8px;letter-spacing:0.04em;text-transform:uppercase;font-family:${PREMIUM_FONT};">${lab}</div>
+    </div>
+  `;
+}
+
+/**
+ * Partner org notification when a move or B2B delivery is booked and scheduled.
+ * Matches the cream premium shell used by {@link moveNotificationEmail}.
+ */
+export function partnerBookingScheduledEmail(params: {
+  kind: "move" | "delivery";
+  customerName: string;
+  whenLabel: string;
+  fromAddress: string | null | undefined;
+  toAddress: string | null | undefined;
+  trackUrl: string;
+}): string {
+  const { kind, customerName, whenLabel, fromAddress, toAddress, trackUrl } =
+    params;
+  const nameEsc = escapeHtmlEmail(customerName);
+  const whenEsc = escapeHtmlEmail(whenLabel);
+  const fromLabel = kind === "delivery" ? "Pickup" : "From";
+  const toLabel = kind === "delivery" ? "Delivery" : "To";
+  const personLabel = kind === "delivery" ? "Recipient" : "Client";
+  const eyebrow =
+    kind === "delivery"
+      ? "Your delivery is scheduled"
+      : "Your move is scheduled";
+  const headline =
+    kind === "delivery"
+      ? "Your delivery is scheduled"
+      : "Your move is scheduled";
+  const intro =
+    kind === "delivery"
+      ? `We have scheduled a delivery for <strong>${nameEsc}</strong>. Below is what we have on file.`
+      : `We have <strong>${nameEsc}</strong> on the calendar with the window below.`;
+  const fromRow =
+    fromAddress?.trim() &&
+    emailNestedKvRow({
+      borderTop: `1px solid ${PREMIUM_RULE}`,
+      labelStyle: `padding:8px 8px 4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`,
+      valueStyle: `padding:8px 0 4px;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`,
+      label: fromLabel,
+      valueHtml: emailMapLinkHtml(String(fromAddress)),
+    });
+  const toRow =
+    toAddress?.trim() &&
+    emailNestedKvRow({
+      borderTop: `1px solid ${PREMIUM_RULE}`,
+      labelStyle: `padding:8px 8px 4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`,
+      valueStyle: `padding:8px 0 4px;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`,
+      label: toLabel,
+      valueHtml: emailMapLinkHtml(String(toAddress)),
+    });
+  const ctaLabel =
+    kind === "delivery"
+      ? PREMIUM_TRACK_DELIVERY_CTA_LABEL
+      : PREMIUM_TRACK_CTA_LABEL;
+  const inner = `
+    <div style="${PREMIUM_EYEBROW_UPPER};margin-bottom:8px;">${eyebrow}</div>
+    <div style="font-size:20px;font-weight:700;margin:0 0 8px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};letter-spacing:0;text-transform:none;">${headline}</div>
+    <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 4px;">${intro}</p>
+    ${partnerScheduledStageBarHtml("Scheduled")}
+    ${premiumSectionRule()}
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;">
+      <tr>
+        <td>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;">
+            ${emailNestedKvRow({
+              borderTop: "none",
+              labelStyle: `padding:4px 8px 4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`,
+              valueStyle: `padding:4px 0;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`,
+              label: personLabel,
+              valueHtml: `<span style="font-family:${PREMIUM_FONT}">${nameEsc}</span>`,
+            })}
+            ${emailNestedKvRow({
+              borderTop: `1px solid ${PREMIUM_RULE}`,
+              labelStyle: `padding:8px 8px 4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`,
+              valueStyle: `padding:8px 0 4px;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`,
+              label: "Date and window",
+              valueHtml: `<span style="font-family:${PREMIUM_FONT}">${whenEsc}</span>`,
+            })}
+            ${fromRow || ""}
+            ${toRow || ""}
+          </table>
+        </td>
+      </tr>
+    </table>
+    <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:24px 0 0;">Open the live tracker for route, crew updates, and documents before go time.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:20px 0 16px;">
+      ${premiumCompactWineCtaAnchor(trackUrl, ctaLabel)}
+    </td></tr></table>
+    <p style="font-size:11px;color:${PREMIUM_BODY_MUTED};line-height:1.5;">This link is for your team. If you did not expect this email, you can ignore it.</p>
+  `;
+  return emailLayout(inner, "booking");
+}
+
+/** Partner portal: share a live tracking link by email (cream shell, logo in wrapper). */
+export function shareTrackingPremiumEmail(params: {
+  eyebrow: string;
+  headline: string;
+  summaryLine: string;
+  trackUrl: string;
+  kind: "move" | "delivery";
+}): string {
+  const ctaLabel =
+    params.kind === "move"
+      ? PREMIUM_TRACK_CTA_LABEL
+      : PREMIUM_TRACK_DELIVERY_CTA_LABEL;
+  const inner = `
+    <div style="${PREMIUM_EYEBROW_UPPER};margin-bottom:8px;">${escapeHtmlEmail(params.eyebrow)}</div>
+    <div style="font-size:20px;font-weight:700;margin:0 0 8px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};letter-spacing:0;text-transform:none;">${escapeHtmlEmail(params.headline)}</div>
+    <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 8px;">${escapeHtmlEmail(params.summaryLine)}</p>
+    <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 24px;">Use the link below to follow live location and status.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
+      ${premiumCompactWineCtaAnchor(params.trackUrl, ctaLabel)}
+    </td></tr></table>
+    <p style="font-size:11px;color:${PREMIUM_BODY_MUTED};line-height:1.5;">This link is unique. If you did not expect this email, you can ignore it.</p>
+  `;
+  return emailLayout(inner, "generic");
+}
+
+function b2bOneOffCtaBlock(trackUrl: string, label: string): string {
+  return `<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:20px 0 16px;">
+    ${premiumCompactWineCtaAnchor(trackUrl, label)}
+  </td></tr></table>`;
+}
+
+/** B2B one-off: business contact, delivery confirmed with tracking. */
+export function b2bDeliveryConfirmedBusinessEmail(trackUrl: string): string {
+  const inner = `
+    <div style="${PREMIUM_EYEBROW_UPPER};margin-bottom:8px;">Delivery confirmed</div>
+    <div style="font-size:20px;font-weight:700;margin:0 0 8px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};letter-spacing:0;text-transform:none;">Your delivery is confirmed</div>
+    <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 24px;">Your Yugo delivery is booked. Track progress, proof of delivery, and updates on one page.</p>
+    ${b2bOneOffCtaBlock(trackUrl, PREMIUM_TRACK_DELIVERY_CTA_LABEL)}
+    <p style="font-size:11px;color:${PREMIUM_BODY_MUTED};line-height:1.5;">Questions? ${escapeHtmlEmail(getClientSupportEmail())} · (647) 370-4525</p>
+  `;
+  return emailLayout(inner, "booking");
+}
+
+/** B2B one-off: end customer (recipient) intro email. */
+export function b2bDeliveryRecipientEmail(
+  brandPlain: string,
+  recUrl: string,
+): string {
+  const brandEsc = escapeHtmlEmail(brandPlain);
+  const inner = `
+    <div style="${PREMIUM_EYEBROW_UPPER};margin-bottom:8px;">Your order is on the way</div>
+    <div style="font-size:20px;font-weight:700;margin:0 0 8px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};letter-spacing:0;text-transform:none;">Track your delivery</div>
+    <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 24px;">Your order from <strong>${brandEsc}</strong> is with Yugo. Use the link below for live status.</p>
+    ${b2bOneOffCtaBlock(recUrl, PREMIUM_TRACK_DELIVERY_CTA_LABEL)}
+    <p style="font-size:11px;color:${PREMIUM_BODY_MUTED};line-height:1.5;">This link is unique to your delivery. If you did not expect this email, you can ignore it.</p>
+  `;
+  return emailLayout(inner, "booking");
+}
+
+/** B2B one-off: crew en route to destination. */
+export function b2bOneOffEnRouteEmail(params: {
+  customerName: string;
+  trackUrl: string;
+  addressSnippet?: string | null;
+}): string {
+  const custEsc = escapeHtmlEmail(params.customerName);
+  const addr = (params.addressSnippet || "").trim();
+  const addrBit = addr
+    ? ` Destination: ${escapeHtmlEmail(addr.length > 100 ? `${addr.slice(0, 100)}…` : addr)}.`
+    : "";
+  const inner = `
+    <div style="${PREMIUM_EYEBROW_UPPER};margin-bottom:8px;">Out for delivery</div>
+    <div style="font-size:20px;font-weight:700;margin:0 0 8px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};letter-spacing:0;text-transform:none;">Your delivery is on the way</div>
+    <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 24px;">Your delivery to <strong>${custEsc}</strong> is en route with Yugo.${addrBit}</p>
+    ${b2bOneOffCtaBlock(params.trackUrl, PREMIUM_TRACK_DELIVERY_CTA_LABEL)}
+    <p style="font-size:11px;color:${PREMIUM_BODY_MUTED};line-height:1.5;">Questions? ${escapeHtmlEmail(getContactPhone())}</p>
+  `;
+  return emailLayout(inner, "booking");
+}
+
+/** B2B one-off: delivered with POD on tracking page. */
+export function b2bOneOffDeliveredEmail(params: {
+  customerName: string;
+  trackUrl: string;
+}): string {
+  const custEsc = escapeHtmlEmail(params.customerName);
+  const inner = `
+    <div style="${PREMIUM_EYEBROW_UPPER};margin-bottom:8px;">Delivered</div>
+    <div style="font-size:20px;font-weight:700;margin:0 0 8px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};letter-spacing:0;text-transform:none;">Delivery complete</div>
+    <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 24px;">The delivery to <strong>${custEsc}</strong> is complete. Proof of delivery and photos are on your tracking page.</p>
+    ${b2bOneOffCtaBlock(params.trackUrl, "VIEW DETAILS")}
+    <p style="font-size:11px;color:${PREMIUM_BODY_MUTED};line-height:1.5;">Questions? ${escapeHtmlEmail(getContactPhone())}</p>
+  `;
+  return emailLayout(inner, "booking");
 }
 
 export function trackingLinkEmail(params: {
@@ -2107,7 +2314,7 @@ export function estate30DayCheckinEmailHtml(
         <a href="${p.trackingUrl.replace(/&/g, "&amp;")}" style="display:inline-block;background-color:transparent;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};padding:12px 28px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-decoration:none;border:1px solid ${EMAIL_FOREST};text-transform:uppercase;font-family:${ESTATE_DM_SANS};">TRACK YOUR MOVE&nbsp;&nbsp;&#8250;</a>
       </td></tr>
     </table>
-    <p style="font-family:${ESTATE_GEORGIA};font-size:11px;letter-spacing:0;text-transform:none;color:${ESTATE_WINE};margin:28px 0 0;line-height:1.4;">Yugo - The Art of Moving</p>
+    <p style="font-family:${ESTATE_GEORGIA};font-size:11px;letter-spacing:0;text-transform:none;color:${ESTATE_WINE};margin:28px 0 0;line-height:1.4;">Yugo</p>
   `);
 }
 

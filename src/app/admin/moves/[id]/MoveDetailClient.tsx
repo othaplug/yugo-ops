@@ -28,6 +28,7 @@ import { isPreMoveChecklistComplete, preMoveChecklistCounts } from "@/lib/pre-mo
 import EstateServiceChecklistAdminRow from "./EstateServiceChecklistAdminRow";
 import { formatMoveDate, formatPlatformDisplay, parseDateOnly } from "@/lib/date-format";
 import { ProfitabilityBreakdownHint } from "@/components/admin/AdminContextHints";
+import PostCompletionPriceEdit from "../../components/PostCompletionPriceEdit";
 
 function isEstateTierMove(m: {
   tier_selected?: string | null;
@@ -150,6 +151,17 @@ interface MoveDetailClientProps {
     status: string;
     price_difference: number | null;
     created_at: string;
+  }[];
+  canEditPostCompletionPrice?: boolean;
+  postCompletionPriceEdits?: {
+    id: string;
+    original_price: number;
+    new_price: number;
+    difference: number;
+    reason: string;
+    edited_by_name: string;
+    created_at: string;
+    invoice_may_need_reissue?: boolean | null;
   }[];
 }
 import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_INDEX, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
@@ -357,6 +369,8 @@ export default function MoveDetailClient({
   linkedBinOrders = [],
   surveyPhotos = [],
   pendingModifications = [],
+  canEditPostCompletionPrice = false,
+  postCompletionPriceEdits = [],
 }: MoveDetailClientProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -1547,6 +1561,21 @@ export default function MoveDetailClient({
           </div>
         );
       })()}
+
+      <PostCompletionPriceEdit
+        jobType="move"
+        jobId={move.id}
+        currentPrice={Number(
+          move.final_amount ??
+            move.total_price ??
+            move.estimate ??
+            move.amount ??
+            0,
+        )}
+        canEdit={canEditPostCompletionPrice}
+        previousEdits={postCompletionPriceEdits}
+        completed={isCompleted}
+      />
 
       {/* Profitability, Owner Only */}
       {userRole === "owner" && <MoveProfitCard move={move} />}

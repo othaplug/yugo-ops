@@ -185,11 +185,11 @@ const TIME_WINDOWS = [
 
 /** Align with main partner dashboard (`PartnerPortalClient`): cream cards, forest hairlines, wine focus. */
 const PM_HEADER =
-  "bg-[#FFFBF7] border-b border-[#2C3E2D]/12 px-4 sm:px-6 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-3 flex items-center justify-between sticky top-0 z-30";
+  "bg-white border-b border-[#2C3E2D]/12 px-4 sm:px-6 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-3 flex items-center justify-between sticky top-0 z-30";
 const PM_TABS_INNER =
   "flex items-center justify-start sm:justify-center gap-0 overflow-x-auto overflow-y-hidden scrollbar-hide border-b border-[#2C3E2D]/10 px-0 sm:px-2";
 const PM_CARD =
-  "rounded-xl border border-[#2C3E2D]/10 bg-[#FFFBF7] shadow-[0_1px_0_rgba(44,62,45,0.05)]";
+  "rounded-xl border border-[#2C3E2D]/10 bg-white shadow-[0_1px_0_rgba(44,62,45,0.05)]";
 const PM_MAIN =
   "max-w-[1100px] mx-auto px-4 sm:px-8 py-5 sm:py-8 pb-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px))] sm:pb-10 text-[#1a1f1b]";
 const PM_INSET =
@@ -327,7 +327,7 @@ export default function PartnerPropertyManagementPortal({
     <PartnerNotificationProvider orgId={orgId}>
       <PartnerChangePasswordGate>
         <div
-          className="min-h-dvh w-full max-w-full min-w-0 overflow-x-clip bg-[#FAF7F2] text-[#1a1f1b]"
+          className="min-h-dvh w-full max-w-full min-w-0 overflow-x-clip bg-white text-[#1a1f1b]"
           data-theme="light"
         >
           <PartnerPortalWelcomeTour

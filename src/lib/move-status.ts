@@ -174,7 +174,7 @@ export function getStatusLabel(status: string | null): string {
 }
 
 /** Normalize legacy status to new status value for DB updates */
-export function normalizeStatus(status: string | null): string | null {
+export function normalizeStatus(status: string | null | undefined): string | null {
   if (!status) return null;
   const legacy: Record<string, string> = {
     // "paid" and legacy aliases resolve to "scheduled" (the canonical selectable stage)
@@ -191,4 +191,11 @@ export function normalizeStatus(status: string | null): string | null {
     confirmed_unassigned: "confirmed_unassigned",
   };
   return legacy[status] || status;
+}
+
+/** True when the move is finished (completed or legacy delivered). */
+export function isMoveStatusCompleted(status: string | null | undefined): boolean {
+  const s = (status || "").toLowerCase();
+  if (s === "delivered" || s === "completed") return true;
+  return normalizeStatus(status) === "completed";
 }

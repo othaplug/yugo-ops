@@ -43,8 +43,11 @@ export interface ColumnDef<T> {
 }
 
 export interface BulkAction {
+  /** Visible label, or `aria-label` when `iconOnly` */
   label: string;
   icon?: ReactNode;
+  /** Show only `icon` (uses `label` for accessibility) */
+  iconOnly?: boolean;
   variant?: "danger" | "default";
   onClick: (selectedKeys: string[]) => void | Promise<void>;
 }
@@ -92,6 +95,8 @@ interface DataTableProps<T> {
   /** Initial sort when no saved view exists (localStorage). Latest-first: e.g. created_at + desc */
   defaultSortCol?: string | null;
   defaultSortDir?: "asc" | "desc";
+  /** Increment after a bulk action (e.g. delete) to clear row selection */
+  clearSelectionSignal?: number;
 }
 
 /* ════════════ Types ─ View Snapshot ════════════ */
@@ -246,6 +251,7 @@ export default function DataTable<T>({
   onSortChange,
   defaultSortCol = null,
   defaultSortDir = "asc",
+  clearSelectionSignal,
 }: DataTableProps<T>) {
   /* ── State ── */
   const [search, setSearch] = useState("");
@@ -263,6 +269,12 @@ export default function DataTable<T>({
     return sv?.perPage ?? loadPerPage(tableId, defaultPerPage);
   });
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (clearSelectionSignal == null || clearSelectionSignal === 0) return;
+    setSelectedKeys(new Set());
+  }, [clearSelectionSignal]);
+
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(() => {
     const sv = loadViewSnapshot(tableId);
     if (sv?.hiddenCols) return new Set(sv.hiddenCols);
@@ -843,7 +855,7 @@ export default function DataTable<T>({
         <div
           className={`${
             selectableDesktopOnly ? "hidden md:flex" : "flex"
-          } flex-row items-center gap-2 sm:gap-3 px-3 py-1.5 mb-2 rounded-xl bg-[var(--gdim)] border border-[var(--gold)]/35 shadow-sm`}
+          } flex-row flex-wrap items-center gap-2 sm:gap-3 mb-2`}
         >
           <span className="text-[11px] font-semibold text-[var(--tx)] shrink-0">
             {selectedKeys.size} selected
@@ -858,24 +870,37 @@ export default function DataTable<T>({
             </button>
           )}
           <div className="flex flex-wrap items-center gap-1.5 ml-auto">
-            {effectiveBulkActions.map((action) => (
-              <button
-                key={action.label}
-                type="button"
-                onClick={() => action.onClick([...selectedKeys])}
-                className={`inline-flex items-center justify-center gap-1.5 h-7 px-3 rounded-lg text-[11px] font-semibold transition-colors ${
-                  action.variant === "danger"
-                    ? "bg-[var(--red)]/15 text-[var(--red)] hover:bg-[var(--red)]/25 border border-[var(--red)]/25"
-                    : "bg-[var(--card)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)]/50"
-                }`}
-              >
-                {action.icon}
-                {action.label}
-              </button>
-            ))}
+            {effectiveBulkActions.map((action) => {
+              const isIconOnly = action.iconOnly && action.icon;
+              const base =
+                action.variant === "danger"
+                  ? "bg-[var(--red)]/15 text-[var(--red)] hover:bg-[var(--red)]/25 border border-[var(--red)]/25"
+                  : "bg-[var(--card)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)]/50";
+              return (
+                <button
+                  key={action.label}
+                  type="button"
+                  aria-label={isIconOnly ? action.label : undefined}
+                  onClick={() => action.onClick([...selectedKeys])}
+                  className={`inline-flex items-center justify-center rounded-lg text-[11px] font-semibold transition-colors ${
+                    isIconOnly
+                      ? `h-8 w-8 shrink-0 p-0 ${base}`
+                      : `h-7 gap-1.5 px-3 ${base}`
+                  }`}
+                >
+                  {action.icon}
+                  {!isIconOnly ? action.label : null}
+                </button>
+              );
+            })}
             <button
               type="button"
-              onClick={() => setSelectedKeys(new Set())}
+              aria-label="Clear selection"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setSelectedKeys(new Set());
+              }}
               className="inline-flex items-center justify-center h-7 px-2.5 rounded-lg text-[11px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--brd)]/30 transition-colors"
             >
               Clear

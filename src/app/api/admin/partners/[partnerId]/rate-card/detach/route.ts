@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireRole } from "@/lib/auth/check-role";
+import { requireSuperAdmin } from "@/lib/auth/check-role";
 
 /**
  * POST /api/admin/partners/[partnerId]/rate-card/detach
@@ -12,7 +12,7 @@ import { requireRole } from "@/lib/auth/check-role";
  * After this, the partner has a fully custom rate card not linked to any template.
  */
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ partnerId: string }> }) {
-  const { error: authErr } = await requireRole("owner");
+  const { error: authErr } = await requireSuperAdmin();
   if (authErr) return authErr;
 
   const db = createAdminClient();

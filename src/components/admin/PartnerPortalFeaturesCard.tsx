@@ -140,8 +140,22 @@ export default function PartnerPortalFeaturesCard({ orgId, vertical, initialFeat
     setDirty(false);
   }, [orgId, initialFeatures]);
 
+  const resolveOn = (
+    key: DeliveryFeatureKey | PmFeatureKey,
+    from: PortalFeatures,
+  ): boolean => {
+    if (Object.prototype.hasOwnProperty.call(from, key)) {
+      return from[key as keyof PortalFeatures] === true;
+    }
+    if (!defaults) return false;
+    return Boolean((defaults as Record<string, boolean>)[key]);
+  };
+
+  const isFeatureOn = (key: DeliveryFeatureKey | PmFeatureKey): boolean =>
+    resolveOn(key, features);
+
   const toggle = (key: DeliveryFeatureKey | PmFeatureKey) => {
-    setFeatures((prev) => ({ ...prev, [key]: !prev[key as keyof PortalFeatures] }));
+    setFeatures((prev) => ({ ...prev, [key]: !resolveOn(key, prev) }));
     setDirty(true);
   };
 
@@ -178,7 +192,7 @@ export default function PartnerPortalFeaturesCard({ orgId, vertical, initialFeat
           <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Portal Features</div>
           <p className="text-[11px] text-[var(--tx3)]">
             {isPmVertical
-              ? "Portfolio portal: buildings, tenant moves, programs, and billing — not B2B delivery scheduling."
+              ? "Portfolio portal: buildings, tenant moves, programs, and billing. Not B2B delivery scheduling."
               : "Control which sections appear in this partner's portal."}
           </p>
         </div>
@@ -195,7 +209,7 @@ export default function PartnerPortalFeaturesCard({ orgId, vertical, initialFeat
 
       <div className="space-y-3">
         {featureMeta.map(({ key, label, desc }) => {
-          const enabled = features[key as keyof PortalFeatures] === true;
+          const enabled = isFeatureOn(key);
           const defaultVal = defaults ? (defaults as Record<string, boolean>)[key] : undefined;
           return (
             <div key={key} className="flex items-start gap-3 p-3 rounded-lg border border-[var(--brd)]/60 hover:border-[var(--brd)] transition-colors">

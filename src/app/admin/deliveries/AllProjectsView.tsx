@@ -15,7 +15,7 @@ import RecurringSchedulesView from "./RecurringSchedulesView";
 import ProjectsListClient from "../projects/ProjectsListClient";
 import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
-import { Bell } from "@phosphor-icons/react";
+import { Bell, Trash } from "@phosphor-icons/react";
 
 const PARTNER_TYPE_FILTERS: { key: string; label: string; categories: string[] }[] = [
   { key: "all", label: "All", categories: [] },
@@ -205,6 +205,7 @@ export default function AllDeliveriesView({
   const [statusFilter, setStatusFilter] = useState("");
   const [moveDatePreset, setMoveDatePreset] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [bulkSelectionTick, setBulkSelectionTick] = useState(0);
 
   const dateRange = getDateRangeFromPreset(moveDatePreset);
   const dateFrom = dateRange?.from ?? "";
@@ -243,12 +244,53 @@ export default function AllDeliveriesView({
     [toast, router],
   );
 
+  const runBulkDelete = useCallback(
+    async (ids: string[]) => {
+      const n = ids.length;
+      if (
+        typeof window !== "undefined" &&
+        !window.confirm(
+          `Delete ${n} delivery${n !== 1 ? "ies" : "y"}? This cannot be undone.`,
+        )
+      ) {
+        return;
+      }
+      const res = await fetch("/api/admin/deliveries/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", ids }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        const deleted = Number(data.deleted) || 0;
+        const skipped = Number(data.skipped) || 0;
+        let msg = `Deleted ${deleted} delivery${deleted !== 1 ? "ies" : "y"}`;
+        if (skipped > 0) {
+          msg += ` (${skipped} skipped: completed or not found)`;
+        }
+        toast(msg, "check");
+        setBulkSelectionTick((t) => t + 1);
+        router.refresh();
+      } else {
+        toast("Error: " + (data.error || "Failed"), "x");
+      }
+    },
+    [toast, router],
+  );
+
   const deliveryBulkActions: BulkAction[] = useMemo(
     () => [
       { label: "Mark Delivered", onClick: (ids) => runBulk("deliver", ids) },
       { label: "Cancel", onClick: (ids) => runBulk("cancel", ids), variant: "danger" as const },
+      {
+        label: "Delete selected deliveries",
+        icon: <Trash className="w-4 h-4 shrink-0" weight="bold" aria-hidden />,
+        iconOnly: true,
+        onClick: runBulkDelete,
+        variant: "danger" as const,
+      },
     ],
-    [runBulk],
+    [runBulk, runBulkDelete],
   );
 
   const hasActiveFilters = !!(statusFilter || moveDatePreset);
@@ -444,6 +486,7 @@ export default function AllDeliveriesView({
           exportable
           columnToggle
           selectable
+          clearSelectionSignal={bulkSelectionTick}
           bulkActions={deliveryBulkActions}
           mobileCardLayout={{
             primaryColumnId: "partner",

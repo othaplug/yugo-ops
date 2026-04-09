@@ -30,6 +30,7 @@ export const PM_PRIMARY_REASON_CODES_ORDERED = [
   "tenant_move_out",
   "reno_move_out",
   "reno_move_in",
+  "reno_bundle",
   "suite_transfer",
   "emergency",
 ] as const;

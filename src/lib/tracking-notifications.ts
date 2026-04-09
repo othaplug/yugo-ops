@@ -16,18 +16,10 @@ import {
 } from "@/lib/partner-job-comms";
 import { deliveryContactEmail } from "@/lib/calendar/delivery-contact";
 import { getFeatureConfig } from "@/lib/platform-settings";
+import { sendClientTrackingCheckpointSms } from "@/lib/notifications/client-tracking-sms";
+import type { TrackingStatus } from "@/lib/tracking-status-types";
 
-export type TrackingStatus =
-  | "en_route_to_pickup"
-  | "arrived_at_pickup"
-  | "loading"
-  | "en_route_to_destination"
-  | "arrived_at_destination"
-  | "unloading"
-  | "completed"
-  | "en_route"
-  | "arrived"
-  | "delivering";
+export type { TrackingStatus } from "@/lib/tracking-status-types";
 
 const CONFIG: Record<
   string,
@@ -393,18 +385,45 @@ export async function notifyOnCheckpoint(
       isPartnerClassDelivery(deliveryRowForSms)) ||
       (jobType === "move" && movePartnerEligible));
 
+  const featureCfg = await getFeatureConfig(["sms_eta_enabled"]);
+  const smsEtaEnabled = featureCfg.sms_eta_enabled === "true";
+  const isPartnerDeliveryStart =
+    jobType === "delivery" &&
+    isJobStart &&
+    !!deliveryRowForSms &&
+    isPartnerClassDelivery(deliveryRowForSms);
+  const isOrgB2bMoveStart =
+    jobType === "move" && isJobStart && movePartnerEligible;
+
+  let partnerSmsNotifyClient = cfg.notifyClient;
+  if (smsEtaEnabled) {
+    if (isPartnerDeliveryStart) {
+      let etaWouldSendToRecipient = true;
+      if (deliveryRowForSms?.organization_id) {
+        const { data: orgForEta } = await admin
+          .from("organizations")
+          .select("customer_notifications_enabled")
+          .eq("id", deliveryRowForSms.organization_id)
+          .maybeSingle();
+        etaWouldSendToRecipient = !!orgForEta?.customer_notifications_enabled;
+      }
+      if (etaWouldSendToRecipient) partnerSmsNotifyClient = false;
+    }
+    if (isOrgB2bMoveStart) partnerSmsNotifyClient = false;
+  }
+
   const resend = process.env.RESEND_API_KEY ? getResend() : null;
 
   const subject =
     status === "completed"
       ? jobType === "delivery"
-        ? `Your delivery is complete - ${formatJobId(moveCode || jobId, jobType)}`
+        ? `Your delivery is complete | ${formatJobId(moveCode || jobId, jobType)}`
         : estateMove
-          ? `Your Estate move is complete - ${formatJobId(moveCode || jobId, jobType)}`
-          : `Your move is complete - ${formatJobId(moveCode || jobId, jobType)}`
+          ? `Your Estate move is complete | ${formatJobId(moveCode || jobId, jobType)}`
+          : `Your move is complete | ${formatJobId(moveCode || jobId, jobType)}`
       : estateMove && jobType === "move"
-        ? `Your Estate move update - ${formatJobId(moveCode || jobId, jobType)}`
-        : `Your crew update - ${formatJobId(moveCode || jobId, jobType)}`;
+        ? `Your Estate move update | ${formatJobId(moveCode || jobId, jobType)}`
+        : `Your crew update | ${formatJobId(moveCode || jobId, jobType)}`;
 
   const headline = headlineForTrackingCheckpoint(
     status,
@@ -467,7 +486,7 @@ export async function notifyOnCheckpoint(
       try {
         await sendEmail({
           to: clientEmail,
-          subject: `Your move is complete ${formatJobId(moveCode || jobId, jobType)}`,
+          subject: `Your move is complete | ${formatJobId(moveCode || jobId, jobType)}`,
           template: "move-complete",
           data: {
             clientName: moveClientName ?? "",
@@ -503,33 +522,46 @@ export async function notifyOnCheckpoint(
     }
   }
 
-  const featureCfg = await getFeatureConfig(["sms_eta_enabled"]);
-  const smsEtaEnabled = featureCfg.sms_eta_enabled === "true";
-  const isPartnerDeliveryStart =
-    jobType === "delivery" &&
-    isJobStart &&
-    !!deliveryRowForSms &&
-    isPartnerClassDelivery(deliveryRowForSms);
-  /** Same as `sendPartnerMoveCheckpointSms` eligibility (non–b2c org). */
-  const isOrgB2bMoveStart =
-    jobType === "move" && isJobStart && movePartnerEligible;
+  const phoneOk = (raw: string | null | undefined) =>
+    (raw || "").replace(/\D/g, "").length >= 10;
 
-  /** Avoid duplicate SMS to the end customer when `/api/eta/send-departure` already ran (same rules as that route). */
-  let partnerSmsNotifyClient = cfg.notifyClient;
-  if (smsEtaEnabled) {
-    if (isPartnerDeliveryStart) {
-      let etaWouldSendToRecipient = true;
-      if (deliveryRowForSms?.organization_id) {
-        const { data: orgForEta } = await admin
-          .from("organizations")
-          .select("customer_notifications_enabled")
-          .eq("id", deliveryRowForSms.organization_id)
-          .maybeSingle();
-        etaWouldSendToRecipient = !!orgForEta?.customer_notifications_enabled;
-      }
-      if (etaWouldSendToRecipient) partnerSmsNotifyClient = false;
+  const partnerHandlesClientSms =
+    (jobType === "delivery" &&
+      deliveryRowForSms &&
+      isPartnerClassDelivery(deliveryRowForSms) &&
+      partnerSmsNotifyClient &&
+      phoneOk(
+        deliveryRowForSms.end_customer_phone || deliveryRowForSms.customer_phone,
+      )) ||
+    (jobType === "move" &&
+      moveRowForSms &&
+      movePartnerEligible &&
+      !!moveRowForSms.organization_id &&
+      partnerSmsNotifyClient &&
+      phoneOk(moveRowForSms.client_phone));
+
+  if (cfg.notifyClient && !partnerHandlesClientSms) {
+    const clientPhone =
+      jobType === "move"
+        ? moveRowForSms?.client_phone
+        : deliveryRowForSms
+          ? (deliveryRowForSms.end_customer_phone ||
+              deliveryRowForSms.customer_phone ||
+              deliveryRowForSms.contact_phone ||
+              "")
+              .trim() || null
+          : null;
+    if (phoneOk(clientPhone)) {
+      sendClientTrackingCheckpointSms({
+        status,
+        jobType,
+        phone: clientPhone,
+        jobCode: String(moveCode || jobId),
+        trackUrl,
+        estateMove: estateMove && jobType === "move",
+        jobUuid: jobId,
+      }).catch(() => {});
     }
-    if (isOrgB2bMoveStart) partnerSmsNotifyClient = false;
   }
 
   if (

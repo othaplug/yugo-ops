@@ -1419,19 +1419,19 @@ export default function TrackDeliveryClient({
             </Link>
           </div>
         </div>
-      </div>
 
-      {/* ── Sticky Footer ── */}
-      <footer className="shrink-0 py-3.5 text-center border-t border-[#2C3E2D]/10">
-        <YugoMarketingFooter
-          contactEmail={companyContactEmail}
-          logoVariant="wine"
-          onLightBackground
-          logoSize={14}
-          mutedColor={FOREST_MUTED}
-          linkColor={FOREST}
-        />
-      </footer>
+        <footer className="py-3.5 mt-8 text-center border-t border-[#2C3E2D]/10">
+          <YugoMarketingFooter
+            contactEmail={companyContactEmail}
+            logoVariant="wine"
+            onLightBackground
+            logoSize={14}
+            mutedColor={FOREST_MUTED}
+            linkColor={FOREST}
+            showTagline={false}
+          />
+        </footer>
+      </div>
     </div>
   );
 }

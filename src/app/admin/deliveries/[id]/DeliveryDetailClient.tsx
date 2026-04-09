@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   PaperPlaneTilt as Send, MapPin, Clock, Stack as Layers, Users, FileText,
   Money as DollarSign, Warning as AlertTriangle, PencilSimple as Pencil, Trash as Trash2, CaretDown as ChevronDown, Phone,
-  Envelope as Mail, Shield, ArrowSquareOut as ExternalLink, Folder, ArrowRight, Check,
+  Envelope as Mail, Shield, ArrowSquareOut as ExternalLink, Folder, ArrowRight, Check, XCircle,
 } from "@phosphor-icons/react";
 import BackButton from "../../components/BackButton";
 import {
@@ -32,6 +32,7 @@ import { toTitleCase } from "@/lib/format-text";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
 import { formatPlatformDisplay } from "@/lib/date-format";
+import PostCompletionPriceEdit from "../../components/PostCompletionPriceEdit";
 
 /* ═══════════════════════════════════════════════════
    Constants
@@ -195,6 +196,8 @@ export default function DeliveryDetailClient({
   linkedProject = null,
   b2bOneOffPriorCount = 0,
   b2bOneOffCohort = null,
+  canEditPostCompletionPrice = false,
+  postCompletionPriceEdits = [],
 }: {
   delivery: any;
   clientEmail?: string | null;
@@ -209,6 +212,17 @@ export default function DeliveryDetailClient({
   b2bOneOffPriorCount?: number;
   /** All one-offs for same contact: vertical + combined revenue for partner conversion context. */
   b2bOneOffCohort?: { verticalLabel: string | null; combinedRevenue: number; deliveryCount: number } | null;
+  canEditPostCompletionPrice?: boolean;
+  postCompletionPriceEdits?: {
+    id: string;
+    original_price: number;
+    new_price: number;
+    difference: number;
+    reason: string;
+    edited_by_name: string;
+    created_at: string;
+    invoice_may_need_reissue?: boolean | null;
+  }[];
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -295,6 +309,10 @@ export default function DeliveryDetailClient({
         }
       : null;
   const completed = isDone(delivery.status);
+  const stLower = (delivery.status || "").toLowerCase();
+  const isCancelledDelivery = stLower === "cancelled";
+  const completedForPriceEdit =
+    stLower === "delivered" || stLower === "completed";
   const deliveryInProgress = isDeliveryInProgress(delivery.status, delivery.stage);
   const cat = CATEGORY_BADGE[delivery.category] || CATEGORY_BADGE.retail;
   const sc = STATUS_COLORS[delivery.status] || STATUS_COLORS.pending;
@@ -737,6 +755,15 @@ export default function DeliveryDetailClient({
         </div>
       )}
 
+      <PostCompletionPriceEdit
+        jobType="delivery"
+        jobId={delivery.id}
+        currentPrice={price}
+        canEdit={canEditPostCompletionPrice}
+        previousEdits={postCompletionPriceEdits}
+        completed={completedForPriceEdit}
+      />
+
       {/* ─── MAIN CONTENT ─── */}
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:gap-8">
         {/* LEFT */}
@@ -772,20 +799,38 @@ export default function DeliveryDetailClient({
 
           {/* Live Tracking / Completion Status, stays as card (hero) */}
           {completed ? (
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 overflow-hidden">
-              <div className="px-5 py-5 text-center">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Check size={16} color="#22C55E" weight="bold" />
-                  <span className="text-[12px] font-bold text-emerald-600 dark:text-emerald-400">
-                    {delivery.status === "cancelled" ? "Cancelled" : "Delivery Complete"}
-                  </span>
+            isCancelledDelivery ? (
+              <div className="rounded-xl border border-red-500/25 bg-red-500/5 overflow-hidden">
+                <div className="px-5 py-5 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <XCircle size={16} className="text-red-600 dark:text-red-400 shrink-0" weight="bold" aria-hidden />
+                    <span className="text-[12px] font-bold text-red-700 dark:text-red-400">
+                      Cancelled
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[var(--tx3)]">
+                    {delivery.updated_at
+                      ? `· ${formatPlatformDisplay(delivery.updated_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }, "")}`
+                      : ""}
+                  </p>
                 </div>
-                <p className="text-[11px] text-[var(--tx3)]">
-                  {displayCrew ? `Completed by ${displayCrew.name}` : ""}
-                  {delivery.updated_at ? ` · ${formatPlatformDisplay(delivery.updated_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }, "")}` : ""}
-                </p>
               </div>
-            </div>
+            ) : (
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 overflow-hidden">
+                <div className="px-5 py-5 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <Check size={16} color="#22C55E" weight="bold" aria-hidden />
+                    <span className="text-[12px] font-bold text-emerald-600 dark:text-emerald-400">
+                      Delivery Complete
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[var(--tx3)]">
+                    {displayCrew ? `Completed by ${displayCrew.name}` : ""}
+                    {delivery.updated_at ? ` · ${formatPlatformDisplay(delivery.updated_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }, "")}` : ""}
+                  </p>
+                </div>
+              </div>
+            )
           ) : (
             <div className="rounded-xl border border-[var(--brd)]/50 overflow-hidden bg-[var(--card)]">
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--brd)]/30">

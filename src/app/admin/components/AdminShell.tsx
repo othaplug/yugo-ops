@@ -117,12 +117,6 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
         Icon: Icons.shippingContainer,
         minRole: "coordinator",
       },
-      {
-        href: "/admin/sales/pricing-map",
-        label: "Pricing map",
-        Icon: Icons.mapPin,
-        minRole: "sales",
-      },
     ],
   },
   {

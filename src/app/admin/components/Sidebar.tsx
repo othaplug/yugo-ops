@@ -22,7 +22,6 @@ const NAV = [
     { name: "Hospitality", icon: "hotel", href: "/admin/partners/hospitality" },
     { name: "Art Gallery", icon: "image", href: "/admin/partners/gallery" },
     { name: "Referral Partners", icon: "handshake", href: "/admin/partners/realtors" },
-    { name: "Pricing map", icon: "mapPin", href: "/admin/sales/pricing-map" },
   ]},
   { label: "Moves", items: [
     { name: "All Moves", icon: "truck", href: "/admin/moves" },

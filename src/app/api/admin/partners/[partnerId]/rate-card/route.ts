@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireRole } from "@/lib/auth/check-role";
+import { requireRole, requireSuperAdmin } from "@/lib/auth/check-role";
 import { isPropertyManagementDeliveryVertical } from "@/lib/partner-type";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ partnerId: string }> }) {
@@ -111,7 +111,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ par
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ partnerId: string }> }) {
-  const { error: authErr } = await requireRole("admin");
+  const { error: authErr } = await requireSuperAdmin();
   if (authErr) return authErr;
 
   const db = createAdminClient();

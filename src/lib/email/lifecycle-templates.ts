@@ -523,7 +523,7 @@ export function reviewRequestEstateEmail(d: ReviewRequestTierData): string {
     </p>
     ${starRatingLinks(d.reviewUrl, d.reviewRedirectUrl)}
     <p style="${CREAM_REVIEW_SMALL}">
-      With gratitude,<br/>${d.coordinatorName || "The Yugo Team"}<br/>Yugo, The Art of Moving
+      With gratitude,<br/>${d.coordinatorName || "The Yugo Team"}<br/>Yugo
     </p>
   `);
 }

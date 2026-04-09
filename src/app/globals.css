@@ -123,10 +123,10 @@
 
 /* Light theme for client tracking (Yugo prototype style) */
 [data-theme="light"] {
-  --bg: #faf7f2;
+  --bg: #ffffff;
   --bg2: #ffffff;
   --card: #ffffff;
-  /* Hairline borders + strong secondary contrast on cream */
+  /* Hairline borders + strong secondary contrast on white */
   --brd: #cbc4b8;
   --tx: #141210;
   --tx2: #252220;

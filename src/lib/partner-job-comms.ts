@@ -253,7 +253,6 @@ export async function notifyPartnerDeliveryBooked(deliveryId: string): Promise<v
   });
 
   let partnerEmail: string | null = null;
-  let partnerLabel = "Partner";
 
   if (row.organization_id) {
     const { data: org } = await admin
@@ -263,36 +262,25 @@ export async function notifyPartnerDeliveryBooked(deliveryId: string): Promise<v
       .maybeSingle();
     if (org) {
       partnerEmail = (org.email || "").trim() || null;
-      partnerLabel = (org.name || "Partner").trim();
     }
   } else if (row.booking_type === "one_off") {
     partnerEmail = (row.contact_email || "").trim() || null;
-    partnerLabel = (row.business_name || row.contact_name || "Partner").trim();
   }
 
-  const subj = `Delivery scheduled — ${cust} (${when})`;
-  const inner = `
-<div class="email-outer-gutter" style="width:100%;max-width:600px;box-sizing:border-box;padding:40px 24px;font-family:system-ui,sans-serif;color:#1a1a1a;margin:0 auto;background:#FAF7F2">
-  <p style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;opacity:0.7;margin:0 0 12px">Yugo · ${escapeHtml(partnerLabel)}</p>
-  <h1 style="font-size:22px;margin:0 0 16px;color:#2C3E2D">Delivery is on the calendar</h1>
-  <p style="font-size:15px;line-height:1.5;margin:0 0 12px">Your delivery for <strong>${escapeHtml(cust)}</strong> is scheduled: <strong>${escapeHtml(when)}</strong>.</p>
-  ${row.pickup_address ? `<p style="font-size:14px;line-height:1.5;margin:0 0 8px"><strong>Pickup</strong><br/>${escapeHtml(String(row.pickup_address))}</p>` : ""}
-  ${row.delivery_address ? `<p style="font-size:14px;line-height:1.5;margin:0 0 16px"><strong>Delivery</strong><br/>${escapeHtml(String(row.delivery_address))}</p>` : ""}
-  <a href="${trackUrl}" style="display:inline-block;border:2px solid #2C3E2D;color:#2C3E2D;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:11px;letter-spacing:0.12em;text-transform:uppercase">Track delivery</a>
-  <p style="font-size:13px;margin:28px 0 0;opacity:0.75">Questions? (647) 370-4525</p>
-</div>`;
+  const subj = "Your delivery is scheduled";
+  const { partnerBookingScheduledEmail } = await import("@/lib/email-templates");
+  const html = partnerBookingScheduledEmail({
+    kind: "delivery",
+    customerName: cust,
+    whenLabel: when,
+    fromAddress: row.pickup_address,
+    toAddress: row.delivery_address,
+    trackUrl,
+  });
 
   if (partnerEmail) {
-    await sendEmail({ to: partnerEmail, subject: subj, html: inner }).catch(() => {});
+    await sendEmail({ to: partnerEmail, subject: subj, html }).catch(() => {});
   }
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
 
 export async function notifyPartnerMoveBooked(opts: {
@@ -329,17 +317,16 @@ export async function notifyPartnerMoveBooked(opts: {
     .filter(Boolean)
     .join(" · ") || "Scheduled";
   const cn = (move.client_name || "Client").trim();
-  const subj = `Move scheduled — ${cn} (${when})`;
-  const inner = `
-<div class="email-outer-gutter" style="width:100%;max-width:600px;box-sizing:border-box;padding:40px 24px;font-family:system-ui,sans-serif;color:#1a1a1a;margin:0 auto;background:#FAF7F2">
-  <p style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;opacity:0.7;margin:0 0 12px">Yugo · ${escapeHtml((org.name || "Partner").trim())}</p>
-  <h1 style="font-size:22px;margin:0 0 16px;color:#2C3E2D">Move is on the calendar</h1>
-  <p style="font-size:15px;line-height:1.5;margin:0 0 12px">The move for <strong>${escapeHtml(cn)}</strong> is scheduled: <strong>${escapeHtml(String(when))}</strong>.</p>
-  ${move.from_address ? `<p style="font-size:14px;line-height:1.5;margin:0 0 8px"><strong>From</strong><br/>${escapeHtml(String(move.from_address))}</p>` : ""}
-  ${move.to_address ? `<p style="font-size:14px;line-height:1.5;margin:0 0 16px"><strong>To</strong><br/>${escapeHtml(String(move.to_address))}</p>` : ""}
-  <a href="${trackUrl}" style="display:inline-block;border:2px solid #2C3E2D;color:#2C3E2D;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:11px;letter-spacing:0.12em;text-transform:uppercase">Track move</a>
-  <p style="font-size:13px;margin:28px 0 0;opacity:0.75">Questions? (647) 370-4525</p>
-</div>`;
+  const subj = "Your move is scheduled";
+  const { partnerBookingScheduledEmail } = await import("@/lib/email-templates");
+  const html = partnerBookingScheduledEmail({
+    kind: "move",
+    customerName: cn,
+    whenLabel: String(when),
+    fromAddress: move.from_address,
+    toAddress: move.to_address,
+    trackUrl,
+  });
 
-  await sendEmail({ to: orgEmail, subject: subj, html: inner }).catch(() => {});
+  await sendEmail({ to: orgEmail, subject: subj, html }).catch(() => {});
 }

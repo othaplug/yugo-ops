@@ -3137,7 +3137,7 @@ export default function TrackMoveClient({
           {!isCompleted && (
             <div className="sticky top-0 z-20 -mx-4 px-4 mb-3 pt-1 pb-0.5 bg-[#F9EDE4] border-b sm:static sm:z-auto sm:mx-0 sm:px-0 sm:mb-3 sm:border-b-0 sm:bg-transparent sm:pt-0 sm:pb-0" style={{ borderColor: `${FOREST}10` }}>
               <div
-                className="flex flex-wrap justify-center gap-x-0 overflow-x-auto overflow-y-hidden scrollbar-hide scroll-smooth snap-x snap-mandatory"
+                className="flex flex-nowrap justify-start gap-x-0 overflow-x-auto overflow-y-hidden scrollbar-hide scroll-smooth snap-x snap-mandatory"
                 style={{ WebkitOverflowScrolling: "touch" }}
               >
                 {tabs.map((t) => (
@@ -3145,7 +3145,7 @@ export default function TrackMoveClient({
                     key={t.key}
                     type="button"
                     onClick={() => setActiveTab(t.key)}
-                    className={`shrink-0 px-3 py-2.5 min-h-11 sm:min-h-0 text-[12px] sm:text-[13px] font-bold uppercase tracking-[0.08em] leading-none whitespace-nowrap border-b-2 transition-colors touch-manipulation snap-start [font-family:var(--font-body)] ${
+                    className={`shrink-0 px-2 py-1.5 min-h-0 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.08em] leading-none whitespace-nowrap border-b-2 transition-colors touch-manipulation snap-start [font-family:var(--font-body)] ${
                       activeTab === t.key
                         ? "opacity-100"
                         : "border-transparent opacity-45 hover:opacity-70"
@@ -4208,10 +4208,9 @@ export default function TrackMoveClient({
             </div>
           )}
         </main>
-        </div>
 
         <footer
-          className="shrink-0 border-t pt-3 px-4 text-center pb-[max(0.875rem,env(safe-area-inset-bottom,0px))]"
+          className="border-t pt-3 px-4 text-center pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] mt-auto"
           style={{ backgroundColor: "#F9EDE4", borderColor: `${FOREST}10` }}
         >
           <YugoMarketingFooter
@@ -4221,9 +4220,11 @@ export default function TrackMoveClient({
             logoSize={10}
             mutedColor={FOREST}
             linkColor={FOREST}
+            showTagline={false}
             taglineClassName="text-[12px] leading-normal opacity-55 font-medium tracking-wide"
           />
         </footer>
+        </div>
       </div>
 
         {/* Change Request Modal (not offered on Estate track — coordinator-led) */}

@@ -4,6 +4,8 @@ export const DEFAULT_PM_RATE_CARD: Record<string, unknown> = {
   tenant_move_in: { studio: 449, "1br": 649, "2br": 849, "3br": 1199, "4br_plus": 1599 },
   reno_move_out: { studio: 349, "1br": 549, "2br": 749, "3br": 1099 },
   reno_move_in: { studio: 349, "1br": 549, "2br": 749, "3br": 1099 },
+  /** Bundle: move-out + move-in (weekday base; weekend adds $200 per tier via weekend_surcharge on seeded rows) */
+  reno_bundle: { studio: 799, "1br": 1099, "2br": 1549, "3br": 2149, "4br_plus": 2899 },
   suite_transfer: { studio: 249, "1br": 449, "2br": 649 },
   emergency_relocation: { studio: 549, "1br": 749, "2br": 949, "3br": 1299, "4br_plus": 1699 },
   staging: { studio: 249, "1br": 449, "2br": 649 },
