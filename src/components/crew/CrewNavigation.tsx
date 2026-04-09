@@ -23,7 +23,6 @@ import {
   SpeakerHigh,
   SpeakerSlash,
   TrafficCone,
-  TrafficSignal,
   Warning,
 } from "@phosphor-icons/react";
 import GlobalModal from "@/components/ui/Modal";
@@ -34,8 +33,6 @@ import {
   type ScoredRouteSummary,
   type TrafficRouteFeatureCollection,
 } from "@/lib/routing/intelligent-directions";
-import { applyTorontoIntelligence } from "@/lib/routing/torontoIntelligence";
-
 const MAPBOX_TOKEN =
   process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
   process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
@@ -67,49 +64,22 @@ const POLYLINE_HINT_LOOKBACK_SEGS = 6;
 const POLYLINE_REACQUIRE_PERP_M = 110;
 
 const GOLD = "#2C3E2D";
-/** Clear / low traffic — readable on Mapbox light basemap. */
-const ROUTE_CLEAR = "#0D9488";
-/** Data-driven route line color from GeoJSON `properties.congestion`. */
-const CREW_NAV_ROUTE_LINE_COLOR: mapboxgl.ExpressionSpecification = [
-  "match",
-  ["get", "congestion"],
-  "severe",
-  "#B91C1C",
-  "heavy",
-  "#EA580C",
-  "moderate",
-  "#D97706",
-  "low",
-  ROUTE_CLEAR,
-  "unknown",
-  ROUTE_CLEAR,
-  ROUTE_CLEAR,
-];
-const CREW_NAV_ROUTE_HALO_COLOR: mapboxgl.ExpressionSpecification = [
-  "match",
-  ["get", "congestion"],
-  "severe",
-  "rgba(185, 28, 28, 0.28)",
-  "heavy",
-  "rgba(234, 88, 12, 0.28)",
-  "moderate",
-  "rgba(217, 119, 6, 0.26)",
-  "low",
-  "rgba(13, 148, 136, 0.22)",
-  "unknown",
-  "rgba(13, 148, 136, 0.22)",
-  "rgba(44, 62, 45, 0.2)",
-];
+/** Single solid route color (no traffic congestion segmentation in the line). */
+const CREW_NAV_ROUTE_LINE_COLOR = "#2563EB";
+const CREW_NAV_ROUTE_HALO_COLOR = "rgba(37, 99, 235, 0.22)";
 const CREW_NAV_LINE_WIDTH = 14;
 const CREW_NAV_HALO_WIDTH = CREW_NAV_LINE_WIDTH + 8;
-const FIRST_PERSON_PITCH = 62;
-const NAV_FOLLOW_ZOOM = 17;
+/** Chase camera: tilt similar to consumer nav (~45 to 50 deg). */
+const CHASE_PITCH_DEG = 50;
+/** Move map center slightly behind the vehicle so more road ahead is visible. */
+const CHASE_CAMERA_BACK_M = 52;
+const NAV_FOLLOW_ZOOM = 17.25;
 
 const EMPTY_TRAFFIC_ROUTE: TrafficRouteFeatureCollection = { type: "FeatureCollection", features: [] };
 
 /** Viewport-sized shell; portaled to document.body so fixed positioning is not clipped by PageContent / tab-content transforms. */
 const CREW_NAV_OVERLAY_CLASS =
-  "fixed top-0 left-0 right-0 z-[var(--z-modal)] flex min-h-0 w-full flex-col overflow-hidden overscroll-contain bg-[#FAF7F2] h-dvh max-h-[100dvh]";
+  "fixed top-0 left-0 right-0 z-[var(--z-modal)] flex min-h-0 w-full flex-col overflow-hidden overscroll-contain bg-black h-dvh max-h-[100dvh]";
 
 export type CrewNavDestination = { lat: number; lng: number; address: string };
 
@@ -155,37 +125,6 @@ function headlineStreetForStep(step: RouteStep | undefined, instructionFallback:
   const n = step?.name && String(step.name).trim();
   if (n) return n;
   return instructionFallback.slice(0, 96);
-}
-
-function trafficSignalsFeatureCollection(steps: RouteStep[]): {
-  type: "FeatureCollection";
-  features: Array<{
-    type: "Feature";
-    properties: Record<string, never>;
-    geometry: { type: "Point"; coordinates: [number, number] };
-  }>;
-} {
-  const features: Array<{
-    type: "Feature";
-    properties: Record<string, never>;
-    geometry: { type: "Point"; coordinates: [number, number] };
-  }> = [];
-  const seen = new Set<string>();
-  for (const step of steps) {
-    for (const ix of step.intersections || []) {
-      if (!ix.classes?.includes("traffic_signals")) continue;
-      const [lng, lat] = ix.location;
-      const key = `${lng.toFixed(5)},${lat.toFixed(5)}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      features.push({
-        type: "Feature",
-        properties: {},
-        geometry: { type: "Point", coordinates: [lng, lat] },
-      });
-    }
-  }
-  return { type: "FeatureCollection", features };
 }
 
 function routeLineStringFeature(coords: [number, number][] | null): {
@@ -258,8 +197,31 @@ function bearingAlongPolylineAhead(
   }
 }
 
+/** Map center is offset behind the vehicle so the forward road fills the upper viewport (chase cam). */
+function cameraLngLatForChase(
+  userPos: { lat: number; lng: number },
+  bearingDeg: number | null
+): [number, number] {
+  if (bearingDeg == null || !Number.isFinite(bearingDeg)) {
+    return [userPos.lng, userPos.lat];
+  }
+  try {
+    const behindBearing = (bearingDeg + 180) % 360;
+    const pt = turf.destination(
+      turf.point([userPos.lng, userPos.lat]),
+      CHASE_CAMERA_BACK_M / 1000,
+      behindBearing,
+      { units: "kilometers" }
+    );
+    const [lng, lat] = pt.geometry.coordinates;
+    return [lng, lat];
+  } catch {
+    return [userPos.lng, userPos.lat];
+  }
+}
+
 /**
- * While navigation is open, keep the camera in driver POV: heading-aligned, pitched, centered on GPS.
+ * While navigation is open, keep the camera in chase POV: heading-aligned, pitched, center offset behind GPS.
  * Omits zoom so pinch / zoom buttons can adjust scale without the next tick forcing NAV_FOLLOW_ZOOM.
  */
 function CrewNavFollowCamera({
@@ -282,10 +244,11 @@ function CrewNavFollowCamera({
     try {
       if (!map.isStyleLoaded()) return;
       setMapBearing(bearingDeg);
+      const center = cameraLngLatForChase(userPos, bearingDeg);
       map.easeTo({
-        center: [userPos.lng, userPos.lat],
+        center,
         bearing: bearingDeg,
-        pitch: FIRST_PERSON_PITCH,
+        pitch: CHASE_PITCH_DEG,
         duration: 200,
         essential: true,
       });
@@ -306,10 +269,11 @@ function easeToDriverPov(
 ) {
   const bearing = bearingDeg != null && Number.isFinite(bearingDeg) ? bearingDeg : map.getBearing();
   setMapBearing(bearing);
+  const center = cameraLngLatForChase(userPos, bearingDeg);
   map.easeTo({
-    center: [userPos.lng, userPos.lat],
+    center,
     bearing,
-    pitch: FIRST_PERSON_PITCH,
+    pitch: CHASE_PITCH_DEG,
     duration,
     essential: true,
   });
@@ -330,11 +294,6 @@ function ManeuverGlyph({ type, modifier, className }: { type?: string; modifier?
   return <ArrowRight className={className} weight="bold" aria-hidden />;
 }
 
-/** Grouped control stack: outer radius only; items separated by dividers (no double borders). */
-const NAV_BTN_STACK =
-  "flex w-11 flex-col overflow-hidden rounded-xl border border-[#CBC4B8] bg-[#FFFBF7] shadow-lg divide-y divide-[#CBC4B8]";
-const NAV_BTN_STACK_ITEM =
-  "flex w-full shrink-0 items-center justify-center text-[var(--tx)] active:scale-95 transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C3E2D]/35";
 /** Zoom +/- pair: shared pill; left / right inner corners square via divide. */
 const NAV_BTN_ZOOM_ROW =
   "flex overflow-hidden rounded-xl border border-[#CBC4B8] bg-[#FFFBF7] shadow-lg divide-x divide-[#CBC4B8]";
@@ -342,108 +301,14 @@ const NAV_BTN_ZOOM_ROW =
 const NAV_BTN_ZOOM_CELL =
   "flex h-9 w-9 shrink-0 items-center justify-center text-[var(--tx)] active:scale-95 transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C3E2D]/35";
 
-const TRAFFIC_FLOW_LAYER_ID = "crew-nav-traffic-flow";
-const TRAFFIC_FLOW_SOURCE_ID = "crew-nav-mapbox-traffic";
 const CREW_NAV_ROUTE_ARROWS_SOURCE_ID = "crew-nav-route-arrows";
 const CREW_NAV_ROUTE_ARROWS_LAYER_ID = "crew-nav-route-arrow-symbols";
 
 const VOICE_STORAGE_KEY = "crew_nav_voice_on";
 
-/** Mapbox traffic vector (flow congestion) — complements route coloring. */
-function CrewNavTrafficFlowLayer() {
-  const { current: mapRef } = useMap();
-
-  useEffect(() => {
-    const map = mapRef?.getMap?.();
-    if (!map) return;
-
-    const addLayers = () => {
-      if (map.getSource(TRAFFIC_FLOW_SOURCE_ID)) return;
-      try {
-        map.addSource(TRAFFIC_FLOW_SOURCE_ID, {
-          type: "vector",
-          url: "mapbox://mapbox.mapbox-traffic-v1",
-        });
-      } catch {
-        return;
-      }
-      const layers = map.getStyle()?.layers ?? [];
-      const before =
-        layers.find((l) => l.id === "road-label")?.id ??
-        layers.find((l) => l.id.includes("road-label") && l.type === "symbol")?.id;
-      try {
-        map.addLayer(
-          {
-            id: TRAFFIC_FLOW_LAYER_ID,
-            type: "line",
-            source: TRAFFIC_FLOW_SOURCE_ID,
-            "source-layer": "traffic",
-            paint: {
-              "line-width": 2,
-              "line-color": [
-                "match",
-                ["get", "congestion"],
-                "low",
-                "#22C55E",
-                "moderate",
-                "#EAB308",
-                "heavy",
-                "#F97316",
-                "severe",
-                "#EF4444",
-                "rgba(90,90,90,0.35)",
-              ],
-              "line-opacity": 0.55,
-            },
-          },
-          before
-        );
-      } catch {
-        try {
-          map.addLayer({
-            id: TRAFFIC_FLOW_LAYER_ID,
-            type: "line",
-            source: TRAFFIC_FLOW_SOURCE_ID,
-            "source-layer": "traffic",
-            paint: {
-              "line-width": 2,
-              "line-color": [
-                "match",
-                ["get", "congestion"],
-                "low",
-                "#22C55E",
-                "moderate",
-                "#EAB308",
-                "heavy",
-                "#F97316",
-                "severe",
-                "#EF4444",
-                "rgba(90,90,90,0.35)",
-              ],
-              "line-opacity": 0.55,
-            },
-          });
-        } catch {
-          /* style may not support traffic source */
-        }
-      }
-    };
-
-    if (map.isStyleLoaded()) addLayers();
-    else map.once("style.load", addLayers);
-
-    return () => {
-      try {
-        if (map.getLayer(TRAFFIC_FLOW_LAYER_ID)) map.removeLayer(TRAFFIC_FLOW_LAYER_ID);
-        if (map.getSource(TRAFFIC_FLOW_SOURCE_ID)) map.removeSource(TRAFFIC_FLOW_SOURCE_ID);
-      } catch {
-        /* ignore */
-      }
-    };
-  }, [mapRef]);
-
-  return null;
-}
+/** Minimal floating controls: circular, high contrast, no duplicate turn preview. */
+const NAV_FLOAT_BTN =
+  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-black/10 bg-white text-[#1A1816] shadow-md active:scale-95 transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C3E2D]/35";
 
 function CrewNavGeolocateControl({ geolocateRef }: { geolocateRef: RefObject<GeolocateControlInstance | null> }) {
   const { current: mapRef } = useMap();
@@ -453,7 +318,7 @@ function CrewNavGeolocateControl({ geolocateRef }: { geolocateRef: RefObject<Geo
     if (!map) return;
     try {
       map.easeTo({
-        pitch: FIRST_PERSON_PITCH,
+        pitch: CHASE_PITCH_DEG,
         duration: 900,
       });
     } catch {
@@ -483,17 +348,13 @@ function CrewNavGeolocateControl({ geolocateRef }: { geolocateRef: RefObject<Geo
   );
 }
 
-/**
- * Ops-style stack: realign driver POV, voice, report, recenter + reroute, next-turn realign, zoom.
- */
+/** Compass, voice, report, GPS refresh; compact zoom. */
 function CrewNavOpsFloatingControls({
   userPos,
   navBearingDeg,
   setMapBearing,
   onRecenter,
   mapBearing,
-  steps,
-  maneuverMeta,
   geolocateRef,
   voiceMuted,
   onVoiceToggle,
@@ -504,8 +365,6 @@ function CrewNavOpsFloatingControls({
   setMapBearing: (deg: number) => void;
   onRecenter: (origin: { lat: number; lng: number }) => void;
   mapBearing: number;
-  steps: RouteStep[];
-  maneuverMeta: { type?: string; modifier?: string };
   geolocateRef: RefObject<GeolocateControlInstance | null>;
   voiceMuted: boolean;
   onVoiceToggle: () => void;
@@ -515,15 +374,15 @@ function CrewNavOpsFloatingControls({
 
   return (
     <div
-      className="absolute right-3 z-10 flex flex-col items-center gap-2"
+      className="absolute right-3 z-10 flex flex-col items-center gap-2.5"
       style={{
-        bottom: "calc(7rem + env(safe-area-inset-bottom, 0px))",
+        bottom: "calc(9.5rem + env(safe-area-inset-bottom, 0px))",
       }}
     >
-      <div className={NAV_BTN_STACK}>
+      <div className="flex flex-col items-center gap-2.5">
         <button
           type="button"
-          className={`${NAV_BTN_STACK_ITEM} h-10`}
+          className={NAV_FLOAT_BTN}
           aria-label="Realign to driving view"
           title="Driving view"
           onClick={() => {
@@ -538,9 +397,9 @@ function CrewNavOpsFloatingControls({
           }}
         >
           <span className="relative flex h-8 w-8 items-center justify-center">
-            <Compass className="absolute text-[#A8A29E]" size={28} weight="regular" aria-hidden />
+            <Compass className="absolute text-[#A8A29E]" size={26} weight="regular" aria-hidden />
             <span
-              className="relative z-[1] text-[9px] font-bold text-red-400 drop-shadow"
+              className="relative z-[1] text-[8px] font-bold text-red-500 drop-shadow"
               style={{ transform: `rotate(${-mapBearing}deg)` }}
               aria-hidden
             >
@@ -551,34 +410,28 @@ function CrewNavOpsFloatingControls({
 
         <button
           type="button"
-          className={`${NAV_BTN_STACK_ITEM} h-10`}
+          className={NAV_FLOAT_BTN}
           aria-label={voiceMuted ? "Turn voice guidance on" : "Mute voice guidance"}
           title={voiceMuted ? "Voice on" : "Voice muted"}
           onClick={onVoiceToggle}
         >
           {voiceMuted ? (
-            <SpeakerSlash size={22} weight="bold" aria-hidden />
+            <SpeakerSlash size={22} weight="bold" className="text-red-600" aria-hidden />
           ) : (
             <SpeakerHigh size={22} weight="bold" aria-hidden />
           )}
         </button>
 
-        <button
-          type="button"
-          className={`${NAV_BTN_STACK_ITEM} h-10`}
-          aria-label="Report road issue"
-          title="Report"
-          onClick={onReportOpen}
-        >
-          <Warning size={22} weight="bold" aria-hidden />
+        <button type="button" className={NAV_FLOAT_BTN} aria-label="Report road issue" title="Report" onClick={onReportOpen}>
+          <Warning size={22} weight="bold" className="text-amber-600" aria-hidden />
         </button>
 
         <button
           type="button"
-          className={`${NAV_BTN_STACK_ITEM} h-11`}
+          className={NAV_FLOAT_BTN}
           disabled={!userPos}
-          aria-label="Center on my location and refresh route"
-          title="My location & refresh route"
+          aria-label="Refresh GPS and route"
+          title="My location and refresh route"
           onClick={() => {
             const u = userPos;
             if (!u) return;
@@ -598,36 +451,11 @@ function CrewNavOpsFloatingControls({
             onRecenter(u);
           }}
         >
-          <NavigationArrow className="text-[var(--tx)]" size={26} weight="fill" aria-hidden />
+          <NavigationArrow className="text-[#1A1816]" size={24} weight="fill" aria-hidden />
         </button>
       </div>
 
-      <button
-        type="button"
-        className="rounded-xl bg-[#5EEAD4] p-2 shadow-xl ring-2 ring-teal-200/40 active:scale-95 transition-transform disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C3E2D]/35"
-        disabled={!mapRef?.getMap?.() || steps.length < 2}
-        aria-label="Realign map to driving view"
-        title="Driving view"
-        onClick={() => {
-          const u = userPos;
-          const m = mapRef?.getMap?.();
-          if (!u || !m) return;
-          if (steps.length < 2) return;
-          try {
-            easeToDriverPov(m, u, navBearingDeg, setMapBearing, 500);
-          } catch {
-            /* ignore */
-          }
-        }}
-      >
-        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#2C3E2D] rotate-45 shadow-inner">
-          <span className="-rotate-45 text-white">
-            <ManeuverGlyph type={maneuverMeta.type} modifier={maneuverMeta.modifier} className="h-7 w-7" />
-          </span>
-        </div>
-      </button>
-
-      <div className={NAV_BTN_ZOOM_ROW}>
+      <div className={`${NAV_BTN_ZOOM_ROW} rounded-full overflow-hidden border-black/10 shadow-md`}>
         <button
           type="button"
           className={NAV_BTN_ZOOM_CELL}
@@ -641,7 +469,7 @@ function CrewNavOpsFloatingControls({
             }
           }}
         >
-          <Plus size={20} weight="bold" aria-hidden />
+          <Plus size={18} weight="bold" aria-hidden />
         </button>
         <button
           type="button"
@@ -656,7 +484,7 @@ function CrewNavOpsFloatingControls({
             }
           }}
         >
-          <Minus size={20} weight="bold" aria-hidden />
+          <Minus size={18} weight="bold" aria-hidden />
         </button>
       </div>
     </div>
@@ -1037,7 +865,6 @@ export function CrewNavigation({
   const [distRemainLabel, setDistRemainLabel] = useState("—");
   const [mapError, setMapError] = useState<string | null>(null);
   const [speedDisplay, setSpeedDisplay] = useState<string | null>(null);
-  const [torontoWarnings, setTorontoWarnings] = useState<string[]>([]);
   /** Degrees clockwise from north — device heading or course-over-ground. */
   const [navBearingDeg, setNavBearingDeg] = useState<number | null>(null);
   /** Map bearing used to rotate the crew arrow relative to the camera. */
@@ -1144,7 +971,6 @@ export function CrewNavigation({
     }, 450);
   }, []);
 
-  const trafficSignalsGeo = useMemo(() => trafficSignalsFeatureCollection(steps), [steps]);
   const routeArrowLineData = useMemo(() => routeLineStringFeature(routeCoords), [routeCoords]);
 
   useEffect(() => {
@@ -1165,7 +991,6 @@ export function CrewNavigation({
       });
       if (!intelligent?.coordinates?.length) {
         setMapError("Could not compute a driving route.");
-        setTorontoWarnings([]);
         setRouteAlternatives([]);
         setTrafficRouteGeoJson(EMPTY_TRAFFIC_ROUTE);
         return;
@@ -1192,11 +1017,9 @@ export function CrewNavigation({
       setSelectedRouteIndex(intelligent.selectedIndex);
       if (dur != null) setEtaLabel(formatEta(dur));
       if (dist != null) setDistRemainLabel(formatDistanceM(dist));
-      setTorontoWarnings(intelligent.torontoWarnings);
       setMapError(null);
     } catch {
       setMapError("Route request failed.");
-      setTorontoWarnings([]);
       setRouteAlternatives([]);
       setTrafficRouteGeoJson(EMPTY_TRAFFIC_ROUTE);
     } finally {
@@ -1225,7 +1048,6 @@ export function CrewNavigation({
     setSteps(legSteps);
     setGuidance(resolveTurnGuidance(legSteps, null));
     setSelectedRouteIndex(apiIndex);
-    setTorontoWarnings(applyTorontoIntelligence(r, new Date()));
     if (dur != null) setEtaLabel(formatEta(dur));
     else setEtaLabel("—");
     if (dist != null) setDistRemainLabel(formatDistanceM(dist));
@@ -1286,7 +1108,6 @@ export function CrewNavigation({
     polylineHintSegRef.current = 0;
     displayEtaSecRef.current = null;
     lastRerouteAtRef.current = 0;
-    setTorontoWarnings([]);
     setTrafficRouteGeoJson(EMPTY_TRAFFIC_ROUTE);
     prevGeoRef.current = null;
     setNavBearingDeg(null);
@@ -1635,7 +1456,7 @@ export function CrewNavigation({
       longitude: lng,
       zoom: NAV_FOLLOW_ZOOM,
       bearing: 0,
-      pitch: FIRST_PERSON_PITCH,
+      pitch: CHASE_PITCH_DEG,
     };
   }, [userPos?.lat, userPos?.lng, destination.lat, destination.lng]);
 
@@ -1672,42 +1493,36 @@ export function CrewNavigation({
       aria-modal="true"
       aria-label="Turn-by-turn navigation"
     >
-      <div className="shrink-0 text-white px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] border-b border-white/10 bg-[#1a3d2e]">
+      <div className="shrink-0 rounded-b-[1.35rem] bg-[#0f7669] px-4 pb-3.5 pt-[calc(0.65rem+env(safe-area-inset-top,0px))] text-white shadow-md">
         <div className="flex items-start gap-3">
-          <div className="flex shrink-0 flex-col items-center gap-1">
+          <div className="flex shrink-0 flex-col items-center gap-0.5">
             <ManeuverIcon type={guidance.maneuverMeta.type} modifier={guidance.maneuverMeta.modifier} />
             {guidance.turnDistanceLabel ? (
-              <p className="text-[13px] font-bold leading-none tabular-nums">{guidance.turnDistanceLabel}</p>
+              <p className="text-[12px] font-bold leading-none tabular-nums text-white/95">{guidance.turnDistanceLabel}</p>
             ) : null}
           </div>
-          <div className="min-w-0 flex-1">
-            {guidance.streetHeadline ? (
-              <p className="text-[20px] font-bold leading-tight">{guidance.streetHeadline}</p>
-            ) : null}
-            <p className="text-[15px] font-semibold leading-snug mt-0.5">{guidance.instructionText}</p>
-            <p className="text-[13px] opacity-85 mt-1">{distRemainLabel} remaining</p>
-            {guidance.thenText ? (
-              <div className="mt-2 rounded-lg border border-white/15 bg-black/20 px-2.5 py-2 text-[12px] leading-snug">
-                <span className="opacity-75 uppercase tracking-wide text-[10px]">Then</span>
-                <div className="flex items-start gap-2 mt-0.5">
-                  <ManeuverGlyph
-                    type={guidance.thenMeta.type}
-                    modifier={guidance.thenMeta.modifier}
-                    className="h-5 w-5 shrink-0"
-                  />
-                  <span className="font-medium">{guidance.thenText}</span>
-                </div>
-              </div>
-            ) : null}
-            {torontoWarnings.length > 0 && (
-              <ul className="mt-2 space-y-1 text-[11px] leading-snug text-amber-100/95 bg-black/25 rounded-lg px-2.5 py-2 border border-amber-400/25">
-                {torontoWarnings.map((w, i) => (
-                  <li key={`${i}-${w.slice(0, 24)}`}>• {w}</li>
-                ))}
-              </ul>
-            )}
+          <div className="min-w-0 flex-1 pt-0.5">
+            <p className="text-[clamp(1.05rem,3.8vw,1.35rem)] font-bold leading-tight tracking-tight">
+              {(guidance.streetHeadline?.trim() || guidance.instructionText.trim() || "Navigation").slice(0, 120)}
+            </p>
           </div>
+          <button
+            type="button"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60"
+            aria-label="Route options"
+            title="Route options"
+            onClick={() => setAlternatesOpen(true)}
+          >
+            <List size={22} weight="bold" aria-hidden />
+          </button>
         </div>
+        {guidance.thenText ? (
+          <div className="mt-2.5 flex items-start gap-2 rounded-xl bg-black/18 px-3 py-2 text-[12px] leading-snug">
+            <span className="shrink-0 pt-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/75">Then</span>
+            <ManeuverGlyph type={guidance.thenMeta.type} modifier={guidance.thenMeta.modifier} className="h-5 w-5 shrink-0 text-white" />
+            <span className="min-w-0 font-medium text-white/95">{guidance.thenText}</span>
+          </div>
+        ) : null}
       </div>
 
       <div className="flex-1 relative min-h-0">
@@ -1723,7 +1538,6 @@ export function CrewNavigation({
           }}
           onMoveEnd={(e) => setMapBearing(e.viewState.bearing)}
         >
-          <CrewNavTrafficFlowLayer />
           <CrewNavGeolocateControl geolocateRef={geolocateRef} />
           <CrewNavFollowCamera userPos={userPos} bearingDeg={navBearingDeg} setMapBearing={setMapBearing} />
           {trafficRouteGeoJson.features.length > 0 && (
@@ -1773,36 +1587,16 @@ export function CrewNavigation({
               />
             </Source>
           )}
-          {trafficSignalsGeo.features.map((f) => {
-            const [sigLng, sigLat] = f.geometry.coordinates;
-            return (
-              <Marker key={`sig-${sigLng.toFixed(5)}-${sigLat.toFixed(5)}`} longitude={sigLng} latitude={sigLat} anchor="center">
-                <div
-                  className="pointer-events-none flex h-9 w-9 items-center justify-center rounded-lg border-2 border-[#1A1816] bg-white shadow-md"
-                  aria-hidden
-                >
-                  <TrafficSignal className="text-[#1A1816]" size={22} weight="bold" aria-hidden />
-                </div>
-              </Marker>
-            );
-          })}
-          {guidance.callout && (
-            <Marker longitude={guidance.callout.lng} latitude={guidance.callout.lat} anchor="bottom">
-              <div className="max-w-[160px] truncate rounded-md border border-[#CBC4B8] bg-white/95 px-2 py-1 text-center text-[11px] font-bold text-[#1A1816] shadow-md">
-                {guidance.callout.label}
-              </div>
-            </Marker>
-          )}
           {userPos && (
             <Marker longitude={userPos.lng} latitude={userPos.lat} anchor="center">
               <div
-                className="flex h-[52px] w-[52px] items-center justify-center rounded-full border border-[#2C3E2D]/35 bg-white/95 shadow-[0_4px_14px_rgba(0,0,0,0.12)]"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-white shadow-[0_3px_12px_rgba(0,0,0,0.2)]"
                 style={{
                   transform:
                     navBearingDeg != null ? `rotate(${navBearingDeg - mapBearing}deg)` : undefined,
                 }}
               >
-                <NavigationArrow className="text-[var(--tx)]" size={34} weight="fill" aria-hidden />
+                <NavigationArrow className="text-[#1A1816]" size={28} weight="fill" aria-hidden />
               </div>
             </Marker>
           )}
@@ -1815,8 +1609,6 @@ export function CrewNavigation({
             setMapBearing={setMapBearing}
             onRecenter={(origin) => void fetchRoute(origin)}
             mapBearing={mapBearing}
-            steps={steps}
-            maneuverMeta={guidance.maneuverMeta}
             geolocateRef={geolocateRef}
             voiceMuted={!voiceOn}
             onVoiceToggle={() => setVoiceOn((v) => !v)}
@@ -1824,43 +1616,25 @@ export function CrewNavigation({
           />
         </Map>
 
-        <div className="absolute top-3 left-3 z-10 flex gap-1.5">
-          <div className="flex min-w-[52px] flex-col items-center justify-center rounded-lg border border-[#CBC4B8] bg-[#FFFBF7] px-2 py-1 shadow-sm">
-            <TrafficSignal className="text-[#1A1816]" size={16} weight="bold" aria-hidden />
-            <span className="text-[10px] font-bold uppercase tracking-wide text-[#1A1816]/70">Limit</span>
-            <span className="text-[14px] font-bold tabular-nums leading-none text-[#1A1816]">—</span>
-          </div>
-          <div className="flex min-w-[72px] flex-col items-center justify-center rounded-lg border border-[#CBC4B8] bg-[#FFFBF7] px-2 py-1 shadow-sm">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-[#1A1816]/70">Speed</span>
-            <span className="text-[14px] font-bold tabular-nums leading-none text-[#1A1816]">
-              {speedDisplay ?? "—"}
-            </span>
-          </div>
+        <div
+          className="absolute bottom-[calc(10.5rem+env(safe-area-inset-bottom,0px))] left-3 z-10 rounded-xl border border-black/10 bg-white px-3 py-2 shadow-md"
+          aria-live="polite"
+        >
+          <span className="text-[13px] font-semibold tabular-nums text-[#1A1816]">{speedDisplay ?? "—"}</span>
         </div>
-
-        {guidance.currentRoadName ? (
-          <div
-            className="pointer-events-none absolute z-10 max-w-[min(92vw,320px)] -translate-x-1/2 truncate rounded-full border border-[#CBC4B8] bg-[#FFFBF7] px-3 py-1.5 text-center text-[12px] font-semibold text-[#1A1816] shadow-sm"
-            style={{ bottom: "calc(7.25rem + env(safe-area-inset-bottom, 0px))", left: "50%" }}
-          >
-            {guidance.currentRoadName}
-          </div>
-        ) : null}
         {mapError && (
-          <div className="absolute top-12 left-3 right-3 bg-red-900/90 text-white text-[12px] px-3 py-2 rounded-lg">{mapError}</div>
+          <div className="absolute left-3 right-3 top-[calc(5.5rem+env(safe-area-inset-top,0px))] z-10 rounded-lg bg-red-900/92 px-3 py-2 text-[12px] text-white">
+            {mapError}
+          </div>
         )}
 
       </div>
 
-      <div className="shrink-0 border-t border-white/10 bg-[#4a1528] text-white">
-        <div className="px-4 pt-3 pb-2 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-2xl font-bold leading-none">{etaLabel}</p>
-            <p className="text-[11px] opacity-80 mt-1 uppercase tracking-wide">ETA</p>
-          </div>
-          <div className="text-right min-w-0 flex-1 max-w-[55%]">
-            <p className="text-[13px] font-medium truncate">{destination.address}</p>
-            <p className="text-[12px] opacity-75 mt-0.5">
+      <div className="shrink-0 rounded-t-[1.35rem] bg-white text-[#1A1816] shadow-[0_-10px_40px_rgba(0,0,0,0.18)]">
+        <div className="flex flex-wrap items-end justify-between gap-3 px-4 pb-3 pt-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-[clamp(1.75rem,6vw,2.25rem)] font-bold leading-none tracking-tight text-[#5C1A33]">{etaLabel}</p>
+            <p className="mt-1.5 text-[12px] tabular-nums text-neutral-600">
               {distRemainLabel}
               {arrivalClockLabel ? ` · ${arrivalClockLabel}` : ""}
             </p>
@@ -1868,39 +1642,23 @@ export function CrewNavigation({
           <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-white/10 hover:bg-white/15"
-              aria-label="Alternate routes"
-              title="Alternate routes"
-              onClick={() => setAlternatesOpen(true)}
-            >
-              <List size={22} weight="bold" aria-hidden />
-            </button>
-            <button
-              type="button"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-white/10 hover:bg-white/15"
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-neutral-200 bg-neutral-100 text-[#1A1816] hover:bg-neutral-200/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C3E2D]/40"
               aria-label="Route overview"
               title="Route overview"
               onClick={fitRouteOverview}
             >
-              <ArrowsSplit size={22} weight="bold" aria-hidden />
+              <ArrowsSplit size={24} weight="bold" aria-hidden />
             </button>
             <button
               type="button"
               onClick={onExit}
-              className="shrink-0 bg-white/20 hover:bg-white/30 px-3 py-2 text-sm font-semibold"
+              className="rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-900/40"
             >
-              Exit Nav
+              Exit
             </button>
           </div>
         </div>
-        <button
-          type="button"
-          className="flex w-full items-center justify-center gap-2 border-t border-white/10 py-2.5 text-[13px] font-semibold opacity-95 hover:bg-white/5"
-          onClick={() => setReportOpen(true)}
-        >
-          <Plus size={18} weight="bold" aria-hidden />
-          Add a report
-        </button>
+        <p className="line-clamp-2 px-4 pb-1 text-[12px] text-neutral-500">{destination.address}</p>
         <div className="h-[env(safe-area-inset-bottom,0px)] min-h-0" aria-hidden />
       </div>
 
@@ -1917,7 +1675,7 @@ export function CrewNavigation({
                 className="min-h-[88px] w-full rounded-md border border-[#CBC4B8] px-3 py-2 text-sm"
                 value={reportNote}
                 onChange={(e) => setReportNote(e.target.value)}
-                placeholder="Road closure, hazard, or traffic…"
+                placeholder="Road closure, hazard, or traffic."
               />
             </>
           )}
@@ -1970,7 +1728,6 @@ export function CrewNavigation({
                     {s.etaLabel} · {s.distanceLabel}
                     {s.fuelCostLabel ? ` · ${s.fuelCostLabel}` : ""}
                   </p>
-                  {s.congestionNote ? <p className="mt-1 text-xs text-[#1A1816]/70">{s.congestionNote}</p> : null}
                   {!isActive ? (
                     <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--tx)]">
                       Use this route
@@ -1981,7 +1738,7 @@ export function CrewNavigation({
             })
           )}
           <p className="text-xs text-[#1A1816]/65">
-            The app starts on the fastest-scoring option. Tap another route to switch. Rerouting from GPS uses the same automatic pick again.
+            The app starts on the fastest option. Tap another route to switch. Rerouting from GPS picks again automatically.
           </p>
         </div>
       </GlobalModal>
