@@ -4,6 +4,19 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { canEditFinalJobPrice } from "@/lib/admin-can-edit-final-price";
 import { isMoveStatusCompleted } from "@/lib/move-status";
 
+/** Avoid exposing raw PostgREST or Postgres strings for known deployment gaps */
+function publicDbErrorMessage(message: string | undefined): string {
+  const m = (message || "").trim();
+  if (
+    /schema cache|Could not find the table|PGRST205/i.test(m) ||
+    (/relation/i.test(m) && /does not exist/i.test(m)) ||
+    (/job_final_price_edits/i.test(m) && /(exist|find|cache)/i.test(m))
+  ) {
+    return "Price history could not be saved because the database is not fully updated. Apply pending Supabase migrations for this project, then try again.";
+  }
+  return m || "Save failed";
+}
+
 function isDeliveryDone(status: string | null | undefined): boolean {
   const s = (status || "").toLowerCase();
   return s === "delivered" || s === "completed";
@@ -95,7 +108,10 @@ export async function POST(req: NextRequest) {
 
     if (insErr) {
       console.error("[job-final-price] audit insert", insErr);
-      return NextResponse.json({ error: insErr.message }, { status: 500 });
+      return NextResponse.json(
+        { error: publicDbErrorMessage(insErr.message) },
+        { status: 500 },
+      );
     }
 
     const { error: upErr } = await db
@@ -107,7 +123,10 @@ export async function POST(req: NextRequest) {
       .eq("id", jobId);
 
     if (upErr) {
-      return NextResponse.json({ error: upErr.message }, { status: 500 });
+      return NextResponse.json(
+        { error: publicDbErrorMessage(upErr.message) },
+        { status: 500 },
+      );
     }
 
     if (inv) {
@@ -170,7 +189,10 @@ export async function POST(req: NextRequest) {
 
   if (insErr) {
     console.error("[job-final-price] audit insert", insErr);
-    return NextResponse.json({ error: insErr.message }, { status: 500 });
+    return NextResponse.json(
+      { error: publicDbErrorMessage(insErr.message) },
+      { status: 500 },
+    );
   }
 
   const { error: upErr } = await db
@@ -183,7 +205,10 @@ export async function POST(req: NextRequest) {
     .eq("id", jobId);
 
   if (upErr) {
-    return NextResponse.json({ error: upErr.message }, { status: 500 });
+    return NextResponse.json(
+      { error: publicDbErrorMessage(upErr.message) },
+      { status: 500 },
+    );
   }
 
   if (moveInv) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { CaretRight } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 
 type PriceEditRow = {
@@ -11,6 +12,15 @@ type PriceEditRow = {
   edited_by_name: string;
   created_at: string;
   invoice_may_need_reissue?: boolean | null;
+};
+
+const sanitizeShownError = (raw: string): string => {
+  if (
+    /schema cache|Could not find the table|job_final_price_edits|PGRST205/i.test(raw)
+  ) {
+    return "Price history could not be saved because the database is not fully updated. Apply pending Supabase migrations, then try again.";
+  }
+  return raw;
 };
 
 export default function PostCompletionPriceEdit({
@@ -67,7 +77,9 @@ export default function PostCompletionPriceEdit({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "Save failed");
+        const msg =
+          typeof data.error === "string" ? data.error : "Save failed";
+        setError(sanitizeShownError(msg));
         return;
       }
       window.location.reload();
@@ -78,84 +90,125 @@ export default function PostCompletionPriceEdit({
     }
   };
 
+  const handleCancel = () => {
+    setOpen(false);
+    setNewPrice(String(currentPrice));
+    setReason("");
+    setError(null);
+  };
+
+  const outlineBtn =
+    "inline-flex items-center justify-center gap-1.5 rounded-md border-2 border-[var(--tx)] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx)] bg-transparent hover:bg-[var(--hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tx)]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] transition-colors disabled:opacity-45 disabled:pointer-events-none";
+
+  const ghostBtn =
+    "inline-flex items-center justify-center rounded-md border border-[var(--brd)] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx2)] bg-transparent hover:bg-[var(--hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tx)]/20 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] transition-colors";
+
+  const fieldClass =
+    "w-full rounded-md border border-[var(--brd)] bg-[var(--surface-raised)] px-3 py-2 text-sm text-[var(--tx)] placeholder:text-[var(--tx3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tx)]/20 focus-visible:border-[var(--brd)]";
+
   return (
-    <div className="mt-6 p-4 border border-amber-200/80 bg-amber-50/90 rounded-lg">
-      <div className="flex flex-wrap justify-between items-start gap-3 mb-3">
-        <div>
-          <h3 className="text-sm font-medium text-amber-900">
+    <div className="mt-6 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 md:p-5 shadow-sm shadow-black/5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx3)]">
+            Billing
+          </p>
+          <h3 className="m-0 pb-0 font-heading text-[15px] font-semibold leading-snug tracking-[0.01em] text-[var(--tx)] md:text-base">
             Adjust final price
           </h3>
-          <p className="text-xs text-amber-800/90 mt-0.5">
-            Owner or senior admin only. Changes are logged with a reason.
+          <p className="text-xs text-[var(--tx3)] leading-relaxed max-w-prose">
+            Owner or senior admin only. Each change is stored with your reason.
           </p>
         </div>
-        {!open && (
+        {!open ? (
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="text-xs text-amber-900 border border-amber-300 px-3 py-1.5 rounded-md hover:bg-amber-100/80 transition-colors"
+            className={`${ghostBtn} shrink-0`}
           >
             Edit price
           </button>
-        )}
+        ) : null}
       </div>
 
-      {open && (
-        <div className="space-y-3">
-          <div className="flex flex-wrap gap-4 items-end">
+      {open ? (
+        <div className="mt-4 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
             <div>
-              <label className="text-xs text-amber-800 block mb-1">
+              <label
+                htmlFor={`current-price-${jobId}`}
+                className="mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx3)]"
+              >
                 Current price
               </label>
-              <p className="text-lg font-medium text-amber-950 tabular-nums">
+              <p
+                id={`current-price-${jobId}`}
+                className="text-xl font-semibold tabular-nums text-[var(--tx)] md:text-2xl"
+              >
                 ${currentPrice.toFixed(2)}
               </p>
             </div>
             <div>
-              <label className="text-xs text-amber-800 block mb-1">
+              <label
+                htmlFor={`new-price-${jobId}`}
+                className="mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx3)]"
+              >
                 New price
               </label>
               <input
+                id={`new-price-${jobId}`}
                 type="number"
                 step="0.01"
                 min={0}
                 value={newPrice}
                 onChange={(e) => setNewPrice(e.target.value)}
-                className="w-36 px-2 py-1.5 border border-amber-300 rounded-md text-lg tabular-nums bg-white text-[var(--tx)]"
+                className={`${fieldClass} max-w-[11rem] tabular-nums text-base font-medium md:text-lg`}
+                aria-describedby={`price-delta-${jobId}`}
               />
             </div>
-            <p
-              className={`text-sm font-medium pb-1 ${
-                priceDiff > 0
-                  ? "text-red-600"
-                  : priceDiff < 0
-                    ? "text-emerald-700"
-                    : "text-[var(--tx3)]"
-              }`}
-            >
-              {priceDiff === 0
-                ? "No change"
-                : `${priceDiff > 0 ? "+" : ""}$${priceDiff.toFixed(2)}`}
-            </p>
+            <div className="sm:pb-1">
+              <p
+                id={`price-delta-${jobId}`}
+                className={`text-sm font-semibold tabular-nums ${
+                  priceDiff > 0
+                    ? "text-[var(--red)]"
+                    : priceDiff < 0
+                      ? "text-[var(--grn)]"
+                      : "text-[var(--tx3)]"
+                }`}
+              >
+                {priceDiff === 0
+                  ? "No change"
+                  : `${priceDiff > 0 ? "+" : ""}$${priceDiff.toFixed(2)}`}
+              </p>
+            </div>
           </div>
 
           <div>
-            <label className="text-xs text-amber-800 block mb-1">
+            <label
+              htmlFor={`price-reason-${jobId}`}
+              className="mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx3)]"
+            >
               Reason (required)
             </label>
             <textarea
+              id={`price-reason-${jobId}`}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Example: extra items on site, agreed adjustment after delivery"
-              className="w-full px-2 py-1.5 border border-amber-300 rounded-md text-sm bg-white text-[var(--tx)] min-h-[64px]"
-              rows={2}
+              className={`${fieldClass} min-h-[80px] resize-y leading-relaxed`}
+              rows={3}
             />
           </div>
 
           {error ? (
-            <p className="text-xs text-red-600" role="alert">
+            <div
+              className="rounded-md border border-[var(--red)]/35 bg-[var(--rdim)] px-3 py-2 text-sm text-[var(--red)]"
+              role="alert"
+              aria-live="polite"
+            >
               {error}
-            </p>
+            </div>
           ) : null}
 
           <div className="flex flex-wrap gap-2">
@@ -163,43 +216,55 @@ export default function PostCompletionPriceEdit({
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="px-4 py-2 bg-amber-700 text-white rounded-md text-sm font-medium disabled:opacity-40"
+              className={outlineBtn}
             >
-              {saving ? "Saving…" : "Save price change"}
+              {saving ? "Saving" : "Save price change"}
+              {!saving ? <CaretRight size={16} weight="bold" aria-hidden /> : null}
             </button>
             <button
               type="button"
-              onClick={() => {
-                setOpen(false);
-                setNewPrice(String(currentPrice));
-                setReason("");
-                setError(null);
-              }}
-              className="px-4 py-2 border border-amber-300 rounded-md text-sm text-amber-900"
+              onClick={handleCancel}
+              disabled={saving}
+              className={`${ghostBtn} disabled:opacity-45`}
             >
               Cancel
             </button>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {previousEdits.length > 0 && (
-        <div className="mt-4 border-t border-amber-200 pt-3">
-          <p className="text-xs text-amber-800 mb-2">Previous changes</p>
-          <ul className="space-y-2 text-xs text-amber-900/90">
+      {previousEdits.length > 0 ? (
+        <div className="mt-5 border-t border-[var(--brd)] pt-4">
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx3)]">
+            Previous changes
+          </p>
+          <ul className="space-y-3 text-xs leading-relaxed text-[var(--tx2)]">
             {previousEdits.map((edit) => (
-              <li key={edit.id}>
-                {new Date(edit.created_at).toLocaleString("en-CA")}{" "}
-                <span className="font-medium">{edit.edited_by_name}</span>: $
-                {Number(edit.original_price).toFixed(2)} to $
+              <li
+                key={edit.id}
+                className="rounded-lg border border-[var(--brd)]/80 bg-[var(--surface)]/60 px-3 py-2.5"
+              >
+                <span className="text-[var(--tx3)]">
+                  {new Date(edit.created_at).toLocaleString("en-CA")}
+                </span>{" "}
+                <span className="font-semibold text-[var(--tx)]">
+                  {edit.edited_by_name}
+                </span>
+                {": "}
+                ${Number(edit.original_price).toFixed(2)} to $
                 {Number(edit.new_price).toFixed(2)}
-                {edit.invoice_may_need_reissue ? " (invoice may need reissue)" : ""}
+                {edit.invoice_may_need_reissue ? (
+                  <span className="text-[var(--org)]">
+                    {" "}
+                    (invoice may need reissue)
+                  </span>
+                ) : null}
                 . {edit.reason}
               </li>
             ))}
           </ul>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
