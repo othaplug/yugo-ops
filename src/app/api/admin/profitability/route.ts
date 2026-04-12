@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
-import { calculateMoveProfitability, calculateDeliveryProfitability, getMonthlyOverhead } from "@/lib/finance/calculateProfit";
+import {
+  calculateMoveProfitability,
+  calculateDeliveryProfitability,
+  getMonthlyOverhead,
+  movePaysCardProcessingFee,
+  deliveryPaysCardProcessingFee,
+} from "@/lib/finance/calculateProfit";
 
 /**
  * Profitability = cost/profit analysis, NOT revenue.
- * Tracks: labour (actual/est hours × crew), truck, fuel (distance-based), processing.
- * Supplies = $0 for deliveries. For moves, based on size from platform_config.
- * Profit = billed amount − direct costs.
+ * Tracks: labour (actual/est hours × crew), truck, fuel (distance-based), supplies.
+ * Card processing is shown only when the client paid by card; it is a pass-through (not subtracted from margin).
+ * Monthly overhead is not allocated per job; see overhead.total for company-wide reference.
  */
 export async function GET(req: NextRequest) {
   const { error: authErr } = await requireAdmin();
@@ -165,14 +171,14 @@ export async function GET(req: NextRequest) {
     // Apply per-job overrides (only override fields that were explicitly set)
     const ov = costOverridesMap[m.id];
     if (ov) {
-      const labour  = ov.labour   != null ? ov.labour   : costs.labour;
-      const fuel    = ov.fuel     != null ? ov.fuel     : costs.fuel;
-      const truck   = ov.truck    != null ? ov.truck    : costs.truck;
+      const labour = ov.labour != null ? ov.labour : costs.labour;
+      const fuel = ov.fuel != null ? ov.fuel : costs.fuel;
+      const truck = ov.truck != null ? ov.truck : costs.truck;
       const supplies = ov.supplies != null ? ov.supplies : costs.supplies;
       const processing = ov.processing != null ? ov.processing : costs.processing;
-      const totalDirect = labour + fuel + truck + supplies + processing;
+      const totalDirect = labour + fuel + truck + supplies;
       const grossProfit = revenue - totalDirect;
-      const netProfit = grossProfit - costs.allocatedOverhead;
+      const netProfit = grossProfit;
       costs = {
         ...costs,
         labour: Math.round(labour),
@@ -181,6 +187,7 @@ export async function GET(req: NextRequest) {
         supplies,
         processing: Math.round(processing * 100) / 100,
         totalDirect: Math.round(totalDirect),
+        allocatedOverhead: 0,
         grossProfit: Math.round(grossProfit),
         netProfit: Math.round(netProfit),
         grossMargin: revenue > 0 ? Math.round(((grossProfit / revenue) * 100) * 10) / 10 : 0,
@@ -204,6 +211,10 @@ export async function GET(req: NextRequest) {
       actual_hours: trackedHours ?? m.actual_hours ?? null,
       est_hours: m.est_hours ?? m.quoted_hours ?? null,
       hasOverride: !!ov,
+      paid_with_card: movePaysCardProcessingFee({
+        balance_method: m.balance_method ?? null,
+        deposit_method: m.deposit_method ?? null,
+      }),
       ...costs,
     };
   });
@@ -216,14 +227,14 @@ export async function GET(req: NextRequest) {
     // Apply per-job overrides
     const ov = costOverridesMap[d.id];
     if (ov) {
-      const labour  = ov.labour   != null ? ov.labour   : costs.labour;
-      const fuel    = ov.fuel     != null ? ov.fuel     : costs.fuel;
-      const truck   = ov.truck    != null ? ov.truck    : costs.truck;
+      const labour = ov.labour != null ? ov.labour : costs.labour;
+      const fuel = ov.fuel != null ? ov.fuel : costs.fuel;
+      const truck = ov.truck != null ? ov.truck : costs.truck;
       const supplies = ov.supplies != null ? ov.supplies : costs.supplies;
       const processing = ov.processing != null ? ov.processing : costs.processing;
-      const totalDirect = labour + fuel + truck + supplies + processing;
+      const totalDirect = labour + fuel + truck + supplies;
       const grossProfit = revenue - totalDirect;
-      const netProfit = grossProfit - costs.allocatedOverhead;
+      const netProfit = grossProfit;
       costs = {
         ...costs,
         labour: Math.round(labour),
@@ -232,6 +243,7 @@ export async function GET(req: NextRequest) {
         supplies,
         processing: Math.round(processing * 100) / 100,
         totalDirect: Math.round(totalDirect),
+        allocatedOverhead: 0,
         grossProfit: Math.round(grossProfit),
         netProfit: Math.round(netProfit),
         grossMargin: revenue > 0 ? Math.round(((grossProfit / revenue) * 100) * 10) / 10 : 0,
@@ -254,6 +266,10 @@ export async function GET(req: NextRequest) {
       neighbourhood,
       actual_hours: trackedHoursD ?? d.actual_hours ?? null,
       hasOverride: !!ov,
+      paid_with_card: deliveryPaysCardProcessingFee({
+        payment_method: d.payment_method ?? null,
+        balance_method: d.balance_method ?? null,
+      }),
       ...costs,
     };
   });
@@ -264,9 +280,8 @@ export async function GET(req: NextRequest) {
   const totalDirectCost = rows.reduce((s, r) => s + r.totalDirect, 0);
   const totalGrossProfit = totalRevenue - totalDirectCost;
   const avgGrossMargin = totalRevenue > 0 ? Math.round(((totalGrossProfit / totalRevenue) * 100) * 10) / 10 : 0;
-  const totalOverhead = rows.reduce((s, r) => s + r.allocatedOverhead, 0);
-  const totalNetProfit = totalGrossProfit - totalOverhead;
-  const avgNetMargin = totalRevenue > 0 ? Math.round(((totalNetProfit / totalRevenue) * 100) * 10) / 10 : 0;
+  const totalNetProfit = totalGrossProfit;
+  const avgNetMargin = avgGrossMargin;
   const avgProfitPerMove = rows.length > 0 ? Math.round(totalGrossProfit / rows.length) : 0;
   const lowMarginCount = rows.filter((r) => r.grossMargin < 25).length;
 

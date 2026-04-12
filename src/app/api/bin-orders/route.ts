@@ -194,6 +194,7 @@ export async function POST(req: NextRequest) {
         square_customer_id: squareCustomerId || null,
         square_card_id: squareCardId || null,
         payment_status: "paid",
+        paid_total_cents: amountCents,
         move_id: moveId || null,
         source: source || "standalone",
       })

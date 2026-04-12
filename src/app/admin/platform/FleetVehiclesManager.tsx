@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "../components/Toast";
 import ModalOverlay from "../components/ModalOverlay";
 import { Icon } from "@/components/AppIcons";
-import { CaretDown, PencilSimple as Pencil, Plus } from "@phosphor-icons/react";
+import { CaretDown, CaretRight, PencilSimple as Pencil, Plus } from "@phosphor-icons/react";
 import {
   ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS,
   ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS,
@@ -310,6 +310,7 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
                     >
                       <Pencil weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
                       Edit
+                      <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
                     </button>
                     <button
                       type="button"
@@ -318,6 +319,7 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
                     >
                       <Plus weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
                       Log Maintenance
+                      <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
                     </button>
                     {v.status !== "retired" && (
                       <button

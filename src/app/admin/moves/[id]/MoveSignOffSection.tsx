@@ -6,6 +6,8 @@ type SignOff = {
   id: string;
   signed_by: string;
   signed_at: string;
+  /** data:image PNG from crew sign-off pad */
+  signature_data_url?: string | null;
   signed_lat: number | null;
   signed_lng: number | null;
   all_items_received: boolean;
@@ -93,6 +95,9 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
     ? new Date(signOff.damage_report_deadline) < new Date()
     : false;
 
+  const sigPreviewUrl =
+    signOff?.signature_data_url || (signOff as { signature_url?: string | null } | null)?.signature_url;
+
   return (
     <div className="space-y-3">
       {/* Escalation banner */}
@@ -123,9 +128,9 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
               href={`/api/admin/moves/${moveId}/signoff/receipt`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[10px] font-medium text-[var(--gold)] hover:underline"
+              className="text-[10px] font-semibold text-[#5C1A33] hover:underline"
             >
-              Download PDF Receipt
+              Download PDF receipt
             </a>
           </div>
 
@@ -140,6 +145,18 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
               <div><span className="text-[var(--tx3)]">Location:</span> {signOff.signed_lat.toFixed(4)}, {signOff.signed_lng?.toFixed(4)}</div>
             )}
           </div>
+
+          {sigPreviewUrl ? (
+            <div className="mt-3 rounded-lg border border-[var(--brd)]/60 bg-[#FAF7F2] p-3 max-w-md">
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Client signature</div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={sigPreviewUrl}
+                alt="Client signature"
+                className="max-h-28 w-full object-contain object-left"
+              />
+            </div>
+          ) : null}
 
           {/* Damage window */}
           {signOff.damage_report_deadline && (

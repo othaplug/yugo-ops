@@ -52,6 +52,25 @@ export function calcHST(preTax: number | string | null | undefined): number {
   return Math.round(n * ONTARIO_HST_RATE * 100) / 100;
 }
 
+/**
+ * Split a tax-inclusive total into pre-tax + HST components (Ontario 13%).
+ * Use for job deposit/balance amounts: `moves.deposit_amount` and `moves.balance_amount` are stored tax-inclusive.
+ */
+export function splitOntarioTaxInclusive(inclusive: number | string | null | undefined): {
+  preTax: number;
+  hst: number;
+  inclusive: number;
+} {
+  const raw = typeof inclusive === "string" ? parseFloat(inclusive) : Number(inclusive);
+  const inc = Math.round(raw * 100) / 100;
+  if (Number.isNaN(inc) || inc <= 0) {
+    return { preTax: 0, hst: 0, inclusive: 0 };
+  }
+  const preTax = Math.round((inc / (1 + ONTARIO_HST_RATE)) * 100) / 100;
+  const hst = Math.round((inc - preTax) * 100) / 100;
+  return { preTax, hst, inclusive: inc };
+}
+
 /** Format price + HST line: "$1,234 + $160 HST" */
 export function formatWithHST(preTax: number | string | null | undefined): string {
   const n = typeof preTax === "string" ? parseFloat(preTax) : Number(preTax);

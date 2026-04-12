@@ -24,7 +24,7 @@ export default function RealtorPartnersSection({ partners }: { partners: Referra
           <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">
             Referral partner organizations
           </h3>
-          <InfoHint variant="admin" ariaLabel="About referral partner organizations" align="start">
+          <InfoHint variant="admin" ariaLabel="About referral partner organizations">
             <p className="text-[12px] leading-relaxed">
               Organization records for realtors, property managers, and developers (commissions & referral
               pipeline). Portal access and login invites are managed per organization. Individual realtor contacts for

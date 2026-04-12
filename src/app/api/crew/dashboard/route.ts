@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
 
   /** Avoid columns missing on some prod DBs (`from_postal_code`, `recurring_schedule_id`, `notes`). */
   const moveSelect =
-    "id, move_code, client_name, from_address, to_address, scheduled_date, scheduled_time, status, move_type, crew_id, event_group_id, event_phase, event_name, weather_brief, weather_alert";
+    "id, move_code, client_name, from_address, to_address, scheduled_date, scheduled_time, status, move_type, crew_id, event_group_id, event_phase, event_name, weather_brief, weather_alert, completed_at";
   const deliverySelect =
     "id, delivery_number, customer_name, client_name, pickup_address, delivery_address, scheduled_date, time_slot, status, items, crew_id, booking_type, created_by_source";
 
@@ -114,6 +114,41 @@ export async function GET(req: NextRequest) {
     deliveries.push(d);
   }
 
+  const moveIdsForSession = moves.map((m) => m.id);
+  const latestSessionByMoveId = new Map<
+    string,
+    { status: string; completed_at: string | null }
+  >();
+  if (moveIdsForSession.length > 0) {
+    const { data: sessionRows } = await supabase
+      .from("tracking_sessions")
+      .select("job_id, status, completed_at, created_at")
+      .eq("job_type", "move")
+      .in("job_id", moveIdsForSession);
+    const bestByJob = new Map<
+      string,
+      { status: string; completed_at: string | null; created_at: string }
+    >();
+    for (const row of sessionRows || []) {
+      const jid = row.job_id as string;
+      const created = String((row as { created_at?: string }).created_at || "");
+      const cur = bestByJob.get(jid);
+      if (!cur || created > cur.created_at) {
+        bestByJob.set(jid, {
+          status: String(row.status || ""),
+          completed_at: (row.completed_at as string | null) ?? null,
+          created_at: created,
+        });
+      }
+    }
+    for (const [jid, v] of bestByJob) {
+      latestSessionByMoveId.set(jid, {
+        status: v.status,
+        completed_at: v.completed_at,
+      });
+    }
+  }
+
   type Job = {
     id: string;
     jobId: string;
@@ -148,6 +183,20 @@ export async function GET(req: NextRequest) {
     const wa = (m as { weather_alert?: string | null }).weather_alert;
     const weatherAlert = wa != null && String(wa).trim() !== "" ? String(wa) : null;
 
+    const rawStatus = (m.status || "scheduled").toLowerCase();
+    const sessionSnap = latestSessionByMoveId.get(m.id);
+    const sessionSaysDone =
+      (sessionSnap?.status || "").toLowerCase() === "completed";
+    const moveRowSaysDone =
+      rawStatus === "completed" || rawStatus === "cancelled";
+    const effectiveStatus =
+      sessionSaysDone && !moveRowSaysDone ? "completed" : m.status || "scheduled";
+    const completedAtFromRow = (m as { completed_at?: string | null }).completed_at;
+    const effectiveCompletedAt =
+      effectiveStatus.toLowerCase() === "completed"
+        ? completedAtFromRow ?? sessionSnap?.completed_at ?? null
+        : null;
+
     jobs.push({
       id: m.id,
       jobId: m.move_code || m.id,
@@ -157,8 +206,8 @@ export async function GET(req: NextRequest) {
       toAddress: m.to_address || "-",
       jobTypeLabel: eventJobTypeLabel ?? (m.move_type === "office" ? "Office · Commercial" : "Residential"),
       scheduledTime: time,
-      status: m.status || "scheduled",
-      completedAt: null,
+      status: effectiveStatus,
+      completedAt: effectiveCompletedAt,
       eventPhase,
       eventName,
       weatherBrief,

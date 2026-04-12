@@ -22,9 +22,6 @@ import {
   Image,
   Clock,
   Lock,
-  PencilSimple,
-  Warning,
-  Phone,
   Check,
   Toolbox,
   ListChecks,
@@ -36,6 +33,9 @@ import { formatPlatformDisplay } from "@/lib/date-format";
 import {
   MOVE_STATUS_FLOW,
   DELIVERY_STATUS_FLOW,
+  CREW_MOVE_PROGRESS_BAR_LABELS,
+  CREW_DELIVERY_PROGRESS_BAR_LABELS,
+  mapMoveProgressIdxToBarIndex,
   getNextStatus,
   getCrewCheckpointDisplayLabel,
 } from "@/lib/crew-tracking-status";
@@ -64,6 +64,12 @@ const CrewNavigation = dynamic(
   () =>
     import("@/components/crew/CrewNavigation").then((m) => m.CrewNavigation),
   { ssr: false },
+);
+
+const WaiverFlow = dynamic(
+  () =>
+    import("@/components/crew/WaiverFlow").then((m) => m.WaiverFlow),
+  { ssr: false, loading: () => null },
 );
 
 const DISPATCH_PHONE = process.env.NEXT_PUBLIC_YUGO_PHONE || "(647) 370-4525";
@@ -155,6 +161,8 @@ interface DeliveryStop {
 interface JobDetail {
   id: string;
   jobId: string;
+  viewerCrewMemberId?: string;
+  viewerCrewMemberName?: string;
   jobType: "move" | "delivery";
   bookingType?: string | null;
   stopsCompleted?: number;
@@ -251,6 +259,7 @@ export default function CrewJobPage({
   const [reportDesc, setReportDesc] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportSubmitted, setReportSubmitted] = useState(false);
+  const [waiverFlowOpen, setWaiverFlowOpen] = useState(false);
   const [canAdvanceFromArrived, setCanAdvanceFromArrived] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("status");
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -1116,39 +1125,17 @@ export default function CrewJobPage({
             <StageProgressBar
               stages={
                 jobType === "move"
-                  ? [
-                      { label: "En Route" },
-                      { label: "Loading" },
-                      { label: "Unloading" },
-                      { label: "Complete" },
-                    ]
-                  : [
-                      { label: "En Route" },
-                      { label: "Arrived" },
-                      { label: "Delivering" },
-                      { label: "Complete" },
-                    ]
+                  ? CREW_MOVE_PROGRESS_BAR_LABELS.map((label) => ({ label }))
+                  : CREW_DELIVERY_PROGRESS_BAR_LABELS.map((label) => ({
+                      label,
+                    }))
               }
               currentIndex={
-                isCompleted
-                  ? 3
-                  : progressIdx >= 0
-                    ? jobType === "move"
-                      ? progressIdx <= 0
-                        ? 0
-                        : progressIdx <= 2
-                          ? 1
-                          : progressIdx <= 5
-                            ? 2
-                            : 3
-                      : progressIdx <= 0
-                        ? 0
-                        : progressIdx <= 1
-                          ? 1
-                          : progressIdx <= 3
-                            ? 2
-                            : 3
-                    : -1
+                progressIdx < 0
+                  ? -1
+                  : jobType === "move"
+                    ? mapMoveProgressIdxToBarIndex(progressIdx)
+                    : progressIdx
               }
               variant="light"
               lightAccent="wine"
@@ -1543,12 +1530,13 @@ export default function CrewJobPage({
             </div>
           )}
 
-          {/* Quick actions — outlined wine / restrained warning (premium crew job row) */}
+          {/* Quick actions — forest / red / wine / leather (brand fills) */}
           {!isCompleted && (
-            <div className="flex items-center justify-center gap-3 pt-2 pb-1 flex-wrap">
+            <div className="flex items-center justify-center gap-2 pt-2 pb-1 flex-wrap">
               {session?.isActive && (
                 <button
                   type="button"
+                  data-no-min-height
                   onClick={() => {
                     const el = noteInputRef.current;
                     if (el) {
@@ -1559,40 +1547,34 @@ export default function CrewJobPage({
                       el.focus();
                     }
                   }}
-                  className="crew-job-action-chip inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 border border-[#5C1A33]/55 bg-transparent text-[12px] font-semibold tracking-[0.04em] text-[#5C1A33] hover:bg-[#5C1A33]/[0.07] hover:border-[#5C1A33]/75 active:scale-[0.98] transition-colors [font-family:var(--font-body)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5C1A33]/35"
+                  className="crew-job-flat inline-flex items-center justify-center min-h-[24px] px-3 py-0.5 !rounded-none border border-solid border-[rgba(28,58,43,0.95)] !bg-[#2C3E2D] !text-[#FFFBF7] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] leading-none [font-family:var(--font-body)] shadow-none transition-[filter,opacity] hover:!brightness-[0.96] active:!brightness-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C3E2D] touch-manipulation"
                 >
-                  <PencilSimple
-                    size={16}
-                    weight="regular"
-                    className="shrink-0 text-[#5C1A33]/85"
-                    aria-hidden
-                  />
                   Note
                 </button>
               )}
               <button
                 type="button"
+                data-no-min-height
                 onClick={() => setReportModalOpen(true)}
-                className="crew-job-action-chip inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 border border-[#92400e]/45 bg-transparent text-[12px] font-semibold tracking-[0.04em] text-[#78350f] hover:bg-[#b45309]/[0.08] hover:border-[#92400e]/55 active:scale-[0.98] transition-colors [font-family:var(--font-body)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b45309]/40"
+                className="crew-job-flat inline-flex items-center justify-center min-h-[24px] px-3 py-0.5 !rounded-none border border-solid border-[rgba(120,35,35,0.95)] !bg-[#B83030] !text-[#FFFBF7] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] leading-none [font-family:var(--font-body)] shadow-none transition-[filter,opacity] hover:!brightness-[0.96] active:!brightness-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B83030] touch-manipulation"
               >
-                <Warning
-                  size={16}
-                  weight="regular"
-                  className="shrink-0 text-[#b45309]"
-                  aria-hidden
-                />
                 Report issue
               </button>
+              {jobType === "move" && session?.isActive && (
+                <button
+                  type="button"
+                  data-no-min-height
+                  onClick={() => setWaiverFlowOpen(true)}
+                  className="crew-job-flat inline-flex items-center justify-center min-h-[24px] px-3 py-0.5 !rounded-none border border-solid border-[rgba(61,18,36,0.95)] !bg-[#5C1A33] !text-[#FFFBF7] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] leading-none [font-family:var(--font-body)] shadow-none transition-[filter,opacity] hover:!brightness-[0.96] active:!brightness-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5C1A33] touch-manipulation"
+                  aria-label="Open on-site risk waiver"
+                >
+                  Risk waiver
+                </button>
+              )}
               <a
                 href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
-                className="crew-job-action-chip inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 border border-[#5C1A33]/55 bg-transparent text-[12px] font-semibold tracking-[0.04em] text-[#5C1A33] hover:bg-[#5C1A33]/[0.07] hover:border-[#5C1A33]/75 active:scale-[0.98] transition-colors [font-family:var(--font-body)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5C1A33]/35"
+                className="crew-job-flat inline-flex items-center justify-center min-h-[24px] px-3 py-0.5 !rounded-none border border-solid border-[rgba(55,32,22,0.95)] !bg-[#492A1D] !text-[#FFFBF7] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] leading-none [font-family:var(--font-body)] shadow-none transition-[filter,opacity] hover:!brightness-[0.96] active:!brightness-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#492A1D] touch-manipulation no-underline"
               >
-                <Phone
-                  size={16}
-                  weight="regular"
-                  className="shrink-0 text-[#5C1A33]/85"
-                  aria-hidden
-                />
                 Dispatch
               </a>
             </div>
@@ -1894,6 +1876,20 @@ export default function CrewJobPage({
         )}
 
       {/* Report Modal — portaled to body so position:fixed is viewport-relative (main.tab-content uses transform animation) */}
+      {job &&
+        jobType === "move" &&
+        job.viewerCrewMemberId &&
+        typeof job.clientName === "string" && (
+          <WaiverFlow
+            open={waiverFlowOpen}
+            onClose={() => setWaiverFlowOpen(false)}
+            moveId={job.id}
+            clientName={job.clientName}
+            viewerCrewMemberId={job.viewerCrewMemberId}
+            viewerCrewMemberName={job.viewerCrewMemberName ?? ""}
+          />
+        )}
+
       {reportModalOpen &&
         typeof document !== "undefined" &&
         createPortal(

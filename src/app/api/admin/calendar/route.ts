@@ -371,14 +371,13 @@ export async function GET(req: NextRequest) {
         if (!dk) continue;
         const calSt = binOrderCalendarStatus(o.status);
         if (statusFilter && calSt !== statusFilter) continue;
-        const nm = String(o.client_name || "").trim() || "Client";
         const ord = String(o.order_number || "").trim() || "BIN";
-        const addr = shortCalAddr(o.delivery_address);
+        const nm = String(o.client_name || "").trim() || "Client";
         events.push({
           id: `bin-drop-${o.id}`,
           type: "bin_delivery",
           blockType: "bin_delivery",
-          name: `${ord} Delivery — ${nm} → ${addr}`,
+          name: `${ord} · Drop-off`,
           description: "Bin rental · drop-off",
           date: dk,
           start: "09:00",
@@ -407,15 +406,14 @@ export async function GET(req: NextRequest) {
         if (!dk) continue;
         const calSt = binOrderCalendarStatus(o.status);
         if (statusFilter && calSt !== statusFilter) continue;
-        const nm = String(o.client_name || "").trim() || "Client";
         const ord = String(o.order_number || "").trim() || "BIN";
+        const nm = String(o.client_name || "").trim() || "Client";
         const pickSrc = (o.pickup_address || o.delivery_address || "").trim();
-        const addr = shortCalAddr(pickSrc);
         events.push({
           id: `bin-pick-${o.id}`,
           type: "bin_pickup",
           blockType: "bin_pickup",
-          name: `${ord} Pickup — ${nm} ← ${addr}`,
+          name: `${ord} · Pickup`,
           description: "Bin rental · pickup",
           date: dk,
           start: "14:00",

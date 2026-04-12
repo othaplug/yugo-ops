@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { CaretDown, CaretRight } from "@phosphor-icons/react";
 import BackButton from "../components/BackButton";
 import { formatCompactCurrency } from "@/lib/format-currency";
 
@@ -112,6 +113,7 @@ function KpiBlock({
 export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]; stats: Stats }) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const router = useRouter();
 
   const filtered = useMemo(() => {
@@ -144,21 +146,44 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
           <h1 className="admin-page-hero text-[var(--tx)]">Bin Rentals</h1>
         </div>
         <Link
-          href="/admin/quotes/new"
+          href="/admin/quotes/new?service=bin_rental"
           className="group inline-flex items-center gap-2 shrink-0 rounded-lg border border-[var(--brd)] px-4 py-2.5 text-[10px] font-bold tracking-wide text-[var(--tx)] shadow-sm transition-all hover:border-[#2C3E2D]/35 hover:bg-[var(--bg2)] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C3E2D]/40"
         >
           Generate quote
         </Link>
       </div>
 
-      <SectionDivider label="Summary" />
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-8">
-        <KpiBlock label="Active Orders" value={String(stats.activeOrders)} sub="In progress" />
-        <KpiBlock label="Drop-offs This Week" value={String(stats.dropoffsThisWeek)} />
-        <KpiBlock label="Pickups This Week" value={String(stats.pickupsThisWeek)} />
-        <KpiBlock label="Revenue (30d)" value={formatCompactCurrency(stats.revenue30d)} sub="Paid orders" accent />
+      <div className="relative my-8">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-[var(--brd)]" />
+        </div>
+        <div className="relative flex justify-start">
+          <button
+            type="button"
+            onClick={() => setSummaryOpen((o) => !o)}
+            className="bg-[var(--bg)] pr-4 flex items-center gap-2 text-left min-w-0 touch-manipulation hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C3E2D]/40 rounded-sm"
+            aria-expanded={summaryOpen}
+          >
+            {summaryOpen ? (
+              <CaretDown className="w-3.5 h-3.5 shrink-0 text-[var(--tx3)]" weight="bold" aria-hidden />
+            ) : (
+              <CaretRight className="w-3.5 h-3.5 shrink-0 text-[var(--tx3)]" weight="bold" aria-hidden />
+            )}
+            <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 select-none">
+              Summary
+            </span>
+          </button>
+        </div>
       </div>
+
+      {summaryOpen ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-8">
+          <KpiBlock label="Active Orders" value={String(stats.activeOrders)} sub="In progress" />
+          <KpiBlock label="Drop-offs This Week" value={String(stats.dropoffsThisWeek)} />
+          <KpiBlock label="Pickups This Week" value={String(stats.pickupsThisWeek)} />
+          <KpiBlock label="Revenue (30d)" value={formatCompactCurrency(stats.revenue30d)} sub="Paid orders" accent />
+        </div>
+      ) : null}
 
       <SectionDivider label="Orders" />
 

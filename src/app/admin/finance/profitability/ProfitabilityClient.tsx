@@ -57,6 +57,8 @@ interface ProfitRow {
   grossMargin: number;
   netMargin: number;
   hasOverride?: boolean;
+  /** Card payment: show processing pass-through estimate in the Proc. column. */
+  paid_with_card?: boolean;
 }
 
 type CostField = "labour" | "fuel" | "truck" | "supplies" | "processing";
@@ -180,10 +182,10 @@ function formatTableDate(d: string | null | undefined): string {
 }
 const marginColor = (m: number, t: number) =>
   m >= t
-    ? "text-emerald-400"
+    ? "text-emerald-800 dark:text-emerald-400"
     : m >= t - 5
-      ? "text-[var(--gold)]"
-      : "text-red-400";
+      ? "text-amber-800 dark:text-amber-300"
+      : "text-red-800 dark:text-red-400";
 const marginBg = (m: number, t: number) =>
   m >= t
     ? "bg-emerald-500/10 border-emerald-500/20"
@@ -274,7 +276,7 @@ function EditableCostCell({
         <button
           type="button"
           onClick={commit}
-          className="text-[10px] font-semibold text-emerald-400 hover:text-emerald-300 px-1 py-0.5"
+          className="text-[10px] font-semibold text-emerald-800 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 px-1 py-0.5"
           disabled={saving}
         >
           Done
@@ -346,25 +348,21 @@ function ChartTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#1A1A1A] border border-[var(--brd)] rounded-lg px-3 py-2 shadow-lg text-[11px]">
+    <div className="rounded-lg border border-[var(--brd)] bg-[var(--card)] px-3 py-2 shadow-lg text-[11px] text-[var(--tx)]">
       {label && (
-        <div className="text-[var(--tx3)] font-medium mb-1">{label}</div>
+        <div className="text-[var(--tx2)] font-medium mb-1">{label}</div>
       )}
       {payload.map((p) => (
         <div key={p.name} className="text-[var(--tx)]">
           {p.name === "grossMargin"
             ? "Gross Margin"
-            : p.name === "netMargin"
-              ? "Net Margin"
-              : p.name === "avgGP"
+            : p.name === "avgGP"
                 ? "Avg Gross Profit"
                 : p.name}
           {": "}
-          <span className="font-semibold text-[var(--gold)]">
+          <span className="font-semibold tabular-nums text-[#14532d] dark:text-emerald-300">
             {typeof p.value === "number" &&
-            (p.name.includes("Margin") ||
-              p.name === "grossMargin" ||
-              p.name === "netMargin")
+            (p.name.includes("Margin") || p.name === "grossMargin")
               ? `${p.value}%`
               : formatCurrency(p.value)}
           </span>
@@ -705,7 +703,7 @@ function OverheadEditor({
           disabled={saving}
           className={`flex items-center gap-1.5 text-[11px] font-semibold px-4 py-1.5 rounded-lg transition-all ${
             saved
-              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+              ? "bg-emerald-500/20 text-emerald-900 dark:text-emerald-300 border border-emerald-600/25 dark:border-emerald-500/30"
               : "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:opacity-90"
           } disabled:opacity-50`}
         >
@@ -821,23 +819,17 @@ export default function ProfitabilityClient() {
         prev.map((r) => {
           if (r.id !== rowId) return r;
           const updated = { ...r, [field]: newValue, hasOverride: true };
-          const {
-            labour,
-            fuel,
-            truck,
-            supplies,
-            processing,
-            revenue,
-            allocatedOverhead,
-          } = updated;
-          const totalDirect = labour + fuel + truck + supplies + processing;
+          const { labour, fuel, truck, supplies, processing, revenue } = updated;
+          void processing;
+          const totalDirect = labour + fuel + truck + supplies;
           const grossProfit = revenue - totalDirect;
-          const netProfit = grossProfit - allocatedOverhead;
+          const netProfit = grossProfit;
           return {
             ...updated,
             totalDirect: Math.round(totalDirect),
             grossProfit: Math.round(grossProfit),
             netProfit: Math.round(netProfit),
+            allocatedOverhead: 0,
             grossMargin:
               revenue > 0
                 ? Math.round((grossProfit / revenue) * 100 * 10) / 10
@@ -1040,17 +1032,14 @@ export default function ProfitabilityClient() {
       {
         totalRev: number;
         totalDirect: number;
-        totalOverhead: number;
         count: number;
       }
     > = {};
     for (const r of rows) {
       const mo = r.date?.slice(0, 7) || "unknown";
-      if (!m[mo])
-        m[mo] = { totalRev: 0, totalDirect: 0, totalOverhead: 0, count: 0 };
+      if (!m[mo]) m[mo] = { totalRev: 0, totalDirect: 0, count: 0 };
       m[mo].totalRev += r.revenue;
       m[mo].totalDirect += r.totalDirect;
-      m[mo].totalOverhead += r.allocatedOverhead;
       m[mo].count++;
     }
     return Object.entries(m)
@@ -1061,14 +1050,6 @@ export default function ProfitabilityClient() {
           v.totalRev > 0
             ? Math.round(
                 ((v.totalRev - v.totalDirect) / v.totalRev) * 100 * 10,
-              ) / 10
-            : 0,
-        netMargin:
-          v.totalRev > 0
-            ? Math.round(
-                ((v.totalRev - v.totalDirect - v.totalOverhead) / v.totalRev) *
-                  100 *
-                  10,
               ) / 10
             : 0,
         moves: v.count,
@@ -1125,13 +1106,10 @@ export default function ProfitabilityClient() {
       "Fuel",
       "Truck",
       "Supplies",
-      "Processing",
+      "Card proc. (est., pass-through)",
       "Direct Cost",
       "Gross Profit",
       "Gross Margin %",
-      "Overhead Alloc",
-      "Net Profit",
-      "Net Margin %",
     ];
     const csvRows = filteredRows.map((r) =>
       [
@@ -1147,13 +1125,10 @@ export default function ProfitabilityClient() {
         r.fuel,
         r.truck,
         r.supplies,
-        r.processing,
+        r.paid_with_card ? r.processing : "",
         r.totalDirect,
         r.grossProfit,
         r.grossMargin,
-        r.allocatedOverhead,
-        r.netProfit,
-        r.netMargin,
       ].join(","),
     );
     const blob = new Blob([headers.join(",") + "\n" + csvRows.join("\n")], {
@@ -1222,7 +1197,7 @@ export default function ProfitabilityClient() {
               <td className="py-1.5 px-2 text-[var(--tx2)]">
                 {formatCurrency(t.avgCost)}
               </td>
-              <td className="py-1.5 px-2 font-medium text-emerald-400">
+              <td className="py-1.5 px-2 font-medium text-emerald-800 dark:text-emerald-400">
                 {formatCurrency(t.avgGP)}
               </td>
               <td
@@ -1315,24 +1290,18 @@ export default function ProfitabilityClient() {
               }
             />
             <StatCard
-              label="Net Margin"
-              value={pct(summary?.avgNetMargin ?? 0)}
-              sub="After Overhead"
-              className={marginColor(summary?.avgNetMargin ?? 0, target - 10)}
-              bgClass={marginBg(summary?.avgNetMargin ?? 0, target - 10)}
-              icon={
-                (summary?.avgNetMargin ?? 0) >= 0 ? (
-                  <TrendingUp className="w-4 h-4" />
-                ) : (
-                  <TrendingDown className="w-4 h-4" />
-                )
-              }
+              label="Monthly overhead"
+              value={formatCurrency(overhead?.total ?? 0)}
+              sub="Company-wide (not allocated per job)"
+              className="text-[var(--tx)]"
+              bgClass="bg-[var(--card)] border-[var(--brd)]/40"
+              icon={null}
             />
             <StatCard
               label="Avg Profit Per Job"
               value={formatCurrency(summary?.avgProfitPerMove ?? 0)}
               sub={`${summary?.moveCount ?? 0} completed jobs`}
-              className="text-[var(--gold)]"
+              className="text-[var(--tx)]"
               bgClass="bg-[var(--gold)]/5 border-[var(--gold)]/15"
             />
             <StatCard
@@ -1340,7 +1309,7 @@ export default function ProfitabilityClient() {
               value={String(summary?.lowMarginCount ?? 0)}
               sub="Jobs below 25% gross"
               className={
-                summary?.lowMarginCount ? "text-red-400" : "text-emerald-400"
+                summary?.lowMarginCount ? "text-red-800 dark:text-red-400" : "text-emerald-800 dark:text-emerald-400"
               }
               bgClass={
                 summary?.lowMarginCount
@@ -1364,15 +1333,15 @@ export default function ProfitabilityClient() {
                 onClick={() =>
                   setMarginFilter((f) => (f === "green" ? "" : "green"))
                 }
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-all duration-150 ${marginFilter === "green" ? "bg-emerald-400/10 ring-1 ring-emerald-400/30" : "hover:bg-[var(--bg2)]"}`}
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-all duration-150 ${marginFilter === "green" ? "bg-emerald-700/10 ring-1 ring-emerald-700/25 dark:bg-emerald-400/10 dark:ring-emerald-400/30" : "hover:bg-[var(--bg2)]"}`}
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                <span className="w-2 h-2 rounded-full bg-emerald-700 dark:bg-emerald-400 shrink-0" />
                 <div className="text-left">
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-[18px] font-bold font-heading text-[var(--tx)] leading-none">
                       {marginFlagBreakdown.green.length}
                     </span>
-                    <span className="text-[9px] font-bold tracking-wider uppercase text-emerald-400/80">
+                    <span className="text-[9px] font-bold tracking-wider uppercase text-emerald-800/95 dark:text-emerald-400/85">
                       {Math.round(
                         (marginFlagBreakdown.green.length /
                           marginFlagBreakdown.total) *
@@ -1426,20 +1395,20 @@ export default function ProfitabilityClient() {
                 onClick={() =>
                   setMarginFilter((f) => (f === "red" ? "" : "red"))
                 }
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-all duration-150 ${marginFilter === "red" ? "bg-red-400/10 ring-1 ring-red-400/30" : "hover:bg-[var(--bg2)]"}`}
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-all duration-150 ${marginFilter === "red" ? "bg-red-800/10 ring-1 ring-red-800/25 dark:bg-red-400/10 dark:ring-red-400/30" : "hover:bg-[var(--bg2)]"}`}
               >
                 <span
-                  className={`w-2 h-2 rounded-full shrink-0 ${marginFlagBreakdown.red.length > 0 ? "bg-red-400" : "bg-[var(--tx3)]/30"}`}
+                  className={`w-2 h-2 rounded-full shrink-0 ${marginFlagBreakdown.red.length > 0 ? "bg-red-700 dark:bg-red-400" : "bg-[var(--tx3)]/30"}`}
                 />
                 <div className="text-left">
                   <div className="flex items-baseline gap-1.5">
                     <span
-                      className={`text-[18px] font-bold font-heading leading-none ${marginFlagBreakdown.red.length > 0 ? "text-red-400" : "text-[var(--tx3)]"}`}
+                      className={`text-[18px] font-bold font-heading leading-none ${marginFlagBreakdown.red.length > 0 ? "text-red-800 dark:text-red-400" : "text-[var(--tx3)]"}`}
                     >
                       {marginFlagBreakdown.red.length}
                     </span>
                     {marginFlagBreakdown.red.length > 0 && (
-                      <span className="text-[9px] font-bold tracking-wider uppercase text-red-400/80">
+                      <span className="text-[9px] font-bold tracking-wider uppercase text-red-800/90 dark:text-red-400/85">
                         {Math.round(
                           (marginFlagBreakdown.red.length /
                             marginFlagBreakdown.total) *
@@ -1608,7 +1577,7 @@ export default function ProfitabilityClient() {
                           <td className="py-1.5 px-2 text-[var(--tx2)]">
                             {formatCurrency(t.avgCost)}
                           </td>
-                          <td className="py-1.5 px-2 font-medium text-emerald-400">
+                          <td className="py-1.5 px-2 font-medium text-emerald-800 dark:text-emerald-400">
                             {formatCurrency(t.avgGP)}
                           </td>
                           <td
@@ -1740,7 +1709,7 @@ export default function ProfitabilityClient() {
                         <td className="py-1.5 px-2 text-[var(--tx2)]">
                           {formatCurrency(n.avgRevenue)}
                         </td>
-                        <td className="py-1.5 px-2 font-medium text-emerald-400">
+                        <td className="py-1.5 px-2 font-medium text-emerald-800 dark:text-emerald-400">
                           {formatCurrency(n.avgGP)}
                         </td>
                         <td
@@ -1798,14 +1767,6 @@ export default function ProfitabilityClient() {
                       dot={{ r: 3, fill: "#2C3E2D" }}
                       activeDot={{ r: 4 }}
                     />
-                    <Line
-                      type="monotone"
-                      dataKey="netMargin"
-                      stroke="#2D6A4F"
-                      strokeWidth={2}
-                      dot={{ r: 3, fill: "#2D6A4F" }}
-                      activeDot={{ r: 4 }}
-                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -1813,10 +1774,6 @@ export default function ProfitabilityClient() {
                 <span className="flex items-center gap-1.5">
                   <span className="w-3 h-0.5 bg-[#2C3E2D] rounded-full inline-block" />
                   Gross Margin
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-0.5 bg-[#2D6A4F] rounded-full inline-block" />
-                  Net Margin
                 </span>
               </div>
             </Section>
@@ -1986,11 +1943,12 @@ export default function ProfitabilityClient() {
                       ) : null,
                       <th
                         key="proc"
+                        title="Estimated card processing pass-through (client-paid). Not in direct cost."
                         className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none"
                         onClick={() => toggleSort("processing")}
                       >
                         <span className="inline-flex items-center gap-0.5">
-                          Proc.
+                          Card proc.
                           <ArrowUpDown className="w-2.5 h-2.5 opacity-40" />
                         </span>
                         <ColHandle col={10} />
@@ -2074,7 +2032,7 @@ export default function ProfitabilityClient() {
                         <td className="py-1.5 px-2 text-[var(--tx3)] tabular-nums overflow-hidden text-ellipsis whitespace-nowrap">
                           {r.actual_hours != null ? `${r.actual_hours}h` : "-"}
                         </td>
-                        <td className="py-1.5 px-2 text-red-400/80 overflow-hidden whitespace-nowrap">
+                        <td className="py-1.5 px-2 text-rose-800 dark:text-rose-400/90 overflow-hidden whitespace-nowrap">
                           <EditableCostCell
                             value={r.labour ?? 0}
                             field="labour"
@@ -2082,7 +2040,7 @@ export default function ProfitabilityClient() {
                             onSaved={handleCostSaved}
                           />
                         </td>
-                        <td className="py-1.5 px-2 text-red-400/80 overflow-hidden whitespace-nowrap">
+                        <td className="py-1.5 px-2 text-rose-800 dark:text-rose-400/90 overflow-hidden whitespace-nowrap">
                           <EditableCostCell
                             value={r.fuel}
                             field="fuel"
@@ -2090,7 +2048,7 @@ export default function ProfitabilityClient() {
                             onSaved={handleCostSaved}
                           />
                         </td>
-                        <td className="py-1.5 px-2 text-red-400/80 overflow-hidden whitespace-nowrap">
+                        <td className="py-1.5 px-2 text-rose-800 dark:text-rose-400/90 overflow-hidden whitespace-nowrap">
                           <EditableCostCell
                             value={r.truck}
                             field="truck"
@@ -2099,7 +2057,7 @@ export default function ProfitabilityClient() {
                           />
                         </td>
                         {tableTab !== "deliveries" && (
-                          <td className="py-1.5 px-2 text-red-400/80 overflow-hidden whitespace-nowrap">
+                          <td className="py-1.5 px-2 text-rose-800 dark:text-rose-400/90 overflow-hidden whitespace-nowrap">
                             <EditableCostCell
                               value={r.supplies}
                               field="supplies"
@@ -2108,18 +2066,24 @@ export default function ProfitabilityClient() {
                             />
                           </td>
                         )}
-                        <td className="py-1.5 px-2 text-red-400/80 overflow-hidden whitespace-nowrap">
-                          <EditableCostCell
-                            value={r.processing}
-                            field="processing"
-                            row={r}
-                            onSaved={handleCostSaved}
-                          />
+                        <td
+                          className={`py-1.5 px-2 overflow-hidden whitespace-nowrap ${r.paid_with_card ? "text-[var(--tx2)]" : "text-[var(--tx3)]"}`}
+                        >
+                          {r.paid_with_card ? (
+                            <EditableCostCell
+                              value={r.processing}
+                              field="processing"
+                              row={r}
+                              onSaved={handleCostSaved}
+                            />
+                          ) : (
+                            "—"
+                          )}
                         </td>
-                        <td className="py-1.5 px-2 font-medium text-red-400 overflow-hidden text-ellipsis whitespace-nowrap">
+                        <td className="py-1.5 px-2 font-medium text-rose-900 dark:text-rose-400 overflow-hidden text-ellipsis whitespace-nowrap">
                           {formatCurrency(r.totalDirect)}
                         </td>
-                        <td className="py-1.5 px-2 font-medium text-emerald-400 overflow-hidden text-ellipsis whitespace-nowrap">
+                        <td className="py-1.5 px-2 font-medium text-emerald-800 dark:text-emerald-400 overflow-hidden text-ellipsis whitespace-nowrap">
                           {formatCurrency(r.grossProfit)}
                         </td>
                         <td
@@ -2157,9 +2121,8 @@ export default function ProfitabilityClient() {
                 </span>
                 {overhead && (
                   <span className="text-[11px] text-[var(--tx3)]">
-                    {formatCurrency(overhead.total)}/mo ·{" "}
-                    {formatCurrency(overhead.perMove)} per job · break-even{" "}
-                    {overhead.breakEven} jobs
+                    {formatCurrency(overhead.total)}/mo · ~{formatCurrency(overhead.perMove)} per job
+                    if spread (not deducted from job rows) · break-even ~{overhead.breakEven} jobs
                   </span>
                 )}
               </div>
@@ -2172,9 +2135,7 @@ export default function ProfitabilityClient() {
             {showOverhead && (
               <div className="px-5 pb-5 border-t border-[var(--brd)]/40">
                 <p className="text-[10px] text-[var(--tx3)] pt-3 pb-4">
-                  Edit your fixed monthly costs. Changes are saved to the
-                  platform and affect all profitability calculations
-                  immediately.
+                  Edit fixed monthly business costs. Job-level gross margin uses labour, truck, fuel, and supplies only. Overhead is for company-wide and break-even modeling, not per-job deductions.
                 </p>
                 <OverheadEditor config={overheadConfig} onSaved={fetchData} />
               </div>

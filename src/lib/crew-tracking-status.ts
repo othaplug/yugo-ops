@@ -25,6 +25,37 @@ export const MOVE_STATUS_FLOW: TrackingStatus[] = [
   "completed",
 ];
 
+/**
+ * Crew job horizontal bar: five key checkpoints (summary, not 1:1 with every DB status).
+ * En route · Loading · To drop-off · Unloading · Complete
+ */
+export const CREW_MOVE_PROGRESS_BAR_LABELS: string[] = [
+  "En route",
+  "Loading",
+  "To drop-off",
+  "Unloading",
+  "Complete",
+];
+
+/** Map MOVE_STATUS_FLOW index (0–6) to {@link CREW_MOVE_PROGRESS_BAR_LABELS} index (0–4). */
+export function mapMoveProgressIdxToBarIndex(progressIdx: number): number {
+  if (progressIdx < 0) return -1;
+  if (progressIdx <= 1) return 0;
+  if (progressIdx === 2) return 1;
+  if (progressIdx === 3) return 2;
+  if (progressIdx <= 5) return 3;
+  return 4;
+}
+
+/** Crew job horizontal bar for deliveries: one label per DELIVERY_STATUS_FLOW step. */
+export const CREW_DELIVERY_PROGRESS_BAR_LABELS: string[] = [
+  "To pickup",
+  "At pickup",
+  "To drop-off",
+  "At drop-off",
+  "Complete",
+];
+
 /** Delivery/project status progression */
 export const DELIVERY_STATUS_FLOW: TrackingStatus[] = [
   "en_route_to_pickup",

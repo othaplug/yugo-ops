@@ -7,7 +7,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
-import { CaretRight, House, X, Warning } from "@phosphor-icons/react";
+import { CaretRight, House, MapPin, X, Warning } from "@phosphor-icons/react";
 import { TrackingFreshness } from "@/components/tracking/TrackingFreshness";
 import { useTheme } from "../components/ThemeContext";
 
@@ -193,6 +193,38 @@ function isOnJob(status: string): boolean {
   return !["idle", "offline", "returning"].includes(status);
 }
 
+/** List / map label: member names when available, otherwise team name without a leading "Team " prefix. */
+function crewMemberLine(
+  members: string[] | undefined | null,
+  teamName: string,
+): string {
+  if (members && members.length > 0) {
+    const parts = members.map((m) => m.trim()).filter(Boolean);
+    if (parts.length > 0) return parts.join(", ");
+  }
+  return (teamName || "Crew").replace(/^Team\s+/i, "");
+}
+
+/** Two-letter avatar from the first member when possible, else from the team name. */
+function crewAvatarInitials(
+  members: string[] | undefined | null,
+  teamName: string,
+): string {
+  if (members && members.length > 0) {
+    const first = members[0].trim();
+    if (first) {
+      const w = first.split(/\s+/).filter(Boolean);
+      if (w.length >= 2) {
+        const a = w[0][0] ?? "";
+        const b = w[w.length - 1][0] ?? "";
+        return `${a}${b}`.toUpperCase().slice(0, 2);
+      }
+      return first.slice(0, 2).toUpperCase();
+    }
+  }
+  return (teamName || "?").replace(/^Team\s+/i, "").slice(0, 2).toUpperCase();
+}
+
 /** crew_locations row first, then tracking session stage, then coarse crew en-route fallback — matches CrewPopup. */
 function effectiveTrackingStatus(
   crew: Crew,
@@ -221,6 +253,12 @@ const SESSION_STATUS_HEADING_PICKUP = new Set([
   "arrived_on_site",
   "loading",
 ]);
+
+type RouteEndMarker = {
+  lng: number;
+  lat: number;
+  role: "pickup" | "dropoff";
+};
 
 function routeTargetsPickupLeg(
   sessionStatus: string | undefined,
@@ -371,6 +409,7 @@ const GodEyeMap = dynamic(
         selectedCrew,
         onCrewClick,
         routeLines,
+        routeEnds,
         office,
         activeSessions,
         mapStyle,
@@ -383,6 +422,7 @@ const GodEyeMap = dynamic(
         selectedCrew: string | null;
         onCrewClick: (id: string) => void;
         routeLines: Map<string, [number, number][]>;
+        routeEnds: Map<string, RouteEndMarker>;
         office: OfficeConfig;
         activeSessions: Session[];
         mapStyle: string;
@@ -425,6 +465,8 @@ const GodEyeMap = dynamic(
               boxShadow:
                 "0 0 0 3px var(--gdim), 0 0 10px var(--gdim), 0 1px 3px rgba(0,0,0,0.4)",
             };
+        /** Forest on light basemap; bright rose on dark / wine mode so the line stays visible on Mapbox dark tiles. */
+        const routeLineColor = mapStyleIsLight ? "#2C3E2D" : "#FB7185";
         return (
           <M
             mapboxAccessToken={MAPBOX_TOKEN}
@@ -465,14 +507,61 @@ const GodEyeMap = dynamic(
                     id={`route-line-${crewId}`}
                     type="line"
                     paint={{
-                      "line-color": "#2C3E2D",
-                      "line-width": 6,
-                      "line-opacity": 0.9,
+                      "line-color": routeLineColor,
+                      "line-width": mapStyleIsLight ? 6 : 7,
+                      "line-opacity": mapStyleIsLight ? 0.9 : 0.95,
                     }}
                   />
                 </Source>
               );
             })}
+
+            {/* Route destination: where this leg is headed (pickup vs delivery address) */}
+            {Array.from(routeEnds.entries()).map(([crewId, end]) => (
+              <Marker
+                key={`route-end-${crewId}`}
+                longitude={end.lng}
+                latitude={end.lat}
+                anchor="center"
+              >
+                <div
+                  className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white shadow-md pointer-events-none"
+                  style={{
+                    background:
+                      end.role === "pickup"
+                        ? "#22C55E"
+                        : "#2C3E2D",
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.28)",
+                  }}
+                  title={
+                    end.role === "pickup"
+                      ? "Next stop: pickup"
+                      : "Next stop: destination"
+                  }
+                  aria-label={
+                    end.role === "pickup"
+                      ? "Next stop: pickup"
+                      : "Next stop: destination"
+                  }
+                >
+                  {end.role === "pickup" ? (
+                    <MapPin
+                      size={20}
+                      weight="fill"
+                      className="text-white"
+                      aria-hidden
+                    />
+                  ) : (
+                    <House
+                      size={20}
+                      weight="fill"
+                      className="text-white"
+                      aria-hidden
+                    />
+                  )}
+                </div>
+              </Marker>
+            ))}
 
             {/* Yugo HQ marker */}
             <Marker
@@ -534,7 +623,7 @@ const GodEyeMap = dynamic(
                       type="button"
                       onClick={() => onCrewClick(c.id)}
                       className={`relative cursor-pointer transition-transform ${isSelected ? "scale-125 z-10" : "hover:scale-110"}`}
-                      title={`${c.name}, ${getStatusLabel(status)}`}
+                      title={`${crewMemberLine(c.members, c.name)}, ${getStatusLabel(status)}`}
                     >
                       {/* Glass pill label, always horizontal above the marker */}
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 flex flex-col items-center gap-0.5 pointer-events-none max-w-[min(200px,70vw)]">
@@ -555,7 +644,7 @@ const GodEyeMap = dynamic(
                             className="text-[11px] font-bold tracking-[0.06em]"
                             style={{ color: crewLabelText }}
                           >
-                            {(c.name || "Crew").replace("Team ", "")}
+                            {crewMemberLine(c.members, c.name)}
                           </span>
                         </div>
                         <span
@@ -713,17 +802,16 @@ function CrewPopup({
                 background: "linear-gradient(135deg, #2C3E2D, #5C1A33)",
               }}
             >
-              {(crew.name || "?")
-                .replace("Team ", "")
-                .slice(0, 2)
-                .toUpperCase()}
+              {crewAvatarInitials(crew.members, crew.name)}
             </div>
             <div>
               <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)]">
-                {crew.name}
+                {crewMemberLine(crew.members, crew.name)}
               </h3>
               <span className="text-[10px] text-[var(--tx3)]">
-                {crew.members?.length || 0} members
+                {crew.members && crew.members.length > 0
+                  ? `${crew.members.length} mover${crew.members.length !== 1 ? "s" : ""}`
+                  : (crew.name || "Crew").replace(/^Team\s+/i, "")}
               </span>
             </div>
           </div>
@@ -880,9 +968,10 @@ export default function UnifiedTrackingView({
   const [crewLocations, setCrewLocations] = useState<Map<string, CrewLocation>>(
     new Map(),
   );
-  const [routeLines, setRouteLines] = useState<Map<string, [number, number][]>>(
-    new Map(),
-  );
+  const [routeOverlay, setRouteOverlay] = useState<{
+    lines: Map<string, [number, number][]>;
+    ends: Map<string, RouteEndMarker>;
+  }>(() => ({ lines: new Map(), ends: new Map() }));
   const [activePanel, setActivePanel] = useState<"jobs" | "teams">("jobs");
   const [jobsPanelExpanded, setJobsPanelExpanded] = useState(true);
   const [relativeTimeTick, setRelativeTimeTick] = useState(0);
@@ -1094,6 +1183,7 @@ export default function UnifiedTrackingView({
       routeFetchDebounceRef.current = null;
       void (async () => {
         const newRoutes = new Map<string, [number, number][]>();
+        const newEnds = new Map<string, RouteEndMarker>();
         for (const s of activeSessions) {
           if (!s.jobRecordId) continue;
           const crew = crews.find((c) => c.id === s.teamId);
@@ -1193,12 +1283,38 @@ export default function UnifiedTrackingView({
             ];
           }
           newRoutes.set(s.teamId, lineCoords);
+          const endCoord = lineCoords[lineCoords.length - 1];
+          if (endCoord && endCoord.length >= 2) {
+            newEnds.set(s.teamId, {
+              lng: endCoord[0],
+              lat: endCoord[1],
+              role: pickupLeg ? "pickup" : "dropoff",
+            });
+          }
         }
-        setRouteLines((prev) => {
-          if (prev.size !== newRoutes.size) return newRoutes;
+        setRouteOverlay((prev) => {
+          if (prev.lines.size !== newRoutes.size) {
+            return { lines: newRoutes, ends: newEnds };
+          }
           for (const [k, v] of newRoutes) {
-            const o = prev.get(k);
-            if (!o || o.length !== v.length || JSON.stringify(o) !== JSON.stringify(v)) return newRoutes;
+            const o = prev.lines.get(k);
+            if (!o || o.length !== v.length || JSON.stringify(o) !== JSON.stringify(v)) {
+              return { lines: newRoutes, ends: newEnds };
+            }
+          }
+          for (const [k, e] of newEnds) {
+            const pe = prev.ends.get(k);
+            if (
+              !pe ||
+              pe.lng !== e.lng ||
+              pe.lat !== e.lat ||
+              pe.role !== e.role
+            ) {
+              return { lines: newRoutes, ends: newEnds };
+            }
+          }
+          for (const k of prev.ends.keys()) {
+            if (!newEnds.has(k)) return { lines: newRoutes, ends: newEnds };
           }
           return prev;
         });
@@ -1256,7 +1372,8 @@ export default function UnifiedTrackingView({
               onCrewClick={(id) =>
                 setSelectedCrew(selectedCrew === id ? null : id)
               }
-              routeLines={routeLines}
+              routeLines={routeOverlay.lines}
+              routeEnds={routeOverlay.ends}
               office={office}
               activeSessions={activeSessions}
               mapStyle={mapStyle}
@@ -1413,6 +1530,9 @@ export default function UnifiedTrackingView({
                             loc?.current_client_name || s.jobName || null;
                           const fromAddr = loc?.current_from_address || null;
                           const toAddr = loc?.current_to_address || null;
+                          const crewForSession = crews.find(
+                            (cr) => cr.id === s.teamId,
+                          );
 
                           const STALE_CLIENT_MS = 12 * 60 * 60 * 1000;
                           const updatedMs = s.updatedAt
@@ -1435,14 +1555,17 @@ export default function UnifiedTrackingView({
                                       background: `linear-gradient(135deg, ${ringColor}CC, ${ringColor}80)`,
                                     }}
                                   >
-                                    {(s.teamName || "?")
-                                      .replace("Team ", "")
-                                      .slice(0, 2)
-                                      .toUpperCase()}
+                                    {crewAvatarInitials(
+                                      crewForSession?.members,
+                                      s.teamName,
+                                    )}
                                   </div>
                                   <div className="min-w-0">
                                     <div className="text-[12px] font-bold text-[var(--tx)] truncate">
-                                      {s.teamName}
+                                      {crewMemberLine(
+                                        crewForSession?.members,
+                                        s.teamName,
+                                      )}
                                     </div>
                                     <div className="text-[10px] text-[var(--tx3)] truncate">
                                       {clientName || "Job in progress"}
@@ -1546,8 +1669,8 @@ export default function UnifiedTrackingView({
                               </div>
                             </div>
                             {crew && (
-                              <span className="text-[9px] font-medium text-[var(--gold)] shrink-0">
-                                {crew.name}
+                              <span className="text-[9px] font-medium text-[var(--gold)] shrink-0 max-w-[120px] truncate">
+                                {crewMemberLine(crew.members, crew.name)}
                               </span>
                             )}
                           </Link>
@@ -1575,8 +1698,8 @@ export default function UnifiedTrackingView({
                               </div>
                             </div>
                             {crew && (
-                              <span className="text-[9px] font-medium text-[var(--gold)] shrink-0">
-                                {crew.name}
+                              <span className="text-[9px] font-medium text-[var(--gold)] shrink-0 max-w-[120px] truncate">
+                                {crewMemberLine(crew.members, crew.name)}
                               </span>
                             )}
                           </Link>
@@ -1657,15 +1780,12 @@ export default function UnifiedTrackingView({
                           boxShadow: `0 0 0 2px ${teamColor(c.id)}`,
                         }}
                       >
-                        {(c.name || "?")
-                          .replace("Team ", "")
-                          .slice(0, 2)
-                          .toUpperCase()}
+                        {crewAvatarInitials(c.members, c.name)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-[12px] font-bold text-[var(--tx)] truncate">
-                            {c.name}
+                            {crewMemberLine(c.members, c.name)}
                           </span>
                           {hasActiveSession && (
                             <span className="dt-badge tracking-[0.04em] text-[var(--gold)]">
@@ -1677,11 +1797,6 @@ export default function UnifiedTrackingView({
                           {c.current_job ? `${c.current_job} · ` : ""}
                           {locationLabel}
                         </div>
-                        {c.members && c.members.length > 0 && (
-                          <div className="text-[9px] text-[var(--tx3)]/60 mt-0.5 truncate">
-                            {c.members.join(", ")}
-                          </div>
-                        )}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {isOff && <Warning size={10} color="#EF4444" />}

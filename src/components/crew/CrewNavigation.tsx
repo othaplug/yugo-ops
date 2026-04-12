@@ -69,11 +69,15 @@ const CREW_NAV_ROUTE_LINE_COLOR = "#2563EB";
 const CREW_NAV_ROUTE_HALO_COLOR = "rgba(37, 99, 235, 0.22)";
 const CREW_NAV_LINE_WIDTH = 14;
 const CREW_NAV_HALO_WIDTH = CREW_NAV_LINE_WIDTH + 8;
-/** Chase camera: tilt similar to consumer nav (~45 to 50 deg). */
-const CHASE_PITCH_DEG = 50;
-/** Move map center slightly behind the vehicle so more road ahead is visible. */
-const CHASE_CAMERA_BACK_M = 52;
-const NAV_FOLLOW_ZOOM = 17.25;
+/**
+ * Dash-cam style: high pitch so the view hugs the road (low windshield / hood line).
+ * Mapbox defaults max pitch to 60; we raise `maxPitch` on the map so this value applies.
+ */
+const CHASE_PITCH_DEG = 67;
+/** Chase point behind the vehicle (m); short offset reads like a low dash mount. */
+const CHASE_CAMERA_BACK_M = 22;
+/** Follow mode zoom; pairs with pitch so lane detail stays readable. */
+const NAV_FOLLOW_ZOOM = 18.05;
 
 const EMPTY_TRAFFIC_ROUTE: TrafficRouteFeatureCollection = { type: "FeatureCollection", features: [] };
 
@@ -221,7 +225,7 @@ function cameraLngLatForChase(
 }
 
 /**
- * While navigation is open, keep the camera in chase POV: heading-aligned, pitched, center offset behind GPS.
+ * While navigation is open, keep first-person chase POV: heading-aligned, pitched, center behind GPS.
  * Omits zoom so pinch / zoom buttons can adjust scale without the next tick forcing NAV_FOLLOW_ZOOM.
  */
 function CrewNavFollowCamera({
@@ -260,7 +264,7 @@ function CrewNavFollowCamera({
   return null;
 }
 
-function easeToDriverPov(
+function easeToFirstPersonNav(
   map: mapboxgl.Map,
   userPos: { lat: number; lng: number },
   bearingDeg: number | null,
@@ -348,7 +352,7 @@ function CrewNavGeolocateControl({ geolocateRef }: { geolocateRef: RefObject<Geo
   );
 }
 
-/** Compass, voice, report, GPS refresh; compact zoom. */
+/** Compass, route options, voice, report, GPS refresh; compact zoom. */
 function CrewNavOpsFloatingControls({
   userPos,
   navBearingDeg,
@@ -359,6 +363,7 @@ function CrewNavOpsFloatingControls({
   voiceMuted,
   onVoiceToggle,
   onReportOpen,
+  onAlternatesOpen,
 }: {
   userPos: { lat: number; lng: number } | null;
   navBearingDeg: number | null;
@@ -369,6 +374,7 @@ function CrewNavOpsFloatingControls({
   voiceMuted: boolean;
   onVoiceToggle: () => void;
   onReportOpen: () => void;
+  onAlternatesOpen: () => void;
 }) {
   const { current: mapRef } = useMap();
 
@@ -390,7 +396,7 @@ function CrewNavOpsFloatingControls({
             const m = mapRef?.getMap?.();
             if (!u || !m) return;
             try {
-              easeToDriverPov(m, u, navBearingDeg, setMapBearing, 500);
+              easeToFirstPersonNav(m, u, navBearingDeg, setMapBearing, 500);
             } catch {
               /* ignore */
             }
@@ -406,6 +412,16 @@ function CrewNavOpsFloatingControls({
               N
             </span>
           </span>
+        </button>
+
+        <button
+          type="button"
+          className={NAV_FLOAT_BTN}
+          aria-label="Route options"
+          title="Route options"
+          onClick={onAlternatesOpen}
+        >
+          <List size={22} weight="bold" aria-hidden />
         </button>
 
         <button
@@ -443,7 +459,7 @@ function CrewNavOpsFloatingControls({
             const m = mapRef?.getMap?.();
             if (m) {
               try {
-                easeToDriverPov(m, u, navBearingDeg, setMapBearing, 650);
+                easeToFirstPersonNav(m, u, navBearingDeg, setMapBearing, 650);
               } catch {
                 /* ignore */
               }
@@ -809,16 +825,16 @@ function resolveTurnGuidance(steps: RouteStep[], traveledAlongM: number | null):
   };
 }
 
-function ManeuverIcon({ type, modifier }: { type?: string; modifier?: string }) {
-  const t = (type || "").toLowerCase();
-  const m = (modifier || "").toLowerCase();
-  if (m.includes("left") || t.includes("left")) return <ArrowBendDownLeft className="w-8 h-8 shrink-0" weight="bold" />;
-  if (m.includes("right") || t.includes("right")) return <ArrowBendDownRight className="w-8 h-8 shrink-0" weight="bold" />;
-  if (t.includes("merge")) return <SignIn className="w-8 h-8 shrink-0" weight="bold" />;
-  if (t.includes("roundabout") || t.includes("rotary")) return <TrafficCone className="w-8 h-8 shrink-0" weight="bold" />;
-  if (t.includes("fork")) return <ForkKnife className="w-8 h-8 shrink-0" weight="bold" />;
-  if (t.includes("arrive")) return <MapPin className="w-8 h-8 shrink-0" weight="bold" />;
-  return <ArrowRight className="w-8 h-8 shrink-0" weight="bold" />;
+/** Straightahead / rename steps — visual only; voice would be constant chatter. */
+const NAV_VOICE_LOW_PRIORITY_TYPES = new Set(["continue", "new name"]);
+
+function stripLeadingInDistancePrefix(instruction: string): string {
+  return instruction.replace(/^\s*In\s+[^:]+:\s*/i, "").trim();
+}
+
+function navigationManeuverVoiceKey(g: CrewNavGuidance): string {
+  const stem = stripLeadingInDistancePrefix(g.instructionText.trim());
+  return `${stem}|${g.maneuverMeta.type || ""}|${g.maneuverMeta.modifier || ""}`;
 }
 
 export function CrewNavigation({
@@ -872,7 +888,9 @@ export function CrewNavigation({
 
   const geolocateRef = useRef<GeolocateControlInstance | null>(null);
   const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
-  const lastSpokenInstructionRef = useRef("");
+  /** Throttle: at most ~2 distance-based prompts per maneuver (250 m and 80 m) plus pickup mid-route. */
+  const navVoiceBucketRef = useRef<{ maneuverKey: string; spoken250: boolean; spoken80: boolean } | null>(null);
+  const lastSpokenArrivalRef = useRef(false);
   const displayEtaSecRef = useRef<number | null>(null);
   const lastRerouteAtRef = useRef(0);
 
@@ -947,18 +965,66 @@ export function CrewNavigation({
   useEffect(() => {
     if (!voiceOn || typeof window === "undefined" || !("speechSynthesis" in window)) return;
     const line = guidance.instructionText.trim();
-    if (!line || line === lastSpokenInstructionRef.current) return;
-    if (line === "Loading route…") return;
-    lastSpokenInstructionRef.current = line;
-    try {
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(line);
-      u.rate = 1;
-      window.speechSynthesis.speak(u);
-    } catch {
-      /* ignore */
+    if (!line || line === "Loading route…") return;
+
+    const maneuverType = (guidance.maneuverMeta.type || "").toLowerCase();
+    if (NAV_VOICE_LOW_PRIORITY_TYPES.has(maneuverType)) return;
+
+    const speak = (text: string) => {
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 1;
+        window.speechSynthesis.speak(u);
+      } catch {
+        /* ignore */
+      }
+    };
+
+    if (maneuverType === "arrive" || line.toLowerCase().includes("you have arrived")) {
+      if (lastSpokenArrivalRef.current) return;
+      lastSpokenArrivalRef.current = true;
+      speak(line);
+      return;
     }
-  }, [guidance.instructionText, voiceOn]);
+
+    const key = navigationManeuverVoiceKey(guidance);
+    const d = guidance.turnDistanceM;
+    let bucket = navVoiceBucketRef.current;
+
+    if (!bucket || bucket.maneuverKey !== key) {
+      bucket = { maneuverKey: key, spoken250: false, spoken80: false };
+      navVoiceBucketRef.current = bucket;
+      if (d != null && Number.isFinite(d)) {
+        if (d <= 80) {
+          bucket.spoken80 = true;
+          bucket.spoken250 = true;
+          speak(line);
+          return;
+        }
+        if (d <= 250) {
+          bucket.spoken250 = true;
+          speak(line);
+          return;
+        }
+        return;
+      }
+      speak(line);
+      return;
+    }
+
+    if (d != null && Number.isFinite(d)) {
+      if (d <= 80 && !bucket.spoken80) {
+        bucket.spoken80 = true;
+        speak(line);
+        return;
+      }
+      if (d <= 250 && !bucket.spoken250) {
+        bucket.spoken250 = true;
+        speak(line);
+      }
+    }
+  }, [guidance, voiceOn]);
 
   const handleMapLoad = useCallback((e: { target: mapboxgl.Map }) => {
     mapInstanceRef.current = e.target;
@@ -997,7 +1063,8 @@ export function CrewNavigation({
       }
       polylineHintSegRef.current = 0;
       displayEtaSecRef.current = null;
-      lastSpokenInstructionRef.current = "";
+      navVoiceBucketRef.current = null;
+      lastSpokenArrivalRef.current = false;
       const r = intelligent.route;
       setRouteAlternatives(intelligent.alternatives ?? []);
       setRouteCoords(intelligent.coordinates);
@@ -1032,7 +1099,8 @@ export function CrewNavigation({
     if (!alt) return;
     polylineHintSegRef.current = 0;
     displayEtaSecRef.current = null;
-    lastSpokenInstructionRef.current = "";
+    navVoiceBucketRef.current = null;
+    lastSpokenArrivalRef.current = false;
     const r = alt.route;
     let dur = typeof r.duration === "number" && Number.isFinite(r.duration) && r.duration >= 0 ? r.duration : null;
     if (dur != null && dur > MAX_SANE_ETA_SEC) {
@@ -1115,7 +1183,8 @@ export function CrewNavigation({
     setRouteSummaries([]);
     setRouteAlternatives([]);
     setSelectedRouteIndex(0);
-    lastSpokenInstructionRef.current = "";
+    navVoiceBucketRef.current = null;
+    lastSpokenArrivalRef.current = false;
   }, [destination.lat, destination.lng, sessionId]);
 
   useEffect(() => {
@@ -1328,7 +1397,8 @@ export function CrewNavigation({
 
         if (!arrivedRef.current && distToDestM < ARRIVAL_RADIUS_M) {
           arrivedRef.current = true;
-          lastSpokenInstructionRef.current = "";
+          navVoiceBucketRef.current = null;
+          lastSpokenArrivalRef.current = false;
           setGuidance({
             ...EMPTY_GUIDANCE,
             instructionText: "You have arrived",
@@ -1435,9 +1505,8 @@ export function CrewNavigation({
         m.off("moveend", onMoveEnd);
         const u = userPosRef.current;
         if (!u) return;
-        const brg = navBearingDegRef.current;
         try {
-          easeToDriverPov(m, u, brg, setMapBearing, 600);
+          easeToFirstPersonNav(m, u, navBearingDegRef.current, setMapBearing, 600);
         } catch {
           /* ignore */
         }
@@ -1493,45 +1562,17 @@ export function CrewNavigation({
       aria-modal="true"
       aria-label="Turn-by-turn navigation"
     >
-      <div className="shrink-0 rounded-b-[1.35rem] bg-[#0f7669] px-4 pb-3.5 pt-[calc(0.65rem+env(safe-area-inset-top,0px))] text-white shadow-md">
-        <div className="flex items-start gap-3">
-          <div className="flex shrink-0 flex-col items-center gap-0.5">
-            <ManeuverIcon type={guidance.maneuverMeta.type} modifier={guidance.maneuverMeta.modifier} />
-            {guidance.turnDistanceLabel ? (
-              <p className="text-[12px] font-bold leading-none tabular-nums text-white/95">{guidance.turnDistanceLabel}</p>
-            ) : null}
-          </div>
-          <div className="min-w-0 flex-1 pt-0.5">
-            <p className="text-[clamp(1.05rem,3.8vw,1.35rem)] font-bold leading-tight tracking-tight">
-              {(guidance.streetHeadline?.trim() || guidance.instructionText.trim() || "Navigation").slice(0, 120)}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60"
-            aria-label="Route options"
-            title="Route options"
-            onClick={() => setAlternatesOpen(true)}
-          >
-            <List size={22} weight="bold" aria-hidden />
-          </button>
-        </div>
-        {guidance.thenText ? (
-          <div className="mt-2.5 flex items-start gap-2 rounded-xl bg-black/18 px-3 py-2 text-[12px] leading-snug">
-            <span className="shrink-0 pt-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/75">Then</span>
-            <ManeuverGlyph type={guidance.thenMeta.type} modifier={guidance.thenMeta.modifier} className="h-5 w-5 shrink-0 text-white" />
-            <span className="min-w-0 font-medium text-white/95">{guidance.thenText}</span>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="flex-1 relative min-h-0">
+      <p className="sr-only" aria-live="polite">
+        {(guidance.streetHeadline?.trim() || guidance.instructionText.trim() || "Navigation").slice(0, 200)}
+      </p>
+      <div className="relative min-h-0 flex-1">
         <Map
           mapboxAccessToken={MAPBOX_TOKEN}
           initialViewState={initialView}
           style={{ width: "100%", height: "100%" }}
           mapStyle={mapStyle}
           reuseMaps
+          maxPitch={85}
           onLoad={(e) => {
             mapInstanceRef.current = e.target;
             handleMapLoad(e);
@@ -1603,6 +1644,31 @@ export function CrewNavigation({
           <Marker longitude={destination.lng} latitude={destination.lat} anchor="bottom">
             <div className="w-3 h-3 rounded-full border-2 border-white shadow-md" style={{ background: GOLD }} />
           </Marker>
+          {guidance.callout ? (
+            <Marker longitude={guidance.callout.lng} latitude={guidance.callout.lat} anchor="bottom">
+              <div className="pointer-events-none flex flex-col items-center">
+                <div className="flex max-w-[min(92vw,280px)] items-center gap-2 rounded-2xl bg-[#2563EB] px-3 py-2.5 shadow-[0_4px_14px_rgba(37,99,235,0.42)]">
+                  <ManeuverGlyph
+                    type={guidance.maneuverMeta.type}
+                    modifier={guidance.maneuverMeta.modifier}
+                    className="h-6 w-6 shrink-0 text-white"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-left text-[15px] font-bold leading-snug text-white">{guidance.callout.label}</p>
+                    {guidance.turnDistanceLabel ? (
+                      <p className="mt-0.5 text-[11px] font-semibold tabular-nums text-white/90">
+                        {guidance.turnDistanceLabel}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+                <div
+                  className="h-0 w-0 border-l-[7px] border-r-[7px] border-t-[9px] border-l-transparent border-r-transparent border-t-[#2563EB]"
+                  aria-hidden
+                />
+              </div>
+            </Marker>
+          ) : null}
           <CrewNavOpsFloatingControls
             userPos={userPos}
             navBearingDeg={navBearingDeg}
@@ -1613,6 +1679,7 @@ export function CrewNavigation({
             voiceMuted={!voiceOn}
             onVoiceToggle={() => setVoiceOn((v) => !v)}
             onReportOpen={() => setReportOpen(true)}
+            onAlternatesOpen={() => setAlternatesOpen(true)}
           />
         </Map>
 
@@ -1623,7 +1690,7 @@ export function CrewNavigation({
           <span className="text-[13px] font-semibold tabular-nums text-[#1A1816]">{speedDisplay ?? "—"}</span>
         </div>
         {mapError && (
-          <div className="absolute left-3 right-3 top-[calc(5.5rem+env(safe-area-inset-top,0px))] z-10 rounded-lg bg-red-900/92 px-3 py-2 text-[12px] text-white">
+          <div className="absolute left-3 right-3 top-[calc(0.65rem+env(safe-area-inset-top,0px))] z-10 rounded-lg bg-red-900/92 px-3 py-2 text-[12px] text-white">
             {mapError}
           </div>
         )}

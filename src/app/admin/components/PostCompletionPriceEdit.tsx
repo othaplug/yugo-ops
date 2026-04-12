@@ -1,7 +1,15 @@
 "use client";
 
-import { CaretRight } from "@phosphor-icons/react";
-import { useMemo, useState } from "react";
+import { CaretRight, PencilSimple as Pencil } from "@phosphor-icons/react";
+import {
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactElement,
+} from "react";
+import ModalOverlay from "./ModalOverlay";
 
 type PriceEditRow = {
   id: string;
@@ -23,6 +31,10 @@ const sanitizeShownError = (raw: string): string => {
   return raw;
 };
 
+type TriggerProps = {
+  onClick?: (e: React.MouseEvent) => void;
+};
+
 export default function PostCompletionPriceEdit({
   jobType,
   jobId,
@@ -30,6 +42,7 @@ export default function PostCompletionPriceEdit({
   canEdit,
   previousEdits,
   completed,
+  trigger,
 }: {
   jobType: "move" | "delivery";
   jobId: string;
@@ -37,12 +50,20 @@ export default function PostCompletionPriceEdit({
   canEdit: boolean;
   previousEdits: PriceEditRow[];
   completed: boolean;
+  /** Optional control (e.g. icon in the price card). Clicks are merged to open the modal. */
+  trigger?: ReactElement<TriggerProps>;
 }) {
-  const [open, setOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [newPrice, setNewPrice] = useState(String(currentPrice));
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!modalOpen) {
+      setNewPrice(String(currentPrice));
+    }
+  }, [currentPrice, modalOpen]);
 
   const priceDiff = useMemo(() => {
     const n = parseFloat(newPrice);
@@ -51,6 +72,20 @@ export default function PostCompletionPriceEdit({
   }, [newPrice, currentPrice]);
 
   if (!completed || !canEdit) return null;
+
+  const handleOpen = () => {
+    setModalOpen(true);
+    setNewPrice(String(currentPrice));
+    setReason("");
+    setError(null);
+  };
+
+  const handleClose = () => {
+    setModalOpen(false);
+    setNewPrice(String(currentPrice));
+    setReason("");
+    setError(null);
+  };
 
   const handleSave = async () => {
     setError(null);
@@ -90,15 +125,8 @@ export default function PostCompletionPriceEdit({
     }
   };
 
-  const handleCancel = () => {
-    setOpen(false);
-    setNewPrice(String(currentPrice));
-    setReason("");
-    setError(null);
-  };
-
   const outlineBtn =
-    "inline-flex items-center justify-center gap-1.5 rounded-md border-2 border-[var(--tx)] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx)] bg-transparent hover:bg-[var(--hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tx)]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] transition-colors disabled:opacity-45 disabled:pointer-events-none";
+    "inline-flex items-center justify-center gap-1.5 rounded-md border-0 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx)] bg-transparent hover:bg-[var(--hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tx)]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] transition-colors disabled:opacity-45 disabled:pointer-events-none";
 
   const ghostBtn =
     "inline-flex items-center justify-center rounded-md border border-[var(--brd)] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx2)] bg-transparent hover:bg-[var(--hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tx)]/20 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] transition-colors";
@@ -106,33 +134,42 @@ export default function PostCompletionPriceEdit({
   const fieldClass =
     "w-full rounded-md border border-[var(--brd)] bg-[var(--surface-raised)] px-3 py-2 text-sm text-[var(--tx)] placeholder:text-[var(--tx3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tx)]/20 focus-visible:border-[var(--brd)]";
 
-  return (
-    <div className="mt-6 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 md:p-5 shadow-sm shadow-black/5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx3)]">
-            Billing
-          </p>
-          <h3 className="m-0 pb-0 font-heading text-[15px] font-semibold leading-snug tracking-[0.01em] text-[var(--tx)] md:text-base">
-            Adjust final price
-          </h3>
-          <p className="text-xs text-[var(--tx3)] leading-relaxed max-w-prose">
-            Owner or senior admin only. Each change is stored with your reason.
-          </p>
-        </div>
-        {!open ? (
+  const triggerNode =
+    trigger && isValidElement(trigger)
+      ? cloneElement(trigger as ReactElement<TriggerProps>, {
+          onClick: (e: React.MouseEvent) => {
+            (trigger as ReactElement<TriggerProps>).props.onClick?.(e);
+            handleOpen();
+          },
+        })
+      : (
           <button
             type="button"
-            onClick={() => setOpen(true)}
-            className={`${ghostBtn} shrink-0`}
+            onClick={handleOpen}
+            className="inline-flex items-center justify-center rounded-md border border-[var(--brd)] p-1.5 text-[var(--tx2)] hover:bg-[var(--hover)] hover:text-[var(--tx)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tx)]/25 transition-colors"
+            aria-label="Adjust final price"
           >
-            Edit price
+            <Pencil size={16} weight="regular" aria-hidden />
           </button>
-        ) : null}
-      </div>
+        );
 
-      {open ? (
-        <div className="mt-4 space-y-4">
+  return (
+    <>
+      {triggerNode}
+
+      <ModalOverlay
+        open={modalOpen}
+        onClose={() => {
+          if (!saving) handleClose();
+        }}
+        title="Adjust final price"
+        maxWidth="md"
+      >
+        <div className="p-5 space-y-4">
+          <p className="text-xs text-[var(--tx3)] leading-relaxed">
+            Owner or senior admin only. Each change is stored with your reason.
+          </p>
+
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
             <div>
               <label
@@ -223,48 +260,48 @@ export default function PostCompletionPriceEdit({
             </button>
             <button
               type="button"
-              onClick={handleCancel}
+              onClick={handleClose}
               disabled={saving}
               className={`${ghostBtn} disabled:opacity-45`}
             >
               Cancel
             </button>
           </div>
-        </div>
-      ) : null}
 
-      {previousEdits.length > 0 ? (
-        <div className="mt-5 border-t border-[var(--brd)] pt-4">
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx3)]">
-            Previous changes
-          </p>
-          <ul className="space-y-3 text-xs leading-relaxed text-[var(--tx2)]">
-            {previousEdits.map((edit) => (
-              <li
-                key={edit.id}
-                className="rounded-lg border border-[var(--brd)]/80 bg-[var(--surface)]/60 px-3 py-2.5"
-              >
-                <span className="text-[var(--tx3)]">
-                  {new Date(edit.created_at).toLocaleString("en-CA")}
-                </span>{" "}
-                <span className="font-semibold text-[var(--tx)]">
-                  {edit.edited_by_name}
-                </span>
-                {": "}
-                ${Number(edit.original_price).toFixed(2)} to $
-                {Number(edit.new_price).toFixed(2)}
-                {edit.invoice_may_need_reissue ? (
-                  <span className="text-[var(--org)]">
-                    {" "}
-                    (invoice may need reissue)
-                  </span>
-                ) : null}
-                . {edit.reason}
-              </li>
-            ))}
-          </ul>
+          {previousEdits.length > 0 ? (
+            <div className="border-t border-[var(--brd)] pt-4">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx3)]">
+                Previous changes
+              </p>
+              <ul className="max-h-44 space-y-2 overflow-y-auto text-xs leading-relaxed text-[var(--tx2)] pr-1">
+                {previousEdits.map((edit) => (
+                  <li
+                    key={edit.id}
+                    className="rounded-lg border border-[var(--brd)]/80 bg-[var(--surface)]/60 px-3 py-2.5"
+                  >
+                    <span className="text-[var(--tx3)]">
+                      {new Date(edit.created_at).toLocaleString("en-CA")}
+                    </span>{" "}
+                    <span className="font-semibold text-[var(--tx)]">
+                      {edit.edited_by_name}
+                    </span>
+                    {": "}
+                    ${Number(edit.original_price).toFixed(2)} to $
+                    {Number(edit.new_price).toFixed(2)}
+                    {edit.invoice_may_need_reissue ? (
+                      <span className="text-[var(--org)]">
+                        {" "}
+                        (invoice may need reissue)
+                      </span>
+                    ) : null}
+                    . {edit.reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
-      ) : null}
-    </div>
+      </ModalOverlay>
+    </>
   );
 }

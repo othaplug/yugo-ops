@@ -429,6 +429,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
           </div>
           <button type="button" onClick={() => setShowEditProject(true)} className={`${ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS} shrink-0`}>
             <Pencil size={12} weight="regular" className="shrink-0" aria-hidden /> Edit
+            <ChevronRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
           </button>
           <button type="button" onClick={() => setDeleteConfirmOpen(true)} className={`${ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS} shrink-0`}>
             <Trash2 size={12} weight="regular" className="shrink-0" aria-hidden /> Delete

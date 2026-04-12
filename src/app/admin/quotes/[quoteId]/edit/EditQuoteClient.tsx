@@ -8,6 +8,7 @@ import { inferWeightTierFromLegacyScore } from "@/lib/pricing/weight-tiers";
 import MultiStopAddressField, { type StopEntry } from "@/components/ui/MultiStopAddressField";
 import { getVisibleAddons, ESTATE_ADDON_UI_LINES } from "@/lib/quotes/addon-visibility";
 import { quoteDetailDateLabel, quoteFormServiceDateLabel } from "@/lib/quotes/quote-field-labels";
+import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -51,19 +52,6 @@ interface EditQuoteClientProps {
   config: Record<string, string>;
   itemWeights: ItemWeight[];
 }
-
-const SERVICE_LABELS: Record<string, string> = {
-  local_move: "Residential Move",
-  long_distance: "Long Distance Move",
-  office_move: "Office Relocation",
-  single_item: "Single Item Delivery",
-  white_glove: "White Glove Service",
-  specialty: "Specialty Service",
-  b2b_delivery: "B2B Delivery",
-  event: "Event",
-  labour_only: "Labour Only",
-  bin_rental: "Bin Rental",
-};
 
 const SPECIALTY_ITEM_TYPES = [
   "piano_upright", "piano_grand", "pool_table", "safe_under_300lbs", "safe_over_300lbs",
@@ -642,7 +630,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
           </h1>
         </div>
         <span className="ml-auto dt-badge tracking-[0.04em] text-[var(--tx)]">
-          {SERVICE_LABELS[serviceType] || serviceType}
+          {serviceTypeDisplayLabel(serviceType)}
         </span>
       </div>
 

@@ -140,7 +140,7 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
                       key={ev.id}
                       type="button"
                       onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
-                      className="w-full text-left rounded-md px-1.5 py-1 text-[8px] font-bold truncate shadow-sm hover:brightness-[1.02]"
+                      className="w-full text-left rounded-md px-1.5 py-1 text-[10px] sm:text-[11px] font-semibold leading-snug line-clamp-2 break-words shadow-sm hover:brightness-[1.02]"
                       style={jobPillCompactStyle(ev)}
                     >
                       {ev.name}
@@ -204,13 +204,15 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
                           ...jobPillSurfaceStyle(ev),
                         }}
                       >
-                        <div className="p-1 flex items-center gap-0.5">
+                        <div className="p-1 flex items-start gap-1 min-h-0">
                           <span
-                            className={`w-1.5 h-1.5 rounded-full shrink-0 ring-1 ${dotRing} ${ev.calendarStatus === "in_progress" ? "animate-pulse" : ""}`}
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 mt-0.5 ring-1 ${dotRing} ${ev.calendarStatus === "in_progress" ? "animate-pulse" : ""}`}
                             style={{ backgroundColor: cancelled ? "rgba(249,237,228,0.85)" : dotColor }}
                           />
                           <span
-                            className="text-[8px] font-bold truncate"
+                            className={`min-w-0 flex-1 font-semibold leading-snug text-[10px] sm:text-[11px] ${
+                              height > 36 ? "line-clamp-2" : "truncate"
+                            }`}
                             style={{ color: cancelled ? "inherit" : fg.main }}
                           >
                             {ev.name}
@@ -218,7 +220,7 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
                         </div>
                         {height > 25 && (
                           <div
-                            className="flex items-center text-[7px] truncate px-1 pb-0.5"
+                            className="flex items-center text-[9px] sm:text-[10px] leading-snug truncate px-1 pb-0.5"
                             style={{ color: cancelled ? "rgba(249,237,228,0.85)" : fg.muted }}
                           >
                             <span className="truncate">{ev.description}</span>

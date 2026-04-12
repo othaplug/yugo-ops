@@ -62,6 +62,9 @@ function isPublic(pathname: string): boolean {
   if (pathname.startsWith("/api/review/")) return true;
   if (pathname.startsWith("/api/perks/")) return true;
   if (pathname.startsWith("/api/referrals/")) return true;
+  /** Move on-site waivers: crew `yugo-crew-session` verified in route (same idea as `/api/crew/*`). */
+  if (/^\/api\/moves\/[^/]+\/(waivers|waiver-photos)$/.test(pathname)) return true;
+  if (/^\/api\/waivers\/[^/]+\/photos$/.test(pathname)) return true;
   if (pathname.startsWith("/_next/")) return true;
   if (pathname.startsWith("/favicon")) return true;
   if (/\.(svg|png|jpg|ico|css|js|woff2?|webmanifest|json)$/.test(pathname)) return true;
@@ -161,6 +164,7 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
+/** Next.js 16: matchers live on `proxy.ts` (do not add `middleware.ts`; both files conflict). */
 export const config = {
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",

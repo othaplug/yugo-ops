@@ -7,13 +7,13 @@ import BackButton from "../../components/BackButton";
 import { useToast } from "../../components/Toast";
 import {
   COMPLETENESS_PATH_LABELS,
-  DETECTED_SERVICE_TYPE_LABELS,
   DISMISS_REASONS,
   LEAD_ACTIVITY_LABELS,
   LEAD_PRIORITY_LABELS,
   LEAD_SOURCE_LABELS,
   LEAD_STATUS_LABELS,
 } from "@/lib/leads/admin-labels";
+import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
 import { CaretRight, Phone } from "@phosphor-icons/react";
 import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
 import LeadResponseSlaCountdown from "../LeadResponseSlaCountdown";
@@ -277,9 +277,7 @@ export default function LeadDetailClient({
           {lead.detected_service_type ? (
             <p>
               <span className="text-[var(--tx3)]">Detected service:</span>{" "}
-              {DETECTED_SERVICE_TYPE_LABELS[
-                String(lead.detected_service_type)
-              ] ?? String(lead.detected_service_type)}
+              {serviceTypeDisplayLabel(String(lead.detected_service_type))}
             </p>
           ) : null}
           {Array.isArray(lead.detected_dates) &&
@@ -430,7 +428,9 @@ export default function LeadDetailClient({
         </p>
         <p>
           <span className="text-[var(--tx3)]">Service:</span>{" "}
-          {String(lead.service_type || "—")}
+          {serviceTypeDisplayLabel(
+            typeof lead.service_type === "string" ? lead.service_type : null,
+          )}
         </p>
         <p>
           <span className="text-[var(--tx3)]">Move size:</span>{" "}

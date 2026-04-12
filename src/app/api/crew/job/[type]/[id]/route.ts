@@ -162,6 +162,8 @@ export async function GET(
     }
 
     return NextResponse.json({
+      viewerCrewMemberId: payload.crewMemberId,
+      viewerCrewMemberName: payload.name,
       id: d.id,
       jobId: d.delivery_number || d.id,
       jobType: "delivery",
@@ -263,6 +265,8 @@ export async function GET(
   const preMoveChecklistAllComplete = isPreMoveChecklistComplete(checklistRaw);
 
   return NextResponse.json({
+    viewerCrewMemberId: payload.crewMemberId,
+    viewerCrewMemberName: payload.name,
     id: m.id,
     jobId: m.move_code || m.id,
     jobType: "move",

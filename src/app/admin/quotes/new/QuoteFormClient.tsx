@@ -637,6 +637,9 @@ const TIMING_PREFS = [
 
 const TAX_RATE = 0.13;
 
+/** No fourth-step catalog add-ons or coordinator pre-tax override; pricing options live in job details. */
+const SKIP_CATALOG_ADDONS_QUOTE_STEP = new Set<string>(["bin_rental"]);
+
 // ─── Helpers ────────────────────────────────────
 
 const fieldInput = "field-input-compact w-full";
@@ -1210,9 +1213,12 @@ export default function QuoteFormClient({
   const hubspotDealId = searchParams.get("hubspot_deal_id") || "";
   const leadIdParam = searchParams.get("lead_id")?.trim() || "";
   const specialtyBuilderQs = searchParams.get("specialty_builder") === "1";
+  /** Deep link from admin (e.g. Bin Rentals → Generate quote uses `?service=bin_rental`). */
+  const serviceTypeFromUrl = searchParams.get("service")?.trim() || "";
 
   // ── Form state ────────────────────────────
   const [serviceType, setServiceType] = useState("local_move");
+  const serviceTypeUrlAppliedRef = useRef(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -1300,6 +1306,14 @@ export default function QuoteFormClient({
     setServiceAreaOverride(false);
     setServiceAreaBlock(null);
   }, [fromAddress, toAddress]);
+
+  useEffect(() => {
+    if (serviceTypeUrlAppliedRef.current) return;
+    if (!serviceTypeFromUrl) return;
+    if (!SERVICE_TYPES.some((x) => x.value === serviceTypeFromUrl)) return;
+    serviceTypeUrlAppliedRef.current = true;
+    setServiceType(serviceTypeFromUrl);
+  }, [serviceTypeFromUrl]);
 
   // Specialty items
   const [specialtyItems, setSpecialtyItems] = useState<
@@ -4193,10 +4207,17 @@ export default function QuoteFormClient({
   };
 
   const isB2bEmbed = serviceType === "b2b_delivery" || serviceType === "b2b_oneoff";
+  const skipsCatalogAddonsQuoteStep =
+    SKIP_CATALOG_ADDONS_QUOTE_STEP.has(serviceType);
 
   useEffect(() => {
     setQuoteFlowStep(0);
   }, [serviceType]);
+
+  useEffect(() => {
+    if (!skipsCatalogAddonsQuoteStep) return;
+    setQuoteFlowStep((s) => (s > 2 ? 2 : s));
+  }, [skipsCatalogAddonsQuoteStep]);
 
   useEffect(() => {
     quoteFlowContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -4225,14 +4246,25 @@ export default function QuoteFormClient({
       return;
     }
     if (quoteFlowStep === 2) {
+      if (skipsCatalogAddonsQuoteStep) return;
       setQuoteFlowStep(3);
     }
   };
 
   const showQuoteFlowNav =
-    (isB2bEmbed && quoteFlowStep < 1) || (!isB2bEmbed && quoteFlowStep < 3);
+    (isB2bEmbed && quoteFlowStep < 1) ||
+    (!isB2bEmbed &&
+      quoteFlowStep < (skipsCatalogAddonsQuoteStep ? 2 : 3));
   const showQuoteGenerateActions =
-    (isB2bEmbed && quoteFlowStep >= 1) || (!isB2bEmbed && quoteFlowStep >= 3);
+    (isB2bEmbed && quoteFlowStep >= 1) ||
+    (!isB2bEmbed &&
+      quoteFlowStep >= (skipsCatalogAddonsQuoteStep ? 2 : 3));
+
+  const quoteFlowNavLabels = isB2bEmbed
+    ? (["Service type", "B2B job"] as const)
+    : skipsCatalogAddonsQuoteStep
+      ? (["Service type", "Client", "Job details & generate"] as const)
+      : (["Service type", "Client", "Job details", "Add-ons & generate"] as const);
 
   // ── Render ────────────────────────────────
   return (
@@ -4418,44 +4450,68 @@ export default function QuoteFormClient({
             <p className="text-[11px] text-[var(--tx3)] mt-1.5 max-w-2xl leading-relaxed">
               Move through each step in order. The live preview updates as you type.
             </p>
-            <nav className="mt-5 flex flex-wrap gap-2" aria-label="Quote form steps">
-              {(isB2bEmbed
-                ? (["Service type", "B2B job"] as const)
-                : (["Service type", "Client", "Job details", "Add-ons & generate"] as const)
-              ).map((label, i) => {
-                const done = i < quoteFlowStep;
-                const active = i === quoteFlowStep;
-                const canJumpBack = i < quoteFlowStep;
-                return (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => {
-                      if (canJumpBack) setQuoteFlowStep(i);
-                    }}
-                    disabled={!canJumpBack && !active}
-                    aria-current={active ? "step" : undefined}
-                    className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition-all duration-300 ease-out ${
-                      active
-                        ? "border-[#2C3E2D] bg-[#2C3E2D]/8 text-[var(--tx)] shadow-sm"
-                        : done
-                          ? "border-[var(--brd)] bg-[var(--bg)] text-[var(--tx2)] hover:border-[#2C3E2D]/40 cursor-pointer"
-                          : "border-[var(--brd)]/60 text-[var(--tx3)] opacity-75 cursor-default"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-                        active ? "bg-[#2C3E2D] text-white" : done ? "bg-[#2C3E2D]/85 text-white" : "bg-[var(--brd)] text-[var(--tx3)]"
-                      }`}
-                    >
-                      {done ? <Check className="w-3.5 h-3.5" weight="bold" aria-hidden /> : i + 1}
-                    </span>
-                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] leading-tight max-w-[160px] sm:max-w-[220px]">
-                      {label}
-                    </span>
-                  </button>
-                );
-              })}
+            <nav className="mt-5 w-full" aria-label="Quote form steps">
+              <div className="flex w-full min-w-0 items-start gap-0">
+                {quoteFlowNavLabels.map((label, i) => {
+                  const done = i < quoteFlowStep;
+                  const active = i === quoteFlowStep;
+                  const canJumpBack = i < quoteFlowStep;
+                  const segmentFilled = quoteFlowStep > i;
+                  return (
+                    <React.Fragment key={label}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (canJumpBack) setQuoteFlowStep(i);
+                        }}
+                        disabled={!canJumpBack && !active}
+                        aria-current={active ? "step" : undefined}
+                        className={`flex min-w-0 flex-1 flex-col items-center gap-2 px-0.5 text-center transition-colors duration-300 ${
+                          active
+                            ? "text-[var(--tx)]"
+                            : done
+                              ? "text-[var(--tx2)]"
+                              : "text-[var(--tx3)] opacity-80"
+                        } ${canJumpBack ? "cursor-pointer hover:text-[var(--tx)]" : ""} ${
+                          !canJumpBack && !active ? "cursor-default" : ""
+                        }`}
+                      >
+                        <span
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-all duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] ${
+                            active
+                              ? "bg-[#2C3E2D] text-white shadow-md shadow-[#2C3E2D]/25 ring-2 ring-[#2C3E2D]/35 ring-offset-2 ring-offset-[var(--bg)]"
+                              : done
+                                ? "bg-[#2C3E2D] text-white"
+                                : "border border-[var(--brd)] bg-[var(--card)] text-[var(--tx3)]"
+                          }`}
+                        >
+                          {done ? (
+                            <Check className="w-3.5 h-3.5" weight="bold" aria-hidden />
+                          ) : (
+                            <span aria-hidden>{i + 1}</span>
+                          )}
+                        </span>
+                        <span className="text-[9px] min-[480px]:text-[10px] font-bold uppercase tracking-[0.12em] leading-snug max-w-[100%]">
+                          {label}
+                        </span>
+                      </button>
+                      {i < quoteFlowNavLabels.length - 1 ? (
+                        <div
+                          className="pointer-events-none mt-[13px] h-[3px] w-2 min-[380px]:w-4 sm:flex-1 sm:max-w-[6rem] shrink-0 self-start rounded-full bg-[var(--brd)]/30 overflow-hidden"
+                          aria-hidden
+                        >
+                          <div
+                            className="h-full w-full origin-left rounded-full bg-gradient-to-r from-[#2C3E2D] via-[#3d5240] to-[#5C1A33] shadow-[0_0_14px_rgba(44,62,61,0.28)] transition-transform duration-700 ease-out [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]"
+                            style={{
+                              transform: segmentFilled ? "scaleX(1)" : "scaleX(0)",
+                            }}
+                          />
+                        </div>
+                      ) : null}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
             </nav>
           </div>
 
@@ -8078,7 +8134,9 @@ export default function QuoteFormClient({
                 </div>
               )}
 
-              {!isB2bEmbed && quoteFlowStep === 3 && (
+              {!isB2bEmbed &&
+                quoteFlowStep === 3 &&
+                !skipsCatalogAddonsQuoteStep && (
               <>
               <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
@@ -9347,8 +9405,8 @@ export default function QuoteFormClient({
               </div>
             )}
 
-            {/* ── Valuation protection (after generate) ── */}
-            {quoteResult?.valuation && (
+            {/* ── Valuation protection (after generate); not applicable to bin rental ── */}
+            {quoteResult?.valuation && serviceType !== "bin_rental" && (
               <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-[11px]">
                 <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
                   Valuation Protection

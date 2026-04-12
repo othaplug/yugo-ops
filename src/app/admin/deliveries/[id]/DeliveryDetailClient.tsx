@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
   PaperPlaneTilt as Send, MapPin, Clock, Stack as Layers, Users, FileText,
-  Money as DollarSign, Warning as AlertTriangle, PencilSimple as Pencil, Trash as Trash2, CaretDown as ChevronDown, Phone,
+  Money as DollarSign, Warning as AlertTriangle, PencilSimple as Pencil, Trash as Trash2, CaretDown as ChevronDown, CaretRight, Phone,
   Envelope as Mail, Shield, ArrowSquareOut as ExternalLink, Folder, ArrowRight, Check, XCircle,
 } from "@phosphor-icons/react";
 import BackButton from "../../components/BackButton";
@@ -313,6 +313,13 @@ export default function DeliveryDetailClient({
   const isCancelledDelivery = stLower === "cancelled";
   const completedForPriceEdit =
     stLower === "delivered" || stLower === "completed";
+  /** Actual job completion time; prefer over updated_at so later edits (invoice, price) do not rewrite the banner. */
+  const completedAtDisplay =
+    typeof delivery.completed_at === "string" && delivery.completed_at.trim()
+      ? delivery.completed_at
+      : (typeof delivery.updated_at === "string" && delivery.updated_at.trim()
+          ? delivery.updated_at
+          : null);
   const deliveryInProgress = isDeliveryInProgress(delivery.status, delivery.stage);
   const cat = CATEGORY_BADGE[delivery.category] || CATEGORY_BADGE.retail;
   const sc = STATUS_COLORS[delivery.status] || STATUS_COLORS.pending;
@@ -702,6 +709,7 @@ export default function DeliveryDetailClient({
             <div className="flex flex-wrap items-center gap-1.5 shrink-0">
               <button type="button" onClick={() => setEditModalOpen(true)} className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}>
                 <Pencil weight="regular" className="w-3 h-3 shrink-0" aria-hidden /> Edit
+                <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
               </button>
               <DownloadPDFButton delivery={delivery} className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS} />
               <button type="button" onClick={() => setDeleteConfirmOpen(true)} className={ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS}>
@@ -754,15 +762,6 @@ export default function DeliveryDetailClient({
           This delivery is {toTitleCase(delivery.status)}. Some fields are locked.
         </div>
       )}
-
-      <PostCompletionPriceEdit
-        jobType="delivery"
-        jobId={delivery.id}
-        currentPrice={price}
-        canEdit={canEditPostCompletionPrice}
-        previousEdits={postCompletionPriceEdits}
-        completed={completedForPriceEdit}
-      />
 
       {/* ─── MAIN CONTENT ─── */}
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:gap-8">
@@ -826,7 +825,9 @@ export default function DeliveryDetailClient({
                   </div>
                   <p className="text-[11px] text-[var(--tx3)]">
                     {displayCrew ? `Completed by ${displayCrew.name}` : ""}
-                    {delivery.updated_at ? ` · ${formatPlatformDisplay(delivery.updated_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }, "")}` : ""}
+                    {completedAtDisplay
+                      ? ` · ${formatPlatformDisplay(completedAtDisplay, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }, "")}`
+                      : ""}
                   </p>
                 </div>
               </div>
@@ -1094,12 +1095,33 @@ export default function DeliveryDetailClient({
 
           {/* Pricing, keeps card treatment (hero/actionable) */}
           <div className={`mt-5 rounded-xl p-4 ${price > 0 ? "bg-gradient-to-br from-[var(--gold)]/8 to-transparent border border-[var(--gold)]/20" : ""}`}>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-1.5">
-              {delivery.override_price != null && Number(delivery.override_price) > 0
-                ? "Price (override)"
-                : delivery.quoted_price
-                  ? "Quoted Price"
-                  : "Pricing"}
+            <div className="flex items-start justify-between gap-2 mb-1.5">
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 min-w-0">
+                {delivery.override_price != null && Number(delivery.override_price) > 0
+                  ? "Price (override)"
+                  : delivery.quoted_price
+                    ? "Quoted Price"
+                    : "Pricing"}
+              </div>
+              {price > 0 && completedForPriceEdit && canEditPostCompletionPrice ? (
+                <PostCompletionPriceEdit
+                  jobType="delivery"
+                  jobId={delivery.id}
+                  currentPrice={price}
+                  canEdit={canEditPostCompletionPrice}
+                  previousEdits={postCompletionPriceEdits}
+                  completed={completedForPriceEdit}
+                  trigger={(
+                    <button
+                      type="button"
+                      className="shrink-0 p-1 rounded-md text-[var(--gold)]/55 hover:text-[var(--gold)] hover:bg-[var(--gold)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/35 transition-colors -mt-0.5"
+                      aria-label="Adjust final price"
+                    >
+                      <Pencil weight="regular" className="w-3.5 h-3.5" aria-hidden />
+                    </button>
+                  )}
+                />
+              ) : null}
             </div>
             {price > 0 ? (
               <>

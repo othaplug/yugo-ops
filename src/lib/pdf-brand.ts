@@ -52,9 +52,8 @@ export function drawYugoLogo(
 }
 
 /**
- * Draw premium Yugo header: optional logo, then wine "Yugo", gold divider.
- * If logoBase64 is provided, logo is drawn at top-left and text is right of it; otherwise text is centered.
- * Returns the y position after the header.
+ * Draw header: optional left logo only (no wordmark text), then gold rule.
+ * Branding is the logo asset; plain "Yugo" text is not drawn.
  */
 export function drawYugoHeader(
   doc: jsPDF,
@@ -71,35 +70,31 @@ export function drawYugoHeader(
   const margin = options.margin ?? 50;
   const logoBase64 = options.logoBase64;
 
-  if (logoBase64) {
-    const logoW = 72;
-    const logoH = logoW * 0.28;
-    try {
-      doc.addImage(logoBase64, "PNG", margin, yStart, logoW, logoH);
-    } catch {
-      // skip
-    }
-  }
-
   const centerX = options.centerX ?? pageWidth / 2;
   const lineEnd =
     options.width != null ? centerX + options.width / 2 : pageWidth - margin;
   const lineStart =
     options.width != null ? centerX - options.width / 2 : margin;
 
-  doc.setFont(FONT_HERO, "bold");
-  doc.setFontSize(24);
-  doc.setTextColor(...WINE);
-  doc.text("Yugo", centerX, yStart + (logoBase64 ? 10 : 0), {
-    align: "center",
-  });
+  let lineY: number;
+  if (logoBase64) {
+    const logoW = 72;
+    const logoH = logoW * 0.28;
+    try {
+      doc.addImage(logoBase64, "PNG", margin, yStart, logoW, logoH);
+    } catch {
+      /* skip */
+    }
+    lineY = yStart + logoH + 6;
+  } else {
+    lineY = yStart + 4;
+  }
 
-  doc.setDrawColor(...GOLD);
+  doc.setDrawColor(...GOLD_DARK);
   doc.setLineWidth(0.5);
-  const lineY = yStart + (logoBase64 ? 18 : 10);
   doc.line(lineStart, lineY, lineEnd, lineY);
 
-  return lineY + 10;
+  return lineY + 12;
 }
 
 /**
@@ -109,6 +104,85 @@ export function drawTopAccentBar(doc: jsPDF, useWine = false): void {
   const pageWidth = doc.internal.pageSize.getWidth();
   doc.setFillColor(...(useWine ? WINE : GOLD));
   doc.rect(0, 0, pageWidth, 4, "F");
+}
+
+/** Full-width wine gradient strip (premium receipts). */
+export function drawTopWineGradientBar(doc: jsPDF, heightPt = 7): void {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const h = heightPt;
+  const steps: [number, number, number][] = [
+    [120, 36, 58],
+    [92, 26, 51],
+    [58, 16, 32],
+  ];
+  const seg = pageWidth / steps.length;
+  steps.forEach((rgb, i) => {
+    doc.setFillColor(...rgb);
+    doc.rect(i * seg, 0, seg + 1, h, "F");
+  });
+}
+
+/**
+ * Centered Yugo logo + gold rule, no duplicate wordmark text.
+ * Returns Y position below the rule for body content.
+ */
+export function drawCenteredYugoLogoBlock(
+  doc: jsPDF,
+  logoDataUri: string,
+  yStart: number,
+): number {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const logoW = Math.min(108, pageWidth - MARGIN * 2);
+  const logoH = logoW * 0.28;
+  const x = (pageWidth - logoW) / 2;
+  if (logoDataUri) {
+    try {
+      doc.addImage(logoDataUri, "PNG", x, yStart, logoW, logoH);
+    } catch {
+      /* wordmark omitted when image fails; rule still draws */
+    }
+  }
+  const lineY = yStart + (logoDataUri ? logoH : 0) + 8;
+  doc.setDrawColor(...GOLD_DARK);
+  doc.setLineWidth(0.55);
+  doc.line(MARGIN, lineY, pageWidth - MARGIN, lineY);
+  return lineY + 14;
+}
+
+/**
+ * Client signature block for US Letter PDFs in points (e.g. margin 50). Matches payment receipt layout.
+ */
+export function drawClientSignatureLetter(
+  doc: jsPDF,
+  dataUrl: string,
+  y: number,
+  marginPt: number,
+): number {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const contentW = pageWidth - marginPt * 2;
+  const boxW = Math.min(contentW, 88);
+  const boxInnerH = 18;
+  const framePad = 5;
+  doc.setFont(FONT_BODY, "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(...GOLD_DARK);
+  doc.text("CLIENT SIGNATURE", marginPt, y);
+  doc.setDrawColor(...GOLD_DARK);
+  doc.setLineWidth(0.35);
+  const boxY = y + 4;
+  doc.setFillColor(252, 251, 249);
+  doc.rect(marginPt, boxY, boxW, boxInnerH + framePad, "FD");
+  const innerPad = 3;
+  const imgW = boxW - innerPad * 2;
+  const imgH = boxInnerH - 2;
+  try {
+    doc.addImage(dataUrl, "PNG", marginPt + innerPad, boxY + 2.5, imgW, imgH);
+  } catch {
+    setBodyText(doc, 8);
+    doc.setTextColor(...GRAY);
+    doc.text("Signature on file", marginPt + innerPad, boxY + boxInnerH / 2 + 2);
+  }
+  return boxY + boxInnerH + framePad + 11;
 }
 
 /**
@@ -177,7 +251,7 @@ export function setBodyText(doc: jsPDF, size = 9): void {
 export function setSectionLabel(doc: jsPDF, size = 8): void {
   doc.setFont(FONT_BODY, "bold");
   doc.setFontSize(size);
-  doc.setTextColor(...GOLD);
+  doc.setTextColor(...GOLD_DARK);
 }
 
 /**
@@ -238,6 +312,18 @@ export function drawPageTemplate(
   return y + 4;
 }
 
+/** Premium client receipt: gradient top bar, centered logo, footer bars. */
+export function drawSignOffReceiptPageShell(
+  doc: jsPDF,
+  logoDataUri: string,
+): number {
+  drawTopWineGradientBar(doc, 7);
+  const y = drawCenteredYugoLogoBlock(doc, logoDataUri, 14);
+  drawYugoFooter(doc);
+  drawBottomAccentBar(doc, true);
+  return y;
+}
+
 /**
  * Draw a section label + gold underline rule for semantic document sections.
  */
@@ -250,10 +336,10 @@ export function drawSectionHeading(
 ): number {
   doc.setFont(FONT_BODY, "bold");
   doc.setFontSize(7.5);
-  doc.setTextColor(...GOLD);
+  doc.setTextColor(...GOLD_DARK);
   doc.text(label.toUpperCase(), x, y);
   doc.setDrawColor(...GOLD_DARK);
   doc.setLineWidth(0.25);
   doc.line(x, y + 2, x + width, y + 2);
-  return y + 8;
+  return y + 12;
 }

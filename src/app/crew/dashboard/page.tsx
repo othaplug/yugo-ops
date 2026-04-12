@@ -407,7 +407,10 @@ export default function CrewDashboardPage() {
                           }`}
                           style={
                             inProgress
-                              ? { background: "linear-gradient(135deg, #D97706, #B45309)" }
+                              ? {
+                                  background:
+                                    "linear-gradient(165deg, #5C1A33 0%, #3e1021 42%, #2a0c18 100%)",
+                                }
                               : undefined
                           }
                         >

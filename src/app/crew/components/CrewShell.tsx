@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { CaretLeft, CaretRight, List, X } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ToastProvider } from "@/app/admin/components/Toast";
-import { Icons } from "@/app/admin/components/SidebarIcons";
 import YugoLogo from "@/components/YugoLogo";
 import CrewSignOutFooter from "./CrewSignOutFooter";
 import OfflineBanner from "@/components/ui/OfflineBanner";
@@ -17,28 +15,24 @@ const NAV_CORE = [
     label: "Dashboard",
     shortLabel: "Dash",
     abbrev: "DB",
-    icon: "target" as const,
   },
   {
     href: "/crew/stats",
     label: "Stats",
     shortLabel: "Stats",
     abbrev: "ST",
-    icon: "barChart" as const,
   },
   {
     href: "/crew/expense",
     label: "Expenses",
     shortLabel: "Exp",
     abbrev: "EX",
-    icon: "dollarSign" as const,
   },
   {
     href: "/crew/end-of-day",
     label: "End of day",
     shortLabel: "EOD",
     abbrev: "ED",
-    icon: "fileText" as const,
   },
 ] as const;
 
@@ -48,14 +42,12 @@ type ShellNavItem =
       label: string;
       shortLabel: string;
       abbrev: string;
-      icon: keyof typeof Icons;
     }
   | {
       href: string | null;
       label: string;
       shortLabel: string;
       abbrev: string;
-      icon: keyof typeof Icons;
       navigation: true;
     };
 
@@ -91,7 +83,6 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
       label: "Navigation",
       shortLabel: "Nav",
       abbrev: "NV",
-      icon: "navigationArrow",
       navigation: true,
     };
     if (!hasActiveBinTasks) return [NAV_CORE[0], navItem, ...NAV_CORE.slice(1)];
@@ -100,7 +91,6 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
       label: "Bin tasks",
       shortLabel: "Bins",
       abbrev: "BT",
-      icon: "recycle",
     };
     return [NAV_CORE[0], navItem, bin, ...NAV_CORE.slice(1)];
   }, [hasActiveBinTasks, navTargetPath]);
@@ -165,7 +155,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
   return (
     <ToastProvider>
       <CrewImmersiveNavContext.Provider value={immersiveNavApi}>
-        <div className="flex min-h-screen bg-[var(--bg)]">
+        <div className="flex h-dvh max-h-dvh min-h-0 w-full overflow-hidden bg-[var(--bg)]">
           <a
             href="#crew-main"
             className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-[#2C3E2D] focus:text-white focus:font-semibold focus:outline-none"
@@ -199,11 +189,11 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                 <button
                   type="button"
                   onClick={() => setSidebarCollapsed(false)}
-                  className="p-2 hover:bg-[var(--card)]/50 transition-colors text-[var(--tx3)] hover:text-[var(--tx2)]"
+                  className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--tx2)] hover:bg-[var(--card)]/50 hover:text-[var(--tx)] transition-colors rounded-lg"
                   title="Expand sidebar"
                   aria-label="Expand sidebar"
                 >
-                  <CaretRight size={15} weight="regular" className="text-current" aria-hidden />
+                  Open
                 </button>
               </div>
               {/* Full: logo + collapse / mobile close */}
@@ -215,19 +205,19 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                   <button
                     type="button"
                     onClick={() => setSidebarCollapsed(true)}
-                    className="hidden md:flex p-2 hover:bg-[var(--card)]/50 transition-colors text-[var(--tx3)] hover:text-[var(--tx2)]"
+                    className="hidden md:flex px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--tx3)] hover:bg-[var(--card)]/50 hover:text-[var(--tx2)] rounded-lg transition-colors"
                     aria-label="Collapse sidebar"
                     title="Collapse sidebar"
                   >
-                    <CaretLeft size={15} weight="regular" className="text-current" aria-hidden />
+                    Hide
                   </button>
                   <button
                     type="button"
                     onClick={() => setSidebarOpen(false)}
-                    className="md:hidden p-2 hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)]"
+                    className="md:hidden px-2 py-1 text-[11px] font-semibold text-[var(--tx2)] hover:bg-[var(--card)]/50 rounded-lg transition-colors"
                     aria-label="Close menu"
                   >
-                    <X size={15} weight="regular" className="text-current" aria-hidden />
+                    Close
                   </button>
                 </div>
               </div>
@@ -252,21 +242,12 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                   const active = isActive(item);
                   const key = "navigation" in item && item.navigation ? "navigation" : item.href;
                   const disabled = "navigation" in item && item.navigation && !item.href;
-                  const IconComp = Icons[item.icon];
                   const content = (
-                    <>
-                      <span
-                        className={`shrink-0 ${active ? "text-[#5C1A33]" : "text-[var(--tx3)]"}`}
-                        aria-hidden
-                      >
-                        <IconComp />
-                      </span>
-                      <span className="truncate uppercase text-[10px] font-bold tracking-[0.14em] leading-none">
-                        {item.label}
-                      </span>
-                    </>
+                    <span className="truncate uppercase text-[10px] font-bold tracking-[0.14em] leading-none pl-0.5">
+                      {item.label}
+                    </span>
                   );
-                  const className = `crew-sidebar-nav-item sidebar-nav-lift flex items-center gap-2.5 px-3.5 py-2.5 mx-2 rounded-xl border-l-2 -ml-px border-transparent [font-family:var(--font-body)] ${
+                  const className = `crew-sidebar-nav-item sidebar-nav-lift flex items-center px-3.5 py-2.5 mx-2 rounded-xl border-l-2 -ml-px border-transparent [font-family:var(--font-body)] ${
                     active ? "is-active" : ""
                   } ${disabled ? "is-disabled" : ""}`;
                   if (disabled) {
@@ -299,22 +280,20 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                 const active = isActive(item);
                 const key = "navigation" in item && item.navigation ? "navigation" : item.href;
                 const disabled = "navigation" in item && item.navigation && !item.href;
-                const IconComp = Icons[item.icon];
                 const railClass = `crew-sidebar-rail-item relative flex items-center justify-center w-10 min-h-10 py-1.5 rounded-xl transition-colors mx-auto [font-family:var(--font-body)] ${
                   active ? "is-active" : ""
                 } ${disabled ? "is-disabled" : ""}`;
                 const railMark = (
                   <span
-                    className={
+                    className={`text-[9px] font-bold tracking-[0.06em] leading-tight text-center px-0.5 ${
                       active
                         ? "text-[#5C1A33]"
                         : disabled
                           ? "text-[var(--tx3)]/40"
                           : "text-[var(--tx3)]"
-                    }
-                    aria-hidden
+                    }`}
                   >
-                    <IconComp />
+                    {item.abbrev}
                   </span>
                 );
                 if (disabled) {
@@ -362,21 +341,21 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className={`crew-keep-round md:hidden fixed z-40 size-10 flex items-center justify-center rounded-xl bg-white/90 text-[var(--tx2)] shadow-[0_2px_16px_rgba(44,62,45,0.12)] border border-[var(--brd)]/60 hover:bg-white hover:text-[var(--tx)] active:scale-[0.98] transition-colors left-3 ${
+              className={`crew-keep-round md:hidden fixed z-40 min-h-10 px-3 flex items-center justify-center rounded-xl bg-white/90 text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--tx2)] shadow-[0_2px_16px_rgba(44,62,45,0.12)] border border-[var(--brd)]/60 hover:bg-white hover:text-[var(--tx)] active:scale-[0.98] transition-colors left-3 ${
                 sidebarOpen ? "pointer-events-none opacity-0" : "opacity-100"
               }`}
               style={{ top: "max(0.75rem, env(safe-area-inset-top, 0px))" }}
               aria-label="Open menu"
             >
-              <List size={22} weight="regular" className="text-current" aria-hidden />
+              Menu
             </button>
           )}
 
-          <div className="flex-1 flex flex-col min-w-0 min-h-0">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <main
               id="crew-main"
               key={pathname}
-              className={`flex-1 min-w-0 overflow-y-auto overflow-x-hidden min-h-0 tab-content ${
+              className={`relative min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y tab-content ${
                 immersiveNav
                   ? "pt-0 pb-0"
                   : "max-md:pt-[calc(3rem+env(safe-area-inset-top,0px))] md:pt-[env(safe-area-inset-top,0px)] pb-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px))] md:pb-0"
@@ -398,8 +377,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
               const active = isActive(item);
               const key = "navigation" in item && item.navigation ? "navigation" : item.href;
               const disabled = "navigation" in item && item.navigation && !item.href;
-              const IconComp = Icons[item.icon];
-              const tabClass = `flex-1 flex flex-col items-center justify-center gap-1 px-0.5 pb-2.5 pt-2 min-h-[52px] text-[10px] font-bold uppercase tracking-[0.08em] leading-tight text-center transition-colors touch-manipulation [font-family:var(--font-body)] ${
+              const tabClass = `flex-1 flex flex-col items-center justify-center px-0.5 pb-2.5 pt-2.5 min-h-[52px] text-[11px] font-bold uppercase tracking-[0.08em] leading-tight text-center transition-colors touch-manipulation [font-family:var(--font-body)] ${
                 active
                   ? "text-[#5C1A33]"
                   : disabled
@@ -409,24 +387,9 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
               const label = (
                 <span className="max-w-full line-clamp-2">{item.shortLabel}</span>
               );
-              const iconWrap = (
-                <span
-                  className={
-                    active
-                      ? "text-[#5C1A33]"
-                      : disabled
-                        ? "text-[var(--tx2)]/40"
-                        : "text-[var(--tx2)]"
-                  }
-                  aria-hidden
-                >
-                  <IconComp />
-                </span>
-              );
               if (disabled) {
                 return (
                   <span key={key} className={tabClass} aria-hidden title="Available when you’re en route on a job.">
-                    {iconWrap}
                     {label}
                   </span>
                 );
@@ -438,7 +401,6 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                   className={tabClass}
                   aria-current={active ? "page" : undefined}
                 >
-                  {iconWrap}
                   {label}
                 </Link>
               );

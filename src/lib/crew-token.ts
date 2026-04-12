@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import type { NextRequest } from "next/server";
 
 const CREW_SECRET_ENV = "CREW_SESSION_SECRET";
 const DEV_SECRET = "dev-crew-secret-change-in-production";
@@ -61,3 +62,9 @@ export function verifyCrewToken(token: string): CrewTokenPayload | null {
 }
 
 export const CREW_COOKIE_NAME = "yugo-crew-session";
+
+/** Prefer reading the crew session from the incoming request (reliable in Route Handlers). */
+export function getVerifiedCrewFromRequest(req: NextRequest): CrewTokenPayload | null {
+  const token = req.cookies.get(CREW_COOKIE_NAME)?.value;
+  return token ? verifyCrewToken(token) : null;
+}

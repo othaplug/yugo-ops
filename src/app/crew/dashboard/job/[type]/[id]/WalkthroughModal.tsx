@@ -163,8 +163,12 @@ export default function WalkthroughModal({
   onClose,
 }: WalkthroughModalProps) {
   const logistics = copyVariant === "logistics";
-  const skipReasons = logistics ? LOGISTICS_SKIP_REASONS : RESIDENTIAL_SKIP_REASONS;
-  const modalTitle = logistics ? "Job list verification" : "Inventory walkthrough";
+  const skipReasons = logistics
+    ? LOGISTICS_SKIP_REASONS
+    : RESIDENTIAL_SKIP_REASONS;
+  const modalTitle = logistics
+    ? "Job list verification"
+    : "Inventory walkthrough";
   const [step, setStep] = useState<
     "intro" | "checklist" | "extras" | "summary" | "skip"
   >("intro");
@@ -208,7 +212,9 @@ export default function WalkthroughModal({
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Skip state
-  const [skipReason, setSkipReason] = useState(RESIDENTIAL_SKIP_REASONS[0].value);
+  const [skipReason, setSkipReason] = useState(
+    RESIDENTIAL_SKIP_REASONS[0].value,
+  );
 
   // Submitting
   const [submitting, setSubmitting] = useState(false);
@@ -328,7 +334,13 @@ export default function WalkthroughModal({
 
   function addB2BQuickPick(label: string, tier: ExtraItemWeightTier) {
     const ws =
-      tier === "light" ? 0.5 : tier === "standard" ? 1 : tier === "heavy" ? 2 : 3;
+      tier === "light"
+        ? 0.5
+        : tier === "standard"
+          ? 1
+          : tier === "heavy"
+            ? 2
+            : 3;
     const surcharge = calculateExtraItemPrice(label, tier, 1, false);
     setExtraItems((prev) => [
       ...prev,
@@ -520,10 +532,7 @@ export default function WalkthroughModal({
       data-crew-portal
       style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
     >
-      <div
-        className="fixed inset-0 z-0 modal-overlay"
-        aria-hidden
-      />
+      <div className="fixed inset-0 z-0 modal-overlay" aria-hidden />
       <div
         className="relative z-10 w-full max-w-[520px] overflow-hidden yugo-glass-light border border-[#2C3E2D]/10 rounded-t-2xl sm:rounded-2xl shadow-[0_24px_64px_-20px_rgba(44,62,45,0.25)] flex flex-col modal-card"
         data-crew-job-premium
@@ -542,7 +551,10 @@ export default function WalkthroughModal({
               {step === "checklist" && `${items.length} items to verify`}
               {step === "extras" && "Add any extra items found"}
               {step === "summary" && "Review changes before submitting"}
-              {step === "skip" && (logistics ? "Select a reason for skipping verification" : "Select a reason for skipping")}
+              {step === "skip" &&
+                (logistics
+                  ? "Select a reason for skipping verification"
+                  : "Select a reason for skipping")}
             </p>
           </div>
           <button
@@ -571,21 +583,30 @@ export default function WalkthroughModal({
                 </div>
               </div>
               <div className="px-1">
-                <h4 className="font-hero text-[19px] font-semibold text-[#2b1810] mb-2 tracking-[-0.02em] leading-snug">
-                  {logistics ? "Step 1: Verify the job list" : "Step 1: Inventory walkthrough"}
+                <h4 className="font-hero text-[24px] sm:text-[26px] font-semibold text-[#2b1810] mb-2 tracking-[-0.02em] leading-tight">
+                  {logistics
+                    ? "Step 1: Verify the job list"
+                    : "Step 1: Inventory walkthrough"}
                 </h4>
-                <p className="text-[13px] text-[#3d2a26]/90 leading-relaxed [font-family:var(--font-body)]">
+                <p className="text-[13px] sm:text-[14px] text-[#3d2a26]/90 leading-relaxed [font-family:var(--font-body)]">
                   {logistics ? (
                     <>
-                      With the site contact or receiver, confirm the job list matches what&apos;s on site. Flag missing
-                      lines and add anything extra.
+                      With the site contact or receiver, confirm the job list
+                      matches what&apos;s on site. Flag missing lines and add
+                      anything extra.
                     </>
                   ) : (
                     <>
-                      Walk through with the client and verify that the inventory on their quote matches what&apos;s
-                      actually here. Flag missing items and add anything extra.
+                      Walk through with the client and verify that the inventory
+                      on their quote matches what&apos;s actually here. Flag
+                      missing items and add anything extra.
                     </>
                   )}
+                </p>
+                <p className="text-[12px] sm:text-[13px] font-semibold text-[#5C1A33]/85 mt-3 leading-snug [font-family:var(--font-body)]">
+                  {logistics
+                    ? "The line-by-line checklist opens on the next screen. Tap Start inventory check."
+                    : "The room-by-room checklist opens on the next screen. Tap Start inventory check."}
                 </p>
               </div>
               <div className="rounded-xl border border-[#5C1A33]/12 bg-gradient-to-br from-[#FAF3F5] via-[#F7EEF1] to-[#F2E6EA] px-4 py-3.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]">
@@ -627,7 +648,9 @@ export default function WalkthroughModal({
           {step === "skip" && (
             <div className="space-y-4">
               <p className="text-[12px] text-[var(--tx3)]">
-                {logistics ? "Why skip verification?" : "Why is the walkthrough being skipped?"}
+                {logistics
+                  ? "Why skip verification?"
+                  : "Why is the walkthrough being skipped?"}
               </p>
               {skipReasons.map((r) => (
                 <label
@@ -659,7 +682,9 @@ export default function WalkthroughModal({
             <div className="space-y-4">
               {items.length === 0 ? (
                 <div className="text-center py-8 text-[13px] text-[var(--tx3)]">
-                  {logistics ? "No items on this job list." : "No inventory items on this quote."}
+                  {logistics
+                    ? "No items on this job list."
+                    : "No inventory items on this quote."}
                 </div>
               ) : (
                 roomGroups.map((group) => (
@@ -750,7 +775,9 @@ export default function WalkthroughModal({
               <p className="text-[12px] text-[var(--tx3)]">
                 Add any items found that were{" "}
                 <strong className="text-[var(--tx)]">
-                  {logistics ? "not on the original job list" : "not on the original quote"}
+                  {logistics
+                    ? "not on the original job list"
+                    : "not on the original quote"}
                 </strong>
                 .
               </p>

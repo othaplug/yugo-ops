@@ -10,6 +10,7 @@ import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/D
 import { useToast } from "../components/Toast";
 import { formatMoveDate, formatAdminCreatedAt } from "@/lib/date-format";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
+import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
 import { getMoveDetailPath } from "@/lib/move-code";
 import { getStatusLabel } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
@@ -37,6 +38,13 @@ interface Move {
   margin_percent?: number | null;
   margin_flag?: string | null;
   est_margin_percent?: number | null;
+  /** Resolved status for admin list (matches /api/admin/moves/[id]/stage when session completed). */
+  display_status?: string | null;
+}
+
+/** Lifecycle status for filters and badges (tracking completion merged on the server). */
+function effectiveMoveStatus(m: Move): string {
+  return (m.display_status ?? m.status ?? "").trim();
 }
 
 interface Quote {
@@ -65,7 +73,6 @@ const TYPE_FILTERS = [
   { value: "specialty", label: "Specialty" },
   { value: "event", label: "Event" },
   { value: "b2b", label: "B2B" },
-  { value: "bin_rental", label: "Bin Rental" },
 ];
 
 const STATUS_FILTERS = [
@@ -169,22 +176,6 @@ function quoteStatusBadgeClass(status: string): string {
   }
 }
 
-function serviceTypeLabel(st: string): string {
-  const map: Record<string, string> = {
-    local_move: "Residential",
-    long_distance: "Residential",
-    office_move: "Office",
-    single_item: "Single Item",
-    white_glove: "White Glove",
-    specialty: "Specialty",
-    event: "Event",
-    b2b_delivery: "B2B",
-    labour_only: "Labour Only",
-    bin_rental: "Bin Rental",
-  };
-  return map[st] || st;
-}
-
 function relativeTime(iso: string | null): string {
   if (!iso) return "";
   const ms = Date.now() - new Date(iso).getTime();
@@ -266,7 +257,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       label: "Client",
       accessor: (m) => m.client_name || "",
       render: (m) => {
-        const isComplete = ["completed", "delivered"].includes((m.status || "").toLowerCase());
+        const isComplete = ["completed", "delivered"].includes(effectiveMoveStatus(m).toLowerCase());
         return (
           <div className="flex items-center gap-2 min-w-0">
             <span className="dt-text-strong truncate" title={m.client_name || "-"}>
@@ -285,12 +276,15 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
     {
       id: "status",
       label: "Status",
-      accessor: (m) => m.status || "",
-      render: (m) => (
-        <span className={`inline-flex items-center dt-badge tracking-[0.04em] ${statusBadgeStyle(m.status || "")}`}>
-          {getStatusLabel(m.status ?? null)}
+      accessor: (m) => effectiveMoveStatus(m),
+      render: (m) => {
+        const s = effectiveMoveStatus(m);
+        return (
+        <span className={`inline-flex items-center dt-badge tracking-[0.04em] ${statusBadgeStyle(s)}`}>
+          {getStatusLabel(s || null)}
         </span>
-      ),
+        );
+      },
     },
     {
       id: "type",
@@ -334,11 +328,11 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       id: "margin",
       label: "Margin",
       accessor: (m) => {
-        const isCompleted = ["completed", "delivered", "paid"].includes((m.status || "").toLowerCase());
+        const isCompleted = ["completed", "delivered", "paid"].includes(effectiveMoveStatus(m).toLowerCase());
         return isCompleted ? (m.margin_percent ?? null) : (m.est_margin_percent ?? null);
       },
       render: (m) => {
-        const isCompleted = ["completed", "delivered", "paid"].includes((m.status || "").toLowerCase());
+        const isCompleted = ["completed", "delivered", "paid"].includes(effectiveMoveStatus(m).toLowerCase());
         const isQuote = ["quoted", "quote"].includes((m.status || "").toLowerCase());
         if (isQuote) return <span className="block text-right dt-text-muted">-</span>;
 
@@ -370,7 +364,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       align: "right",
       defaultHidden: false,
       exportAccessor: (m) => {
-        const isCompleted = ["completed", "delivered", "paid"].includes((m.status || "").toLowerCase());
+        const isCompleted = ["completed", "delivered", "paid"].includes(effectiveMoveStatus(m).toLowerCase());
         return isCompleted ? (m.margin_percent ?? "") : (m.est_margin_percent ?? "");
       },
     },
@@ -452,7 +446,7 @@ export default function AllMovesClient({
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     afterTypeFilter.forEach((m) => {
-      const s = (m.status || "").toLowerCase().replace(/\s+/g, "_");
+      const s = effectiveMoveStatus(m).toLowerCase().replace(/\s+/g, "_");
       counts[s] = (counts[s] || 0) + 1;
     });
     return counts;
@@ -462,7 +456,7 @@ export default function AllMovesClient({
     () =>
       activeStatus
         ? afterTypeFilter.filter(
-            (m) => (m.status || "").toLowerCase().replace(/\s+/g, "_") === activeStatus,
+            (m) => effectiveMoveStatus(m).toLowerCase().replace(/\s+/g, "_") === activeStatus,
           )
         : afterTypeFilter,
     [afterTypeFilter, activeStatus],
@@ -471,7 +465,7 @@ export default function AllMovesClient({
   const filtered = useMemo(() => {
     if (!activeMargin) return afterStatusFilter;
     return afterStatusFilter.filter((m) => {
-      const isCompleted = ["completed", "delivered", "paid"].includes((m.status || "").toLowerCase());
+      const isCompleted = ["completed", "delivered", "paid"].includes(effectiveMoveStatus(m).toLowerCase());
       const pct = isCompleted ? m.margin_percent : m.est_margin_percent;
       if (pct == null) return false;
       const flag = m.margin_flag || (pct >= 35 ? "green" : pct >= 25 ? "yellow" : "red");
@@ -679,7 +673,7 @@ export default function AllMovesClient({
                     {q.client_name || "-"}
                   </div>
                   <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">
-                    {serviceTypeLabel(q.service_type)} · {relativeTime(q.sent_at || q.created_at)}
+                    {serviceTypeDisplayLabel(q.service_type)} · {relativeTime(q.sent_at || q.created_at)}
                   </div>
                   <div className="mt-1.5 text-[var(--text-base)] font-bold text-[var(--gold)] font-heading">
                     {quoteAmount(q)}

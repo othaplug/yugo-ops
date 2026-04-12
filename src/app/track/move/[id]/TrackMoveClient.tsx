@@ -71,6 +71,7 @@ import {
   type BinBundleKey,
 } from "@/lib/pricing/bin-rental";
 import { labelBookingModificationType } from "@/lib/moves/booking-modification-labels";
+import { isTrackNonMoveProduct } from "@/lib/track-non-move-product";
 
 function formatPerkOffer(
   offerType: string,
@@ -122,7 +123,6 @@ const SQUARE_SDK_PRODUCTION = "https://web.squarecdn.com/v1/square.js";
 const CHANGE_TYPES = [
   "Change move date",
   "Change move time",
-  "Add items to inventory",
   "Remove items from inventory",
   "Change destination address",
   "Add special instructions",
@@ -339,7 +339,7 @@ function BinRentalTrackingSection({
                 className="text-[13px] font-semibold"
                 style={{ color: FOREST }}
               >
-                Your move — {formatMoveDate(binOrder.move_date)}
+                Home move day — {formatMoveDate(binOrder.move_date)}
               </p>
               <p
                 className="text-[12px] opacity-70 mt-0.5"
@@ -1109,10 +1109,22 @@ export default function TrackMoveClient({
     service_type: move.service_type,
     move_type: move.move_type,
   });
+  const isNonMoveProductTrack = isTrackNonMoveProduct(serviceType);
+  const normTrackAddr = (a: string | null | undefined) =>
+    String(a ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+  const singleSiteBinRental =
+    isNonMoveProductTrack &&
+    normTrackAddr(move.from_address) ===
+      normTrackAddr(move.to_address || move.delivery_address);
   const tabs: { key: TabKey; label: string }[] = [
     { key: "dash", label: "Dashboard" },
     { key: "track" as TabKey, label: "Live Tracking" },
-    ...(isSingleItem ? [] : [{ key: "inv" as TabKey, label: "Inventory" }]),
+    ...(isSingleItem || isNonMoveProductTrack
+      ? []
+      : [{ key: "inv" as TabKey, label: "Inventory" }]),
     { key: "files", label: "Files" },
   ];
 
@@ -1155,7 +1167,8 @@ export default function TrackMoveClient({
   );
 
   const moveProjectTrackSection = React.useMemo(() => {
-    if (!moveProjectForTrack || isLogisticsDeliveryTrack) return null;
+    if (!moveProjectForTrack || isLogisticsDeliveryTrack || isNonMoveProductTrack)
+      return null;
     const phases = moveProjectForTrack.phases;
     const flat = phases
       .flatMap((ph) =>
@@ -1283,7 +1296,12 @@ export default function TrackMoveClient({
         ) : null}
       </div>
     );
-  }, [moveProjectForTrack, isLogisticsDeliveryTrack, move.scheduled_date]);
+  }, [
+    moveProjectForTrack,
+    isLogisticsDeliveryTrack,
+    isNonMoveProductTrack,
+    move.scheduled_date,
+  ]);
 
   const trackPageBg = "#F9EDE4";
   const trackPageInk = FOREST;
@@ -1608,7 +1626,9 @@ export default function TrackMoveClient({
                   const isSpecialty = serviceType === "specialty";
                   const label = isB2BOneOff
                     ? "Commercial Delivery"
-                    : serviceType === "single_item"
+                    : serviceType === "bin_rental"
+                      ? "Bin rental"
+                      : serviceType === "single_item"
                       ? "Delivery"
                       : isOffice
                         ? "Commercial Move"
@@ -1676,6 +1696,7 @@ export default function TrackMoveClient({
             const hints = ind
               .map((k) => complexityLabels[k])
               .filter(Boolean) as string[];
+            if (isNonMoveProductTrack) return null;
             if ((est == null || est < 3) && hints.length === 0) return null;
             return (
               <div
@@ -1725,88 +1746,105 @@ export default function TrackMoveClient({
                   </div>
                 </div>
               ) : daysUntil === 0 ? (
-                <>
+                isNonMoveProductTrack ? (
                   <div className="text-center">
                     <div
                       className="font-hero text-[30px] md:text-[34px] leading-tight font-semibold"
                       style={{ color: trackHero }}
                     >
-                      Today&apos;s the day
+                      {binOrder ? "Your plan for today" : "Today"}
                     </div>
                     <div
-                      className="mt-1 text-[12px] font-sans opacity-60"
+                      className="mt-1 text-[12px] font-sans opacity-60 max-w-md mx-auto px-2"
                       style={{ color: FOREST }}
                     >
-                      {isInProgress &&
-                      liveEtaMinutes != null &&
-                      liveEtaMinutes > 0
-                        ? `Your crew is ${liveEtaMinutes} minutes away`
-                        : isInProgress && liveStage != null
-                          ? (LIVE_TRACKING_STAGES.find(
-                              (s) => s.key === liveStage,
-                            )?.label ?? "In progress")
-                          : arrivalWindow
-                            ? `Arrival: ${arrivalWindow}`
-                            : "Your crew is on the way"}
+                      Use the bin rental card on your dashboard for drop-off, your home move day, and pickup.
                     </div>
                   </div>
-                  {scheduledDate && (
-                    <div className="mt-5">
-                      <StageProgressBar
-                        stages={[
-                          { label: "En Route" },
-                          { label: "Loading" },
-                          { label: "In Transit" },
-                          { label: "Unloading" },
-                          { label: "Complete" },
-                        ]}
-                        currentIndex={
-                          isCompleted
-                            ? 4
-                            : isInProgress && liveStage != null
-                              ? (() => {
-                                  const s = liveStage as string;
-                                  if (["job_complete", "completed"].includes(s))
-                                    return 4;
-                                  if (
-                                    [
-                                      "unloading",
-                                      "arrived_at_destination",
-                                    ].includes(s)
-                                  )
-                                    return 3;
-                                  if (
-                                    [
-                                      "en_route_to_destination",
-                                      "in_transit",
-                                    ].includes(s)
-                                  )
-                                    return 2;
-                                  if (
-                                    [
-                                      "loading",
-                                      "arrived_on_site",
-                                      "arrived_at_pickup",
-                                    ].includes(s)
-                                  )
-                                    return 1;
-                                  if (
-                                    [
-                                      "on_route",
-                                      "en_route",
-                                      "en_route_to_pickup",
-                                    ].includes(s)
-                                  )
-                                    return 0;
-                                  return -1;
-                                })()
-                              : -1
-                        }
-                        variant="light"
-                      />
+                ) : (
+                  <>
+                    <div className="text-center">
+                      <div
+                        className="font-hero text-[30px] md:text-[34px] leading-tight font-semibold"
+                        style={{ color: trackHero }}
+                      >
+                        Today&apos;s the day
+                      </div>
+                      <div
+                        className="mt-1 text-[12px] font-sans opacity-60"
+                        style={{ color: FOREST }}
+                      >
+                        {isInProgress &&
+                        liveEtaMinutes != null &&
+                        liveEtaMinutes > 0
+                          ? `Your crew is ${liveEtaMinutes} minutes away`
+                          : isInProgress && liveStage != null
+                            ? (LIVE_TRACKING_STAGES.find(
+                                (s) => s.key === liveStage,
+                              )?.label ?? "In progress")
+                            : arrivalWindow
+                              ? `Arrival: ${arrivalWindow}`
+                              : "Your crew is on the way"}
+                      </div>
                     </div>
-                  )}
-                </>
+                    {scheduledDate && (
+                      <div className="mt-5">
+                        <StageProgressBar
+                          stages={[
+                            { label: "En Route" },
+                            { label: "Loading" },
+                            { label: "In Transit" },
+                            { label: "Unloading" },
+                            { label: "Complete" },
+                          ]}
+                          currentIndex={
+                            isCompleted
+                              ? 4
+                              : isInProgress && liveStage != null
+                                ? (() => {
+                                    const s = liveStage as string;
+                                    if (["job_complete", "completed"].includes(s))
+                                      return 4;
+                                    if (
+                                      [
+                                        "unloading",
+                                        "arrived_at_destination",
+                                      ].includes(s)
+                                    )
+                                      return 3;
+                                    if (
+                                      [
+                                        "en_route_to_destination",
+                                        "in_transit",
+                                      ].includes(s)
+                                    )
+                                      return 2;
+                                    if (
+                                      [
+                                        "loading",
+                                        "arrived_on_site",
+                                        "arrived_at_pickup",
+                                      ].includes(s)
+                                    )
+                                      return 1;
+                                    if (
+                                      [
+                                        "on_route",
+                                        "en_route",
+                                        "en_route_to_pickup",
+                                      ].includes(s)
+                                    )
+                                      return 0;
+                                    return -1;
+                                  })()
+                                : -1
+                          }
+                          variant="light"
+                        />
+                      </div>
+                    )}
+                  </>
+                )
               ) : daysUntil != null && daysUntil < 0 && !isInProgress ? (
                 <div className="text-center">
                   <div
@@ -1840,7 +1878,9 @@ export default function TrackMoveClient({
                   >
                     {isLogisticsDeliveryTrack
                       ? "days until delivery day"
-                      : "days until move day"}
+                      : isNonMoveProductTrack
+                        ? "days until move day (packing with bins)"
+                        : "days until move day"}
                   </div>
                 </div>
               )}
@@ -2278,6 +2318,9 @@ export default function TrackMoveClient({
                             memberNames={crewMembers}
                             roles={crewRoles}
                             forest={FOREST}
+                            mode={
+                              isNonMoveProductTrack ? "bins" : "move"
+                            }
                           />
                         </div>
 
@@ -2920,6 +2963,7 @@ export default function TrackMoveClient({
 
               {/* ── Tip Your Crew Card ── */}
               {tippingEnabled &&
+                !isNonMoveProductTrack &&
                 (tipState === "first_visit" || tipState === "can_tip_later") &&
                 (() => {
                   const tipAmounts = ([10, 20, 30] as const).map((pct) => ({
@@ -3380,7 +3424,7 @@ export default function TrackMoveClient({
 
               {/* Move Details */}
               <div className="space-y-4">
-                {scheduledDate && (
+                {scheduledDate && !(binOrder && isNonMoveProductTrack) ? (
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div
@@ -3424,7 +3468,7 @@ export default function TrackMoveClient({
                       </button>
                     )}
                   </div>
-                )}
+                ) : null}
 
                 <style>{`
                 @keyframes slideInFrom {
@@ -3443,68 +3487,105 @@ export default function TrackMoveClient({
                 .addr-line { animation: drawLine 0.35s ease 0.2s both; transform-origin: top; }
                 .addr-to   { animation: slideInTo 0.45s cubic-bezier(0.22,1,0.36,1) 0.3s both; }
               `}</style>
-                <div className="flex gap-3 items-stretch">
-                  {/* Connector spine */}
-                  <div className="flex flex-col items-center pt-1 shrink-0">
+                {!(binOrder && isNonMoveProductTrack) &&
+                  (singleSiteBinRental ? (
+                  <div
+                    className="rounded-xl border px-3 py-3"
+                    style={{
+                      borderColor: `${FOREST}14`,
+                      backgroundColor: `${FOREST}04`,
+                    }}
+                  >
                     <div
-                      className="w-1.5 h-1.5 rounded-full mt-0.5"
-                      style={{ backgroundColor: FOREST }}
-                    />
+                      className="text-[10px] font-bold uppercase tracking-[0.08em] opacity-40"
+                      style={{ color: FOREST }}
+                    >
+                      Delivery and pickup
+                    </div>
                     <div
-                      className="addr-line w-px flex-1 my-1"
-                      style={{
-                        background: `linear-gradient(to bottom, ${FOREST}70, ${FOREST}20)`,
-                      }}
-                    />
-                    <div
-                      className="w-1.5 h-1.5 rounded-sm rotate-45"
-                      style={{ backgroundColor: `${FOREST}90` }}
-                    />
+                      className="text-[14px] font-medium mt-1 leading-snug"
+                      style={{ color: FOREST }}
+                    >
+                      {shortAddress(move.to_address || move.delivery_address)}
+                    </div>
+                    {formatAccessForDisplay(
+                      (move as { from_access?: string | null }).from_access,
+                    ) ? (
+                      <div
+                        className="text-[11px] mt-1 opacity-60"
+                        style={{ color: FOREST }}
+                      >
+                        Access:{" "}
+                        {formatAccessForDisplay(
+                          (move as { from_access?: string | null }).from_access,
+                        )}
+                      </div>
+                    ) : null}
                   </div>
-                  {/* Address text */}
-                  <div className="flex flex-col gap-3 min-w-0 flex-1">
-                    {pickupStopsForUi.map((stop, idx) => (
-                      <div key={idx} className="addr-from min-w-0">
+                ) : (
+                  <div className="flex gap-3 items-stretch">
+                    {/* Connector spine */}
+                    <div className="flex flex-col items-center pt-1 shrink-0">
+                      <div
+                        className="w-1.5 h-1.5 rounded-full mt-0.5"
+                        style={{ backgroundColor: FOREST }}
+                      />
+                      <div
+                        className="addr-line w-px flex-1 my-1"
+                        style={{
+                          background: `linear-gradient(to bottom, ${FOREST}70, ${FOREST}20)`,
+                        }}
+                      />
+                      <div
+                        className="w-1.5 h-1.5 rounded-sm rotate-45"
+                        style={{ backgroundColor: `${FOREST}90` }}
+                      />
+                    </div>
+                    {/* Address text */}
+                    <div className="flex flex-col gap-3 min-w-0 flex-1">
+                      {pickupStopsForUi.map((stop, idx) => (
+                        <div key={idx} className="addr-from min-w-0">
+                          <div
+                            className="text-[10px] font-bold uppercase tracking-[0.08em] opacity-40"
+                            style={{ color: FOREST }}
+                          >
+                            {pickupStopsForUi.length > 1
+                              ? `Pickup ${idx + 1}`
+                              : "From"}
+                          </div>
+                          <div
+                            className="text-[14px] font-medium mt-0.5 leading-snug"
+                            style={{ color: FOREST }}
+                          >
+                            {shortAddress(stop.address)}
+                          </div>
+                          {formatAccessForDisplay(stop.access) ? (
+                            <div
+                              className="text-[11px] mt-0.5 opacity-60"
+                              style={{ color: FOREST }}
+                            >
+                              Access: {formatAccessForDisplay(stop.access)}
+                            </div>
+                          ) : null}
+                        </div>
+                      ))}
+                      <div className="addr-to min-w-0">
                         <div
                           className="text-[10px] font-bold uppercase tracking-[0.08em] opacity-40"
                           style={{ color: FOREST }}
                         >
-                          {pickupStopsForUi.length > 1
-                            ? `Pickup ${idx + 1}`
-                            : "From"}
+                          To
                         </div>
                         <div
                           className="text-[14px] font-medium mt-0.5 leading-snug"
                           style={{ color: FOREST }}
                         >
-                          {shortAddress(stop.address)}
+                          {shortAddress(move.to_address || move.delivery_address)}
                         </div>
-                        {formatAccessForDisplay(stop.access) ? (
-                          <div
-                            className="text-[11px] mt-0.5 opacity-60"
-                            style={{ color: FOREST }}
-                          >
-                            Access: {formatAccessForDisplay(stop.access)}
-                          </div>
-                        ) : null}
-                      </div>
-                    ))}
-                    <div className="addr-to min-w-0">
-                      <div
-                        className="text-[10px] font-bold uppercase tracking-[0.08em] opacity-40"
-                        style={{ color: FOREST }}
-                      >
-                        To
-                      </div>
-                      <div
-                        className="text-[14px] font-medium mt-0.5 leading-snug"
-                        style={{ color: FOREST }}
-                      >
-                        {shortAddress(move.to_address || move.delivery_address)}
                       </div>
                     </div>
                   </div>
-                </div>
+                ))}
 
                 <div className="flex flex-col gap-3 pt-1">
                   <div className="flex items-start justify-between gap-4">
@@ -3633,6 +3714,7 @@ export default function TrackMoveClient({
                   memberNames={crewMembers}
                   roles={crewRoles}
                   forest={FOREST}
+                  mode={isNonMoveProductTrack ? "bins" : "move"}
                 />
               </div>
 
@@ -3668,7 +3750,10 @@ export default function TrackMoveClient({
               )}
 
               {/* Estate: service-milestone checklist. Standard: homeowner prep (72h). */}
-              {isEstateTier && estateDayPlan && !isCompleted && (
+              {isEstateTier &&
+                !isNonMoveProductTrack &&
+                estateDayPlan &&
+                !isCompleted && (
                 <div className="mt-5">
                   <EstateServiceChecklist
                     readOnly
@@ -3684,6 +3769,7 @@ export default function TrackMoveClient({
                 </div>
               )}
               {!isEstateTier &&
+                !isNonMoveProductTrack &&
                 !isCompleted &&
                 daysUntil != null &&
                 daysUntil >= 0 &&
@@ -3712,7 +3798,9 @@ export default function TrackMoveClient({
                 )}
 
               {/* ── Live Move Timeline (move day or in-progress) ── */}
-              {!isCompleted && (daysUntil === 0 || isInProgress) && (
+              {!isCompleted &&
+                !isNonMoveProductTrack &&
+                (daysUntil === 0 || isInProgress) && (
                 <div className="mt-5">
                   <LiveMoveTimeline
                     moveId={move.id}
@@ -3724,11 +3812,13 @@ export default function TrackMoveClient({
               )}
 
               {!isCompleted &&
-                ((inventoryChangeFeatureOn &&
+                ((!isNonMoveProductTrack &&
+                  inventoryChangeFeatureOn &&
                   inventoryChangeItemWeights.length > 0) ||
                   !isEstateTier) && (
                   <div className="pt-5 mt-3 space-y-3">
-                    {inventoryChangeFeatureOn &&
+                    {!isNonMoveProductTrack &&
+                      inventoryChangeFeatureOn &&
                       inventoryChangeItemWeights.length > 0 && (
                         <>
                           {inventoryChangePending ? (
@@ -3769,17 +3859,16 @@ export default function TrackMoveClient({
                                 }}
                               >
                                 <div
-                                  className="text-[11px] font-bold uppercase tracking-[0.08em] mb-1"
+                                  className="text-[15px] sm:text-[17px] font-bold uppercase tracking-[0.1em] leading-tight mb-2 [font-family:var(--font-body)]"
                                   style={{ color: FOREST }}
                                 >
                                   Need to update your inventory?
                                 </div>
                                 <p
-                                  className="text-[12px] leading-relaxed opacity-80 mb-3"
+                                  className="text-[12px] sm:text-[13px] leading-relaxed opacity-85 mb-3"
                                   style={{ color: FOREST }}
                                 >
-                                  Add or remove items before your move. Changes
-                                  are reviewed by your coordinator.
+                                  Changes are reviewed by your coordinator before your move.
                                 </p>
                                 <button
                                   type="button"
@@ -3788,10 +3877,11 @@ export default function TrackMoveClient({
                                     inventoryChangeEligible &&
                                     setInventoryChangeModalOpen(true)
                                   }
-                                  className="w-full sm:w-auto rounded-full font-semibold text-[12px] py-2.5 px-5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                  className="w-full sm:w-auto rounded-none px-4 py-2 font-bold uppercase tracking-[0.12em] leading-none text-[10px] sm:text-[11px] transition-[filter,opacity] hover:brightness-95 active:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40 disabled:cursor-not-allowed [font-family:var(--font-body)]"
                                   style={{
                                     backgroundColor: FOREST,
-                                    color: "#F9EDE4",
+                                    color: "#FFFBF7",
+                                    outlineColor: FOREST,
                                   }}
                                 >
                                   Request inventory change
@@ -4284,7 +4374,7 @@ export default function TrackMoveClient({
                   <select
                     value={changeType}
                     onChange={(e) => setChangeType(e.target.value)}
-                    className="w-full rounded-lg border px-3 py-2 text-[12px] sm:text-[13px] leading-tight outline-none focus:ring-2 focus:ring-[#2C3E2D]/20 focus:ring-offset-0 [font-family:var(--font-body)]"
+                    className="w-full rounded-none border px-3 py-2.5 text-[12px] sm:text-[13px] leading-tight outline-none focus:ring-2 focus:ring-[#2C3E2D]/20 focus:ring-offset-0 [font-family:var(--font-body)]"
                     style={{
                       borderColor: `${FOREST}22`,
                       backgroundColor: "#F9EDE4",

@@ -193,9 +193,38 @@ export function normalizeStatus(status: string | null | undefined): string | nul
   return legacy[status] || status;
 }
 
+/**
+ * Aligns admin list status with GET /api/admin/moves/[id]/stage: when the move row is not
+ * terminal but the latest tracking session is completed, treat as completed for display.
+ */
+export function resolveAdminMoveListDisplayStatus(
+  moveStatus: string | null | undefined,
+  latestSessionStatus: string | null | undefined,
+): string {
+  const raw = (moveStatus || "").trim();
+  const st = raw.toLowerCase();
+  const terminal = st === "completed" || st === "cancelled" || st === "delivered";
+  if (terminal) return raw;
+  if ((latestSessionStatus || "").toLowerCase().trim() === "completed") return "completed";
+  return raw;
+}
+
 /** True when the move is finished (completed or legacy delivered). */
 export function isMoveStatusCompleted(status: string | null | undefined): boolean {
-  const s = (status || "").toLowerCase();
+  const s = (status || "").toLowerCase().trim();
+  if (!s) return false;
   if (s === "delivered" || s === "completed") return true;
-  return normalizeStatus(status) === "completed";
+  return normalizeStatus(s) === "completed";
+}
+
+/**
+ * Staff can regenerate Move Summary / Invoice / Receipt PDFs when the job is finished
+ * or the move is in a payment-complete flag state (legacy "paid" rows, etc.).
+ */
+export function canRegenerateMoveDocuments(status: string | null | undefined): boolean {
+  const s = (status || "").toLowerCase().trim();
+  if (!s) return false;
+  if (isMoveStatusCompleted(status)) return true;
+  if (s === "paid" || s === "final_payment_received") return true;
+  return false;
 }

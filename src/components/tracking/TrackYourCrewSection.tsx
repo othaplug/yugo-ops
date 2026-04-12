@@ -11,6 +11,8 @@ type Props = {
   forest: string;
   /** Extra classes on outer wrapper (e.g. border-t spacing). */
   className?: string;
+  /** Bin rental and similar: delivery-focused copy instead of full move crew. */
+  mode?: "move" | "bins";
 };
 
 /**
@@ -23,19 +25,30 @@ export default function TrackYourCrewSection({
   roles = CREW_ROLES_DEFAULT,
   forest,
   className = "",
+  mode = "move",
 }: Props) {
   const names = memberNames.filter(Boolean);
   const showNameList = crewAssigned && revealNames && names.length > 0;
   const showFinalizingList =
     crewAssigned && revealNames && names.length === 0;
 
+  const isBins = mode === "bins";
+
   const placeholderTitle = !crewAssigned
-    ? "Crew not assigned yet"
-    : "Crew assigned — names soon";
+    ? isBins
+      ? "Team not assigned yet"
+      : "Crew not assigned yet"
+    : isBins
+      ? "Team assigned — names soon"
+      : "Crew assigned — names soon";
 
   const placeholderBody = !crewAssigned
-    ? "Your coordinator will confirm your team and share details here."
-    : "We share your crew’s names within three days of move day so you can focus on prep until then.";
+    ? isBins
+      ? "Your coordinator will confirm bin drop-off and pickup and share details here."
+      : "Your coordinator will confirm your team and share details here."
+    : isBins
+      ? "We share names within a few days of service so you can focus on your schedule until then."
+      : "We share your crew’s names within three days of move day so you can focus on prep until then.";
 
   return (
     <div className={className}>
@@ -43,7 +56,7 @@ export default function TrackYourCrewSection({
         className="text-[11px] font-semibold uppercase tracking-[0.08em] opacity-50 mb-3"
         style={{ color: forest }}
       >
-        Your Crew
+        {isBins ? "Your team" : "Your Crew"}
       </div>
 
       {showNameList ? (
@@ -98,14 +111,15 @@ export default function TrackYourCrewSection({
               className="text-[13px] font-semibold leading-snug"
               style={{ color: forest }}
             >
-              Crew details coming soon
+              {isBins ? "Team details coming soon" : "Crew details coming soon"}
             </p>
             <p
               className="text-[12px] mt-1 leading-relaxed opacity-75"
               style={{ color: forest }}
             >
-              Your coordinator is finalizing who&apos;s on your team — check
-              back shortly.
+              {isBins
+                ? "Your coordinator is finalizing who will run drop-off and pickup. Check back shortly."
+                : "Your coordinator is finalizing who's on your team. Check back shortly."}
             </p>
           </div>
         </div>

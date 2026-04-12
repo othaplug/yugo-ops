@@ -12,21 +12,20 @@ import { formatCurrency, calcHST } from "@/lib/format-currency";
 import { getLegalBranding } from "@/lib/legal-branding";
 import {
   WINE,
-  GOLD,
   DARK,
   GRAY,
   CREAM_BG,
-  drawYugoHeader,
   drawYugoFooter,
-  drawTopAccentBar,
   drawBottomAccentBar,
+  drawTopWineGradientBar,
+  drawCenteredYugoLogoBlock,
+  drawClientSignatureLetter,
+  drawSectionHeading,
   getTableHeadStyles,
   TABLE_ALT_ROW,
   setSectionLabel,
   setBodyText,
   setHeroTitle,
-  SECTION_GAP,
-  SUB_SECTION_GAP,
   drawInfoBox,
 } from "@/lib/pdf-brand";
 import { isMoveRowLogisticsDelivery } from "@/lib/quotes/b2b-quote-copy";
@@ -114,15 +113,30 @@ function loadYugoLogoBase64(): string {
   return "";
 }
 
-function pdfHeader(doc: jsPDF, yStart: number, centerX: number, logoBase64?: string): number {
-  return drawYugoHeader(doc, { yStart, centerX, margin: 50, logoBase64 });
-}
-
+/** Letter PDFs use points; default footer Y in pdf-brand targets mm layouts, so anchor to page bottom */
 function pdfFooter(doc: jsPDF, footerLine: string): void {
-  drawYugoFooter(doc, { y: 285, line: footerLine });
+  const pageH = doc.internal.pageSize.getHeight();
+  drawYugoFooter(doc, { y: pageH - 30, line: footerLine });
 }
 
-/** Move Summary PDF — Yugo design: logo, accent bars, organized sections */
+/** Human-readable valuation line for PDFs (never raw DB tokens when we can help it) */
+function formatValuationTierForPdf(tier: string | null | undefined): string {
+  const raw = (tier || "").trim();
+  if (!raw) return "Released value";
+  const t = raw.toLowerCase().replace(/\s+/g, "_");
+  const map: Record<string, string> = {
+    released: "Released value",
+    released_value: "Released value",
+    enhanced: "Enhanced value",
+    full_replacement: "Full replacement",
+    essential: "Released value",
+    signature: "Signature valuation",
+    estate: "Estate valuation",
+  };
+  return map[t] || raw.replace(/_/g, " ");
+}
+
+/** Move Summary PDF: wine gradient, centered wordmark, section rules, letter/pt spacing */
 function generateMoveSummaryPDF(
   move: MoveRow,
   crew: CrewRow,
@@ -131,115 +145,187 @@ function generateMoveSummaryPDF(
   logoBase64: string,
   footerLine: string,
 ): Buffer {
+  const BODY = 12;
+  const BLOCK = 18;
+  const SUB = 10;
   const logistics = isMoveRowLogisticsDelivery(move);
   const doc = new jsPDF("p", "pt", "letter");
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 50;
+  const contentW = pageWidth - margin * 2;
   const centerX = pageWidth / 2;
-  let y = 36;
+  let y = 0;
 
-  drawTopAccentBar(doc, true);
-  y = pdfHeader(doc, 24, centerX, logoBase64);
-  setHeroTitle(doc, 16);
+  const ensureSpace = (minBottomSpace: number) => {
+    if (y + minBottomSpace > pageHeight - 56) {
+      doc.addPage();
+      drawTopWineGradientBar(doc, 7);
+      y = drawCenteredYugoLogoBlock(doc, logoBase64, 14);
+      setHeroTitle(doc, 13);
+      doc.text(
+        logistics ? "Delivery Summary (continued)" : "Move Summary (continued)",
+        centerX,
+        y,
+        { align: "center" },
+      );
+      y += 22;
+    }
+  };
+
+  drawTopWineGradientBar(doc, 7);
+  y = drawCenteredYugoLogoBlock(doc, logoBase64, 14);
+
+  setHeroTitle(doc, 17);
   doc.text(logistics ? "Delivery Summary" : "Move Summary", centerX, y, { align: "center" });
-  y += SECTION_GAP + 8;
+  y += 24;
 
-  // ─── Move details (Yugo info block) ───
-  const boxW = pageWidth - margin * 2;
-  const boxH = 52;
-  drawInfoBox(doc, { x: margin, y, width: boxW, height: boxH });
+  const pad = 12;
+  const inner = margin + pad;
+  setBodyText(doc, 9);
+  const fromLines = doc.splitTextToSize(move.from_address || "-", contentW - pad * 2);
+  const toLines = doc.splitTextToSize(move.to_address || "-", contentW - pad * 2);
+  const boxTitle = logistics ? "JOB DETAILS" : "MOVE DETAILS";
+  const idLabel = logistics ? `Job ref: ${moveDisplayId(move)}` : `Move ID: ${moveDisplayId(move)}`;
+  const dateStr = formatDate(move.completed_at || move.scheduled_date);
+
+  const boxTop = y;
+  const boxH =
+    pad +
+    14 +
+    BODY * 2 +
+    6 +
+    SUB +
+    fromLines.length * BODY +
+    6 +
+    SUB +
+    toLines.length * BODY +
+    pad;
+
+  drawInfoBox(doc, { x: margin, y: boxTop, width: contentW, height: boxH });
+
+  let cy = boxTop + pad + 10;
   setSectionLabel(doc, 8);
-  doc.text(logistics ? "JOB DETAILS" : "MOVE DETAILS", margin + 6, y + 10);
+  doc.text(boxTitle, inner, cy);
+  cy += 14;
   setBodyText(doc, 9);
-  doc.text(
-    logistics ? `Job Ref: ${moveDisplayId(move)}` : `Move ID: ${moveDisplayId(move)}`,
-    margin + 6,
-    y + 22,
-  );
+  doc.setFont("helvetica", "bold");
+  doc.text(idLabel, inner, cy);
+  doc.setFont("helvetica", "normal");
   doc.setTextColor(...GRAY);
-  doc.setFontSize(8);
-  doc.text(`Date: ${formatDate(move.completed_at || move.scheduled_date)}`, pageWidth - margin - 6, y + 22, { align: "right" });
-  doc.setTextColor(...DARK);
   doc.setFontSize(9);
-  doc.text(`Client: ${move.client_name || "-"}`, margin + 6, y + 32);
-  doc.setTextColor(...GRAY);
-  doc.setFontSize(8);
-  doc.text(`From: ${(move.from_address || "-").slice(0, 50)}${(move.from_address?.length ?? 0) > 50 ? "…" : ""}`, margin + 6, y + 42);
-  doc.text(`To: ${(move.to_address || "-").slice(0, 50)}${(move.to_address?.length ?? 0) > 50 ? "…" : ""}`, margin + 6, y + 50);
-  y += boxH + SECTION_GAP;
+  doc.text(`Date: ${dateStr}`, pageWidth - inner, cy, { align: "right" });
+  doc.setTextColor(...DARK);
+  cy += BODY;
+  doc.text(`Client: ${move.client_name || "-"}`, inner, cy);
+  cy += BODY + 6;
 
-  // ─── Plan & crew ───
-  setSectionLabel(doc, 9);
-  doc.text("PACKAGE & CREW", margin, y);
-  y += SUB_SECTION_GAP;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.text("FROM", inner, cy);
+  doc.setFont("helvetica", "normal");
   setBodyText(doc, 9);
-  doc.text(`Plan: ${tierLabel}`, margin, y);
-  y += 6;
-  const crewNames = crew?.members && Array.isArray(crew.members)
-    ? (crew.members as string[]).join(", ")
-    : crew?.name || "-";
-  const crewCount = Array.isArray(crew?.members) ? (crew.members as string[]).length : 0;
-  doc.text(
-    `Crew: ${crewNames} · ${crewCount || "N"} ${logistics ? "logistics professionals" : "movers"}`,
+  cy += SUB;
+  fromLines.forEach((line: string) => {
+    doc.text(line, inner, cy);
+    cy += BODY;
+  });
+  cy += 6;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.text("TO", inner, cy);
+  doc.setFont("helvetica", "normal");
+  setBodyText(doc, 9);
+  cy += SUB;
+  toLines.forEach((line: string) => {
+    doc.text(line, inner, cy);
+    cy += BODY;
+  });
+
+  y = boxTop + boxH + BLOCK;
+
+  ensureSpace(96);
+  y = drawSectionHeading(
+    doc,
+    logistics ? "Job & team" : "Package & crew",
     margin,
     y,
+    contentW,
   );
-  y += 6;
-  const truck = move.truck_primary || move.truck_secondary || "-";
-  doc.text(`${logistics ? "Vehicle" : "Truck"}: ${truck}`, margin, y);
-  y += 6;
-  const hours = move.actual_hours ?? move.est_hours;
-  doc.text(`Duration: ${hours != null ? `${hours} hours` : "-"}`, margin, y);
-  y += SECTION_GAP;
+  setBodyText(doc, 9);
+  const crewNames =
+    crew?.members && Array.isArray(crew.members)
+      ? (crew.members as string[]).join(", ")
+      : crew?.name || "-";
+  const crewCount = Array.isArray(crew?.members) ? (crew.members as string[]).length : 0;
+  const moverWord = logistics ? "logistics professionals" : "movers";
+  const durationLine =
+    move.actual_hours != null
+      ? `${move.actual_hours} hours`
+      : move.est_hours != null
+        ? `${move.est_hours} hours (estimated)`
+        : "-";
+  const pkgLines = [
+    `Plan: ${tierLabel}`,
+    `Crew: ${crewNames} (${crewCount || 0} ${moverWord})`,
+    `${logistics ? "Vehicle" : "Truck"}: ${move.truck_primary || move.truck_secondary || "-"}`,
+    `Duration: ${durationLine}`,
+  ];
+  pkgLines.forEach((line) => {
+    doc.text(line, margin, y);
+    y += BODY;
+  });
+  y += BLOCK - BODY;
 
-  // ─── Inventory ───
-  setSectionLabel(doc, 9);
-  doc.text("INVENTORY", margin, y);
-  y += SUB_SECTION_GAP;
-  setBodyText(doc, 8);
-  doc.setTextColor(...DARK);
+  ensureSpace(72);
+  y = drawSectionHeading(doc, "Inventory", margin, y, contentW);
+  setBodyText(doc, 9);
   if (inventory.length === 0) {
-    doc.text("No inventory recorded.", margin, y);
-    y += 8;
+    doc.text("No inventory recorded for this move.", margin, y);
+    y += BODY;
   } else {
-    const lines = inventory.slice(0, 40).map((i) => {
+    const maxItems = 48;
+    inventory.slice(0, maxItems).forEach((i) => {
       const room = i.room ? `[${i.room}] ` : "";
       const box = i.box_number ? ` #${i.box_number}` : "";
-      return `${room}${i.item_name || "Item"}${box}`;
+      doc.text(`${room}${i.item_name || "Item"}${box}`, margin, y);
+      y += BODY;
     });
-    doc.text(lines, margin, y);
-    y += lines.length * 5 + 4;
-    if (inventory.length > 40) {
+    if (inventory.length > maxItems) {
       doc.setTextColor(...GRAY);
-      doc.text(`… and ${inventory.length - 40} more items`, margin, y);
-      y += 8;
+      doc.text(`… and ${inventory.length - maxItems} more items.`, margin, y);
+      doc.setTextColor(...DARK);
+      y += BODY;
     }
   }
-  y += SECTION_GAP;
+  y += BLOCK - BODY;
 
-  // ─── What was included ───
-  setSectionLabel(doc, 9);
-  doc.text("WHAT WAS INCLUDED", margin, y);
-  y += SUB_SECTION_GAP;
-  setBodyText(doc, 8);
+  ensureSpace(56);
+  y = drawSectionHeading(doc, "What was included", margin, y, contentW);
+  setBodyText(doc, 9);
   const tierKey = (move.tier_selected || "").toLowerCase().replace(/\s+/g, "_");
   const includedLine = logistics
     ? LOGISTICS_INCLUDED_FALLBACK
     : TIER_FEATURES[tierKey] || TIER_FEATURES.essential || "Moving service as agreed.";
-  doc.text(includedLine, margin, y);
-  y += SECTION_GAP;
+  doc.splitTextToSize(includedLine, contentW).forEach((line: string) => {
+    doc.text(line, margin, y);
+    y += BODY;
+  });
+  y += BLOCK - BODY;
 
-  setSectionLabel(doc, 9);
-  doc.text("VALUATION COVERAGE", margin, y);
-  setBodyText(doc, 8);
-  doc.text(`: ${move.valuation_tier || "Released value"}`, margin + 58, y);
+  ensureSpace(40);
+  y = drawSectionHeading(doc, "Valuation coverage", margin, y, contentW);
+  setBodyText(doc, 9);
+  doc.text(formatValuationTierForPdf(move.valuation_tier), margin, y);
+  y += BODY + 10;
 
   pdfFooter(doc, footerLine);
   drawBottomAccentBar(doc, true);
   return Buffer.from(doc.output("arraybuffer"));
 }
 
-/** Invoice PDF — Yugo design: logo, tier + add-ons, HST, payments */
+/** Invoice PDF: wine gradient shell, centered wordmark, readable spacing (no wordmark text) */
 function generateInvoicePDF(
   move: MoveRow,
   extraItems: ExtraRow,
@@ -247,40 +333,52 @@ function generateInvoicePDF(
   tierPrice: number,
   logoBase64: string,
   footerLine: string,
-  brandDisplay: string,
   companyLegal: string,
 ): Buffer {
+  const BODY = 12;
   const logistics = isMoveRowLogisticsDelivery(move);
   const doc = new jsPDF("p", "pt", "letter");
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 50;
   const centerX = pageWidth / 2;
-  let y = 36;
+  let y = 0;
 
-  drawTopAccentBar(doc, false);
-  y = pdfHeader(doc, 24, centerX, logoBase64);
-  setHeroTitle(doc, 16);
+  drawTopWineGradientBar(doc, 7);
+  y = drawCenteredYugoLogoBlock(doc, logoBase64, 14);
+  setHeroTitle(doc, 17);
   doc.text("Invoice", centerX, y, { align: "center" });
-  y += SECTION_GAP + 8;
+  y += 24;
 
   const invNum = invoiceNumber(move);
   const issuedDate = formatDate(move.completed_at || move.scheduled_date);
   setBodyText(doc, 10);
+  doc.setFont("helvetica", "bold");
   doc.text(`Invoice #: ${invNum}`, margin, y);
+  doc.setFont("helvetica", "normal");
   doc.setTextColor(...GRAY);
   doc.setFontSize(9);
   doc.text(`Date issued: ${issuedDate}`, pageWidth - margin, y, { align: "right" });
-  y += 10;
-  doc.setTextColor(...GRAY);
-  doc.text("Bill to:", margin, y);
-  y += 6;
   doc.setTextColor(...DARK);
-  doc.text(`${move.client_name || "-"}`, margin, y);
-  y += 5;
+  y += BODY;
+
+  doc.setTextColor(...GRAY);
   doc.setFontSize(9);
-  if (move.client_email) doc.text(move.client_email, margin, y), (y += 5);
-  if (move.client_phone) doc.text(move.client_phone, margin, y), (y += 5);
-  y += 8;
+  doc.text("Bill to:", margin, y);
+  y += BODY;
+  doc.setTextColor(...DARK);
+  setBodyText(doc, 10);
+  doc.text(`${move.client_name || "-"}`, margin, y);
+  y += BODY;
+  doc.setFontSize(9);
+  if (move.client_email) {
+    doc.text(move.client_email, margin, y);
+    y += BODY;
+  }
+  if (move.client_phone) {
+    doc.text(move.client_phone, margin, y);
+    y += BODY;
+  }
+  y += 10;
 
   const approvedExtras = extraItems.filter((e) => (e.status ?? "approved") === "approved" && (e.fee_cents ?? 0) > 0);
   const subtotal = tierPrice + approvedExtras.reduce((s, e) => s + (Number(e.fee_cents) || 0) / 100 * (e.quantity || 1), 0);
@@ -309,33 +407,31 @@ function generateInvoicePDF(
     margin: { left: margin },
     alternateRowStyles: { fillColor: TABLE_ALT_ROW },
   });
-  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14;
+  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 16;
 
   setBodyText(doc, 9);
   const depositDate = formatDate(move.deposit_paid_at);
   const balanceDate = formatDate(move.balance_paid_at);
   doc.text(`Deposit paid ${depositDate}`, margin, y);
   doc.text(`-${formatCurrency(depositPaid)}`, pageWidth - margin, y, { align: "right" });
-  y += 6;
+  y += BODY;
   doc.text(`Balance paid ${balanceDate}`, margin, y);
   doc.text(`-${formatCurrency(balancePaid)}`, pageWidth - margin, y, { align: "right" });
-  y += 6;
+  y += BODY;
   doc.setFont("helvetica", "bold");
   doc.text("Amount owing", margin, y);
   doc.text(formatCurrency(amountOwing), pageWidth - margin, y, { align: "right" });
-  y += 14;
+  y += BODY + 8;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...GRAY);
   doc.text(
-    logistics
-      ? `Thank you for choosing ${brandDisplay} for your delivery.`
-      : `Thank you for choosing ${brandDisplay}.`,
+    logistics ? "Thank you for your business. This invoice covers your delivery." : "Thank you for your business.",
     margin,
     y,
   );
-  y += 5;
+  y += BODY;
   doc.text(`${companyLegal}, Toronto ON`, margin, y);
 
   pdfFooter(doc, footerLine);
@@ -343,7 +439,7 @@ function generateInvoicePDF(
   return Buffer.from(doc.output("arraybuffer"));
 }
 
-/** Receipt PDF — Yugo design: logo, payment table */
+/** Payment receipt: premium shell, generous line height, optional client signature from sign-off */
 function generateReceiptPDF(
   move: MoveRow,
   tierLabel: string,
@@ -351,38 +447,66 @@ function generateReceiptPDF(
   balancePaid: number,
   logoBase64: string,
   footerLine: string,
-  brandDisplay: string,
+  signatureDataUrl?: string | null,
   cardLast4?: string | null,
 ): Buffer {
+  const BODY = 12;
+  const BLOCK = 16;
   const logistics = isMoveRowLogisticsDelivery(move);
   const doc = new jsPDF("p", "pt", "letter");
   const margin = 50;
   const pageWidth = doc.internal.pageSize.getWidth();
+  const contentW = pageWidth - margin * 2;
   const centerX = pageWidth / 2;
-  let y = 36;
+  let y = 0;
 
-  drawTopAccentBar(doc, true);
-  y = pdfHeader(doc, 24, centerX, logoBase64);
-  setHeroTitle(doc, 16);
+  drawTopWineGradientBar(doc, 7);
+  y = drawCenteredYugoLogoBlock(doc, logoBase64, 14);
+  setHeroTitle(doc, 17);
   doc.text("Payment Receipt", centerX, y, { align: "center" });
-  y += SECTION_GAP + 8;
+  y += 24;
 
   setBodyText(doc, 10);
+  doc.setFont("helvetica", "bold");
   doc.text(`Receipt #: ${receiptNumber(move)}`, margin, y);
+  doc.setFont("helvetica", "normal");
   doc.setTextColor(...GRAY);
   doc.setFontSize(9);
   doc.text(`Date: ${formatDate(move.balance_paid_at || move.completed_at)}`, pageWidth - margin, y, { align: "right" });
-  y += 8;
   doc.setTextColor(...DARK);
+  y += BODY;
+
   doc.text(`Client: ${move.client_name || "-"}`, margin, y);
-  y += 6;
+  y += BODY;
+
+  const fromLines = doc.splitTextToSize(move.from_address || "-", contentW);
+  const toLines = doc.splitTextToSize(move.to_address || "-", contentW);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
   doc.setTextColor(...GRAY);
-  doc.text(
-    `${logistics ? "Route" : "Move"}: ${move.from_address || "-"} → ${move.to_address || "-"}`,
-    margin,
-    y,
-  );
-  y += 14;
+  doc.text(logistics ? "ROUTE FROM" : "FROM", margin, y);
+  y += BODY - 2;
+  doc.setFont("helvetica", "normal");
+  setBodyText(doc, 9);
+  doc.setTextColor(...DARK);
+  fromLines.forEach((line: string) => {
+    doc.text(line, margin, y);
+    y += BODY;
+  });
+  y += 4;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...GRAY);
+  doc.text(logistics ? "ROUTE TO" : "TO", margin, y);
+  y += BODY - 2;
+  doc.setFont("helvetica", "normal");
+  setBodyText(doc, 9);
+  doc.setTextColor(...DARK);
+  toLines.forEach((line: string) => {
+    doc.text(line, margin, y);
+    y += BODY;
+  });
+  y += 10;
 
   const totalPaid = depositPaid + balancePaid;
   const cardSuffix = cardLast4 ? `Card ending ${cardLast4}` : "Card";
@@ -420,10 +544,22 @@ function generateReceiptPDF(
   doc.setFontSize(9);
   doc.setTextColor(...GRAY);
   doc.text(
-    `This receipt confirms full payment for your ${brandDisplay} ${jobNoun}.`,
+    logistics
+      ? "This receipt confirms full payment for your completed delivery."
+      : "This receipt confirms full payment for your completed move.",
     margin,
     y,
   );
+  y += BODY + 4;
+
+  const sig =
+    typeof signatureDataUrl === "string" && signatureDataUrl.trim().startsWith("data:image")
+      ? signatureDataUrl.trim()
+      : null;
+  if (sig) {
+    y = drawClientSignatureLetter(doc, sig, y, margin);
+    y += BLOCK;
+  }
 
   pdfFooter(doc, footerLine);
   drawBottomAccentBar(doc, true);
@@ -448,12 +584,14 @@ export async function generateMovePDFs(moveId: string): Promise<{ summaryPath: s
     { data: crew },
     { data: inventory },
     { data: extraItems },
+    { data: signOffRow },
   ] = await Promise.all([
     moveRow.crew_id
       ? admin.from("crews").select("name, members").eq("id", moveRow.crew_id).maybeSingle()
       : Promise.resolve({ data: null }),
     admin.from("move_inventory").select("room, item_name, box_number").eq("move_id", moveId).order("room").order("item_name"),
     admin.from("extra_items").select("description, quantity, fee_cents, status").eq("job_id", moveId).eq("job_type", "move"),
+    admin.from("client_sign_offs").select("signature_data_url").eq("job_id", moveId).eq("job_type", "move").maybeSingle(),
   ]);
 
   const crewData = crew as CrewRow;
@@ -468,7 +606,6 @@ export async function generateMovePDFs(moveId: string): Promise<{ summaryPath: s
 
   const branding = await getLegalBranding();
   const footerLine = `${branding.companyLegal} · ${branding.address}`.replace(/\s+/g, " ").trim();
-  const brandDisplay = branding.brand;
   const companyLegal = branding.companyLegal;
 
   const logoBase64 = loadYugoLogoBase64();
@@ -487,7 +624,6 @@ export async function generateMovePDFs(moveId: string): Promise<{ summaryPath: s
     tierPrice,
     logoBase64,
     footerLine,
-    brandDisplay,
     companyLegal,
   );
   const receiptBuffer = generateReceiptPDF(
@@ -497,7 +633,7 @@ export async function generateMovePDFs(moveId: string): Promise<{ summaryPath: s
     balancePaid,
     logoBase64,
     footerLine,
-    brandDisplay,
+    signOffRow?.signature_data_url ?? null,
     undefined,
   );
 

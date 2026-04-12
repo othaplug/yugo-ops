@@ -5,6 +5,7 @@ import autoTable from "jspdf-autotable";
 import {
   WINE,
   GOLD,
+  GOLD_DARK,
   DARK,
   GRAY,
   GRAY_LIGHT,
@@ -20,6 +21,8 @@ import {
   setSectionLabel,
   drawPageTemplate,
   drawSectionHeading,
+  drawSignOffReceiptPageShell,
+  setHeroTitle,
   MARGIN,
 } from "./pdf-brand";
 import { normalizeDeliveryItemsForDisplay } from "./delivery-items";
@@ -201,22 +204,57 @@ export interface SignOffReceiptData {
   escalationTriggered?: boolean;
   escalationReason?: string | null;
   discrepancyFlags?: string[];
+  /** data:image/png;base64,... from client sign-off pad */
+  signatureDataUrl?: string | null;
 }
 
-export function generateSignOffReceiptPDF(data: SignOffReceiptData) {
+/** Receipt signature block: compact width and height so it matches body scale, not a full-bleed panel */
+function drawClientSignatureImage(
+  doc: jsPDF,
+  dataUrl: string,
+  y: number,
+): number {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const contentW = pageWidth - MARGIN * 2;
+  const boxW = Math.min(contentW, 88);
+  const boxInnerH = 18;
+  const framePad = 5;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(...GOLD);
+  doc.text("CLIENT SIGNATURE", MARGIN, y);
+  doc.setDrawColor(...GOLD_DARK);
+  doc.setLineWidth(0.35);
+  const boxY = y + 4;
+  doc.setFillColor(252, 251, 249);
+  doc.rect(MARGIN, boxY, boxW, boxInnerH + framePad, "FD");
+  const innerPad = 3;
+  const imgW = boxW - innerPad * 2;
+  const imgH = boxInnerH - 2;
+  try {
+    doc.addImage(dataUrl, "PNG", MARGIN + innerPad, boxY + 2.5, imgW, imgH);
+  } catch {
+    setBodyText(doc, 8);
+    doc.setTextColor(...GRAY);
+    doc.text("Signature image unavailable", MARGIN + innerPad, boxY + boxInnerH / 2 + 2);
+  }
+  return boxY + boxInnerH + framePad + 11;
+}
+
+export function generateSignOffReceiptPDF(
+  data: SignOffReceiptData,
+  options?: { logoDataUri?: string },
+) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const red = [220, 38, 38] as [number, number, number];
   const green = [22, 163, 74] as [number, number, number];
 
-  let y = drawPageTemplate(doc, { useWineBar: true });
+  let y = drawSignOffReceiptPageShell(doc, options?.logoDataUri ?? "");
 
-  // Document title
-  doc.setFont("times", "bold");
-  doc.setFontSize(16);
-  doc.setTextColor(...WINE);
+  setHeroTitle(doc, 17);
   doc.text("Client Sign-Off Receipt", pageWidth / 2, y, { align: "center" });
-  y += 6;
+  y += 12;
 
   // Job reference
   doc.setFont("helvetica", "bold");
@@ -226,29 +264,39 @@ export function generateSignOffReceiptPDF(data: SignOffReceiptData) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...GRAY);
-  doc.text(`Type: ${data.jobType}`, 115, y);
-  y += 10;
+  doc.text(`Type: ${data.jobType}`, pageWidth - MARGIN, y, { align: "right" });
+  y += 12;
 
   // Sign-off details
-  y = drawSectionHeading(doc, "Sign-Off Details", MARGIN, y, 170);
+  y = drawSectionHeading(doc, "Sign-Off Details", MARGIN, y, pageWidth - MARGIN * 2);
   setBodyText(doc, 9);
   doc.text(`Signed by: ${data.signedBy}`, MARGIN, y); y += 5;
   if (data.clientName) { doc.text(`Client: ${data.clientName}`, MARGIN, y); y += 5; }
   doc.text(`Date: ${new Date(data.signedAt).toLocaleString("en-US")}`, MARGIN, y); y += 5;
   if (data.signedLat != null && data.signedLng != null) {
-    doc.text(`Location: ${data.signedLat.toFixed(5)}, ${data.signedLng.toFixed(5)}`, 20, y); y += 5;
+    doc.text(`Location: ${data.signedLat.toFixed(5)}, ${data.signedLng.toFixed(5)}`, MARGIN, y); y += 5;
   }
   if (data.satisfactionRating != null) {
-    doc.text(`Satisfaction: ${data.satisfactionRating}/5`, 20, y); y += 5;
+    doc.text(`Satisfaction: ${data.satisfactionRating}/5`, MARGIN, y); y += 5;
   }
   if (data.npsScore != null) {
     const npsCategory = data.npsScore <= 6 ? "Detractor" : data.npsScore <= 8 ? "Passive" : "Promoter";
-    doc.text(`NPS Score: ${data.npsScore}/10 (${npsCategory})`, 20, y); y += 5;
+    doc.text(`NPS Score: ${data.npsScore}/10 (${npsCategory})`, MARGIN, y); y += 5;
   }
   if (data.wouldRecommend != null) {
-    doc.text(`Would recommend: ${data.wouldRecommend ? "Yes" : "No"}`, 20, y); y += 5;
+    doc.text(`Would recommend: ${data.wouldRecommend ? "Yes" : "No"}`, MARGIN, y); y += 5;
   }
-  y += 3;
+  y += 4;
+
+  if (data.signatureDataUrl) {
+    if (y > 210) {
+      doc.addPage();
+      y = drawSignOffReceiptPageShell(doc, options?.logoDataUri ?? "");
+    }
+    y = drawClientSignatureImage(doc, data.signatureDataUrl, y);
+  }
+
+  y += 2;
 
   // Damage report deadline
   if (data.damageReportDeadline) {
@@ -510,7 +558,7 @@ export function generateMoveInvoicePDF(data: MoveInvoiceData) {
   drawYugoFooter(doc, { y: 278 });
   doc.setFontSize(8);
   doc.setTextColor(...GRAY);
-  doc.text("Thank you for choosing Yugo. Payment is due upon receipt unless otherwise arranged.", 20, 283);
+  doc.text("Thank you for your business. Payment is due upon receipt unless otherwise arranged.", 20, 283);
   drawBottomAccentBar(doc, false);
   return doc;
 }
@@ -760,7 +808,7 @@ export function generateMoveSnapshotPDF(data: MoveSnapshotData) {
   drawYugoFooter(doc, { y: 278 });
   doc.setFontSize(7);
   doc.setTextColor(...GRAY);
-  doc.text("This document is an automated summary of your move. For questions, contact Yugo support.", 20, 283);
+  doc.text("This document is an automated summary of your move. For questions, contact your coordinator.", 20, 283);
   drawBottomAccentBar(doc, true);
   return doc;
 }
@@ -794,24 +842,21 @@ export function generatePoDPDF(data: PoDPDFData) {
   doc.setFillColor(...gold);
   doc.rect(0, 0, 210, 3, "F");
 
-  doc.setFontSize(28);
+  doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...dark);
-  doc.text("Yugo", 20, 26);
-  doc.setFontSize(10);
-  doc.setTextColor(...gray);
-  doc.text("Proof of Delivery", 20, 33);
+  doc.text("Proof of Delivery", 20, 28);
 
   if (data.partnerName) {
     doc.setFontSize(9);
     doc.setTextColor(...gold);
-    doc.text(data.partnerName, 130, 22);
+    doc.text(data.partnerName, 130, 30);
   }
 
   doc.setDrawColor(220, 220, 220);
-  doc.line(20, 38, 190, 38);
+  doc.line(20, 36, 190, 36);
 
-  let y = 48;
+  let y = 46;
 
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
@@ -939,7 +984,7 @@ export function generatePoDPDF(data: PoDPDFData) {
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...gray);
   doc.text("This is an official Proof of Delivery document. Retain for your records.", 20, 278);
-  doc.text(`Generated ${new Date().toLocaleString("en-US")} • Yugo • withyugo.com`, 20, 283);
+  doc.text(`Generated ${new Date().toLocaleString("en-US")} · withyugo.com`, 20, 283);
 
   doc.setFillColor(...gold);
   doc.rect(0, 294, 210, 3, "F");
@@ -1031,7 +1076,7 @@ export function generateEODReportPDF(reports: EODReportForPDF[]) {
 
   doc.setFontSize(8);
   doc.setTextColor(...gray);
-  doc.text("Yugo EOD", 20, 285);
+  doc.text("End of day report", 20, 285);
 
   return doc;
 }

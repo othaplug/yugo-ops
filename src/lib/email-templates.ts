@@ -122,6 +122,8 @@ const PREMIUM_EYEBROW_UPPER = `font-family:${PREMIUM_FONT};font-size:12px;font-w
 export const PREMIUM_TRACK_CTA_LABEL = "TRACK YOUR MOVE";
 /** Status-update emails for deliveries (same typography as {@link PREMIUM_TRACK_CTA_LABEL}). */
 export const PREMIUM_TRACK_DELIVERY_CTA_LABEL = "TRACK YOUR DELIVERY";
+/** Bin rental booking confirmations (same CTA chrome as other premium track links). */
+export const PREMIUM_TRACK_BIN_ORDER_CTA_LABEL = "TRACK YOUR ORDER";
 
 /**
  * Primary CTA for track-style links (cream premium shell). Use {@link PREMIUM_TRACK_CTA_LABEL} for copy.
@@ -1997,6 +1999,179 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
     <p style="font-size:12px;color:${PREMIUM_BODY_MUTED};margin:0 0 16px;text-align:center">
       Looking forward to a smooth move.<br/>
       <strong style="color:${PREMIUM_BODY}">- The Yugo Team</strong>
+    </p>
+  `);
+}
+
+export interface BinRentalConfirmationParams {
+  clientName: string;
+  moveCode: string;
+  bundleLabel: string;
+  dropOffDate: string | null;
+  pickupDate: string | null;
+  /** Optional move date from quote factors when the client is relocating. */
+  moveDate: string | null;
+  deliveryAddress: string;
+  /** When different from delivery (empty pickup at property). */
+  pickupAddress: string | null;
+  totalWithTax: number;
+  depositPaid: number;
+  balanceRemaining: number;
+  trackingUrl: string;
+}
+
+/**
+ * Bin rental paid through the standard quote or pay flow.
+ * Reuses the premium cream shell and KV rows; copy is bin specific (no move crew or truck rows).
+ */
+export function binRentalConfirmationEmail(
+  p: BinRentalConfirmationParams,
+): string {
+  const firstName =
+    (p.clientName || "").trim().split(/\s+/).filter(Boolean)[0] || "";
+  const headline = firstName
+    ? `Your bin rental is confirmed, ${firstName}.`
+    : "Your bin rental is confirmed.";
+  const dropStr = confirmDateDisplay(p.dropOffDate);
+  const pickStr = confirmDateDisplay(p.pickupDate);
+  const moveStr = p.moveDate ? confirmDateDisplay(p.moveDate) : null;
+  const sB = `1px solid ${PREMIUM_RULE}`;
+  const sL = `padding:4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`;
+  const sV = `padding:4px 0;font-size:12px;color:${PREMIUM_BODY};font-weight:600;text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`;
+  const sVf = `${sV};color:${EMAIL_FOREST}`;
+  const sVg = `${sV};color:#2D7A4F`;
+  const pickupDiffers =
+    (p.pickupAddress || "").trim() &&
+    (p.deliveryAddress || "").trim() &&
+    (p.pickupAddress || "").trim() !== (p.deliveryAddress || "").trim();
+
+  return emailLayout(`
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;font-family:${PREMIUM_FONT};">Booking confirmed</div>
+    <h1 style="font-size:28px;font-weight:700;letter-spacing:0;margin:0 0 12px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};text-transform:none;">${headline}</h1>
+    <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 24px">
+      Thank you for your order. Here are your bin rental details.
+    </p>
+
+    ${premiumSectionRule()}
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td style="padding:0;">
+      <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">Your bin rental</div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;font-size:12px;border-collapse:collapse">
+        ${emailNestedKvRow({
+          borderTop: "none",
+          labelStyle: sL,
+          valueStyle: sV,
+          label: "Reference",
+          valueHtml: escapeHtmlEmail(p.moveCode),
+        })}
+        ${emailNestedKvRow({
+          borderTop: sB,
+          labelStyle: sL,
+          valueStyle: sVf,
+          label: "Bundle",
+          valueHtml: escapeHtmlEmail(p.bundleLabel),
+        })}
+        ${emailNestedKvRow({
+          borderTop: sB,
+          labelStyle: sL,
+          valueStyle: sV,
+          label: "Drop off",
+          valueHtml: escapeHtmlEmail(dropStr),
+        })}
+        ${emailNestedKvRow({
+          borderTop: sB,
+          labelStyle: sL,
+          valueStyle: sV,
+          label: "Pickup",
+          valueHtml: escapeHtmlEmail(pickStr),
+        })}
+        ${
+          moveStr
+            ? emailNestedKvRow({
+                borderTop: sB,
+                labelStyle: sL,
+                valueStyle: sV,
+                label: "Move date",
+                valueHtml: escapeHtmlEmail(moveStr),
+              })
+            : ""
+        }
+        ${emailNestedKvRow({
+          borderTop: sB,
+          labelStyle: sL,
+          valueStyle: sV,
+          label: "Delivery address",
+          valueHtml: emailMapLinkHtml(p.deliveryAddress),
+        })}
+        ${
+          pickupDiffers
+            ? emailNestedKvRow({
+                borderTop: sB,
+                labelStyle: sL,
+                valueStyle: sV,
+                label: "Empty pickup",
+                valueHtml: emailMapLinkHtml(p.pickupAddress || ""),
+              })
+            : ""
+        }
+        ${emailNestedKvRow({
+          borderTop: sB,
+          labelStyle: sL,
+          valueStyle: sV,
+          label: "Total",
+          valueHtml: escapeHtmlEmail(
+            `${formatCurrencyEmail(p.totalWithTax)} · taxes included`,
+          ),
+        })}
+      </table>
+    </td></tr></table>
+
+    ${premiumSectionRule()}
+    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">What to expect</div>
+    <div style="font-size:13px;color:${PREMIUM_BODY};line-height:1.8">
+      <div>&middot; We coordinate drop off and pickup windows with you before each visit</div>
+      <div>&middot; Bins are reusable, stackable, and dropped at your delivery address</div>
+      <div>&middot; You will receive reminders before drop off and pickup</div>
+    </div>
+
+    ${premiumSectionRule()}
+    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">Before we arrive</div>
+    <div style="font-size:13px;color:${PREMIUM_BODY};line-height:1.8">
+      <div>&middot; Clear access for delivery where bins will be placed</div>
+      <div>&middot; Let us know if building or elevator access needs to be booked</div>
+      <div>&middot; Contact us if your dates need to change</div>
+    </div>
+
+    ${premiumSectionRule()}
+    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">Your tracking page</div>
+    <div style="font-size:13px;color:${PREMIUM_BODY_MUTED};line-height:1.6">
+      Follow your order status and updates in one place:
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;margin-bottom:20px;"><tr><td align="center">
+      ${premiumCompactWineCtaAnchor(p.trackingUrl, PREMIUM_TRACK_BIN_ORDER_CTA_LABEL, "block")}
+    </td></tr></table>
+
+    <div style="background:${EMAIL_PREMIUM_ISLAND};border:1px solid ${PREMIUM_RULE};padding:${PREMIUM_CALLOUT_PAD};margin-bottom:16px;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;font-size:12px;border-collapse:collapse">
+        ${emailNestedKvRow({
+          borderTop: "none",
+          labelStyle: sL,
+          valueStyle: sVg,
+          label: "Deposit paid",
+          valueHtml: formatCurrencyEmail(p.depositPaid),
+        })}
+        ${emailNestedKvRow({
+          borderTop: sB,
+          labelStyle: sL,
+          valueStyle: sV,
+          label: "Balance remaining",
+          valueHtml: formatCurrencyEmail(p.balanceRemaining),
+        })}
+      </table>
+    </div>
+
+    <p style="font-size:12px;color:${PREMIUM_BODY_MUTED};margin:0 0 16px;text-align:center">
+      Questions? Email ${getClientSupportEmail()} or call us anytime.
     </p>
   `);
 }

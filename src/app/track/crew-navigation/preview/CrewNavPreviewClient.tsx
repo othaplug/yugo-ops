@@ -47,7 +47,7 @@ export default function CrewNavPreviewClient() {
         <button
           type="button"
           onClick={() => setNavOpen(true)}
-          className="inline-flex items-center gap-2 rounded-full border-2 border-[#2C3E2D] bg-transparent px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#2C3E2D] outline-none transition-colors hover:bg-[#2C3E2D]/6 focus-visible:ring-2 focus-visible:ring-[#2C3E2D] focus-visible:ring-offset-2"
+          className="inline-flex items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#2C3E2D] outline-none transition-colors hover:bg-[#2C3E2D]/8 focus-visible:ring-2 focus-visible:ring-[#2C3E2D] focus-visible:ring-offset-2"
         >
           Open sample navigation
           <CaretRight size={18} weight="bold" aria-hidden />

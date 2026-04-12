@@ -27,6 +27,8 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: false,
   experimental: {
     viewTransition: true,
+    /** Avoid HMR “module factory is not available” when barrel-imported Phosphor icons change (e.g. crew job page). */
+    optimizePackageImports: ["@phosphor-icons/react"],
   },
   serverExternalPackages: ["square"],
   async headers() {

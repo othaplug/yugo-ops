@@ -4,6 +4,11 @@ import { isSuperAdminEmail } from "@/lib/super-admin";
 import { redirect } from "next/navigation";
 import QuoteDetailClient from "./QuoteDetailClient";
 import { computeQuoteEngagementMetrics } from "@/lib/quotes/comparison-intelligence";
+import { getQuotePaymentPipelineMode } from "@/lib/quotes/payment-pipeline-mode";
+import {
+  getOfflineDepositInclusiveFromQuote,
+  getQuoteTotalWithTaxFromRow,
+} from "@/app/quote/[quoteId]/quote-shared";
 
 interface Props {
   params: Promise<{ quoteId: string }>;
@@ -60,6 +65,26 @@ export default async function QuoteDetailPage({ params }: Props) {
 
   const engagementMetrics = await computeQuoteEngagementMetrics(db, quote.id);
 
+  const paymentPipelineMode = await getQuotePaymentPipelineMode(
+    quote.service_type as string | null,
+  );
+  const { totalWithTax } = getQuoteTotalWithTaxFromRow(quote);
+  const offlineDepositAmount = getOfflineDepositInclusiveFromQuote(quote);
+
+  const { data: linkedMoveRow } = await db
+    .from("moves")
+    .select("move_code")
+    .eq("quote_id", quote.id)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  const { data: linkedDelRow } = await db
+    .from("deliveries")
+    .select("delivery_number")
+    .eq("source_quote_id", quote.id)
+    .maybeSingle();
+
   return (
     <div className="max-w-[1400px] mx-auto px-5 md:px-6 py-5 md:py-6">
       <QuoteDetailClient
@@ -70,6 +95,11 @@ export default async function QuoteDetailPage({ params }: Props) {
         followupsSentCount={followupsSentCount ?? 0}
         followupMaxAttempts={followupMaxAttempts}
         engagementMetrics={engagementMetrics}
+        paymentPipelineMode={paymentPipelineMode}
+        offlineTotalWithTax={totalWithTax}
+        offlineDepositAmount={offlineDepositAmount}
+        linkedMoveCode={linkedMoveRow?.move_code ?? null}
+        linkedDeliveryNumber={linkedDelRow?.delivery_number ?? null}
       />
     </div>
   );

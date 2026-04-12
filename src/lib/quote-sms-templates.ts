@@ -35,6 +35,16 @@ export function buildQuoteSmsBody(params: {
     ].join("\n\n");
   }
 
+  if (st === "bin_rental") {
+    return [
+      greet,
+      `Your Yugo bin rental quote is ready.`,
+      `View your quote:\n${params.quoteUrl}`,
+      `We are here if you have any questions. Reply or call (647) 370-4525.`,
+      `The Yugo Team`,
+    ].join("\n\n");
+  }
+
   return [
     greet,
     `Your Yugo moving quote is ready.`,
@@ -75,13 +85,16 @@ export function buildQuoteFollowupSmsBody(params: {
       `View quote:\n${url}`,
     ].join("\n\n");
   }
-  const deliveryFollowup = isClientLogisticsDeliveryServiceType(params.serviceType);
+  const st = params.serviceType;
+  const closingLine = isClientLogisticsDeliveryServiceType(st)
+    ? `We would love to complete your delivery.`
+    : st === "bin_rental"
+      ? `We would love to complete your bin rental.`
+      : `We would love to take care of your move.`;
   return [
     `Hi ${name},`,
     `A gentle reminder that your Yugo quote expires tomorrow.`,
-    deliveryFollowup
-      ? `We would love to complete your delivery.`
-      : `We would love to take care of your move.`,
+    closingLine,
     `View quote:\n${url}`,
   ].join("\n\n");
 }

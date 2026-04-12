@@ -91,7 +91,7 @@ export async function POST(req: Request) {
     await finalizeBalancePaymentSettlement({
       admin: supabase,
       moveId,
-      balancePreTax: balanceAmount,
+      balanceTaxInclusive: balanceAmount,
       squarePaymentId: paymentId,
       squareReceiptUrl: receiptUrl,
       settlementMethod: "client",

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
+import {
+  formatLastPositionLine,
+  reverseGeocodePlaceName,
+} from "@/lib/mapbox/reverse-geocode";
 
 const STALE_MS = 10 * 60 * 1000;
 
@@ -51,10 +55,11 @@ export async function GET(req: NextRequest) {
 
     const lastLat = loc?.lat != null ? Number(loc.lat) : null;
     const lastLng = loc?.lng != null ? Number(loc.lng) : null;
-    const pos =
-      lastLat != null && lastLng != null
-        ? `${lastLat.toFixed(5)}, ${lastLng.toFixed(5)}`
-        : "unknown";
+    let pos = "unknown";
+    if (lastLat != null && lastLng != null) {
+      const address = await reverseGeocodePlaceName(lastLat, lastLng);
+      pos = formatLastPositionLine(lastLat, lastLng, address);
+    }
 
     const code = move.move_code || String(move.id).slice(0, 8);
 

@@ -374,7 +374,10 @@ export async function POST(
     }
   } catch {}
 
-  // Complete the job
+  // Complete the job: sign-off always finalizes the move/delivery. Do not require an *active* tracking session,
+  // otherwise moves can stay in_progress while the session row is already completed (admin and crew dashboard drift).
+  const now = new Date().toISOString();
+
   const { data: activeSession } = await admin
     .from("tracking_sessions")
     .select("id, started_at")
@@ -383,32 +386,55 @@ export async function POST(
     .eq("is_active", true)
     .maybeSingle();
 
+  const { data: latestSession } = await admin
+    .from("tracking_sessions")
+    .select("id, started_at")
+    .eq("job_id", entityId)
+    .eq("job_type", jobType)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   if (activeSession) {
-    const now = new Date().toISOString();
-    await admin
+    const { error: sessionErr } = await admin
       .from("tracking_sessions")
       .update({ status: "completed", is_active: false, completed_at: now, updated_at: now })
       .eq("id", activeSession.id);
-    // Calculate actual hours from session start to now (same logic as checkpoint route)
-    const sessionStart = activeSession.started_at ? new Date(activeSession.started_at as string).getTime() : null;
-    const sessionEnd = new Date(now).getTime();
-    const actualHours = sessionStart ? Math.round(((sessionEnd - sessionStart) / 3_600_000) * 100) / 100 : null;
-    const table = jobType === "move" ? "moves" : "deliveries";
-    await admin
-      .from(table)
-      .update({
-        status: jobType === "move" ? "completed" : "delivered",
-        stage: "completed",
-        completed_at: now,
-        updated_at: now,
-        eta_tracking_active: false,
-        ...(actualHours != null && actualHours > 0 ? { actual_hours: actualHours } : {}),
-      })
-      .eq("id", entityId);
+    if (sessionErr) console.error("[signoff] tracking_sessions complete failed:", sessionErr.message);
+  }
+
+  const sessionForHours = activeSession ?? latestSession;
+  const sessionStartMs = sessionForHours?.started_at
+    ? new Date(sessionForHours.started_at as string).getTime()
+    : null;
+  const sessionEndMs = new Date(now).getTime();
+  const actualHours =
+    sessionStartMs != null
+      ? Math.round(((sessionEndMs - sessionStartMs) / 3_600_000) * 100) / 100
+      : null;
+
+  const table = jobType === "move" ? "moves" : "deliveries";
+  const { error: jobCompleteErr } = await admin
+    .from(table)
+    .update({
+      status: jobType === "move" ? "completed" : "delivered",
+      stage: "completed",
+      completed_at: now,
+      updated_at: now,
+      eta_tracking_active: false,
+      ...(actualHours != null && actualHours > 0 ? { actual_hours: actualHours } : {}),
+    })
+    .eq("id", entityId);
+
+  if (jobCompleteErr) {
+    console.error(
+      "[signoff] job finalize failed (client sign-off row already saved; dispatch may need manual status fix):",
+      jobCompleteErr.message,
+    );
+  } else {
     if (jobType === "move") {
       syncDealStageByMoveId(entityId, "completed").catch(() => {});
       createReviewRequestIfEligible(admin, entityId).catch((e) => console.error("[review] create failed:", e));
-      // Create client referral so it’s available on the dashboard immediately (no 24–48hr cron wait)
       createClientReferralIfNeeded(admin, entityId).catch((e) => console.error("[referral] create failed:", e));
       try {
         await generateMovePDFs(entityId);
@@ -416,32 +442,31 @@ export async function POST(
         console.error("[generateMovePDFs] failed:", e);
       }
     }
-  // Fire-and-forget: send "Completed" SMS (ETA system)
-  const origin = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  fetch(`${origin.replace(/\/$/, "")}/api/eta/send-completed`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jobId: entityId, jobType }),
-  }).catch((e) => console.error("[eta] send-completed failed:", e));
 
-  // Fire-and-forget: auto-generate invoice for partner B2B jobs (per-job billing only)
-  if (jobType === "delivery") {
-    maybeNotifyB2BOneOffDelivered(entityId).catch(() => {});
-    fetch(`${origin.replace(/\/$/, "")}/api/invoices/auto-delivery`, {
+    const origin = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    fetch(`${origin.replace(/\/$/, "")}/api/eta/send-completed`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ deliveryId: entityId }),
-    }).catch((e) => console.error("[auto-invoice] delivery trigger failed:", e));
-  }
-  if (jobType === "move") {
-    fetch(`${origin.replace(/\/$/, "")}/api/invoices/auto-move`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ moveId: entityId }),
-    }).catch((e) => console.error("[auto-invoice] move trigger failed:", e));
-  }
+      body: JSON.stringify({ jobId: entityId, jobType }),
+    }).catch((e) => console.error("[eta] send-completed failed:", e));
+
+    if (jobType === "delivery") {
+      maybeNotifyB2BOneOffDelivered(entityId).catch(() => {});
+      fetch(`${origin.replace(/\/$/, "")}/api/invoices/auto-delivery`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deliveryId: entityId }),
+      }).catch((e) => console.error("[auto-invoice] delivery trigger failed:", e));
+    }
+    if (jobType === "move") {
+      fetch(`${origin.replace(/\/$/, "")}/api/invoices/auto-move`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ moveId: entityId }),
+      }).catch((e) => console.error("[auto-invoice] move trigger failed:", e));
+    }
   }
 
   const signoffHadDamage = !noDamages || !noPropertyDamage || hasNewDamage;

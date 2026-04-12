@@ -419,6 +419,7 @@ export default function PartnersManagement() {
                             className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
                           >
                             View Details
+                            <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
                           </Link>
                           <button
                             type="button"

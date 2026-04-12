@@ -59,12 +59,20 @@ export function deliveryRecipientTrackUrl(d: {
   return `${base}/track/delivery/${encodeURIComponent(d.delivery_number)}?token=${signTrackToken("delivery", d.id)}`;
 }
 
+/**
+ * @param clientFacing When true, never use internal crew team names (e.g. Alpha); use neutral client copy only.
+ */
 function checkpointSmsLine(
   status: PartnerCheckpointStatus,
   jobType: "move" | "delivery",
   teamName: string,
+  clientFacing = false,
 ): string {
-  const crew = (teamName || "Yugo crew").trim();
+  const crew = clientFacing
+    ? jobType === "move"
+      ? "Your moving team"
+      : "Your crew"
+    : (teamName || "Yugo crew").trim();
   if (jobType === "delivery") {
     switch (status) {
       case "en_route_to_pickup":
@@ -80,7 +88,9 @@ function checkpointSmsLine(
       case "completed":
         return `Your delivery is complete. Thanks for choosing Yugo.`;
       default:
-        return `Delivery update from ${crew}.`;
+        return clientFacing
+          ? `You have a new delivery update from Yugo.`
+          : `Delivery update from ${crew}.`;
     }
   }
   switch (status) {
@@ -97,7 +107,9 @@ function checkpointSmsLine(
     case "completed":
       return `Your move is complete. Thanks for choosing Yugo.`;
     default:
-      return `Move update from ${crew}.`;
+      return clientFacing
+        ? `You have a new move update from Yugo.`
+        : `Move update from ${crew}.`;
   }
 }
 
@@ -146,10 +158,11 @@ export async function sendPartnerDeliveryCheckpointSms(opts: {
   const endPhone = (row.end_customer_phone || row.customer_phone || "").trim();
   const bizUrl = deliveryBusinessTrackUrl(row);
   const recUrl = deliveryRecipientTrackUrl(row);
-  const line = checkpointSmsLine(status, "delivery", teamName);
+  const linePartner = checkpointSmsLine(status, "delivery", teamName, false);
+  const lineClient = checkpointSmsLine(status, "delivery", teamName, true);
 
   const sent = new Set<string>();
-  const sendIf = async (raw: string, url: string) => {
+  const sendIf = async (raw: string, url: string, line: string) => {
     const d = digitsOnly(raw);
     if (d.length < 10) return;
     if (sent.has(d)) return;
@@ -159,10 +172,10 @@ export async function sendPartnerDeliveryCheckpointSms(opts: {
   };
 
   if (notifyPartner && partnerPhone) {
-    await sendIf(partnerPhone, bizUrl);
+    await sendIf(partnerPhone, bizUrl, linePartner);
   }
   if (notifyClient && endPhone) {
-    await sendIf(endPhone, recUrl);
+    await sendIf(endPhone, recUrl, lineClient);
   }
 }
 
@@ -207,10 +220,11 @@ export async function sendPartnerMoveCheckpointSms(opts: {
   const clientPhone = (row.client_phone || "").trim();
   const base = getEmailBaseUrl().replace(/\/$/, "");
   const trackUrl = `${base}/track/move/${slug}?token=${signTrackToken("move", row.id)}`;
-  const line = checkpointSmsLine(status, "move", teamName);
+  const linePartner = checkpointSmsLine(status, "move", teamName, false);
+  const lineClient = checkpointSmsLine(status, "move", teamName, true);
 
   const sent = new Set<string>();
-  const sendIf = async (raw: string) => {
+  const sendIf = async (raw: string, line: string) => {
     const d = digitsOnly(raw);
     if (d.length < 10) return;
     if (sent.has(d)) return;
@@ -219,8 +233,8 @@ export async function sendPartnerMoveCheckpointSms(opts: {
     await sendSMS(raw, body).catch(() => {});
   };
 
-  if (notifyPartner && orgPhone) await sendIf(orgPhone);
-  if (notifyClient && clientPhone) await sendIf(clientPhone);
+  if (notifyPartner && orgPhone) await sendIf(orgPhone, linePartner);
+  if (notifyClient && clientPhone) await sendIf(clientPhone, lineClient);
 }
 
 /** After issue tokens, re-load is optional; we build URLs from row + sign fallback. */

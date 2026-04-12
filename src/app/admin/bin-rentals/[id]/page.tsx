@@ -20,16 +20,5 @@ export default async function BinOrderDetailPage({
 
   if (!order) notFound();
 
-  // If linked to a move, fetch move code
-  let moveCode: string | null = null;
-  if (order.move_id) {
-    const { data: move } = await db
-      .from("moves")
-      .select("move_code")
-      .eq("id", order.move_id)
-      .single();
-    moveCode = move?.move_code ?? null;
-  }
-
-  return <BinOrderDetailClient order={order} moveCode={moveCode} />;
+  return <BinOrderDetailClient order={order} />;
 }

@@ -80,7 +80,7 @@ export function QuotesFollowupAutomationHint({
   return (
     <InfoHint variant={variant} align={align} ariaLabel={ariaLabel} className={className} iconSize={iconSize}>
       <p className="text-[12px] leading-relaxed">
-        <strong className="font-semibold text-[var(--tx)]">Automated:</strong> Vercel runs this job daily at 4:00 PM UTC
+        <strong className="font-semibold text-[var(--tx)]">Automated:</strong> The system runs this job daily at 4:00 PM UTC
         when <span className="whitespace-nowrap">Auto follow-up emails</span> is enabled in{" "}
         <Link
           href="/admin/platform?tab=app"
@@ -104,7 +104,7 @@ export function ProfitabilityBreakdownHint({
   return (
     <InfoHint variant={variant} align={align} ariaLabel={ariaLabel} className={className} iconSize={iconSize}>
       <p className="text-[12px] leading-relaxed">
-        Cost, profit, and margin from labour, truck, fuel, and supplies
+        Margin uses labour, truck, fuel, and supplies only. Card processing appears when the client paid by card; it is an estimate of what they pay as a pass-through, not subtracted here. Monthly overhead is company-wide on the finance profitability page, not per move.
       </p>
     </InfoHint>
   );

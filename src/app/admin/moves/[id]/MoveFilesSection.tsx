@@ -5,6 +5,7 @@ import { Upload, FileText, Image, X, CaretDown as ChevronDown, CaretRight as Che
 
 
 import { useToast } from "../../components/Toast";
+import { canRegenerateMoveDocuments } from "@/lib/move-status";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,8 @@ type FileEntry = {
 type SignOffData = {
   signed_by?: string;
   signed_at?: string;
+  /** data:image PNG from sign-off pad */
+  signature_data_url?: string | null;
   satisfaction_rating?: number | null;
   nps_score?: number | null;
   feedback_note?: string | null;
@@ -71,14 +74,20 @@ function FileGroup({
   label,
   borderColor,
   files,
+  /** When set, shown in the header instead of `files.length` (e.g. PoD: signature + photo count) */
+  headerCount,
+  /** Shown above the thumbnail grid when `files.length > 0` (differentiates signature block vs attachments) */
+  filesSectionLabel,
   empty,
-  defaultOpen = true,
+  defaultOpen = false,
   extra,
   onDeleteFile,
 }: {
   label: string;
   borderColor: string;
   files: FileEntry[];
+  headerCount?: number;
+  filesSectionLabel?: string;
   empty?: string;
   defaultOpen?: boolean;
   extra?: React.ReactNode;
@@ -104,7 +113,9 @@ function FileGroup({
         <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">
           {label}
         </span>
-        <span className="text-[9px] text-[var(--tx3)] ml-1">({files.length})</span>
+        <span className="text-[9px] text-[var(--tx3)] ml-1">
+          ({headerCount !== undefined ? headerCount : files.length})
+        </span>
       </button>
 
       {open && (
@@ -114,7 +125,13 @@ function FileGroup({
             <p className="text-[11px] text-[var(--tx3)] ml-4">{empty}</p>
           )}
           {files.length > 0 && (
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+            <div className={filesSectionLabel ? "ml-4" : undefined}>
+              {filesSectionLabel ? (
+                <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)] mb-2">
+                  {filesSectionLabel}
+                </p>
+              ) : null}
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
               {files.map((f) => (
                 <div key={f.id} className="relative group">
                   {f.type === "image" ? (
@@ -163,6 +180,7 @@ function FileGroup({
                   </div>
                 </div>
               ))}
+              </div>
             </div>
           )}
         </>
@@ -207,7 +225,7 @@ export default function MoveFilesSection({ moveId, moveStatus }: { moveId: strin
   const [regenerating, setRegenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const isCompleted = moveStatus === "completed" || moveStatus === "delivered";
+  const canRegeneratePdfs = canRegenerateMoveDocuments(moveStatus);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -250,16 +268,13 @@ export default function MoveFilesSection({ moveId, moveStatus }: { moveId: strin
       }
       setCrewPhotos(crewArr);
 
-      // Sign-off / PoD
+      // Sign-off / PoD (signature renders only in the Client signature card above; grid is delivery/site photos)
       const so = signoffRes.signOff || signoffRes;
       if (so?.signed_at) {
         setSignOff(so);
         const podArr: FileEntry[] = [];
-        if (so.signature_url) {
-          podArr.push({ id: "sig", url: so.signature_url, name: "Signature", type: "image", badge: "pod", date: so.signed_at });
-        }
         for (const url of (so.delivery_photo_urls ?? [])) {
-          podArr.push({ id: url, url, name: "PoD photo", type: "image", badge: "pod", date: so.signed_at });
+          podArr.push({ id: url, url, name: "Delivery photo", type: "image", badge: "pod", date: so.signed_at });
         }
         setPodFiles(podArr);
       } else {
@@ -340,7 +355,12 @@ export default function MoveFilesSection({ moveId, moveStatus }: { moveId: strin
   };
 
   const allPhotoCount = photos.length + crewPhotos.length;
-  const hasAny = podFiles.length + allPhotoCount + documents.length + adminFiles.length > 0;
+  const sigPreviewUrl =
+    signOff?.signature_data_url || (signOff as { signature_url?: string } | null)?.signature_url;
+  /** Signature is shown in the card above; count includes it plus delivery photos for the section badge */
+  const podSectionCount = podFiles.length + (sigPreviewUrl ? 1 : 0);
+  const hasAny =
+    podFiles.length + allPhotoCount + documents.length + adminFiles.length > 0 || !!signOff;
 
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3">
@@ -350,7 +370,7 @@ export default function MoveFilesSection({ moveId, moveStatus }: { moveId: strin
           Files & Media
         </h3>
         <div className="flex items-center gap-2">
-          {isCompleted && (
+          {canRegeneratePdfs && (
             <button
               type="button"
               onClick={async () => {
@@ -403,36 +423,50 @@ export default function MoveFilesSection({ moveId, moveStatus }: { moveId: strin
             label="Proof of Delivery"
             borderColor="border-[var(--brd)]"
             files={podFiles}
-            defaultOpen
+            headerCount={podSectionCount}
+            filesSectionLabel={podFiles.length > 0 ? "Delivery photos" : undefined}
             extra={
               signOff ? (
-                <div className="mb-2 ml-4 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-[11px]">
-                  {signOff.signed_by && (
-                    <div><span className="text-[var(--tx3)]">Signed by: </span>{signOff.signed_by}</div>
-                  )}
-                  {signOff.signed_at && (
-                    <div><span className="text-[var(--tx3)]">Date: </span>{new Date(signOff.signed_at).toLocaleString()}</div>
-                  )}
-                  {signOff.satisfaction_rating != null && (
-                    <div><span className="text-[var(--tx3)]">Rating: </span>{signOff.satisfaction_rating}/5</div>
-                  )}
-                  {signOff.nps_score != null && (
-                    <div><span className="text-[var(--tx3)]">NPS: </span>{signOff.nps_score}</div>
-                  )}
-                  {signOff.feedback_note && (
-                    <div className="col-span-full"><span className="text-[var(--tx3)]">Note: </span>{signOff.feedback_note}</div>
-                  )}
-                  {signOff.escalation_triggered && (
-                    <div className="col-span-full text-red-600 font-semibold flex items-center gap-1.5"><Warning size={13} className="shrink-0" /> Escalation: {signOff.escalation_reason}</div>
-                  )}
-                  <div className="col-span-full">
+                <div className="mb-3 ml-4 space-y-3 text-[11px]">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
+                    {signOff.signed_by && (
+                      <div><span className="text-[var(--tx3)]">Signed by: </span>{signOff.signed_by}</div>
+                    )}
+                    {signOff.signed_at && (
+                      <div><span className="text-[var(--tx3)]">Date: </span>{new Date(signOff.signed_at).toLocaleString()}</div>
+                    )}
+                    {signOff.satisfaction_rating != null && (
+                      <div><span className="text-[var(--tx3)]">Rating: </span>{signOff.satisfaction_rating}/5</div>
+                    )}
+                    {signOff.nps_score != null && (
+                      <div><span className="text-[var(--tx3)]">NPS: </span>{signOff.nps_score}</div>
+                    )}
+                    {signOff.feedback_note && (
+                      <div className="col-span-full"><span className="text-[var(--tx3)]">Note: </span>{signOff.feedback_note}</div>
+                    )}
+                    {signOff.escalation_triggered && (
+                      <div className="col-span-full text-red-600 font-semibold flex items-center gap-1.5"><Warning size={13} className="shrink-0" /> Escalation: {signOff.escalation_reason}</div>
+                    )}
+                  </div>
+                  {sigPreviewUrl ? (
+                    <div className="rounded-lg border border-[var(--brd)]/60 bg-[#FAF7F2] p-3 max-w-md">
+                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Client signature</div>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={sigPreviewUrl}
+                        alt="Client signature"
+                        className="max-h-28 w-full object-contain object-left"
+                      />
+                    </div>
+                  ) : null}
+                  <div>
                     <a
                       href={`/api/admin/moves/${moveId}/signoff/receipt`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[10px] text-[var(--gold)] hover:underline"
+                      className="text-[10px] font-semibold text-[#5C1A33] hover:underline"
                     >
-                      Download PDF Receipt
+                      Download PDF receipt
                     </a>
                   </div>
                 </div>
@@ -446,7 +480,6 @@ export default function MoveFilesSection({ moveId, moveStatus }: { moveId: strin
             borderColor="border-[#2D6A4F]"
             files={[...photos, ...crewPhotos]}
             empty="No photos yet."
-            defaultOpen={allPhotoCount > 0}
           />
 
           {/* Documents */}
@@ -478,7 +511,6 @@ export default function MoveFilesSection({ moveId, moveStatus }: { moveId: strin
               label="Admin Uploads"
               borderColor="border-[var(--brd)]"
               files={adminFiles}
-              defaultOpen
             />
           )}
         </div>

@@ -5,7 +5,6 @@ import { verifyTrackToken } from "@/lib/track-token";
 const CHANGE_TYPES = [
   "Change move date",
   "Change move time",
-  "Add items to inventory",
   "Remove items from inventory",
   "Change destination address",
   "Add special instructions",

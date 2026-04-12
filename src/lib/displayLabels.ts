@@ -14,7 +14,20 @@ export const SERVICE_TYPE_LABELS: Record<string, string> = {
   bin_rental: "Bin Rental",
   local_move: "Local Move",
   long_distance: "Long Distance Move",
+  /** Lead inbox / coordinator (not a quote service_type, but shown on same admin surfaces) */
+  pm_inquiry: "Property management inquiry",
 };
+
+/**
+ * Admin and client quote UI: never show raw `service_type` DB slugs (e.g. `bin_rental`).
+ * Prefer this over ad-hoc maps or `displayLabel()` so labels stay consistent.
+ */
+export function serviceTypeDisplayLabel(value: string | null | undefined): string {
+  const v = typeof value === "string" ? value.trim() : "";
+  if (!v) return "—";
+  const fromMap = getDisplayLabel(v, "service_type");
+  return fromMap || displayLabel(v);
+}
 
 // Move statuses
 export const MOVE_STATUS_LABELS: Record<string, string> = {

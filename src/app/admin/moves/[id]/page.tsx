@@ -7,18 +7,49 @@ import { canEditFinalJobPrice } from "@/lib/admin-can-edit-final-price";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const slug = (await params).id?.trim() || "";
   const db = createAdminClient();
   const byUuid = isMoveIdUuid(slug);
   const { data: move } = await (byUuid
-    ? db.from("moves").select("move_code").eq("id", slug).single()
-    : db.from("moves").select("move_code").ilike("move_code", slug.replace(/^#/, "").toUpperCase()).single());
+    ? db
+        .from("moves")
+        .select("id, move_code, service_type, move_type")
+        .eq("id", slug)
+        .single()
+    : db
+        .from("moves")
+        .select("id, move_code, service_type, move_type")
+        .ilike("move_code", slug.replace(/^#/, "").toUpperCase())
+        .single());
+  if (
+    move &&
+    (String(move.service_type ?? "").toLowerCase() === "bin_rental" ||
+      String(move.move_type ?? "").toLowerCase() === "bin_rental")
+  ) {
+    const { data: bo } = await db
+      .from("bin_orders")
+      .select("order_number")
+      .eq("move_id", move.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (bo?.order_number) return { title: `Bin order ${bo.order_number}` };
+    return { title: "Bin rental" };
+  }
   const name = move?.move_code ? `Move ${move.move_code}` : "Move";
   return { title: name };
 }
 
-export default async function MoveDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function MoveDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const slug = (await params).id?.trim() || "";
   const supabase = await createClient();
   const db = createAdminClient();
@@ -26,20 +57,50 @@ export default async function MoveDetailPage({ params }: { params: Promise<{ id:
   const [{ data: move, error }, { data: crews }] = await Promise.all([
     byUuid
       ? db.from("moves").select("*").eq("id", slug).single()
-      : db.from("moves").select("*").ilike("move_code", slug.replace(/^#/, "").toUpperCase()).single(),
+      : db
+          .from("moves")
+          .select("*")
+          .ilike("move_code", slug.replace(/^#/, "").toUpperCase())
+          .single(),
     db.from("crews").select("id, name, members").order("name"),
   ]);
 
   if (error || !move) notFound();
 
+  if (
+    String(move.service_type ?? "").toLowerCase() === "bin_rental" ||
+    String(move.move_type ?? "").toLowerCase() === "bin_rental"
+  ) {
+    const { data: binOrder } = await db
+      .from("bin_orders")
+      .select("id")
+      .eq("move_id", move.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (binOrder?.id) {
+      redirect(`/admin/bin-rentals/${binOrder.id}`);
+    }
+    redirect("/admin/bin-rentals");
+  }
+
   if (byUuid && move.move_code?.trim()) {
     redirect(getMoveDetailPath(move));
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: pu } = await db.from("platform_users").select("role").eq("user_id", user?.id ?? "").single();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: pu } = await db
+    .from("platform_users")
+    .select("role")
+    .eq("user_id", user?.id ?? "")
+    .single();
   const userRole = pu?.role ?? "viewer";
-  const canEditPostCompletionPrice = canEditFinalJobPrice(pu?.role ?? null, user?.email ?? null);
+  const canEditPostCompletionPrice = canEditFinalJobPrice(
+    pu?.role ?? null,
+    user?.email ?? null,
+  );
 
   const isOffice = move.move_type === "office";
 
@@ -56,12 +117,40 @@ export default async function MoveDetailPage({ params }: { params: Promise<{ id:
     { data: surveyPhotos },
     { data: pendingModifications },
     { data: postCompletionPriceEdits },
+    { data: moveWaiverRows },
   ] = await Promise.all([
-    db.from("move_change_requests").select("fee_cents").eq("move_id", move.id).eq("status", "approved"),
-    db.from("extra_items").select("fee_cents").eq("job_id", move.id).eq("job_type", "move").eq("status", "approved"),
-    db.from("eta_sms_log").select("message_type, sent_at, eta_minutes, twilio_sid").eq("move_id", move.id).order("sent_at", { ascending: false }),
-    db.from("review_requests").select("id, status, email_sent_at, reminder_sent_at, review_clicked, review_clicked_at, client_rating, client_feedback").eq("move_id", move.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-    db.from("item_weights").select("slug, item_name, weight_score, category, room, is_common, display_order, active").eq("active", true).order("display_order"),
+    db
+      .from("move_change_requests")
+      .select("fee_cents")
+      .eq("move_id", move.id)
+      .eq("status", "approved"),
+    db
+      .from("extra_items")
+      .select("fee_cents")
+      .eq("job_id", move.id)
+      .eq("job_type", "move")
+      .eq("status", "approved"),
+    db
+      .from("eta_sms_log")
+      .select("message_type, sent_at, eta_minutes, twilio_sid")
+      .eq("move_id", move.id)
+      .order("sent_at", { ascending: false }),
+    db
+      .from("review_requests")
+      .select(
+        "id, status, email_sent_at, reminder_sent_at, review_clicked, review_clicked_at, client_rating, client_feedback",
+      )
+      .eq("move_id", move.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    db
+      .from("item_weights")
+      .select(
+        "slug, item_name, weight_score, category, room, is_common, display_order, active",
+      )
+      .eq("active", true)
+      .order("display_order"),
     move.pending_inventory_change_request_id
       ? db
           .from("inventory_change_requests")
@@ -84,8 +173,16 @@ export default async function MoveDetailPage({ params }: { params: Promise<{ id:
       .eq("entity_type", "move")
       .eq("entity_id", move.id)
       .order("created_at", { ascending: true }),
-    db.from("bin_orders").select("*").eq("move_id", move.id).order("created_at", { ascending: false }),
-    db.from("move_survey_photos").select("id, room, photo_url, notes, uploaded_at").eq("move_id", move.id).order("uploaded_at", { ascending: false }),
+    db
+      .from("bin_orders")
+      .select("*")
+      .eq("move_id", move.id)
+      .order("created_at", { ascending: false }),
+    db
+      .from("move_survey_photos")
+      .select("id, room, photo_url, notes, uploaded_at")
+      .eq("move_id", move.id)
+      .order("uploaded_at", { ascending: false }),
     db
       .from("move_modifications")
       .select("id, type, status, price_difference, created_at")
@@ -101,10 +198,64 @@ export default async function MoveDetailPage({ params }: { params: Promise<{ id:
       .eq("job_id", move.id)
       .eq("job_type", "move")
       .order("created_at", { ascending: false }),
+    db
+      .from("move_waivers")
+      .select(
+        "id, category, item_name, description, crew_recommendation, reported_by_name, status, signed_by, signed_at, signature_data, photo_urls",
+      )
+      .eq("move_id", move.id)
+      .order("created_at", { ascending: false }),
   ]);
-  const changeFeesCents = (approvedChanges ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
-  const extraFeesCents = (approvedExtras ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
+  const changeFeesCents = (approvedChanges ?? []).reduce(
+    (s, r) => s + (Number(r.fee_cents) || 0),
+    0,
+  );
+  const extraFeesCents = (approvedExtras ?? []).reduce(
+    (s, r) => s + (Number(r.fee_cents) || 0),
+    0,
+  );
   const additionalFeesCents = changeFeesCents + extraFeesCents;
+
+  const moveWaivers = await Promise.all(
+    (moveWaiverRows ?? []).map(
+      async (w: {
+        id: string;
+        category: string;
+        item_name: string;
+        description: string;
+        crew_recommendation: string | null;
+        reported_by_name: string | null;
+        status: string;
+        signed_by: string | null;
+        signed_at: string | null;
+        signature_data: string | null;
+        photo_urls: string[] | null;
+      }) => {
+        const paths = Array.isArray(w.photo_urls) ? w.photo_urls : [];
+        const photoUrlsSigned = await Promise.all(
+          paths.map(async (path) => {
+            const { data } = await db.storage
+              .from("job-photos")
+              .createSignedUrl(path, 7200);
+            return data?.signedUrl ?? "";
+          }),
+        );
+        return {
+          id: w.id,
+          category: w.category,
+          item_name: w.item_name,
+          description: w.description,
+          crew_recommendation: w.crew_recommendation,
+          reported_by_name: w.reported_by_name,
+          status: w.status,
+          signed_by: w.signed_by,
+          signed_at: w.signed_at,
+          signature_data: w.signature_data,
+          photoUrlsSigned,
+        };
+      },
+    ),
+  );
 
   return (
     <MoveDetailClient
@@ -124,6 +275,7 @@ export default async function MoveDetailPage({ params }: { params: Promise<{ id:
       pendingModifications={pendingModifications ?? []}
       canEditPostCompletionPrice={canEditPostCompletionPrice}
       postCompletionPriceEdits={postCompletionPriceEdits ?? []}
+      moveWaivers={moveWaivers}
     />
   );
 }

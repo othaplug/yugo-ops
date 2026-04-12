@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { generateMovePDFs } from "@/lib/documents/generateMovePDFs";
+import { canRegenerateMoveDocuments } from "@/lib/move-status";
 
 /**
- * Regenerate Move Summary, Invoice, and Receipt PDFs for a completed move.
- * Admin only. Useful when move data was corrected after completion.
+ * Regenerate Move Summary, Invoice, and Receipt PDFs for a finished or fully paid move.
+ * Admin only. Useful when move data was corrected after completion or payment.
  */
 export async function POST(
   _req: Request,
@@ -24,10 +25,13 @@ export async function POST(
 
   if (error || !move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
   const status = (move as { status?: string }).status;
-  if (status !== "completed" && status !== "delivered") {
+  if (!canRegenerateMoveDocuments(status)) {
     return NextResponse.json(
-      { error: "Documents can only be regenerated for completed moves" },
-      { status: 400 }
+      {
+        error:
+          "Documents can only be regenerated after the move is completed, delivered, or fully paid",
+      },
+      { status: 400 },
     );
   }
 

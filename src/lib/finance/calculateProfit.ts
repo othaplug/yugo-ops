@@ -1,20 +1,26 @@
 /**
  * Profitability cost model — NOT revenue.
- * Moves:     labour + fuel (distance-based) + truck + supplies-by-size + processing
- * Deliveries: labour + fuel (distance/zone-based) + truck + processing (supplies = $0)
- * Profit = billed amount − totalDirect
+ * Moves:     labour + fuel (distance-based) + truck + supplies-by-size
+ * Deliveries: labour + fuel + truck (supplies = $0)
+ * Card processing fees are a client pass-through (added to what they pay), not Yugo operating cost, so they are
+ * never subtracted from margin. When the client paid by card, we still show an estimated pass-through amount for reference.
+ * Monthly business overhead is not allocated per job; see finance profitability page for company-wide overhead.
  */
 export interface MoveCosts {
   labour: number;
   fuel: number;
   truck: number;
   supplies: number;
+  /** Estimated card processing pass-through (client-paid); 0 if not card. Never included in totalDirect. */
   processing: number;
   totalDirect: number;
+  /** Kept for API shape; always 0 (no per-job overhead allocation). */
   allocatedOverhead: number;
   grossProfit: number;
+  /** Same as gross profit (no per-job overhead). */
   netProfit: number;
   grossMargin: number;
+  /** Same as gross margin. */
   netMargin: number;
 }
 
@@ -22,32 +28,46 @@ function cfg(config: Record<string, string>, key: string, fallback = 0): number 
   return parseFloat(config[key] ?? "") || fallback;
 }
 
+/** True when final balance was paid by card, or balance unset and deposit was card. */
+export function movePaysCardProcessingFee(move: {
+  balance_method?: string | null;
+  deposit_method?: string | null;
+}): boolean {
+  const bal = (move.balance_method || "").trim();
+  if (bal.toLowerCase() === "card") return true;
+  if (bal) return false;
+  return (move.deposit_method || "").toLowerCase() === "card";
+}
+
+export function deliveryPaysCardProcessingFee(d: {
+  payment_method?: string | null;
+  balance_method?: string | null;
+}): boolean {
+  const p = (d.payment_method || "").trim();
+  if (p.toLowerCase() === "card") return true;
+  if (p) return false;
+  return (d.balance_method || "").toLowerCase() === "card";
+}
+
+function paymentProcessingEstimate(revenue: number, config: Record<string, string>): number {
+  return revenue * cfg(config, "payment_processing_pct", 0.029) + cfg(config, "payment_processing_flat", 0.3);
+}
+
 /**
  * Average packing supplies cost by move size (industry-based defaults).
  * These are used when platform_config doesn't have a specific supplies_cost_<size> entry.
  */
 const SUPPLIES_DEFAULTS: Record<string, number> = {
-  studio:    30,
-  "1br":     50,
-  "2br":     75,
-  "3br":    110,
-  "4br":    150,
+  studio: 30,
+  "1br": 50,
+  "2br": 75,
+  "3br": 110,
+  "4br": 150,
   "5br_plus": 200,
-  partial:   25,
-  office:    70,
+  partial: 25,
+  office: 70,
   single_item: 0,
 };
-
-function allocateOverhead(config: Record<string, string>, monthlyMoveCount: number): number {
-  const monthly =
-    cfg(config, "monthly_software_cost", 250) +
-    cfg(config, "monthly_auto_insurance", 1000) +
-    cfg(config, "monthly_gl_insurance", 300) +
-    cfg(config, "monthly_marketing_budget", 1000) +
-    cfg(config, "monthly_office_admin", 350) +
-    cfg(config, "monthly_owner_draw", 0);
-  return monthlyMoveCount > 0 ? monthly / monthlyMoveCount : monthly;
-}
 
 function buildCosts(
   revenue: number,
@@ -56,20 +76,15 @@ function buildCosts(
   truck: number,
   supplies: number,
   config: Record<string, string>,
-  monthlyMoveCount: number,
-  paymentMethod?: string | null,
+  includeProcessingEstimate: boolean,
 ): MoveCosts {
-  // Processing costs are absorbed into quoted prices via processing_recovery_rate/flat.
-  // For margin accounting purposes we still model it as a cost against revenue.
-  // paymentMethod param retained for API compatibility but no longer affects this calc.
-  void paymentMethod;
-  const processing = revenue * cfg(config, "payment_processing_pct", 0.029) + cfg(config, "payment_processing_flat", 0.3);
-  const totalDirect = labour + fuel + truck + supplies + processing;
-  const allocatedOverhead = allocateOverhead(config, monthlyMoveCount);
+  const processing = includeProcessingEstimate ? paymentProcessingEstimate(revenue, config) : 0;
+  const totalDirect = labour + fuel + truck + supplies;
+  const allocatedOverhead = 0;
   const grossProfit = revenue - totalDirect;
-  const netProfit = grossProfit - allocatedOverhead;
+  const netProfit = grossProfit;
   const grossMargin = revenue > 0 ? Math.round(((grossProfit / revenue) * 100) * 10) / 10 : 0;
-  const netMargin = revenue > 0 ? Math.round(((netProfit / revenue) * 100) * 10) / 10 : 0;
+  const netMargin = grossMargin;
   return {
     labour: Math.round(labour),
     fuel: Math.round(fuel * 100) / 100,
@@ -102,15 +117,15 @@ export function calculateMoveProfitability(
     deposit_method?: string | null;
   },
   config: Record<string, string>,
-  monthlyMoveCount: number,
+  _monthlyMoveCountUnused: number,
 ): MoveCosts {
+  void _monthlyMoveCountUnused;
   const revenue = Number(move.estimate ?? 0) || 0;
   const hours = Number(move.actual_hours ?? move.est_hours ?? 4) || 4;
   const crewSize = Number(move.actual_crew_count ?? move.est_crew_size ?? move.crew_count ?? 2) || 2;
   const labour = crewSize * hours * cfg(config, "crew_hourly_cost", 25);
 
   const distanceKm = Number(move.distance_km ?? 20) || 20;
-  // Round-trip fuel (pickup + dropoff)
   const fuel = distanceKm * 2 * cfg(config, "fuel_cost_per_km", 0.35);
 
   const workingDays = cfg(config, "truck_working_days_per_month", 22);
@@ -119,7 +134,6 @@ export function calculateMoveProfitability(
     if (explicit > 0) return explicit;
     const monthly = parseFloat(config[`truck_monthly_cost_${type}`] ?? "");
     if (monthly > 0) return Math.round((monthly / workingDays) * 100) / 100;
-    // Industry-researched fallbacks (Canadian market, pre-HST)
     const defaults: Record<string, number> = { sprinter: 65, "16ft": 70, "20ft": 80, "26ft": 295 };
     return defaults[type] ?? 75;
   };
@@ -127,7 +141,6 @@ export function calculateMoveProfitability(
   const truck = truckDailyRate(truckType) +
     (move.truck_secondary ? truckDailyRate(move.truck_secondary.toLowerCase().replace(/[^a-z0-9]/g, "")) : 0);
 
-  // Supplies: look up by move size, fall back to industry defaults (0 for office/single_item overrides)
   const svc = (move.service_type ?? "local_move").toLowerCase();
   let suppliesKey: string;
   if (svc === "office_move" || svc === "office") suppliesKey = "supplies_cost_office";
@@ -137,8 +150,8 @@ export function calculateMoveProfitability(
   const suppliesFallback = SUPPLIES_DEFAULTS[move.move_size?.toLowerCase() ?? "studio"] ?? 30;
   const supplies = cfg(config, suppliesKey, suppliesFallback);
 
-  const paymentMethod = move.balance_method ?? move.deposit_method ?? null;
-  return buildCosts(revenue, labour, fuel, truck, supplies, config, monthlyMoveCount, paymentMethod);
+  const includeProcessingEstimate = movePaysCardProcessingFee(move);
+  return buildCosts(revenue, labour, fuel, truck, supplies, config, includeProcessingEstimate);
 }
 
 /**
@@ -146,18 +159,18 @@ export function calculateMoveProfitability(
  * Distance from delivery.distance_km, zone-based fallback.
  */
 export function calculateDeliveryProfitability(
-  d: Record<string, any>,
+  d: Record<string, unknown>,
   revenue: number,
   config: Record<string, string>,
-  monthlyMoveCount: number,
+  _monthlyMoveCountUnused: number,
 ): MoveCosts {
-  const isDayRate = (d.booking_type || "").toLowerCase() === "day_rate";
+  void _monthlyMoveCountUnused;
+  const isDayRate = String(d.booking_type || "").toLowerCase() === "day_rate";
   const defaultHours = isDayRate ? 8 : 4;
   const hours = Number(d.actual_hours ?? defaultHours) || defaultHours;
   const crewSize = Number(d.actual_crew_count ?? d.est_crew_size ?? 2) || 2;
   const labour = crewSize * hours * cfg(config, "crew_hourly_cost", 25);
 
-  // Use stored distance_km, fall back to zone estimate
   const zoneKm = d.zone != null ? (Number(d.zone) === 1 ? 15 : Number(d.zone) === 2 ? 35 : 50) : 20;
   const distanceKm = Number(d.distance_km ?? zoneKm) || zoneKm;
   const fuel = distanceKm * 2 * cfg(config, "fuel_cost_per_km", 0.35);
@@ -171,15 +184,16 @@ export function calculateDeliveryProfitability(
     const defaults: Record<string, number> = { sprinter: 65, "16ft": 70, "20ft": 80, "26ft": 295 };
     return defaults[type] ?? 75;
   };
-  const truckType = (d.vehicle_type || "sprinter").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const truckType = String(d.vehicle_type || "sprinter").toLowerCase().replace(/[^a-z0-9]/g, "");
   const truck = delivTruckDaily(truckType);
 
-  // Deliveries do not use packing supplies
   const supplies = 0;
 
-  // Delivery payment method
-  const paymentMethod = (d.payment_method ?? d.balance_method ?? null) as string | null;
-  return buildCosts(revenue, labour, fuel, truck, supplies, config, monthlyMoveCount, paymentMethod);
+  const includeProcessingEstimate = deliveryPaysCardProcessingFee({
+    payment_method: d.payment_method as string | null | undefined,
+    balance_method: d.balance_method as string | null | undefined,
+  });
+  return buildCosts(revenue, labour, fuel, truck, supplies, config, includeProcessingEstimate);
 }
 
 export function getMonthlyOverhead(config: Record<string, string>): number {

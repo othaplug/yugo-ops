@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DownloadSimple } from "@phosphor-icons/react";
+import { CaretRight, DownloadSimple } from "@phosphor-icons/react";
 import { useToast } from "../../components/Toast";
 import { generateDeliveryPDF } from "@/lib/pdf";
 
@@ -28,6 +28,9 @@ export default function DownloadPDFButton({
     <button type="button" onClick={handleDownload} disabled={loading} className={className}>
       <DownloadSimple weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
       {loading ? "Generating…" : "Download"}
+      {!loading ? (
+        <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
+      ) : null}
     </button>
   );
 }

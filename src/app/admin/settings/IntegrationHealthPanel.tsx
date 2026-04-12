@@ -19,7 +19,7 @@ interface IntegrationConfig {
 
 const CATEGORY_ORDER = ["Payments", "Communications", "Mapping", "CRM", "Accounting", "Automation"];
 
-/** How each integration is wired — set these in your deployment environment (e.g. Vercel → Environment Variables). */
+/** How each integration is wired — set these in your deployment environment (hosting provider env vars). */
 const SETUP_GUIDE: Record<string, { title: string; bullets: string[] }> = {
   square: {
     title: "Square",
@@ -210,7 +210,7 @@ export default function IntegrationHealthPanel({
               ))}
             </ul>
             <p className="text-[11px] text-[var(--tx3)] mb-4">
-              Add variables in your hosting provider (e.g. Vercel → Project → Settings → Environment Variables), then redeploy.
+              Add variables in your hosting or deployment settings (environment variables), then redeploy.
             </p>
             <button
               type="button"

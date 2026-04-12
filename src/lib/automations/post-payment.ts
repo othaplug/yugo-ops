@@ -22,6 +22,7 @@ import {
   curatedConfirmationEmail,
   signatureConfirmationEmail,
   estateConfirmationEmail,
+  binRentalConfirmationEmail,
   statusUpdateEmailHtml,
   type TierConfirmationParams,
 } from "@/lib/email-templates";
@@ -74,7 +75,26 @@ const SERVICE_LABELS: Record<string, string> = {
   b2b_delivery: "B2B Delivery",
   event: "Event Logistics",
   labour_only: "Labour Only",
+  bin_rental: "Bin Rental",
 };
+
+function binBundleLabelFromFactors(factors: Record<string, unknown>): string {
+  const fromLabel = String(factors.bin_bundle_label ?? "").trim();
+  if (fromLabel) return fromLabel;
+  const bt = String(factors.bin_bundle_type ?? "").toLowerCase();
+  const customN = Math.floor(Number(factors.bin_custom_count) || 0);
+  if (bt === "custom" && customN > 0) {
+    return `Custom · ${customN} bins`;
+  }
+  const byType: Record<string, string> = {
+    studio: "Studio bundle",
+    "1br": "1 bedroom bundle",
+    "2br": "2 bedroom bundle",
+    "3br": "3 bedroom bundle",
+    "4br_plus": "4 bedroom plus bundle",
+  };
+  return byType[bt] || "Bin rental";
+}
 
 function getSeason(dateStr: string | null): string | null {
   if (!dateStr) return null;
@@ -141,14 +161,17 @@ export async function runPostPaymentActions(
   const existingChecklistTok = String(
     (move as { checklist_token?: string | null }).checklist_token ?? "",
   ).trim();
-  if (!existingSurveyTok) tokenUpdates.survey_token = randomBytes(24).toString("hex");
-  if (!existingChecklistTok) tokenUpdates.checklist_token = randomBytes(24).toString("hex");
+  if (!existingSurveyTok)
+    tokenUpdates.survey_token = randomBytes(24).toString("hex");
+  if (!existingChecklistTok)
+    tokenUpdates.checklist_token = randomBytes(24).toString("hex");
   if (Object.keys(tokenUpdates).length > 0) {
     const { error: tokUpErr } = await supabase
       .from("moves")
       .update(tokenUpdates)
       .eq("id", input.moveId);
-    if (tokUpErr) console.error("[postPayment] survey/checklist tokens", tokUpErr);
+    if (tokUpErr)
+      console.error("[postPayment] survey/checklist tokens", tokUpErr);
   }
   const surveyTokenForEmail = String(
     tokenUpdates.survey_token ?? existingSurveyTok,
@@ -285,6 +308,61 @@ export async function runPostPaymentActions(
         if (!clientEmail) return;
 
         const resend = getResend();
+
+        if (quote.service_type === "bin_rental") {
+          const dropOffRaw =
+            typeof factors.bin_drop_off_date === "string"
+              ? factors.bin_drop_off_date.trim()
+              : "";
+          const pickupRaw =
+            typeof factors.bin_pickup_date === "string"
+              ? factors.bin_pickup_date.trim()
+              : "";
+          let moveDateForEmail: string | null =
+            typeof factors.bin_move_date === "string" &&
+            factors.bin_move_date.trim()
+              ? factors.bin_move_date.trim()
+              : quote.move_date
+                ? String(quote.move_date).trim()
+                : null;
+          if (moveDateForEmail && dropOffRaw && moveDateForEmail === dropOffRaw) {
+            moveDateForEmail = null;
+          }
+
+          const delivery = String(quote.to_address ?? "").trim();
+          const fromA = String(quote.from_address ?? "").trim();
+          const pickupOnly =
+            fromA && delivery && fromA !== delivery ? fromA : null;
+
+          const html = binRentalConfirmationEmail({
+            clientName,
+            moveCode: input.moveCode,
+            bundleLabel: binBundleLabelFromFactors(factors),
+            dropOffDate: dropOffRaw || null,
+            pickupDate: pickupRaw || null,
+            moveDate: moveDateForEmail,
+            deliveryAddress: delivery,
+            pickupAddress: pickupOnly,
+            totalWithTax,
+            depositPaid: depositAmount,
+            balanceRemaining: balanceAmount,
+            trackingUrl,
+          });
+          const subject = `Your Yugo bin rental is confirmed, ${input.moveCode}`;
+          const emailFrom = await getEmailFrom();
+          await resend.emails.send({
+            from: emailFrom,
+            to: clientEmail,
+            subject,
+            html,
+            headers: {
+              Precedence: "auto",
+              "X-Auto-Response-Suppress": "All",
+            },
+          });
+          return;
+        }
+
         const tier = selectedTier ?? "signature";
 
         const TRUCK_DISPLAY: Record<string, string> = {
@@ -413,12 +491,17 @@ export async function runPostPaymentActions(
       critical: false,
       fn: async () => {
         if (!clientEmail || !surveyTokenForEmail) return;
+        if (quote.service_type === "bin_rental") return;
         const tier = String(selectedTier ?? "").toLowerCase();
         if (tier === "estate") return;
         if (
-          !["essential", "curated", "signature", "essentials", "premier"].includes(
-            tier,
-          )
+          ![
+            "essential",
+            "curated",
+            "signature",
+            "essentials",
+            "premier",
+          ].includes(tier)
         )
           return;
 
@@ -467,16 +550,20 @@ export async function runPostPaymentActions(
 
         const companyDisplayName = await getCompanyDisplayName();
         const first = clientName?.trim().split(/\s+/)[0] || "there";
-        const checklistLine = checklistTokenForEmail
-          ? `Move-day checklist:\n${baseUrl}/checklist/${checklistTokenForEmail}`
-          : null;
+        const isBinRental = quote.service_type === "bin_rental";
+        const checklistLine =
+          !isBinRental && checklistTokenForEmail
+            ? `Move-day checklist:\n${baseUrl}/checklist/${checklistTokenForEmail}`
+            : null;
         await sendSMS(
           to,
           [
             `Hi ${first},`,
             `You're booked with ${companyDisplayName}. Reference: ${input.moveCode}.`,
             `Your coordinator will reach out within 24 hours.`,
-            `Track your move:\n${trackingUrl}`,
+            isBinRental
+              ? `Track your order:\n${trackingUrl}`
+              : `Track your move:\n${trackingUrl}`,
             ...(checklistLine ? [checklistLine] : []),
           ].join("\n\n"),
         );

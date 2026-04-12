@@ -487,3 +487,64 @@ export function calculateDeposit(
       return Math.round(total * 0.1);
   }
 }
+
+/** Pre-tax and tax-inclusive totals from stored tier or custom price (aligned with createMoveFromQuote). */
+export function getQuoteTotalWithTaxFromRow(quote: {
+  selected_tier?: string | null;
+  tiers?: unknown;
+  custom_price?: number | null;
+}): { basePrice: number; totalWithTax: number } {
+  const selectedTier = quote.selected_tier;
+  const tiers = quote.tiers as
+    | Record<string, { price: number; total: number }>
+    | undefined;
+  if (selectedTier && tiers?.[selectedTier]) {
+    const tierData = tiers[selectedTier];
+    const basePrice = tierData?.price ?? 0;
+    const totalWithTax =
+      tierData?.total ?? Math.round(basePrice * 1.13);
+    return { basePrice, totalWithTax };
+  }
+  const basePrice = Number(quote.custom_price ?? 0);
+  return { basePrice, totalWithTax: Math.round(basePrice * 1.13) };
+}
+
+/**
+ * Tax-inclusive deposit for offline booking (matches client quote deposit logic in aggregate).
+ */
+export function getOfflineDepositInclusiveFromQuote(quote: {
+  service_type?: string | null;
+  selected_tier?: string | null;
+  tiers?: unknown;
+  custom_price?: number | null;
+  deposit_amount?: number | null;
+}): number {
+  const { basePrice, totalWithTax } = getQuoteTotalWithTaxFromRow(quote);
+  const st = String(quote.service_type ?? "");
+
+  if (quote.deposit_amount != null && Number(quote.deposit_amount) > 0) {
+    return Math.min(totalWithTax, Number(quote.deposit_amount));
+  }
+
+  if (st === "bin_rental") {
+    return totalWithTax;
+  }
+
+  const tier = String(quote.selected_tier ?? "");
+  let depositPreTax: number;
+  if (st === "local_move" && tier) {
+    depositPreTax = calculateTieredDeposit(tier, basePrice);
+  } else {
+    depositPreTax = calculateDeposit(
+      st === "local_move" ? "local_move" : st,
+      basePrice,
+      tier || undefined,
+    );
+  }
+
+  if (basePrice <= 0) return totalWithTax;
+  return Math.min(
+    totalWithTax,
+    Math.round((depositPreTax / basePrice) * totalWithTax * 100) / 100,
+  );
+}

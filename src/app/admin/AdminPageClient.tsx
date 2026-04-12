@@ -12,6 +12,7 @@ import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import Link from "next/link";
 import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
+import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
 import {
   getStatusLabel,
   normalizeStatus,
@@ -1808,7 +1809,7 @@ export default function AdminPageClient({
                                   <p className="text-[10px] text-[var(--tx3)] mt-0.5">
                                     {COMPLETENESS_PATH_LABELS[path] || path}
                                     {row.service_type
-                                      ? ` · ${row.service_type.replace(/_/g, " ")}`
+                                      ? ` · ${serviceTypeDisplayLabel(row.service_type)}`
                                       : ""}
                                   </p>
                                   {row.follow_up_sent_at ? (

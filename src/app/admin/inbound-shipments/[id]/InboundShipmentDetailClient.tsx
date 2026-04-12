@@ -4,18 +4,18 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Copy,
   CheckCircle,
   Warning,
-  Truck,
-  Warehouse,
-  User,
   Camera,
 } from "@phosphor-icons/react";
 import {
   INBOUND_SHIPMENT_STATUS_LABELS,
   INBOUND_INSPECTION_STATUS_LABELS,
 } from "@/lib/inbound-shipment-labels";
+import {
+  ADMIN_PREMIUM_SOLID_CTA_CLASS,
+  ADMIN_PREMIUM_TEXT_CTA_CLASS,
+} from "@/app/admin/components/admin-toolbar-action-classes";
 
 type Shipment = Record<string, unknown> & { id: string; shipment_number: string; status: string };
 
@@ -158,27 +158,24 @@ export default function InboundShipmentDetailClient({
             type="button"
             disabled={loading}
             onClick={() => copy(trackUrl)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-xs font-semibold"
+            className={`${ADMIN_PREMIUM_TEXT_CTA_CLASS} normal-case text-[11px] font-semibold min-h-[40px]`}
           >
-            <Copy size={14} aria-hidden />
             Copy public status link
           </button>
           <button
             type="button"
             disabled={loading}
             onClick={() => copy(customerUrl)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-xs font-semibold"
+            className={`${ADMIN_PREMIUM_TEXT_CTA_CLASS} normal-case text-[11px] font-semibold min-h-[40px]`}
           >
-            <User size={14} aria-hidden />
             Copy customer form link
           </button>
           <button
             type="button"
             disabled={loading}
             onClick={() => copy(rissdCustomerUrl)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-xs font-semibold"
+            className={`${ADMIN_PREMIUM_TEXT_CTA_CLASS} normal-case text-[11px] font-semibold min-h-[40px]`}
           >
-            <Truck size={14} aria-hidden />
             Copy end-customer track link
           </button>
         </div>
@@ -193,25 +190,23 @@ export default function InboundShipmentDetailClient({
             type="button"
             disabled={loading}
             onClick={() => postStatus("in_transit")}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--bg2)] text-xs font-semibold border border-[var(--brd)]"
+            className={ADMIN_PREMIUM_SOLID_CTA_CLASS}
           >
-            <Truck size={16} aria-hidden />
             Mark in transit
           </button>
           <button
             type="button"
             disabled={loading}
             onClick={() => postStatus("received")}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--bg2)] text-xs font-semibold border border-[var(--brd)]"
+            className={ADMIN_PREMIUM_SOLID_CTA_CLASS}
           >
-            <Warehouse size={16} aria-hidden />
             Mark received
           </button>
           <button
             type="button"
             disabled={loading}
             onClick={() => postStatus("inspecting")}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--bg2)] text-xs font-semibold border border-[var(--brd)]"
+            className={ADMIN_PREMIUM_SOLID_CTA_CLASS}
           >
             Start inspection
           </button>
@@ -219,43 +214,39 @@ export default function InboundShipmentDetailClient({
             type="button"
             disabled={loading}
             onClick={() => postStatus("customer_contacted")}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--bg2)] text-xs font-semibold border border-[var(--brd)]"
+            className={ADMIN_PREMIUM_SOLID_CTA_CLASS}
           >
-            <User size={16} aria-hidden />
             Mark customer contacted
           </button>
           <button
             type="button"
             disabled={loading}
             onClick={() => postStatus("delivery_scheduled")}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--bg2)] text-xs font-semibold border border-[var(--brd)]"
+            className={ADMIN_PREMIUM_SOLID_CTA_CLASS}
           >
-            <CheckCircle size={16} aria-hidden />
             Mark delivery scheduled
           </button>
           <button
             type="button"
             disabled={loading}
             onClick={() => postStatus("out_for_delivery")}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--bg2)] text-xs font-semibold border border-[var(--brd)]"
+            className={ADMIN_PREMIUM_SOLID_CTA_CLASS}
           >
-            <Truck size={16} aria-hidden />
             Out for delivery
           </button>
           <button
             type="button"
             disabled={loading}
             onClick={() => postStatus("delivered")}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--bg2)] text-xs font-semibold border border-[var(--brd)]"
+            className={ADMIN_PREMIUM_SOLID_CTA_CLASS}
           >
-            <CheckCircle size={16} aria-hidden />
             Mark delivered
           </button>
           <button
             type="button"
             disabled={loading}
             onClick={() => postStatus("completed")}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--bg2)] text-xs font-semibold border border-[var(--brd)]"
+            className={ADMIN_PREMIUM_SOLID_CTA_CLASS}
           >
             Close / completed
           </button>

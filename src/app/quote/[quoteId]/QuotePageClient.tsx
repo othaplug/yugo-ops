@@ -147,6 +147,7 @@ import {
   b2bVerticalUsesPackageLeadIcon,
   isClientLogisticsDeliveryServiceType,
 } from "@/lib/quotes/b2b-quote-copy";
+import { quoteShowsCargoInsuranceTrust } from "@/lib/quotes/quote-cargo-insurance-trust";
 import {
   getResolvedMoveIncludes,
   mergeTierFeatureListsPreferLater,
@@ -313,6 +314,8 @@ export default function QuotePageClient({
     isClientLogisticsDeliveryServiceType(quote.service_type)
       ? "delivery"
       : "move";
+
+  const showCargoInsuranceTrust = quoteShowsCargoInsuranceTrust(quote.service_type)
 
   const clientPickupRows = useMemo(() => {
     const fa = quote.factors_applied as Record<string, unknown> | null;
@@ -2078,7 +2081,11 @@ export default function QuotePageClient({
         {/* ═══ SOCIAL PROOF + TRUST BAR ═══ */}
         <section className={`mb-10 pt-6 border-t ${shellBorderTopClass}`}>
           <div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 sm:gap-4 text-center max-w-md mx-auto sm:max-w-none">
+            <div
+              className={`grid grid-cols-2 sm:gap-4 text-center max-w-md mx-auto sm:max-w-none ${
+                showCargoInsuranceTrust ? "sm:grid-cols-3" : "sm:grid-cols-2"
+              }`}
+            >
               <div className={trustBarTopLeftClass}>
                 <p
                   className="text-sm sm:text-[13px] font-bold tracking-tight"
@@ -2093,21 +2100,29 @@ export default function QuotePageClient({
                   5-star rated on Google
                 </p>
               </div>
-              <div className={trustBarTopRightClass}>
-                <p
-                  className="text-sm sm:text-[13px] font-bold tracking-tight"
-                  style={{ color: shellInk.primary }}
-                >
-                  $2M Insurance
-                </p>
-                <p
-                  className="text-[11px] sm:text-[12px] leading-snug mt-1 mx-auto sm:max-w-none px-0.5"
-                  style={{ color: shellInk.body }}
-                >
-                  Full cargo coverage
-                </p>
-              </div>
-              <div className="col-span-2 min-w-0 pt-4 sm:col-span-1 sm:pt-0 px-2 sm:px-0">
+              {showCargoInsuranceTrust ? (
+                <div className={trustBarTopRightClass}>
+                  <p
+                    className="text-sm sm:text-[13px] font-bold tracking-tight"
+                    style={{ color: shellInk.primary }}
+                  >
+                    $2M Insurance
+                  </p>
+                  <p
+                    className="text-[11px] sm:text-[12px] leading-snug mt-1 mx-auto sm:max-w-none px-0.5"
+                    style={{ color: shellInk.body }}
+                  >
+                    Full cargo coverage
+                  </p>
+                </div>
+              ) : null}
+              <div
+                className={
+                  showCargoInsuranceTrust
+                    ? "col-span-2 min-w-0 pt-4 sm:col-span-1 sm:pt-0 px-2 sm:px-0"
+                    : `${trustBarTopRightClass} px-2 sm:px-0`
+                }
+              >
                 <p
                   className="text-sm sm:text-[13px] font-bold tracking-tight"
                   style={{ color: shellInk.primary }}

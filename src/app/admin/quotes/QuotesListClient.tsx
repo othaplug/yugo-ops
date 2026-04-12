@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatAdminCreatedAt } from "@/lib/date-format";
 import { toTitleCase } from "@/lib/format-text";
+import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
 import { Plus, PaperPlaneTilt, Trash as Trash2 } from "@phosphor-icons/react";
 import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
 import CreateButton from "../components/CreateButton";
@@ -54,15 +55,6 @@ function statusBadge(status: string): string {
     case "expired": case "declined": return "text-[var(--red)]";
     default: return "text-[var(--tx3)]";
   }
-}
-
-function serviceLabel(st: string): string {
-  const map: Record<string, string> = {
-    local_move: "Residential", long_distance: "Long Distance", office_move: "Office",
-    single_item: "Single Item", white_glove: "White Glove", specialty: "Specialty",
-    event: "Event", b2b_delivery: "B2B", labour_only: "Labour Only",
-  };
-  return map[st] || st;
 }
 
 function quoteAmountRaw(q: Quote): number | null {
@@ -303,8 +295,8 @@ export default function QuotesListClient({
         id: "service",
         label: "Service",
         accessor: (q) => q.service_type,
-        render: (q) => serviceLabel(q.service_type),
-        exportAccessor: (q) => serviceLabel(q.service_type),
+        render: (q) => serviceTypeDisplayLabel(q.service_type),
+        exportAccessor: (q) => serviceTypeDisplayLabel(q.service_type),
       },
       {
         id: "status",
@@ -319,7 +311,7 @@ export default function QuotesListClient({
               >
                 {toTitleCase(q.status)}
               </span>
-              {expiry && (
+              {expiry && q.status !== "expired" && (
                 <span className={`text-[9px] font-semibold ${expiry.className}`}>
                   {expiry.label}
                 </span>

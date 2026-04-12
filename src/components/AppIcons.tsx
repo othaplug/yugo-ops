@@ -12,12 +12,14 @@ import {
   Money, PaintBrush, ToggleRight, Gear, Users,
   House, Buildings, Armchair, OfficeChair, Palette, Image, Handshake, Eye,
   Clock, Flag, Target, Calendar, MapPin, ChatText, Gift, Camera,
-  Star, Link, CircleNotch, Pulse, CaretRight, User, UserMinus,
+  Star, Link, CircleNotch, Pulse, User, UserMinus,
   TrendUp, TrendDown, Minus, Certificate, Stack, Path, ShippingContainer,
   Recycle,
   Lightning,
   type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
+// Subpath import: `optimizePackageImports` for `@phosphor-icons/react` can leave `CaretRight` unbound when only used inside ICON_MAP (Toast/AppIcons loads on all crew shells).
+import { CaretRight } from "@phosphor-icons/react/CaretRight";
 import React from "react";
 
 const ICON_MAP: Record<string, PhosphorIcon> = {

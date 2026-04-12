@@ -14,8 +14,6 @@ import {
   readCrewGeoOptIn,
   revokeCrewLocationMemory,
 } from "@/lib/crew/useCrewPersistentTracking";
-import { CaretRight } from "@phosphor-icons/react";
-
 const IDLE_INTERVAL_MS = 30_000;
 
 /**
@@ -162,12 +160,6 @@ export default function CrewAlwaysOnLocation() {
                 ·
               </span>
               Tap to reconnect
-              <CaretRight
-                size={12}
-                weight="bold"
-                className="shrink-0 text-[var(--tx)] opacity-80 transition-transform group-hover:translate-x-0.5"
-                aria-hidden
-              />
             </span>
           )}
         </button>

@@ -52,7 +52,7 @@ function resolveVariant(v: InfoHintVariant): Exclude<InfoHintVariant, "partner">
   return v === "partner" ? "default" : v;
 }
 
-/** Horizontal alignment of the panel relative to the trigger (default center). Use `end` when the icon sits near the right edge so the panel stays in view. */
+/** Horizontal alignment of the panel relative to the trigger. Default `start` avoids clipping when ancestors use `overflow-x-hidden` (centered panels extend left and get cut off). */
 export type InfoHintAlign = "center" | "start" | "end";
 
 export type InfoHintProps = {
@@ -64,7 +64,7 @@ export type InfoHintProps = {
   side?: "top" | "bottom";
   /** Icon size in px (default 16) */
   iconSize?: number;
-  /** Panel horizontal alignment — `end` keeps wide copy readable when the trigger is right-aligned. */
+  /** Panel horizontal alignment. Default `start` (left edge of trigger). Use `end` when the icon sits near the right edge; use `center` only when symmetry matters and overflow is not an issue. */
   align?: InfoHintAlign;
 };
 
@@ -82,7 +82,7 @@ export function InfoHint({
   variant: variantProp = "default",
   side = "bottom",
   iconSize = 16,
-  align = "center",
+  align = "start",
 }: InfoHintProps) {
   const variant = resolveVariant(variantProp);
   const id = useId();

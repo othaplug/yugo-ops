@@ -3218,6 +3218,16 @@ select:focus-visible {
   border-radius: 10px !important;
 }
 
+/* Square quick actions (same specificity as rule above). */
+.crew-app
+  .crew-job-premium
+  button.crew-job-quick-action:not(.crew-keep-round):not(.crew-job-flat),
+[data-crew-portal]
+  [data-crew-job-premium]
+  button.crew-job-quick-action:not(.crew-keep-round):not(.crew-job-flat) {
+  border-radius: 0 !important;
+}
+
 .crew-app .crew-job-premium .crew-premium-cta,
 .crew-app .crew-job-premium a.crew-premium-cta,
 [data-crew-portal] [data-crew-job-premium] .crew-premium-cta,
@@ -3244,10 +3254,61 @@ select:focus-visible {
   opacity: 0.48 !important;
 }
 
-/* Secondary row on job status (Note / Report / Dispatch) — architectural radius, win over square crew default */
-.crew-app .crew-job-action-chip,
-[data-crew-portal] .crew-job-action-chip {
+/* Secondary chips (walkthrough, modals) — soft radius */
+.crew-app .crew-job-action-chip:not(.crew-job-quick-action),
+[data-crew-portal] .crew-job-action-chip:not(.crew-job-quick-action) {
   border-radius: 8px !important;
+}
+
+/* Job status quick action row — square, solid fills (must beat .crew-job-premium button radius + any bg resets). */
+.crew-app .crew-job-premium .crew-job-quick-action,
+[data-crew-portal] [data-crew-job-premium] .crew-job-quick-action {
+  border-radius: 0 !important;
+  -webkit-appearance: none;
+  appearance: none;
+  border-style: solid;
+  border-width: 1px;
+  box-shadow: none;
+}
+.crew-app .crew-job-premium button.crew-job-quick-action,
+[data-crew-portal] [data-crew-job-premium] button.crew-job-quick-action,
+.crew-app .crew-job-premium a.crew-job-quick-action,
+[data-crew-portal] [data-crew-job-premium] a.crew-job-quick-action {
+  border-radius: 0 !important;
+}
+.crew-app .crew-job-premium .crew-job-quick-action--forest,
+[data-crew-portal] [data-crew-job-premium] .crew-job-quick-action--forest {
+  background-color: #2c3e2d !important;
+  color: #fffbf7 !important;
+  border-color: rgba(28, 58, 43, 0.95) !important;
+}
+.crew-app .crew-job-premium .crew-job-quick-action--rust,
+[data-crew-portal] [data-crew-job-premium] .crew-job-quick-action--rust {
+  background-color: #92400e !important;
+  color: #fffbf7 !important;
+  border-color: rgba(120, 53, 15, 0.95) !important;
+}
+.crew-app .crew-job-premium .crew-job-quick-action--warning,
+[data-crew-portal] [data-crew-job-premium] .crew-job-quick-action--warning {
+  background-color: #c2410c !important;
+  color: #fffbf7 !important;
+  border-color: rgba(154, 52, 18, 0.95) !important;
+}
+.crew-app .crew-job-premium .crew-job-quick-action--wine,
+[data-crew-portal] [data-crew-job-premium] .crew-job-quick-action--wine,
+.crew-app .crew-job-premium a.crew-job-quick-action--wine,
+[data-crew-portal] [data-crew-job-premium] a.crew-job-quick-action--wine {
+  background-color: #5c1a33 !important;
+  color: #fffbf7 !important;
+  border-color: rgba(61, 18, 36, 0.95) !important;
+}
+.crew-app .crew-job-premium .crew-job-quick-action:hover:not(:disabled),
+[data-crew-portal] [data-crew-job-premium] .crew-job-quick-action:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+.crew-app .crew-job-premium a.crew-job-quick-action--wine:hover,
+[data-crew-portal] [data-crew-job-premium] a.crew-job-quick-action--wine:hover {
+  filter: brightness(0.96);
 }
 
 /* ═══════════════════════════════════════════════════════

@@ -5,7 +5,11 @@ import { requireAdmin } from "@/lib/api-auth";
 import { squareClient } from "@/lib/square";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { logAudit } from "@/lib/audit";
-import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment";
+import {
+  depositTaxInclusiveFromMove,
+  finalizeBalancePaymentSettlement,
+  recordAdminDepositForMove,
+} from "@/lib/complete-balance-payment";
 
 export async function PATCH(
   req: NextRequest,
@@ -30,47 +34,130 @@ export async function PATCH(
       });
     };
 
-    if (action === "mark_paid") {
+    if (action === "mark_deposit_collected" || action === "mark_paid") {
       if (!markedBy?.trim()) {
         return NextResponse.json({ error: "marked_by is required" }, { status: 400 });
       }
       const admin = createAdminClient();
-      const now = new Date().toISOString();
+      const { data: row, error: fetchErr } = await admin.from("moves").select("*").eq("id", id).single();
+      if (fetchErr || !row) return NextResponse.json({ error: "Move not found" }, { status: 404 });
 
-      const { data: current, error: fetchErr } = await admin.from("moves").select("status").eq("id", id).single();
-      if (fetchErr || !current) return NextResponse.json({ error: "Move not found" }, { status: 404 });
-
-      // Don't regress a move that's already paid, in_progress, completed, or cancelled
-      const PAST_PAID_STATUSES = new Set(["paid", "in_progress", "completed", "cancelled"]);
-      const patch: Record<string, unknown> = {
-        payment_marked_paid: true,
-        payment_marked_paid_at: now,
-        payment_marked_paid_by: markedBy.trim(),
-        updated_at: now,
-      };
-      if (!PAST_PAID_STATUSES.has(current.status ?? "")) {
-        patch.status = "paid";
+      const depositIncl = depositTaxInclusiveFromMove(row);
+      try {
+        await recordAdminDepositForMove({
+          admin,
+          moveId: id,
+          depositTaxInclusive: depositIncl,
+          paymentMarkedBy: markedBy.trim(),
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Failed to record deposit";
+        return NextResponse.json({ error: msg }, { status: 400 });
       }
 
-      const { data: move, error: updateErr } = await admin
-        .from("moves")
-        .update(patch)
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 400 });
-      if (!move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
+      const { data: move, error: reloadErr } = await admin.from("moves").select("*").eq("id", id).single();
+      if (reloadErr || !move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
 
       await admin.from("status_events").insert({
         entity_type: "move",
         entity_id: id,
         event_type: "payment_received",
-        description: `Move marked as paid by ${markedBy.trim()}`,
+        description: `Deposit recorded by ${markedBy.trim()} (admin)`,
         icon: "dollar",
       });
 
-      await auditAfter({ status: move.status, markedBy: markedBy.trim() });
+      await auditAfter({ status: move.status, markedBy: markedBy.trim(), kind: "deposit" });
+      return NextResponse.json(move);
+    }
+
+    if (action === "mark_full_payment_collected") {
+      if (!markedBy?.trim()) {
+        return NextResponse.json({ error: "marked_by is required" }, { status: 400 });
+      }
+      const admin = createAdminClient();
+      const { data: moveBefore, error: fetchE } = await admin.from("moves").select("*").eq("id", id).single();
+      if (fetchE || !moveBefore) return NextResponse.json({ error: "Move not found" }, { status: 404 });
+
+      if (moveBefore.balance_paid_at) {
+        const { data: m } = await admin.from("moves").select("*").eq("id", id).single();
+        return NextResponse.json(m ?? moveBefore);
+      }
+
+      const [{ data: approvedChanges }, { data: approvedExtras }] = await Promise.all([
+        admin.from("move_change_requests").select("fee_cents").eq("move_id", id).eq("status", "approved"),
+        admin.from("extra_items").select("fee_cents").eq("job_id", id).eq("job_type", "move").eq("status", "approved"),
+      ]);
+      const additionalCents =
+        (approvedChanges ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0) +
+        (approvedExtras ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
+      let bal = Number(moveBefore.balance_amount || 0) + additionalCents / 100;
+
+      const depositIncl = depositTaxInclusiveFromMove(moveBefore);
+      if (!moveBefore.deposit_paid_at && depositIncl > 0) {
+        try {
+          await recordAdminDepositForMove({
+            admin,
+            moveId: id,
+            depositTaxInclusive: depositIncl,
+            paymentMarkedBy: markedBy.trim(),
+          });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "Failed to record deposit";
+          return NextResponse.json({ error: msg }, { status: 400 });
+        }
+        const { data: afterDep } = await admin.from("moves").select("balance_amount").eq("id", id).single();
+        bal = Number(afterDep?.balance_amount || 0) + additionalCents / 100;
+      }
+
+      const now = new Date().toISOString();
+      if (bal <= 0.005) {
+        const { data: fresh } = await admin.from("moves").select("*").eq("id", id).single();
+        if (!fresh?.balance_paid_at) {
+          await admin
+            .from("moves")
+            .update({
+              balance_paid_at: now,
+              balance_amount: 0,
+              updated_at: now,
+            })
+            .eq("id", id);
+        }
+        const { data: move } = await admin.from("moves").select("*").eq("id", id).single();
+        await admin.from("status_events").insert({
+          entity_type: "move",
+          entity_id: id,
+          event_type: "payment_received",
+          description: `Full payment recorded by ${markedBy.trim()} (admin, no balance line)`,
+          icon: "dollar",
+        });
+        await auditAfter({ status: move?.status, markedBy: markedBy.trim(), kind: "full_payment" });
+        return NextResponse.json(move);
+      }
+
+      try {
+        await finalizeBalancePaymentSettlement({
+          admin,
+          moveId: id,
+          balanceTaxInclusive: bal,
+          squarePaymentId: null,
+          squareReceiptUrl: null,
+          settlementMethod: "admin",
+          paymentMarkedBy: markedBy.trim(),
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Failed to record balance payment";
+        return NextResponse.json({ error: msg }, { status: 500 });
+      }
+
+      const { data: move } = await admin.from("moves").select("*").eq("id", id).single();
+      await admin.from("status_events").insert({
+        entity_type: "move",
+        entity_id: id,
+        event_type: "payment_received",
+        description: `Balance settled in full by ${markedBy.trim()} (admin)`,
+        icon: "dollar",
+      });
+      await auditAfter({ status: move?.status, markedBy: markedBy.trim(), kind: "full_payment" });
       return NextResponse.json(move);
     }
 
@@ -117,7 +204,7 @@ export async function PATCH(
         await finalizeBalancePaymentSettlement({
           admin,
           moveId: id,
-          balancePreTax: bal,
+          balanceTaxInclusive: bal,
           squarePaymentId: null,
           squareReceiptUrl: null,
           settlementMethod: "admin",
@@ -202,7 +289,7 @@ export async function PATCH(
         await finalizeBalancePaymentSettlement({
           admin,
           moveId: id,
-          balancePreTax: balanceAmount,
+          balanceTaxInclusive: balanceAmount,
           squarePaymentId: paymentId,
           squareReceiptUrl: receiptUrl,
           settlementMethod: "admin",

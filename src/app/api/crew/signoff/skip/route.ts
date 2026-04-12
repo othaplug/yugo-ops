@@ -88,31 +88,62 @@ export async function POST(req: NextRequest) {
     });
   } catch {}
 
-  // Complete the job when sign-off is skipped
+  const now = new Date().toISOString();
+
   const { data: activeSession } = await admin
     .from("tracking_sessions")
-    .select("id")
+    .select("id, started_at")
     .eq("job_id", entityId)
     .eq("job_type", jobType)
     .eq("is_active", true)
     .maybeSingle();
 
+  const { data: latestSession } = await admin
+    .from("tracking_sessions")
+    .select("id, started_at")
+    .eq("job_id", entityId)
+    .eq("job_type", jobType)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   if (activeSession) {
-    const now = new Date().toISOString();
-    await admin
+    const { error: sessionErr } = await admin
       .from("tracking_sessions")
       .update({ status: "completed", is_active: false, completed_at: now, updated_at: now })
       .eq("id", activeSession.id);
-    const table = jobType === "move" ? "moves" : "deliveries";
-    await admin
-      .from(table)
-      .update({
-        status: jobType === "move" ? "completed" : "delivered",
-        stage: "completed",
-        completed_at: now,
-        updated_at: now,
-      })
-      .eq("id", entityId);
+    if (sessionErr) console.error("[signoff/skip] tracking_sessions complete failed:", sessionErr.message);
+  }
+
+  const sessionForHours = activeSession ?? latestSession;
+  const sessionStartMs = sessionForHours?.started_at
+    ? new Date(sessionForHours.started_at as string).getTime()
+    : null;
+  const sessionEndMs = new Date(now).getTime();
+  const actualHours =
+    sessionStartMs != null
+      ? Math.round(((sessionEndMs - sessionStartMs) / 3_600_000) * 100) / 100
+      : null;
+
+  const table = jobType === "move" ? "moves" : "deliveries";
+  const { error: jobCompleteErr } = await admin
+    .from(table)
+    .update({
+      status: jobType === "move" ? "completed" : "delivered",
+      stage: "completed",
+      completed_at: now,
+      updated_at: now,
+      eta_tracking_active: false,
+      ...(actualHours != null && actualHours > 0 ? { actual_hours: actualHours } : {}),
+    })
+    .eq("id", entityId);
+
+  if (jobCompleteErr) {
+    console.error(
+      "[signoff/skip] job finalize failed (skip row already saved; dispatch may need manual status fix):",
+      jobCompleteErr.message,
+    );
+  } else {
     if (jobType === "move") {
       syncDealStageByMoveId(entityId, "completed").catch(() => {});
       createReviewRequestIfEligible(admin, entityId).catch((e) => console.error("[review] create failed:", e));

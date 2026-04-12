@@ -467,8 +467,8 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
             href={event.href}
             className={
               wineMode
-                ? "flex w-full items-center justify-center gap-2 py-3 rounded-xl border-2 border-[rgba(240,208,227,0.45)] text-[11px] font-bold uppercase tracking-[0.12em] text-[#FCF8F5] hover:bg-[rgba(255,255,255,0.06)] transition-colors"
-                : "flex w-full items-center justify-center gap-2 py-3 rounded-xl border-2 border-[var(--brd)] text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--tx)] hover:bg-[var(--hover)] transition-colors"
+                ? "inline-flex w-full items-center justify-center gap-2 py-2.5 rounded-lg border-0 text-[11px] font-bold uppercase tracking-[0.12em] text-[#FCF8F5] hover:bg-[rgba(255,255,255,0.06)] transition-colors"
+                : "inline-flex w-full items-center justify-center gap-2 py-2.5 rounded-lg border-0 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--tx)] hover:bg-[var(--hover)] transition-colors"
             }
           >
             View full details

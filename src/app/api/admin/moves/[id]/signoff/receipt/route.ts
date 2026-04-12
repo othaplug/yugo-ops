@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { generateSignOffReceiptPDF } from "@/lib/pdf";
+import { loadYugoLogoDataUriForPdf } from "@/lib/pdf-logo-server";
 import { formatJobId } from "@/lib/move-code";
 
 export async function GET(
@@ -54,26 +55,33 @@ export async function GET(
     { label: "Property left clean", value: !!signOff.property_left_clean },
   ];
 
-  const doc = generateSignOffReceiptPDF({
-    jobId: moveId,
-    jobType: "move",
-    displayId,
-    clientName: move?.client_name || undefined,
-    signedBy: signOff.signed_by,
-    signedAt: signOff.signed_at,
-    signedLat: signOff.signed_lat,
-    signedLng: signOff.signed_lng,
-    satisfactionRating: signOff.satisfaction_rating,
-    npsScore: signOff.nps_score,
-    wouldRecommend: signOff.would_recommend,
-    damageReportDeadline: signOff.damage_report_deadline,
-    confirmations,
-    feedbackNote: signOff.feedback_note,
-    exceptions: signOff.exceptions,
-    escalationTriggered: signOff.escalation_triggered,
-    escalationReason: signOff.escalation_reason,
-    discrepancyFlags: signOff.discrepancy_flags || [],
-  });
+  const doc = generateSignOffReceiptPDF(
+    {
+      jobId: moveId,
+      jobType: "move",
+      displayId,
+      clientName: move?.client_name || undefined,
+      signedBy: signOff.signed_by,
+      signedAt: signOff.signed_at,
+      signedLat: signOff.signed_lat,
+      signedLng: signOff.signed_lng,
+      satisfactionRating: signOff.satisfaction_rating,
+      npsScore: signOff.nps_score,
+      wouldRecommend: signOff.would_recommend,
+      damageReportDeadline: signOff.damage_report_deadline,
+      confirmations,
+      feedbackNote: signOff.feedback_note,
+      exceptions: signOff.exceptions,
+      escalationTriggered: signOff.escalation_triggered,
+      escalationReason: signOff.escalation_reason,
+      discrepancyFlags: signOff.discrepancy_flags || [],
+      signatureDataUrl:
+        typeof signOff.signature_data_url === "string" && signOff.signature_data_url.trim()
+          ? signOff.signature_data_url.trim()
+          : undefined,
+    },
+    { logoDataUri: loadYugoLogoDataUriForPdf() },
+  );
 
   const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
 

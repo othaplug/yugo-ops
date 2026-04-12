@@ -20,11 +20,14 @@ export default function StageProgressBar({
   variant = "dark",
   /** Light variant only: wine-tinted inactive chrome for crew premium job screen. */
   lightAccent = "forest",
+  /** Smaller labels when many stages (e.g. full move flow on crew job). */
+  dense = false,
 }: {
   stages: { label: string }[];
   currentIndex: number; // 0-based; -1 = not started
   variant?: "dark" | "light";
   lightAccent?: "forest" | "wine";
+  dense?: boolean;
 }) {
   const total = stages.length;
   const completedCount = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, total);
@@ -46,14 +49,27 @@ export default function StageProgressBar({
 
 
       {/* ── Nodes + connectors ── */}
-      <div className="flex items-start">
+      <div
+        className={
+          dense
+            ? "flex items-start w-full min-w-0 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:thin]"
+            : "flex items-start"
+        }
+      >
         {stages.map((s, i) => {
           const isDone = i < completedCount;
           const isCurrent = i === completedCount - 1 && !isComplete;
           const isLast = i === total - 1;
 
           return (
-            <div key={s.label} className="flex items-start flex-1 last:flex-none">
+            <div
+              key={`${s.label}-${i}`}
+              className={
+                dense
+                  ? "flex items-start flex-1 min-w-[2.4rem] sm:min-w-[2.75rem] last:flex-none"
+                  : "flex items-start flex-1 last:flex-none"
+              }
+            >
 
               {/* Node + label */}
               <div className="flex flex-col items-center min-w-0">
@@ -180,7 +196,11 @@ export default function StageProgressBar({
 
                 {/* Stage label */}
                 <span
-                  className="mt-2.5 text-[11px] font-semibold text-center leading-tight tracking-wide transition-colors duration-300"
+                  className={
+                    dense
+                      ? "mt-2 text-[8px] sm:text-[9px] font-semibold text-center leading-tight tracking-wide transition-colors duration-300 px-px"
+                      : "mt-2.5 text-[11px] font-semibold text-center leading-tight tracking-wide transition-colors duration-300"
+                  }
                   style={{
                     color: isDone
                       ? isComplete

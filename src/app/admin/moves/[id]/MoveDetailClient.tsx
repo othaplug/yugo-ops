@@ -29,6 +29,7 @@ import EstateServiceChecklistAdminRow from "./EstateServiceChecklistAdminRow";
 import { formatMoveDate, formatPlatformDisplay, parseDateOnly } from "@/lib/date-format";
 import { ProfitabilityBreakdownHint } from "@/components/admin/AdminContextHints";
 import PostCompletionPriceEdit from "../../components/PostCompletionPriceEdit";
+import MoveWaiversSection, { type MoveWaiverRow } from "./MoveWaiversSection";
 
 function isEstateTierMove(m: {
   tier_selected?: string | null;
@@ -163,6 +164,7 @@ interface MoveDetailClientProps {
     created_at: string;
     invoice_may_need_reissue?: boolean | null;
   }[];
+  moveWaivers?: MoveWaiverRow[];
 }
 import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_INDEX, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
 import RecommendedCrewPanel from "./RecommendedCrewPanel";
@@ -210,6 +212,7 @@ function isMoveInProgress(status: string | null | undefined, stage: string | nul
 }
 import { stripClientMessagesFromNotes } from "@/lib/internal-notes";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
+import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
 import { formatAccessForDisplay, toTitleCase } from "@/lib/format-text";
 
 const VEHICLE_LABELS: Record<string, string> = {
@@ -371,6 +374,7 @@ export default function MoveDetailClient({
   pendingModifications = [],
   canEditPostCompletionPrice = false,
   postCompletionPriceEdits = [],
+  moveWaivers = [],
 }: MoveDetailClientProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -443,7 +447,7 @@ export default function MoveDetailClient({
   const isPaid = move.status === "paid" || !!move.payment_marked_paid;
   const moveInProgress = isMoveInProgress(move.status, move.stage);
   const isBalancePaid = !!move.balance_paid_at;
-  const [balanceLoading, setBalanceLoading] = useState<"card" | null>(null);
+  const [paymentBtnLoading, setPaymentBtnLoading] = useState<"deposit" | "full" | "card" | null>(null);
   const [balanceJustSettled, setBalanceJustSettled] = useState(false);
   const [jobDuration, setJobDuration] = useState<{ startedAt: string | null; completedAt: string | null; isActive: boolean } | null>(null);
   const [jobDurationElapsed, setJobDurationElapsed] = useState(0);
@@ -1346,8 +1350,9 @@ export default function MoveDetailClient({
           </div>
         </div>
 
-        {/* Valuation Protection */}
-        {(move.valuation_tier || move.valuation_upgrade_cost || move.declaration_total) && (
+        {/* Valuation Protection (not applicable to bin rental) */}
+        {String(move.service_type || "").toLowerCase() !== "bin_rental" &&
+          (move.valuation_tier || move.valuation_upgrade_cost || move.declaration_total) && (
           <div className="border-t border-[var(--brd)]/30 py-4">
             <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Valuation Protection</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
@@ -1376,28 +1381,97 @@ export default function MoveDetailClient({
 
       {/* Financial Snapshot */}
       {(() => {
-        const fullyPaid = balanceDue <= 0.005 && (isPaid || isBalancePaid);
+        const PAY_TOTAL_EPS = 0.05;
         const quoteTotal = estimate > 0 ? estimate : (depositPaid + balanceDue);
-        const collectedAmount =
+        const ledgerSumAfterTax = paymentLedger.reduce(
+          (s, row) => s + Number(row.pre_tax_amount) + Number(row.hst_amount),
+          0,
+        );
+        const totalPaidNum =
           move.total_paid != null && move.total_paid !== ""
             ? Number(move.total_paid)
-            : fullyPaid
-              ? quoteTotal
+            : null;
+        /** Do not treat deposit-only `payment_marked_paid` as full settlement; require balance cleared or recognized totals. */
+        const fullyPaid =
+          balanceDue <= PAY_TOTAL_EPS &&
+          (isBalancePaid ||
+            (totalPaidNum != null && totalPaidNum >= quoteTotal - PAY_TOTAL_EPS) ||
+            ledgerSumAfterTax >= quoteTotal - PAY_TOTAL_EPS);
+        const collectedAmount = fullyPaid
+          ? quoteTotal
+          : totalPaidNum != null
+            ? totalPaidNum
+            : ledgerSumAfterTax > 0
+              ? ledgerSumAfterTax
               : depositPaid;
         const progressPct = quoteTotal > 0 ? Math.min(100, Math.round((collectedAmount / quoteTotal) * 100)) : 0;
-        const SERVICE_LABELS: Record<string, string> = {
-          local_move: "Residential", long_distance: "Long Distance",
-          office_move: "Office", single_item: "Single Item",
-          white_glove: "White Glove", specialty: "Specialty", b2b_delivery: "B2B Delivery",
-          event: "Event", labour_only: "Labour Only", bin_rental: "Bin Rental",
+        const footerRecordedAfterTax = fullyPaid
+          ? quoteTotal
+          : totalPaidNum ?? (ledgerSumAfterTax > 0 ? ledgerSumAfterTax : null);
+        const depositRowsTotalAfterTax = paymentLedger
+          .filter((r) => r.entry_type === "deposit")
+          .reduce((s, r) => s + Number(r.pre_tax_amount) + Number(r.hst_amount), 0);
+
+        const ledgerDisplayTitle = (row: (typeof paymentLedger)[0]) => {
+          if (row.entry_type === "deposit") {
+            if (row.label === "Deposit" || row.label === "Contract deposit") return "Contract deposit";
+            return row.label;
+          }
+          if (row.entry_type === "balance") {
+            if (row.label === "Balance payment" || row.label === "Final payment") return "Final payment";
+            return row.label;
+          }
+          return row.label;
         };
+
+        const ledgerContextLine = (row: (typeof paymentLedger)[0], lineTotal: number) => {
+          if (row.entry_type === "deposit") {
+            return `${formatCurrency(lineTotal)} deposit on ${formatCurrency(quoteTotal)} contract total`;
+          }
+          if (row.entry_type === "balance") {
+            const depBase =
+              depositRowsTotalAfterTax > 0 ? depositRowsTotalAfterTax : Math.min(depositPaid, quoteTotal);
+            return `${formatCurrency(quoteTotal)} contract − ${formatCurrency(depBase)} deposit = ${formatCurrency(lineTotal)}`;
+          }
+          return null;
+        };
+
+        const finalPriceForEdit = Number(
+          move.final_amount ??
+            move.total_price ??
+            move.estimate ??
+            move.amount ??
+            0,
+        );
 
         return (
           <div className="rounded-2xl border border-[var(--brd)]/60 bg-[var(--card)] overflow-hidden">
             {/* Header strip */}
-            <div className="flex items-center justify-between px-5 pt-4 pb-0">
-              <span className="text-[11px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]">Payments</span>
-              <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-between px-5 pt-4 pb-0 gap-2">
+              <span className="text-[11px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)] shrink-0">
+                Payments
+              </span>
+              <div className="flex items-center gap-1.5 flex-wrap justify-end min-w-0">
+                {isCompleted && canEditPostCompletionPrice ? (
+                  <PostCompletionPriceEdit
+                    jobType="move"
+                    jobId={move.id}
+                    currentPrice={finalPriceForEdit}
+                    canEdit={canEditPostCompletionPrice}
+                    previousEdits={postCompletionPriceEdits}
+                    completed={isCompleted}
+                    trigger={(
+                      <button
+                        type="button"
+                        className="shrink-0 p-1 rounded-md text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tx)]/25 transition-colors"
+                        aria-label="Adjust final price"
+                        title="Adjust final price"
+                      >
+                        <Pencil weight="regular" className="w-3.5 h-3.5" aria-hidden />
+                      </button>
+                    )}
+                  />
+                ) : null}
                 {(() => {
                   const label = tierDisplayLabel(move.tier_selected);
                   return label ? (
@@ -1408,7 +1482,7 @@ export default function MoveDetailClient({
                 })()}
                 {move.service_type && (
                   <span className="text-[9px] text-[var(--tx3)]">
-                    {SERVICE_LABELS[move.service_type as string] || move.service_type}
+                    {serviceTypeDisplayLabel(move.service_type)}
                   </span>
                 )}
               </div>
@@ -1469,27 +1543,39 @@ export default function MoveDetailClient({
                   {paymentLedger.map((row) => {
                     const lineTotal = Number(row.pre_tax_amount) + Number(row.hst_amount);
                     const paid = new Date(row.paid_at);
+                    const contextLine = ledgerContextLine(row, lineTotal);
                     return (
                       <li key={row.id} className="flex flex-wrap items-baseline justify-between gap-2 text-[11px] text-[var(--tx)]">
-                        <div>
-                          <span className="font-semibold">{row.label}</span>
+                        <div className="min-w-0">
+                          <span className="font-semibold">{ledgerDisplayTitle(row)}</span>
                           <span className="text-[var(--tx3)]/88 ml-1.5">
                             · {formatPlatformDisplay(paid, { month: "short", day: "numeric" })}
                           </span>
                           {row.settlement_method === "admin" && (
                             <span className="text-[9px] text-[var(--tx3)] ml-1">(override)</span>
                           )}
+                          {contextLine && (
+                            <div className="text-[9px] text-[var(--tx3)]/90 mt-1 leading-snug max-w-[min(100%,280px)]">
+                              {contextLine}
+                            </div>
+                          )}
                         </div>
-                        <div className="font-medium tabular-nums">
-                          {formatCurrency(row.pre_tax_amount)} + {formatCurrency(row.hst_amount)} HST = {formatCurrency(lineTotal)}
+                        <div className="font-medium tabular-nums text-right">
+                          <div className="text-[var(--tx)]">{formatCurrency(lineTotal)}</div>
+                          {(Number(row.hst_amount) > 0 || Number(row.pre_tax_amount) > 0) && (
+                            <div className="text-[9px] text-[var(--tx3)] font-normal mt-0.5 ml-auto leading-snug">
+                              Subtotal {formatCurrency(row.pre_tax_amount)} + tax {formatCurrency(row.hst_amount)}
+                            </div>
+                          )}
                         </div>
                       </li>
                     );
                   })}
                 </ul>
-                {move.total_paid != null && move.total_paid !== "" && (
+                {footerRecordedAfterTax != null && (
                   <p className="text-[10px] text-[var(--tx3)]/80 mt-3 pt-2 border-t border-[var(--brd)]/30">
-                    Total recognized (after tax): <span className="font-semibold text-[var(--tx)]">{formatCurrency(move.total_paid)}</span>
+                    Recorded payments (after tax):{" "}
+                    <span className="font-semibold text-[var(--tx)]">{formatCurrency(footerRecordedAfterTax)}</span>
                   </p>
                 )}
               </div>
@@ -1498,28 +1584,60 @@ export default function MoveDetailClient({
             {/* Action row, only when action is needed */}
             {!fullyPaid && !balanceJustSettled && !isBalancePaid && (
               <div className="px-4 py-3 border-t border-[var(--brd)]/40 flex flex-wrap items-center gap-2">
-                {!isPaid && (
+                {!move.deposit_paid_at && depositPaid > 0 && (
                   <button
                     type="button"
+                    disabled={paymentBtnLoading !== null}
                     onClick={async () => {
+                      setPaymentBtnLoading("deposit");
                       try {
                         const res = await fetch(`/api/admin/moves/${move.id}`, {
                           method: "PATCH",
                           headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ action: "mark_paid", marked_by: "admin" }),
+                          body: JSON.stringify({ action: "mark_deposit_collected", marked_by: "admin" }),
                         });
                         const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || "Failed to mark as paid");
+                        if (!res.ok) throw new Error(data.error || "Failed to record deposit");
                         if (data) setMove(data);
                         router.refresh();
-                        toast("Move marked as paid", "check");
+                        toast("Deposit recorded", "check");
                       } catch (err) {
-                        toast(err instanceof Error ? err.message : "Failed to mark as paid", "alertTriangle");
+                        toast(err instanceof Error ? err.message : "Failed to record deposit", "alertTriangle");
+                      } finally {
+                        setPaymentBtnLoading(null);
                       }
                     }}
-                    className="text-[10px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--grn)]/12 text-[var(--grn)] border border-[var(--grn)]/25 hover:bg-[var(--grn)]/20 transition-colors"
+                    className="inline-flex items-center justify-center rounded-lg border border-[var(--grn)]/40 bg-[var(--grn)]/8 px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--grn)] hover:bg-[var(--grn)]/14 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   >
-                    Mark Deposit Paid
+                    {paymentBtnLoading === "deposit" ? "RECORDING…" : "MARK DEPOSIT PAID"}
+                  </button>
+                )}
+                {!move.balance_paid_at && balanceDue > 0.005 && (
+                  <button
+                    type="button"
+                    disabled={paymentBtnLoading !== null}
+                    onClick={async () => {
+                      setPaymentBtnLoading("full");
+                      try {
+                        const res = await fetch(`/api/admin/moves/${move.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ action: "mark_full_payment_collected", marked_by: "admin" }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || "Failed to record full payment");
+                        if (data) setMove(data);
+                        router.refresh();
+                        toast("Full payment recorded", "check");
+                      } catch (err) {
+                        toast(err instanceof Error ? err.message : "Failed to record full payment", "alertTriangle");
+                      } finally {
+                        setPaymentBtnLoading(null);
+                      }
+                    }}
+                    className="inline-flex items-center justify-center rounded-lg border border-[var(--grn)]/40 bg-[var(--grn)]/8 px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--grn)] hover:bg-[var(--grn)]/14 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    {paymentBtnLoading === "full" ? "RECORDING…" : "FULL PAYMENT COLLECTED"}
                   </button>
                 )}
                 {balanceDue > 0 && !move.balance_auto_charged && (
@@ -1527,10 +1645,10 @@ export default function MoveDetailClient({
                     {move.square_card_id && (
                       <button
                         type="button"
-                        disabled={balanceLoading !== null}
+                        disabled={paymentBtnLoading !== null}
                         onClick={async () => {
                           if (!window.confirm(`Charge ${formatCurrency(balanceDue)} CAD to the client's card on file?`)) return;
-                          setBalanceLoading("card");
+                          setPaymentBtnLoading("card");
                           try {
                             const res = await fetch(`/api/admin/moves/${move.id}`, {
                               method: "PATCH",
@@ -1546,12 +1664,12 @@ export default function MoveDetailClient({
                           } catch (err) {
                             toast(err instanceof Error ? err.message : "Failed to charge card", "alertTriangle");
                           } finally {
-                            setBalanceLoading(null);
+                            setPaymentBtnLoading(null);
                           }
                         }}
                         className="text-[10px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/25 hover:bg-[var(--gold)]/18 transition-colors disabled:opacity-40"
                       >
-                        {balanceLoading === "card" ? "Charging…" : "Charge Card Now"}
+                        {paymentBtnLoading === "card" ? "Charging…" : "Charge Card Now"}
                       </button>
                     )}
                   </>
@@ -1561,21 +1679,6 @@ export default function MoveDetailClient({
           </div>
         );
       })()}
-
-      <PostCompletionPriceEdit
-        jobType="move"
-        jobId={move.id}
-        currentPrice={Number(
-          move.final_amount ??
-            move.total_price ??
-            move.estimate ??
-            move.amount ??
-            0,
-        )}
-        canEdit={canEditPostCompletionPrice}
-        previousEdits={postCompletionPriceEdits}
-        completed={isCompleted}
-      />
 
       {/* Profitability, Owner Only */}
       {userRole === "owner" && <MoveProfitCard move={move} />}
@@ -1742,6 +1845,8 @@ export default function MoveDetailClient({
       {/* Reported Issues from crew */}
       <IncidentsSection jobId={move.id} jobType="move" />
 
+      <MoveWaiversSection waivers={moveWaivers} />
+
       {/* Internal Notes, seamless */}
       <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
         {!isCompleted ? (
@@ -1903,8 +2008,9 @@ export default function MoveDetailClient({
 function MoveProfitCard({ move }: { move: any }) {
   const [costs, setCosts] = useState<{
     labour: number; fuel: number; truck: number; supplies: number;
-    processing: number; totalDirect: number; allocatedOverhead: number;
-    grossProfit: number; netProfit: number; grossMargin: number; netMargin: number;
+    processing: number; totalDirect: number;
+    grossProfit: number; grossMargin: number;
+    paidWithCard?: boolean;
   } | null>(null);
   const [target, setTarget] = useState(40);
 
@@ -1927,11 +2033,9 @@ function MoveProfitCard({ move }: { move: any }) {
             supplies: match.supplies,
             processing: match.processing,
             totalDirect: match.totalDirect,
-            allocatedOverhead: match.allocatedOverhead,
             grossProfit: match.grossProfit,
-            netProfit: match.netProfit,
             grossMargin: match.grossMargin,
-            netMargin: match.netMargin,
+            paidWithCard: match.paid_with_card === true,
           });
         }
       } catch { /* silent */ }
@@ -1957,13 +2061,15 @@ function MoveProfitCard({ move }: { move: any }) {
         <div className="flex justify-between"><span className="text-[var(--tx3)]">Fuel</span><span className="text-red-400/80">-{formatCurrency(costs.fuel)}</span></div>
         <div className="flex justify-between"><span className="text-[var(--tx3)]">Truck</span><span className="text-red-400/80">-{formatCurrency(costs.truck)}</span></div>
         <div className="flex justify-between"><span className="text-[var(--tx3)]">Supplies</span><span className="text-red-400/80">-{formatCurrency(costs.supplies)}</span></div>
-        <div className="flex justify-between"><span className="text-[var(--tx3)]">Processing</span><span className="text-red-400/80">-{formatCurrency(costs.processing)}</span></div>
+        {costs.paidWithCard && costs.processing > 0 ? (
+          <div className="flex justify-between gap-3">
+            <span className="text-[var(--tx3)]">Card processing (client-paid, est.)</span>
+            <span className="text-[var(--tx2)] tabular-nums">{formatCurrency(costs.processing)}</span>
+          </div>
+        ) : null}
         <div className="border-t border-[var(--brd)]/30 my-1" />
         <div className="flex justify-between font-medium"><span className="text-[var(--tx3)]">Direct Cost</span><span className="text-red-400">-{formatCurrency(costs.totalDirect)}</span></div>
         <div className="flex justify-between font-semibold"><span className="text-[var(--tx)]">Gross Profit</span><span className={marginColor}>{formatCurrency(costs.grossProfit)} ({costs.grossMargin}%)</span></div>
-        <div className="border-t border-[var(--brd)]/30 my-1" />
-        <div className="flex justify-between"><span className="text-[var(--tx3)]">Overhead Allocation</span><span className="text-[var(--tx3)]">-{formatCurrency(costs.allocatedOverhead)}</span></div>
-        <div className="flex justify-between font-semibold"><span className="text-[var(--tx)]">Net Profit</span><span className={costs.netMargin >= 0 ? "text-emerald-400" : "text-red-400"}>{formatCurrency(costs.netProfit)} ({costs.netMargin}%)</span></div>
       </div>
       {costs.grossMargin < target && (
         <div className="mt-3 text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5">

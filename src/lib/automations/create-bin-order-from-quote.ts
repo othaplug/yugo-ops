@@ -100,6 +100,7 @@ export async function createBinOrderFromBinRentalQuote(opts: {
       square_customer_id: opts.squareCustomerId ?? null,
       square_card_id: opts.squareCardId ?? null,
       payment_status: "paid",
+      paid_total_cents: Math.round(totalPaid * 100),
       move_id: moveId,
       source: "admin",
     })

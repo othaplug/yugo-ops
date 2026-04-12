@@ -1,20 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Truck,
   CheckCircle,
   Warning,
   Phone,
   Envelope,
-  Link as LinkIcon,
   XCircle,
 } from "@phosphor-icons/react";
 import PageContent from "@/app/admin/components/PageContent";
+import {
+  ADMIN_PREMIUM_GHOST_CANCEL_CLASS,
+  ADMIN_PREMIUM_SOLID_CTA_CLASS,
+} from "@/app/admin/components/admin-toolbar-action-classes";
 import { formatPlatformDisplay } from "@/lib/date-format";
+import { InfoHint } from "@/components/ui/InfoHint";
+
+const toDateInputValue = (d: string | null | undefined): string => {
+  if (!d) return "";
+  const s = String(d);
+  return s.length >= 10 ? s.slice(0, 10) : "";
+};
+
+const SECTION_RULE =
+  "pb-3 mb-4 border-b border-[color-mix(in_srgb,var(--yugo-primary-text)_16%,transparent)]";
+const FIELD_WASH =
+  "w-full rounded-lg bg-[color-mix(in_srgb,var(--yugo-primary-text)_7%,transparent)] px-3 py-2.5 text-[13px] text-[var(--tx)] outline-none border-0 focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--yugo-primary-text)_28%,transparent)]";
 
 const STATUS_LABELS: Record<string, string> = {
   confirmed: "Confirmed",
@@ -55,7 +69,7 @@ const ALL_STATUSES = [
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function BinOrderDetailClient({ order, moveCode }: { order: any; moveCode: string | null }) {
+export default function BinOrderDetailClient({ order }: { order: any }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
@@ -70,6 +84,29 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
   const [dropoffModal, setDropoffModal] = useState(false);
   const [dropoffCrew, setDropoffCrew] = useState("");
   const [dropoffProcessing, setDropoffProcessing] = useState(false);
+
+  const [scheduleDraft, setScheduleDraft] = useState({
+    drop_off_date: toDateInputValue(order.drop_off_date),
+    move_date: toDateInputValue(order.move_date),
+    pickup_date: toDateInputValue(order.pickup_date),
+  });
+  const [bundleDraft, setBundleDraft] = useState<string>(order.bundle_type);
+  const [chargeUpgradeDiff, setChargeUpgradeDiff] = useState(false);
+
+  useEffect(() => {
+    setScheduleDraft({
+      drop_off_date: toDateInputValue(order.drop_off_date),
+      move_date: toDateInputValue(order.move_date),
+      pickup_date: toDateInputValue(order.pickup_date),
+    });
+    setBundleDraft(order.bundle_type);
+  }, [
+    order.drop_off_date,
+    order.move_date,
+    order.pickup_date,
+    order.bundle_type,
+    order.id,
+  ]);
 
   const fmtDate = (d: string | null) => {
     if (!d) return "-";
@@ -93,8 +130,24 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "Update failed");
-      setMsg({ type: "ok", text: "Updated successfully" });
+      if (!res.ok) throw new Error(data.error || "Update failed");
+      if (data.success !== true) throw new Error(data.error || "Update failed");
+      if (payload.bundle_type != null) {
+        const due = typeof data.amountDueCents === "number" ? data.amountDueCents : 0;
+        if (data.chargedUpgrade) {
+          setMsg({ type: "ok", text: "Bundle updated and card charged for the difference." });
+        } else if (due > 0) {
+          setMsg({
+            type: "ok",
+            text: `Bundle updated. Balance due $${(due / 100).toFixed(2)}. Charge the card on file or collect another way.`,
+          });
+        } else {
+          setMsg({ type: "ok", text: "Bundle updated." });
+        }
+        setChargeUpgradeDiff(false);
+      } else {
+        setMsg({ type: "ok", text: "Updated successfully" });
+      }
       router.refresh();
     } catch (e) {
       setMsg({ type: "err", text: e instanceof Error ? e.message : "Update failed" });
@@ -102,6 +155,50 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
       setSaving(false);
     }
   };
+
+  const handleSaveSchedule = () => {
+    patchOrder({
+      drop_off_date: scheduleDraft.drop_off_date || undefined,
+      move_date: scheduleDraft.move_date || undefined,
+      pickup_date: scheduleDraft.pickup_date || undefined,
+    });
+  };
+
+  const handleApplyBundle = () => {
+    if (bundleDraft === order.bundle_type) return;
+    patchOrder({
+      bundle_type: bundleDraft,
+      charge_upgrade_diff: chargeUpgradeDiff,
+    });
+  };
+
+  const handleChargeBalance = async () => {
+    setSaving(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/bin-orders/${order.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "charge_balance" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Charge failed");
+      if (data.success !== true) throw new Error(data.error || "Charge failed");
+      setMsg({ type: "ok", text: "Balance charged to card on file." });
+      router.refresh();
+    } catch (e) {
+      setMsg({ type: "err", text: e instanceof Error ? e.message : "Charge failed" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const paidCents =
+    order.paid_total_cents != null
+      ? Number(order.paid_total_cents)
+      : Math.round(Number(order.total) * 100);
+  const totalCents = Math.round(Number(order.total) * 100);
+  const balanceDueCents = Math.max(0, totalCents - paidCents);
 
   const completeDropoff = async () => {
     setDropoffProcessing(true);
@@ -180,18 +277,20 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
         <div className="flex gap-2 shrink-0">
           {!order.drop_off_completed_at && order.status !== "cancelled" && order.status !== "completed" && (
             <button
+              type="button"
               onClick={() => setDropoffModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#7C9FD4]/15 text-[#7C9FD4] border border-[#7C9FD4]/30 hover:bg-[#7C9FD4]/25 transition-colors text-[13px] font-medium"
+              className={ADMIN_PREMIUM_SOLID_CTA_CLASS}
             >
-              <Truck size={14} /> Mark Delivered
+              Mark delivered
             </button>
           )}
           {order.drop_off_completed_at && !order.pickup_completed_at && order.status !== "cancelled" && (
             <button
+              type="button"
               onClick={() => setPickupModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/30 hover:bg-[#22c55e]/25 transition-colors text-[13px] font-medium"
+              className={ADMIN_PREMIUM_SOLID_CTA_CLASS}
             >
-              <CheckCircle size={14} /> Mark Picked Up
+              Mark picked up
             </button>
           )}
         </div>
@@ -199,30 +298,24 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
 
       {/* Feedback */}
       {msg && (
-        <div className={`mb-4 px-4 py-3 rounded-xl text-[13px] font-medium flex items-center gap-2 ${msg.type === "ok" ? "bg-green-500/10 text-green-400 border border-green-500/20" : "bg-red-500/10 text-red-400 border border-red-500/20"}`}>
+        <div className={`mb-4 px-4 py-3 rounded-xl text-[13px] font-medium flex items-center gap-2 ${msg.type === "ok" ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
           {msg.type === "ok" ? <CheckCircle size={14} /> : <XCircle size={14} />}
           {msg.text}
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-10">
         {/* Client info */}
         <Section title="Client">
           <InfoRow label="Name" value={order.client_name} />
           <InfoRow
             label="Email"
-            value={<a href={`mailto:${order.client_email}`} className="text-[var(--gold)] hover:underline flex items-center gap-1"><Envelope size={12} />{order.client_email}</a>}
+            value={<a href={`mailto:${order.client_email}`} className="text-[var(--yugo-primary-text)] hover:underline flex items-center gap-1 font-semibold"><Envelope size={12} aria-hidden />{order.client_email}</a>}
           />
           <InfoRow
             label="Phone"
-            value={<a href={`tel:${order.client_phone}`} className="text-[var(--gold)] hover:underline flex items-center gap-1"><Phone size={12} />{order.client_phone}</a>}
+            value={<a href={`tel:${order.client_phone}`} className="text-[var(--yugo-primary-text)] hover:underline flex items-center gap-1 font-semibold"><Phone size={12} aria-hidden />{order.client_phone}</a>}
           />
-          {moveCode && (
-            <InfoRow
-              label="Linked move"
-              value={<Link href={`/admin/moves/${order.move_id}`} className="text-[var(--gold)] hover:underline flex items-center gap-1"><LinkIcon size={12} />{moveCode}</Link>}
-            />
-          )}
           <InfoRow label="Source" value={order.source === "move_addon" ? "Moving add-on" : order.source === "admin" ? "Admin created" : "Standalone booking"} />
         </Section>
 
@@ -236,16 +329,122 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
 
         {/* Bundle */}
         <Section title="Bundle">
-          <InfoRow label="Type" value={`${BUNDLE_LABELS[order.bundle_type] || order.bundle_type} (${order.bin_count} bins)`} />
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-[11px] text-[var(--tx3)] leading-snug flex-1">
+              Bundle and totals follow platform pricing. Edits apply to this order everywhere it appears.
+            </p>
+            <InfoHint variant="admin" ariaLabel="Bundle upgrade workflow" className="shrink-0">
+              If the new total is higher than what the client already paid, leave the difference as balance due
+              or charge the card on file when you apply the change. If there is no card, collect payment outside
+              the app and use Charge balance after you record the payment in Square.
+            </InfoHint>
+          </div>
+          <div className="space-y-2 pt-1">
+            <label className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide" htmlFor="bin-bundle-type">
+              Bundle type
+            </label>
+            <select
+              id="bin-bundle-type"
+              value={bundleDraft}
+              onChange={(e) => setBundleDraft(e.target.value)}
+              disabled={saving}
+              className={`${FIELD_WASH} disabled:opacity-50 cursor-pointer`}
+            >
+              {Object.entries(BUNDLE_LABELS).map(([k, label]) => (
+                <option key={k} value={k}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            {order.square_card_id ? (
+              <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={chargeUpgradeDiff}
+                  onChange={(e) => setChargeUpgradeDiff(e.target.checked)}
+                  className="rounded border-[var(--brd)]"
+                />
+                Charge card on file for the price difference when applying
+              </label>
+            ) : (
+              <p className="text-[11px] text-amber-500/90">
+                No card on file. After you apply a more expensive bundle, collect payment manually or add a card, then use Charge balance.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={handleApplyBundle}
+              disabled={saving || bundleDraft === order.bundle_type}
+              className="inline-flex items-center justify-center min-h-[36px] px-4 rounded-lg text-[10px] font-bold uppercase tracking-[0.12em] leading-none [font-family:var(--font-body)] border-0 bg-[color-mix(in_srgb,var(--yugo-primary-text)_10%,transparent)] text-[var(--yugo-primary-text)] hover:bg-[color-mix(in_srgb,var(--yugo-primary-text)_17%,transparent)] disabled:opacity-45 transition-colors"
+            >
+              Apply bundle change
+            </button>
+          </div>
+          <InfoRow label="Bins allocated" value={String(order.bin_count)} />
           <InfoRow label="Includes paper" value={order.includes_paper ? "Yes" : "No"} />
           <InfoRow label="Includes zip ties" value={order.includes_zip_ties ? "Yes" : "No"} />
         </Section>
 
         {/* Schedule */}
         <Section title="Schedule">
-          <InfoRow label="Drop-off date" value={fmtDate(order.drop_off_date)} />
-          <InfoRow label="Move date" value={fmtDate(order.move_date)} />
-          <InfoRow label="Pickup date" value={fmtDate(order.pickup_date)} />
+          <p className="text-[11px] text-[var(--tx3)] mb-2">
+            Date edits save to this order for crew, tracking, and admin views.
+          </p>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1" htmlFor="sched-drop">
+                Drop-off date
+              </label>
+              <input
+                id="sched-drop"
+                type="date"
+                value={scheduleDraft.drop_off_date}
+                onChange={(e) =>
+                  setScheduleDraft((s) => ({ ...s, drop_off_date: e.target.value }))
+                }
+                disabled={saving}
+                className={`${FIELD_WASH} disabled:opacity-50`}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1" htmlFor="sched-move">
+                Move date
+              </label>
+              <input
+                id="sched-move"
+                type="date"
+                value={scheduleDraft.move_date}
+                onChange={(e) =>
+                  setScheduleDraft((s) => ({ ...s, move_date: e.target.value }))
+                }
+                disabled={saving}
+                className={`${FIELD_WASH} disabled:opacity-50`}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1" htmlFor="sched-pickup">
+                Pickup date
+              </label>
+              <input
+                id="sched-pickup"
+                type="date"
+                value={scheduleDraft.pickup_date}
+                onChange={(e) =>
+                  setScheduleDraft((s) => ({ ...s, pickup_date: e.target.value }))
+                }
+                disabled={saving}
+                className={`${FIELD_WASH} disabled:opacity-50`}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveSchedule}
+              disabled={saving}
+              className="inline-flex items-center justify-center min-h-[36px] px-4 rounded-lg text-[10px] font-bold uppercase tracking-[0.12em] leading-none [font-family:var(--font-body)] border-0 bg-[color-mix(in_srgb,var(--yugo-primary-text)_10%,transparent)] text-[var(--yugo-primary-text)] hover:bg-[color-mix(in_srgb,var(--yugo-primary-text)_17%,transparent)] disabled:opacity-45 transition-colors"
+            >
+              Save schedule
+            </button>
+          </div>
           {order.drop_off_completed_at && (
             <InfoRow label="Delivered at" value={fmtDate(order.drop_off_completed_at)} highlight="green" />
           )}
@@ -266,7 +465,14 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
             <InfoRow label="GTA surcharge" value={fmtMoney(order.delivery_surcharge)} />
           )}
           <InfoRow label="HST" value={fmtMoney(order.hst)} />
-          <InfoRow label="Total" value={fmtMoney(order.total)} highlight="gold" />
+          <InfoRow label="Total" value={fmtMoney(order.total)} highlight="primary" />
+          {balanceDueCents > 0 && (
+            <InfoRow
+              label="Balance due"
+              value={`$${(balanceDueCents / 100).toFixed(2)}`}
+              highlight="primary"
+            />
+          )}
           {Number(order.late_return_fees) > 0 && (
             <InfoRow label="Late fees" value={fmtMoney(order.late_return_fees)} highlight="red" />
           )}
@@ -278,9 +484,26 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
             value={
               order.payment_status === "paid"
                 ? <span className="flex items-center gap-1"><CheckCircle size={12} weight="fill" /> Paid</span>
-                : order.payment_status || "-"
+                : order.payment_status === "balance_due"
+                  ? "Balance due"
+                  : order.payment_status || "-"
             }
           />
+          {balanceDueCents > 0 && order.square_card_id && (
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={handleChargeBalance}
+                disabled={saving}
+                className="inline-flex items-center justify-center min-h-[40px] px-5 rounded-xl text-[10px] font-bold uppercase tracking-[0.12em] leading-none [font-family:var(--font-body)] bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-45 transition-colors"
+              >
+                Charge balance to card on file
+              </button>
+              <p className="text-[11px] text-[var(--tx3)] mt-2">
+                Charges the remaining balance for this order total using Square. If you already collected outside Square, skip this and reconcile in your books.
+              </p>
+            </div>
+          )}
           {order.square_payment_id && (
             <InfoRow label="Square payment ID" value={<span className="font-mono text-[11px]">{order.square_payment_id}</span>} />
           )}
@@ -293,7 +516,7 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
               defaultValue={order.status}
               onChange={(e) => patchOrder({ status: e.target.value })}
               disabled={saving}
-              className="w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[13px] text-[var(--tx)] focus:outline-none focus:border-[var(--gold)] disabled:opacity-50"
+              className={`${FIELD_WASH} disabled:opacity-50 cursor-pointer`}
             >
               {ALL_STATUSES.map((s) => (
                 <option key={s} value={s}>{STATUS_LABELS[s]}</option>
@@ -306,13 +529,13 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
 
       {/* Photos */}
       {(order.drop_off_photos?.length > 0 || order.pickup_photos?.length > 0) && (
-        <div className="mt-4">
+        <div className="mt-10 pt-8 border-t border-[color-mix(in_srgb,var(--yugo-primary-text)_14%,transparent)]">
           <Section title="Photos">
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {[...(order.drop_off_photos || []), ...(order.pickup_photos || [])].map((url: string, i: number) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                  <img src={url} alt={`Bin photo ${i + 1}`} className="w-full aspect-square object-cover rounded-lg border border-[var(--brd)] hover:opacity-80 transition-opacity" />
+                  <img src={url} alt={`Bin photo ${i + 1}`} className="w-full aspect-square object-cover rounded-lg shadow-sm hover:opacity-80 transition-opacity" />
                 </a>
               ))}
             </div>
@@ -328,17 +551,20 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
           <input
             type="text" value={dropoffCrew} onChange={(e) => setDropoffCrew(e.target.value)}
             placeholder="e.g. Marcus, Alex"
-            className="w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[13px] text-[var(--tx)] focus:outline-none focus:border-[var(--gold)] mb-4"
+            className={`${FIELD_WASH} mb-4`}
           />
           <p className="text-[12px] text-[var(--tx3)] mb-4">Client will receive SMS: &quot;Your bins have been delivered!&quot;</p>
           <div className="flex gap-2">
-            <button onClick={() => setDropoffModal(false)} className="flex-1 py-2.5 rounded-lg border border-[var(--brd)] text-[13px] text-[var(--tx3)] hover:text-[var(--tx)] transition-colors">Cancel</button>
+            <button type="button" onClick={() => setDropoffModal(false)} className={ADMIN_PREMIUM_GHOST_CANCEL_CLASS}>
+              Cancel
+            </button>
             <button
+              type="button"
               onClick={completeDropoff}
               disabled={dropoffProcessing}
-              className="flex-1 py-2.5 rounded-lg bg-[#7C9FD4] text-white font-semibold text-[13px] hover:bg-[#6a8ec3] transition-colors disabled:opacity-50"
+              className={`${ADMIN_PREMIUM_SOLID_CTA_CLASS} flex-1`}
             >
-              {dropoffProcessing ? "Saving…" : "Confirm Delivery"}
+              {dropoffProcessing ? "Saving…" : "Confirm delivery"}
             </button>
           </div>
         </Modal>
@@ -352,7 +578,7 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
           <input
             type="number" min={0} max={order.bin_count} value={pickupBins}
             onChange={(e) => setPickupBins(Math.min(order.bin_count, Math.max(0, parseInt(e.target.value) || 0)))}
-            className="w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[13px] text-[var(--tx)] focus:outline-none focus:border-[var(--gold)] mb-2"
+            className={`${FIELD_WASH} mb-2`}
           />
           {pickupBins < order.bin_count && (
             <p className="text-[12px] text-red-400 mb-3 flex items-center gap-1">
@@ -363,16 +589,19 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
           <input
             type="text" value={pickupCrew} onChange={(e) => setPickupCrew(e.target.value)}
             placeholder="e.g. Marcus, Alex"
-            className="w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[13px] text-[var(--tx)] focus:outline-none focus:border-[var(--gold)] mb-4"
+            className={`${FIELD_WASH} mb-4`}
           />
           <div className="flex gap-2">
-            <button onClick={() => setPickupModal(false)} className="flex-1 py-2.5 rounded-lg border border-[var(--brd)] text-[13px] text-[var(--tx3)] hover:text-[var(--tx)] transition-colors">Cancel</button>
+            <button type="button" onClick={() => setPickupModal(false)} className={ADMIN_PREMIUM_GHOST_CANCEL_CLASS}>
+              Cancel
+            </button>
             <button
+              type="button"
               onClick={completePickup}
               disabled={pickupProcessing}
-              className="flex-1 py-2.5 rounded-lg bg-[#22c55e] text-white font-semibold text-[13px] hover:bg-[#16a34a] transition-colors disabled:opacity-50"
+              className={`${ADMIN_PREMIUM_SOLID_CTA_CLASS} flex-1`}
             >
-              {pickupProcessing ? "Saving…" : "Confirm Pickup"}
+              {pickupProcessing ? "Saving…" : "Confirm pickup"}
             </button>
           </div>
         </Modal>
@@ -383,13 +612,13 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
 
 function Section({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-      <div className="flex items-center gap-2 mb-4">
-        {icon && <span className="text-[var(--gold)]">{icon}</span>}
-        <h3 className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3)]">{title}</h3>
+    <section>
+      <div className={`flex items-center gap-2 ${SECTION_RULE}`}>
+        {icon && <span className="text-[var(--yugo-primary-text)] opacity-90">{icon}</span>}
+        <h3 className="text-[11px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]">{title}</h3>
       </div>
       <div className="space-y-2.5">{children}</div>
-    </div>
+    </section>
   );
 }
 
@@ -400,9 +629,14 @@ function InfoRow({
 }: {
   label: string;
   value: React.ReactNode;
-  highlight?: "green" | "red" | "gold";
+  highlight?: "green" | "red" | "gold" | "primary";
 }) {
-  const colorMap = { green: "text-green-400", red: "text-red-400", gold: "text-[var(--gold)]" };
+  const colorMap = {
+    green: "text-green-400",
+    red: "text-red-400",
+    gold: "text-[var(--gold)]",
+    primary: "text-[var(--yugo-primary-text)]",
+  };
   return (
     <div className="flex justify-between items-start gap-3 text-[13px]">
       <span className="text-[var(--tx3)] shrink-0">{label}</span>
@@ -414,8 +648,13 @@ function InfoRow({
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+      <div
+        className="absolute inset-0 bg-black/60"
+        role="presentation"
+        onClick={onClose}
+        onKeyDown={(e) => e.key === "Escape" && onClose()}
+      />
+      <div className="relative bg-[var(--card)] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
         <h3 className="text-[16px] font-bold text-[var(--tx)] mb-1">{title}</h3>
         {children}
       </div>

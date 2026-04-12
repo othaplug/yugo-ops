@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import {
   ArrowLeft,
@@ -16,6 +17,7 @@ import {
   DeviceMobile as Smartphone,
   Trash as Trash2,
   CaretDown as ChevronDown,
+  CaretRight,
   PencilSimple as Pencil,
 } from "@phosphor-icons/react";
 import {
@@ -25,12 +27,15 @@ import {
 import { formatPlatformDisplay } from "@/lib/date-format";
 import { QuotesFollowupAutomationHint } from "@/components/admin/AdminContextHints";
 import { toTitleCase } from "@/lib/format-text";
-import { displayLabel } from "@/lib/displayLabels";
+import { displayLabel, serviceTypeDisplayLabel } from "@/lib/displayLabels";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { formatPhone } from "@/lib/phone";
 import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
 import { quoteDetailDateLabel } from "@/lib/quotes/quote-field-labels";
 import type { QuoteEngagementMetrics } from "@/lib/quotes/comparison-intelligence";
+import { formatCurrency } from "@/lib/format-currency";
+import type { QuotePaymentPipelineMode } from "@/lib/quotes/payment-pipeline-mode";
+import { InfoHint } from "@/components/ui/InfoHint";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -58,6 +63,11 @@ interface Props {
   followupsSentCount?: number;
   followupMaxAttempts?: number;
   engagementMetrics?: QuoteEngagementMetrics | null;
+  paymentPipelineMode?: QuotePaymentPipelineMode;
+  offlineTotalWithTax?: number;
+  offlineDepositAmount?: number;
+  linkedMoveCode?: string | null;
+  linkedDeliveryNumber?: string | null;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -216,6 +226,11 @@ export default function QuoteDetailClient({
   followupsSentCount = 0,
   followupMaxAttempts = 3,
   engagementMetrics = null,
+  paymentPipelineMode = "deposit_then_balance",
+  offlineTotalWithTax = 0,
+  offlineDepositAmount = 0,
+  linkedMoveCode = null,
+  linkedDeliveryNumber = null,
 }: Props) {
   const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -234,6 +249,10 @@ export default function QuoteDetailClient({
   );
   const [pipelineSaving, setPipelineSaving] = useState(false);
   const [pipelineMsg, setPipelineMsg] = useState<string | null>(null);
+  const [offlineModalKind, setOfflineModalKind] = useState<"deposit" | "full" | null>(null);
+  const [offlineLoading, setOfflineLoading] = useState(false);
+  const [offlineError, setOfflineError] = useState<string | null>(null);
+  const [offlineSuccess, setOfflineSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     setPipelineStatus(String(quote.status || "draft"));
@@ -293,6 +312,48 @@ export default function QuoteDetailClient({
     setAutoFollowup(next);
     await patchQuote({ auto_followup_active: next });
   }
+
+  const handleOfflineConfirm = async () => {
+    if (!offlineModalKind || offlineLoading) return;
+    setOfflineLoading(true);
+    setOfflineError(null);
+    try {
+      const res = await fetch(
+        `/api/admin/quotes/${quote.id}/confirm-offline-payment`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ kind: offlineModalKind }),
+        },
+      );
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        already_booked?: boolean;
+        move_code?: string;
+        delivery_number?: string;
+      };
+      if (!res.ok) throw new Error(data.error || "Request failed");
+      setOfflineModalKind(null);
+      if (data.already_booked) {
+        setOfflineSuccess("A job from this quote already exists.");
+      } else if (data.move_code) {
+        setOfflineSuccess(
+          `Move ${data.move_code} created. Confirmation email and automations are running.`,
+        );
+      } else if (data.delivery_number) {
+        setOfflineSuccess(
+          `Delivery ${data.delivery_number} created. Confirmation and automations are running.`,
+        );
+      } else {
+        setOfflineSuccess("Saved.");
+      }
+      router.refresh();
+    } catch (e) {
+      setOfflineError(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setOfflineLoading(false);
+    }
+  };
 
   async function handleRecoverMove() {
     setRecoverError(null);
@@ -415,8 +476,7 @@ export default function QuoteDetailClient({
 
           {/* Row 3: subtitle */}
           <p className="text-[12px] text-[var(--tx3)]">
-            {displayLabel(quote.service_type) ||
-              toTitleCase(quote.service_type?.split("_").join(" ") || "")}{" "}
+            {serviceTypeDisplayLabel(quote.service_type)}{" "}
             &middot; Created{" "}
             {formatPlatformDisplay(quote.created_at, {
               month: "short",
@@ -435,6 +495,7 @@ export default function QuoteDetailClient({
             >
               <Pencil weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
               Edit all details
+              <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
             </button>
             {quote.quote_url && (
               <a
@@ -445,6 +506,7 @@ export default function QuoteDetailClient({
               >
                 <ExternalLink weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
                 Client view
+                <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
               </a>
             )}
             {quote.status === "accepted" && (
@@ -576,6 +638,7 @@ export default function QuoteDetailClient({
                   className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
                 >
                   Save status
+                  <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
                 </button>
                 {!autoFollowup && (
                   <span className="text-[11px] text-[var(--tx3)]">
@@ -593,6 +656,133 @@ export default function QuoteDetailClient({
             </>
           )}
         </div>
+
+        <div className="rounded-lg bg-[var(--card)] px-3 py-2">
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-3 sm:gap-y-1.5">
+            <div className="flex items-center gap-1.5 min-w-0 shrink-0">
+              <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                Offline payment
+              </span>
+              <InfoHint
+                variant="admin"
+                iconSize={15}
+                ariaLabel="About offline payment"
+                side="bottom"
+              >
+                <p className="text-[12px] leading-relaxed max-w-[min(100vw-2rem,320px)]">
+                  When the client paid outside the quote page (cash, wire, or cheque), record it here. This creates the move or delivery and runs the same confirmation steps as card checkout.
+                </p>
+              </InfoHint>
+            </div>
+            {linkedMoveCode ? (
+              <p className="text-[11px] text-[var(--tx)] sm:text-right">
+                Booked{" "}
+                <Link
+                  href={`/admin/moves/${encodeURIComponent(linkedMoveCode)}`}
+                  className="font-semibold text-[#2C3E2D] underline underline-offset-2 hover:opacity-90"
+                >
+                  {linkedMoveCode}
+                </Link>
+              </p>
+            ) : linkedDeliveryNumber ? (
+              <p className="text-[11px] text-[var(--tx)] sm:text-right">
+                Booked{" "}
+                <Link
+                  href={`/admin/deliveries/${encodeURIComponent(linkedDeliveryNumber)}`}
+                  className="font-semibold text-[#2C3E2D] underline underline-offset-2 hover:opacity-90"
+                >
+                  {linkedDeliveryNumber}
+                </Link>
+              </p>
+            ) : (
+              <div className="flex flex-col gap-1 min-w-0 sm:flex-1 sm:items-end">
+                {(offlineSuccess || offlineError) && (
+                  <p
+                    className={`text-[10px] w-full text-right leading-snug ${
+                      offlineError ? "text-[var(--red)]" : "text-emerald-600 dark:text-emerald-400"
+                    }`}
+                  >
+                    {offlineError ?? offlineSuccess}
+                  </p>
+                )}
+                <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                  {paymentPipelineMode === "full_upfront" ? (
+                    <button
+                      type="button"
+                      disabled={offlineLoading}
+                      onClick={() => {
+                        setOfflineError(null);
+                        setOfflineSuccess(null);
+                        setOfflineModalKind("full");
+                      }}
+                      className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
+                    >
+                      Record full payment and confirm booking
+                      <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        disabled={offlineLoading}
+                        onClick={() => {
+                          setOfflineError(null);
+                          setOfflineSuccess(null);
+                          setOfflineModalKind("deposit");
+                        }}
+                        className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
+                      >
+                        Record deposit received
+                        <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={offlineLoading}
+                        onClick={() => {
+                          setOfflineError(null);
+                          setOfflineSuccess(null);
+                          setOfflineModalKind("full");
+                        }}
+                        className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
+                      >
+                        Record full payment (complete job)
+                        <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
+                      </button>
+                    </>
+                  )}
+                  <p className="text-[10px] text-[var(--tx3)] tabular-nums whitespace-nowrap">
+                    Total {formatCurrency(offlineTotalWithTax)} incl. tax
+                    {paymentPipelineMode === "deposit_then_balance" ? (
+                      <> · First payment {formatCurrency(offlineDepositAmount)}</>
+                    ) : null}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <ConfirmDialog
+          open={offlineModalKind !== null}
+          title={
+            offlineModalKind === "deposit"
+              ? "Record deposit (offline)"
+              : "Record full payment (offline)"
+          }
+          message={
+            offlineModalKind === "deposit"
+              ? `Create the booked job and record ${formatCurrency(offlineDepositAmount)} as paid (incl. tax), matching this quote. Confirmation email and automations will run.`
+              : `Create the booked job and record ${formatCurrency(offlineTotalWithTax)} as paid in full (incl. tax). Confirmation email and automations will run.`
+          }
+          confirmLabel={offlineLoading ? "Working…" : "Confirm"}
+          onConfirm={() => void handleOfflineConfirm()}
+          onCancel={() => {
+            if (!offlineLoading) {
+              setOfflineModalKind(null);
+              setOfflineError(null);
+            }
+          }}
+        />
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left: Quote Details */}
@@ -1082,10 +1272,7 @@ export default function QuoteDetailClient({
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)]">Service</span>
                   <span className="text-[var(--tx)] font-medium">
-                    {displayLabel(quote.service_type) ||
-                      toTitleCase(
-                        quote.service_type?.split("_").join(" ") || "",
-                      )}
+                    {serviceTypeDisplayLabel(quote.service_type)}
                   </span>
                 </div>
                 {quote.move_size && (

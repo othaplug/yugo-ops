@@ -31,7 +31,8 @@ export async function GET(
       damage_report_deadline,
       escalation_triggered, escalation_reason,
       discrepancy_flags,
-      feedback_note, exceptions
+      feedback_note, exceptions,
+      signature_data_url
     `)
     .eq("job_id", moveId)
     .eq("job_type", "move")

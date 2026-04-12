@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { PencilSimple as Pencil, Trash as Trash2 } from "@phosphor-icons/react";
+import { CaretRight, PencilSimple as Pencil, Trash as Trash2 } from "@phosphor-icons/react";
 import {
   ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS,
   ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS,
@@ -227,6 +227,9 @@ export default function ClientDetailClient({
                 className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
               >
                 {resendPortalLoading ? "Sending…" : "Send tracking link"}
+                {!resendPortalLoading ? (
+                  <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
+                ) : null}
               </button>
             ) : (
               <>
@@ -253,6 +256,9 @@ export default function ClientDetailClient({
                   className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
                 >
                   {resendPortalLoading ? "Sending…" : "Resend portal access"}
+                  {!resendPortalLoading ? (
+                    <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
+                  ) : null}
                 </button>
                 {showPmProposal && (
                   <button
@@ -287,6 +293,9 @@ export default function ClientDetailClient({
                     className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
                   >
                     {proposalLoading ? "Generating…" : "Generate proposal PDF"}
+                    {!proposalLoading ? (
+                      <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
+                    ) : null}
                   </button>
                 )}
               </>
@@ -298,6 +307,7 @@ export default function ClientDetailClient({
             >
               <Pencil weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
               Edit {isClient ? "client" : "partner"}
+              <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
             </button>
             <button
               type="button"

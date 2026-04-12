@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
       ? Math.round(((sessionEnd - sessionStart) / 3_600_000) * 100) / 100
       : null;
 
-    await admin
+    const { error: moveCompleteErr } = await admin
       .from(table)
       .update({
         status: session.job_type === "move" ? "completed" : "delivered",
@@ -186,6 +186,12 @@ export async function POST(req: NextRequest) {
           : {}),
       })
       .eq("id", session.job_id);
+    if (moveCompleteErr) {
+      console.error(
+        "[checkpoint] job row did not sync to completed (session already finalized):",
+        moveCompleteErr.message,
+      );
+    }
     if (session.job_type === "move") {
       syncDealStageByMoveId(session.job_id, "completed").catch(() => {});
       const { createReviewRequestIfEligible } =

@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
       await finalizeBalancePaymentSettlement({
         admin: supabase,
         moveId: move.id,
-        balancePreTax: balanceAmount,
+        balanceTaxInclusive: balanceAmount,
         squarePaymentId: paymentId,
         squareReceiptUrl: receiptUrl,
         settlementMethod: "auto-charge",

@@ -68,7 +68,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     await finalizeBalancePaymentSettlement({
       admin,
       moveId,
-      balancePreTax: balanceAmount,
+      balanceTaxInclusive: balanceAmount,
       squarePaymentId: paymentId,
       squareReceiptUrl: receiptUrl,
       settlementMethod: "client",

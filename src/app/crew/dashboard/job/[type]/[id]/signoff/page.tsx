@@ -1190,8 +1190,8 @@ export default function ClientSignOffPage({
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
                 placeholder="e.g. Jane Smith"
-                className="w-full px-4 py-3 border bg-[#FFFBF7] text-[var(--text-base)] outline-none transition-colors [font-family:var(--font-body)] focus:border-[#5C1A33]/40"
-                style={{ color: INK, borderColor: BORDER }}
+                className="w-full px-0 py-2.5 bg-transparent border-0 border-b border-solid rounded-none text-[var(--text-base)] outline-none transition-[border-color] [font-family:var(--font-body)] border-b-[rgba(44,62,45,0.28)] focus:border-b-[#5C1A33]/70 placeholder:text-[rgba(90,107,94,0.75)]"
+                style={{ color: INK }}
               />
             </div>
 

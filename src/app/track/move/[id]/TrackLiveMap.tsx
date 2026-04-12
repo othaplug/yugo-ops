@@ -365,6 +365,24 @@ export default function TrackLiveMap({
   const displayCrewTitle = maskCrewIdentity
     ? "Your crew"
     : crew?.name || "Your Crew";
+
+  /** Public main line if API omits a value */
+  const fallbackPhoneRaw =
+    process.env.NEXT_PUBLIC_YUGO_PHONE || "+16473704525";
+  /**
+   * crew-status API: `crewPhone` = truck/device/crew line; `dispatchPhone` = office (getDispatchPhone).
+   * Coordinator actions = office only. Call crew = crew line, then public fallback (never the other role’s number).
+   */
+  const officeLineRaw = dispatchPhone || fallbackPhoneRaw;
+  const crewLineRaw = crewPhone || fallbackPhoneRaw;
+
+  const coordinatorTelHref = `tel:${officeLineRaw.replace(/[^\d+]/g, "")}`;
+  const crewCallTelHref = `tel:${crewLineRaw.replace(/[^\d+]/g, "")}`;
+  const coordinatorSmsHref = `sms:${officeLineRaw.replace(/[^\d+]/g, "")}`;
+
+  const trackPremiumBtn =
+    "rounded-none text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] leading-none transition-colors";
+
   const showPlaceholder = !loading && !hasActiveTracking;
   const canShowMap = !loading && (hasActiveTracking || !!pickup || !!dropoff);
 
@@ -673,15 +691,16 @@ export default function TrackLiveMap({
                     </div>
                   </div>
                   <a
-                    href={`tel:${(crewPhone || dispatchPhone || process.env.NEXT_PUBLIC_YUGO_PHONE || "+16473704525").replace(/[^\d+]/g, "")}`}
-                    className="shrink-0 flex items-center gap-1.5 py-2 px-3 rounded-lg border border-[#E7E5E4] bg-white text-[12px] font-semibold text-[#1A1A1A] hover:border-[#2C3E2D] transition-colors"
+                    href={coordinatorTelHref}
+                    className={`shrink-0 flex items-center gap-1.5 py-2 px-2.5 ${trackPremiumBtn} bg-[#492A1D] text-[#FFFBF7] border border-[rgba(55,32,22,0.95)] hover:bg-[#3d2418]`}
+                    aria-label="Call coordinator"
                   >
                     <Phone
                       size={13}
                       className="text-current shrink-0"
                       aria-hidden
                     />
-                    {crewPhone ? "Call crew" : "Call dispatch"}
+                    Call coordinator
                   </a>
                 </div>
 
@@ -752,15 +771,17 @@ export default function TrackLiveMap({
                   {/* Call + Text buttons */}
                   <div className="flex gap-2 pt-1">
                     <a
-                      href={`tel:${(crewPhone || dispatchPhone || process.env.NEXT_PUBLIC_YUGO_PHONE || "+16473704525").replace(/[^\d+]/g, "")}`}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-[13px] font-semibold text-[#1A1A1A] hover:border-[#2C3E2D] transition-colors"
+                      href={crewCallTelHref}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 ${trackPremiumBtn} bg-[#2C3E2D] text-[#FFFBF7] border border-[#1f3020] hover:bg-[#244026]`}
+                      aria-label="Call crew"
                     >
                       <Phone size={14} className="text-current shrink-0" />
-                      {crewPhone ? "Call crew" : "Call dispatch"}
+                      Call crew
                     </a>
                     <a
-                      href={`sms:${(dispatchPhone || crewPhone || process.env.NEXT_PUBLIC_YUGO_PHONE || "+16473704525").replace(/[^\d+]/g, "")}`}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-[13px] font-semibold text-[#1A1A1A] hover:border-[#2C3E2D] transition-colors"
+                      href={coordinatorSmsHref}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 ${trackPremiumBtn} bg-white text-[#5C1A33] border-2 border-[#5C1A33] hover:bg-[#5C1A33]/6`}
+                      aria-label="Text coordinator"
                     >
                       <ChatCircle
                         size={14}

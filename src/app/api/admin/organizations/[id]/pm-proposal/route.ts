@@ -42,10 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const pageW = doc.internal.pageSize.getWidth();
   let y = 22;
 
-  doc.setFontSize(20);
-  doc.text("Yugo", 20, y);
-  y += 10;
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.text("Property management partnership proposal", 20, y);
   y += 12;
 
@@ -64,9 +61,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   y += 6;
   doc.setFontSize(10);
   const about = [
-    "Yugo provides fixed-rate renovation and tenant moves with transparent surcharges,",
+    "We provide fixed-rate renovation and tenant moves with transparent surcharges,",
     "a dedicated partner portal for buildings and units, and real-time move tracking for tenants.",
-    "Rates below come from your contract rate card in Yugo.",
+    "Rates below come from your contract rate card on file.",
   ];
   for (const line of about) {
     doc.text(line, 20, y, { maxWidth: pageW - 40 });
