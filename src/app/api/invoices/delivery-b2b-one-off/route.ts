@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth/check-role";
 import { createAndPublishSquareInvoice } from "@/lib/square-invoice";
 import { resolveDeliveryUuidFromApiPathSegment } from "@/lib/delivery-resolve-id";
 import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
+import { opsInvoiceNumberForSquareJob } from "@/lib/invoice-display-number";
 
 /**
  * Creates a Square invoice for a B2B one-off delivery (no partner org), emails the business
@@ -87,8 +88,10 @@ export async function POST(req: NextRequest) {
   const addr =
     (delivery.delivery_address || delivery.pickup_address || "").trim();
 
-  const { count } = await admin.from("invoices").select("id", { count: "exact", head: true });
-  const invoiceNumber = `INV-${String((count ?? 0) + 1).padStart(4, "0")}`;
+  const invoiceNumber = opsInvoiceNumberForSquareJob({
+    jobType: "delivery",
+    referenceCode: delivery.delivery_number,
+  });
 
   const dueDays = 14;
   const dueDate = new Date(Date.now() + dueDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);

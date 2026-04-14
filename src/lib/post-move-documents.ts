@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateMoveInvoicePDF, generateMoveSnapshotPDF } from "@/lib/pdf";
 import type { MoveInvoiceData, MoveSnapshotData } from "@/lib/pdf";
+import { opsInvoiceNumberForSquareJob } from "@/lib/invoice-display-number";
 
 export async function generatePostMoveDocuments(moveId: string): Promise<void> {
   const admin = createAdminClient();
@@ -67,7 +68,10 @@ export async function generatePostMoveDocuments(moveId: string): Promise<void> {
   const checkpoints = Array.isArray(trackingSession?.checkpoints) ? trackingSession.checkpoints : [];
 
   // ─── Generate Invoice PDF ───
-  const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+  const invoiceNumber = opsInvoiceNumberForSquareJob({
+    jobType: "move",
+    referenceCode: moveCode,
+  });
 
   const invoiceData: MoveInvoiceData = {
     invoiceNumber,

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 import { createAndPublishSquareInvoice } from "@/lib/square-invoice";
 import { resolveB2BInvoiceCustomerName } from "@/lib/b2b-invoice-customer-name";
+import { opsInvoiceNumberForSquareJob } from "@/lib/invoice-display-number";
 
 /**
  * Admin-only: Generate invoices for completed/delivered deliveries
@@ -57,12 +58,6 @@ export async function POST() {
   // Filter to only deliveries with B2B orgs
   const b2bToProcess = toProcess.filter((d) => orgMap.has(d.organization_id));
 
-  // Get current invoice count for numbering
-  const { count: invoiceCount } = await admin
-    .from("invoices")
-    .select("id", { count: "exact", head: true });
-  let counter = (invoiceCount ?? 0) + 1;
-
   const results: { deliveryId: string; invoiceId: string; invoiceNumber: string }[] = [];
   const errors: { deliveryId: string; error: string }[] = [];
 
@@ -82,8 +77,10 @@ export async function POST() {
         delivery.admin_adjusted_price ?? delivery.total_price ?? delivery.quoted_price ?? 0
       );
 
-      const invoiceNumber = `INV-${String(counter).padStart(4, "0")}`;
-      counter++;
+      const invoiceNumber = opsInvoiceNumberForSquareJob({
+        jobType: "delivery",
+        referenceCode: delivery.delivery_number,
+      });
 
       let squareInvoiceId: string | null = null;
       let squareInvoiceUrl: string | null = null;

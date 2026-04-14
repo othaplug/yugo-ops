@@ -15,7 +15,9 @@ export default async function InvoicesPage() {
   // Disambiguate embed: PostgREST errors if multiple FKs exist between invoices and organizations.
   const withOrg = await db
     .from("invoices")
-    .select("*, organizations!organization_id(vertical, type)")
+    .select(
+      "*, organizations!organization_id(vertical, type), deliveries!delivery_id(delivery_number), moves!move_id(move_code)"
+    )
     .order("created_at", { ascending: false });
 
   let invoices = withOrg.data;

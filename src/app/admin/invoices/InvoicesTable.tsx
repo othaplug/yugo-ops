@@ -8,6 +8,7 @@ import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/D
 import { formatAdminCreatedAt } from "@/lib/date-format";
 import { useToast } from "../components/Toast";
 import { getInvoiceServiceTypeLabel } from "@/utils/partnerType";
+import { displayInvoiceNumber } from "@/lib/invoice-display-number";
 
 /** Strip protocol and truncate for table display; full URL stays on the link + title. */
 function shortenInvoiceUrl(raw: string, maxLen = 44): string {
@@ -78,13 +79,14 @@ export default function InvoicesTable({
     {
       id: "invoice_number",
       label: "Invoice",
-      accessor: (r) => r.invoice_number,
+      accessor: (r) => displayInvoiceNumber(r),
       render: (r) => {
         const typeLabel = getInvoiceServiceTypeLabel(r);
         const isMove = typeLabel === "Move";
+        const num = displayInvoiceNumber(r);
         return (
           <div>
-            <span className="dt-text-id">{r.invoice_number}</span>
+            <span className="dt-text-id">{num}</span>
             <span
               className={`ml-2 inline-flex items-center dt-badge ${
                 isMove ? "text-blue-600" : "text-[var(--gold)]"

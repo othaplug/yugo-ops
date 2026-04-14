@@ -6,7 +6,8 @@ import { normalizePhone } from "@/lib/phone";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
 import { squareClient } from "@/lib/square";
-import { runB2BOneOffPaymentRecordedFlow } from "@/lib/b2b-delivery-payment";
+import { getSquarePaymentConfig } from "@/lib/square-config";
+import { isSquareInvoicePaidStatus, markLocalInvoicePaidFromSquare } from "@/lib/square-invoice-paid";
 import crypto from "crypto";
 
 /**
@@ -14,7 +15,7 @@ import crypto from "crypto";
  *
  * Handles Square webhook events:
  *  - card.expiring         — card on file about to expire (sent ~30 days out)
- *  - payment.updated       — payment status changes (for reconciliation)
+ *  - payment.updated       — COMPLETED invoice card payments: resolve invoice via order id and mark Ops paid (backup if invoice.updated was missed)
  *  - invoice.updated       — when an invoice is paid, sync DB + B2B one-off delivery prepay flow; when Square no longer has the invoice (removed), delete the local row
  *  - customer.updated      — customer record changes
  *
@@ -29,6 +30,7 @@ function verifySquareSignature(
   url: string,
   sigKey: string,
 ): boolean {
+  if (!signature?.trim()) return false;
   const hmac = crypto.createHmac("sha256", sigKey);
   hmac.update(url + body);
   const expected = hmac.digest("base64");
@@ -37,6 +39,43 @@ function verifySquareSignature(
   } catch {
     return false;
   }
+}
+
+/** Square signs with the exact notification URL from the Developer Console; host/proto must match the inbound request. */
+function collectSquareWebhookNotificationUrlCandidates(req: NextRequest): string[] {
+  const path = "/api/webhooks/square";
+  const set = new Set<string>();
+
+  const explicit = (process.env.SQUARE_WEBHOOK_NOTIFICATION_URL || "").trim();
+  if (explicit) set.add(explicit.replace(/\/$/, ""));
+
+  const bases = [
+    getEmailBaseUrl(),
+    (process.env.NEXT_PUBLIC_APP_URL || "").trim().replace(/\/$/, ""),
+    (process.env.NEXT_PUBLIC_EMAIL_APP_URL || "").trim().replace(/\/$/, ""),
+  ];
+  for (const b of bases) {
+    if (b) set.add(`${b}${path}`);
+  }
+
+  const vercel = (process.env.VERCEL_URL || "").trim();
+  if (vercel) set.add(`https://${vercel.replace(/\/$/, "")}${path}`);
+
+  const hostRaw = req.headers.get("x-forwarded-host") || req.headers.get("host");
+  if (hostRaw) {
+    const host = hostRaw.split(",")[0].trim();
+    let proto = (req.headers.get("x-forwarded-proto") || "").split(",")[0].trim();
+    if (!proto) {
+      proto =
+        req.headers.get("x-forwarded-ssl") === "on" ||
+        (process.env.VERCEL === "1" && !host.includes("localhost"))
+          ? "https"
+          : "http";
+    }
+    set.add(`${proto}://${host}${path}`);
+  }
+
+  return [...set].filter(Boolean);
 }
 
 type SquareWebhookEvent = {
@@ -71,11 +110,15 @@ export async function POST(req: NextRequest) {
   const sigKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
   const rawBody = await req.text();
 
-  // Verify signature in production
+  // Verify signature: must use the same notification URL Square has in the app (often differs from NEXT_PUBLIC_APP_URL).
   if (sigKey) {
     const signature = req.headers.get("x-square-hmacsha256-signature") || "";
-    const webhookUrl = `${getEmailBaseUrl()}/api/webhooks/square`;
-    if (!verifySquareSignature(rawBody, signature, webhookUrl, sigKey)) {
+    const candidates = collectSquareWebhookNotificationUrlCandidates(req);
+    const ok = candidates.some((url) => verifySquareSignature(rawBody, signature, url, sigKey));
+    if (!ok) {
+      console.error("[square webhook] signature mismatch; check SQUARE_WEBHOOK_NOTIFICATION_URL or webhook URL in Square dashboard", {
+        triedHosts: candidates.slice(0, 6),
+      });
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
   }
@@ -139,14 +182,50 @@ function squareInvoiceFetchIndicatesMissing(err: unknown): boolean {
 function extractSquareInvoiceIdFromWebhook(event: SquareWebhookEvent): string | null {
   const data = event.data as Record<string, unknown> | undefined;
   if (!data) return null;
-  if (typeof data.id === "string" && data.type === "invoice") return data.id;
+  const dataType = data.type != null ? String(data.type).toLowerCase() : "";
+  if (typeof data.id === "string" && (!dataType || dataType === "invoice")) {
+    return data.id;
+  }
   const obj = data.object as Record<string, unknown> | undefined;
   if (obj && typeof obj === "object") {
     const inv = obj.invoice as Record<string, unknown> | undefined;
     if (inv && typeof inv.id === "string") return inv.id;
+    const o = obj as { id?: unknown; order_id?: unknown; status?: unknown };
+    if (typeof o.id === "string" && (o.order_id != null || typeof o.status === "string")) {
+      return o.id;
+    }
     if (typeof obj.id === "string") return obj.id;
   }
   if (typeof data.id === "string") return data.id;
+  return null;
+}
+
+function extractSquareInvoiceStatusFromWebhook(event: SquareWebhookEvent): string | undefined {
+  const data = event.data as Record<string, unknown> | undefined;
+  if (!data) return undefined;
+  const obj = data.object as Record<string, unknown> | undefined;
+  if (obj && typeof obj === "object") {
+    const inv = obj.invoice as Record<string, unknown> | undefined;
+    if (inv && typeof inv.status === "string") return inv.status;
+    if (typeof obj.status === "string") return obj.status;
+  }
+  return undefined;
+}
+
+/** List invoices at location and find the Square invoice id for the given order id (used when payment.updated fires without a reliable invoice.updated). */
+async function findSquareInvoiceIdByOrderId(orderId: string): Promise<string | null> {
+  const { locationId } = await getSquarePaymentConfig();
+  if (!locationId || !orderId) return null;
+
+  const page = await squareClient.invoices.list({ locationId, limit: 100 });
+  let scanned = 0;
+  const maxScan = 2000;
+  for await (const inv of page) {
+    scanned++;
+    if (scanned > maxScan) break;
+    const row = inv as { id?: string; orderId?: string };
+    if (row.orderId === orderId && row.id) return row.id;
+  }
   return null;
 }
 
@@ -155,14 +234,19 @@ async function handleInvoiceUpdated(
   supabase: ReturnType<typeof createAdminClient>,
 ) {
   const invoiceId = extractSquareInvoiceIdFromWebhook(event);
-  if (!invoiceId) return;
+  if (!invoiceId) {
+    console.error("[square webhook] invoice.updated: could not parse Square invoice id from payload");
+    return;
+  }
   if (!(process.env.SQUARE_ACCESS_TOKEN || "").trim()) return;
 
-  let status: string | undefined;
+  const webhookStatus = extractSquareInvoiceStatusFromWebhook(event);
+
+  let apiStatus: string | undefined;
   let publicUrl: string | null = null;
   try {
     const res = await squareClient.invoices.get({ invoiceId });
-    status = res.invoice?.status as string | undefined;
+    apiStatus = res.invoice?.status as string | undefined;
     publicUrl = res.invoice?.publicUrl ?? null;
   } catch (e) {
     console.error("[square webhook] invoices.get failed:", e);
@@ -179,51 +263,25 @@ async function handleInvoiceUpdated(
         });
       }
     }
-    return;
+    if (!squareInvoiceFetchIndicatesMissing(e)) {
+      // Transient API failure: still mark paid if the webhook payload says PAID
+      const fromWebhook = isSquareInvoicePaidStatus(webhookStatus);
+      if (!fromWebhook) return;
+    } else {
+      return;
+    }
   }
 
-  if (status !== "PAID") return;
+  const status = apiStatus ?? webhookStatus;
+  if (!isSquareInvoicePaidStatus(status)) return;
 
-  const { data: invRow } = await supabase
-    .from("invoices")
-    .select("id, delivery_id, status, square_invoice_url")
-    .eq("square_invoice_id", invoiceId)
-    .maybeSingle();
-
-  if (!invRow?.id) return;
-
-  const now = new Date().toISOString();
-  const patch: Record<string, unknown> = {
-    status: "paid",
-    updated_at: now,
-  };
-  if (publicUrl) patch.square_invoice_url = publicUrl;
-
-  await supabase.from("invoices").update(patch).eq("id", invRow.id);
-
-  await supabase.from("webhook_logs").insert({
-    source: "square",
-    event_type: "invoice.updated.paid",
-    payload: { invoice_id: invoiceId, delivery_id: invRow.delivery_id },
-    status: "processed",
+  await markLocalInvoicePaidFromSquare({
+    supabase,
+    squareInvoiceId: invoiceId,
+    squareInvoiceUrl: publicUrl,
+    squareReceiptUrl: null,
+    logContext: "invoice.updated",
   });
-
-  const deliveryId = invRow.delivery_id;
-  if (!deliveryId) return;
-
-  const { data: del } = await supabase
-    .from("deliveries")
-    .select("booking_type, organization_id")
-    .eq("id", deliveryId)
-    .maybeSingle();
-
-  if (del?.booking_type !== "one_off" || del.organization_id) return;
-
-  try {
-    await runB2BOneOffPaymentRecordedFlow(deliveryId, { notifyMode: "only_if_newly_paid" });
-  } catch (e) {
-    console.error("[square webhook] B2B one-off payment flow:", e);
-  }
 }
 
 async function handlePaymentUpdated(
@@ -253,6 +311,38 @@ async function handlePaymentUpdated(
       status: "processed",
     })
     .then(() => {});
+
+  if (!(process.env.SQUARE_ACCESS_TOKEN || "").trim()) return;
+
+  try {
+    const payRes = await squareClient.payments.get({ paymentId });
+    const payment = payRes.payment as
+      | { status?: string; orderId?: string; receiptUrl?: string }
+      | undefined;
+    if (!payment) return;
+    const payStatus = String(payment.status || "").toUpperCase();
+    if (payStatus !== "COMPLETED") return;
+
+    const orderId = payment.orderId;
+    if (!orderId) return;
+
+    const squareInvoiceId = await findSquareInvoiceIdByOrderId(orderId);
+    if (!squareInvoiceId) return;
+
+    const invRes = await squareClient.invoices.get({ invoiceId: squareInvoiceId });
+    const inv = invRes.invoice;
+    if (!isSquareInvoicePaidStatus(inv?.status as string | undefined)) return;
+
+    await markLocalInvoicePaidFromSquare({
+      supabase,
+      squareInvoiceId,
+      squareInvoiceUrl: inv?.publicUrl ?? null,
+      squareReceiptUrl: payment.receiptUrl ?? null,
+      logContext: "payment.updated",
+    });
+  } catch (e) {
+    console.error("[square webhook] payment.updated sync failed:", e);
+  }
 }
 
 async function handleCardExpiring(

@@ -67,9 +67,12 @@ export async function POST(
 
     if (!cardId && customerId) {
       try {
-        const listRes = await squareClient.cards.list({ customerId });
-        const payload = listRes as unknown as { cards?: { id?: string }[] };
-        const cards = Array.isArray(payload.cards) ? payload.cards : [];
+        const listRes = await squareClient.cards.list({
+          customerId,
+          // SDK omits sortOrder by sending sort_order=null, which serializes to sort_order= and Square rejects (INVALID_ENUM_VALUE).
+          sortOrder: "ASC",
+        });
+        const cards = listRes.data ?? [];
         cardId = cards.length > 0 ? (cards[0].id ?? null) : null;
       } catch {
         // ignore

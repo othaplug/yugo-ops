@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import AdminInvoiceDetailModal from "./AdminInvoiceDetailModal";
 import InvoicesTable from "./InvoicesTable";
-import { ToastProvider } from "../components/Toast";
+import { ToastProvider, useToast } from "../components/Toast";
 
 const STATUS_FILTERS = [
   { value: "all", label: "All" },
@@ -31,14 +31,16 @@ interface InvoicesPageClientProps {
   invoices: any[];
 }
 
-export default function InvoicesPageClient({ invoices }: InvoicesPageClientProps) {
+function InvoicesPageInner({ invoices }: InvoicesPageClientProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [detailInvoice, setDetailInvoice] = useState<typeof invoices[0] | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortCol, setSortCol] = useState<string>("created_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [backfilling, setBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState<string | null>(null);
+  const [syncingSquare, setSyncingSquare] = useState(false);
 
   const runBackfill = async () => {
     setBackfilling(true);
@@ -55,13 +57,45 @@ export default function InvoicesPageClient({ invoices }: InvoicesPageClientProps
     }
   };
 
+  const runSquareSync = async () => {
+    setSyncingSquare(true);
+    try {
+      const res = await fetch("/api/admin/invoices/reconcile-square", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ limit: 100 }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast(data.error || "Sync failed", "x");
+        return;
+      }
+      const n = typeof data.markedPaid === "number" ? data.markedPaid : 0;
+      const checked = typeof data.checked === "number" ? data.checked : 0;
+      const linked = typeof data.linkedIds === "number" ? data.linkedIds : 0;
+      const errList = Array.isArray(data.errors) ? (data.errors as string[]).slice(0, 2).join(" ") : "";
+      const parts = [
+        n > 0 ? `Marked ${n} paid` : "No new paid matches",
+        checked > 0 ? `checked ${checked}` : null,
+        linked > 0 ? `linked ${linked} Square id${linked !== 1 ? "s" : ""}` : null,
+        errList ? `Notes: ${errList}` : null,
+      ].filter(Boolean);
+      toast(parts.join(". ") || "Done", n > 0 || linked > 0 ? "check" : "check");
+      if (n > 0 || linked > 0) router.refresh();
+    } catch {
+      toast("Sync failed", "x");
+    } finally {
+      setSyncingSquare(false);
+    }
+  };
+
   const filteredInvoices = useMemo(() => {
     if (statusFilter === "all") return invoices;
     return invoices.filter((inv) => (inv.status || "").toLowerCase() === statusFilter);
   }, [invoices, statusFilter]);
 
   return (
-    <ToastProvider>
+    <>
       <div>
         <div className="px-0 py-4 border-b border-[var(--brd)]/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h3 className="font-heading text-[15px] font-bold text-[var(--tx)]">All Invoices</h3>
@@ -73,6 +107,14 @@ export default function InvoicesPageClient({ invoices }: InvoicesPageClientProps
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
             >
               {backfilling ? "Generating…" : "Generate Invoices"}
+            </button>
+            <button
+              type="button"
+              onClick={runSquareSync}
+              disabled={syncingSquare}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:bg-[var(--bg2)] transition-all disabled:opacity-50"
+            >
+              {syncingSquare ? "Syncing…" : "Sync paid from Square"}
             </button>
             {backfillResult && (
               <span className="text-[10px] text-[var(--tx3)]">{backfillResult}</span>
@@ -135,6 +177,14 @@ export default function InvoicesPageClient({ invoices }: InvoicesPageClientProps
         invoice={detailInvoice}
         onSaved={() => router.refresh()}
       />
+    </>
+  );
+}
+
+export default function InvoicesPageClient(props: InvoicesPageClientProps) {
+  return (
+    <ToastProvider>
+      <InvoicesPageInner {...props} />
     </ToastProvider>
   );
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createAndPublishSquareInvoice } from "@/lib/square-invoice";
 import { resolveB2BInvoiceCustomerName } from "@/lib/b2b-invoice-customer-name";
+import { opsInvoiceNumberForSquareJob } from "@/lib/invoice-display-number";
 import { serverDebug } from "@/lib/server-log";
 
 /**
@@ -82,10 +83,10 @@ export async function POST(req: NextRequest) {
   const contactName = org.contact_name ?? null;
   const refCode = (move.move_code || moveId).slice(0, 32);
 
-  const { count } = await admin
-    .from("invoices")
-    .select("id", { count: "exact", head: true });
-  const invoiceNumber = `INV-${String((count ?? 0) + 1).padStart(4, "0")}`;
+  const invoiceNumber = opsInvoiceNumberForSquareJob({
+    jobType: "move",
+    referenceCode: refCode,
+  });
 
   let squareInvoiceId: string | null = null;
   let squareInvoiceUrl: string | null = null;

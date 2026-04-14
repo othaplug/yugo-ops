@@ -43,7 +43,11 @@ export async function POST(req: NextRequest) {
     } | null = null;
 
     try {
-      const cardsRes = await squareClient.cards.list({ customerId: customer.id });
+      const cardsRes = await squareClient.cards.list({
+        customerId: customer.id,
+        // SDK omits sortOrder by sending sort_order=null, which serializes to sort_order= and Square rejects (INVALID_ENUM_VALUE).
+        sortOrder: "ASC",
+      });
       const found = cardsRes.data?.find((c) => c.enabled);
       if (found) {
         activeCard = {

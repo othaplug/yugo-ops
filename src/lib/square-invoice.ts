@@ -1,6 +1,6 @@
 import { squareClient } from "@/lib/square";
 import { getSquarePaymentConfig } from "@/lib/square-config";
-import { normalizeDeliveryNumber } from "@/lib/delivery-number";
+import { opsInvoiceNumberForSquareJob } from "@/lib/invoice-display-number";
 import type { Currency } from "square";
 
 export interface CreateSquareInvoiceInput {
@@ -162,12 +162,10 @@ export async function createAndPublishSquareInvoice(
           },
         ],
         deliveryMethod: orgEmail ? "EMAIL" : "SHARE_MANUALLY",
-        invoiceNumber:
-          jobType === "move"
-            ? `M-${String(deliveryNumber || deliveryId)
-                .replace(/[^A-Za-z0-9-]/g, "")
-                .slice(0, 24)}`
-            : normalizeDeliveryNumber(deliveryNumber),
+        invoiceNumber: opsInvoiceNumberForSquareJob({
+          jobType: jobType === "move" ? "move" : "delivery",
+          referenceCode: deliveryNumber,
+        }),
         title: jobType === "move" ? "Move Service" : "Delivery Service",
         description:
           jobType === "move"

@@ -120,6 +120,9 @@ export default function AdminInvoiceDetailModal({
   if (!open || !invoice) return null;
 
   const inv = (detail?.invoice ?? invoice) as Record<string, unknown>;
+  const displayNum = String(
+    inv.display_invoice_number ?? inv.invoice_number ?? invoice.invoice_number ?? ""
+  );
   const delivery = detail?.delivery as Record<string, unknown> | null | undefined;
   const lineItemsRaw = inv.line_items;
   const lineItems: LineItem[] = Array.isArray(lineItemsRaw)
@@ -139,7 +142,7 @@ export default function AdminInvoiceDetailModal({
   const total = subtotal + hst;
 
   return (
-    <ModalOverlay open={open} onClose={onClose} title={`Invoice ${invoice.invoice_number}`} maxWidth="lg">
+    <ModalOverlay open={open} onClose={onClose} title={`Invoice ${displayNum || invoice.invoice_number}`} maxWidth="lg">
       <div className="p-5 space-y-5">
         {loading ? (
           <div className="py-12 text-center text-[var(--tx3)] text-[13px]">Loading invoice details…</div>
