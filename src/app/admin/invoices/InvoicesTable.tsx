@@ -2,8 +2,8 @@
 
 import { useCallback } from "react";
 import Link from "next/link";
-import Badge from "../components/Badge";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
+import { getInvoiceStatusLabel, invoiceStatusBadgeClass } from "@/lib/invoice-admin-status";
 import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
 import { formatAdminCreatedAt } from "@/lib/date-format";
 import { useToast } from "../components/Toast";
@@ -79,6 +79,8 @@ export default function InvoicesTable({
     {
       id: "invoice_number",
       label: "Invoice",
+      minWidth: "132px",
+      defaultWidth: 156,
       accessor: (r) => displayInvoiceNumber(r),
       render: (r) => {
         const typeLabel = getInvoiceServiceTypeLabel(r);
@@ -102,6 +104,8 @@ export default function InvoicesTable({
     {
       id: "client_name",
       label: "Client",
+      minWidth: "156px",
+      defaultWidth: 208,
       accessor: (r) => r.client_name,
       render: (r) => (
         <Link
@@ -156,13 +160,21 @@ export default function InvoicesTable({
     {
       id: "status",
       label: "Status",
-      accessor: (r) => r.status,
-      render: (r) => <Badge status={r.status} />,
+      accessor: (r) => getInvoiceStatusLabel(r.status),
+      render: (r) => (
+        <span
+          className={`inline-flex items-center dt-badge tracking-[0.04em] uppercase ${invoiceStatusBadgeClass(r.status)}`}
+        >
+          {getInvoiceStatusLabel(r.status)}
+        </span>
+      ),
       sortable: true,
     },
     {
       id: "square",
       label: "Square",
+      minWidth: "140px",
+      defaultWidth: 200,
       accessor: (r) =>
         [r.square_invoice_url, r.square_invoice_id].filter(Boolean).join(" ") || "",
       render: (r) =>

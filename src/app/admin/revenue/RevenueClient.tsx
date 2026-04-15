@@ -20,6 +20,12 @@ import {
   ArrowUpRight,
   X,
 } from "@phosphor-icons/react";
+import {
+  getInvoiceStatusLabel,
+  invoiceStatusBadgeClass,
+  invoiceStatusIsOutstanding,
+} from "@/lib/invoice-admin-status";
+import { isDeliveryId } from "@/lib/delivery-number";
 
 type Period = "6mo" | "year" | "ytd" | "monthly" | "all";
 
@@ -54,16 +60,73 @@ const MONTH_LABELS = [
   "Dec",
 ];
 
+type DeliveryEmbed = { delivery_number?: string | null };
+
 interface Invoice {
   id: string;
   client_name: string | null;
   organization_id: string | null;
+  /** Partner / logistics invoices: always treated as B2B channel revenue when present. */
+  delivery_id: string | null;
+  move_id: string | null;
   amount: number | null;
   status: string | null;
   created_at: string | null;
   updated_at: string | null;
   invoice_number: string | null;
   paid_at: string | null;
+  /** From revenue page query embed (same idea as admin invoices list). */
+  deliveries?: DeliveryEmbed | DeliveryEmbed[] | null;
+}
+
+function embedDeliveryNumber(inv: Invoice): string | null {
+  const d = inv.deliveries;
+  const row = Array.isArray(d) ? d[0] : d;
+  const n = row?.delivery_number;
+  return n != null && String(n).trim() !== "" ? String(n).trim() : null;
+}
+
+function invoiceExcludedFromRevenue(inv: Invoice): boolean {
+  const s = (inv.status || "").toLowerCase().trim();
+  return s === "cancelled" || s === "archived";
+}
+
+function getInvoicePartnerType(
+  inv: Invoice,
+  orgIdToType: Record<string, string>,
+  clientTypeMap: Record<string, string>,
+): string {
+  if (inv.organization_id && orgIdToType[inv.organization_id]) {
+    return orgIdToType[inv.organization_id];
+  }
+  const name = inv.client_name;
+  if (name && clientTypeMap[name]) return clientTypeMap[name];
+  return "retail";
+}
+
+function isB2BInvoice(
+  inv: Invoice,
+  orgIdToType: Record<string, string>,
+  clientTypeMap: Record<string, string>,
+): boolean {
+  return getInvoicePartnerType(inv, orgIdToType, clientTypeMap) !== "b2c";
+}
+
+/**
+ * Partner invoice rail: delivery jobs (logistics / B2B) or non–move-client orgs.
+ * Matches admin invoice list: display can show DLV-* from `deliveries` while `invoice_number` is PJ/DEL/INV.
+ */
+function isPartnerChannelInvoice(
+  inv: Invoice,
+  orgIdToType: Record<string, string>,
+  clientTypeMap: Record<string, string>,
+): boolean {
+  if (inv.delivery_id) return true;
+  if (embedDeliveryNumber(inv)) return true;
+  const num = String(inv.invoice_number || "").trim();
+  if (/^DLV-/i.test(num)) return true;
+  if (isDeliveryId(num)) return true;
+  return isB2BInvoice(inv, orgIdToType, clientTypeMap);
 }
 
 interface PaidMove {
@@ -81,6 +144,8 @@ interface RevenueClientProps {
   invoices: Invoice[];
   paidMoves?: PaidMove[];
   clientTypeMap?: Record<string, string>;
+  /** Org id → type (retail, b2c, …). Used so B2B invoices resolve even when client name mismatches. */
+  orgIdToType?: Record<string, string>;
   clientNameToOrgId?: Record<string, string>;
 }
 
@@ -240,6 +305,7 @@ export default function RevenueClient({
   invoices,
   paidMoves = [],
   clientTypeMap = {},
+  orgIdToType = {},
   clientNameToOrgId = {},
 }: RevenueClientProps) {
   const [period, setPeriod] = useState<Period>("6mo");
@@ -257,10 +323,16 @@ export default function RevenueClient({
   };
 
   const all = invoices || [];
-  const paid = all.filter((i) => i.status === "paid");
+  const invoicesForBreakdown = all.filter((i) => !invoiceExcludedFromRevenue(i));
+  const b2bRevenueInvoices = invoicesForBreakdown.filter((i) =>
+    isPartnerChannelInvoice(i, orgIdToType, clientTypeMap),
+  );
   const paidMovesList = paidMoves || [];
 
-  const invoiceRevenue = paid.reduce((s, i) => s + Number(i.amount), 0);
+  const invoiceRevenue = b2bRevenueInvoices.reduce(
+    (s, i) => s + Number(i.amount ?? 0),
+    0,
+  );
   const moveRevenue = paidMovesList.reduce(
     (s, m) => s + Number(m.amount ?? m.estimate ?? 0),
     0,
@@ -271,11 +343,11 @@ export default function RevenueClient({
   const movePct = 100 - invPct;
 
   const outstanding = all
-    .filter((i) => i.status === "sent" || i.status === "overdue")
-    .reduce((s, i) => s + Number(i.amount), 0);
+    .filter((i) => invoiceStatusIsOutstanding(i.status))
+    .reduce((s, i) => s + Number(i.amount ?? 0), 0);
 
   const byClient: Record<string, number> = {};
-  paid.forEach((i) => {
+  invoicesForBreakdown.forEach((i) => {
     const name = i.client_name ?? "-";
     byClient[name] = (byClient[name] || 0) + Number(i.amount);
   });
@@ -297,7 +369,7 @@ export default function RevenueClient({
     // All Time: aggregate by year
     if (period === "all") {
       const byYear: Record<number, number> = {};
-      paid.forEach((inv) => {
+      b2bRevenueInvoices.forEach((inv) => {
         const y = getInvoiceRevenueDate(inv).getFullYear();
         byYear[y] = (byYear[y] || 0) + Number(inv.amount);
       });
@@ -320,7 +392,7 @@ export default function RevenueClient({
       const result: { label: string; value: number; fullLabel: string }[] = [];
       for (let m = 0; m < 12; m++) {
         let sum = 0;
-        paid.forEach((inv) => {
+        b2bRevenueInvoices.forEach((inv) => {
           const d = getInvoiceRevenueDate(inv);
           if (d.getFullYear() === selectedYear && d.getMonth() === m)
             sum += Number(inv.amount);
@@ -343,7 +415,7 @@ export default function RevenueClient({
       const daysInMonth = new Date(year, month + 1, 0).getDate();
       const byDay: Record<number, number> = {};
       for (let d = 1; d <= daysInMonth; d++) byDay[d] = 0;
-      paid.forEach((inv) => {
+      b2bRevenueInvoices.forEach((inv) => {
         const d = getInvoiceRevenueDate(inv);
         if (d.getFullYear() === year && d.getMonth() === month) {
           byDay[d.getDate()] = (byDay[d.getDate()] || 0) + Number(inv.amount);
@@ -382,7 +454,7 @@ export default function RevenueClient({
         y += 1;
       }
       let sum = 0;
-      paid.forEach((inv) => {
+      b2bRevenueInvoices.forEach((inv) => {
         const d = getInvoiceRevenueDate(inv);
         if (d.getFullYear() === y && d.getMonth() === m)
           sum += Number(inv.amount);
@@ -399,12 +471,11 @@ export default function RevenueClient({
       });
     }
     return result;
-  }, [period, selectedYear, paid, paidMovesList]);
+  }, [period, selectedYear, b2bRevenueInvoices, paidMovesList]);
 
   const byTypeRaw: Record<string, number> = {};
-  paid.forEach((i) => {
-    const t =
-      (i.client_name ? clientTypeMap[i.client_name] : undefined) || "retail";
+  invoicesForBreakdown.forEach((i) => {
+    const t = getInvoicePartnerType(i, orgIdToType, clientTypeMap);
     byTypeRaw[t] = (byTypeRaw[t] || 0) + Number(i.amount);
   });
   const byType = [
@@ -440,7 +511,7 @@ export default function RevenueClient({
     },
     {
       key: "b2c",
-      label: "B2C Moves",
+      label: "Moves",
       amount: byTypeRaw.b2c || 0,
       color: "var(--tx3)",
     },
@@ -450,18 +521,17 @@ export default function RevenueClient({
 
   const invoicesByType = useMemo(() => {
     if (!selectedType) return [];
-    return all.filter(
+    return invoicesForBreakdown.filter(
       (i) =>
-        ((i.client_name ? clientTypeMap[i.client_name] : undefined) ||
-          "retail") === selectedType,
+        getInvoicePartnerType(i, orgIdToType, clientTypeMap) === selectedType,
     );
-  }, [all, selectedType, clientTypeMap]);
+  }, [invoicesForBreakdown, selectedType, orgIdToType, clientTypeMap]);
 
   const now = new Date();
   const currentMonthRevenue = useMemo(() => {
     const y = now.getFullYear();
     const m = now.getMonth();
-    const invSum = paid
+    const invSum = b2bRevenueInvoices
       .filter((inv) => {
         const d = getInvoiceRevenueDate(inv);
         return d.getFullYear() === y && d.getMonth() === m;
@@ -474,13 +544,13 @@ export default function RevenueClient({
       })
       .reduce((s, m) => s + Number(m.amount ?? m.estimate ?? 0), 0);
     return invSum + moveSum;
-  }, [paid, paidMovesList, now]);
+  }, [b2bRevenueInvoices, paidMovesList, now]);
 
   const prevMonthRevenue = useMemo(() => {
     const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const y = prev.getFullYear();
     const m = prev.getMonth();
-    const invSum = paid
+    const invSum = b2bRevenueInvoices
       .filter((inv) => {
         const d = getInvoiceRevenueDate(inv);
         return d.getFullYear() === y && d.getMonth() === m;
@@ -493,22 +563,22 @@ export default function RevenueClient({
       })
       .reduce((s, m) => s + Number(m.amount ?? m.estimate ?? 0), 0);
     return invSum + moveSum;
-  }, [paid, paidMovesList, now]);
+  }, [b2bRevenueInvoices, paidMovesList, now]);
 
   const ytdRevenue = useMemo(() => {
     const y = now.getFullYear();
-    const invSum = paid
+    const invSum = b2bRevenueInvoices
       .filter((inv) => getInvoiceRevenueDate(inv).getFullYear() === y)
       .reduce((s, i) => s + Number(i.amount), 0);
     const moveSum = paidMovesList
       .filter((move) => getMoveRevenueDate(move).getFullYear() === y)
       .reduce((s, m) => s + Number(m.amount ?? m.estimate ?? 0), 0);
     return invSum + moveSum;
-  }, [paid, paidMovesList, now]);
+  }, [b2bRevenueInvoices, paidMovesList, now]);
 
-  const totalPaidItems = paid.length + paidMovesList.length;
+  const revenueSourceCount = b2bRevenueInvoices.length + paidMovesList.length;
   const avgJob =
-    totalPaidItems > 0 ? Math.round(paidTotal / totalPaidItems) : 0;
+    revenueSourceCount > 0 ? Math.round(paidTotal / revenueSourceCount) : 0;
   const pctChange =
     prevMonthRevenue > 0
       ? Math.round(
@@ -558,19 +628,19 @@ export default function RevenueClient({
         <KpiCard
           label={`${now.getFullYear()} YTD`}
           value={formatCompactCurrency(ytdRevenue)}
-          sub={`${paid.length + paidMovesList.length} paid jobs`}
+          sub={`${b2bRevenueInvoices.length} partner invoices · ${paidMovesList.length} paid moves`}
           href="/admin/invoices"
         />
         <KpiCard
           label="Outstanding"
           value={formatCompactCurrency(outstanding)}
-          sub="Sent + overdue"
+          sub="Open invoices before HST (excludes paid, draft)"
           href="/admin/invoices"
         />
         <KpiCard
           label="Avg Job Value"
           value={formatCompactCurrency(avgJob)}
-          sub={`Across ${totalPaidItems} jobs`}
+          sub={`Across ${revenueSourceCount} sources`}
         />
       </div>
 
@@ -582,7 +652,7 @@ export default function RevenueClient({
             <div className="sm:pr-8 pb-4 sm:pb-0">
               <SourcePill
                 color="var(--gold)"
-                label="Invoice Payments"
+                label="Partner invoices"
                 value={invoiceRevenue}
                 pct={invPct}
               />
@@ -601,7 +671,8 @@ export default function RevenueClient({
                 {formatCompactCurrency(paidTotal)}
               </p>
               <p className="text-[10px] text-[var(--tx3)] mt-1.5">
-                {totalPaidItems} paid transactions
+                {b2bRevenueInvoices.length} partner invoices ·{" "}
+                {paidMovesList.length} paid moves
               </p>
             </div>
           </div>
@@ -725,8 +796,8 @@ export default function RevenueClient({
         ) : (
           <div className="h-full flex items-center justify-center">
             <p className="text-[12px] text-[var(--tx3)] text-center max-w-[280px]">
-              No revenue in this period. Revenue appears when invoices or moves
-              are marked paid.
+              No revenue in this period. Add partner invoices or paid move
+              payments that fall in this range.
             </p>
           </div>
         )}
@@ -741,7 +812,7 @@ export default function RevenueClient({
           <div className="mb-5">
             <h2 className="admin-section-h2">By Service Type</h2>
             <p className="text-[10px] text-[var(--tx3)] mt-0.5">
-              Invoice revenue by client category
+              Partner invoice amounts by category (before HST, excludes cancelled and archived)
             </p>
           </div>
           <div className="space-y-1 divide-y divide-[var(--brd)]">
@@ -851,7 +922,7 @@ export default function RevenueClient({
               })
             ) : (
               <p className="text-[11px] text-[var(--tx3)] py-6">
-                No paid invoices or moves yet.
+                No invoice or move revenue yet.
               </p>
             )}
           </div>
@@ -927,15 +998,9 @@ export default function RevenueClient({
                         {inv.client_name}
                       </span>
                       <span
-                        className={`dt-badge tracking-[0.04em] shrink-0 ${
-                          inv.status === "paid"
-                            ? "text-[var(--grn)]"
-                            : inv.status === "overdue"
-                              ? "text-red-600 dark:text-red-400"
-                              : "text-amber-700 dark:text-amber-300"
-                        }`}
+                        className={`dt-badge tracking-[0.04em] shrink-0 ${invoiceStatusBadgeClass(inv.status)}`}
                       >
-                        {inv.status}
+                        {getInvoiceStatusLabel(inv.status)}
                       </span>
                       <span className="font-bold text-[var(--tx)] shrink-0">
                         {formatCurrency(inv.amount)}

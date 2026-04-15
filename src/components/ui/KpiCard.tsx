@@ -7,6 +7,7 @@ export default function KpiCard({
   label,
   value,
   sub,
+  subVariant = "default",
   delta,
   href,
   accent = false,
@@ -15,6 +16,8 @@ export default function KpiCard({
   label: string;
   value: string;
   sub?: string;
+  /** `tightCaps`: DM Sans, bold, uppercase, tight tracking (no sentence-casing). */
+  subVariant?: "default" | "tightCaps";
   delta?: number;
   href?: string;
   accent?: boolean;
@@ -30,9 +33,7 @@ export default function KpiCard({
     <div className={href ? "group cursor-pointer" : "group cursor-default"}>
       <p
         className={`text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/78 mb-1 sm:mb-2 transition-colors ${
-          href
-            ? "group-hover:text-[var(--tx3)]/90"
-            : ""
+          href ? "group-hover:text-[var(--tx3)]/90" : ""
         }`}
       >
         {label}
@@ -45,7 +46,15 @@ export default function KpiCard({
         {value}
       </p>
       {sub && (
-        <p className="text-[9px] text-[var(--tx3)] mt-1.5">{toSentenceCase(sub)}</p>
+        <p
+          className={
+            subVariant === "tightCaps"
+              ? "mt-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] leading-snug text-[var(--tx3)]/92 [font-family:var(--font-body)]"
+              : "text-[9px] text-[var(--tx3)] mt-1.5"
+          }
+        >
+          {subVariant === "tightCaps" ? sub : toSentenceCase(sub)}
+        </p>
       )}
       {delta !== undefined && delta !== 0 && (
         <div

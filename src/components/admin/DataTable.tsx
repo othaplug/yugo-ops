@@ -269,11 +269,23 @@ export default function DataTable<T>({
     return sv?.perPage ?? loadPerPage(tableId, defaultPerPage);
   });
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const dataTableContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (clearSelectionSignal == null || clearSelectionSignal === 0) return;
     setSelectedKeys(new Set());
   }, [clearSelectionSignal]);
+
+  useEffect(() => {
+    if (!selectable || selectedKeys.size === 0) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const root = dataTableContainerRef.current;
+      if (!root || root.contains(e.target as Node)) return;
+      setSelectedKeys(new Set());
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [selectable, selectedKeys]);
 
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(() => {
     const sv = loadViewSnapshot(tableId);
@@ -719,7 +731,7 @@ export default function DataTable<T>({
 
   /* ════════════ Render ════════════ */
   return (
-    <div className="space-y-0 w-full min-w-0 max-w-full">
+    <div ref={dataTableContainerRef} className="space-y-0 w-full min-w-0 max-w-full">
       {/* ── Toolbar ── */}
       <div className="flex flex-col gap-2 mb-4 relative">
         <div className="flex items-center gap-2 w-full min-w-0">
@@ -921,12 +933,13 @@ export default function DataTable<T>({
             {selectable && <col style={{ width: 40 }} />}
             {colWidths.map((w, i) => {
               const col = visibleCols[i];
-              const style: CSSProperties = { width: w };
-              if (col?.minWidth) style.minWidth = col.minWidth;
+              const isLast = i === visibleCols.length - 1;
+              const style: CSSProperties = isLast
+                ? { width: "auto", minWidth: col?.minWidth ?? Math.max(w, 100) }
+                : { width: w };
+              if (!isLast && col?.minWidth) style.minWidth = col.minWidth;
               return <col key={col?.id ?? i} style={style} />;
             })}
-            {/* Spacer col absorbs remaining width so table fills container */}
-            <col style={{ width: "auto" }} />
           </colgroup>
           <thead className={stickyHeader ? "sticky top-0 z-10 bg-[var(--bg)] shadow-[0_1px_0_0_var(--brd)]" : ""}>
             <tr className="border-b border-[var(--brd)]/50">
@@ -995,15 +1008,13 @@ export default function DataTable<T>({
                   </th>
                 );
               })}
-              {/* Spacer fills remaining width */}
-              <th className="w-auto" />
             </tr>
           </thead>
           <tbody>
             {paged.length === 0 ? (
               <tr>
                 <td
-                  colSpan={visibleCols.length + (selectable ? 1 : 0) + 1}
+                  colSpan={visibleCols.length + (selectable ? 1 : 0)}
                 >
                   <div className="dt-empty">
                     <p className="dt-empty-title">{emptyMessage}</p>
@@ -1072,8 +1083,6 @@ export default function DataTable<T>({
                         : <span className="uppercase text-[var(--tx)]">{String(col.accessor(row) ?? "-")}</span>}
                     </td>
                   ))}
-                  {/* Spacer cell fills remaining width */}
-                  <td />
                 </tr>
                 );
               })

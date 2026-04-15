@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Badge from "../components/Badge";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
+import { getInvoiceStatusLabel, invoiceStatusBadgeClass } from "@/lib/invoice-admin-status";
 import ModalOverlay from "../components/ModalOverlay";
 import { useToast } from "../components/Toast";
 import { getDeliveryDetailPath } from "@/lib/move-code";
@@ -156,7 +156,11 @@ export default function AdminInvoiceDetailModal({
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Status</div>
-                <Badge status={String(inv.status ?? status)} />
+                <span
+                  className={`text-[11px] font-bold uppercase tracking-wide ${invoiceStatusBadgeClass(String(inv.status ?? status))}`}
+                >
+                  {getInvoiceStatusLabel(String(inv.status ?? status))}
+                </span>
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Amount</div>

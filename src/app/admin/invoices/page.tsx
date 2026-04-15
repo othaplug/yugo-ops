@@ -6,7 +6,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import BackButton from "../components/BackButton";
 import { formatCompactCurrency } from "@/lib/format-currency";
 import KpiCard from "@/components/ui/KpiCard";
-import SectionDivider from "@/components/ui/SectionDivider";
 import InvoicesPageClient from "./InvoicesPageClient";
 
 export default async function InvoicesPage() {
@@ -16,7 +15,7 @@ export default async function InvoicesPage() {
   const withOrg = await db
     .from("invoices")
     .select(
-      "*, organizations!organization_id(vertical, type), deliveries!delivery_id(delivery_number), moves!move_id(move_code)"
+      "*, organizations!organization_id(vertical, type), deliveries!delivery_id(delivery_number), moves!move_id(move_code)",
     )
     .order("created_at", { ascending: false });
 
@@ -25,8 +24,14 @@ export default async function InvoicesPage() {
   let orgEmbedWarning: string | null = null;
 
   if (withOrg.error) {
-    console.error("[admin/invoices] query with organizations embed failed:", withOrg.error);
-    const plain = await db.from("invoices").select("*").order("created_at", { ascending: false });
+    console.error(
+      "[admin/invoices] query with organizations embed failed:",
+      withOrg.error,
+    );
+    const plain = await db
+      .from("invoices")
+      .select("*")
+      .order("created_at", { ascending: false });
     if (plain.error) {
       console.error("[admin/invoices] fallback query failed:", plain.error);
       loadError = plain.error.message || "Failed to load invoices";
@@ -63,7 +68,9 @@ export default async function InvoicesPage() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <div className="mb-6"><BackButton label="Back" /></div>
+      <div className="mb-6">
+        <BackButton label="Back" />
+      </div>
 
       {loadError && (
         <div
@@ -85,21 +92,57 @@ export default async function InvoicesPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-8">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Finance</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">
+            Finance
+          </p>
           <h1 className="admin-page-hero text-[var(--tx)]">Invoices</h1>
         </div>
       </div>
 
       {/* KPI row */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
-        <KpiCard label="Total" value={String(all.length)} sub={`${paid.length} paid · ${draft.length} draft`} href="/admin/revenue" />
-        <KpiCard label="Paid" value={formatCompactCurrency(paidTotal)} sub={`${paid.length} invoices`} accent href="/admin/revenue" />
-        <KpiCard label="Pending / Sent" value={formatCompactCurrency(sentTotal)} sub={`${sent.length} awaiting`} href="/admin/revenue" />
-        <KpiCard label="Overdue" value={formatCompactCurrency(overdueTotal)} sub={`${overdue.length} past due`} warn={overdueTotal > 0} href="/admin/revenue" />
-        <KpiCard label="Draft" value={String(draft.length)} sub="not yet sent" />
+        <KpiCard
+          label="Total"
+          value={String(all.length)}
+          sub={
+            draft.length > 0
+              ? `${paid.length} paid · ${draft.length} ${draft.length === 1 ? "draft" : "drafts"}`
+              : `${paid.length} paid`
+          }
+          subVariant="tightCaps"
+          href="/admin/revenue"
+        />
+        <KpiCard
+          label="Paid"
+          value={formatCompactCurrency(paidTotal)}
+          sub={`${paid.length} ${paid.length === 1 ? "invoice" : "invoices"}`}
+          subVariant="tightCaps"
+          accent
+          href="/admin/revenue"
+        />
+        <KpiCard
+          label="Pending / Sent"
+          value={formatCompactCurrency(sentTotal)}
+          sub={`${sent.length} awaiting`}
+          subVariant="tightCaps"
+          href="/admin/revenue"
+        />
+        <KpiCard
+          label="Overdue"
+          value={formatCompactCurrency(overdueTotal)}
+          sub={`${overdue.length} past due`}
+          subVariant="tightCaps"
+          warn={overdueTotal > 0}
+          href="/admin/revenue"
+        />
+        <KpiCard
+          label="Draft"
+          value={String(draft.length)}
+          sub="not yet sent"
+          subVariant="tightCaps"
+        />
       </div>
 
-      <SectionDivider label="All Invoices" />
       <InvoicesPageClient invoices={all} />
     </div>
   );
