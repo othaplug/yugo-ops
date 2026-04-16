@@ -9,7 +9,7 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Cell,
+  Legend,
 } from "recharts";
 import BackButton from "../components/BackButton";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
@@ -25,7 +25,18 @@ import {
   invoiceStatusBadgeClass,
   invoiceStatusIsOutstanding,
 } from "@/lib/invoice-admin-status";
-import { isDeliveryId } from "@/lib/delivery-number";
+import {
+  type PartnerRevenueInvoice,
+  deliveryIdsCoveredByAnyInvoice,
+  invoiceExcludedFromRevenue,
+  getInvoicePartnerType,
+  isPartnerChannelInvoice,
+  getInvoiceRevenueDate,
+  normalizePartnerCategoryForBreakdown,
+  partnerRevenueTotalForMonth,
+  partnerRevenueLifetime,
+} from "@/lib/partner-revenue";
+import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
 
 type Period = "6mo" | "year" | "ytd" | "monthly" | "all";
 
@@ -60,74 +71,7 @@ const MONTH_LABELS = [
   "Dec",
 ];
 
-type DeliveryEmbed = { delivery_number?: string | null };
-
-interface Invoice {
-  id: string;
-  client_name: string | null;
-  organization_id: string | null;
-  /** Partner / logistics invoices: always treated as B2B channel revenue when present. */
-  delivery_id: string | null;
-  move_id: string | null;
-  amount: number | null;
-  status: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-  invoice_number: string | null;
-  paid_at: string | null;
-  /** From revenue page query embed (same idea as admin invoices list). */
-  deliveries?: DeliveryEmbed | DeliveryEmbed[] | null;
-}
-
-function embedDeliveryNumber(inv: Invoice): string | null {
-  const d = inv.deliveries;
-  const row = Array.isArray(d) ? d[0] : d;
-  const n = row?.delivery_number;
-  return n != null && String(n).trim() !== "" ? String(n).trim() : null;
-}
-
-function invoiceExcludedFromRevenue(inv: Invoice): boolean {
-  const s = (inv.status || "").toLowerCase().trim();
-  return s === "cancelled" || s === "archived";
-}
-
-function getInvoicePartnerType(
-  inv: Invoice,
-  orgIdToType: Record<string, string>,
-  clientTypeMap: Record<string, string>,
-): string {
-  if (inv.organization_id && orgIdToType[inv.organization_id]) {
-    return orgIdToType[inv.organization_id];
-  }
-  const name = inv.client_name;
-  if (name && clientTypeMap[name]) return clientTypeMap[name];
-  return "retail";
-}
-
-function isB2BInvoice(
-  inv: Invoice,
-  orgIdToType: Record<string, string>,
-  clientTypeMap: Record<string, string>,
-): boolean {
-  return getInvoicePartnerType(inv, orgIdToType, clientTypeMap) !== "b2c";
-}
-
-/**
- * Partner invoice rail: delivery jobs (logistics / B2B) or non–move-client orgs.
- * Matches admin invoice list: display can show DLV-* from `deliveries` while `invoice_number` is PJ/DEL/INV.
- */
-function isPartnerChannelInvoice(
-  inv: Invoice,
-  orgIdToType: Record<string, string>,
-  clientTypeMap: Record<string, string>,
-): boolean {
-  if (inv.delivery_id) return true;
-  if (embedDeliveryNumber(inv)) return true;
-  const num = String(inv.invoice_number || "").trim();
-  if (/^DLV-/i.test(num)) return true;
-  if (isDeliveryId(num)) return true;
-  return isB2BInvoice(inv, orgIdToType, clientTypeMap);
-}
+type Invoice = PartnerRevenueInvoice;
 
 interface PaidMove {
   id: string;
@@ -141,17 +85,14 @@ interface PaidMove {
 }
 
 interface RevenueClientProps {
-  invoices: Invoice[];
+  invoices: PartnerRevenueInvoice[];
+  /** Recent deliveries (same window as Command Center) for partner revenue when no invoice row exists. */
+  deliveries?: Record<string, unknown>[];
   paidMoves?: PaidMove[];
   clientTypeMap?: Record<string, string>;
   /** Org id → type (retail, b2c, …). Used so B2B invoices resolve even when client name mismatches. */
   orgIdToType?: Record<string, string>;
   clientNameToOrgId?: Record<string, string>;
-}
-
-function getInvoiceRevenueDate(inv: Invoice): Date {
-  const ts = inv.paid_at || inv.created_at;
-  return ts ? new Date(ts) : new Date(0);
 }
 
 function getMoveRevenueDate(m: PaidMove): Date {
@@ -238,23 +179,50 @@ function KpiCard({
 }
 
 // ─── Custom Tooltip ───────────────────────────────────────────────────────────
-function CustomTooltip({
+const CHART_PARTNER_FILL = "#5C1A33";
+const CHART_MOVES_FILL = "#2C3E2D";
+
+function StackedRevenueTooltip({
   active,
   payload,
   label: _label,
 }: {
   active?: boolean;
-  payload?: { value: number; payload?: { fullLabel?: string } }[];
+  payload?: Array<{
+    value?: number;
+    name?: string;
+    color?: string;
+    dataKey?: string;
+    payload?: { fullLabel?: string };
+  }>;
   label?: string;
 }) {
   if (!active || !payload?.length) return null;
-  const p = payload[0];
-  const fullLabel = p?.payload?.fullLabel ?? _label;
+  const fullLabel = payload[0]?.payload?.fullLabel ?? _label;
+  const total = payload.reduce((s, x) => s + Number(x.value ?? 0), 0);
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl px-3.5 py-2.5 shadow-xl text-[11px]">
-      <p className="text-[var(--tx3)] mb-1 font-medium">{fullLabel}</p>
-      <p className="font-bold text-[var(--tx)]">
-        {formatCurrency(p.value ?? 0)}
+      <p className="text-[var(--tx3)] mb-2 font-medium">{fullLabel}</p>
+      <div className="space-y-1.5">
+        {payload.map((p) => (
+          <div
+            key={String(p.dataKey)}
+            className="flex items-center justify-between gap-6"
+          >
+            <span
+              className="font-medium"
+              style={{ color: p.color ?? "var(--tx2)" }}
+            >
+              {p.name}
+            </span>
+            <span className="font-bold text-[var(--tx)] tabular-nums">
+              {formatCurrency(Number(p.value ?? 0))}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 pt-2 border-t border-[var(--brd)] font-bold text-[var(--tx)] tabular-nums">
+        Total {formatCurrency(total)}
       </p>
     </div>
   );
@@ -303,6 +271,7 @@ function SourcePill({
 
 export default function RevenueClient({
   invoices,
+  deliveries = [],
   paidMoves = [],
   clientTypeMap = {},
   orgIdToType = {},
@@ -311,7 +280,6 @@ export default function RevenueClient({
   const [period, setPeriod] = useState<Period>("6mo");
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [hoveredBar, setHoveredBar] = useState<number | null>(null);
 
   const handlePeriodChange = (key: Period) => {
     setSelectedYear(null);
@@ -324,14 +292,20 @@ export default function RevenueClient({
 
   const all = invoices || [];
   const invoicesForBreakdown = all.filter((i) => !invoiceExcludedFromRevenue(i));
-  const b2bRevenueInvoices = invoicesForBreakdown.filter((i) =>
-    isPartnerChannelInvoice(i, orgIdToType, clientTypeMap),
-  );
   const paidMovesList = paidMoves || [];
+  const paidInvoicesAll = all.filter((i) => i.status === "paid");
+  const deliveryRows =
+    deliveries as Parameters<typeof partnerRevenueTotalForMonth>[2];
 
-  const invoiceRevenue = b2bRevenueInvoices.reduce(
-    (s, i) => s + Number(i.amount ?? 0),
-    0,
+  const invoiceRevenue = partnerRevenueLifetime(
+    all,
+    paidInvoicesAll,
+    deliveryRows,
+    orgIdToType,
+    clientTypeMap,
+  );
+  const paidPartnerInvoices = paidInvoicesAll.filter((i) =>
+    isPartnerChannelInvoice(i, orgIdToType, clientTypeMap),
   );
   const moveRevenue = paidMovesList.reduce(
     (s, m) => s + Number(m.amount ?? m.estimate ?? 0),
@@ -361,87 +335,157 @@ export default function RevenueClient({
     .slice(0, 6);
   const maxClientAmount = Math.max(1, topClients[0]?.[1] ?? 1);
 
+  type ChartRow = {
+    label: string;
+    fullLabel: string;
+    value: number;
+    partner: number;
+    moves: number;
+  };
+
   const chartData = useMemo(() => {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
 
-    // All Time: aggregate by year
+    const moveSumInMonth = (y: number, mo: number) =>
+      paidMovesList
+        .filter((move) => {
+          const d = getMoveRevenueDate(move);
+          return d.getFullYear() === y && d.getMonth() === mo;
+        })
+        .reduce((s, move) => s + Number(move.amount ?? move.estimate ?? 0), 0);
+
+    const partnerInMonth = (y: number, mo: number) =>
+      partnerRevenueTotalForMonth(
+        all,
+        paidInvoicesAll,
+        deliveryRows,
+        orgIdToType,
+        clientTypeMap,
+        y,
+        mo,
+      );
+
+    const row = (
+      label: string,
+      fullLabel: string,
+      partner: number,
+      moves: number,
+    ): ChartRow => ({
+      label,
+      fullLabel,
+      partner,
+      moves,
+      value: partner + moves,
+    });
+
+    // All Time: aggregate by year (partner + moves)
     if (period === "all") {
-      const byYear: Record<number, number> = {};
-      b2bRevenueInvoices.forEach((inv) => {
-        const y = getInvoiceRevenueDate(inv).getFullYear();
-        byYear[y] = (byYear[y] || 0) + Number(inv.amount);
+      const years = new Set<number>();
+      all.forEach((inv) => years.add(getInvoiceRevenueDate(inv).getFullYear()));
+      paidMovesList.forEach((m) =>
+        years.add(getMoveRevenueDate(m).getFullYear()),
+      );
+      (deliveries || []).forEach((d) => {
+        const ts = String(d.scheduled_date || d.created_at || "");
+        if (ts) years.add(new Date(ts).getFullYear());
       });
-      paidMovesList.forEach((m) => {
-        const y = getMoveRevenueDate(m).getFullYear();
-        byYear[y] = (byYear[y] || 0) + Number(m.amount ?? m.estimate ?? 0);
+      const sorted = [...years].sort((a, b) => a - b);
+      return sorted.map((y) => {
+        let partner = 0;
+        let moves = 0;
+        for (let mo = 0; mo < 12; mo++) {
+          partner += partnerInMonth(y, mo);
+          moves += moveSumInMonth(y, mo);
+        }
+        return row(String(y), String(y), partner, moves);
       });
-      const years = Object.keys(byYear)
-        .map(Number)
-        .sort((a, b) => a - b);
-      return years.map((y) => ({
-        label: String(y),
-        value: byYear[y] || 0,
-        fullLabel: String(y),
-      }));
     }
 
-    // Specific year selected: monthly breakdown for that year
     if (selectedYear !== null) {
-      const result: { label: string; value: number; fullLabel: string }[] = [];
+      const result: ChartRow[] = [];
       for (let m = 0; m < 12; m++) {
-        let sum = 0;
-        b2bRevenueInvoices.forEach((inv) => {
-          const d = getInvoiceRevenueDate(inv);
-          if (d.getFullYear() === selectedYear && d.getMonth() === m)
-            sum += Number(inv.amount);
-        });
-        paidMovesList.forEach((move) => {
-          const d = getMoveRevenueDate(move);
-          if (d.getFullYear() === selectedYear && d.getMonth() === m)
-            sum += Number(move.amount ?? move.estimate ?? 0);
-        });
-        result.push({
-          label: MONTH_LABELS[m],
-          value: sum,
-          fullLabel: `${MONTH_LABELS[m]} ${selectedYear}`,
-        });
+        const partner = partnerInMonth(selectedYear, m);
+        const moves = moveSumInMonth(selectedYear, m);
+        result.push(
+          row(
+            MONTH_LABELS[m],
+            `${MONTH_LABELS[m]} ${selectedYear}`,
+            partner,
+            moves,
+          ),
+        );
       }
       return result;
     }
 
     if (period === "monthly") {
       const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const byDay: Record<number, number> = {};
-      for (let d = 1; d <= daysInMonth; d++) byDay[d] = 0;
-      b2bRevenueInvoices.forEach((inv) => {
+      const byDayMoves: Record<number, number> = {};
+      const byDayPartnerInv: Record<number, number> = {};
+      const byDayDlv: Record<number, number> = {};
+      for (let d = 1; d <= daysInMonth; d++) {
+        byDayMoves[d] = 0;
+        byDayPartnerInv[d] = 0;
+        byDayDlv[d] = 0;
+      }
+      paidPartnerInvoices.forEach((inv) => {
         const d = getInvoiceRevenueDate(inv);
         if (d.getFullYear() === year && d.getMonth() === month) {
-          byDay[d.getDate()] = (byDay[d.getDate()] || 0) + Number(inv.amount);
+          const day = d.getDate();
+          byDayPartnerInv[day] =
+            (byDayPartnerInv[day] || 0) + Number(inv.amount);
         }
       });
       paidMovesList.forEach((m) => {
         const d = getMoveRevenueDate(m);
         if (d.getFullYear() === year && d.getMonth() === month) {
-          byDay[d.getDate()] =
-            (byDay[d.getDate()] || 0) + Number(m.amount ?? m.estimate ?? 0);
+          const day = d.getDate();
+          byDayMoves[day] =
+            (byDayMoves[day] || 0) + Number(m.amount ?? m.estimate ?? 0);
         }
       });
+      const covered = deliveryIdsCoveredByAnyInvoice(all);
+      const PAID_D = new Set(["delivered", "completed"]);
+      for (const raw of deliveries || []) {
+        const d = raw as Parameters<typeof effectiveDeliveryPrice>[0] & {
+          id: string;
+          status?: string | null;
+          scheduled_date?: string | null;
+          created_at?: string | null;
+        };
+        if (!PAID_D.has(String(d.status || "").toLowerCase())) continue;
+        if (covered.has(String(d.id))) continue;
+        const ts = String(d.scheduled_date || d.created_at || "");
+        const dt = ts ? new Date(ts) : null;
+        if (
+          !dt ||
+          dt.getFullYear() !== year ||
+          dt.getMonth() !== month
+        )
+          continue;
+        const day = dt.getDate();
+        byDayDlv[day] = (byDayDlv[day] || 0) + effectiveDeliveryPrice(d);
+      }
       return Array.from({ length: daysInMonth }, (_, i) => {
         const day = i + 1;
-        return {
-          label: String(day),
-          value: byDay[day] || 0,
-          fullLabel: `${now.toLocaleString("en-US", { month: "short" })} ${day}`,
-        };
+        const partner =
+          (byDayPartnerInv[day] || 0) + (byDayDlv[day] || 0);
+        const moves = byDayMoves[day] || 0;
+        return row(
+          String(day),
+          `${now.toLocaleString("en-US", { month: "short" })} ${day}`,
+          partner,
+          moves,
+        );
       });
     }
 
     const monthsToShow =
       period === "6mo" ? 6 : period === "ytd" ? month + 1 : 12;
     const startMonth = period === "6mo" ? month - 5 : 0;
-    const result: { label: string; value: number; fullLabel: string }[] = [];
+    const result: ChartRow[] = [];
 
     for (let i = 0; i < monthsToShow; i++) {
       let m = startMonth + i;
@@ -453,37 +497,66 @@ export default function RevenueClient({
         m -= 12;
         y += 1;
       }
-      let sum = 0;
-      b2bRevenueInvoices.forEach((inv) => {
-        const d = getInvoiceRevenueDate(inv);
-        if (d.getFullYear() === y && d.getMonth() === m)
-          sum += Number(inv.amount);
-      });
-      paidMovesList.forEach((move) => {
-        const d = getMoveRevenueDate(move);
-        if (d.getFullYear() === y && d.getMonth() === m)
-          sum += Number(move.amount ?? move.estimate ?? 0);
-      });
-      result.push({
-        label: MONTH_LABELS[m],
-        value: sum,
-        fullLabel: `${MONTH_LABELS[m]} ${y}`,
-      });
+      const partner = partnerInMonth(y, m);
+      const moves = moveSumInMonth(y, m);
+      result.push(
+        row(MONTH_LABELS[m], `${MONTH_LABELS[m]} ${y}`, partner, moves),
+      );
     }
     return result;
-  }, [period, selectedYear, b2bRevenueInvoices, paidMovesList]);
+  }, [
+    period,
+    selectedYear,
+    all,
+    paidInvoicesAll,
+    deliveryRows,
+    paidMovesList,
+    paidPartnerInvoices,
+    deliveries,
+    orgIdToType,
+    clientTypeMap,
+  ]);
 
-  const byTypeRaw: Record<string, number> = {};
-  invoicesForBreakdown.forEach((i) => {
-    const t = getInvoicePartnerType(i, orgIdToType, clientTypeMap);
-    byTypeRaw[t] = (byTypeRaw[t] || 0) + Number(i.amount);
-  });
+  const byTypeRaw: Record<string, number> = {
+    retail: 0,
+    designer: 0,
+    hospitality: 0,
+    gallery: 0,
+    realtor: 0,
+    b2c: 0,
+  };
+  for (const inv of paidPartnerInvoices) {
+    if (invoiceExcludedFromRevenue(inv)) continue;
+    const cat = normalizePartnerCategoryForBreakdown(
+      getInvoicePartnerType(inv, orgIdToType, clientTypeMap),
+    );
+    byTypeRaw[cat] =
+      (byTypeRaw[cat] || 0) + Number(inv.amount ?? 0);
+  }
+  const coveredForBreakdown = deliveryIdsCoveredByAnyInvoice(all);
+  const PAID_DLV = new Set(["delivered", "completed"]);
+  for (const raw of deliveryRows) {
+    const d = raw as Parameters<typeof effectiveDeliveryPrice>[0] & {
+      id: string;
+      organization_id?: string | null;
+      status?: string | null;
+    };
+    if (!PAID_DLV.has(String(d.status || "").toLowerCase())) continue;
+    if (coveredForBreakdown.has(String(d.id))) continue;
+    const oid = d.organization_id;
+    const orgType =
+      (oid && orgIdToType[oid]) || "retail";
+    const cat = normalizePartnerCategoryForBreakdown(orgType);
+    byTypeRaw[cat] =
+      (byTypeRaw[cat] || 0) + effectiveDeliveryPrice(d);
+  }
+  byTypeRaw.b2c = (byTypeRaw.b2c || 0) + moveRevenue;
   const byType = [
     {
       key: "retail",
       label: "Retail",
       amount: byTypeRaw.retail || 0,
-      color: "var(--gold)",
+      color: "#2C3E2D",
     },
     {
       key: "designer",
@@ -521,62 +594,107 @@ export default function RevenueClient({
 
   const invoicesByType = useMemo(() => {
     if (!selectedType) return [];
-    return invoicesForBreakdown.filter(
-      (i) =>
-        getInvoicePartnerType(i, orgIdToType, clientTypeMap) === selectedType,
-    );
-  }, [invoicesForBreakdown, selectedType, orgIdToType, clientTypeMap]);
+    return paidInvoicesAll.filter((i) => {
+      if (invoiceExcludedFromRevenue(i)) return false;
+      if (!isPartnerChannelInvoice(i, orgIdToType, clientTypeMap))
+        return false;
+      const cat = normalizePartnerCategoryForBreakdown(
+        getInvoicePartnerType(i, orgIdToType, clientTypeMap),
+      );
+      return cat === selectedType;
+    });
+  }, [paidInvoicesAll, selectedType, orgIdToType, clientTypeMap]);
 
   const now = new Date();
   const currentMonthRevenue = useMemo(() => {
     const y = now.getFullYear();
     const m = now.getMonth();
-    const invSum = b2bRevenueInvoices
-      .filter((inv) => {
-        const d = getInvoiceRevenueDate(inv);
-        return d.getFullYear() === y && d.getMonth() === m;
-      })
-      .reduce((s, i) => s + Number(i.amount), 0);
+    const partnerSum = partnerRevenueTotalForMonth(
+      all,
+      paidInvoicesAll,
+      deliveryRows,
+      orgIdToType,
+      clientTypeMap,
+      y,
+      m,
+    );
     const moveSum = paidMovesList
       .filter((move) => {
         const d = getMoveRevenueDate(move);
         return d.getFullYear() === y && d.getMonth() === m;
       })
-      .reduce((s, m) => s + Number(m.amount ?? m.estimate ?? 0), 0);
-    return invSum + moveSum;
-  }, [b2bRevenueInvoices, paidMovesList, now]);
+      .reduce((s, mov) => s + Number(mov.amount ?? mov.estimate ?? 0), 0);
+    return partnerSum + moveSum;
+  }, [
+    all,
+    paidInvoicesAll,
+    deliveryRows,
+    orgIdToType,
+    clientTypeMap,
+    paidMovesList,
+    now,
+  ]);
 
   const prevMonthRevenue = useMemo(() => {
     const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const y = prev.getFullYear();
     const m = prev.getMonth();
-    const invSum = b2bRevenueInvoices
-      .filter((inv) => {
-        const d = getInvoiceRevenueDate(inv);
-        return d.getFullYear() === y && d.getMonth() === m;
-      })
-      .reduce((s, i) => s + Number(i.amount), 0);
+    const partnerSum = partnerRevenueTotalForMonth(
+      all,
+      paidInvoicesAll,
+      deliveryRows,
+      orgIdToType,
+      clientTypeMap,
+      y,
+      m,
+    );
     const moveSum = paidMovesList
       .filter((move) => {
         const d = getMoveRevenueDate(move);
         return d.getFullYear() === y && d.getMonth() === m;
       })
-      .reduce((s, m) => s + Number(m.amount ?? m.estimate ?? 0), 0);
-    return invSum + moveSum;
-  }, [b2bRevenueInvoices, paidMovesList, now]);
+      .reduce((s, mov) => s + Number(mov.amount ?? mov.estimate ?? 0), 0);
+    return partnerSum + moveSum;
+  }, [
+    all,
+    paidInvoicesAll,
+    deliveryRows,
+    orgIdToType,
+    clientTypeMap,
+    paidMovesList,
+    now,
+  ]);
 
   const ytdRevenue = useMemo(() => {
     const y = now.getFullYear();
-    const invSum = b2bRevenueInvoices
-      .filter((inv) => getInvoiceRevenueDate(inv).getFullYear() === y)
-      .reduce((s, i) => s + Number(i.amount), 0);
+    const m = now.getMonth();
+    let partnerY = 0;
+    for (let mo = 0; mo <= m; mo++) {
+      partnerY += partnerRevenueTotalForMonth(
+        all,
+        paidInvoicesAll,
+        deliveryRows,
+        orgIdToType,
+        clientTypeMap,
+        y,
+        mo,
+      );
+    }
     const moveSum = paidMovesList
       .filter((move) => getMoveRevenueDate(move).getFullYear() === y)
-      .reduce((s, m) => s + Number(m.amount ?? m.estimate ?? 0), 0);
-    return invSum + moveSum;
-  }, [b2bRevenueInvoices, paidMovesList, now]);
+      .reduce((s, mov) => s + Number(mov.amount ?? mov.estimate ?? 0), 0);
+    return partnerY + moveSum;
+  }, [
+    all,
+    paidInvoicesAll,
+    deliveryRows,
+    orgIdToType,
+    clientTypeMap,
+    paidMovesList,
+    now,
+  ]);
 
-  const revenueSourceCount = b2bRevenueInvoices.length + paidMovesList.length;
+  const revenueSourceCount = paidPartnerInvoices.length + paidMovesList.length;
   const avgJob =
     revenueSourceCount > 0 ? Math.round(paidTotal / revenueSourceCount) : 0;
   const pctChange =
@@ -588,9 +706,6 @@ export default function RevenueClient({
         ? 100
         : 0;
   const currentMonthLabel = now.toLocaleString("en-US", { month: "long" });
-
-  // Chart max for bar highlight
-  const chartMax = Math.max(1, ...chartData.map((d) => d.value));
 
   return (
     <div className="max-w-[1100px] mx-auto px-4 sm:px-5 md:px-8 py-6 md:py-8 animate-fade-up">
@@ -628,7 +743,7 @@ export default function RevenueClient({
         <KpiCard
           label={`${now.getFullYear()} YTD`}
           value={formatCompactCurrency(ytdRevenue)}
-          sub={`${b2bRevenueInvoices.length} partner invoices · ${paidMovesList.length} paid moves`}
+          sub={`${paidPartnerInvoices.length} paid partner invoices · ${paidMovesList.length} paid moves`}
           href="/admin/invoices"
         />
         <KpiCard
@@ -671,7 +786,7 @@ export default function RevenueClient({
                 {formatCompactCurrency(paidTotal)}
               </p>
               <p className="text-[10px] text-[var(--tx3)] mt-1.5">
-                {b2bRevenueInvoices.length} partner invoices ·{" "}
+                {paidPartnerInvoices.length} paid partner invoices ·{" "}
                 {paidMovesList.length} paid moves
               </p>
             </div>
@@ -732,13 +847,12 @@ export default function RevenueClient({
         </div>
       </div>
 
-      <div className="h-[220px] w-full min-w-0">
+      <div className="h-[260px] w-full min-w-0">
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
               margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
-              onMouseLeave={() => setHoveredBar(null)}
             >
               <XAxis
                 dataKey="label"
@@ -763,34 +877,30 @@ export default function RevenueClient({
                 width={42}
               />
               <Tooltip
-                content={<CustomTooltip />}
+                content={<StackedRevenueTooltip />}
                 cursor={{ fill: "rgba(255,255,255,0.08)" }}
               />
+              <Legend
+                wrapperStyle={{ fontSize: 10, paddingTop: 4 }}
+                formatter={(value) => (
+                  <span className="text-[var(--tx2)]">{value}</span>
+                )}
+              />
               <Bar
-                dataKey="value"
+                name="Partner (B2B)"
+                dataKey="partner"
+                stackId="rev"
+                fill={CHART_PARTNER_FILL}
+                maxBarSize={44}
+              />
+              <Bar
+                name="Moves"
+                dataKey="moves"
+                stackId="rev"
+                fill={CHART_MOVES_FILL}
                 radius={[4, 4, 0, 0]}
                 maxBarSize={44}
-                onMouseEnter={(_, index) => setHoveredBar(index)}
-              >
-                {chartData.map((entry, index) => (
-                  <Cell
-                    key={index}
-                    fill={
-                      entry.value === chartMax && chartMax > 0
-                        ? "var(--gold)"
-                        : hoveredBar === index
-                          ? "rgba(255,255,255,0.55)"
-                          : "rgba(255,255,255,0.4)"
-                    }
-                    stroke={
-                      entry.value === chartMax && chartMax > 0
-                        ? "var(--gold)"
-                        : "rgba(255,255,255,0.45)"
-                    }
-                    strokeWidth={1}
-                  />
-                ))}
-              </Bar>
+              />
             </BarChart>
           </ResponsiveContainer>
         ) : (
@@ -812,7 +922,9 @@ export default function RevenueClient({
           <div className="mb-5">
             <h2 className="admin-section-h2">By Service Type</h2>
             <p className="text-[10px] text-[var(--tx3)] mt-0.5">
-              Partner invoice amounts by category (before HST, excludes cancelled and archived)
+              Paid partner and delivery fallback by org category, plus residential
+              move payments under Moves (before HST; invoice rows exclude cancelled
+              and archived)
             </p>
           </div>
           <div className="space-y-1 divide-y divide-[var(--brd)]">
@@ -1008,6 +1120,17 @@ export default function RevenueClient({
                     </li>
                   ))}
                 </ul>
+              ) : selectedType === "b2c" && moveRevenue > 0 ? (
+                <p className="text-[11px] text-[var(--tx3)] py-8 text-center leading-relaxed">
+                  Most of this total is residential move payments from paid move
+                  records, not partner invoices. Use Moves in admin for detail.
+                </p>
+              ) : (byType.find((t) => t.key === selectedType)?.amount ?? 0) >
+                0 ? (
+                <p className="text-[11px] text-[var(--tx3)] py-8 text-center leading-relaxed">
+                  This total includes delivered partner jobs attributed here when
+                  there is no invoice row, or amounts not shown in the list above.
+                </p>
               ) : (
                 <p className="text-[11px] text-[var(--tx3)] py-8 text-center">
                   No invoices for this category.
@@ -1015,18 +1138,32 @@ export default function RevenueClient({
               )}
             </div>
 
-            {/* Modal footer total */}
-            {invoicesByType.length > 0 && (
-              <div className="flex items-center justify-between px-5 py-3.5 border-t border-[var(--brd)] shrink-0">
-                <span className="text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)]">
-                  {invoicesByType.length} invoice
-                  {invoicesByType.length !== 1 ? "s" : ""}
-                </span>
-                <span className="text-[13px] font-bold text-[var(--tx)]">
-                  {formatCurrency(
-                    invoicesByType.reduce((s, i) => s + Number(i.amount), 0),
-                  )}
-                </span>
+            {/* Modal footer: category total matches breakdown row */}
+            {selectedType != null && (
+              <div className="flex flex-col gap-1 px-5 py-3.5 border-t border-[var(--brd)] shrink-0">
+                {invoicesByType.length > 0 && (
+                  <div className="flex items-center justify-between text-[10px] text-[var(--tx3)]">
+                    <span>
+                      {invoicesByType.length} partner invoice
+                      {invoicesByType.length !== 1 ? "s" : ""} listed
+                    </span>
+                    <span className="tabular-nums">
+                      {formatCurrency(
+                        invoicesByType.reduce((s, i) => s + Number(i.amount), 0),
+                      )}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)]">
+                    Category total (before HST)
+                  </span>
+                  <span className="text-[13px] font-bold text-[var(--tx)] tabular-nums">
+                    {formatCurrency(
+                      byType.find((t) => t.key === selectedType)?.amount ?? 0,
+                    )}
+                  </span>
+                </div>
               </div>
             )}
           </div>

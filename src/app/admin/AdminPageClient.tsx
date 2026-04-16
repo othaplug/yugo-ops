@@ -112,8 +112,7 @@ interface LiveSession {
 type MonthRevenue = {
   m: string;
   moves: number;
-  deliveries: number;
-  invoices: number;
+  partner: number;
 };
 
 type UnassignedJob = {
@@ -177,7 +176,7 @@ interface Props {
   overdueCount: number;
   currentMonthRevenue: number;
   revenuePctChange: number;
-  revenueBreakdown: { moves: number; deliveries: number; invoices: number };
+  revenueBreakdown: { moves: number; partner: number };
   monthlyRevenue: MonthRevenue[];
   activityEvents: ActivityEvent[];
   activeQuotesCount: number;
@@ -1454,24 +1453,14 @@ export default function AdminPageClient({
                       Moves {formatCompactCurrency(revenueBreakdown.moves)}
                     </span>
                   )}
-                  {revenueBreakdown.deliveries > 0 && (
+                  {revenueBreakdown.partner > 0 && (
                     <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx2)]">
                       <span
                         className="w-1.5 h-1.5 rounded-full"
                         style={{ background: "#3B82F6" }}
                       />
-                      Deliveries{" "}
-                      {formatCompactCurrency(revenueBreakdown.deliveries)}
-                    </span>
-                  )}
-                  {revenueBreakdown.invoices > 0 && (
-                    <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx2)]">
-                      <span
-                        className="w-1.5 h-1.5 rounded-full"
-                        style={{ background: "var(--grn)" }}
-                      />
-                      Invoices{" "}
-                      {formatCompactCurrency(revenueBreakdown.invoices)}
+                      Partner (B2B){" "}
+                      {formatCompactCurrency(revenueBreakdown.partner)}
                     </span>
                   )}
                 </div>
@@ -1481,24 +1470,19 @@ export default function AdminPageClient({
               <div className="flex items-end gap-[3px] h-[56px] w-full min-w-0">
                 {(monthlyRevenue.length > 0
                   ? monthlyRevenue
-                  : ([
-                      { m: "\u2014", moves: 0, deliveries: 0, invoices: 0 },
-                    ] as MonthRevenue[])
+                  : ([{ m: "\u2014", moves: 0, partner: 0 }] as MonthRevenue[])
                 ).map((d, i) => {
-                  const total = d.moves + d.deliveries + d.invoices;
+                  const total = d.moves + d.partner;
                   const maxV = Math.max(
                     1,
-                    ...monthlyRevenue.map(
-                      (x) => x.moves + x.deliveries + x.invoices,
-                    ),
+                    ...monthlyRevenue.map((x) => x.moves + x.partner),
                   );
                   const pct = Math.round((total / maxV) * 100);
                   const isNow =
                     monthlyRevenue.length > 0 &&
                     i === monthlyRevenue.length - 1;
                   const movePct = total > 0 ? (d.moves / total) * 100 : 0;
-                  const dlvPct = total > 0 ? (d.deliveries / total) * 100 : 0;
-                  const invPct = total > 0 ? (d.invoices / total) * 100 : 0;
+                  const partnerPct = total > 0 ? (d.partner / total) * 100 : 0;
 
                   return (
                     <div
@@ -1510,20 +1494,10 @@ export default function AdminPageClient({
                           className="w-full rounded-t overflow-hidden min-h-[2px] transition-all duration-300 flex flex-col-reverse"
                           style={{ height: `${Math.max(pct, 6)}%` }}
                         >
-                          {invPct > 0 && (
+                          {partnerPct > 0 && (
                             <div
                               style={{
-                                height: `${invPct}%`,
-                                background: isNow
-                                  ? "var(--grn)"
-                                  : "color-mix(in srgb, var(--grn) 28%, transparent)",
-                              }}
-                            />
-                          )}
-                          {dlvPct > 0 && (
-                            <div
-                              style={{
-                                height: `${dlvPct}%`,
+                                height: `${partnerPct}%`,
                                 background: isNow
                                   ? "#3B82F6"
                                   : "rgba(59,130,246,0.25)",
@@ -1565,14 +1539,9 @@ export default function AdminPageClient({
                               Moves ${d.moves.toFixed(1)}K
                             </p>
                           )}
-                          {d.deliveries > 0 && (
+                          {d.partner > 0 && (
                             <p className="text-[8px] text-[#3B82F6]">
-                              Deliveries ${d.deliveries.toFixed(1)}K
-                            </p>
-                          )}
-                          {d.invoices > 0 && (
-                            <p className="text-[8px] text-[var(--grn)]">
-                              Invoices ${d.invoices.toFixed(1)}K
+                              Partner (B2B) ${d.partner.toFixed(1)}K
                             </p>
                           )}
                         </div>

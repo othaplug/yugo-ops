@@ -7,7 +7,10 @@ import RevenueClient from "./RevenueClient";
 
 export default async function RevenuePage() {
   const db = createAdminClient();
-  const [{ data: invoices }, { data: orgs }, { data: paidMoves }] =
+  const cutoffDeliveries = new Date(Date.now() - 730 * 24 * 3600_000)
+    .toISOString()
+    .slice(0, 10);
+  const [{ data: invoices }, { data: orgs }, { data: paidMoves }, { data: deliveries }] =
     await Promise.all([
       db
         .from("invoices")
@@ -22,6 +25,12 @@ export default async function RevenuePage() {
         )
         .eq("payment_marked_paid", true)
         .not("payment_marked_paid_at", "is", null),
+      db
+        .from("deliveries")
+        .select("*")
+        .gte("created_at", `${cutoffDeliveries}T00:00:00.000Z`)
+        .order("created_at", { ascending: false })
+        .limit(1500),
     ]);
   const clientTypeMap: Record<string, string> = {};
   const orgIdToType: Record<string, string> = {};
@@ -39,6 +48,7 @@ export default async function RevenuePage() {
   return (
     <RevenueClient
       invoices={invoices || []}
+      deliveries={(deliveries || []) as Record<string, unknown>[]}
       paidMoves={paidMoves || []}
       clientTypeMap={clientTypeMap}
       orgIdToType={orgIdToType}

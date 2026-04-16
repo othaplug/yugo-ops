@@ -11,6 +11,7 @@ import { formatMoveDate, formatAdminCreatedAt } from "@/lib/date-format";
 import { getDeliveryDetailPath, formatJobId } from "@/lib/move-code";
 import { toTitleCase } from "@/lib/format-text";
 import { formatCurrency } from "@/lib/format-currency";
+import { formatDeliveryPriceForAdminList } from "@/lib/delivery-pricing";
 import RecurringSchedulesView from "./RecurringSchedulesView";
 import ProjectsListClient from "../projects/ProjectsListClient";
 import KpiCard from "@/components/ui/KpiCard";
@@ -52,6 +53,11 @@ interface Delivery {
   vehicle_type?: string | null;
   num_stops?: number | null;
   total_price?: number | null;
+  admin_adjusted_price?: number | null;
+  quoted_price?: number | null;
+  final_price?: number | null;
+  calculated_price?: number | null;
+  override_price?: number | null;
   delivery_type?: string | null;
   zone?: number | null;
   completed_at?: string | null;
@@ -145,7 +151,11 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
     id: "price",
     label: "Price",
     accessor: (d) => d.total_price ?? 0,
-    render: (d) => (d.total_price != null && d.total_price > 0 ? formatCurrency(d.total_price) : "-"),
+    render: (d) => (
+      <span className="text-[11px] leading-snug tabular-nums">
+        {formatDeliveryPriceForAdminList(d)}
+      </span>
+    ),
     sortable: true,
   },
   {

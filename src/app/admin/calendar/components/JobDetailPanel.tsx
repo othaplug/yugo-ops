@@ -54,7 +54,12 @@ function canEditEvent(ev: CalendarEvent): boolean {
   return !hasTime && !hasTeam;
 }
 
-export default function JobDetailPanel({ event, crews, onClose, onRescheduled }: Props) {
+export default function JobDetailPanel({
+  event,
+  crews,
+  onClose,
+  onRescheduled,
+}: Props) {
   const { theme } = useTheme();
   const wineMode = theme === "dark";
 
@@ -87,8 +92,11 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
 
   const canReassign = REASSIGNABLE.includes(event.type) && canEditEvent(event);
 
-  const hasContact =
-    !!(event.clientName?.trim() || event.clientPhone?.trim() || event.clientEmail?.trim());
+  const hasContact = !!(
+    event.clientName?.trim() ||
+    event.clientPhone?.trim() ||
+    event.clientEmail?.trim()
+  );
 
   const deliveryPartnerLine =
     event.type === "delivery" &&
@@ -99,7 +107,8 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
       : null;
 
   const handleSaveReassign = async () => {
-    if (!reassignCrewId || !reassignDate || !reassignStart || !reassignEnd) return;
+    if (!reassignCrewId || !reassignDate || !reassignStart || !reassignEnd)
+      return;
     setSaving(true);
     setSaveError(null);
     try {
@@ -107,7 +116,10 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          event_id: event.type === "blocked" ? event.scheduleBlockId || event.id : event.id,
+          event_id:
+            event.type === "blocked"
+              ? event.scheduleBlockId || event.id
+              : event.id,
           event_type: event.type,
           crew_id: reassignCrewId,
           date: reassignDate,
@@ -149,7 +161,9 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
   const fieldClass = wineMode
     ? "w-full bg-[#3A0820] border border-[rgba(201,139,168,0.38)] rounded-lg px-3 py-2.5 text-[13px] text-[#FCF8F5] outline-none focus:ring-2 focus:ring-[rgba(240,208,227,0.25)]"
     : "w-full bg-white border border-[#2C3E2D]/20 rounded-lg px-3 py-2.5 text-[13px] text-[#1c1917] outline-none focus:ring-2 focus:ring-[#2C3E2D]/25";
-  const reassignHover = wineMode ? "hover:bg-white/[0.06]" : "hover:bg-[#2C3E2D]/[0.04]";
+  const reassignHover = wineMode
+    ? "hover:bg-white/[0.06]"
+    : "hover:bg-[#2C3E2D]/[0.04]";
   const recurringNote = wineMode
     ? "text-[11px] text-[#D4C4CF] bg-[rgba(58,8,32,0.55)] rounded-lg px-3 py-2 border border-[rgba(201,139,168,0.25)]"
     : "text-[11px] text-[#57534e] bg-[#FAF7F2] rounded-lg px-3 py-2 border border-[#2C3E2D]/10";
@@ -169,28 +183,39 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="w-2 h-2 rounded-full shrink-0 ring-2 ring-white/20" style={{ backgroundColor: event.color }} />
+              <span
+                className="w-2 h-2 rounded-full shrink-0 ring-2 ring-white/20"
+                style={{ backgroundColor: event.color }}
+              />
               <span className="font-[family-name:var(--font-body)] text-[10px] font-bold uppercase tracking-[0.12em] text-[rgba(255,251,247,0.85)]">
                 {TYPE_LABELS[event.type] || event.type}
               </span>
               <span
                 className="text-[9px] font-bold uppercase tracking-[0.1em] px-2 py-0.5 rounded border"
-                style={{ color: CREAM_INK, borderColor: "rgba(255,251,247,0.35)" }}
+                style={{
+                  color: CREAM_INK,
+                  borderColor: "rgba(255,251,247,0.35)",
+                }}
               >
                 {toTitleCase(event.calendarStatus)}
               </span>
               {event.isRecurring && (
-                <span
-                  className="text-[9px] font-bold uppercase tracking-[0.1em] px-2 py-0.5 rounded border border-emerald-400/40 text-emerald-100/95"
-                >
+                <span className="text-[9px] font-bold uppercase tracking-[0.1em] px-2 py-0.5 rounded border border-emerald-400/40 text-emerald-100/95">
                   Recurring
                 </span>
               )}
             </div>
-            <h2 className="font-hero text-[1.35rem] sm:text-[1.5rem] leading-tight text-[#FFFBF7] pr-2">{event.name}</h2>
+            <h2 className="font-hero text-[1.35rem] sm:text-[1.5rem] leading-tight text-[#FFFBF7] pr-2">
+              {event.name}
+            </h2>
             {event.description && (
-              <p className="text-[13px] mt-1.5 leading-snug" style={{ color: CREAM_MUTED }}>
-                {event.type === "delivery" ? event.description : toTitleCase(event.description)}
+              <p
+                className="text-[13px] mt-1.5 leading-snug"
+                style={{ color: CREAM_MUTED }}
+              >
+                {event.type === "delivery"
+                  ? event.description
+                  : toTitleCase(event.description)}
               </p>
             )}
           </div>
@@ -211,7 +236,9 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
           <div className={`${eyebrowCls} mb-2`}>Time</div>
           <div className={`text-[15px] font-semibold ${ink}`}>{timeStr}</div>
           {event.durationHours != null && (
-            <div className={`text-[12px] mt-0.5 ${inkMuted}`}>{event.durationHours} hours estimated</div>
+            <div className={`text-[12px] mt-0.5 ${inkMuted}`}>
+              {event.durationHours} hours estimated
+            </div>
           )}
           <div className={`text-[12px] mt-1 ${inkMuted}`}>
             {formatPlatformDisplay(new Date(event.date + "T12:00:00"), {
@@ -227,13 +254,24 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
           <section className={`${cardSurface} px-4 py-3.5`}>
             <div className={`${eyebrowCls} mb-2`}>Contact</div>
             {event.clientName?.trim() && (
-              <div className={`flex items-start gap-2.5 text-[14px] font-semibold mb-2 ${ink}`}>
-                <User className="w-4 h-4 shrink-0 mt-0.5" style={{ color: accentIcon }} weight="bold" aria-hidden />
-                <span className="min-w-0 break-words">{event.clientName.trim()}</span>
+              <div
+                className={`flex items-start gap-2.5 text-[14px] font-semibold mb-2 ${ink}`}
+              >
+                <User
+                  className="w-4 h-4 shrink-0 mt-0.5"
+                  style={{ color: accentIcon }}
+                  weight="bold"
+                  aria-hidden
+                />
+                <span className="min-w-0 break-words">
+                  {event.clientName.trim()}
+                </span>
               </div>
             )}
             {deliveryPartnerLine && (
-              <p className={`text-[12px] mb-2 pl-[26px] ${partnerLineCls}`}>Partner · {deliveryPartnerLine}</p>
+              <p className={`text-[12px] mb-2 pl-[26px] ${partnerLineCls}`}>
+                Partner · {deliveryPartnerLine}
+              </p>
             )}
             {event.clientPhone?.trim() && (
               <div className="flex flex-wrap gap-2 mb-1.5">
@@ -241,7 +279,11 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
                   href={`tel:${String(event.clientPhone).replace(/[^\d+]/g, "")}`}
                   className={linkStrong}
                 >
-                  <Phone className="w-4 h-4 shrink-0" weight="bold" aria-hidden />
+                  <Phone
+                    className="w-4 h-4 shrink-0"
+                    weight="bold"
+                    aria-hidden
+                  />
                   {formatPhone(event.clientPhone)}
                 </a>
                 <a
@@ -249,7 +291,11 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
                   className={linkSub}
                 >
                   SMS
-                  <CaretRight className="w-3.5 h-3.5" weight="bold" aria-hidden />
+                  <CaretRight
+                    className="w-3.5 h-3.5"
+                    weight="bold"
+                    aria-hidden
+                  />
                 </a>
               </div>
             )}
@@ -258,7 +304,11 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
                 href={`mailto:${event.clientEmail.trim()}`}
                 className={`${linkStrong} break-all`}
               >
-                <EnvelopeSimple className="w-4 h-4 shrink-0" weight="bold" aria-hidden />
+                <EnvelopeSimple
+                  className="w-4 h-4 shrink-0"
+                  weight="bold"
+                  aria-hidden
+                />
                 {event.clientEmail.trim()}
               </a>
             )}
@@ -271,13 +321,23 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
             <div className={`${eyebrowCls} mb-2`}>Assignment</div>
             {event.crewName && (
               <div className={`flex items-center gap-2 text-[14px] ${ink}`}>
-                <Icon name="users" className="w-4 h-4 shrink-0 stroke-[1.75] stroke-current" style={{ color: accentIcon }} />
+                <Icon
+                  name="users"
+                  className="w-4 h-4 shrink-0 stroke-[1.75] stroke-current"
+                  style={{ color: accentIcon }}
+                />
                 <span className="font-semibold">{event.crewName}</span>
               </div>
             )}
             {event.truckName && (
-              <div className={`flex items-center gap-2 text-[14px] mt-1 ${ink}`}>
-                <Icon name="mapPin" className="w-4 h-4 shrink-0 stroke-[1.75] stroke-current" style={{ color: accentIcon }} />
+              <div
+                className={`flex items-center gap-2 text-[14px] mt-1 ${ink}`}
+              >
+                <Icon
+                  name="mapPin"
+                  className="w-4 h-4 shrink-0 stroke-[1.75] stroke-current"
+                  style={{ color: accentIcon }}
+                />
                 {event.truckName}
               </div>
             )}
@@ -290,17 +350,20 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
             <div className={`${eyebrowCls} mb-2`}>Location</div>
             {event.fromAddress && (
               <div className={`text-[13px] leading-snug ${ink}`}>
-                <span className={inkLabel}>From:</span> {formatAddressForDisplay(event.fromAddress)}
+                <span className={inkLabel}>From:</span>{" "}
+                {formatAddressForDisplay(event.fromAddress)}
               </div>
             )}
             {event.toAddress && (
               <div className={`text-[13px] leading-snug mt-1 ${ink}`}>
-                <span className={inkLabel}>To:</span> {formatAddressForDisplay(event.toAddress)}
+                <span className={inkLabel}>To:</span>{" "}
+                {formatAddressForDisplay(event.toAddress)}
               </div>
             )}
             {event.deliveryAddress && (
               <div className={`text-[13px] leading-snug mt-1 ${ink}`}>
-                <span className={inkLabel}>Deliver to:</span> {formatAddressForDisplay(event.deliveryAddress)}
+                <span className={inkLabel}>Deliver to:</span>{" "}
+                {formatAddressForDisplay(event.deliveryAddress)}
               </div>
             )}
           </section>
@@ -310,12 +373,18 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
         {(event.moveSize || event.itemCount || event.category) && (
           <section className={`${cardSurface} px-4 py-3.5`}>
             <div className={`${eyebrowCls} mb-2`}>Details</div>
-            {event.moveSize && <div className={`text-[13px] ${ink}`}>Size: {event.moveSize}</div>}
+            {event.moveSize && (
+              <div className={`text-[13px] ${ink}`}>Size: {event.moveSize}</div>
+            )}
             {event.itemCount != null && (
-              <div className={`text-[13px] ${ink}`}>Items: {event.itemCount}</div>
+              <div className={`text-[13px] ${ink}`}>
+                Items: {event.itemCount}
+              </div>
             )}
             {event.category && (
-              <div className={`text-[13px] ${ink}`}>Category: {toTitleCase(event.category)}</div>
+              <div className={`text-[13px] ${ink}`}>
+                Category: {toTitleCase(event.category)}
+              </div>
             )}
           </section>
         )}
@@ -348,7 +417,11 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
               <span
                 className={`inline-flex items-center gap-2 font-[family-name:var(--font-body)] text-[11px] font-bold uppercase tracking-[0.12em] ${wineMode ? "text-[#FCF8F5]" : "text-[var(--tx)]"}`}
               >
-                <Icon name="calendar" className="w-4 h-4 shrink-0 stroke-[1.75] stroke-current" style={{ color: accentIcon }} />
+                <Icon
+                  name="calendar"
+                  className="w-4 h-4 shrink-0 stroke-[1.75] stroke-current"
+                  style={{ color: accentIcon }}
+                />
                 Reassign / Reschedule
               </span>
               <CaretDown
@@ -360,10 +433,13 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
             </button>
 
             {showReassign && (
-              <div className={`px-4 pb-4 pt-1 space-y-3 border-t ${wineMode ? "border-[rgba(201,139,168,0.28)]" : "border-[#2C3E2D]/10"}`}>
+              <div
+                className={`px-4 pb-4 pt-1 space-y-3 border-t ${wineMode ? "border-[rgba(201,139,168,0.28)]" : "border-[#2C3E2D]/10"}`}
+              >
                 {event.isRecurring && (
                   <p className={recurringNote}>
-                    Changing team updates the recurring schedule; all instances will use the new team.
+                    Changing team updates the recurring schedule; all instances
+                    will use the new team.
                   </p>
                 )}
                 <div>
@@ -394,7 +470,9 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={`${eyebrowCls} mb-1.5 block`}>Start</label>
+                    <label className={`${eyebrowCls} mb-1.5 block`}>
+                      Start
+                    </label>
                     <select
                       value={reassignStart}
                       onChange={(e) => setReassignStart(e.target.value)}
@@ -414,11 +492,13 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
                       onChange={(e) => setReassignEnd(e.target.value)}
                       className={fieldClass}
                     >
-                      {TIME_SLOTS_15MIN.filter((t) => t > reassignStart).map((t) => (
-                        <option key={t} value={t}>
-                          {formatTime12(t)}
-                        </option>
-                      ))}
+                      {TIME_SLOTS_15MIN.filter((t) => t > reassignStart).map(
+                        (t) => (
+                          <option key={t} value={t}>
+                            {formatTime12(t)}
+                          </option>
+                        ),
+                      )}
                     </select>
                   </div>
                 </div>
@@ -453,7 +533,11 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
                   ) : (
                     <>
                       Confirm reassignment
-                      <CaretRight className="w-4 h-4" weight="bold" aria-hidden />
+                      <CaretRight
+                        className="w-4 h-4"
+                        weight="bold"
+                        aria-hidden
+                      />
                     </>
                   )}
                 </button>
@@ -472,7 +556,11 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
             }
           >
             View full details
-            <CaretRight className="w-4 h-4 shrink-0" weight="bold" aria-hidden />
+            <CaretRight
+              className="w-4 h-4 shrink-0"
+              weight="bold"
+              aria-hidden
+            />
           </Link>
         )}
       </div>

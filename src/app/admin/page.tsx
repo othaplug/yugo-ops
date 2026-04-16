@@ -13,6 +13,11 @@ import {
   type MoveWeatherBrief,
 } from "@/lib/weather/move-weather-brief";
 import AdminPageClient from "./AdminPageClient";
+import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
+import {
+  partnerRevenueTotalForMonth,
+  type PartnerRevenueInvoice,
+} from "@/lib/partner-revenue";
 
 export default async function AdminPage() {
   const admin = createAdminClient();
@@ -25,6 +30,7 @@ export default async function AdminPage() {
     { data: deliveries },
     { data: moves },
     { data: invoices },
+    { data: orgs },
     activityResult,
     { data: quotes },
     pendingChangesResult,
@@ -45,7 +51,12 @@ export default async function AdminPage() {
       .gte("created_at", `${cutoff90}T00:00:00.000Z`)
       .order("created_at", { ascending: false })
       .limit(500),
-    admin.from("invoices").select("id, status, amount, updated_at, created_at"),
+    admin
+      .from("invoices")
+      .select(
+        "id, client_name, organization_id, delivery_id, move_id, amount, status, created_at, updated_at, invoice_number, paid_at, deliveries!delivery_id(delivery_number)",
+      ),
+    admin.from("organizations").select("id, name, type"),
     (async () => {
       try {
         return await admin
@@ -188,7 +199,14 @@ export default async function AdminPage() {
 
   const allDeliveries = (deliveries || []) as Record<string, unknown>[];
   const allMoves = (moves || []) as Record<string, unknown>[];
-  const allInvoices = invoices || [];
+  const allInvoices = (invoices || []) as Record<string, unknown>[];
+
+  const clientTypeMap: Record<string, string> = {};
+  const orgIdToType: Record<string, string> = {};
+  (orgs || []).forEach((o: { id: string; name: string; type?: string | null }) => {
+    clientTypeMap[o.name] = o.type || "retail";
+    orgIdToType[o.id] = o.type || "retail";
+  });
   const activity = activityResult?.data ?? [];
   const activeQuotesCount = quotes?.length ?? 0;
 
@@ -385,8 +403,6 @@ export default async function AdminPage() {
 
   const movRev = (m: Record<string, unknown>) =>
     Number(m.estimate || m.amount || 0);
-  const dlvRev = (d: Record<string, unknown>) =>
-    Number(d.admin_adjusted_price || d.total_price || d.quoted_price || 0);
 
   const PAID_MOVE_STATUSES = new Set([
     "completed",
@@ -401,23 +417,20 @@ export default async function AdminPage() {
       PAID_MOVE_STATUSES.has(String(m.status)) ||
       m.payment_marked_paid === true,
   );
-  const paidDeliveries = allDeliveries.filter((d) =>
-    PAID_DLV_STATUSES.has(String(d.status)),
-  );
   const paidInvoices = allInvoices.filter((i) => i.status === "paid");
+
+  const deliveryRow = (d: Record<string, unknown>) =>
+    d as Parameters<typeof effectiveDeliveryPrice>[0] & {
+      id: string;
+      status?: string | null;
+      scheduled_date?: string | null;
+      created_at?: string | null;
+    };
 
   const getMoveDate = (m: Record<string, unknown>) => {
     const ts = String(
       m.payment_marked_paid_at || m.scheduled_date || m.created_at || "",
     );
-    return ts ? new Date(ts) : new Date(0);
-  };
-  const getDlvDate = (d: Record<string, unknown>) => {
-    const ts = String(d.scheduled_date || d.created_at || "");
-    return ts ? new Date(ts) : new Date(0);
-  };
-  const getInvDate = (inv: { updated_at?: string; created_at?: string }) => {
-    const ts = inv.updated_at || inv.created_at;
     return ts ? new Date(ts) : new Date(0);
   };
   const inMonth = (d: Date, y: number, mo: number) =>
@@ -426,27 +439,33 @@ export default async function AdminPage() {
   const curMoveRev = paidMoves
     .filter((m) => inMonth(getMoveDate(m), thisYear, thisMonth))
     .reduce((s, m) => s + movRev(m), 0);
-  const curDlvRev = paidDeliveries
-    .filter((d) => inMonth(getDlvDate(d), thisYear, thisMonth))
-    .reduce((s, d) => s + dlvRev(d), 0);
-  const curInvRev = paidInvoices
-    .filter((i) => inMonth(getInvDate(i), thisYear, thisMonth))
-    .reduce((s, i) => s + Number(i.amount || 0), 0);
+  const curPartnerRev = partnerRevenueTotalForMonth(
+    allInvoices as PartnerRevenueInvoice[],
+    paidInvoices as PartnerRevenueInvoice[],
+    allDeliveries as Parameters<typeof partnerRevenueTotalForMonth>[2],
+    orgIdToType,
+    clientTypeMap,
+    thisYear,
+    thisMonth,
+  );
 
-  const currentMonthRevenue = curMoveRev + curDlvRev + curInvRev;
+  const currentMonthRevenue = curMoveRev + curPartnerRev;
 
   const pm = thisMonth === 0 ? 11 : thisMonth - 1;
   const py = thisMonth === 0 ? thisYear - 1 : thisYear;
   const prevMoveRev = paidMoves
     .filter((m) => inMonth(getMoveDate(m), py, pm))
     .reduce((s, m) => s + movRev(m), 0);
-  const prevDlvRev = paidDeliveries
-    .filter((d) => inMonth(getDlvDate(d), py, pm))
-    .reduce((s, d) => s + dlvRev(d), 0);
-  const prevInvRev = paidInvoices
-    .filter((i) => inMonth(getInvDate(i), py, pm))
-    .reduce((s, i) => s + Number(i.amount || 0), 0);
-  const prevMonthRevenue = prevMoveRev + prevDlvRev + prevInvRev;
+  const prevPartnerRev = partnerRevenueTotalForMonth(
+    allInvoices as PartnerRevenueInvoice[],
+    paidInvoices as PartnerRevenueInvoice[],
+    allDeliveries as Parameters<typeof partnerRevenueTotalForMonth>[2],
+    orgIdToType,
+    clientTypeMap,
+    py,
+    pm,
+  );
+  const prevMonthRevenue = prevMoveRev + prevPartnerRev;
 
   const revenuePctChange =
     prevMonthRevenue > 0
@@ -474,8 +493,7 @@ export default async function AdminPage() {
   type MonthRevenue = {
     m: string;
     moves: number;
-    deliveries: number;
-    invoices: number;
+    partner: number;
   };
   const monthlyRevenue: MonthRevenue[] = [];
   for (let i = 5; i >= 0; i--) {
@@ -485,17 +503,19 @@ export default async function AdminPage() {
     const movSum = paidMoves
       .filter((m) => inMonth(getMoveDate(m), yr, monthIdx))
       .reduce((s, m) => s + movRev(m), 0);
-    const dlvSum = paidDeliveries
-      .filter((d) => inMonth(getDlvDate(d), yr, monthIdx))
-      .reduce((s, d) => s + dlvRev(d), 0);
-    const invSum = paidInvoices
-      .filter((inv) => inMonth(getInvDate(inv), yr, monthIdx))
-      .reduce((s, inv) => s + Number(inv.amount || 0), 0);
+    const partnerSum = partnerRevenueTotalForMonth(
+      allInvoices as PartnerRevenueInvoice[],
+      paidInvoices as PartnerRevenueInvoice[],
+      allDeliveries as Parameters<typeof partnerRevenueTotalForMonth>[2],
+      orgIdToType,
+      clientTypeMap,
+      yr,
+      monthIdx,
+    );
     monthlyRevenue.push({
       m: monthLabels[monthIdx],
       moves: movSum / 1000,
-      deliveries: dlvSum / 1000,
-      invoices: invSum / 1000,
+      partner: partnerSum / 1000,
     });
   }
 
@@ -678,7 +698,7 @@ export default async function AdminPage() {
       collectedEarnings += val;
   }
   for (const d of todayDeliveriesAll) {
-    const val = dlvRev(d);
+    const val = effectiveDeliveryPrice(deliveryRow(d));
     potentialEarnings += val;
     if (PAID_DLV_STATUSES.has(String(d.status))) collectedEarnings += val;
   }
@@ -803,8 +823,7 @@ export default async function AdminPage() {
       revenuePctChange={revenuePctChange}
       revenueBreakdown={{
         moves: curMoveRev,
-        deliveries: curDlvRev,
-        invoices: curInvRev,
+        partner: curPartnerRev,
       }}
       monthlyRevenue={monthlyRevenue}
       activityEvents={activity}

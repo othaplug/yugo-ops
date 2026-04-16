@@ -3303,7 +3303,9 @@ select:focus-visible {
   border-color: rgba(61, 18, 36, 0.95) !important;
 }
 .crew-app .crew-job-premium .crew-job-quick-action:hover:not(:disabled),
-[data-crew-portal] [data-crew-job-premium] .crew-job-quick-action:hover:not(:disabled) {
+[data-crew-portal]
+  [data-crew-job-premium]
+  .crew-job-quick-action:hover:not(:disabled) {
   filter: brightness(0.96);
 }
 .crew-app .crew-job-premium a.crew-job-quick-action--wine:hover,

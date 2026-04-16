@@ -30,17 +30,28 @@ export default function CalendarView() {
     setDetailEvent(ev);
   }, []);
 
-  const handleDateClick = useCallback((date: string) => {
-    cal.selectDateAndView(date, "day");
-  }, [cal]);
+  const handleDateClick = useCallback(
+    (date: string) => {
+      cal.selectDateAndView(date, "day");
+    },
+    [cal],
+  );
 
   const handleNewClick = useCallback((date: string) => {
     setScheduleModal({ open: true, date });
   }, []);
 
-  const handleEmptyClick = useCallback((crewId: string, time: string) => {
-    setScheduleModal({ open: true, date: cal.selectedDate, crewId, startTime: time });
-  }, [cal.selectedDate]);
+  const handleEmptyClick = useCallback(
+    (crewId: string, time: string) => {
+      setScheduleModal({
+        open: true,
+        date: cal.selectedDate,
+        crewId,
+        startTime: time,
+      });
+    },
+    [cal.selectedDate],
+  );
 
   const handleScheduleJob = useCallback(() => {
     setScheduleModal({ open: true });
@@ -51,13 +62,22 @@ export default function CalendarView() {
     setScheduleModal({ open: false });
   }, [cal]);
 
-  const handleDayClick = useCallback((date: string) => {
-    cal.selectDateAndView(date, "day");
-  }, [cal]);
+  const handleDayClick = useCallback(
+    (date: string) => {
+      cal.selectDateAndView(date, "day");
+    },
+    [cal],
+  );
 
-  const handleMonthClick = useCallback((month: number) => {
-    cal.selectDateAndView(`${cal.yearView}-${String(month + 1).padStart(2, "0")}-01`, "month");
-  }, [cal]);
+  const handleMonthClick = useCallback(
+    (month: number) => {
+      cal.selectDateAndView(
+        `${cal.yearView}-${String(month + 1).padStart(2, "0")}-01`,
+        "month",
+      );
+    },
+    [cal],
+  );
 
   return (
     <div className="min-h-0 flex flex-col">
@@ -85,12 +105,18 @@ export default function CalendarView() {
         </div>
       )}
 
-      {!cal.loading && !cal.fetchError && (cal.diagnostics?.movesError || cal.diagnostics?.deliveriesError) && (
-        <div className="mx-6 mt-4 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm space-y-1">
-          {cal.diagnostics.movesError && <div>Moves: {cal.diagnostics.movesError}</div>}
-          {cal.diagnostics.deliveriesError && <div>Deliveries: {cal.diagnostics.deliveriesError}</div>}
-        </div>
-      )}
+      {!cal.loading &&
+        !cal.fetchError &&
+        (cal.diagnostics?.movesError || cal.diagnostics?.deliveriesError) && (
+          <div className="mx-6 mt-4 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm space-y-1">
+            {cal.diagnostics.movesError && (
+              <div>Moves: {cal.diagnostics.movesError}</div>
+            )}
+            {cal.diagnostics.deliveriesError && (
+              <div>Deliveries: {cal.diagnostics.deliveriesError}</div>
+            )}
+          </div>
+        )}
 
       {!cal.loading && !cal.fetchError && cal.counts && cal.view !== "year" && (
         <div className="mx-3 sm:mx-5 mt-3 mb-2 px-3 py-2 rounded-md bg-[var(--card)] border border-[var(--brd)] text-[11px] text-[var(--tx3)] flex items-center gap-2">
@@ -165,7 +191,10 @@ export default function CalendarView() {
                 event={detailEvent}
                 crews={cal.crews}
                 onClose={() => setDetailEvent(null)}
-                onRescheduled={() => { cal.refetch(); setDetailEvent(null); }}
+                onRescheduled={() => {
+                  cal.refetch();
+                  setDetailEvent(null);
+                }}
               />
             </div>
           )}
