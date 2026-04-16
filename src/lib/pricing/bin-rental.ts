@@ -38,6 +38,96 @@ export function wardrobeBoxesForBundle(bundleType: BinBundleKey): number {
   return BIN_RENTAL_BUNDLE_SPECS[bundleType]?.wardrobeBoxes ?? 0;
 }
 
+/** Straight-line km from Yugo HQ (GTA core) to each stop; used for out-of-core surcharges. */
+export interface BinHubDistanceInput {
+  delivery_km_from_hub: number | null;
+  pickup_km_from_hub: number | null;
+  /** True when Mapbox geocoding failed for one or both addresses */
+  distance_pricing_unavailable?: boolean;
+}
+
+export interface BinRentalDistanceCharge {
+  deliveryDistanceKm: number;
+  pickupDistanceKm: number;
+  deliveryDriveMinutes: number;
+  pickupDriveMinutes: number;
+  deliveryFee: number;
+  pickupFee: number;
+  totalDistanceFee: number;
+}
+
+/** Toronto reference (GTA core) for hub distance; matches mapbox/driving-distance GTA_CORE. */
+export const YUGO_HQ_LAT = 43.6534817;
+export const YUGO_HQ_LNG = -79.3839347;
+
+export function haversineKmBin(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/** Rough regional drive time from straight-line km from hub (GTA logistics). */
+export function estimateBinRegionalDriveMinutes(distanceKm: number): number {
+  if (distanceKm <= 20) return 30;
+  if (distanceKm <= 50) return Math.round(30 + (distanceKm - 20) * 1.2);
+  if (distanceKm <= 100) return Math.round(66 + (distanceKm - 50) * 0.9);
+  return Math.round(111 + (distanceKm - 100) * 0.7);
+}
+
+/**
+ * Per-leg fee beyond free radius: max(extraKm * rate, min fee), rounded to nearest $5.
+ */
+export function calculateBinDistanceFeeFromKm(
+  deliveryKm: number | null,
+  pickupKm: number | null,
+  config: Map<string, string>,
+): BinRentalDistanceCharge | null {
+  if (
+    deliveryKm == null ||
+    pickupKm == null ||
+    !Number.isFinite(deliveryKm) ||
+    !Number.isFinite(pickupKm)
+  ) {
+    return null;
+  }
+
+  const freeRadius = cfgNum(config, "bin_rental_free_radius_km", 20);
+  const perKm = cfgNum(config, "bin_rental_per_km", 3.5);
+  const minFee = cfgNum(config, "bin_rental_min_distance_fee", 50);
+
+  const feeForLeg = (km: number): number => {
+    if (km <= freeRadius) return 0;
+    const extraKm = km - freeRadius;
+    let raw = Math.max(Math.round(extraKm * perKm), minFee);
+    raw = Math.round(raw / 5) * 5;
+    return raw;
+  };
+
+  const deliveryFee = feeForLeg(deliveryKm);
+  const pickupFee = feeForLeg(pickupKm);
+
+  return {
+    deliveryDistanceKm: Math.round(deliveryKm * 10) / 10,
+    pickupDistanceKm: Math.round(pickupKm * 10) / 10,
+    deliveryDriveMinutes: estimateBinRegionalDriveMinutes(deliveryKm),
+    pickupDriveMinutes: estimateBinRegionalDriveMinutes(pickupKm),
+    deliveryFee,
+    pickupFee,
+    totalDistanceFee: deliveryFee + pickupFee,
+  }
+}
+
 export interface BinRentalPriceInput {
   bundle_type: BinBundleKey;
   /** When bundle_type === custom */
@@ -49,6 +139,8 @@ export interface BinRentalPriceInput {
   linked_move_id?: string | null;
   /** Bins available after subtracting fleet out on rental; if set and totalBins exceeds this, returns error */
   available_bins?: number | null;
+  /** Optional hub distances (km) for delivery and pickup stops */
+  hub_distance?: BinHubDistanceInput;
 }
 
 export interface BinRentalLineItem {
@@ -65,6 +157,8 @@ export type BinRentalPriceOutcome =
       totalBins: number;
       wardrobeBoxes: number;
       bundleLabel: string;
+      distanceCharge: BinRentalDistanceCharge | null;
+      distancePricingUnavailable: boolean;
     }
   | { ok: false; error: string; availableBins?: number; requiredBins?: number };
 
@@ -148,6 +242,35 @@ export function calculateBinRentalPrice(
     });
   }
 
+  let distanceCharge: BinRentalDistanceCharge | null = null;
+  const distIn = input.hub_distance;
+  const distUnavailable = !!distIn?.distance_pricing_unavailable;
+  if (!distUnavailable && distIn) {
+    distanceCharge = calculateBinDistanceFeeFromKm(
+      distIn.delivery_km_from_hub,
+      distIn.pickup_km_from_hub,
+      config,
+    );
+    if (distanceCharge && distanceCharge.totalDistanceFee > 0) {
+      if (distanceCharge.deliveryFee > 0) {
+        subtotal += distanceCharge.deliveryFee;
+        lines.push({
+          key: "distance_delivery",
+          label: `Delivery distance fee (${distanceCharge.deliveryDistanceKm} km)`,
+          amount: distanceCharge.deliveryFee,
+        });
+      }
+      if (distanceCharge.pickupFee > 0) {
+        subtotal += distanceCharge.pickupFee;
+        lines.push({
+          key: "distance_pickup",
+          label: `Pickup distance fee (${distanceCharge.pickupDistanceKm} km)`,
+          amount: distanceCharge.pickupFee,
+        });
+      }
+    }
+  }
+
   const avail = input.available_bins;
   if (avail != null && Number.isFinite(avail) && avail >= 0 && totalBins > avail) {
     return {
@@ -165,6 +288,8 @@ export function calculateBinRentalPrice(
     totalBins,
     wardrobeBoxes,
     bundleLabel,
+    distanceCharge,
+    distancePricingUnavailable: distUnavailable,
   };
 }
 

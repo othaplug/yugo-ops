@@ -1,4 +1,6 @@
 -- Track cumulative amount received in cents for balance after bundle upgrades and add-on charges.
+-- Version 20260411140100 (not 20260411140000) to avoid colliding with backfill_invoice_numbers_job_codes.
+
 ALTER TABLE public.bin_orders ADD COLUMN IF NOT EXISTS paid_total_cents INTEGER;
 
 COMMENT ON COLUMN public.bin_orders.paid_total_cents IS

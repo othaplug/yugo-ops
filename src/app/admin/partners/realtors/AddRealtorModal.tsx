@@ -57,34 +57,34 @@ export default function AddRealtorModal({ open, onClose }: AddRealtorModalProps)
     <ModalOverlay open={open} onClose={onClose} title="Add Realtor" maxWidth="md">
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Agent Name *</label>
+          <label className="admin-premium-label">Agent Name *</label>
           <input
             type="text"
             value={agentName}
             onChange={(e) => setAgentName(e.target.value)}
             placeholder="e.g. Jane Smith"
             required
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email</label>
+          <label className="admin-premium-label">Email</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="agent@brokerage.com"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Brokerage</label>
+          <label className="admin-premium-label">Brokerage</label>
           <input
             type="text"
             value={brokerage}
             onChange={(e) => setBrokerage(e.target.value)}
             placeholder="e.g. Royal LePage"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
           />
         </div>
         <div className="flex gap-2 pt-2">

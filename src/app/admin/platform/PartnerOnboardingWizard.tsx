@@ -324,9 +324,8 @@ interface PartnerOnboardingWizardProps {
   onClose: () => void;
 }
 
-const inputCls =
-  "w-full px-3.5 py-3 bg-[var(--bg)] border border-[var(--brd)]/70 rounded-xl text-[var(--text-base)] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)]/60 focus:ring-2 focus:ring-[var(--gold)]/10 outline-none transition-all duration-150";
-const labelCls = "block text-[11px] font-semibold tracking-widest uppercase text-[var(--tx3)] mb-2";
+const inputCls = "admin-premium-input w-full";
+const labelCls = "admin-premium-label";
 
 export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboardingWizardProps) {
   const { toast } = useToast();

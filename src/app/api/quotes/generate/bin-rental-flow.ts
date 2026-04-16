@@ -6,6 +6,7 @@ import {
   sumBinsOutOnRental,
   availableBinInventory,
   BIN_RENTAL_BUNDLE_SPECS,
+  haversineKmBin,
   type BinBundleKey,
 } from "@/lib/pricing/bin-rental";
 import { normalizePhone } from "@/lib/phone";
@@ -15,6 +16,7 @@ import {
   quoteNumericSuffixForHubSpot,
 } from "@/lib/quotes/quote-id";
 import { patchHubSpotDealJobNo } from "@/lib/hubspot/sync-deal-job-no";
+import { geocode, GTA_CORE_LAT, GTA_CORE_LNG } from "@/lib/mapbox/driving-distance";
 
 const TAX_RATE = 0.13;
 
@@ -66,6 +68,8 @@ export type BinRentalQuoteInput = {
   bin_linked_move_id?: string | null;
   bin_delivery_notes?: string;
   internal_notes?: string;
+  quote_source?: string;
+  source_request_id?: string | null;
 };
 
 type SupabaseAdmin = ReturnType<typeof createAdminClient>;
@@ -115,6 +119,32 @@ export async function buildBinRentalQuoteResponse(opts: {
   const outOnRental = await sumBinsOutOnRental(sb);
   const available = availableBinInventory(totalCap, outOnRental);
 
+  const deliveryAddr = (input.to_address || "").trim();
+  const pickupAddrRaw = (input.from_address || "").trim();
+  const pickupAddr =
+    pickupAddrRaw && pickupAddrRaw.toLowerCase() !== deliveryAddr.toLowerCase()
+      ? pickupAddrRaw
+      : deliveryAddr;
+
+  const deliveryGeo = deliveryAddr ? await geocode(deliveryAddr) : null;
+  const pickupGeo =
+    pickupAddr === deliveryAddr
+      ? deliveryGeo
+      : pickupAddr
+        ? await geocode(pickupAddr)
+        : null;
+
+  const geoFailed =
+    !deliveryGeo || (pickupAddr !== deliveryAddr && !pickupGeo);
+
+  const deliveryKmFromHub = deliveryGeo
+    ? haversineKmBin(GTA_CORE_LAT, GTA_CORE_LNG, deliveryGeo.lat, deliveryGeo.lng)
+    : null;
+  const pickupKmFromHub =
+    pickupGeo != null
+      ? haversineKmBin(GTA_CORE_LAT, GTA_CORE_LNG, pickupGeo.lat, pickupGeo.lng)
+      : null;
+
   const priceResult = calculateBinRentalPrice(
     {
       bundle_type: bundleType,
@@ -124,6 +154,17 @@ export async function buildBinRentalQuoteResponse(opts: {
       material_delivery_charge: input.bin_material_delivery !== false,
       linked_move_id: linkedRaw,
       available_bins: available,
+      hub_distance: geoFailed
+        ? {
+            delivery_km_from_hub: null,
+            pickup_km_from_hub: null,
+            distance_pricing_unavailable: true,
+          }
+        : {
+            delivery_km_from_hub: deliveryKmFromHub,
+            pickup_km_from_hub: pickupKmFromHub,
+            distance_pricing_unavailable: false,
+          },
     },
     config,
   );
@@ -164,6 +205,9 @@ export async function buildBinRentalQuoteResponse(opts: {
   } else if (linkedRaw) {
     includes.push("Delivery included with your Yugo move");
   }
+  if (priceResult.distanceCharge && priceResult.distanceCharge.totalDistanceFee > 0) {
+    includes.push("Distance-based delivery and pickup fees (outside core radius)");
+  }
 
   const custom_price: TierShape = {
     price: subtotal,
@@ -197,6 +241,16 @@ export async function buildBinRentalQuoteResponse(opts: {
     bin_inventory_available: available,
     internal_notes: input.internal_notes?.trim() || null,
     payment_full_at_booking: true,
+    bin_hub_delivery_km:
+      deliveryKmFromHub != null ? Math.round(deliveryKmFromHub * 10) / 10 : null,
+    bin_hub_pickup_km:
+      pickupKmFromHub != null ? Math.round(pickupKmFromHub * 10) / 10 : null,
+    bin_delivery_drive_min: priceResult.distanceCharge?.deliveryDriveMinutes ?? null,
+    bin_pickup_drive_min: priceResult.distanceCharge?.pickupDriveMinutes ?? null,
+    bin_distance_fee_delivery: priceResult.distanceCharge?.deliveryFee ?? 0,
+    bin_distance_fee_pickup: priceResult.distanceCharge?.pickupFee ?? 0,
+    bin_distance_fee_total: priceResult.distanceCharge?.totalDistanceFee ?? 0,
+    bin_distance_geocoding_failed: geoFailed,
   };
 
   const isUpdate = !isPreview && !!input.quote_id?.trim();
@@ -249,6 +303,8 @@ export async function buildBinRentalQuoteResponse(opts: {
   if (!isPreview) {
     const quotePayload = {
       hubspot_deal_id: input.hubspot_deal_id || null,
+      quote_source: input.quote_source?.trim() || null,
+      source_request_id: input.source_request_id?.trim() || null,
       contact_id: contactId,
       service_type: "bin_rental" as const,
       status: "draft" as const,
@@ -338,6 +394,25 @@ export async function buildBinRentalQuoteResponse(opts: {
         return { status: 500, body: { error: "Quote insert failed", code: "QUOTE_ID_INSERT_FAILED" } };
       }
     }
+
+    const reqId = input.source_request_id?.trim();
+    if (reqId) {
+      const { data: qUuid } = await sb
+        .from("quotes")
+        .select("id")
+        .eq("quote_id", quoteId)
+        .maybeSingle();
+      if (qUuid?.id) {
+        await sb
+          .from("quote_requests")
+          .update({
+            quote_id: qUuid.id,
+            converted_at: new Date().toISOString(),
+            status: "quote_sent",
+          })
+          .eq("id", reqId);
+      }
+    }
   }
 
   const expiresAtStr = new Date(Date.now() + expiryDays * 86_400_000).toISOString();
@@ -368,8 +443,9 @@ export async function buildBinRentalQuoteResponse(opts: {
       quoteId,
       preview: isPreview,
       service_type: "bin_rental",
-      distance_km: null,
-      drive_time_min: null,
+      distance_km:
+        deliveryKmFromHub != null ? Math.round(deliveryKmFromHub * 10) / 10 : null,
+      drive_time_min: priceResult.distanceCharge?.deliveryDriveMinutes ?? null,
       move_date: input.move_date,
       expires_at: expiresAtStr,
       factors,

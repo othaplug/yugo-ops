@@ -62,7 +62,7 @@ export default async function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-sans antialiased">
+      <body className="antialiased">
         <OfflineBanner />
         <ToastProvider>
           <PhosphorProvider>{children}</PhosphorProvider>

@@ -60,9 +60,9 @@ export default function SettingsForm() {
   };
 
   const fieldClass =
-    "w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
+    "admin-premium-input w-full";
 
-  const labelClass = "block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5";
+  const labelClass = "admin-premium-label admin-premium-label--tight";
 
   return (
     <div className="space-y-3">

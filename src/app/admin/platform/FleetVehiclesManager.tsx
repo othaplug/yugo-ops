@@ -366,40 +366,40 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
       <ModalOverlay open={addOpen} onClose={() => setAddOpen(false)} title="Add Vehicle" maxWidth="sm">
         <form className="p-5 space-y-4" onSubmit={(e) => { e.preventDefault(); handleAdd(); }}>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Vehicle Type</label>
-            <select value={formType} onChange={(e) => { setFormType(e.target.value); setFormName(TYPE_LABELS[e.target.value]?.label || ""); }} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
+            <label className="admin-premium-label">Vehicle Type</label>
+            <select value={formType} onChange={(e) => { setFormType(e.target.value); setFormName(TYPE_LABELS[e.target.value]?.label || ""); }} className="admin-premium-input w-full">
               {Object.entries(TYPE_LABELS).map(([key, val]) => (
                 <option key={key} value={key}>{val.label} ({val.cuft} cu ft)</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">License Plate</label>
-            <input type="text" value={formPlate} onChange={(e) => setFormPlate(e.target.value.toUpperCase())} placeholder="e.g. SPR786" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+            <label className="admin-premium-label">License Plate</label>
+            <input type="text" value={formPlate} onChange={(e) => setFormPlate(e.target.value.toUpperCase())} placeholder="e.g. SPR786" className="admin-premium-input w-full" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Display Name</label>
-            <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+            <label className="admin-premium-label">Display Name</label>
+            <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="admin-premium-input w-full" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Call number (optional)</label>
+            <label className="admin-premium-label">Call number (optional)</label>
             <input
               type="tel"
               value={formPhone}
               onChange={(e) => setFormPhone(e.target.value)}
               placeholder={PHONE_PLACEHOLDER}
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
+              className="admin-premium-input w-full"
             />
             <p className="text-[10px] text-[var(--tx3)] mt-1">Shown to customers on live tracking for this vehicle.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Mileage (km)</label>
-              <input type="number" value={formMileage} onChange={(e) => setFormMileage(e.target.value)} placeholder="0" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+              <label className="admin-premium-label">Mileage (km)</label>
+              <input type="number" value={formMileage} onChange={(e) => setFormMileage(e.target.value)} placeholder="0" className="admin-premium-input w-full" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Status</label>
-              <select value={formStatus} onChange={(e) => setFormStatus(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
+              <label className="admin-premium-label">Status</label>
+              <select value={formStatus} onChange={(e) => setFormStatus(e.target.value)} className="admin-premium-input w-full">
                 <option value="active">Active</option>
                 <option value="maintenance">Maintenance</option>
                 <option value="retired">Retired</option>
@@ -408,8 +408,8 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
           </div>
           {teams.length > 0 && (
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Assigned Team</label>
-              <select value={formTeam} onChange={(e) => setFormTeam(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
+              <label className="admin-premium-label">Assigned Team</label>
+              <select value={formTeam} onChange={(e) => setFormTeam(e.target.value)} className="admin-premium-input w-full">
                 <option value="">None</option>
                 {teams.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
@@ -418,8 +418,8 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
             </div>
           )}
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Notes</label>
-            <input type="text" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Optional" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+            <label className="admin-premium-label">Notes</label>
+            <input type="text" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Optional" className="admin-premium-input w-full" />
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={() => setAddOpen(false)} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
@@ -432,28 +432,28 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
       <ModalOverlay open={!!editVehicle} onClose={() => setEditVehicle(null)} title={`Edit ${editVehicle?.display_name ?? "Vehicle"}`} maxWidth="sm">
         <form className="p-5 space-y-4" onSubmit={(e) => { e.preventDefault(); handleUpdate(); }}>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Display Name</label>
-            <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+            <label className="admin-premium-label">Display Name</label>
+            <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="admin-premium-input w-full" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Call number (optional)</label>
+            <label className="admin-premium-label">Call number (optional)</label>
             <input
               type="tel"
               value={formPhone}
               onChange={(e) => setFormPhone(e.target.value)}
               placeholder={PHONE_PLACEHOLDER}
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
+              className="admin-premium-input w-full"
             />
             <p className="text-[10px] text-[var(--tx3)] mt-1">Shown to customers on live tracking for this vehicle.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Mileage (km)</label>
-              <input type="number" value={formMileage} onChange={(e) => setFormMileage(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+              <label className="admin-premium-label">Mileage (km)</label>
+              <input type="number" value={formMileage} onChange={(e) => setFormMileage(e.target.value)} className="admin-premium-input w-full" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Status</label>
-              <select value={formStatus} onChange={(e) => setFormStatus(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
+              <label className="admin-premium-label">Status</label>
+              <select value={formStatus} onChange={(e) => setFormStatus(e.target.value)} className="admin-premium-input w-full">
                 <option value="active">Active</option>
                 <option value="maintenance">Maintenance</option>
                 <option value="retired">Retired</option>
@@ -462,8 +462,8 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
           </div>
           {teams.length > 0 && (
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Assigned Team</label>
-              <select value={formTeam} onChange={(e) => setFormTeam(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
+              <label className="admin-premium-label">Assigned Team</label>
+              <select value={formTeam} onChange={(e) => setFormTeam(e.target.value)} className="admin-premium-input w-full">
                 <option value="">None</option>
                 {teams.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
@@ -472,8 +472,8 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
             </div>
           )}
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Notes</label>
-            <input type="text" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Optional" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+            <label className="admin-premium-label">Notes</label>
+            <input type="text" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Optional" className="admin-premium-input w-full" />
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={() => setEditVehicle(null)} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
@@ -487,23 +487,23 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
         <form className="p-5 space-y-4" onSubmit={(e) => { e.preventDefault(); handleAddMaintenance(); }}>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Type</label>
-              <select value={maintType} onChange={(e) => setMaintType(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
+              <label className="admin-premium-label">Type</label>
+              <select value={maintType} onChange={(e) => setMaintType(e.target.value)} className="admin-premium-input w-full">
                 {MAINT_TYPES.map((t) => <option key={t} value={t}>{MAINT_LABELS[t]}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Date</label>
-              <input type="date" value={maintDate} onChange={(e) => setMaintDate(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+              <label className="admin-premium-label">Date</label>
+              <input type="date" value={maintDate} onChange={(e) => setMaintDate(e.target.value)} className="admin-premium-input w-full" />
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Cost ($)</label>
-            <input type="number" step="0.01" value={maintCost} onChange={(e) => setMaintCost(e.target.value)} placeholder="0.00" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+            <label className="admin-premium-label">Cost ($)</label>
+            <input type="number" step="0.01" value={maintCost} onChange={(e) => setMaintCost(e.target.value)} placeholder="0.00" className="admin-premium-input w-full" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Notes</label>
-            <input type="text" value={maintNotes} onChange={(e) => setMaintNotes(e.target.value)} placeholder="Optional" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+            <label className="admin-premium-label">Notes</label>
+            <input type="text" value={maintNotes} onChange={(e) => setMaintNotes(e.target.value)} placeholder="Optional" className="admin-premium-input w-full" />
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={() => setMaintVehicleId(null)} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>

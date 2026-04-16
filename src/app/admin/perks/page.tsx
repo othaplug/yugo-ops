@@ -153,23 +153,23 @@ function CreatePerkModal({
         <div className="p-5 space-y-4">
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Partner *</label>
-            <select value={form.partner_id} onChange={(e) => set("partner_id", e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" required>
+            <select value={form.partner_id} onChange={(e) => set("partner_id", e.target.value)} className="admin-premium-input w-full" required>
               <option value="">Select a partner</option>
               {partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Title *</label>
-            <input value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. 10% off your first order" className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
+            <input value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. 10% off your first order" className="admin-premium-input w-full" />
           </div>
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Description</label>
-            <textarea value={form.description} onChange={(e) => set("description", e.target.value)} rows={2} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none resize-none" />
+            <textarea value={form.description} onChange={(e) => set("description", e.target.value)} rows={2} className="admin-premium-input w-full resize-none" />
           </div>
           <div className={`grid gap-3 ${["percentage_off", "dollar_off"].includes(form.offer_type) ? "grid-cols-2" : "grid-cols-1"}`}>
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Offer Type</label>
-              <select value={form.offer_type} onChange={(e) => set("offer_type", e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none">
+              <select value={form.offer_type} onChange={(e) => set("offer_type", e.target.value)} className="admin-premium-input w-full">
                 <option value="percentage_off">% Off</option>
                 <option value="dollar_off">$ Off</option>
                 <option value="free_service">Free Service</option>
@@ -189,7 +189,7 @@ function CreatePerkModal({
                     <input type="number" value={form.discount_value} onChange={(e) => set("discount_value", e.target.value)} placeholder="e.g. 25" className="w-full py-2 pr-3 pl-0.5 bg-transparent text-[12px] focus:outline-none" />
                   </div>
                 ) : (
-                  <input type="number" value={form.discount_value} onChange={(e) => set("discount_value", e.target.value)} placeholder="e.g. 10" className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
+                  <input type="number" value={form.discount_value} onChange={(e) => set("discount_value", e.target.value)} placeholder="e.g. 10" className="admin-premium-input w-full" />
                 )}
               </div>
             )}
@@ -197,31 +197,31 @@ function CreatePerkModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Code</label>
-              <input value={form.redemption_code} onChange={(e) => set("redemption_code", e.target.value.toUpperCase())} placeholder="YUGO10" className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] font-mono focus:border-[var(--gold)] outline-none" />
+              <input value={form.redemption_code} onChange={(e) => set("redemption_code", e.target.value.toUpperCase())} placeholder="YUGO10" className="admin-premium-input w-full font-mono" />
             </div>
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Redemption URL</label>
-              <input value={form.redemption_url} onChange={(e) => set("redemption_url", e.target.value)} placeholder="https://…" className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
+              <input value={form.redemption_url} onChange={(e) => set("redemption_url", e.target.value)} placeholder="https://…" className="admin-premium-input w-full" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Valid From</label>
-              <input type="date" value={form.valid_from} onChange={(e) => set("valid_from", e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
+              <input type="date" value={form.valid_from} onChange={(e) => set("valid_from", e.target.value)} className="admin-premium-input w-full" />
             </div>
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Valid Until (blank = no expiry)</label>
-              <input type="date" value={form.valid_until} onChange={(e) => set("valid_until", e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
+              <input type="date" value={form.valid_until} onChange={(e) => set("valid_until", e.target.value)} className="admin-premium-input w-full" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Max Redemptions (blank = unlimited)</label>
-              <input type="number" value={form.max_redemptions} onChange={(e) => set("max_redemptions", e.target.value)} placeholder="∞" className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
+              <input type="number" value={form.max_redemptions} onChange={(e) => set("max_redemptions", e.target.value)} placeholder="∞" className="admin-premium-input w-full" />
             </div>
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Display Order</label>
-              <input type="number" value={form.display_order} onChange={(e) => set("display_order", e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
+              <input type="number" value={form.display_order} onChange={(e) => set("display_order", e.target.value)} className="admin-premium-input w-full" />
             </div>
           </div>
           <div className="flex gap-2 pt-2">
@@ -303,7 +303,7 @@ function CreatePromoReferralModal({
               value={form.code}
               onChange={(e) => set("code", e.target.value.toUpperCase())}
               placeholder="e.g. YUGOSUMMER50"
-              className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] font-mono focus:border-[var(--gold)] outline-none"
+              className="admin-premium-input w-full font-mono"
             />
             <p className="text-[10px] text-[var(--tx3)] mt-1">Unique code customers enter at checkout. Min 4 characters.</p>
           </div>
@@ -315,7 +315,7 @@ function CreatePromoReferralModal({
                 value={form.referrer_credit}
                 onChange={(e) => set("referrer_credit", e.target.value)}
                 min={0}
-                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none"
+                className="admin-premium-input w-full"
               />
             </div>
             <div>
@@ -325,7 +325,7 @@ function CreatePromoReferralModal({
                 value={form.referred_discount}
                 onChange={(e) => set("referred_discount", e.target.value)}
                 min={0}
-                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none"
+                className="admin-premium-input w-full"
               />
             </div>
           </div>
@@ -335,7 +335,7 @@ function CreatePromoReferralModal({
               value={form.label}
               onChange={(e) => set("label", e.target.value)}
               placeholder="e.g. Summer 2025 Campaign"
-              className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none"
+              className="admin-premium-input w-full"
             />
           </div>
           <div>
@@ -344,7 +344,7 @@ function CreatePromoReferralModal({
               type="date"
               value={form.expires_at}
               onChange={(e) => set("expires_at", e.target.value)}
-              className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none"
+              className="admin-premium-input w-full"
             />
             <p className="text-[10px] text-[var(--tx3)] mt-1">Leave blank for 1 year from today.</p>
           </div>

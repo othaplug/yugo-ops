@@ -3,6 +3,7 @@ import { createClient as createJwtSupabaseClient } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { insertAuditLog } from "@/lib/audit";
+import { recordLoginHistorySuccess } from "@/lib/auth/login-history-record";
 
 /**
  * Records a login audit row after password (or other client-side) sign-in.
@@ -51,6 +52,8 @@ export async function POST(req: Request) {
     resourceType: "system",
     details: { method: bearer ? "password" : "session" },
   });
+
+  await recordLoginHistorySuccess({ userId, headers: req.headers });
 
   return NextResponse.json({ ok: true });
 }

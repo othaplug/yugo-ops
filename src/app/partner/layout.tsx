@@ -34,7 +34,7 @@ export default async function PartnerLayout({
       <>
         <PartnerLightTheme />
         <YugoBetaBanner />
-        {children}
+        <div className="partner-app min-h-dvh w-full">{children}</div>
       </>
     );
   }
@@ -88,7 +88,7 @@ export default async function PartnerLayout({
     <PartnerOrgProvider orgDisplayName={orgDisplayName}>
       <PartnerLightTheme />
       <div
-        className="min-h-screen min-h-dvh bg-white w-full max-w-full min-w-0 overflow-x-clip flex flex-col"
+        className="partner-app min-h-screen min-h-dvh bg-white w-full max-w-full min-w-0 overflow-x-clip flex flex-col"
         suppressHydrationWarning
       >
         <YugoBetaBanner />

@@ -1615,7 +1615,25 @@ function PmBookForm({
       </div>
 
       <div>
-        <PmScheduleSectionLabel>Tenant communication</PmScheduleSectionLabel>
+        <div className="flex items-start justify-between gap-3">
+          <PmScheduleSectionLabel>Tenant communication</PmScheduleSectionLabel>
+          <InfoHint
+            ariaLabel="Tenant communication options"
+            align="end"
+            className="shrink-0 mt-0.5"
+          >
+            <div className="space-y-2 text-[11px]">
+              <p>
+                <span className="font-semibold">Yugo contacts tenant:</span> When the booking is approved, Yugo can text
+                the tenant a tracking link for move day (phone required).
+              </p>
+              <p>
+                <span className="font-semibold">We forward tracking:</span> You will receive the tracking link by email to
+                share with the tenant.
+              </p>
+            </div>
+          </InfoHint>
+        </div>
         <div className="flex flex-wrap gap-2">
           {(
             [
@@ -1638,18 +1656,6 @@ function PmBookForm({
             </button>
           ))}
         </div>
-        {tenantCommsChoice === "yugo" && (
-          <p className="text-[11px] text-[var(--tx3)] mt-2 leading-relaxed">
-            When the booking is approved, Yugo can text the tenant a tracking
-            link for move day (phone required).
-          </p>
-        )}
-        {tenantCommsChoice === "partner" && (
-          <p className="text-[11px] text-[var(--tx3)] mt-2 leading-relaxed">
-            You will receive the tracking link by email to share with the
-            tenant.
-          </p>
-        )}
       </div>
 
       {estimateSection}

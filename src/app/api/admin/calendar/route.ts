@@ -8,6 +8,11 @@ import { requireStaff } from "@/lib/api-auth";
 import { formatDeliveryCalendarDescription } from "@/lib/calendar/delivery-event-label";
 import { toTitleCase } from "@/lib/format-text";
 import { deliveryContactEmail, deliveryContactPhone } from "@/lib/calendar/delivery-contact";
+import {
+  buildReferenceBlockTimeMap,
+  resolveDeliveryDisplayTimes,
+  resolveMoveDisplayTimes,
+} from "@/lib/calendar/event-time-resolution";
 
 export const dynamic = "force-dynamic";
 
@@ -109,14 +114,18 @@ export async function GET(req: NextRequest) {
     const [movesResult, deliveriesResult, phasesResult, projectsResult, blocksResult, crewsResult, recurringResult, benchmarksResult, durationDefaultsResult, binDropResult, binPickResult, moveProjectDaysResult] = await Promise.allSettled([
       db
         .from("moves")
-        .select("id, move_code, client_name, client_phone, client_email, move_type, move_size, est_hours, status, scheduled_date, scheduled_start, scheduled_end, crew_id, from_address, to_address, event_group_id, event_phase, event_name")
+        .select(
+          "id, move_code, client_name, client_phone, client_email, move_type, move_size, est_hours, status, scheduled_date, scheduled_start, scheduled_end, scheduled_time, preferred_time, arrival_window, estimated_duration_minutes, crew_id, from_address, to_address, event_group_id, event_phase, event_name",
+        )
         .gte("scheduled_date", startDate)
         .lte("scheduled_date", endDate)
         .neq("status", "cancelled"),
       // Scheduled deliveries include B2B (`category`); no separate query.
       db
         .from("deliveries")
-        .select("id, delivery_number, client_name, customer_name, customer_phone, customer_email, contact_phone, contact_email, end_customer_phone, end_customer_email, delivery_type, category, status, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_hours, crew_id, pickup_address, delivery_address, items")
+        .select(
+          "id, delivery_number, client_name, customer_name, customer_phone, customer_email, contact_phone, contact_email, end_customer_phone, end_customer_email, delivery_type, category, status, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_hours, estimated_duration_minutes, crew_id, pickup_address, delivery_address, items",
+        )
         .gte("scheduled_date", startDate)
         .lte("scheduled_date", endDate)
         .not("status", "eq", "cancelled"),
@@ -184,6 +193,7 @@ export async function GET(req: NextRequest) {
     const phases = phasesResult.status === "fulfilled" && !phasesResult.value.error ? phasesResult.value.data : null;
     const projects = projectsResult.status === "fulfilled" && !projectsResult.value.error ? projectsResult.value.data : null;
     const blocks = blocksResult.status === "fulfilled" && !blocksResult.value.error ? blocksResult.value.data : null;
+    const refBlockTimes = buildReferenceBlockTimeMap(blocks);
     const crews = crewsResult.status === "fulfilled" && !crewsResult.value.error ? crewsResult.value.data : null;
     const recurringSchedules = recurringResult.status === "fulfilled" && !recurringResult.value.error ? recurringResult.value.data : null;
     const binOrdersDrop =
@@ -229,13 +239,26 @@ export async function GET(req: NextRequest) {
       if (statusFilter && (m.status || "scheduled") !== statusFilter) continue;
 
       const crew = m.crew_id ? crewListForLookup.find((c) => c.id === m.crew_id) : null;
-      const moveStart = (m.scheduled_start as string | null) || null;
-      const moveEnd = (m.scheduled_end as string | null) || null;
       const moveSize = (m.move_size as string | null)?.toLowerCase() || null;
-      const moveDuration =
-        moveStart && moveEnd
-          ? null
-          : (m.est_hours != null ? Number(m.est_hours) : null) ?? baselineBySize.get(moveSize || "") ?? baselineBySize.get("2br") ?? 4;
+      const baselineMoveHours = baselineBySize.get(moveSize || "") ?? baselineBySize.get("2br") ?? 4;
+      const moveBlock = refBlockTimes.get(`move:${m.id}`) ?? null;
+      const resolved = resolveMoveDisplayTimes({
+        scheduledStart: (m.scheduled_start as string | null) || null,
+        scheduledEnd: (m.scheduled_end as string | null) || null,
+        scheduledTimeText: (m.scheduled_time as string | null) || null,
+        preferredTime: (m.preferred_time as string | null) || null,
+        arrivalWindowLabel: (m.arrival_window as string | null) || null,
+        block: moveBlock,
+        estimatedDurationMinutes:
+          m.estimated_duration_minutes != null && Number.isFinite(Number(m.estimated_duration_minutes))
+            ? Number(m.estimated_duration_minutes)
+            : null,
+        estHours: m.est_hours != null ? Number(m.est_hours) : null,
+        baselineHours: baselineMoveHours,
+      });
+      const moveStart = resolved.start;
+      const moveEnd = resolved.end;
+      const moveDuration = resolved.durationHours;
       const eventPhase = (m.event_phase as "delivery" | "setup" | "return" | "single_day" | null) || null;
       const eventName = (m.event_name as string | null) || null;
       const eventGroupId = (m.event_group_id as string | null) || null;
@@ -288,8 +311,6 @@ export async function GET(req: NextRequest) {
 
       const crewD = d.crew_id ? crewListForLookup.find((c) => c.id === d.crew_id) : null;
       const itemCount = Array.isArray(d.items) ? d.items.length : null;
-      const delStart = (d.scheduled_start as string | null) || (d.time_slot as string | null) || null;
-      const delEnd = (d.scheduled_end as string | null) || null;
       const delTypeRaw = ((d.delivery_type || d.category) as string | null)?.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "") || "standard";
       const DELIVERY_TYPE_MAP: Record<string, string> = {
         single_item: "standard",
@@ -301,13 +322,24 @@ export async function GET(req: NextRequest) {
         multipiece: "multi_piece",
       };
       const delType = DELIVERY_TYPE_MAP[delTypeRaw] ?? delTypeRaw;
-      const delDuration =
-        delStart && delEnd
-          ? null
-          : (d.estimated_duration_hours != null ? Number(d.estimated_duration_hours) : null) ??
-            deliveryDurationByType.get(delType) ??
-            deliveryDurationByType.get("standard") ??
-            1.5;
+      const typeDefaultHours =
+        deliveryDurationByType.get(delType) ?? deliveryDurationByType.get("standard") ?? 1.5;
+      const delBlock = refBlockTimes.get(`delivery:${d.id}`) ?? null;
+      const resolvedDel = resolveDeliveryDisplayTimes({
+        scheduledStart: (d.scheduled_start as string | null) || null,
+        scheduledEnd: (d.scheduled_end as string | null) || null,
+        timeSlot: (d.time_slot as string | null) || null,
+        block: delBlock,
+        estimatedDurationMinutes:
+          d.estimated_duration_minutes != null && Number.isFinite(Number(d.estimated_duration_minutes))
+            ? Number(d.estimated_duration_minutes)
+            : null,
+        estimatedDurationHours: d.estimated_duration_hours != null ? Number(d.estimated_duration_hours) : null,
+        typeDefaultHours,
+      });
+      const delStart = resolvedDel.start;
+      const delEnd = resolvedDel.end;
+      const delDuration = resolvedDel.durationHours;
       const delCat = `${d.category || ""} ${d.delivery_type || ""}`.toLowerCase();
       const deliveryFill = delCat.includes("b2b") ? CALENDAR_B2B_DELIVERY_FILL : JOB_COLORS.delivery;
       events.push({

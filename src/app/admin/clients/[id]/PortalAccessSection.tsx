@@ -227,7 +227,7 @@ export default function PortalAccessSection({
               Set a new temporary password for <strong>{resetUser.name || resetUser.email}</strong>. They will receive an email with the new password and login link.
             </p>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New temporary password *</label>
+              <label className="admin-premium-label">New temporary password *</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -236,7 +236,7 @@ export default function PortalAccessSection({
                   placeholder="Min 8 characters"
                   required
                   minLength={8}
-                  className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                  className="admin-premium-input flex-1"
                 />
                 <button type="button" onClick={generateResetPassword} className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]">
                   Generate
@@ -261,28 +261,28 @@ export default function PortalAccessSection({
             Invite someone at {orgName} to log in. They can {labels.portalDescription}.
           </p>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email *</label>
+            <label className="admin-premium-label">Email *</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="user@company.com"
               required
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+              className="admin-premium-input w-full"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Name</label>
+            <label className="admin-premium-label">Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Jane Smith"
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+              className="admin-premium-input w-full"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Temporary Password *</label>
+            <label className="admin-premium-label">Temporary Password *</label>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -291,7 +291,7 @@ export default function PortalAccessSection({
                 placeholder="Min 8 characters"
                 required
                 minLength={8}
-                className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                className="admin-premium-input flex-1"
               />
               <button type="button" onClick={generatePassword} className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]">
                 Generate

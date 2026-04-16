@@ -217,7 +217,7 @@ export default function SearchBox() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.length >= 2 && setOpen(true)}
-          className="min-h-0 flex-1 border-none bg-transparent py-0 font-sans text-[12px] leading-none text-[var(--tx)] placeholder:text-[var(--tx3)] placeholder:opacity-80 outline-none"
+          className="min-h-0 flex-1 border-none bg-transparent py-0 font-sans text-[12px] leading-none text-[var(--tx)] placeholder:text-[var(--tx2)] placeholder:opacity-75 outline-none"
         />
         {query.length > 0 ? (
           <button
@@ -237,7 +237,7 @@ export default function SearchBox() {
             />
           </button>
         ) : (
-          <kbd className="hidden h-5 shrink-0 select-none items-center justify-center rounded-[2px] border border-[var(--brd)] bg-transparent px-1.5 font-mono text-[10px] leading-none text-[var(--tx2)] sm:inline-flex">
+          <kbd className="hidden h-5 shrink-0 select-none items-center justify-center rounded-[2px] border border-[var(--brd)] bg-[var(--bg)]/80 px-1.5 font-mono text-[10px] leading-none text-[var(--tx)]/80 sm:inline-flex">
             ⌘K
           </kbd>
         )}

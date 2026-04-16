@@ -109,28 +109,28 @@ export default function InviteUserModal({ open, onClose }: InviteUserModalProps)
             </div>
           )}
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email *</label>
+            <label className="admin-premium-label">Email *</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="user@company.com"
               required
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+              className="admin-premium-input w-full"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Full Name</label>
+            <label className="admin-premium-label">Full Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Jane Smith"
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+              className="admin-premium-input w-full"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Temporary Password *</label>
+            <label className="admin-premium-label">Temporary Password *</label>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <input
@@ -140,7 +140,7 @@ export default function InviteUserModal({ open, onClose }: InviteUserModalProps)
                   placeholder="Min 8 characters"
                   required
                   minLength={8}
-                  className="w-full px-4 py-2.5 pr-10 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                  className="admin-premium-input admin-premium-input--trailing w-full"
                 />
                 <button
                   type="button"
@@ -166,11 +166,11 @@ export default function InviteUserModal({ open, onClose }: InviteUserModalProps)
             <p className="text-[10px] text-[var(--tx3)] mt-1">User must change password on first login</p>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
+            <label className="admin-premium-label">Role</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+              className="admin-premium-input w-full"
             >
               <option value="admin">Admin</option>
               <option value="manager">Manager</option>

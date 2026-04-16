@@ -110,11 +110,11 @@ export default async function SettingsTabPage({
           </div>
           <div className="px-5 py-5 space-y-4">
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Change Password</label>
+              <label className="admin-premium-label admin-premium-label--tight">Change Password</label>
               <SettingsForm />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Two-Factor Authentication</label>
+              <label className="admin-premium-label admin-premium-label--tight">Two-Factor Authentication</label>
               <div className="flex items-center justify-between py-2.5 px-4 bg-[var(--bg)] border border-[var(--brd)] rounded-lg">
                 <span className="text-[13px] text-[var(--tx2)]">{platformUser?.two_factor_enabled ? "2FA is active, code sent to email on each login" : "2FA not enabled"}</span>
                 <Enable2FAButton enabled={platformUser?.two_factor_enabled} />

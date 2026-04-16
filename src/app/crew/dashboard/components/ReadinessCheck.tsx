@@ -120,7 +120,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
             ))}
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[var(--tx3)] mb-1.5 uppercase tracking-[0.12em] leading-none">
+            <label className="admin-premium-label admin-premium-label--tight">
               Note (optional)
             </label>
             <input
@@ -128,7 +128,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Any notes about today's setup..."
-              className="w-full px-3 py-2.5 border border-[var(--brd)] bg-[var(--bg)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus-visible:border-[rgba(92,26,51,0.45)] focus-visible:ring-1 focus-visible:ring-[#5C1A33]/35"
+              className="admin-premium-input w-full text-[13px] text-[var(--tx)]"
             />
           </div>
           {error && (

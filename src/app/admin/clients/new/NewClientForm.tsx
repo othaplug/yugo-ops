@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { InfoHint } from "@/components/ui/InfoHint";
 import { useRouter } from "next/navigation";
 import { useToast } from "../../components/Toast";
 import { normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
@@ -209,11 +210,17 @@ export default function NewClientForm({
         <>
           {referralPartnerHub ? (
             <>
-              <p className="text-[11px] text-[var(--tx3)] leading-relaxed mb-3">
-                Creates an organization for commission-based referral partners. Pipeline tracking and individual realtor
-                contacts live on the Referral Partners page.
-              </p>
-              <Field label="Referral partner type">
+              <Field
+                label="Referral partner type"
+                hint={
+                  <InfoHint variant="admin" ariaLabel="About referral partner organizations">
+                    <p className="text-[11px] leading-relaxed">
+                      Creates an organization for commission-based referral partners. Pipeline tracking and individual
+                      realtor contacts live on the Referral Partners page.
+                    </p>
+                  </InfoHint>
+                }
+              >
                 <select
                   name="type"
                   value={partnerType}
@@ -426,11 +433,22 @@ export default function NewClientForm({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div>
       {label && (
-        <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">{label}</label>
+        <div className="mb-1 flex flex-wrap items-center gap-1.5">
+          <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">{label}</span>
+          {hint}
+        </div>
       )}
       {children}
     </div>

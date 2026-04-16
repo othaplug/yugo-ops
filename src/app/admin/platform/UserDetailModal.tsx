@@ -199,17 +199,17 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
       <div className="p-5 space-y-5">
         <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Name</label>
+            <label className="admin-premium-label">Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Full name"
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+              className="admin-premium-input w-full"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email</label>
+            <label className="admin-premium-label">Email</label>
             <div className="px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx2)]">
               {user.email}
             </div>
@@ -217,19 +217,19 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
           </div>
           {!user.id.startsWith("inv-") && (
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone (SMS)</label>
+            <label className="admin-premium-label">Phone (SMS)</label>
             <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="e.g. 5551234567"
-              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+              className="admin-premium-input w-full"
             />
             <p className="text-[10px] text-[var(--tx3)] mt-1">Used for SMS notifications (e.g. quote viewed, payment received). Use 10 or 11 digits.</p>
           </div>
           )}
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
+            <label className="admin-premium-label">Role</label>
             {isAdmin ? (
               <div className="px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx2)] flex items-center gap-2">
                 <span className="w-2 h-2 bg-[var(--admin-primary-fill)] rounded-full" />
@@ -240,7 +240,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
                 disabled={!canEditRole}
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none disabled:opacity-60"
+                className="admin-premium-input w-full disabled:opacity-60"
               >
                 <option value="owner">Owner</option>
                 <option value="admin">Admin</option>
@@ -259,24 +259,24 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
                 Specializations are matched to lead service type (lowercase). Example: local_move, office_move, b2b_delivery
               </p>
               <div>
-                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Specializations</label>
+                <label className="admin-premium-label">Specializations</label>
                 <input
                   type="text"
                   value={specInput}
                   onChange={(e) => setSpecInput(e.target.value)}
                   placeholder="local_move, office_move, b2b_delivery"
-                  className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                  className="admin-premium-input w-full"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Max open leads</label>
+                <label className="admin-premium-label">Max open leads</label>
                 <input
                   type="number"
                   min={1}
                   max={500}
                   value={maxOpenLeads}
                   onChange={(e) => setMaxOpenLeads(parseInt(e.target.value, 10) || 20)}
-                  className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                  className="admin-premium-input w-full"
                 />
               </div>
               <label className="flex items-center gap-2 text-[12px] text-[var(--tx)] cursor-pointer">
@@ -305,7 +305,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="New password (min 8 chars)"
               minLength={8}
-              className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+              className="admin-premium-input flex-1"
             />
             <button type="submit" disabled={resetting || !newPassword} className="px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50">
               {resetting ? "Resetting…" : "Reset"}

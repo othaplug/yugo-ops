@@ -179,6 +179,7 @@ export async function POST(req: NextRequest) {
       roundingNearest: rounding,
       parkingLongCarryTotal: 0,
       pricingExtras: useVerticalZoneSchedule ? [] : extras,
+      platformConfig: config,
     });
 
     const engineSubtotal = dim.subtotal;

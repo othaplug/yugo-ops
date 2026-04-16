@@ -272,7 +272,7 @@ function SidebarNavItem({
         href={href}
         onClick={onNavigate}
         title={label}
-        className={`relative flex items-center justify-center w-10 h-10 mx-auto rounded-r-[2px] rounded-l-none border-l-2 transition-colors ${
+        className={`relative flex items-center justify-center w-10 h-10 mx-auto rounded-xl rounded-l-none border-l-2 transition-colors ${
           active
             ? "border-l-[var(--yu-accent)] bg-[color-mix(in_srgb,var(--yu-accent)_20%,transparent)] text-[var(--tx)]"
             : "border-l-transparent text-[var(--tx2)] hover:bg-[color-mix(in_srgb,var(--yu-accent)_12%,transparent)] hover:text-[var(--tx)]"
@@ -293,7 +293,7 @@ function SidebarNavItem({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`sidebar-nav-lift flex items-center gap-3 px-4 py-2.5 mx-2 text-[13px] font-medium border-l-2 -ml-px rounded-none ${
+      className={`sidebar-nav-lift flex items-center gap-3 px-3.5 py-2.5 mx-1.5 text-[13px] font-medium tracking-tight border-l-2 -ml-px rounded-[10px] ${
         active
           ? "bg-[color-mix(in_srgb,var(--yu-accent)_22%,transparent)] text-[var(--tx)] border-l-[var(--yu-accent)] font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
           : "text-[var(--tx2)] border-l-transparent hover:bg-[color-mix(in_srgb,var(--yu-accent)_12%,transparent)] hover:text-[var(--tx)]"
@@ -603,14 +603,14 @@ export default function AdminShell({
               `}
               >
                 {/* Logo bar */}
-                <div className="h-14 flex items-center shrink-0 bg-transparent border-b border-[var(--brd)]/20">
+                <div className="h-12 flex items-center shrink-0 bg-transparent border-b border-[var(--brd)]/20">
                   {/* Rail mode: show only expand button */}
                   <div
                     className={`hidden md:flex w-full items-center justify-center transition-all duration-200 ${sidebarCollapsed ? "" : "opacity-0 pointer-events-none absolute"}`}
                   >
                     <button
                       onClick={() => setSidebarCollapsed(false)}
-                      className="p-2.5 rounded-[2px] hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)] hover:text-[var(--tx)]"
+                      className="p-2.5 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)] hover:text-[var(--tx)]"
                       title="Expand sidebar"
                       aria-label="Expand sidebar"
                     >
@@ -633,7 +633,7 @@ export default function AdminShell({
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setSidebarCollapsed(true)}
-                        className="hidden md:flex p-2 rounded-[2px] hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)] hover:text-[var(--tx)]"
+                        className="hidden md:flex p-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)] hover:text-[var(--tx)]"
                         aria-label="Collapse sidebar"
                         title="Collapse sidebar"
                       >
@@ -646,7 +646,7 @@ export default function AdminShell({
                       </button>
                       <button
                         onClick={() => setSidebarOpen(false)}
-                        className="md:hidden p-2 rounded-[2px] hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)]"
+                        className="md:hidden p-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)]"
                       >
                         <X
                           size={15}
@@ -677,7 +677,7 @@ export default function AdminShell({
                               [section.label]: !prev[section.label],
                             }))
                           }
-                          className="sidebar-nav-lift w-full flex items-center justify-between admin-eyebrow normal-case px-4 py-2.5 mx-2 rounded-[2px] font-heading text-[var(--tx2)] hover:bg-[rgba(139,26,58,0.12)] hover:text-[var(--tx)] active:bg-[rgba(139,26,58,0.08)] transition-colors min-h-[40px]"
+                          className="sidebar-nav-lift w-full flex items-center justify-between admin-eyebrow normal-case px-3.5 py-2.5 mx-1.5 rounded-[10px] font-heading text-[var(--tx2)] hover:bg-[rgba(139,26,58,0.12)] hover:text-[var(--tx)] active:bg-[rgba(139,26,58,0.08)] transition-colors min-h-[40px]"
                           aria-expanded={!isCollapsed}
                         >
                           {section.label}
@@ -764,7 +764,7 @@ export default function AdminShell({
               <div className="flex-1 flex flex-col min-w-0 min-h-0 max-w-full admin-main-offset">
                 {/* Topbar — flex row; search width capped inside flex-1 wrapper so bell + profile stay visible */}
                 <div
-                  className={`fixed top-0 right-0 z-30 h-14 shrink-0 glass-topbar border-b border-[var(--brd)]/50 transition-all duration-300 safe-area-top flex items-center justify-between gap-2 sm:gap-4 min-w-0 max-w-full pl-3 pr-3 sm:pl-4 sm:pr-4 md:px-6 ${topbarLeftOffset}`}
+                  className={`fixed top-0 right-0 z-30 h-12 shrink-0 glass-topbar border-b border-[var(--brd)]/50 transition-all duration-300 safe-area-top flex items-center justify-between gap-2 sm:gap-4 min-w-0 max-w-full pl-3 pr-3 sm:pl-4 sm:pr-4 md:px-6 ${topbarLeftOffset}`}
                 >
                   <button
                     onClick={() => setSidebarOpen(true)}
@@ -792,7 +792,7 @@ export default function AdminShell({
                 {role === "owner" &&
                   !twoFactorEnabled &&
                   !owner2faBannerDismissed && (
-                    <div className="sticky top-14 z-20 relative pl-4 pr-11 sm:pr-12 py-2.5 text-center text-[12px] font-medium bg-[rgba(180,100,20,0.12)] border-b border-[var(--brd)]/35 border-l-2 border-l-[#B46414] text-[var(--tx)]">
+                    <div className="sticky top-12 z-20 relative pl-4 pr-11 sm:pr-12 py-2.5 text-center text-[12px] font-medium bg-[rgba(180,100,20,0.12)] border-b border-[var(--brd)]/35 border-l-2 border-l-[#B46414] text-[var(--tx)]">
                       <Shield
                         weight="regular"
                         className="inline w-3.5 h-3.5 mr-1.5 -mt-0.5"

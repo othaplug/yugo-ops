@@ -525,7 +525,7 @@ function OverheadEditor({
                   onChange={(e) =>
                     setStandard((p) => ({ ...p, [f.key]: e.target.value }))
                   }
-                  className="w-full pl-5 pr-2 py-1.5 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[var(--tx)] outline-none focus:border-[var(--gold)] transition-colors"
+                  className="admin-premium-input admin-premium-input--leading admin-premium-input--compact w-full"
                 />
               </div>
             </div>
@@ -579,7 +579,7 @@ function OverheadEditor({
                         [t.key]: e.target.value,
                       }))
                     }
-                    className="w-full pl-5 pr-2 py-1.5 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[var(--tx)] outline-none focus:border-[var(--gold)] transition-colors"
+                    className="admin-premium-input admin-premium-input--leading admin-premium-input--compact w-full"
                   />
                 </div>
               </div>
@@ -622,7 +622,7 @@ function OverheadEditor({
                     ),
                   )
                 }
-                className="flex-1 px-2.5 py-1.5 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[var(--tx)] outline-none focus:border-[var(--gold)] transition-colors"
+                className="admin-premium-input admin-premium-input--compact flex-1"
               />
               <div className="relative w-28">
                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[var(--tx3)]">
@@ -642,7 +642,7 @@ function OverheadEditor({
                       ),
                     )
                   }
-                  className="w-full pl-5 pr-2 py-1.5 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[var(--tx)] outline-none focus:border-[var(--gold)] transition-colors"
+                  className="admin-premium-input admin-premium-input--leading admin-premium-input--compact w-full"
                 />
               </div>
               <button
@@ -664,7 +664,7 @@ function OverheadEditor({
           value={newLabel}
           onChange={(e) => setNewLabel(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addCustom()}
-          className="flex-1 px-2.5 py-1.5 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)] transition-colors"
+          className="admin-premium-input admin-premium-input--compact flex-1"
         />
         <div className="relative w-28">
           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[var(--tx3)]">
@@ -678,7 +678,7 @@ function OverheadEditor({
             value={newAmount}
             onChange={(e) => setNewAmount(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addCustom()}
-            className="w-full pl-5 pr-2 py-1.5 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)] transition-colors"
+            className="admin-premium-input admin-premium-input--leading admin-premium-input--compact w-full"
           />
         </div>
         <button

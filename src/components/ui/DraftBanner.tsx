@@ -26,7 +26,7 @@ export default function DraftBanner({ onRestore, onDismiss }: DraftBannerProps) 
         <button
           type="button"
           onClick={onDismiss}
-          className="p-1.5 rounded-lg text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors"
+          className="p-1.5 rounded-lg text-[var(--tx2)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors"
           title="Discard draft"
         >
           <X size={14} />

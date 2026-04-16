@@ -85,49 +85,49 @@ export default function PartnerProfileSettings() {
       </div>
       <form onSubmit={handleSave} className="px-5 py-5 space-y-5">
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Company Name</label>
+          <label className="admin-premium-label admin-premium-label--tight">Company Name</label>
           <div className="text-[13px] text-[var(--tx2)] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2">
             {profile.name}
           </div>
           <p className="text-[10px] text-[var(--tx3)] mt-1">Only administrators can change this</p>
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Partner Type</label>
+          <label className="admin-premium-label admin-premium-label--tight">Partner Type</label>
           <div className="text-[13px] text-[var(--tx2)] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2">
             {TYPE_LABELS[profile.type] || profile.type}
           </div>
           <p className="text-[10px] text-[var(--tx3)] mt-1">Only administrators can change this</p>
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Contact Name</label>
+          <label className="admin-premium-label admin-premium-label--tight">Contact Name</label>
           <input
             type="text"
             value={contactName}
             onChange={(e) => setContactName(e.target.value)}
             placeholder="e.g. Marie Dubois"
-            className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+            className="admin-premium-input w-full"
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Email</label>
+          <label className="admin-premium-label admin-premium-label--tight">Email</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="contact@company.com"
             required
-            className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+            className="admin-premium-input w-full"
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Phone</label>
+          <label className="admin-premium-label admin-premium-label--tight">Phone</label>
           <input
             ref={phoneInput.ref}
             type="tel"
             value={phone}
             onChange={phoneInput.onChange}
             placeholder={PHONE_PLACEHOLDER}
-            className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+            className="admin-premium-input w-full"
           />
         </div>
         <button

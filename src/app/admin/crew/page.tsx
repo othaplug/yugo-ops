@@ -44,7 +44,7 @@ export default async function CrewPage() {
 
   return (
     <div
-      className="relative w-full min-h-[500px] [height:calc(100dvh-3.5rem-4rem-env(safe-area-inset-bottom,0px))] md:[height:calc(100dvh-3.5rem)]"
+      className="relative w-full min-h-[500px] [height:calc(100dvh_-_var(--app-chrome-h)_-_4rem_-_env(safe-area-inset-bottom,0px))] md:[height:calc(100dvh_-_var(--app-chrome-h))]"
     >
       {/* Floating header overlay, hidden on mobile where it conflicts with live status chip */}
       <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none hidden sm:flex">

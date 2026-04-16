@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CaretDown, CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import PageContent from "@/app/admin/components/PageContent";
 import WineFadeRule from "@/components/crew/WineFadeRule";
 import { toTitleCase } from "@/lib/format-text";
@@ -13,9 +13,8 @@ const CREW_EXPENSE_EYEBROW =
 
 const CREW_EXPENSE_META = "text-[13px] text-[var(--tx2)]";
 
-/** Underline-only fields — single bottom rule, forest on focus. */
-const fieldCrewExpense =
-  "w-full bg-transparent border-0 border-b border-[var(--brd)]/40 px-0.5 py-3.5 text-[var(--tx)] placeholder:text-[var(--tx3)]/65 rounded-none shadow-none focus:outline-none focus:ring-0 focus:border-b-[#2C3E2D]/70 transition-[border-color] duration-200";
+/** Premium line fields (shared system with admin; scoped via `.crew-app` in globals.css). */
+const fieldCrewExpense = "admin-premium-input w-full";
 
 const EXPENSE_STATUS_LABEL: Record<string, string> = {
   pending: "Pending review",
@@ -254,27 +253,19 @@ export default function CrewExpenseClient() {
               <label htmlFor="crew-expense-job" className={CREW_EXPENSE_EYEBROW}>
                 Link to job (optional)
               </label>
-              <div className="relative border-b border-[var(--brd)]/40 transition-[border-color] duration-200 focus-within:border-b-[#2C3E2D]/70">
-                <select
-                  id="crew-expense-job"
-                  value={jobId}
-                  onChange={(e) => setJobId(e.target.value)}
-                  className="w-full cursor-pointer appearance-none border-0 bg-transparent py-3.5 pl-0.5 pr-10 text-[15px] text-[var(--tx)] shadow-none focus:outline-none focus:ring-0"
-                >
-                  <option value="">— None —</option>
-                  {jobs.map((j) => (
-                    <option key={j.id} value={j.id}>
-                      {j.jobId} · {j.clientName}
-                    </option>
-                  ))}
-                </select>
-                <CaretDown
-                  size={16}
-                  weight="bold"
-                  className="pointer-events-none absolute right-0.5 top-1/2 -translate-y-1/2 text-[var(--tx3)]"
-                  aria-hidden
-                />
-              </div>
+              <select
+                id="crew-expense-job"
+                value={jobId}
+                onChange={(e) => setJobId(e.target.value)}
+                className="admin-premium-input w-full cursor-pointer text-[15px] text-[var(--tx)]"
+              >
+                <option value="">— None —</option>
+                {jobs.map((j) => (
+                  <option key={j.id} value={j.id}>
+                    {j.jobId} · {j.clientName}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>

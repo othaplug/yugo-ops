@@ -138,7 +138,11 @@ export default function DayView({
   const doReschedule = useCallback(
     async (ev: CalendarEvent, newCrewId: string, newStart: string) => {
       const durationMins =
-        ev.start && ev.end ? timeToMinutes(ev.end) - timeToMinutes(ev.start) : 120;
+        ev.start && ev.end
+          ? timeToMinutes(ev.end) - timeToMinutes(ev.start)
+          : ev.durationHours != null && Number.isFinite(ev.durationHours)
+            ? Math.round(ev.durationHours * 60)
+            : 120;
       const newEnd = minutesToTime(
         Math.min(timeToMinutes(newStart) + durationMins, DAY_END_HOUR * 60)
       );
@@ -449,7 +453,7 @@ export default function DayView({
                               className="text-[8px] mt-auto opacity-90"
                               style={{ color: cancelled ? "rgba(249,237,228,0.75)" : fg.muted }}
                             >
-                              {formatTime12(ev.start)} – {formatTime12(ev.end)}
+                              {formatTime12(ev.start)} to {formatTime12(ev.end)}
                             </div>
                           )}
                         </div>

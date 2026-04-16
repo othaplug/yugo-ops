@@ -312,7 +312,7 @@ export default function NewInboundShipmentClient({
           </div>
           {mode === "partner" ? (
             <select
-              className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+              className="admin-premium-input w-full text-sm"
               value={organizationId}
               onChange={(e) => setOrganizationId(e.target.value)}
             >
@@ -333,7 +333,7 @@ export default function NewInboundShipmentClient({
                   {...senderHs.bindField("business")}
                   required
                   placeholder="Business name"
-                  className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                  className="admin-premium-input w-full text-sm"
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
                   autoComplete="organization"
@@ -346,7 +346,7 @@ export default function NewInboundShipmentClient({
                   {...senderHs.bindField("email")}
                   required
                   placeholder="Contact email"
-                  className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                  className="admin-premium-input w-full text-sm"
                   value={businessEmail}
                   onChange={(e) => setBusinessEmail(e.target.value)}
                   autoComplete="email"
@@ -357,7 +357,7 @@ export default function NewInboundShipmentClient({
                 <input
                   {...senderHs.bindField("phone")}
                   placeholder="Contact phone"
-                  className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                  className="admin-premium-input w-full text-sm"
                   value={businessPhone}
                   onChange={(e) => setBusinessPhone(e.target.value)}
                   autoComplete="tel"
@@ -371,7 +371,7 @@ export default function NewInboundShipmentClient({
               Issue line (call if delivery issues)
             </span>
             <input
-              className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+              className="mt-1 admin-premium-input w-full text-sm"
               value={partnerIssuePhone}
               onChange={(e) => setPartnerIssuePhone(e.target.value)}
               placeholder="e.g. 1-844-403-0392, option 3"
@@ -383,7 +383,7 @@ export default function NewInboundShipmentClient({
         <div className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-3">
             <select
-              className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+              className="admin-premium-input w-full text-sm"
               value={carrierName}
               onChange={(e) => setCarrierName(e.target.value)}
             >
@@ -395,7 +395,7 @@ export default function NewInboundShipmentClient({
             </select>
             {carrierName === "Other" && (
               <input
-                className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                className="admin-premium-input w-full text-sm"
                 placeholder="Carrier name"
                 value={carrierOther}
                 onChange={(e) => setCarrierOther(e.target.value)}
@@ -403,13 +403,13 @@ export default function NewInboundShipmentClient({
             )}
             <input
               placeholder="Tracking number"
-              className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+              className="admin-premium-input w-full text-sm"
               value={carrierTracking}
               onChange={(e) => setCarrierTracking(e.target.value)}
             />
             <input
               type="date"
-              className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+              className="admin-premium-input w-full text-sm"
               value={carrierEta}
               onChange={(e) => setCarrierEta(e.target.value)}
             />
@@ -459,7 +459,7 @@ export default function NewInboundShipmentClient({
               <input
                 required={idx === 0}
                 placeholder="Description"
-                className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                className="admin-premium-input w-full text-sm"
                 value={it.name}
                 onChange={(e) => {
                   const v = e.target.value;
@@ -473,7 +473,7 @@ export default function NewInboundShipmentClient({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <input
                   placeholder="Boxes"
-                  className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                  className="admin-premium-input w-full text-sm"
                   value={it.boxes}
                   onChange={(e) => {
                     const v = e.target.value;
@@ -486,7 +486,7 @@ export default function NewInboundShipmentClient({
                 />
                 <input
                   placeholder="Dimensions"
-                  className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                  className="admin-premium-input w-full text-sm"
                   value={it.dimensions}
                   onChange={(e) => {
                     const v = e.target.value;
@@ -499,7 +499,7 @@ export default function NewInboundShipmentClient({
                 />
                 <input
                   placeholder="Weight (lbs)"
-                  className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                  className="admin-premium-input w-full text-sm"
                   value={it.weight_lbs}
                   onChange={(e) => {
                     const v = e.target.value;
@@ -512,7 +512,7 @@ export default function NewInboundShipmentClient({
                 />
                 <input
                   placeholder="Declared value ($)"
-                  className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                  className="admin-premium-input w-full text-sm"
                   value={it.declared_value}
                   onChange={(e) => {
                     const v = e.target.value;
@@ -561,7 +561,7 @@ export default function NewInboundShipmentClient({
                   {...custHs.bindField("contact")}
                   required={!customerLater}
                   placeholder="Name"
-                  className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                  className="admin-premium-input w-full text-sm"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   autoComplete="name"
@@ -574,7 +574,7 @@ export default function NewInboundShipmentClient({
                   type="email"
                   {...custHs.bindField("email")}
                   placeholder="Email"
-                  className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                  className="admin-premium-input w-full text-sm"
                   value={customerEmail}
                   onChange={(e) => setCustomerEmail(e.target.value)}
                   autoComplete="email"
@@ -586,7 +586,7 @@ export default function NewInboundShipmentClient({
                   {...custHs.bindField("phone")}
                   required={!customerLater}
                   placeholder="Phone"
-                  className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                  className="admin-premium-input w-full text-sm"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   autoComplete="tel"
@@ -605,17 +605,17 @@ export default function NewInboundShipmentClient({
                       !p.trim() && r.postalCode ? r.postalCode : p,
                     );
                   }}
-                  className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)] text-[var(--tx)] placeholder:text-[var(--tx3)]/82 focus:outline-none focus:ring-1 focus:ring-[var(--gold)]/30"
+                  className="admin-premium-input w-full text-sm text-[var(--tx)]"
                 />
               </div>
               <input
                 placeholder="Postal code"
-                className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                className="admin-premium-input w-full text-sm"
                 value={customerPostal}
                 onChange={(e) => setCustomerPostal(e.target.value)}
               />
               <select
-                className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                className="admin-premium-input w-full text-sm"
                 value={customerAccess}
                 onChange={(e) => setCustomerAccess(e.target.value)}
               >
@@ -627,7 +627,7 @@ export default function NewInboundShipmentClient({
               <textarea
                 placeholder="Notes"
                 rows={2}
-                className="sm:col-span-2 rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                className="sm:col-span-2 admin-premium-input w-full text-sm"
                 value={customerNotes}
                 onChange={(e) => setCustomerNotes(e.target.value)}
               />
@@ -638,7 +638,7 @@ export default function NewInboundShipmentClient({
         <SectionDivider label="Service requirements" />
         <div className="space-y-4">
           <select
-            className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+            className="admin-premium-input w-full text-sm"
             value={serviceLevel}
             onChange={(e) => setServiceLevel(e.target.value)}
           >
@@ -691,7 +691,7 @@ export default function NewInboundShipmentClient({
           <label className="block text-sm">
             <span className="text-[var(--tx3)]">Receiving inspection</span>
             <select
-              className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+              className="mt-1 admin-premium-input w-full text-sm"
               value={receivingTier}
               onChange={(e) =>
                 setReceivingTier(e.target.value as "standard" | "detailed")
@@ -708,7 +708,7 @@ export default function NewInboundShipmentClient({
               Assembly complexity (for pricing)
             </span>
             <select
-              className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+              className="mt-1 admin-premium-input w-full text-sm"
               value={assemblyComplexity}
               onChange={(e) =>
                 setAssemblyComplexity(
@@ -725,7 +725,7 @@ export default function NewInboundShipmentClient({
           <textarea
             placeholder="Special instructions"
             rows={2}
-            className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+            className="admin-premium-input w-full text-sm"
             value={specialInstructions}
             onChange={(e) => setSpecialInstructions(e.target.value)}
           />
@@ -749,7 +749,7 @@ export default function NewInboundShipmentClient({
               Estimated storage days (for quote)
             </span>
             <input
-              className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+              className="mt-1 admin-premium-input w-full text-sm"
               value={estimatedStorageDays}
               onChange={(e) => setEstimatedStorageDays(e.target.value)}
             />
@@ -761,7 +761,7 @@ export default function NewInboundShipmentClient({
             <label className="text-sm">
               <span className="text-[var(--tx3)]">Receiving fee</span>
               <input
-                className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                className="mt-1 admin-premium-input w-full text-sm"
                 value={receivingFee}
                 onChange={(e) => setReceivingFee(e.target.value)}
               />
@@ -769,7 +769,7 @@ export default function NewInboundShipmentClient({
             <label className="text-sm">
               <span className="text-[var(--tx3)]">Delivery fee</span>
               <input
-                className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                className="mt-1 admin-premium-input w-full text-sm"
                 value={deliveryPrice}
                 onChange={(e) => setDeliveryPrice(e.target.value)}
               />
@@ -777,7 +777,7 @@ export default function NewInboundShipmentClient({
             <label className="text-sm">
               <span className="text-[var(--tx3)]">Assembly fee</span>
               <input
-                className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                className="mt-1 admin-premium-input w-full text-sm"
                 value={assemblyPrice}
                 onChange={(e) => setAssemblyPrice(e.target.value)}
               />
@@ -785,7 +785,7 @@ export default function NewInboundShipmentClient({
             <label className="text-sm">
               <span className="text-[var(--tx3)]">Storage fee</span>
               <input
-                className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                className="mt-1 admin-premium-input w-full text-sm"
                 value={storagePrice}
                 onChange={(e) => setStoragePrice(e.target.value)}
               />
@@ -793,7 +793,7 @@ export default function NewInboundShipmentClient({
             <label className="text-sm sm:col-span-2">
               <span className="text-[var(--tx3)]">Total (pre-tax)</span>
               <input
-                className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                className="mt-1 admin-premium-input w-full text-sm"
                 value={totalPrice}
                 onChange={(e) => setTotalPrice(e.target.value)}
               />
@@ -802,7 +802,7 @@ export default function NewInboundShipmentClient({
           <label className="block text-sm">
             <span className="text-[var(--tx3)]">Bill to</span>
             <select
-              className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+              className="mt-1 admin-premium-input w-full text-sm"
               value={billingMethod}
               onChange={(e) => setBillingMethod(e.target.value)}
             >

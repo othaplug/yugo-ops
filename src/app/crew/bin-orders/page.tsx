@@ -412,7 +412,7 @@ export default function CrewBinOrdersPage() {
                           Math.min(activeTask.bin_count, Math.max(0, parseInt(e.target.value, 10) || 0)),
                         )
                       }
-                      className="w-full rounded-xl border border-[var(--brd)]/60 bg-white px-3 py-3.5 text-center text-[24px] font-bold text-[var(--tx)] focus:outline-none focus:ring-2 focus:ring-[#5C1A33]/25"
+                      className="admin-premium-input w-full text-center !text-[24px] !py-3 font-bold text-[var(--tx)]"
                     />
                     {binsReturned < activeTask.bin_count && (
                       <p className="text-[13px] text-red-700 mt-2 leading-relaxed font-medium">
@@ -431,7 +431,7 @@ export default function CrewBinOrdersPage() {
                     value={crewName}
                     onChange={(e) => setCrewName(e.target.value)}
                     placeholder="e.g. Marcus"
-                    className="w-full rounded-xl border border-[var(--brd)]/60 bg-white px-3 py-3.5 text-[16px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:outline-none focus:ring-2 focus:ring-[#5C1A33]/25"
+                    className="admin-premium-input w-full !text-[16px] !py-3 text-[var(--tx)]"
                   />
                 </div>
 

@@ -19,9 +19,8 @@ type Row = {
   created_at?: string;
 };
 
-const inputCls =
-  "w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)]/70 rounded-xl text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)]/50 outline-none";
-const labelCls = "block text-[10px] font-bold uppercase tracking-widest text-[var(--tx3)] mb-1.5";
+const inputCls = "admin-premium-input w-full";
+const labelCls = "admin-premium-label admin-premium-label--tight";
 
 export default function EquipmentCatalogPanel() {
   const { toast } = useToast();

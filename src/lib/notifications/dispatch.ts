@@ -186,7 +186,7 @@ export async function sendNotification(
       body: buildNotificationBody(eventSlug, data),
       icon: getNotificationIcon(eventSlug),
       link: buildNotificationLink(eventSlug, data),
-      source_type: getSourceType(eventSlug),
+      source_type: getSourceType(eventSlug, data),
       source_id: data.sourceId || null,
       is_read: false,
     });
@@ -255,6 +255,8 @@ export function buildNotificationTitle(
     checklist_incomplete: "Readiness check failed",
     claim_submitted: "New claim submitted",
     low_margin_alert: "Low margin alert",
+    in_job_margin_alert: "In-job margin alert",
+    in_job_schedule_alert: "In-job schedule risk",
     high_value_move: "High-value move flag",
     system_error: "System error",
     crew_gps_offline: "Crew GPS offline",
@@ -332,6 +334,8 @@ export function getNotificationIcon(slug: string): string {
     checklist_incomplete: "clipboard",
     claim_submitted: "alertTriangle",
     low_margin_alert: "alertTriangle",
+    in_job_margin_alert: "alertTriangle",
+    in_job_schedule_alert: "clock",
     high_value_move: "dollar",
     system_error: "alertTriangle",
     crew_gps_offline: "mapPin",
@@ -370,10 +374,14 @@ export function buildNotificationLink(
   if (slug === "tip_received") return "/admin/tips";
   if (slug === "lead_new" && data.sourceId) return `/admin/leads/${data.sourceId}`;
   if (slug === "partner_pm_booking" && data.moveId) return `/admin/moves/${data.moveId}`;
+  if (slug === "in_job_margin_alert" || slug === "in_job_schedule_alert") {
+    if (data.moveId) return `/admin/moves/${data.moveId}`;
+    if (data.deliveryId) return `/admin/deliveries/${data.deliveryId}`;
+  }
   return "/admin";
 }
 
-export function getSourceType(slug: string): string {
+export function getSourceType(slug: string, data?: NotificationData): string {
   if (slug.startsWith("quote_") || slug === "quote_comparison_signal") return "quote";
   if (
     slug.startsWith("move_") ||
@@ -394,5 +402,9 @@ export function getSourceType(slug: string): string {
   if (slug === "lead_new") return "lead";
   if (slug === "partner_pm_booking") return "move";
   if (slug === "crew_idle_off_route") return "system";
+  if (slug === "in_job_margin_alert" || slug === "in_job_schedule_alert") {
+    if (data?.moveId) return "move";
+    if (data?.deliveryId) return "delivery";
+  }
   return "system";
 }

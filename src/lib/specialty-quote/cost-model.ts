@@ -3,14 +3,17 @@
  * Pure functions for admin UI and API validation.
  */
 
+import { getTruckFeeSync } from "@/lib/pricing/truck-fees";
+
 export type VehicleType = "sprinter" | "16ft" | "26ft";
 
 export type ZoneTier = "gta_core" | "zone_2" | "zone_3" | "outside";
 
+/** @deprecated Use platform truck_fee_* via getTruckFeeSync; kept for typing only. */
 export const VEHICLE_BASE: Record<VehicleType, number> = {
-  sprinter: 67,
-  "16ft": 95,
-  "26ft": 130,
+  sprinter: 80,
+  "16ft": 140,
+  "26ft": 280,
 };
 
 export const EQUIPMENT_RATES: Record<string, { label: string; dollars: number }> = {
@@ -97,6 +100,8 @@ export type CostLineInput = {
   zoneTier: ZoneTier;
   zoneFeeOverride?: number | null;
   stairFlights: number;
+  /** platform_config map for truck_fee_* keys */
+  platformConfig?: Map<string, string> | Record<string, unknown> | null;
 };
 
 export type CostLineDetail = { key: string; label: string; amount: number };
@@ -109,7 +114,7 @@ export function buildSpecialtyCostLines(input: CostLineInput): {
 } {
   const rate = input.labourRatePerHr ?? LABOUR_LOADED_RATE;
   const labour = Math.max(0, input.crewCount) * Math.max(0, input.jobHours) * rate;
-  const vBase = VEHICLE_BASE[input.vehicleType] ?? VEHICLE_BASE.sprinter;
+  const vBase = getTruckFeeSync(input.vehicleType, input.platformConfig ?? null);
   const wSur = weightSurchargeDollars(input.weightLbs);
   const vehicle = vBase + wSur;
   const fuel = Math.max(0, input.totalKm) * FUEL_PER_KM;

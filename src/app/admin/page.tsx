@@ -13,7 +13,7 @@ import {
   type MoveWeatherBrief,
 } from "@/lib/weather/move-weather-brief";
 import AdminPageClient from "./AdminPageClient";
-import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
+import { deliveryPreTaxForAdminList } from "@/lib/delivery-pricing";
 import {
   partnerRevenueTotalForMonth,
   type PartnerRevenueInvoice,
@@ -54,7 +54,7 @@ export default async function AdminPage() {
     admin
       .from("invoices")
       .select(
-        "id, client_name, organization_id, delivery_id, move_id, amount, status, created_at, updated_at, invoice_number, paid_at, deliveries!delivery_id(delivery_number)",
+        "id, client_name, organization_id, delivery_id, move_id, amount, status, created_at, updated_at, invoice_number, paid_at, deliveries!delivery_id(delivery_number, final_price, calculated_price, override_price, admin_adjusted_price, total_price, quoted_price)",
       ),
     admin.from("organizations").select("id, name, type"),
     (async () => {
@@ -420,7 +420,7 @@ export default async function AdminPage() {
   const paidInvoices = allInvoices.filter((i) => i.status === "paid");
 
   const deliveryRow = (d: Record<string, unknown>) =>
-    d as Parameters<typeof effectiveDeliveryPrice>[0] & {
+    d as Parameters<typeof deliveryPreTaxForAdminList>[0] & {
       id: string;
       status?: string | null;
       scheduled_date?: string | null;
@@ -698,7 +698,7 @@ export default async function AdminPage() {
       collectedEarnings += val;
   }
   for (const d of todayDeliveriesAll) {
-    const val = effectiveDeliveryPrice(deliveryRow(d));
+    const val = deliveryPreTaxForAdminList(deliveryRow(d));
     potentialEarnings += val;
     if (PAID_DLV_STATUSES.has(String(d.status))) collectedEarnings += val;
   }

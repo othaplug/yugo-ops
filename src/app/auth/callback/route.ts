@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { insertAuditLog } from "@/lib/audit";
+import { recordLoginHistorySuccess } from "@/lib/auth/login-history-record";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -19,6 +20,10 @@ export async function GET(request: NextRequest) {
         action: "login",
         resourceType: "system",
         details: { method: "code_exchange", next },
+      });
+      await recordLoginHistorySuccess({
+        userId: data.user.id,
+        headers: request.headers,
       });
     }
   }

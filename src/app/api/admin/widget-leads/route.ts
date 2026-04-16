@@ -2,12 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const { error: authError } = await requireStaff();
     if (authError) return authError;
 
     const supabase = createAdminClient();
+    const id = req.nextUrl.searchParams.get("id")?.trim();
+    if (id) {
+      const { data, error } = await supabase
+        .from("quote_requests")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ lead: data });
+    }
+
     const { data, error } = await supabase
       .from("quote_requests")
       .select("*")

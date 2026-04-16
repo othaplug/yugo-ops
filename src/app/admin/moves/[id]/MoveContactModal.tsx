@@ -86,20 +86,20 @@ export default function MoveContactModal({ open, onClose, moveId, initial, onSav
     <ModalOverlay open={open} onClose={onClose} title="Client contact details" maxWidth="md">
       <div className="p-5 space-y-3">
         <div>
-          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]" />
+          <label className="admin-premium-label admin-premium-label--tight mb-1">Name</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} className="admin-premium-input w-full text-[var(--tx)]" />
         </div>
         <div>
-          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]" />
+          <label className="admin-premium-label admin-premium-label--tight mb-1">Email</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="admin-premium-input w-full text-[var(--tx)]" />
         </div>
         <div>
-          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Phone</label>
-          <input ref={phoneInput.ref} type="tel" value={phone} onChange={phoneInput.onChange} placeholder={PHONE_PLACEHOLDER} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]" />
+          <label className="admin-premium-label admin-premium-label--tight mb-1">Phone</label>
+          <input ref={phoneInput.ref} type="tel" value={phone} onChange={phoneInput.onChange} placeholder={PHONE_PLACEHOLDER} className="admin-premium-input w-full text-[var(--tx)]" />
         </div>
         <div>
-          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Preferred contact</label>
-          <select value={preferred} onChange={(e) => setPreferred(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px]">
+          <label className="admin-premium-label admin-premium-label--tight mb-1">Preferred contact</label>
+          <select value={preferred} onChange={(e) => setPreferred(e.target.value)} className="admin-premium-input w-full text-[var(--tx)]">
             {PREFERRED_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}

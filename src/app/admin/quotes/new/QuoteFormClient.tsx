@@ -78,12 +78,16 @@ import {
   shouldShowMoveProjectPlanner,
 } from "@/lib/move-projects/visibility";
 import type { MoveProjectPayload } from "@/lib/move-projects/schema";
+import type { LabourValidationResult } from "@/lib/pricing/labour-validation";
 import B2BJobsDeliveryForm, {
   type B2BJobsEmbedSnapshot,
 } from "@/components/admin/b2b/B2BJobsDeliveryForm";
 import {
   calculateBinRentalPrice,
   BIN_RENTAL_BUNDLE_SPECS,
+  haversineKmBin,
+  YUGO_HQ_LAT,
+  YUGO_HQ_LNG,
 } from "@/lib/pricing/bin-rental";
 import {
   calculateB2BDimensionalPrice,
@@ -93,6 +97,7 @@ import {
   type B2BQuoteLineItem,
   type DeliveryVerticalRow,
 } from "@/lib/pricing/b2b-dimensional";
+import { formatTruckOptionLabel } from "@/lib/pricing/truck-fees";
 import { mergeBundleTierIntoMergedRates } from "@/lib/b2b-bundle-line-items";
 import { prepareB2bLineItemsForDimensionalEngine } from "@/lib/b2b-dimensional-quote-prep";
 import { suggestB2bWeightTierFromDescription } from "@/lib/pricing/b2b-weight-helpers";
@@ -252,6 +257,8 @@ interface QuoteResult {
     target_margin: number;
     signature_margin: number | null;
   } | null;
+  labour_validation?: LabourValidationResult;
+  labour_validation_by_tier?: Record<string, LabourValidationResult>;
   bin_inventory?: { total: number; out_on_rental: number; available: number };
 }
 
@@ -400,14 +407,6 @@ const PARKING_OPTIONS = [
   { value: "dedicated", label: "Dedicated / loading dock" },
   { value: "street", label: "Street parking" },
   { value: "no_dedicated", label: "No dedicated parking (+$75)" },
-] as const;
-
-const EVENT_TRUCK_OPTIONS = [
-  { value: "sprinter", label: "Sprinter (base)" },
-  { value: "16ft", label: "16ft (+$75)" },
-  { value: "20ft", label: "20ft (+$150)" },
-  { value: "26ft", label: "26ft (+$250)" },
-  { value: "none", label: "No truck (on-site)" },
 ] as const;
 
 const EVENT_LEG_RETURN_RATE_OPTIONS = [
@@ -1212,6 +1211,8 @@ export default function QuoteFormClient({
   const { toast } = useToast();
   const hubspotDealId = searchParams.get("hubspot_deal_id") || "";
   const leadIdParam = searchParams.get("lead_id")?.trim() || "";
+  const widgetRequestIdParam =
+    searchParams.get("widget_request_id")?.trim() || "";
   const specialtyBuilderQs = searchParams.get("specialty_builder") === "1";
   /** Deep link from admin (e.g. Bin Rentals → Generate quote uses `?service=bin_rental`). */
   const serviceTypeFromUrl = searchParams.get("service")?.trim() || "";
@@ -1738,6 +1739,9 @@ export default function QuoteFormClient({
   const [binLinkedMoveId, setBinLinkedMoveId] = useState("");
   const [binDeliveryNotes, setBinDeliveryNotes] = useState("");
   const [binInternalNotes, setBinInternalNotes] = useState("");
+  const [binHubDeliveryKm, setBinHubDeliveryKm] = useState<number | null>(null);
+  const [binHubPickupKm, setBinHubPickupKm] = useState<number | null>(null);
+  const [binDistanceGeoFailed, setBinDistanceGeoFailed] = useState(false);
 
   // Custom crating (all service types — coordinator decides per quote)
   const [cratingRequired, setCratingRequired] = useState(false);
@@ -2050,6 +2054,7 @@ export default function QuoteFormClient({
   const [hubspotLoaded, setHubspotLoaded] = useState(false);
   const [hubspotBanner, setHubspotBanner] = useState("");
   const [leadQuoteBanner, setLeadQuoteBanner] = useState("");
+  const [widgetQuoteBanner, setWidgetQuoteBanner] = useState("");
   const [leadRequiresSpecialtyQuote, setLeadRequiresSpecialtyQuote] =
     useState(false);
   const [leadParsedWeightMax, setLeadParsedWeightMax] = useState<number | null>(
@@ -2458,6 +2463,56 @@ export default function QuoteFormClient({
     if (specialtyBuilderQs) setSpecialtyBuilderOpen(true);
   }, [specialtyBuilderQs]);
 
+  useEffect(() => {
+    if (!widgetRequestIdParam) {
+      setWidgetQuoteBanner("");
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/admin/widget-leads?id=${encodeURIComponent(widgetRequestIdParam)}`,
+          { credentials: "include" },
+        );
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { lead?: Record<string, unknown> };
+        const L = data.lead;
+        if (!L || cancelled) return;
+        const str = (v: unknown) => (v != null ? String(v).trim() : "");
+        const nm = str(L.name);
+        if (nm) {
+          const parts = nm.split(/\s+/).filter(Boolean);
+          if (parts[0]) setFirstName(parts[0]);
+          if (parts.length > 1) setLastName(parts.slice(1).join(" "));
+        }
+        if (str(L.email)) setEmail(str(L.email).toLowerCase());
+        if (str(L.phone)) setPhone(formatPhone(str(L.phone)));
+        const fp = str(L.from_postal);
+        const tp = str(L.to_postal);
+        if (fp) setFromAddress(fp.toUpperCase());
+        if (tp) setToAddress(tp.toUpperCase());
+        const ms = str(L.move_size);
+        if (ms && MOVE_SIZES.some((x) => x.value === ms)) {
+          setMoveSize(ms);
+          moveSizeUserTouchedRef.current = true;
+        }
+        const md = L.move_date;
+        if (typeof md === "string" && md.trim())
+          setMoveDate(md.trim().slice(0, 10));
+        setServiceType("local_move");
+        setWidgetQuoteBanner(
+          `Pre-filled from widget lead ${str(L.lead_number) || ""}`.trim(),
+        );
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [widgetRequestIdParam]);
+
   const singleItemLbs = useMemo(() => {
     const n = parseFloat(String(itemWeight).replace(/[^\d.]/g, ""));
     return Number.isFinite(n) ? n : 0;
@@ -2828,6 +2883,75 @@ export default function QuoteFormClient({
 
   const configMap = useMemo(() => new Map(Object.entries(config)), [config]);
 
+  useEffect(() => {
+    if (serviceType !== "bin_rental") return;
+    const delivery = toAddress.trim();
+    const pickup =
+      binPickupSameAsDelivery || !fromAddress.trim()
+        ? delivery
+        : fromAddress.trim();
+    if (!delivery) {
+      setBinHubDeliveryKm(null);
+      setBinHubPickupKm(null);
+      setBinDistanceGeoFailed(false);
+      return;
+    }
+    const t = window.setTimeout(() => {
+      const coordsFromGeocode = async (
+        q: string,
+      ): Promise<{ lat: number; lng: number } | null> => {
+        try {
+          const res = await fetch(
+            `/api/mapbox/geocode?q=${encodeURIComponent(q)}&limit=1&country=CA`,
+            { credentials: "include" },
+          );
+          const data = (await res.json()) as {
+            features?: { geometry?: { coordinates?: number[] } }[];
+          };
+          const c = data.features?.[0]?.geometry?.coordinates;
+          if (
+            Array.isArray(c) &&
+            c.length >= 2 &&
+            typeof c[0] === "number" &&
+            typeof c[1] === "number"
+          ) {
+            return { lng: c[0], lat: c[1] };
+          }
+        } catch {
+          /* ignore */
+        }
+        return null;
+      };
+      void (async () => {
+        const dCoord = await coordsFromGeocode(delivery);
+        const pCoord =
+          pickup === delivery ? dCoord : await coordsFromGeocode(pickup);
+        if (!dCoord || !pCoord) {
+          setBinDistanceGeoFailed(true);
+          setBinHubDeliveryKm(null);
+          setBinHubPickupKm(null);
+          return;
+        }
+        setBinDistanceGeoFailed(false);
+        const dk = haversineKmBin(
+          YUGO_HQ_LAT,
+          YUGO_HQ_LNG,
+          dCoord.lat,
+          dCoord.lng,
+        );
+        const pk = haversineKmBin(
+          YUGO_HQ_LAT,
+          YUGO_HQ_LNG,
+          pCoord.lat,
+          pCoord.lng,
+        );
+        setBinHubDeliveryKm(dk);
+        setBinHubPickupKm(pk);
+      })();
+    }, 450);
+    return () => window.clearTimeout(t);
+  }, [serviceType, toAddress, fromAddress, binPickupSameAsDelivery]);
+
   const binLivePreview = useMemo(() => {
     if (serviceType !== "bin_rental") return null;
     const linked = binLinkedMoveId.trim() || null;
@@ -2846,6 +2970,17 @@ export default function QuoteFormClient({
         material_delivery_charge: binMaterialDelivery,
         linked_move_id: linked,
         available_bins: avail,
+        hub_distance: binDistanceGeoFailed
+          ? {
+              delivery_km_from_hub: null,
+              pickup_km_from_hub: null,
+              distance_pricing_unavailable: true,
+            }
+          : {
+              delivery_km_from_hub: binHubDeliveryKm,
+              pickup_km_from_hub: binHubPickupKm,
+              distance_pricing_unavailable: false,
+            },
       },
       configMap,
     );
@@ -2893,6 +3028,9 @@ export default function QuoteFormClient({
     configMap,
     moveDate,
     binInventorySnapshot,
+    binHubDeliveryKm,
+    binHubPickupKm,
+    binDistanceGeoFailed,
   ]);
 
   useEffect(() => {
@@ -3035,6 +3173,17 @@ export default function QuoteFormClient({
     if (!isMoveDateWeekend(moveDate) || wk <= 0) return null;
     return { label: "Weekend delivery", amount: wk };
   }, [moveDate, config]);
+
+  const eventTruckOptions = useMemo(
+    () => [
+      { value: "sprinter", label: formatTruckOptionLabel("sprinter", config) },
+      { value: "16ft", label: formatTruckOptionLabel("16ft", config) },
+      { value: "20ft", label: formatTruckOptionLabel("20ft", config) },
+      { value: "26ft", label: formatTruckOptionLabel("26ft", config) },
+      { value: "none", label: "No truck (on-site)" },
+    ],
+    [config],
+  );
 
   const b2bDimensionalPreview = useMemo(() => {
     if (
@@ -3192,6 +3341,7 @@ export default function QuoteFormClient({
       roundingNearest: rounding,
       parkingLongCarryTotal: plcTotal,
       pricingExtras,
+      platformConfig: config,
     });
     const taxRate = cfgNum(config, "tax_rate", TAX_RATE);
     const access = b2bAccessSurchargeFromConfig(config, fromAccess, toAccess);
@@ -3776,6 +3926,11 @@ export default function QuoteFormClient({
         base.clear_move_project = true;
       }
 
+      if (widgetRequestIdParam) {
+        base.quote_source = "widget";
+        base.source_request_id = widgetRequestIdParam;
+      }
+
       return base;
     },
     [
@@ -3905,6 +4060,7 @@ export default function QuoteFormClient({
       movePlannerVisible,
       moveProjectPayload,
       savedMoveProjectId,
+      widgetRequestIdParam,
     ],
   );
 
@@ -4299,6 +4455,16 @@ export default function QuoteFormClient({
         </div>
       )}
 
+      {widgetQuoteBanner && (
+        <div className="mb-4 px-4 py-2.5 rounded-lg bg-[var(--gold)]/12 border border-[var(--gold)]/35 text-[12px] font-medium text-[var(--tx)] flex items-center gap-2">
+          <Check className="w-4 h-4 shrink-0" aria-hidden />
+          {widgetQuoteBanner}
+          <span className="text-[11px] text-[var(--tx3)] font-normal">
+            Review details before generating the quote.
+          </span>
+        </div>
+      )}
+
       {showSpecialtyQuoteBanner && (
         <div className="mb-4 px-4 py-3 rounded-lg border border-[var(--brd)] bg-[var(--card)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-start gap-2 min-w-0">
@@ -4443,11 +4609,11 @@ export default function QuoteFormClient({
           className={`flex flex-col transition-all duration-300 w-full max-w-none min-w-0 ${previewOpen ? "min-[480px]:w-[60%]" : "min-[480px]:w-full"}`}
         >
           <div className="mb-6 pb-6 border-b border-[var(--brd)]/70">
-            <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">
+            <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx2)] mb-1.5">
               Sales
             </p>
             <h1 className="admin-page-hero text-[var(--tx)]">Generate Quote</h1>
-            <p className="text-[11px] text-[var(--tx3)] mt-1.5 max-w-2xl leading-relaxed">
+            <p className="text-[11px] text-[var(--tx2)] mt-1.5 max-w-2xl leading-relaxed">
               Move through each step in order. The live preview updates as you type.
             </p>
             <nav className="mt-5 w-full" aria-label="Quote form steps">
@@ -4471,7 +4637,7 @@ export default function QuoteFormClient({
                             ? "text-[var(--tx)]"
                             : done
                               ? "text-[var(--tx2)]"
-                              : "text-[var(--tx3)] opacity-80"
+                              : "text-[var(--tx2)]/85"
                         } ${canJumpBack ? "cursor-pointer hover:text-[var(--tx)]" : ""} ${
                           !canJumpBack && !active ? "cursor-default" : ""
                         }`}
@@ -4482,7 +4648,7 @@ export default function QuoteFormClient({
                               ? "bg-[#FAF7F2] text-[#3D1624] shadow-md shadow-black/20 ring-2 ring-[rgba(250,247,242,0.45)] ring-offset-2 ring-offset-[var(--bg)]"
                               : done
                                 ? "bg-[#FAF7F2] text-[#3D1624]"
-                                : "border border-[var(--brd)] bg-[var(--card)] text-[var(--tx3)]"
+                                : "border border-[var(--brd)] bg-[var(--card)] text-[var(--tx2)]"
                           }`}
                         >
                           {done ? (
@@ -4497,7 +4663,7 @@ export default function QuoteFormClient({
                       </button>
                       {i < quoteFlowNavLabels.length - 1 ? (
                         <div
-                          className="pointer-events-none mt-[13px] h-[3px] w-2 min-[380px]:w-4 sm:flex-1 sm:max-w-[6rem] shrink-0 self-start rounded-full bg-[var(--brd)]/30 overflow-hidden"
+                          className="pointer-events-none mt-[13px] h-[3px] w-2 min-[380px]:w-4 sm:flex-1 sm:max-w-[6rem] shrink-0 self-start rounded-full bg-[var(--brd)]/65 overflow-hidden"
                           aria-hidden
                         >
                           <div
@@ -4520,7 +4686,7 @@ export default function QuoteFormClient({
               {/* ── 1. Service type ── */}
               {quoteFlowStep === 0 && (
               <div>
-                <label className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
+                <label className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx2)] mb-2">
                   Service Type
                 </label>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
@@ -4534,7 +4700,7 @@ export default function QuoteFormClient({
                         className={`relative text-left px-3 py-2 rounded-lg border transition-all duration-200 ${
                           sel
                             ? "bg-gradient-to-br from-[#2C3E2D] to-[#5C1A33] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
-                            : "bg-[var(--card)] border-[var(--brd)] hover:border-[var(--gold)]/40 hover:bg-[var(--bg)]"
+                            : "bg-[var(--card)] border-[1.5px] border-[var(--brd)] shadow-sm shadow-black/[0.04] hover:border-[var(--gold)]/50 hover:bg-[var(--bg)]"
                         }`}
                       >
                         <div className="flex items-start gap-2">
@@ -4550,7 +4716,7 @@ export default function QuoteFormClient({
                               {card.label}
                             </div>
                             <div
-                              className={`text-[9px] mt-0.5 leading-snug ${sel ? "text-white/90" : "text-[var(--tx3)]"}`}
+                              className={`text-[9px] mt-0.5 leading-snug ${sel ? "text-white/90" : "text-[var(--tx2)]/90"}`}
                             >
                               {card.desc}
                             </div>
@@ -4877,7 +5043,7 @@ export default function QuoteFormClient({
                         setReferralMsg("");
                       }}
                       placeholder="YUGO-NAME-XXXX"
-                      className="flex-1 px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] font-mono text-[var(--tx)] placeholder:text-[var(--tx2)] focus:border-[var(--gold)] outline-none"
+                      className="admin-premium-input flex-1 font-mono"
                     />
                     <button
                       type="button"
@@ -6331,7 +6497,7 @@ export default function QuoteFormClient({
                   </Field>
 
                   <div>
-                    <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
+                    <label className="admin-premium-label admin-premium-label--tight">
                       Item Dimensions (optional)
                     </label>
                     <div className="flex items-center gap-2">
@@ -6365,7 +6531,7 @@ export default function QuoteFormClient({
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
+                    <label className="admin-premium-label admin-premium-label--tight">
                       Special Requirements
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -6395,7 +6561,7 @@ export default function QuoteFormClient({
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
+                    <label className="admin-premium-label admin-premium-label--tight">
                       Building Requirements
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -6560,7 +6726,7 @@ export default function QuoteFormClient({
                           onChange={(e) => setEventTruckType(e.target.value)}
                           className={fieldInput}
                         >
-                          {EVENT_TRUCK_OPTIONS.filter(
+                          {eventTruckOptions.filter(
                             (o) => o.value !== "none",
                           ).map((o) => (
                             <option key={o.value} value={o.value}>
@@ -7097,7 +7263,7 @@ export default function QuoteFormClient({
                                 }
                                 className={fieldInput}
                               >
-                                {EVENT_TRUCK_OPTIONS.filter(
+                                {eventTruckOptions.filter(
                                   (o) => o.value !== "none",
                                 ).map((o) => (
                                   <option key={o.value} value={o.value}>
@@ -8068,6 +8234,38 @@ export default function QuoteFormClient({
                           generate quote to confirm live availability
                         </p>
                       )}
+                      {binDistanceGeoFailed && toAddress.trim().length > 0 && (
+                        <p className="text-amber-700 dark:text-amber-400 flex items-start gap-1 text-[10px]">
+                          <Warning
+                            className="w-3.5 h-3.5 shrink-0 mt-0.5"
+                            aria-hidden
+                          />
+                          Could not determine distance. Coordinator will verify
+                          pricing.
+                        </p>
+                      )}
+                      {!binDistanceGeoFailed &&
+                        binHubDeliveryKm != null &&
+                        binHubPickupKm != null && (
+                          <div className="text-[10px] text-[var(--tx2)] space-y-0.5 pt-1">
+                            <div className="flex justify-between gap-2">
+                              <span className="text-[var(--tx3)]">
+                                Delivery distance
+                              </span>
+                              <span className="tabular-nums">
+                                {binHubDeliveryKm.toFixed(1)} km
+                              </span>
+                            </div>
+                            <div className="flex justify-between gap-2">
+                              <span className="text-[var(--tx3)]">
+                                Pickup distance
+                              </span>
+                              <span className="tabular-nums">
+                                {binHubPickupKm.toFixed(1)} km
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       {binLivePreview.error && (
                         <p className="text-amber-700 dark:text-amber-400 flex items-start gap-1">
                           <Warning
@@ -8430,7 +8628,7 @@ export default function QuoteFormClient({
               <button
                 type="button"
                 onClick={handleQuoteFlowContinue}
-                className="flex-1 min-h-11 py-2.5 rounded-lg text-[11px] font-bold inline-flex items-center justify-center gap-1.5 border border-[rgba(250,247,242,0.55)] text-[#FAF7F2] bg-transparent hover:bg-[rgba(250,247,242,0.08)] transition-colors"
+                className="flex-1 min-h-11 py-2.5 rounded-lg text-[11px] font-bold inline-flex items-center justify-center gap-1.5 border border-transparent bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-none"
               >
                 Continue
                 <ChevronRight className="w-3.5 h-3.5" weight="bold" aria-hidden />
@@ -8548,7 +8746,7 @@ export default function QuoteFormClient({
                       : "Live Quote Preview"}
                   </h2>
                   {!quoteResult && (
-                    <p className="text-[10px] text-[var(--tx3)] mt-0.5">
+                    <p className="text-[10px] text-[var(--tx2)] mt-0.5">
                       Updates as you fill in the form
                     </p>
                   )}
@@ -8881,13 +9079,13 @@ export default function QuoteFormClient({
                     ) : (serviceType === "local_move" ||
                         serviceType === "long_distance") &&
                       !liveEstimate ? (
-                      <div className="rounded-xl border border-[var(--brd)]/60 bg-[var(--card)]/40 p-4 text-[11px] text-[var(--tx2)]">
+                      <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4 text-[11px] text-[var(--tx)]">
                         <p className="flex items-start gap-2">
                           <Info
                             className="w-4 h-4 shrink-0 text-[var(--gold)] mt-0.5"
                             aria-hidden
                           />
-                          <span>
+                          <span className="leading-snug">
                             Select move size or add inventory to see a rough
                             tier preview. Generate quote for exact pricing.
                           </span>
@@ -9672,6 +9870,130 @@ export default function QuoteFormClient({
                   </div>
                 );
               })()}
+
+            {quoteResult?.labour_validation && (
+              <div
+                className={[
+                  "p-3 rounded-lg mt-3 text-sm border",
+                  quoteResult.labour_validation.status === "above_ceiling"
+                    ? "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800"
+                    : "",
+                  quoteResult.labour_validation.status === "below_floor"
+                    ? "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900"
+                    : "",
+                  quoteResult.labour_validation.status === "within_range"
+                    ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800"
+                    : "",
+                  quoteResult.labour_validation.status === "not_applicable"
+                    ? "bg-[var(--bg2)] border-[var(--brd)]"
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <div className="flex justify-between items-center gap-2">
+                  <p className="text-[9px] uppercase tracking-wider text-[var(--tx3)]">
+                    Labour rate check
+                  </p>
+                  <span
+                    className={[
+                      "text-[9px] px-2 py-0.5 rounded-full font-semibold",
+                      quoteResult.labour_validation.status === "within_range"
+                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200"
+                        : "",
+                      quoteResult.labour_validation.status === "above_ceiling"
+                        ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200"
+                        : "",
+                      quoteResult.labour_validation.status === "below_floor"
+                        ? "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200"
+                        : "",
+                      quoteResult.labour_validation.status === "not_applicable"
+                        ? "bg-[var(--bg)] text-[var(--tx3)]"
+                        : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
+                    {quoteResult.labour_validation.status === "within_range"
+                      ? "Competitive"
+                      : quoteResult.labour_validation.status === "above_ceiling"
+                        ? "Above ceiling"
+                        : quoteResult.labour_validation.status === "below_floor"
+                          ? "Underpriced"
+                          : "Not enforced"}
+                  </span>
+                </div>
+                <div className="mt-2 space-y-1">
+                  <div className="flex justify-between text-[10px] gap-2">
+                    <span className="text-[var(--tx3)]">Effective rate</span>
+                    <span className="font-medium text-[var(--tx)] tabular-nums">
+                      ${quoteResult.labour_validation.effectiveRate.toFixed(0)}/hr per mover
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[10px] gap-2">
+                    <span className="text-[var(--tx3)]">Band (floor to ceiling)</span>
+                    <span className="text-[var(--tx)] tabular-nums">
+                      ${quoteResult.labour_validation.floor}–${quoteResult.labour_validation.ceiling}/hr
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[10px] gap-2">
+                    <span className="text-[var(--tx3)]">Labour portion</span>
+                    <span className="text-[var(--tx)] tabular-nums">
+                      ${quoteResult.labour_validation.labourComponent}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[10px] gap-2">
+                    <span className="text-[var(--tx3)]">Non-labour (est.)</span>
+                    <span className="text-[var(--tx)] tabular-nums">
+                      ${quoteResult.labour_validation.nonLabourComponent}
+                    </span>
+                  </div>
+                </div>
+                {quoteResult.labour_validation_by_tier &&
+                  quoteResult.service_type === "local_move" && (
+                    <div className="mt-3 pt-2 border-t border-[var(--brd)]/60 space-y-1">
+                      <p className="text-[9px] uppercase tracking-wider text-[var(--tx3)] mb-1">
+                        By tier
+                      </p>
+                      {(["essential", "signature", "estate"] as const).map((tk) => {
+                        const row = quoteResult.labour_validation_by_tier?.[tk];
+                        if (!row) return null;
+                        const tierStatusLabel =
+                          row.status === "within_range"
+                            ? "Competitive"
+                            : row.status === "above_ceiling"
+                              ? "Above ceiling"
+                              : row.status === "below_floor"
+                                ? "Underpriced"
+                                : "Not enforced";
+                        return (
+                          <div
+                            key={tk}
+                            className="flex justify-between text-[10px] gap-2"
+                          >
+                            <span className="text-[var(--tx3)] capitalize">{tk}</span>
+                            <span className="text-[var(--tx)] tabular-nums">
+                              ${row.effectiveRate.toFixed(0)}/hr · {tierStatusLabel}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                {quoteResult.labour_validation.message && (
+                  <p
+                    className={[
+                      "text-[10px] mt-2 leading-relaxed",
+                      quoteResult.labour_validation.status === "above_ceiling"
+                        ? "text-amber-800 dark:text-amber-200/90"
+                        : "text-red-800 dark:text-red-200/90",
+                    ].join(" ")}
+                  >
+                    {quoteResult.labour_validation.message}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* ── Live inventory score (before generate) ── */}
             {!quoteResult &&
@@ -11155,6 +11477,79 @@ function PriceBreakdownResidential({
   );
 }
 
+function BinRentalFactorsSummary({
+  factors,
+}: {
+  factors: Record<string, unknown>;
+}) {
+  const geoFail = factors.bin_distance_geocoding_failed === true;
+  const delKm = factors.bin_hub_delivery_km;
+  const pKm = factors.bin_hub_pickup_km;
+  const delMin = factors.bin_delivery_drive_min;
+  const pMin = factors.bin_pickup_drive_min;
+  const lines = Array.isArray(factors.bin_line_items)
+    ? (factors.bin_line_items as { label: string; amount: number }[])
+    : [];
+  const sub = factors.bin_subtotal;
+  const tax = factors.bin_tax;
+  const grand = factors.bin_grand_total;
+
+  return (
+    <div className="space-y-2 text-[10px]">
+      {geoFail && (
+        <p className="text-amber-700 dark:text-amber-400 flex items-start gap-1.5">
+          <Warning className="w-3.5 h-3.5 shrink-0 mt-0.5" weight="bold" aria-hidden />
+          Could not determine distance. Coordinator will verify pricing.
+        </p>
+      )}
+      {!geoFail && typeof delKm === "number" && (
+        <div className="flex items-center justify-between">
+          <span className="text-[var(--tx3)]">Delivery distance</span>
+          <span className="text-[var(--tx)] font-medium tabular-nums">
+            {delKm} km
+            {typeof delMin === "number" ? ` (${delMin} min)` : ""}
+          </span>
+        </div>
+      )}
+      {!geoFail && typeof pKm === "number" && (
+        <div className="flex items-center justify-between">
+          <span className="text-[var(--tx3)]">Pickup distance</span>
+          <span className="text-[var(--tx)] font-medium tabular-nums">
+            {pKm} km
+            {typeof pMin === "number" ? ` (${pMin} min)` : ""}
+          </span>
+        </div>
+      )}
+      {lines.map((ln, i) => (
+        <div key={i} className="flex items-center justify-between gap-2">
+          <span className="text-[var(--tx3)] text-left">{ln.label}</span>
+          <span className="text-[var(--tx)] font-medium shrink-0">
+            {fmtPrice(ln.amount)}
+          </span>
+        </div>
+      ))}
+      {typeof sub === "number" && (
+        <div className="flex items-center justify-between pt-1 border-t border-[var(--brd)]/50">
+          <span className="text-[var(--tx3)]">Subtotal</span>
+          <span className="text-[var(--tx)] font-semibold">{fmtPrice(sub)}</span>
+        </div>
+      )}
+      {typeof tax === "number" && (
+        <div className="flex items-center justify-between">
+          <span className="text-[var(--tx3)]">HST (13%)</span>
+          <span className="text-[var(--tx)]">{fmtPrice(tax)}</span>
+        </div>
+      )}
+      {typeof grand === "number" && (
+        <div className="flex items-center justify-between">
+          <span className="text-[var(--tx)] font-semibold">Total</span>
+          <span className="text-[var(--tx)] font-semibold">{fmtPrice(grand)}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FactorsDisplayCollapsible({
   factors,
   distance,
@@ -11170,9 +11565,13 @@ function FactorsDisplayCollapsible({
   tiers?: Record<string, TierResult>;
   moveSize?: string | null;
 }) {
+  const isBinRental =
+    factors.service_family === "bin_rental" ||
+    typeof factors.bin_bundle_type === "string";
   // Use rich residential breakdown when the new formula fields are present (distance_modifier)
   const isNewResidential = typeof factors.distance_modifier === "number";
-  const hasContent = Object.keys(factors).length > 0 || distance != null;
+  const hasContent =
+    Object.keys(factors).length > 0 || distance != null;
   if (!hasContent) return null;
 
   return (
@@ -11185,7 +11584,9 @@ function FactorsDisplayCollapsible({
         Price Breakdown
       </summary>
       <div className="mt-2">
-        {isNewResidential ? (
+        {isBinRental ? (
+          <BinRentalFactorsSummary factors={factors} />
+        ) : isNewResidential ? (
           <PriceBreakdownResidential
             factors={factors}
             distance={distance}
@@ -11244,15 +11645,44 @@ function LegacyFactorsDisplay({
     "truck_surcharge",
     "truck_recommended",
     "truck_type_selected",
+    "service_family",
+    "payment_full_at_booking",
+    "bin_bundle_type",
+    "bin_bundle_label",
+    "bin_count_total",
+    "bin_wardrobe_boxes",
+    "bin_extra_bins",
+    "bin_packing_paper",
+    "bin_material_delivery_charged",
+    "bin_linked_move_id",
+    "bin_drop_off_date",
+    "bin_pickup_date",
+    "bin_move_date",
+    "bin_rental_cycle_days",
+    "bin_delivery_notes",
+    "bin_line_items",
+    "bin_subtotal",
+    "bin_tax",
+    "bin_grand_total",
+    "bin_inventory_total",
+    "bin_inventory_out",
+    "bin_inventory_available",
+    "bin_hub_delivery_km",
+    "bin_hub_pickup_km",
+    "bin_delivery_drive_min",
+    "bin_pickup_drive_min",
+    "bin_distance_fee_delivery",
+    "bin_distance_fee_pickup",
+    "bin_distance_fee_total",
+    "bin_distance_geocoding_failed",
+    "internal_notes",
   ]);
-  const entries = Object.entries(factors).filter(
-    ([key, v]) =>
-      !HIDDEN_KEYS.has(key) &&
-      v !== null &&
-      v !== undefined &&
-      v !== 0 &&
-      v !== 1,
-  );
+  const entries = Object.entries(factors).filter(([key, v]) => {
+    if (HIDDEN_KEYS.has(key)) return false;
+    if (v === null || v === undefined || v === 0 || v === 1) return false;
+    if (typeof v === "object") return false;
+    return true;
+  });
   const labourDelta =
     typeof factors.labour_delta === "number"
       ? factors.labour_delta

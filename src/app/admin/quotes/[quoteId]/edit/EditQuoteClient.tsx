@@ -579,7 +579,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   const livePrice = livePreview?.tiers?.essential?.price ?? livePreview?.tiers?.curated?.price ?? livePreview?.tiers?.essentials?.price ?? livePreview?.custom_price?.price ?? null;
 
   const inputClass = "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/82 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
-  const labelClass = "block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1";
+  const labelClass = "admin-premium-label admin-premium-label--tight mb-1";
 
   if (isB2bQuote) {
     return (

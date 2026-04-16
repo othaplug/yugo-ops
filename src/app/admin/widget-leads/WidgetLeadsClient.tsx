@@ -283,7 +283,12 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
                     className="border-b border-[var(--brd)]/[0.35] transition-colors last:border-b-0 hover:bg-[var(--hover)]/80"
                   >
                     <td className="px-4 py-3.5 font-semibold text-[var(--tx)]">
-                      {l.lead_number}
+                      <Link
+                        href={`/admin/widget-leads/${l.id}`}
+                        className="text-[var(--tx)] hover:underline underline-offset-2"
+                      >
+                        {l.lead_number}
+                      </Link>
                     </td>
                     <td className="px-4 py-3.5 font-medium text-[var(--tx)]">
                       {l.name}

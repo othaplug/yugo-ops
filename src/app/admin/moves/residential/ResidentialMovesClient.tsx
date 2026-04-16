@@ -209,7 +209,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none min-h-[40px] touch-manipulation"
+                  className="admin-premium-input w-full min-h-[40px] touch-manipulation"
                 >
                   {STATUS_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
@@ -221,7 +221,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
                 <select
                   value={moveDatePreset}
                   onChange={(e) => setMoveDatePreset(e.target.value)}
-                  className="w-full text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none min-h-[40px] touch-manipulation"
+                  className="admin-premium-input w-full min-h-[40px] touch-manipulation"
                 >
                   <option value="">All dates</option>
                   <optgroup label="Days">

@@ -314,7 +314,7 @@ export default function DispatchBoardClient({ today }: Props) {
   ];
 
   return (
-    <div className="flex flex-col min-h-[calc(100dvh-3.5rem-56px)] md:min-h-[calc(100dvh-3.5rem)] h-auto md:h-[calc(100dvh-3.5rem)] animate-fade-up px-5 sm:px-6 md:px-8 lg:px-10 py-6 md:py-8 max-w-[1800px] mx-auto w-full">
+    <div className="flex flex-col min-h-[calc(100dvh_-_var(--app-chrome-h)_-_56px)] md:min-h-[calc(100dvh_-_var(--app-chrome-h))] h-auto md:h-[calc(100dvh_-_var(--app-chrome-h))] animate-fade-up px-5 sm:px-6 md:px-8 lg:px-10 py-6 md:py-8 max-w-[1800px] mx-auto w-full">
       {/* ── Header ── */}
       <div className="mb-6 space-y-3">
         {/* Row 1: Title + primary CTA */}

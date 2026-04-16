@@ -177,6 +177,80 @@ function fmtDuration(seconds: number): string {
   return s > 0 ? `${m}m ${s}s` : `${m}m`;
 }
 
+/** Human-readable engagement payload (never raw DB keys like service_type, scroll_pct). */
+function formatEngagementEventDetail(
+  eventType: string,
+  data: Record<string, unknown> | null | undefined,
+  quoteServiceType: string | null,
+): string {
+  if (!data || typeof data !== "object") return "";
+
+  if (eventType === "engagement_ping") {
+    const sp = data.scroll_pct;
+    if (typeof sp === "number" && Number.isFinite(sp)) {
+      return `Scroll ${Math.round(sp)}%`;
+    }
+    return "";
+  }
+
+  const parts: string[] = [];
+
+  if (data.source != null && data.source !== "") {
+    const s = String(data.source).toLowerCase();
+    if (s === "server") parts.push("Server");
+    else if (s === "client") parts.push("Client");
+    else parts.push(toTitleCase(String(data.source)));
+  }
+
+  if (data.service_type != null && data.service_type !== "") {
+    const st = String(data.service_type);
+    if (!quoteServiceType || st !== quoteServiceType) {
+      parts.push(serviceTypeDisplayLabel(st));
+    }
+  }
+
+  const skip = new Set(["source", "service_type", "scroll_pct", "elapsed_seconds"]);
+
+  for (const [k, v] of Object.entries(data)) {
+    if (v == null || v === "") continue;
+    if (skip.has(k)) continue;
+
+    if (k === "tier" || k === "selected_tier") {
+      const t = String(v).toLowerCase();
+      const label =
+        t === "essential" || t === "curated"
+          ? "Essential"
+          : t === "signature"
+            ? "Signature"
+            : t === "estate"
+              ? "Estate"
+              : toTitleCase(String(v).replace(/_/g, " "));
+      parts.push(`Tier: ${label}`);
+      continue;
+    }
+    if (k === "addon_slug") {
+      parts.push(
+        `Add-on: ${displayLabel(String(v)) || toTitleCase(String(v).replace(/_/g, " "))}`,
+      );
+      continue;
+    }
+    if (k === "addons_selected") {
+      parts.push(`Add-ons: ${v}`);
+      continue;
+    }
+    if (k === "contract_signed") {
+      parts.push(typeof v === "boolean" && v ? "Contract signed" : "Contract not signed");
+      continue;
+    }
+
+    parts.push(
+      `${toTitleCase(k.replace(/_/g, " "))}: ${typeof v === "boolean" ? (v ? "Yes" : "No") : String(v)}`,
+    );
+  }
+
+  return parts.join(" · ");
+}
+
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -407,6 +481,9 @@ export default function QuoteDetailClient({
     quote.status,
     isSuperAdmin,
   );
+  /** Bin rental jobs are tracked separately; “Create Move” is the wrong affordance here. */
+  const showCreateMoveFromAcceptedQuote =
+    quote.service_type !== "bin_rental";
   const factors = quote.factors_applied as Record<string, unknown> | null;
   const signal = engagementSignal(engagement);
 
@@ -509,7 +586,7 @@ export default function QuoteDetailClient({
                 <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
               </a>
             )}
-            {quote.status === "accepted" && (
+            {quote.status === "accepted" && showCreateMoveFromAcceptedQuote && (
               <>
                 <button
                   type="button"
@@ -1104,12 +1181,11 @@ export default function QuoteDetailClient({
                           color: "text-[var(--tx3)]",
                         };
                         const Icon = cfg.icon;
-                        const detail = ev.data
-                          ? Object.entries(ev.data)
-                              .filter(([, v]) => v != null && v !== "")
-                              .map(([k, v]) => `${k}: ${v}`)
-                              .join(", ")
-                          : "";
+                        const detail = formatEngagementEventDetail(
+                          ev.type,
+                          ev.data,
+                          quote.service_type ?? null,
+                        );
 
                         return (
                           <div

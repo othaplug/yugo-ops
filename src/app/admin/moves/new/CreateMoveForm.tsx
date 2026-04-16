@@ -94,7 +94,7 @@ const CREATE_MOVE_FLOW_STEP_LABELS = ["Service & client", "Locations & job detai
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">{label}</label>
+      <label className="admin-premium-label admin-premium-label--tight mb-1">{label}</label>
       {children}
     </div>
   );

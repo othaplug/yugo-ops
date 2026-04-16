@@ -430,7 +430,7 @@ export function defaultDimensionalForm(): DimensionalConfigForm {
     distance_free_km: 15,
     distance_per_km: 3,
     handling_rates: { threshold: 75, room_of_choice: 125 },
-    truck_rates: { sprinter: 0, "16ft": 50, "20ft": 100, "26ft": 150 },
+    truck_rates: { sprinter: 0, "16ft": 60, "20ft": 120, "26ft": 200 },
     complexity_premiums: {
       time_sensitive: 100,
       fragile: 75,

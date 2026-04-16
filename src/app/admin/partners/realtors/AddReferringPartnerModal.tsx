@@ -14,6 +14,7 @@ import {
   organizationTypeLabel,
   partnerHasSelfServePortal,
 } from "@/lib/partner-type";
+import { InfoHint } from "@/components/ui/InfoHint";
 
 type ReferralOrgType = (typeof REFERRAL_HUB_ORG_TYPES)[number];
 
@@ -101,18 +102,22 @@ export default function AddReferringPartnerModal({
       maxWidth="2xl"
     >
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
-        <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
-          Creates a referral organization record (commission pipeline). This is
-          separate from move clients and delivery partners.
-        </p>
+        <div className="flex justify-end">
+          <InfoHint variant="admin" align="end" ariaLabel="About referring partners">
+            <p className="text-[11px] leading-relaxed">
+              Creates a referral organization record (commission pipeline). This is separate from move clients and
+              delivery partners.
+            </p>
+          </InfoHint>
+        </div>
         <div>
-          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
+          <label className="admin-premium-label admin-premium-label--tight">
             Referring partner type
           </label>
           <select
             value={partnerType}
             onChange={(e) => setPartnerType(e.target.value as ReferralOrgType)}
-            className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
             required
           >
             {REFERRAL_HUB_ORG_TYPES.map((v) => (
@@ -123,7 +128,7 @@ export default function AddReferringPartnerModal({
           </select>
         </div>
         <div>
-          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
+          <label className="admin-premium-label admin-premium-label--tight">
             Organization name
           </label>
           <input
@@ -132,12 +137,12 @@ export default function AddReferringPartnerModal({
             value={partnerCompanyName}
             onChange={(e) => setPartnerCompanyName(e.target.value)}
             placeholder="Company or team name"
-            className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] outline-none"
+            className="admin-premium-input w-full"
             autoComplete="organization"
           />
         </div>
         <div>
-          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
+          <label className="admin-premium-label admin-premium-label--tight">
             Primary contact
           </label>
           <input
@@ -146,12 +151,12 @@ export default function AddReferringPartnerModal({
             value={partnerContactName}
             onChange={(e) => setPartnerContactName(e.target.value)}
             placeholder="Contact name"
-            className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] outline-none"
+            className="admin-premium-input w-full"
             autoComplete="name"
           />
         </div>
         <div>
-          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
+          <label className="admin-premium-label admin-premium-label--tight">
             Email
           </label>
           <input
@@ -160,12 +165,12 @@ export default function AddReferringPartnerModal({
             value={partnerEmail}
             onChange={(e) => setPartnerEmail(e.target.value)}
             placeholder="email@company.com"
-            className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] outline-none"
+            className="admin-premium-input w-full"
             autoComplete="email"
           />
         </div>
         <div>
-          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
+          <label className="admin-premium-label admin-premium-label--tight">
             Phone
           </label>
           <input
@@ -174,7 +179,7 @@ export default function AddReferringPartnerModal({
             value={phone}
             onChange={phoneInput.onChange}
             placeholder={PHONE_PLACEHOLDER}
-            className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] outline-none"
+            className="admin-premium-input w-full"
             autoComplete="tel"
           />
         </div>
@@ -184,7 +189,7 @@ export default function AddReferringPartnerModal({
           onChange={(r) => setAddress(r.fullAddress)}
           placeholder="Office or billing address"
           label="Address"
-          className="w-full px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)]"
+          className="admin-premium-input w-full"
         />
         {partnerPortalSupported ? (
           <label className="flex items-center gap-2 cursor-pointer">

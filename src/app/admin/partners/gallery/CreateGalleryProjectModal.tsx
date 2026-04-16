@@ -122,7 +122,7 @@ export default function CreateGalleryProjectModal({
     <ModalOverlay open={open} onClose={handleClose} title="New gallery project" maxWidth="md">
       <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+          <label className="admin-premium-label">
             Project name *
           </label>
           <input
@@ -131,18 +131,18 @@ export default function CreateGalleryProjectModal({
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Feinstein: Convergence"
             required
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
           />
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+          <label className="admin-premium-label">
             Project type
           </label>
           <select
             value={projectType}
             onChange={(e) => setProjectType(e.target.value)}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
           >
             <option value="">Select type…</option>
             {PROJECT_TYPES.map((t) => (
@@ -152,13 +152,13 @@ export default function CreateGalleryProjectModal({
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+          <label className="admin-premium-label">
             Gallery partner
           </label>
           <select
             value={galleryOrgId}
             onChange={(e) => setGalleryOrgId(e.target.value)}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
           >
             <option value="">Select gallery…</option>
             {galleryPartners.map((p) => (
@@ -174,12 +174,12 @@ export default function CreateGalleryProjectModal({
             onChange={(r) => setAddress(r.fullAddress)}
             placeholder="Delivery or exhibition address"
             label="Address / venue"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
           />
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+          <label className="admin-premium-label">
             Location / venue name
           </label>
           <input
@@ -187,32 +187,32 @@ export default function CreateGalleryProjectModal({
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="e.g. Main Gallery, Vault"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
           />
         </div>
 
         {(projectType === "exhibition" || projectType === "art_fair") && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+              <label className="admin-premium-label">
                 Start date
               </label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                className="admin-premium-input w-full"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+              <label className="admin-premium-label">
                 End date
               </label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                className="admin-premium-input w-full"
               />
             </div>
           </div>
@@ -252,7 +252,7 @@ export default function CreateGalleryProjectModal({
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+          <label className="admin-premium-label">
             Estimate
           </label>
           <input
@@ -260,12 +260,12 @@ export default function CreateGalleryProjectModal({
             value={estimate}
             onChange={(e) => setEstimate(e.target.value)}
             placeholder="e.g. $45K"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
           />
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+          <label className="admin-premium-label">
             Install / deinstall notes
           </label>
           <input
@@ -273,12 +273,12 @@ export default function CreateGalleryProjectModal({
             value={installDeinstallNotes}
             onChange={(e) => setInstallDeinstallNotes(e.target.value)}
             placeholder="e.g. Install only, Both"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
           />
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+          <label className="admin-premium-label">
             Details
           </label>
           <textarea
@@ -286,7 +286,7 @@ export default function CreateGalleryProjectModal({
             onChange={(e) => setDetails(e.target.value)}
             placeholder="Project details, special instructions…"
             rows={3}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none resize-none"
+            className="admin-premium-textarea w-full resize-none"
           />
         </div>
 

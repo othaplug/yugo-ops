@@ -560,8 +560,8 @@ function BusinessInfoSection() {
 
   if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
 
-  const inputCls = "w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none";
-  const labelCls = "block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5";
+  const inputCls = "admin-premium-input w-full";
+  const labelCls = "admin-premium-label admin-premium-label--tight";
   const subheadCls = "text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]/82 mb-3 flex items-center gap-1.5";
 
   const inp = (key: string, label: string, placeholder: string, type = "text") => (
@@ -716,7 +716,7 @@ function FuelPricingSection() {
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Gasoline ($/L)</label>
+            <label className="admin-premium-label admin-premium-label--tight">Gasoline ($/L)</label>
             <input
               type="number"
               min={0.01}
@@ -724,11 +724,11 @@ function FuelPricingSection() {
               step={0.01}
               value={gas}
               onChange={(e) => setGas(e.target.value)}
-              className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] outline-none focus:border-[var(--gold)]"
+              className="admin-premium-input w-full"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Diesel ($/L)</label>
+            <label className="admin-premium-label admin-premium-label--tight">Diesel ($/L)</label>
             <input
               type="number"
               min={0.01}
@@ -736,16 +736,16 @@ function FuelPricingSection() {
               step={0.01}
               value={diesel}
               onChange={(e) => setDiesel(e.target.value)}
-              className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] outline-none focus:border-[var(--gold)]"
+              className="admin-premium-input w-full"
             />
           </div>
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Active fuel for estimates</label>
+          <label className="admin-premium-label admin-premium-label--tight">Active fuel for estimates</label>
           <select
             value={fuelType}
             onChange={(e) => setFuelType(e.target.value === "diesel" ? "diesel" : "gas")}
-            className="w-full sm:max-w-xs px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] outline-none focus:border-[var(--gold)]"
+            className="admin-premium-input w-full sm:max-w-xs"
           >
             <option value="gas">Gasoline</option>
             <option value="diesel">Diesel</option>
@@ -826,26 +826,26 @@ function QuotingDefaultsSection() {
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Quote Expiry (days)</label>
-            <input type="number" value={config.quote_expiry_days || "7"} onChange={(e) => setConfig((p) => ({ ...p, quote_expiry_days: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+            <label className="admin-premium-label admin-premium-label--tight">Quote Expiry (days)</label>
+            <input type="number" value={config.quote_expiry_days || "7"} onChange={(e) => setConfig((p) => ({ ...p, quote_expiry_days: e.target.value }))} className="admin-premium-input w-full" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Default Deposit %</label>
-            <input type="number" value={config.default_deposit_pct || "25"} onChange={(e) => setConfig((p) => ({ ...p, default_deposit_pct: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+            <label className="admin-premium-label admin-premium-label--tight">Default Deposit %</label>
+            <input type="number" value={config.default_deposit_pct || "25"} onChange={(e) => setConfig((p) => ({ ...p, default_deposit_pct: e.target.value }))} className="admin-premium-input w-full" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Minimum Deposit ($)</label>
-            <input type="number" value={config.minimum_deposit || "100"} onChange={(e) => setConfig((p) => ({ ...p, minimum_deposit: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+            <label className="admin-premium-label admin-premium-label--tight">Minimum Deposit ($)</label>
+            <input type="number" value={config.minimum_deposit || "100"} onChange={(e) => setConfig((p) => ({ ...p, minimum_deposit: e.target.value }))} className="admin-premium-input w-full" />
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Quote ID Prefix</label>
-            <input type="text" value={config.quote_id_prefix || "YG-"} onChange={(e) => setConfig((p) => ({ ...p, quote_id_prefix: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+            <label className="admin-premium-label admin-premium-label--tight">Quote ID Prefix</label>
+            <input type="text" value={config.quote_id_prefix || "YG-"} onChange={(e) => setConfig((p) => ({ ...p, quote_id_prefix: e.target.value }))} className="admin-premium-input w-full" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Follow-up Max Attempts</label>
-            <input type="number" value={config.followup_max_attempts || "3"} onChange={(e) => setConfig((p) => ({ ...p, followup_max_attempts: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+            <label className="admin-premium-label admin-premium-label--tight">Follow-up Max Attempts</label>
+            <input type="number" value={config.followup_max_attempts || "3"} onChange={(e) => setConfig((p) => ({ ...p, followup_max_attempts: e.target.value }))} className="admin-premium-input w-full" />
           </div>
           <div className="flex items-end">
             <label className="flex items-center gap-2 text-[12px] text-[var(--tx)]">
@@ -871,30 +871,30 @@ function QuotingDefaultsSection() {
               Enable inventory change requests
             </label>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">$ per weight-score unit</label>
+              <label className="admin-premium-label admin-premium-label--tight">$ per weight-score unit</label>
               <input
                 type="number"
                 value={config.change_request_per_score_rate || "35"}
                 onChange={(e) => setConfig((p) => ({ ...p, change_request_per_score_rate: e.target.value }))}
-                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] outline-none"
+                className="admin-premium-input w-full"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Min hours before move</label>
+              <label className="admin-premium-label admin-premium-label--tight">Min hours before move</label>
               <input
                 type="number"
                 value={config.change_request_min_hours_before_move || "48"}
                 onChange={(e) => setConfig((p) => ({ ...p, change_request_min_hours_before_move: e.target.value }))}
-                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] outline-none"
+                className="admin-premium-input w-full"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Max lines per request</label>
+              <label className="admin-premium-label admin-premium-label--tight">Max lines per request</label>
               <input
                 type="number"
                 value={config.change_request_max_items_per_request || "10"}
                 onChange={(e) => setConfig((p) => ({ ...p, change_request_max_items_per_request: e.target.value }))}
-                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] outline-none"
+                className="admin-premium-input w-full"
               />
             </div>
           </div>
@@ -1154,16 +1154,16 @@ function EmailTemplatesSection() {
       <ModalOverlay open onClose={() => setEditing(null)} title={`Edit: ${SLUG_LABELS[editing.template_slug] || editing.template_slug}`} maxWidth="md">
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Subject Line</label>
-            <input type="text" value={editSubject} onChange={(e) => setEditSubject(e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+            <label className="admin-premium-label admin-premium-label--tight">Subject Line</label>
+            <input type="text" value={editSubject} onChange={(e) => setEditSubject(e.target.value)} className="admin-premium-input w-full" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Body (HTML)</label>
-            <textarea value={editBody} onChange={(e) => setEditBody(e.target.value)} rows={8} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] font-mono focus:border-[var(--brd)] outline-none resize-y" />
+            <label className="admin-premium-label admin-premium-label--tight">Body (HTML)</label>
+            <textarea value={editBody} onChange={(e) => setEditBody(e.target.value)} rows={8} className="admin-premium-textarea w-full font-mono resize-y" />
           </div>
           {editing.merge_variables?.length > 0 && (
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Available Variables</label>
+              <label className="admin-premium-label admin-premium-label--tight">Available Variables</label>
               <div className="flex flex-wrap gap-1.5">
                 {editing.merge_variables.map((v: string) => (
                   <span key={v} className="text-[10px] font-mono font-semibold text-[var(--gold)] border border-[var(--brd)] px-1.5 py-0.5 rounded-md">{`{{${v}}}`}</span>
@@ -1184,11 +1184,11 @@ function EmailTemplatesSection() {
       <ModalOverlay open onClose={() => setPreviewSlug(null)} title={`Preview: ${SLUG_LABELS[previewTpl.template_slug] || previewTpl.template_slug}`} maxWidth="md">
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Subject</label>
+            <label className="admin-premium-label admin-premium-label--tight">Subject</label>
             <div className="px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)]">{previewTpl.subject.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => ({ client_name: "John Smith", company_name: "Yugo", move_date: "March 15, 2026", quote_link: "https://helloyugo.com/quote/abc123", total_price: "$1,250.00", crew_names: "Marcus, Devon", company_phone: "(647) 370-4525", move_address: "123 Queen St W" }[key] || `{{${key}}}`) )}</div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Body Preview</label>
+            <label className="admin-premium-label admin-premium-label--tight">Body Preview</label>
             <div className="px-4 py-3 bg-[var(--card)] rounded-lg text-[13px] text-[var(--tx)]" dangerouslySetInnerHTML={{ __html: previewTpl.body_html.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => ({ client_name: "John Smith", company_name: "Yugo", move_date: "March 15, 2026", quote_link: "https://helloyugo.com/quote/abc123", total_price: "$1,250.00", crew_names: "Marcus, Devon", company_phone: "(647) 370-4525", move_address: "123 Queen St W" }[key] || `{{${key}}}`) )} } />
           </div>
           <button type="button" onClick={() => setPreviewSlug(null)} className="w-full px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]">Close</button>
@@ -1787,22 +1787,22 @@ export default function PlatformSettingsClient({
             {/* Add new staff */}
             <div className="flex flex-wrap items-end gap-2">
               <div className="flex-1 min-w-[140px]">
-                <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Full Name</label>
+                <label className="admin-premium-label admin-premium-label--tight mb-1">Full Name</label>
                 <input
                   type="text"
                   value={addStaffName}
                   onChange={(e) => setAddStaffName(e.target.value)}
                   placeholder="e.g. Marcus Johnson"
-                  className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--brd)]/50"
+                  className="admin-premium-input w-full"
                   onKeyDown={(e) => { if (e.key === "Enter") handleAddStaff(); }}
                 />
               </div>
               <div className="min-w-[100px]">
-                <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Role</label>
+                <label className="admin-premium-label admin-premium-label--tight mb-1">Role</label>
                 <select
                   value={addStaffRole}
                   onChange={(e) => setAddStaffRole(e.target.value)}
-                  className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] outline-none focus:border-[var(--brd)]/50"
+                  className="admin-premium-input w-full"
                 >
                   <option value="mover">Mover</option>
                   <option value="driver">Driver</option>
@@ -2391,7 +2391,7 @@ export default function PlatformSettingsClient({
             );
           })}
           <div className="pt-4 mt-4 border-t border-[var(--brd)]">
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Date format</label>
+            <label className="admin-premium-label admin-premium-label--tight">Date format</label>
             <p className="text-[11px] text-[var(--tx3)] mb-2">
               How dates appear across admin, partner, crew, and client surfaces (same business timezone; this only changes presentation).
             </p>
@@ -2399,7 +2399,7 @@ export default function PlatformSettingsClient({
               <select
                 value={displayDateFormatPreset}
                 onChange={(e) => setDisplayDateFormatPreset(normalizeDisplayDateFormatPreset(e.target.value))}
-                className="w-full sm:max-w-xl px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                className="admin-premium-input w-full sm:max-w-xl"
               >
                 {DISPLAY_DATE_FORMAT_OPTION_GROUPS.map((g) => (
                   <optgroup key={g.label} label={g.label}>
@@ -2433,18 +2433,18 @@ export default function PlatformSettingsClient({
           </div>
           <div className="pt-4 mt-4 border-t border-[var(--brd)] space-y-4">
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Google Review URL</label>
+              <label className="admin-premium-label admin-premium-label--tight">Google Review URL</label>
               <p className="text-[11px] text-[var(--tx3)] mb-2">Link customers are redirected to when they click the review button in emails</p>
               <input
                 type="url"
                 value={googleReviewUrl}
                 onChange={(e) => setGoogleReviewUrl(e.target.value)}
                 placeholder="https://g.page/r/CU67iDN6TgMIEB0/review/"
-                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
+                className="admin-premium-input w-full"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
+              <label className="admin-premium-label admin-premium-label--tight">
                 Quote page — Google reviews headline
               </label>
               <p className="text-[11px] text-[var(--tx3)] mb-2">
@@ -2455,7 +2455,7 @@ export default function PlatformSettingsClient({
                 value={googleReviewCountLabel}
                 onChange={(e) => setGoogleReviewCountLabel(e.target.value)}
                 placeholder={DEFAULT_GOOGLE_REVIEW_COUNT_LABEL}
-                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
+                className="admin-premium-input w-full"
               />
             </div>
             <button
@@ -2702,7 +2702,7 @@ export default function PlatformSettingsClient({
       <ModalOverlay open={addTeamModalOpen} onClose={() => setAddTeamModalOpen(false)} title="Add Team" maxWidth="md">
         <div className="p-5 space-y-5">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team name</label>
+            <label className="admin-premium-label">Team name</label>
             <input
               value={addTeamName}
               onChange={(e) => setAddTeamName(e.target.value)}
@@ -2850,20 +2850,20 @@ export default function PlatformSettingsClient({
         {editingStaff && (
           <form className="p-5 space-y-4" onSubmit={(e) => { e.preventDefault(); handleEditStaff(); }}>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Name</label>
+              <label className="admin-premium-label">Name</label>
               <input
                 type="text"
                 value={editStaffName}
                 onChange={(e) => setEditStaffName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                className="admin-premium-input w-full"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
+              <label className="admin-premium-label">Role</label>
               <select
                 value={editStaffRole}
                 onChange={(e) => setEditStaffRole(e.target.value)}
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                className="admin-premium-input w-full"
               >
                 <option value="mover">Mover</option>
                 <option value="driver">Driver</option>
@@ -2874,27 +2874,27 @@ export default function PlatformSettingsClient({
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone</label>
+              <label className="admin-premium-label">Phone</label>
               <input
                 type="tel"
                 value={editStaffPhone}
                 onChange={(e) => setEditStaffPhone(e.target.value)}
                 placeholder="Optional"
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                className="admin-premium-input w-full"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email</label>
+              <label className="admin-premium-label">Email</label>
               <input
                 type="email"
                 value={editStaffEmail}
                 onChange={(e) => setEditStaffEmail(e.target.value)}
                 placeholder="Optional"
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                className="admin-premium-input w-full"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Hourly Rate ($)</label>
+              <label className="admin-premium-label">Hourly Rate ($)</label>
               <input
                 type="number"
                 step="0.50"
@@ -2902,11 +2902,11 @@ export default function PlatformSettingsClient({
                 onChange={(e) => {
                   if (editingStaff) setEditingStaff({ ...editingStaff, hourly_rate: parseFloat(e.target.value) || 0 });
                 }}
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                className="admin-premium-input w-full"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Specialties</label>
+              <label className="admin-premium-label">Specialties</label>
               <div className="flex flex-wrap gap-1.5">
                 {["Piano", "Art Handling", "Heavy Lift", "Fragile Items", "Electronics", "Disassembly", "Packing", "Office Moves"].map((sp) => {
                   const slug = sp.toLowerCase().replace(/\s+/g, "_");
@@ -3035,7 +3035,7 @@ export default function PlatformSettingsClient({
               Set a new 6-digit PIN for <strong>{resetPinMember.name}</strong>. They will use it to log in to the Crew Portal.
             </p>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New PIN (6 digits)</label>
+              <label className="admin-premium-label">New PIN (6 digits)</label>
               <input
                 type="password"
                 inputMode="numeric"
@@ -3044,7 +3044,7 @@ export default function PlatformSettingsClient({
                 value={resetPinValue}
                 onChange={(e) => setResetPinValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 placeholder="000000"
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none font-mono"
+                className="admin-premium-input w-full font-mono"
               />
             </div>
             <div className="flex gap-2 pt-2">

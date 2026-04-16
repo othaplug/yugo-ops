@@ -4,6 +4,7 @@ import { formatAccessForDisplay } from "@/lib/format-text";
 import { createBinOrderFromBinRentalQuote } from "@/lib/automations/create-bin-order-from-quote";
 import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
 import { generateWelcomePackageToken } from "@/lib/welcome-package-token";
+import { estimateMoveDurationFromQuoteRow } from "@/lib/jobs/duration-estimate";
 
 /* ═══════════════════════════════════════════════════════════
    createMoveFromQuote
@@ -505,6 +506,44 @@ export async function createMoveFromQuote(
       },
     ];
   }
+
+  const grossForDuration = totalWithTax;
+  const attachDurationFields = (row: RowInsert): RowInsert => {
+    const dEst = estimateMoveDurationFromQuoteRow({
+      serviceType: String(quote.service_type ?? ""),
+      moveType,
+      distanceKm: (row.distance_km as number | null) ?? (quote.distance_km as number | null),
+      driveTimeMin:
+        (row.drive_time_min as number | null) ??
+        (quote.drive_time_min as number | null),
+      estCrewSize:
+        (row.est_crew_size as number | null) ??
+        (quote.est_crew_size as number | null),
+      estHours:
+        (row.est_hours as number | null) ??
+        (typeof factors.est_job_hours === "number"
+          ? factors.est_job_hours
+          : null),
+      inventoryScore: (quote.inventory_score as number | null) ?? null,
+      fromAccess: quote.from_access,
+      toAccess: quote.to_access,
+      fromLongCarry: !!(quote as { from_long_carry?: boolean }).from_long_carry,
+      toLongCarry: !!(quote as { to_long_carry?: boolean }).to_long_carry,
+      tierSelected: selectedTier,
+      truckPrimary: (row.truck_primary as string | null) ?? (quote.truck_primary as string | null),
+      grossRevenue: grossForDuration,
+      factors,
+    });
+    if (!dEst) return row;
+    return {
+      ...row,
+      estimated_duration_minutes: dEst.totalMinutes,
+      estimated_internal_cost: dEst.estimatedCost,
+      margin_alert_minutes: dEst.maxMinutesBeforeMarginAlert,
+    };
+  };
+
+  rowsToInsert = rowsToInsert.map(attachDurationFields);
 
   const [primaryRow, ...siblingRows] = rowsToInsert;
   const { data: primary, error: primaryErr } = await supabase

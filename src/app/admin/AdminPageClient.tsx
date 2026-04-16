@@ -603,7 +603,7 @@ export default function AdminPageClient({
         <div
           className="fixed left-1/2 z-[100] flex items-center justify-center w-9 h-9 rounded-sm border border-[var(--brd)] shadow-md"
           style={{
-            top: "calc(3.5rem + env(safe-area-inset-top, 0px) + 8px)",
+            top: "calc(var(--app-chrome-h) + env(safe-area-inset-top, 0px) + 8px)",
             transform: `translate(-50%, ${pullDistance}px)`,
             backgroundColor: "var(--card)",
             border: "1px solid var(--brd)",

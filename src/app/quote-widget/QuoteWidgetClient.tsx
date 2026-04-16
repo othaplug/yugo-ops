@@ -26,8 +26,7 @@ const WINE = "#5C1A33";
 const CREAM = "#FAF7F2";
 const FOREST_BODY = "#3E4D40";
 const FOREST_MUTED = "#5A6B5E";
-const QUOTE_EYEBROW_CLASS =
-  "text-[11px] font-bold tracking-[0.12em] uppercase";
+const QUOTE_EYEBROW_CLASS = "text-[11px] font-bold tracking-[0.12em] uppercase";
 
 /** Selection rings, progress fill, primary chrome — wine (not forest). */
 const ACCENT = WINE;
@@ -617,8 +616,7 @@ export default function QuoteWidgetClient() {
                   key={i}
                   className="h-0.5 rounded-full flex-1 transition-all duration-500"
                   style={{
-                    backgroundColor:
-                      i <= step ? ACCENT : "rgba(92,26,51,0.08)",
+                    backgroundColor: i <= step ? ACCENT : "rgba(92,26,51,0.08)",
                   }}
                 />
               ))}
@@ -636,7 +634,10 @@ export default function QuoteWidgetClient() {
                 <h2 className="font-hero text-[22px] sm:text-[26px] font-bold leading-snug tracking-tight mb-1 text-[#5C1A33]">
                   Tell us about your move
                 </h2>
-                <p className="text-[13px] mb-6 leading-relaxed" style={{ color: FOREST_BODY }}>
+                <p
+                  className="text-[13px] mb-6 leading-relaxed"
+                  style={{ color: FOREST_BODY }}
+                >
                   Select the type and size of your move.
                 </p>
 
@@ -654,7 +655,9 @@ export default function QuoteWidgetClient() {
                         className="p-4 rounded-xl border text-left transition-all duration-200 hover:border-[#5C1A33]/18"
                         style={{
                           borderColor: active ? ACCENT : "rgba(92,26,51,0.12)",
-                          backgroundColor: active ? "rgba(92,26,51,0.06)" : "#FFFFFF",
+                          backgroundColor: active
+                            ? "rgba(92,26,51,0.06)"
+                            : "#FFFFFF",
                           boxShadow: active ? `0 0 0 1px ${ACCENT}` : "none",
                         }}
                       >
@@ -702,12 +705,16 @@ export default function QuoteWidgetClient() {
                             onClick={() => setMoveSize(s.key)}
                             className="py-3 px-3 rounded-xl text-[13px] font-medium border transition-all duration-200 hover:border-[#5C1A33]/18"
                             style={{
-                              borderColor: active ? ACCENT : "rgba(92,26,51,0.12)",
+                              borderColor: active
+                                ? ACCENT
+                                : "rgba(92,26,51,0.12)",
                               backgroundColor: active
                                 ? "rgba(92,26,51,0.06)"
                                 : "#FFFFFF",
                               color: active ? WINE : FOREST_MUTED,
-                              boxShadow: active ? `0 0 0 1px ${ACCENT}` : "none",
+                              boxShadow: active
+                                ? `0 0 0 1px ${ACCENT}`
+                                : "none",
                             }}
                           >
                             {s.label}
@@ -732,12 +739,16 @@ export default function QuoteWidgetClient() {
                             onClick={() => setOfficeSize(s.key)}
                             className="py-3 px-4 rounded-xl text-[13px] font-medium border transition-all duration-200 hover:border-[#5C1A33]/18"
                             style={{
-                              borderColor: active ? ACCENT : "rgba(92,26,51,0.12)",
+                              borderColor: active
+                                ? ACCENT
+                                : "rgba(92,26,51,0.12)",
                               backgroundColor: active
                                 ? "rgba(92,26,51,0.06)"
                                 : "#FFFFFF",
                               color: active ? WINE : FOREST_MUTED,
-                              boxShadow: active ? `0 0 0 1px ${ACCENT}` : "none",
+                              boxShadow: active
+                                ? `0 0 0 1px ${ACCENT}`
+                                : "none",
                             }}
                           >
                             {s.label}
@@ -755,7 +766,11 @@ export default function QuoteWidgetClient() {
                   style={{ backgroundColor: WINE }}
                 >
                   Continue
-                  <CaretRight size={16} weight="bold" className="shrink-0 opacity-95" />
+                  <CaretRight
+                    size={16}
+                    weight="bold"
+                    className="shrink-0 opacity-95"
+                  />
                 </button>
               </div>
             </StepContainer>
@@ -769,7 +784,10 @@ export default function QuoteWidgetClient() {
                 <h2 className="font-hero text-[22px] sm:text-[26px] font-bold leading-snug tracking-tight mb-1 text-[#5C1A33]">
                   Locations & property details
                 </h2>
-                <p className="text-[13px] mb-6 leading-relaxed" style={{ color: FOREST_BODY }}>
+                <p
+                  className="text-[13px] mb-6 leading-relaxed"
+                  style={{ color: FOREST_BODY }}
+                >
                   Postal codes and access details help us give you an accurate
                   estimate.
                 </p>
@@ -784,7 +802,10 @@ export default function QuoteWidgetClient() {
                       Moving from
                     </div>
                     <div>
-                      <div className={labelClass} style={{ color: FOREST_MUTED }}>
+                      <div
+                        className={labelClass}
+                        style={{ color: FOREST_MUTED }}
+                      >
                         Postal code
                       </div>
                       <input
@@ -800,7 +821,10 @@ export default function QuoteWidgetClient() {
                       />
                     </div>
                     <div>
-                      <div className={labelClass} style={{ color: FOREST_MUTED }}>
+                      <div
+                        className={labelClass}
+                        style={{ color: FOREST_MUTED }}
+                      >
                         Building type
                       </div>
                       <SelectWrapper>
@@ -819,7 +843,10 @@ export default function QuoteWidgetClient() {
                       </SelectWrapper>
                     </div>
                     <div>
-                      <div className={labelClass} style={{ color: FOREST_MUTED }}>
+                      <div
+                        className={labelClass}
+                        style={{ color: FOREST_MUTED }}
+                      >
                         Access
                       </div>
                       <SelectWrapper>
@@ -848,7 +875,10 @@ export default function QuoteWidgetClient() {
                       Moving to
                     </div>
                     <div>
-                      <div className={labelClass} style={{ color: FOREST_MUTED }}>
+                      <div
+                        className={labelClass}
+                        style={{ color: FOREST_MUTED }}
+                      >
                         Postal code
                       </div>
                       <input
@@ -864,7 +894,10 @@ export default function QuoteWidgetClient() {
                       />
                     </div>
                     <div>
-                      <div className={labelClass} style={{ color: FOREST_MUTED }}>
+                      <div
+                        className={labelClass}
+                        style={{ color: FOREST_MUTED }}
+                      >
                         Building type
                       </div>
                       <SelectWrapper>
@@ -883,7 +916,10 @@ export default function QuoteWidgetClient() {
                       </SelectWrapper>
                     </div>
                     <div>
-                      <div className={labelClass} style={{ color: FOREST_MUTED }}>
+                      <div
+                        className={labelClass}
+                        style={{ color: FOREST_MUTED }}
+                      >
                         Access
                       </div>
                       <SelectWrapper>
@@ -911,7 +947,11 @@ export default function QuoteWidgetClient() {
                   style={{ backgroundColor: WINE }}
                 >
                   Continue
-                  <CaretRight size={16} weight="bold" className="shrink-0 opacity-95" />
+                  <CaretRight
+                    size={16}
+                    weight="bold"
+                    className="shrink-0 opacity-95"
+                  />
                 </button>
               </div>
             </StepContainer>
@@ -925,7 +965,10 @@ export default function QuoteWidgetClient() {
                 <h2 className="font-hero text-[22px] sm:text-[26px] font-bold leading-snug tracking-tight mb-1 text-[#5C1A33]">
                   Your belongings
                 </h2>
-                <p className="text-[13px] mb-5 leading-relaxed" style={{ color: FOREST_BODY }}>
+                <p
+                  className="text-[13px] mb-5 leading-relaxed"
+                  style={{ color: FOREST_BODY }}
+                >
                   Add furniture items for a more accurate estimate, or skip to
                   continue.
                 </p>
@@ -948,10 +991,7 @@ export default function QuoteWidgetClient() {
                     >
                       {estimatedBoxes}
                     </div>
-                    <div
-                      className="text-[11px]"
-                      style={{ color: `${WINE}50` }}
-                    >
+                    <div className="text-[11px]" style={{ color: `${WINE}50` }}>
                       {moveType === "office"
                         ? "Based on office size"
                         : "Based on home size"}
@@ -970,10 +1010,7 @@ export default function QuoteWidgetClient() {
                     >
                       {totalItems}
                     </div>
-                    <div
-                      className="text-[11px]"
-                      style={{ color: `${WINE}50` }}
-                    >
+                    <div className="text-[11px]" style={{ color: `${WINE}50` }}>
                       Added so far
                     </div>
                   </div>
@@ -1163,10 +1200,7 @@ export default function QuoteWidgetClient() {
                       className="px-4 pb-3 pt-1 border-t space-y-2"
                       style={{ borderColor: `${WINE}06` }}
                     >
-                      <p
-                        className="text-[11px]"
-                        style={{ color: `${WINE}70` }}
-                      >
+                      <p className="text-[11px]" style={{ color: `${WINE}70` }}>
                         Add items not in the list above (e.g. custom furniture,
                         specific pieces).
                       </p>
@@ -1275,7 +1309,10 @@ export default function QuoteWidgetClient() {
                       {specialHandling.trim() && (
                         <span
                           className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                          style={{ backgroundColor: `${ACCENT}15`, color: ACCENT }}
+                          style={{
+                            backgroundColor: `${ACCENT}15`,
+                            color: ACCENT,
+                          }}
                         >
                           Filled
                         </span>
@@ -1329,7 +1366,11 @@ export default function QuoteWidgetClient() {
                     style={{ backgroundColor: WINE }}
                   >
                     Continue
-                    <CaretRight size={16} weight="bold" className="shrink-0 opacity-95" />
+                    <CaretRight
+                      size={16}
+                      weight="bold"
+                      className="shrink-0 opacity-95"
+                    />
                   </button>
                 </div>
               </div>
@@ -1392,14 +1433,20 @@ export default function QuoteWidgetClient() {
                     <h2 className="font-hero text-[22px] sm:text-[26px] font-bold leading-snug tracking-tight mb-1 text-[#5C1A33]">
                       Choose your move date
                     </h2>
-                    <p className="text-[13px] mb-5 leading-relaxed" style={{ color: FOREST_BODY }}>
+                    <p
+                      className="text-[13px] mb-5 leading-relaxed"
+                      style={{ color: FOREST_BODY }}
+                    >
                       Prices vary by day and time. Select a date to see your
                       estimate.
                     </p>
 
                     {/* ── Date picker trigger ── */}
                     <div className="mb-5">
-                      <div className={labelClass} style={{ color: FOREST_MUTED }}>
+                      <div
+                        className={labelClass}
+                        style={{ color: FOREST_MUTED }}
+                      >
                         Preferred move date
                       </div>
                       <div className="relative">
@@ -1670,13 +1717,17 @@ export default function QuoteWidgetClient() {
                           style={{ color: WINE }}
                         >
                           <div className="flex justify-between gap-3">
-                            <span style={{ color: `${WINE}70` }}>Essential</span>
+                            <span style={{ color: `${WINE}70` }}>
+                              Essential
+                            </span>
                             <span className="font-medium tabular-nums">
                               {fmtCurrency(essentialPriceRounded)}
                             </span>
                           </div>
                           <div className="flex justify-between gap-3">
-                            <span style={{ color: `${WINE}70` }}>Signature</span>
+                            <span style={{ color: `${WINE}70` }}>
+                              Signature
+                            </span>
                             <span className="font-medium tabular-nums">
                               {fmtCurrency(signaturePriceRounded)}
                             </span>
@@ -1698,7 +1749,10 @@ export default function QuoteWidgetClient() {
                           >
                             What&apos;s included (Essential)
                           </summary>
-                          <div className="mt-2 space-y-1 text-[11px] leading-relaxed" style={{ color: `${WINE}65` }}>
+                          <div
+                            className="mt-2 space-y-1 text-[11px] leading-relaxed"
+                            style={{ color: `${WINE}65` }}
+                          >
                             <p>Dedicated moving truck</p>
                             <p>Professional crew</p>
                             <p>Protective wrapping for key furniture</p>
@@ -1797,7 +1851,11 @@ export default function QuoteWidgetClient() {
                       ) : (
                         <>
                           Get My Guaranteed Quote
-                          <CaretRight size={16} weight="bold" className="shrink-0 opacity-95" />
+                          <CaretRight
+                            size={16}
+                            weight="bold"
+                            className="shrink-0 opacity-95"
+                          />
                         </>
                       )}
                     </button>

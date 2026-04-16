@@ -317,6 +317,18 @@ function AnalyticsDashboard() {
 
   if (!data) return null;
 
+  const la = data.labourAnalytics as
+    | {
+        quotesWithLabourCheck?: number
+        pctAboveCeiling?: number
+        pctBelowFloor?: number
+        countAboveCeiling?: number
+        countBelowFloor?: number
+        avgRateByService?: Record<string, number>
+        topAboveCeilingService?: { service_type: string; count: number } | null
+      }
+    | undefined
+
   const metrics = [
     { label: "Quotes (30d)", value: data.quotesSent || 0 },
     { label: "Conversion", value: `${data.conversionRate || 0}%` },
@@ -326,21 +338,77 @@ function AnalyticsDashboard() {
     { label: "Lost Reason", value: data.topLostReason || "-" },
   ];
 
+  const labourMetrics =
+    la && (la.quotesWithLabourCheck ?? 0) > 0
+      ? [
+          {
+            label: "Labour check (30d)",
+            value: `${la.quotesWithLabourCheck ?? 0} quotes`,
+          },
+          {
+            label: "Above ceiling",
+            value: `${la.pctAboveCeiling ?? 0}% (${la.countAboveCeiling ?? 0})`,
+          },
+          {
+            label: "Below floor",
+            value: `${la.pctBelowFloor ?? 0}% (${la.countBelowFloor ?? 0})`,
+          },
+          {
+            label: "Top above-ceiling type",
+            value: la.topAboveCeilingService
+              ? `${la.topAboveCeilingService.service_type} (${la.topAboveCeilingService.count})`
+              : "—",
+          },
+        ]
+      : [];
+
   return (
-    <div className="flex flex-wrap gap-px mb-6 rounded-xl overflow-hidden border border-[var(--brd)] bg-[var(--brd)]">
-      {metrics.map((m, i) => (
-        <div
-          key={m.label}
-          className="flex-1 min-w-[100px] bg-[var(--card)] px-4 py-3 flex flex-col gap-1"
-        >
-          <div className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[var(--tx3)] leading-none">
-            {m.label}
+    <div className="space-y-4 mb-6">
+      <div className="flex flex-wrap gap-px rounded-xl overflow-hidden border border-[var(--brd)] bg-[var(--brd)]">
+        {metrics.map((m) => (
+          <div
+            key={m.label}
+            className="flex-1 min-w-[100px] bg-[var(--card)] px-4 py-3 flex flex-col gap-1"
+          >
+            <div className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[var(--tx3)] leading-none">
+              {m.label}
+            </div>
+            <div className="text-[18px] font-bold font-heading text-[var(--tx)] leading-tight break-words">
+              {m.value}
+            </div>
           </div>
-          <div className="text-[18px] font-bold font-heading text-[var(--tx)] leading-tight break-words">
-            {m.value}
+        ))}
+      </div>
+      {labourMetrics.length > 0 ? (
+        <div>
+          <p className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[var(--tx3)] mb-2">
+            Labour rate validation (diagnostic)
+          </p>
+          <div className="flex flex-wrap gap-px rounded-xl overflow-hidden border border-[var(--brd)] bg-[var(--brd)]">
+            {labourMetrics.map((m) => (
+              <div
+                key={m.label}
+                className="flex-1 min-w-[100px] bg-[var(--card)] px-4 py-3 flex flex-col gap-1"
+              >
+                <div className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[var(--tx3)] leading-none">
+                  {m.label}
+                </div>
+                <div className="text-[14px] font-bold font-heading text-[var(--tx)] leading-tight break-words">
+                  {m.value}
+                </div>
+              </div>
+            ))}
           </div>
+          {la?.avgRateByService && Object.keys(la.avgRateByService).length > 0 ? (
+            <p className="text-[10px] text-[var(--tx3)] mt-2 leading-relaxed">
+              Avg implied rate by service:{" "}
+              {Object.entries(la.avgRateByService)
+                .map(([k, v]) => `${k} $${v}/hr`)
+                .join(" · ")}
+            </p>
+          ) : null}
         </div>
-      ))}
+      ) : null}
     </div>
   );
 }
@@ -371,7 +439,7 @@ function BaseRatesSection() {
       </table>
       {adding ? (
         <div className="flex items-center gap-2 mt-3">
-          <input value={newSize} onChange={(e) => setNewSize(e.target.value)} placeholder="e.g. townhouse" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none focus:border-[var(--brd)]" />
+          <input value={newSize} onChange={(e) => setNewSize(e.target.value)} placeholder="e.g. townhouse" className="admin-premium-input admin-premium-input--compact bg-transparent text-[var(--tx)]" />
           <button type="button" onClick={async () => { if (newSize.trim()) { await add({ move_size: newSize.trim(), base_price: 0, min_crew: 2, estimated_hours: 0 }); setNewSize(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]">Add</button>
           <button type="button" onClick={() => setAdding(false)} className="text-[11px] text-[var(--tx3)]">Cancel</button>
         </div>
@@ -425,6 +493,58 @@ function LabourPricingSection() {
           <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey="estate_supplies_allowance" />
         </div>
       )}
+
+      <p className="text-[11px] text-[var(--tx3)] mt-6">
+        Labour rate validation: implied $/hr per mover from each generated quote is compared to these floors and ceilings. This does not change pricing; it flags quotes for coordinator review.
+      </p>
+      <table className={tbl}>
+        <thead>
+          <tr>
+            <th className={th}>Band</th>
+            <th className={th}>Floor ($/hr)</th>
+            <th className={th}>Ceiling ($/hr)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(
+            [
+              ["Essential", "labour_rate_floor_essential", "labour_rate_ceiling_essential"],
+              ["Signature", "labour_rate_floor_signature", "labour_rate_ceiling_signature"],
+              ["Estate (tracked)", "labour_rate_floor_estate", "labour_rate_ceiling_estate"],
+              ["White glove", "labour_rate_floor_white_glove", "labour_rate_ceiling_white_glove"],
+              ["Specialty", "labour_rate_floor_specialty", "labour_rate_ceiling_specialty"],
+              ["Event", "labour_rate_floor_event", "labour_rate_ceiling_event"],
+              ["Labour only", "labour_rate_floor_labour_only", "labour_rate_ceiling_labour_only"],
+              ["B2B", "labour_rate_floor_b2b", "labour_rate_ceiling_b2b"],
+            ] as const
+          ).map(([label, floorKey, ceilKey]) => {
+            const floorRow = getVal(floorKey)
+            const ceilRow = getVal(ceilKey)
+            if (!floorRow || !ceilRow) return null
+            return (
+              <tr key={label}>
+                <td className={td}><span className="text-[12px] font-medium text-[var(--tx)]">{label}</span></td>
+                <td className={td}>
+                  <EditCell
+                    value={Number(floorRow.value)}
+                    onChange={(v) => updateRow(String(floorRow.id), "value", v)}
+                    type="number"
+                    className="w-16 font-semibold text-[var(--tx)]"
+                  />
+                </td>
+                <td className={td}>
+                  <EditCell
+                    value={Number(ceilRow.value)}
+                    onChange={(v) => updateRow(String(ceilRow.id), "value", v)}
+                    type="number"
+                    className="w-16 font-semibold text-[var(--tx)]"
+                  />
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
 
       <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
     </div>
@@ -530,7 +650,7 @@ function NeighbourhoodsSection() {
   return (
     <div className="pt-4 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search postal code or name…" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none focus:border-[var(--brd)] flex-1 min-w-[180px]" />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search postal code or name…" className="admin-premium-input admin-premium-input--compact flex-1 min-w-[180px] bg-transparent text-[var(--tx)]" />
         <div className="flex gap-1">
           {["", "A", "B", "C", "D"].map((t) => (
             <button key={t} type="button" onClick={() => setFilterTier(t)} className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${filterTier === t ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:bg-[var(--bg2)]"}`}>
@@ -557,12 +677,12 @@ function NeighbourhoodsSection() {
       </div>
       {adding ? (
         <div className="flex flex-wrap items-center gap-2 mt-2">
-          <input value={newRow.postal_prefix} onChange={(e) => setNewRow({ ...newRow, postal_prefix: e.target.value.toUpperCase() })} placeholder="M5R" className="w-20 px-2 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none" />
-          <input value={newRow.neighbourhood_name} onChange={(e) => setNewRow({ ...newRow, neighbourhood_name: e.target.value })} placeholder="Neighbourhood" className="flex-1 min-w-[120px] px-2 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none" />
-          <select value={newRow.tier} onChange={(e) => setNewRow({ ...newRow, tier: e.target.value })} className="px-2 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none">
+          <input value={newRow.postal_prefix} onChange={(e) => setNewRow({ ...newRow, postal_prefix: e.target.value.toUpperCase() })} placeholder="M5R" className="admin-premium-input admin-premium-input--compact w-20 bg-transparent text-[var(--tx)]" />
+          <input value={newRow.neighbourhood_name} onChange={(e) => setNewRow({ ...newRow, neighbourhood_name: e.target.value })} placeholder="Neighbourhood" className="admin-premium-input flex-1 min-w-[120px]" />
+          <select value={newRow.tier} onChange={(e) => setNewRow({ ...newRow, tier: e.target.value })} className="admin-premium-input admin-premium-input--compact bg-transparent text-[var(--tx)]">
             <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
           </select>
-          <input value={newRow.multiplier} onChange={(e) => setNewRow({ ...newRow, multiplier: e.target.value })} placeholder="1.00" className="w-16 px-2 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none" type="number" step="0.01" />
+          <input value={newRow.multiplier} onChange={(e) => setNewRow({ ...newRow, multiplier: e.target.value })} placeholder="1.00" className="admin-premium-input admin-premium-input--compact w-16 bg-transparent text-[var(--tx)]" type="number" step="0.01" />
           <button type="button" onClick={async () => { await add({ postal_prefix: newRow.postal_prefix, neighbourhood_name: newRow.neighbourhood_name, tier: newRow.tier, multiplier: Number(newRow.multiplier) }); setNewRow({ postal_prefix: "", neighbourhood_name: "", tier: "C", multiplier: "1.00" }); setAdding(false); }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]">Add</button>
           <button type="button" onClick={() => setAdding(false)} className="text-[11px] text-[var(--tx3)]">Cancel</button>
         </div>
@@ -598,7 +718,7 @@ function AccessScoresSection() {
       </table>
       {adding ? (
         <div className="flex items-center gap-2 mt-3">
-          <input value={newType} onChange={(e) => setNewType(e.target.value)} placeholder="e.g. rooftop_access" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none flex-1" />
+          <input value={newType} onChange={(e) => setNewType(e.target.value)} placeholder="e.g. rooftop_access" className="admin-premium-input admin-premium-input--compact flex-1 min-w-0 bg-transparent text-[var(--tx)]" />
           <button type="button" onClick={async () => { if (newType.trim()) { await add({ access_type: newType.trim(), surcharge: 0, notes: "" }); setNewType(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]">Add</button>
           <button type="button" onClick={() => setAdding(false)} className="text-[11px] text-[var(--tx3)]">Cancel</button>
         </div>
@@ -687,7 +807,7 @@ function SpecialtySurchargesSection() {
       </table>
       {adding ? (
         <div className="flex items-center gap-2 mt-3">
-          <input value={newType} onChange={(e) => setNewType(e.target.value)} placeholder="e.g. piano_baby_grand" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none flex-1" />
+          <input value={newType} onChange={(e) => setNewType(e.target.value)} placeholder="e.g. piano_baby_grand" className="admin-premium-input admin-premium-input--compact flex-1 min-w-0 bg-transparent text-[var(--tx)]" />
           <button type="button" onClick={async () => { if (newType.trim()) { await add({ item_type: newType.trim(), surcharge: 0, requires_specialty_crew: false }); setNewType(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]">Add</button>
           <button type="button" onClick={() => setAdding(false)} className="text-[11px] text-[var(--tx3)]">Cancel</button>
         </div>
@@ -729,7 +849,7 @@ function SingleItemSection() {
       </table>
       {adding ? (
         <div className="flex items-center gap-2">
-          <input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="Category name" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none flex-1" />
+          <input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="Category name" className="admin-premium-input admin-premium-input--compact flex-1 min-w-0 bg-transparent text-[var(--tx)]" />
           <button type="button" onClick={async () => { if (newCat.trim()) { await add({ item_category: newCat.trim(), base_price_min: 0, base_price_max: 0, weight_class: "varies" }); setNewCat(""); setAdding(false); } }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]">Add</button>
           <button type="button" onClick={() => setAdding(false)} className="text-[11px] text-[var(--tx3)]">Cancel</button>
         </div>
@@ -1083,9 +1203,9 @@ function TierEditor({ tiers, onChange }: { tiers: { label: string; price: number
     <div className="space-y-1 pl-4 border-l-2 border-[var(--gold)]/30">
       {items.map((t, i) => (
         <div key={i} className="flex items-center gap-2">
-          <input value={t.label} onChange={(e) => update(i, "label", e.target.value)} className="flex-1 px-2 py-1 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded outline-none text-[var(--tx)]" />
+          <input value={t.label} onChange={(e) => update(i, "label", e.target.value)} className="admin-premium-input admin-premium-input--compact flex-1" />
           <span className="text-[10px] text-[var(--tx3)]">$</span>
-          <input type="number" value={t.price} onChange={(e) => update(i, "price", e.target.value)} className="w-16 px-2 py-1 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded outline-none text-[var(--gold)] font-semibold" />
+          <input type="number" value={t.price} onChange={(e) => update(i, "price", e.target.value)} className="admin-premium-input admin-premium-input--compact w-16 text-[var(--gold)] font-semibold" />
           <button type="button" onClick={() => { const next = items.filter((_, j) => j !== i); setItems(next); onChange(next); }} className="text-[var(--tx3)] hover:text-red-400 text-[11px]">×</button>
         </div>
       ))}
@@ -1171,7 +1291,7 @@ function AddOnsSection() {
   return (
     <div className="pt-4 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search add-ons…" className="px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none focus:border-[var(--brd)] flex-1 min-w-[160px]" />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search add-ons…" className="admin-premium-input admin-premium-input--compact flex-1 min-w-[160px] bg-transparent text-[var(--tx)]" />
         <div className="flex gap-1 flex-wrap">
           {FILTER_TABS.map((t) => (
             <button key={t.key} type="button" onClick={() => setFilter(t.key)} className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${filter === t.key ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:bg-[var(--bg2)]"}`}>
@@ -1187,7 +1307,7 @@ function AddOnsSection() {
 
       {adding ? (
         <div className="flex items-center gap-2 p-3 bg-[var(--bg)] rounded-lg border border-[var(--brd)]">
-          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Add-on name" className="flex-1 px-3 py-1.5 border border-[var(--brd)] rounded-lg text-[12px] bg-[var(--card)] text-[var(--tx)] outline-none" />
+          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Add-on name" className="admin-premium-input flex-1" />
           <button
             type="button"
             onClick={async () => {
@@ -1692,7 +1812,7 @@ function CustomItemsUsedSection({ onAddToMaster }: { onAddToMaster?: () => void 
                   type="text"
                   value={addForm.item_name}
                   onChange={(e) => setAddForm((p) => ({ ...p, item_name: e.target.value }))}
-                  className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)]"
+                  className="admin-premium-input w-full"
                 />
               </div>
               <div>
@@ -1700,7 +1820,7 @@ function CustomItemsUsedSection({ onAddToMaster }: { onAddToMaster?: () => void 
                 <select
                   value={addForm.weight_score}
                   onChange={(e) => setAddForm((p) => ({ ...p, weight_score: Number(e.target.value) }))}
-                  className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)]"
+                  className="admin-premium-input w-full"
                 >
                   {WEIGHT_OPTS.map((w) => (
                     <option key={w} value={w}>{w} ({w >= 2 ? "Heavy" : w <= 0.5 ? "Light" : "Medium"})</option>
@@ -1712,7 +1832,7 @@ function CustomItemsUsedSection({ onAddToMaster }: { onAddToMaster?: () => void 
                 <select
                   value={addForm.category}
                   onChange={(e) => setAddForm((p) => ({ ...p, category: e.target.value }))}
-                  className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)]"
+                  className="admin-premium-input w-full"
                 >
                   {CATEGORY_OPTS.map((c) => (
                     <option key={c} value={c}>{c}</option>
@@ -1724,7 +1844,7 @@ function CustomItemsUsedSection({ onAddToMaster }: { onAddToMaster?: () => void 
                 <select
                   value={addForm.room}
                   onChange={(e) => setAddForm((p) => ({ ...p, room: e.target.value }))}
-                  className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)]"
+                  className="admin-premium-input w-full"
                 >
                   {ROOM_OPTS.map((r) => (
                     <option key={r} value={r}>{toTitleCase(r)}</option>
@@ -2989,6 +3109,60 @@ function SpecialtyPricingSection() {
   );
 }
 
+/* ────────── TRUCK FEES (platform_config) ────────── */
+function TruckFeesPricingSection() {
+  const { isSuperAdmin } = usePricingAdmin();
+  const { rows, loading, save, undo, updateRow, saving } = useSection("config");
+  if (loading) return <Skeleton />;
+
+  const fields = [
+    { key: "truck_fee_sprinter", label: "Sprinter / cargo van", hint: "Small moves, single items, bin rentals" },
+    { key: "truck_fee_16ft", label: "16-foot truck", hint: "Studio to 2BR moves, small deliveries" },
+    { key: "truck_fee_20ft", label: "20-foot truck", hint: "2BR to 3BR moves, medium deliveries" },
+    { key: "truck_fee_24ft", label: "24-foot truck", hint: "Large residential loads between 20ft and 26ft" },
+    { key: "truck_fee_26ft", label: "26-foot truck", hint: "3BR+ moves, large deliveries, office moves" },
+  ];
+
+  return (
+    <div className="pt-4 space-y-4">
+      <p className="text-[11px] text-[var(--tx3)]">
+        Per-job truck allocation fee by vehicle size. Applied across quote types unless a flow uses a dedicated override (for example labour-only optional truck fee).
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {fields.map(({ key, label, hint }) => {
+          const row = rows.find((r) => (r as Row & { key?: string }).key === key);
+          const fallback =
+            key === "truck_fee_sprinter"
+              ? 80
+              : key === "truck_fee_16ft"
+                ? 140
+                : key === "truck_fee_20ft"
+                  ? 200
+                  : key === "truck_fee_24ft"
+                    ? 240
+                    : 280;
+          const val = Number((row as Row & { value?: string })?.value ?? fallback);
+          return (
+            <div key={key} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3">
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
+              <p className="text-[10px] text-[var(--tx3)] mb-2">{hint}</p>
+              {row ? (
+                <EditCell value={val} onChange={(v) => updateRow(String((row as Row & { id?: string }).id), "value", v)} type="number" className="text-[15px] font-bold text-[var(--gold)]" />
+              ) : (
+                <div>
+                  <p className="text-[10px] text-[var(--tx3)]">{MSG_CONFIG_MISSING}</p>
+                  <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey={key} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
+    </div>
+  );
+}
+
 /* ────────── LABOUR-ONLY (platform_config) ────────── */
 function LabourOnlyPricingSection() {
   const { isSuperAdmin } = usePricingAdmin();
@@ -3134,7 +3308,7 @@ function EngineConfigSection() {
                     rows={2}
                     value={val}
                     onChange={(e) => updateRow(String(row.id), "value", e.target.value)}
-                    className="w-full bg-[var(--bg2)] border border-[var(--brd)] rounded px-2 py-1.5 text-[11px] font-mono text-[var(--tx)] outline-none focus:border-[var(--gold)] resize-none"
+                    className="admin-premium-textarea w-full font-mono resize-none text-[11px]"
                   />
                 ) : (
                   <EditCell value={val} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="text-[15px] font-bold text-[var(--gold)]" />
@@ -3176,6 +3350,9 @@ function BinRentalPricingSection() {
     { key: "bin_rental_drop_off_days_before", label: "Drop-off days before move", hint: "Default 7." },
     { key: "bin_rental_pickup_days_after", label: "Pickup days after move", hint: "Default 5." },
     { key: "bin_rental_rental_days", label: "Rental cycle (days)", hint: "Default 12." },
+    { key: "bin_rental_free_radius_km", label: "Hub distance free radius (km)", hint: "Straight-line km from GTA core before per-km fees (default 20)." },
+    { key: "bin_rental_per_km", label: "Bin distance per km ($)", hint: "Applied to each km beyond free radius per leg." },
+    { key: "bin_rental_min_distance_fee", label: "Minimum distance fee per leg ($)", hint: "Floor per delivery or pickup leg before rounding to $5." },
   ];
 
   return (
@@ -3295,6 +3472,10 @@ export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperA
 
       <Accordion title="Tier features & wrapping" subtitle="What's included in each service tier on customer quotes">
         <TierFeaturesSection />
+      </Accordion>
+
+      <Accordion title="Truck fees" subtitle="Per-job truck allocation (all service types that bill by vehicle size)">
+        <TruckFeesPricingSection />
       </Accordion>
 
       <Accordion title="Labour-only" subtitle="Per mover-hour, truck, second-visit discount, storage between visits">

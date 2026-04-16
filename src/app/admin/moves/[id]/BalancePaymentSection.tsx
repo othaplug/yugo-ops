@@ -177,7 +177,7 @@ export default function BalancePaymentSection({ move, onUpdate }: BalancePayment
                 value={overrideNote}
                 onChange={(e) => setOverrideNote(e.target.value)}
                 placeholder="Describe the payment method…"
-                className="w-full px-3 py-2 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]/50"
+                className="admin-premium-input w-full"
               />
             </div>
           )}

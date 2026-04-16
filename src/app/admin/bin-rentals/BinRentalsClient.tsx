@@ -193,12 +193,12 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by order, client, address…"
-          className="flex-1 min-w-0 rounded-lg border border-[var(--brd)] bg-[var(--card)] py-2.5 px-4 text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]"
+          className="admin-premium-input flex-1 min-w-0"
         />
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[13px] text-[var(--tx)] focus:outline-none focus:border-[var(--gold)] sm:min-w-[160px]"
+          className="admin-premium-input admin-premium-input--compact sm:min-w-[160px] text-[var(--tx)]"
         >
           <option value="all">All statuses</option>
           {Object.entries(STATUS_LABELS).map(([k, v]) => (

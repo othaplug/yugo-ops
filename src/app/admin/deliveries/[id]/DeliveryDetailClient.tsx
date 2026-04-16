@@ -557,7 +557,7 @@ export default function DeliveryDetailClient({
                 placeholder={delivery.total_price ? String(delivery.total_price) : "Enter price"}
                 value={adjustedPrice}
                 onChange={(e) => setAdjustedPrice(e.target.value)}
-                className="w-full max-w-[200px] text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                className="admin-premium-input w-full max-w-[200px]"
               />
             </div>
             {showRejectForm ? (
@@ -567,7 +567,7 @@ export default function DeliveryDetailClient({
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                   rows={2}
-                  className="w-full text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] resize-none"
+                  className="admin-premium-textarea w-full resize-none"
                 />
                 <div className="flex items-center gap-2">
                   <button type="button" onClick={handleReject} disabled={approveDeclineLoading} className="px-4 py-2 rounded-lg text-[11px] font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">

@@ -1369,7 +1369,7 @@ export default function QuotePageClient({
      ══════════════════════════════════════════════ */
   return (
     <div
-      className={`min-h-screen transition-all duration-700 ${
+      className={`min-h-screen w-full min-w-0 transition-all duration-700 ${
         premiumShell
           ? shellKind === "wine"
             ? "bg-[#2B0416] text-[#F9EDE4]"
@@ -1381,7 +1381,7 @@ export default function QuotePageClient({
     >
       {expiringSoon && !showDeclineConfirmation && (
         <div
-          className="sticky top-0 z-50 px-4 py-2.5 text-center text-[12px] sm:text-[13px] font-medium tracking-[0.02em] leading-snug"
+          className="sticky top-0 z-50 box-border w-screen max-w-[100vw] ml-[calc(50%-50vw)] px-4 py-2.5 text-center text-[12px] sm:text-[13px] font-medium tracking-[0.02em] leading-snug"
           style={{
             backgroundColor: "rgba(244, 250, 245, 0.95)",
             color: FOREST,
@@ -1393,7 +1393,7 @@ export default function QuotePageClient({
       )}
       {showDeclineConfirmation && (
         <div
-          className="sticky top-0 z-50 px-4 py-3 text-center text-[12px] sm:text-[13px] font-medium tracking-[0.02em] leading-snug"
+          className="sticky top-0 z-50 box-border w-screen max-w-[100vw] ml-[calc(50%-50vw)] px-4 py-3 text-center text-[12px] sm:text-[13px] font-medium tracking-[0.02em] leading-snug"
           style={{
             backgroundColor: "rgba(244, 250, 245, 0.97)",
             color: FOREST,

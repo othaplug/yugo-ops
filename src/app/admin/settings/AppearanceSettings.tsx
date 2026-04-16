@@ -62,7 +62,7 @@ export default function AppearanceSettings() {
   };
 
   const fieldClass =
-    "w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
+    "admin-premium-input w-full";
 
   const Row = ({
     label,
@@ -170,7 +170,7 @@ export default function AppearanceSettings() {
             <select
               value={dateFormat}
               onChange={(e) => setDateFormat(e.target.value)}
-              className="px-2.5 py-1.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[11px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="admin-premium-input admin-premium-input--compact w-full min-w-0"
             >
               {DATE_FORMATS.map((f) => (
                 <option key={f.value} value={f.value}>
@@ -200,7 +200,7 @@ export default function AppearanceSettings() {
             <select
               value={density}
               onChange={(e) => setDensity(e.target.value)}
-              className="px-2.5 py-1.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[11px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="admin-premium-input admin-premium-input--compact w-full min-w-0"
             >
               {FONT_SIZES.map((f) => (
                 <option key={f.value} value={f.value}>
@@ -225,7 +225,7 @@ export default function AppearanceSettings() {
             <select
               value={defaultPage}
               onChange={(e) => setDefaultPage(e.target.value)}
-              className="px-2.5 py-1.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[11px] text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+              className="admin-premium-input admin-premium-input--compact w-full min-w-0"
             >
               {DEFAULT_PAGES.map((p) => (
                 <option key={p.value} value={p.value}>

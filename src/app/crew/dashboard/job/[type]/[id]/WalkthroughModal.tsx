@@ -526,7 +526,7 @@ export default function WalkthroughModal({
 
   const modal = (
     <div
-      className="fixed inset-0 z-[99995] flex min-h-0 items-center justify-center p-4 sm:p-5"
+      className="premium-field-host fixed inset-0 z-[99995] flex min-h-0 items-center justify-center p-4 sm:p-5"
       data-modal-root
       data-yugo-glass-modal
       data-crew-portal
@@ -824,7 +824,7 @@ export default function WalkthroughModal({
                   {/* Search */}
                   {!selectedItem && (
                     <div>
-                      <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">
+                      <label className="admin-premium-label admin-premium-label--tight">
                         Search item
                       </label>
                       <div className="relative">
@@ -837,7 +837,7 @@ export default function WalkthroughModal({
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           placeholder="e.g. dining table, boxes…"
-                          className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] text-[13px] placeholder:text-[var(--tx3)] outline-none focus:border-[#5C1A33]/60"
+                          className="admin-premium-input w-full pl-10 pr-3 py-2 text-[13px] text-[var(--tx)]"
                         />
                         {searching && (
                           <CircleNotch
@@ -922,13 +922,13 @@ export default function WalkthroughModal({
                   {/* Custom item */}
                   {!selectedItem && customItemName && (
                     <div>
-                      <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">
+                      <label className="admin-premium-label admin-premium-label--tight">
                         Item name
                       </label>
                       <input
                         value={customItemName}
                         onChange={(e) => setCustomItemName(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-lg bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] text-[13px] outline-none"
+                        className="admin-premium-input w-full text-[var(--tx)] text-[13px]"
                       />
                       <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mt-3 mb-1">
                         Weight

@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { resolveAdminMoveListDisplayStatus } from "@/lib/move-status";
+import { pickLatestTrackingSession, resolveAdminMoveListDisplayStatus } from "@/lib/move-status";
 import AllMovesClient from "./AllMovesClient";
 
 export const metadata = { title: "Moves" };
@@ -53,21 +53,30 @@ export default async function AllMovesPage() {
   }
 
   const moveIdList = moves.map((m) => m.id).filter(Boolean) as string[];
-  const latestSessionByMoveId: Record<string, { status: string; created_at: string }> = {};
+  const latestSessionByMoveId: Record<string, { status: string; updated_at: string; created_at: string }> = {};
   if (moveIdList.length > 0) {
     const { data: sessionRows } = await db
       .from("tracking_sessions")
-      .select("job_id, status, created_at")
+      .select("job_id, status, created_at, updated_at")
       .eq("job_type", "move")
       .in("job_id", moveIdList);
+    const byJob = new Map<string, typeof sessionRows>();
     for (const row of sessionRows || []) {
-      const r = row as { job_id?: string; status?: string; created_at?: string };
+      const r = row as { job_id?: string };
       const jid = String(r.job_id || "");
       if (!jid) continue;
-      const created = String(r.created_at || "");
-      const prev = latestSessionByMoveId[jid];
-      if (!prev || created > prev.created_at) {
-        latestSessionByMoveId[jid] = { status: String(r.status || ""), created_at: created };
+      const list = byJob.get(jid) || [];
+      list.push(row);
+      byJob.set(jid, list);
+    }
+    for (const [jid, rows] of byJob) {
+      const best = pickLatestTrackingSession(rows as { created_at?: string; updated_at?: string; status?: string }[]);
+      if (best) {
+        latestSessionByMoveId[jid] = {
+          status: String((best as { status?: string }).status || ""),
+          created_at: String((best as { created_at?: string }).created_at || ""),
+          updated_at: String((best as { updated_at?: string }).updated_at || ""),
+        };
       }
     }
   }

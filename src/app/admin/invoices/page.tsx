@@ -5,6 +5,7 @@ export const revalidate = 0;
 import { createAdminClient } from "@/lib/supabase/admin";
 import BackButton from "../components/BackButton";
 import { formatCompactCurrency } from "@/lib/format-currency";
+import { invoiceGrossForDisplay } from "@/lib/delivery-pricing";
 import KpiCard from "@/components/ui/KpiCard";
 import InvoicesPageClient from "./InvoicesPageClient";
 
@@ -15,7 +16,7 @@ export default async function InvoicesPage() {
   const withOrg = await db
     .from("invoices")
     .select(
-      "*, organizations!organization_id(vertical, type), deliveries!delivery_id(delivery_number), moves!move_id(move_code)",
+      "*, organizations!organization_id(vertical, type), deliveries!delivery_id(delivery_number, final_price, calculated_price, override_price, admin_adjusted_price, total_price, quoted_price), moves!move_id(move_code)",
     )
     .order("created_at", { ascending: false });
 
@@ -62,9 +63,11 @@ export default async function InvoicesPage() {
   const sent = all.filter((i) => i.status === "sent");
   const overdue = all.filter((i) => i.status === "overdue");
   const draft = all.filter((i) => i.status === "draft");
-  const paidTotal = paid.reduce((s, i) => s + Number(i.amount), 0);
-  const sentTotal = sent.reduce((s, i) => s + Number(i.amount), 0);
-  const overdueTotal = overdue.reduce((s, i) => s + Number(i.amount), 0);
+  const sumGross = (rows: typeof all) =>
+    rows.reduce((s, i) => s + invoiceGrossForDisplay(i), 0);
+  const paidTotal = sumGross(paid);
+  const sentTotal = sumGross(sent);
+  const overdueTotal = sumGross(overdue);
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
@@ -115,7 +118,7 @@ export default async function InvoicesPage() {
         <KpiCard
           label="Paid"
           value={formatCompactCurrency(paidTotal)}
-          sub={`${paid.length} ${paid.length === 1 ? "invoice" : "invoices"}`}
+          sub={`${paid.length} ${paid.length === 1 ? "invoice" : "invoices"} · incl. HST`}
           subVariant="tightCaps"
           accent
           href="/admin/revenue"
@@ -123,14 +126,14 @@ export default async function InvoicesPage() {
         <KpiCard
           label="Pending / Sent"
           value={formatCompactCurrency(sentTotal)}
-          sub={`${sent.length} awaiting`}
+          sub={`${sent.length} awaiting · incl. HST`}
           subVariant="tightCaps"
           href="/admin/revenue"
         />
         <KpiCard
           label="Overdue"
           value={formatCompactCurrency(overdueTotal)}
-          sub={`${overdue.length} past due`}
+          sub={`${overdue.length} past due · incl. HST`}
           subVariant="tightCaps"
           warn={overdueTotal > 0}
           href="/admin/revenue"

@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 import Link from "next/link";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
+import { invoicePreTaxForDisplay } from "@/lib/delivery-pricing";
 import { getInvoiceStatusLabel, invoiceStatusBadgeClass } from "@/lib/invoice-admin-status";
 import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
 import { formatAdminCreatedAt } from "@/lib/date-format";
@@ -121,23 +122,28 @@ export default function InvoicesTable({
     {
       id: "amount",
       label: "Amount",
-      accessor: (r) => Number(r.amount),
+      accessor: (r) => invoicePreTaxForDisplay(r),
       render: (r) => {
-        const amt = Number(r.amount);
+        const pre = invoicePreTaxForDisplay(r);
+        if (pre <= 0) {
+          return <span className="dt-amount-neutral">—</span>;
+        }
         return (
           <>
-            <span className="dt-amount-neutral">{formatCurrency(r.amount)}</span>
-            {amt > 0 && (
-              <span className="dt-text-meta ml-1 block sm:inline">
-                +{formatCurrency(calcHST(amt))} HST
-              </span>
-            )}
+            <span className="dt-amount-neutral">{formatCurrency(pre)}</span>
+            <span className="dt-text-meta ml-1 block sm:inline">
+              +{formatCurrency(calcHST(pre))} HST
+            </span>
           </>
         );
       },
       sortable: true,
       align: "right",
-      exportAccessor: (r) => formatCurrency(r.amount),
+      exportAccessor: (r) => {
+        const pre = invoicePreTaxForDisplay(r);
+        if (pre <= 0) return "";
+        return `${formatCurrency(pre)} + ${formatCurrency(calcHST(pre))} HST`;
+      },
     },
     {
       id: "created_at",

@@ -38,10 +38,8 @@ const BLOCK_REASONS = [
   { value: "blocked", label: "Other" },
 ];
 
-const inputCls =
-  "w-full px-3.5 py-3 bg-[var(--bg)] border border-[var(--brd)]/70 rounded-xl text-[var(--text-base)] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)]/60 focus:ring-2 focus:ring-[var(--gold)]/10 outline-none transition-all duration-150";
-const labelCls =
-  "flex items-center gap-1.5 text-[11px] font-semibold tracking-widest uppercase text-[var(--tx2)] mb-2";
+const inputCls = "admin-premium-input w-full";
+const labelCls = "admin-premium-label-row";
 
 export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDate, prefillCrewId, prefillStart, crews }: Props) {
   const [jobType, setJobType] = useState<JobType>("move");

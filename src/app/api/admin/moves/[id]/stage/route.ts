@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
+import { computeOperationalJobAlerts } from "@/lib/jobs/operational-alerts";
+import { estimateDurationFromMoveRow } from "@/lib/jobs/duration-estimate";
+import { maybeNotifyOperationalInJobAlerts } from "@/lib/jobs/operational-alert-notifications";
+import { isMoveIdUuid } from "@/lib/move-code";
+import { pickLatestTrackingSession } from "@/lib/move-status";
 
 /** GET move stage/status for live polling. Staff only. */
 export async function GET(
@@ -10,47 +15,120 @@ export async function GET(
   const { error } = await requireStaff();
   if (error) return error;
 
-  const { id } = await params;
+  const rawSlug = (await params).id?.trim() || "";
   const admin = createAdminClient();
-  const { data, error: fetchErr } = await admin
-    .from("moves")
-    .select("stage, status, updated_at, completed_at")
-    .eq("id", id)
-    .single();
+  const byUuid = isMoveIdUuid(rawSlug);
+  const { data, error: fetchErr } = await (byUuid
+    ? admin
+        .from("moves")
+        .select(
+          "id, stage, status, updated_at, completed_at, estimate, amount, estimated_internal_cost, estimated_duration_minutes, factors_applied, service_type, move_type, distance_km, drive_time_min, est_crew_size, est_hours, inventory_score, from_access, to_access, from_long_carry, to_long_carry, tier_selected, truck_primary, client_name",
+        )
+        .eq("id", rawSlug)
+        .single()
+    : admin
+        .from("moves")
+        .select(
+          "id, stage, status, updated_at, completed_at, estimate, amount, estimated_internal_cost, estimated_duration_minutes, factors_applied, service_type, move_type, distance_km, drive_time_min, est_crew_size, est_hours, inventory_score, from_access, to_access, from_long_carry, to_long_carry, tier_selected, truck_primary, client_name",
+        )
+        .ilike("move_code", rawSlug.replace(/^#/, "").toUpperCase())
+        .single());
 
   if (fetchErr || !data) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const id = (data as { id: string }).id;
 
   const st = (data.status || "").toLowerCase();
   const terminal = st === "completed" || st === "cancelled" || st === "delivered";
   if (!terminal) {
     const { data: sessionRows } = await admin
       .from("tracking_sessions")
-      .select("status, completed_at, created_at")
+      .select("status, completed_at, created_at, updated_at, started_at, is_active")
       .eq("job_id", id)
       .eq("job_type", "move");
-    let best: { status: string; completed_at: string | null; created_at: string } | null = null;
-    for (const r of sessionRows || []) {
-      const created = String((r as { created_at?: string }).created_at || "");
-      if (!best || created > best.created_at) {
-        best = {
-          status: String(r.status || ""),
-          completed_at: (r.completed_at as string | null) ?? null,
-          created_at: created,
-        };
-      }
-    }
-    if (best?.status?.toLowerCase() === "completed") {
+    const best = pickLatestTrackingSession(sessionRows || []);
+    const bestRow = best as { status?: string; completed_at?: string | null } | null;
+    const sessionCompleted =
+      !!bestRow &&
+      ((bestRow.status || "").toLowerCase() === "completed" || !!bestRow.completed_at);
+    if (sessionCompleted) {
       return NextResponse.json(
         {
           ...data,
           status: "completed",
           stage: "completed",
-          completed_at: best.completed_at ?? data.completed_at,
+          completed_at: bestRow!.completed_at ?? data.completed_at,
+          operationalAlerts: null,
         },
         { headers: { "Cache-Control": "no-store, max-age=0" } },
       );
     }
   }
 
-  return NextResponse.json(data, { headers: { "Cache-Control": "no-store, max-age=0" } });
+  let operationalAlerts = null;
+  if (!terminal) {
+    const row = data as Record<string, unknown>;
+    let allocated: number | null =
+      row.estimated_duration_minutes != null &&
+      Number.isFinite(Number(row.estimated_duration_minutes)) &&
+      Number(row.estimated_duration_minutes) > 0
+        ? Math.round(Number(row.estimated_duration_minutes))
+        : null;
+    if (allocated == null) {
+      const dEst = estimateDurationFromMoveRow(row);
+      if (dEst) allocated = dEst.totalMinutes;
+    }
+
+    const { data: activeSess } = await admin
+      .from("tracking_sessions")
+      .select("status, started_at")
+      .eq("job_id", id)
+      .eq("job_type", "move")
+      .eq("is_active", true)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let elapsedMin: number | null = null;
+    if (activeSess?.started_at) {
+      elapsedMin =
+        (Date.now() - new Date(String(activeSess.started_at)).getTime()) /
+        60000;
+    }
+
+    const gross = Number(row.estimate ?? row.amount ?? 0);
+    const intCostRaw = row.estimated_internal_cost;
+    let intCost =
+      intCostRaw != null && Number.isFinite(Number(intCostRaw))
+        ? Number(intCostRaw)
+        : null;
+    if (intCost == null) {
+      const dFallback = estimateDurationFromMoveRow(row);
+      if (dFallback) intCost = dFallback.estimatedCost;
+    }
+
+    operationalAlerts = computeOperationalJobAlerts({
+      jobType: "move",
+      grossRevenue: gross,
+      estimatedInternalCost: intCost,
+      allocatedMinutes: allocated,
+      elapsedMinutes: elapsedMin,
+      trackingStatus: activeSess?.status
+        ? String(activeSess.status)
+        : String((data as { stage?: string }).stage || ""),
+    });
+
+    const clientLabel = String((data as { client_name?: string | null }).client_name || "").trim() || "Customer";
+    void maybeNotifyOperationalInJobAlerts({
+      jobType: "move",
+      jobId: id,
+      clientLabel,
+      alerts: operationalAlerts,
+    });
+  }
+
+  return NextResponse.json(
+    { ...data, operationalAlerts },
+    { headers: { "Cache-Control": "no-store, max-age=0" } },
+  );
 }

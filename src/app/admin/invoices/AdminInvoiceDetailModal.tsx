@@ -287,35 +287,35 @@ export default function AdminInvoiceDetailModal({
                 <div className="mt-4 space-y-4 p-4 rounded-lg bg-[var(--bg)]/30 border border-[var(--brd)]/20">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Subtotal ($)</label>
+                      <label className="admin-premium-label admin-premium-label--tight mb-1">Subtotal ($)</label>
                       <input
                         type="number"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                         min="0"
                         step="0.01"
-                        className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                        className="admin-premium-input w-full"
                       />
                       <div className="mt-1 text-[10px] text-[var(--tx3)]">
                         +{formatCurrency(calcHST(amount || 0))} HST (13%) · Total {formatCurrency(Number(amount || 0) + calcHST(amount || 0))}
                       </div>
                     </div>
                     <div>
-                      <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Due Date</label>
+                      <label className="admin-premium-label admin-premium-label--tight mb-1">Due Date</label>
                       <input
                         type="date"
                         value={dueDate}
                         onChange={(e) => setDueDate(e.target.value)}
-                        className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                        className="admin-premium-input w-full"
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Status</label>
+                    <label className="admin-premium-label admin-premium-label--tight mb-1">Status</label>
                     <select
                       value={status}
                       onChange={(e) => setStatus(e.target.value)}
-                      className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                      className="admin-premium-input w-full"
                     >
                       {STATUS_OPTIONS.map((s) => (
                         <option key={s} value={s}>{STATUS_LABELS[s] ?? s}</option>
@@ -323,7 +323,7 @@ export default function AdminInvoiceDetailModal({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">
+                    <label className="admin-premium-label admin-premium-label--tight mb-1">
                       {fileUrl ? "Replace PDF" : "Upload PDF"}
                     </label>
                     <input

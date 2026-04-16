@@ -127,7 +127,7 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   placeholder="000000"
                   maxLength={6}
-                  className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[20px] text-center font-mono tracking-[0.5em] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                  className="admin-premium-input admin-premium-input--otp w-full font-mono text-[var(--tx)]"
                   autoFocus
                 />
               </div>

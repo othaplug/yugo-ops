@@ -2189,7 +2189,7 @@ function VendorTrackerTab({ data, projectId, onRefresh }: { data: ProjectData; p
           onChange={(e) => handleNoteChange(e.target.value)}
           rows={3}
           placeholder="Internal notes not visible to the designer. Issues, scheduling notes, logistics remarks…"
-          className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] outline-none resize-none focus:border-amber-500/50 transition-colors"
+          className="admin-premium-textarea w-full resize-none"
         />
       </div>
       </section>

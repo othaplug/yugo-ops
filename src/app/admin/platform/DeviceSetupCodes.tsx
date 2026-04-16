@@ -247,7 +247,7 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
       >
         <form onSubmit={handleCreateCode} className="space-y-5">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Truck (optional)</label>
+            <label className="admin-premium-label">Truck (optional)</label>
             <select
               value={formTruckId}
               onChange={(e) => setFormTruckId(e.target.value)}
@@ -267,7 +267,7 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
             </p>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Default Team (optional)</label>
+            <label className="admin-premium-label">Default Team (optional)</label>
             <select
               value={formTeamId}
               onChange={(e) => setFormTeamId(e.target.value)}
@@ -283,7 +283,7 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
             </p>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Device Name (optional)</label>
+            <label className="admin-premium-label">Device Name (optional)</label>
             <input
               type="text"
               value={formDeviceName}
@@ -293,7 +293,7 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Expires in</label>
+            <label className="admin-premium-label">Expires in</label>
             <select
               value={formExpiresInHours}
               onChange={(e) => setFormExpiresInHours(Number(e.target.value))}

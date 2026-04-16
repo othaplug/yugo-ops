@@ -278,11 +278,10 @@ export default function QuoteResidentialDisplaySection({
     }
   };
 
-  const labelCls = "block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5";
-  const inputCls =
-    "w-full px-2.5 py-1.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]/50";
+  const labelCls = "admin-premium-label admin-premium-label--tight";
+  const inputCls = "admin-premium-input admin-premium-input--compact w-full";
   const ta =
-    "w-full min-h-[180px] px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg font-mono text-[11px] leading-relaxed text-[var(--tx)] outline-none focus:border-[var(--gold)]/50";
+    "admin-premium-textarea w-full min-h-[180px] font-mono text-[11px] leading-relaxed";
 
   const list = editorRowsForTier(storage, activeTier);
   const showConvert = isLegacyFullTier(storage, "signature") || isLegacyFullTier(storage, "estate");

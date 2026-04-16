@@ -44,10 +44,13 @@ import { formatAccessForDisplay } from "@/lib/format-text";
 import PageContent from "@/app/admin/components/PageContent";
 import { useCrewImmersiveNav } from "@/app/crew/components/CrewImmersiveNavContext";
 import StageProgressBar from "@/components/StageProgressBar";
+import { InfoHint } from "@/components/ui/InfoHint";
 import JobPhotos from "./JobPhotos";
 import JobInventory from "./JobInventory";
 import DayRateStopFlow from "./DayRateStopFlow";
 import WalkthroughModal from "./WalkthroughModal";
+import CrewJobTimer from "@/app/crew/components/CrewJobTimer";
+import type { OperationalJobAlerts } from "@/lib/jobs/operational-alerts";
 import {
   useCrewPersistentTracking,
   checkLocationPermissions,
@@ -212,6 +215,9 @@ interface JobDetail {
   preMoveChecklistTotal?: number;
   preMoveChecklistAllComplete?: boolean;
   preMoveChecklistNotifiedAt?: string | null;
+  estimatedDurationMinutes?: number | null;
+  marginAlertMinutes?: number | null;
+  operationalAlerts?: OperationalJobAlerts | null;
 }
 
 interface Session {
@@ -384,6 +390,16 @@ export default function CrewJobPage({
     const interval = setInterval(fetchSession, 5000);
     return () => clearInterval(interval);
   }, [fetchSession]);
+
+  useEffect(() => {
+    if (isCompleted || !session?.isActive) return;
+    const tick = () => {
+      void fetchJob();
+    };
+    tick();
+    const id = setInterval(tick, 10000);
+    return () => clearInterval(id);
+  }, [fetchJob, isCompleted, session?.isActive]);
 
   useEffect(() => {
     if (!isCompleted) {
@@ -802,6 +818,23 @@ export default function CrewJobPage({
         </div>
       </div>
 
+      {!isCompleted &&
+        job &&
+        job.estimatedDurationMinutes != null &&
+        job.estimatedDurationMinutes > 0 && (
+          <CrewJobTimer
+            elapsedMs={session?.isActive ? elapsedMs : 0}
+            estimatedMinutes={job.estimatedDurationMinutes}
+            marginAlertMinutes={
+              job.marginAlertMinutes != null && job.marginAlertMinutes > 0
+                ? job.marginAlertMinutes
+                : job.estimatedDurationMinutes
+            }
+            startedAtIso={session?.startedAt ?? null}
+            operationalAlerts={job.operationalAlerts ?? null}
+          />
+        )}
+
       {showStartButton &&
         (locationPermission === "prompt" ||
           locationPermission === "unknown") && (
@@ -1041,40 +1074,52 @@ export default function CrewJobPage({
             </Link>
           )}
 
-          {/* Location + charging note (status pill lives in top bar until job starts) */}
-          <div className="px-2 space-y-3 py-1">
-            {locationPermission === "granted" && showStartButton && (
-              <p className="text-[11px] text-[#5C1A33]/45 text-center leading-relaxed max-w-[340px] mx-auto [font-family:var(--font-body)]">
-                Keep location on for the whole job—live tracking stays active
-                until you finish.
+          {/* Live tracking tips: compact label + InfoHint so the main column stays clear */}
+          {(showStartButton || (session?.isActive && !isCompleted)) && (
+            <div className="px-2 flex justify-center items-center gap-2 py-0.5 min-h-0">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#5C1A33]/30 [font-family:var(--font-body)] select-none">
+                Tracking tips
+              </span>
+              <InfoHint
+                variant="crew"
+                align="center"
+                side="top"
+                iconSize={15}
+                ariaLabel="Tips for live tracking"
+              >
+                <div className="space-y-2 [font-family:var(--font-body)]">
+                  <p>
+                    Keep location on for the whole job. Live tracking stays
+                    active until you finish.
+                  </p>
+                  <p>
+                    {jobType === "delivery"
+                      ? "Keep your device charged during deliveries for uninterrupted tracking."
+                      : "Keep your device charged during moves for uninterrupted tracking."}
+                  </p>
+                </div>
+              </InfoHint>
+            </div>
+          )}
+
+          {session?.isActive &&
+            !isCompleted &&
+            isNavigatingLeg &&
+            canUseLocationActions &&
+            !navDestination && (
+              <p className="px-2 text-[10px] text-[#3d2a22]/65 text-center leading-snug max-w-[380px] mx-auto [font-family:var(--font-body)]">
+                Map routing needs coordinates for this job. Open the Details tab
+                for full addresses, or ask dispatch to verify{" "}
+                {useLogisticsCopy
+                  ? "origin and destination"
+                  : "pickup and drop-off"}{" "}
+                pins. Use{" "}
+                <span className="text-[#5C1A33] font-semibold">
+                  Navigation
+                </span>{" "}
+                in the crew menu when pins are available.
               </p>
             )}
-
-            {session?.isActive &&
-              !isCompleted &&
-              isNavigatingLeg &&
-              canUseLocationActions &&
-              !navDestination && (
-                <p className="text-[11px] text-[#3d2a22]/75 text-center leading-relaxed px-1 max-w-[380px] mx-auto [font-family:var(--font-body)]">
-                  Map routing needs coordinates for this job. Open the Details
-                  tab for full addresses, or ask dispatch to verify{" "}
-                  {useLogisticsCopy
-                    ? "origin and destination"
-                    : "pickup and drop-off"}{" "}
-                  pins. Use{" "}
-                  <span className="text-[#5C1A33] font-semibold">
-                    Navigation
-                  </span>{" "}
-                  in the crew menu when pins are available.
-                </p>
-              )}
-
-            <p className="text-[11px] text-[#5C1A33]/40 text-center leading-relaxed max-w-[340px] mx-auto [font-family:var(--font-body)]">
-              {jobType === "delivery"
-                ? "Keep your device charged during deliveries for uninterrupted tracking."
-                : "Keep your device charged during moves for uninterrupted tracking."}
-            </p>
-          </div>
 
           {showStartButton && (
             <div className="px-2 space-y-3">
@@ -1310,9 +1355,9 @@ export default function CrewJobPage({
           <div>
             {/* Header — wine serif title + forest meta (premium crew delivery / move) */}
             <div className="flex items-center justify-between pb-3 border-b border-[#5C1A33]/[0.08]">
-              <p className="font-hero text-[15px] font-semibold text-[#5C1A33] leading-none tracking-tight">
+              <h2 className="font-hero text-[22px] sm:text-[24px] font-semibold text-[#5C1A33] leading-tight tracking-tight">
                 Timeline
-              </p>
+              </h2>
               {session?.startedAt && (
                 <span className="text-[10px] font-medium tabular-nums [font-family:var(--font-body)] text-[var(--tx3)]">
                   Started{" "}
@@ -1894,7 +1939,7 @@ export default function CrewJobPage({
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[99990]"
+            className="premium-field-host fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[99990]"
             data-modal-root
             data-crew-portal
             style={{
@@ -1945,7 +1990,7 @@ export default function CrewJobPage({
               ) : (
                 <>
                   <div className="mb-4">
-                    <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">
+                    <label className="admin-premium-label admin-premium-label--tight">
                       Issue type
                     </label>
                     <select
@@ -1955,7 +2000,7 @@ export default function CrewJobPage({
                         setReportType(v);
                         setReportUrgency(defaultUrgencyForIssue(v));
                       }}
-                      className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--brd)] outline-none"
+                      className="admin-premium-input w-full text-[var(--tx)]"
                     >
                       {MOVE_DAY_ISSUE_OPTIONS.map((o) => (
                         <option key={o.code} value={o.code}>
@@ -1965,7 +2010,7 @@ export default function CrewJobPage({
                     </select>
                   </div>
                   <div className="mb-4">
-                    <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">
+                    <label className="admin-premium-label admin-premium-label--tight">
                       Urgency
                     </label>
                     <select
@@ -1975,7 +2020,7 @@ export default function CrewJobPage({
                           e.target.value as "high" | "medium" | "low",
                         )
                       }
-                      className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--brd)] outline-none"
+                      className="admin-premium-input w-full text-[var(--tx)]"
                     >
                       <option value="high">High</option>
                       <option value="medium">Medium</option>
@@ -1983,7 +2028,7 @@ export default function CrewJobPage({
                     </select>
                   </div>
                   <div className="mb-4">
-                    <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">
+                    <label className="admin-premium-label admin-premium-label--tight">
                       Description
                     </label>
                     <textarea
@@ -1991,7 +2036,7 @@ export default function CrewJobPage({
                       onChange={(e) => setReportDesc(e.target.value)}
                       placeholder="Describe what happened..."
                       rows={3}
-                      className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--brd)] outline-none resize-none"
+                      className="admin-premium-textarea w-full resize-none text-[var(--tx)]"
                     />
                   </div>
                   <div className="flex gap-3">

@@ -220,7 +220,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
           This person will be able to log in to the Crew Portal (tablet/phone) with their phone and PIN. Select from roster members who don&apos;t yet have access.
         </p>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team member</label>
+          <label className="admin-premium-label">Team member</label>
           <select
             value={name}
             onChange={(e) => {
@@ -229,7 +229,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
               const team = activeTeams.find((t) => (t.memberIds || []).some((m) => nameMatches(m, v)));
               if (team) setTeamId(team.id);
             }}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
           >
             <option value="">Choose team member…</option>
             {availableForPortal.map((n) => (
@@ -241,7 +241,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
           )}
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone (for login)</label>
+          <label className="admin-premium-label">Phone (for login)</label>
           <input
             ref={phoneInput.ref}
             type="tel"
@@ -251,7 +251,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
               setStaleDuplicate(null);
             }}
             placeholder={PHONE_PLACEHOLDER}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
           />
           {(phoneOwner || staleDuplicate) && (
             <p className="text-[11px] text-[var(--tx2)] mt-2 p-3 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/25">
@@ -270,7 +270,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
           )}
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">PIN (6 digits)</label>
+          <label className="admin-premium-label">PIN (6 digits)</label>
           <input
             type="password"
             inputMode="numeric"
@@ -278,15 +278,15 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
             placeholder="000000"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] font-mono text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full font-mono"
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team</label>
+          <label className="admin-premium-label">Team</label>
           <select
             value={teamId}
             onChange={(e) => setTeamId(e.target.value)}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
           >
             <option value="">Choose team…</option>
             {activeTeams.map((t) => (
@@ -295,11 +295,11 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
+          <label className="admin-premium-label">Role</label>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as "lead" | "specialist" | "driver")}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
           >
             <option value="lead">Lead (shown first on tablet)</option>
             <option value="specialist">Specialist</option>

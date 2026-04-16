@@ -209,6 +209,21 @@ export function resolveAdminMoveListDisplayStatus(
   return raw;
 }
 
+/**
+ * Pick the tracking row the crew most recently touched. Using `created_at` alone misses
+ * completion (same row: `updated_at` moves forward when status becomes completed).
+ */
+export function pickLatestTrackingSession<
+  T extends { created_at?: string | null; updated_at?: string | null },
+>(rows: T[] | null | undefined): T | null {
+  if (!rows?.length) return null;
+  return rows.reduce((best, row) => {
+    const bt = Date.parse(String(best.updated_at || best.created_at || 0)) || 0;
+    const rt = Date.parse(String(row.updated_at || row.created_at || 0)) || 0;
+    return rt >= bt ? row : best;
+  });
+}
+
 /** True when the move is finished (completed or legacy delivered). */
 export function isMoveStatusCompleted(status: string | null | undefined): boolean {
   const s = (status || "").toLowerCase().trim();

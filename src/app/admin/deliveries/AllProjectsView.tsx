@@ -474,7 +474,7 @@ export default function AllDeliveriesView({
             <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Filters</span>
             <button type="button" onClick={() => setFilterOpen(false)} className="text-[var(--gold)] text-[11px] font-medium">Done</button>
           </div>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5">
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="admin-premium-input w-full">
             {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <MoveDateFilter value={moveDatePreset} onChange={setMoveDatePreset} label="Date" />

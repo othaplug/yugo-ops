@@ -1,5 +1,9 @@
 import { isDeliveryId } from "@/lib/delivery-number";
-import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
+import {
+  deliveryPreTaxForAdminList,
+  invoicePreTaxForDisplay,
+  type DeliveryPriceFields,
+} from "@/lib/delivery-pricing";
 
 /**
  * Shared B2B / partner revenue: Command Center, Finance → Revenue, reports.
@@ -19,8 +23,8 @@ export type PartnerRevenueInvoice = {
   updated_at?: string | null;
   paid_at?: string | null;
   deliveries?:
-    | { delivery_number?: string | null }
-    | { delivery_number?: string | null }[]
+    | (DeliveryPriceFields & { delivery_number?: string | null })
+    | (DeliveryPriceFields & { delivery_number?: string | null })[]
     | null;
 };
 
@@ -120,7 +124,7 @@ export function getInvoiceRevenueDate(inv: PartnerRevenueInvoice): Date {
   return ts ? new Date(ts) : new Date(0);
 }
 
-/** Deliveries that have any non-cancelled invoice: use invoice amounts, not delivery row. */
+/** Deliveries that have any non-cancelled invoice: use invoice line (delivery-priced when embedded), not delivery row fallback. */
 export function deliveryIdsCoveredByAnyInvoice(
   invoices: PartnerRevenueInvoice[],
 ): Set<string> {
@@ -141,13 +145,13 @@ export function sumPaidPartnerInvoicesInMonth(
   for (const inv of paidPartnerInvoices) {
     const d = getInvoiceRevenueDate(inv);
     if (d.getFullYear() === year && d.getMonth() === month) {
-      sum += Number(inv.amount ?? 0);
+      sum += invoicePreTaxForDisplay(inv);
     }
   }
   return sum;
 }
 
-type DeliveryRow = Parameters<typeof effectiveDeliveryPrice>[0] & {
+type DeliveryRow = DeliveryPriceFields & {
   id: string;
   status?: string | null;
   scheduled_date?: string | null;
@@ -169,7 +173,7 @@ export function partnerDeliveryFallbackInMonth(
     const ts = String(d.scheduled_date || d.created_at || "");
     const dt = ts ? new Date(ts) : new Date(0);
     if (dt.getFullYear() === year && dt.getMonth() === month) {
-      sum += effectiveDeliveryPrice(d);
+      sum += deliveryPreTaxForAdminList(d);
     }
   }
   return sum;
@@ -211,14 +215,14 @@ export function partnerRevenueLifetime(
     isPartnerChannelInvoice(i, orgIdToType, clientTypeMap),
   );
   const invPart = paidPartner.reduce(
-    (s, i) => s + Number(i.amount ?? 0),
+    (s, i) => s + invoicePreTaxForDisplay(i),
     0,
   );
   let dlvPart = 0;
   for (const d of paidDeliveries) {
     if (!PAID_DLV_STATUSES.has(String(d.status || "").toLowerCase())) continue;
     if (covered.has(String(d.id))) continue;
-    dlvPart += effectiveDeliveryPrice(d);
+    dlvPart += deliveryPreTaxForAdminList(d);
   }
   return invPart + dlvPart;
 }

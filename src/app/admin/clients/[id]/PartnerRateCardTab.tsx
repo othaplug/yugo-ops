@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 import { formatCurrency } from "@/lib/format-currency";
+import { InfoHint } from "@/components/ui/InfoHint";
 import { PM_PRIMARY_REASON_CODES_ORDERED } from "@/lib/partners/pm-portal-move-types";
 
 /* ─── Types ─── */
@@ -307,7 +308,7 @@ function EditOverrideModal({
             step={1}
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            className="w-full px-3 py-2 text-[13px] font-semibold bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)]"
+            className="admin-premium-input w-full font-semibold"
             autoFocus
           />
         </div>
@@ -331,7 +332,7 @@ function EditOverrideModal({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="e.g. Negotiated rate for Q1 2026"
-            className="w-full px-3 py-2 text-[11px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)]"
+            className="admin-premium-input w-full"
           />
         </div>
 
@@ -397,9 +398,13 @@ function PmRateEditModal({
   return (
     <ModalOverlay open onClose={onClose} title={title} maxWidth="sm">
       <div className="p-5 space-y-4">
-        <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
-          Weekday rate is the base. Weekend pricing adds the weekend amount on Fri to Sun (same rule as the partner portal).
-        </p>
+        <div className="flex justify-end">
+          <InfoHint variant="admin" align="end" ariaLabel="Weekday and weekend rates">
+            <p className="text-[11px] leading-relaxed">
+              Weekday rate is the base. Weekend pricing adds the weekend amount on Fri to Sun (same rule as the partner portal).
+            </p>
+          </InfoHint>
+        </div>
         <div>
           <label className="block text-[10px] font-semibold text-[var(--tx2)] mb-1.5">Weekday base ($)</label>
           <input
@@ -408,7 +413,7 @@ function PmRateEditModal({
             step={1}
             value={baseStr}
             onChange={(e) => setBaseStr(e.target.value)}
-            className="w-full px-3 py-2 text-[13px] font-semibold bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)]"
+            className="admin-premium-input w-full font-semibold"
             autoFocus
           />
         </div>
@@ -420,7 +425,7 @@ function PmRateEditModal({
             step={1}
             value={wkndStr}
             onChange={(e) => setWkndStr(e.target.value)}
-            className="w-full px-3 py-2 text-[13px] font-semibold bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)]"
+            className="admin-premium-input w-full font-semibold"
           />
         </div>
         <div className="flex gap-2 pt-1">
@@ -475,7 +480,7 @@ function RateCardSettingsModal({
           <select
             value={templateId}
             onChange={(e) => setTemplateId(e.target.value)}
-            className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)]"
+            className="admin-premium-input w-full"
           >
             <option value="">- No template -</option>
             {templates.map((t) => (
@@ -513,7 +518,7 @@ function RateCardSettingsModal({
             type="number" min={0} max={100} step={1}
             value={discount}
             onChange={(e) => setDiscount(e.target.value)}
-            className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)]"
+            className="admin-premium-input w-full"
           />
           <p className="text-[9px] text-[var(--tx3)] mt-1">Applied to all template rates. Overridden cells use their custom value instead.</p>
         </div>
@@ -803,17 +808,21 @@ export default function PartnerRateCardTab({
   );
 
   /* ─── Render ─── */
+  const rateCardContextHint = showPortfolioMatrix
+    ? showTemplatePmMatrix
+      ? "Residential move pricing from the Property & Portfolio template (local zone). Activate a fixed-rate portfolio contract to store partner-specific rates in pm_rate_cards."
+      : "Residential move pricing by move reason and unit size (local zone). The partner portal and PM pricing APIs use this matrix, not B2B per-piece delivery rates."
+    : templateKind === "referral"
+      ? "Referral partners earn commission on completed moves; delivery rate tables do not apply."
+      : "Rates shown are base prices for standard access (elevator/ground). Walk-up, long carry, and heavy item surcharges may apply to per-delivery bookings.";
+
   return (
     <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
-      <p className="text-[11px] text-[var(--tx3)] mb-4">
-        {showPortfolioMatrix
-          ? showTemplatePmMatrix
-            ? "Residential move pricing from the Property & Portfolio template (local zone). Activate a fixed-rate portfolio contract to store partner-specific rates in pm_rate_cards."
-            : "Residential move pricing by move reason and unit size (local zone). The partner portal and PM pricing APIs use this matrix, not B2B per-piece delivery rates."
-          : templateKind === "referral"
-            ? "Referral partners earn commission on completed moves; delivery rate tables do not apply."
-            : "Rates shown are base prices for standard access (elevator/ground). Walk-up, long carry, and heavy item surcharges may apply to per-delivery bookings."}
-      </p>
+      <div className="flex justify-end mb-3">
+        <InfoHint variant="admin" align="end" ariaLabel="About this rate card">
+          <p className="text-[11px] leading-relaxed">{rateCardContextHint}</p>
+        </InfoHint>
+      </div>
       {/* Header */}
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-2">
         <div className="flex flex-col sm:flex-row sm:items-start gap-4">

@@ -75,7 +75,7 @@ export default function MoveModificationQuickForm({
           <select
             value={type}
             onChange={(e) => setType(e.target.value)}
-            className="mt-0.5 w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2 py-1.5 text-[12px] text-[var(--tx)]"
+            className="mt-0.5 admin-premium-input w-full"
           >
             <option value="date_change">Date change</option>
             <option value="address_change">Address change</option>
@@ -89,7 +89,7 @@ export default function MoveModificationQuickForm({
             type="date"
             value={newDate}
             onChange={(e) => setNewDate(e.target.value)}
-            className="mt-0.5 w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2 py-1.5 text-[12px] text-[var(--tx)]"
+            className="mt-0.5 admin-premium-input w-full"
           />
         </label>
         <label className="text-[10px] text-[var(--tx3)]">
@@ -100,7 +100,7 @@ export default function MoveModificationQuickForm({
             value={newPrice}
             onChange={(e) => setNewPrice(e.target.value)}
             placeholder="Leave blank to keep"
-            className="mt-0.5 w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2 py-1.5 text-[12px] text-[var(--tx)]"
+            className="mt-0.5 admin-premium-input w-full"
           />
         </label>
         <label className="text-[10px] text-[var(--tx3)] sm:col-span-2">
@@ -108,7 +108,7 @@ export default function MoveModificationQuickForm({
           <input
             value={newFrom}
             onChange={(e) => setNewFrom(e.target.value)}
-            className="mt-0.5 w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2 py-1.5 text-[12px] text-[var(--tx)]"
+            className="mt-0.5 admin-premium-input w-full"
           />
         </label>
         <label className="text-[10px] text-[var(--tx3)] sm:col-span-2">
@@ -116,7 +116,7 @@ export default function MoveModificationQuickForm({
           <input
             value={newTo}
             onChange={(e) => setNewTo(e.target.value)}
-            className="mt-0.5 w-full bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2 py-1.5 text-[12px] text-[var(--tx)]"
+            className="mt-0.5 admin-premium-input w-full"
           />
         </label>
       </div>

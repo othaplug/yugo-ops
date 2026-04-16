@@ -1,38 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSuperAdminEmail } from "@/lib/super-admin";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-function parseDevice(ua: string | null): string {
-  if (!ua) return "Unknown";
-  if (/iPhone|iPad|iPod/i.test(ua)) return "iOS";
-  if (/Android/i.test(ua)) return "Android";
-  if (/Mac OS X/i.test(ua)) {
-    if (/Chrome/i.test(ua)) return "Mac / Chrome";
-    if (/Safari/i.test(ua)) return "Mac / Safari";
-    if (/Firefox/i.test(ua)) return "Mac / Firefox";
-    return "Mac";
-  }
-  if (/Windows/i.test(ua)) {
-    if (/Chrome/i.test(ua)) return "Windows / Chrome";
-    if (/Firefox/i.test(ua)) return "Windows / Firefox";
-    if (/Edge/i.test(ua)) return "Windows / Edge";
-    return "Windows";
-  }
-  if (/Linux/i.test(ua)) return "Linux";
-  return "Browser";
-}
+/** Login history is recorded from POST /api/auth/audit-login and /auth/callback, not here. */
 
-function getClientIp(req: NextRequest): string {
-  const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) return first;
-  }
-  return req.headers.get("x-real-ip")?.trim() || "-";
-}
-
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -45,14 +18,6 @@ export async function GET(req: NextRequest) {
     const admin = createAdminClient();
 
     if (isSuperAdminEmail(user.email)) {
-      void Promise.resolve(
-        admin.from("login_history").insert({
-          user_id: user.id,
-          device: parseDevice(req.headers.get("user-agent")),
-          ip_address: getClientIp(req),
-          status: "success",
-        })
-      ).catch(() => {});
       return NextResponse.json({ role: "admin" });
     }
 
@@ -65,13 +30,6 @@ export async function GET(req: NextRequest) {
 
     if (platformUser) {
       const role = platformUser.role || "";
-      // Record login event fire-and-forget — never block the response
-      void Promise.resolve(admin.from("login_history").insert({
-        user_id: user.id,
-        device: parseDevice(req.headers.get("user-agent")),
-        ip_address: getClientIp(req),
-        status: "success",
-      })).catch(() => {});
 
       if (role === "client") return NextResponse.json({ role: "client" });
       if (["owner", "admin", "manager", "dispatcher", "coordinator", "viewer", "sales"].includes(role)) {

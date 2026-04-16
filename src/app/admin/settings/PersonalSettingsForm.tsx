@@ -65,9 +65,9 @@ export default function PersonalSettingsForm({
   };
 
   const fieldClass =
-    "w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
+    "admin-premium-input w-full";
 
-  const labelClass = "block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5";
+  const labelClass = "admin-premium-label admin-premium-label--tight";
 
   return (
     <div className="space-y-5">
@@ -127,10 +127,10 @@ export default function PersonalSettingsForm({
       <div>
         <label className={labelClass}>Time zone</label>
         <div className={`${fieldClass} opacity-90 cursor-default`}>
-          Eastern Time (Toronto) — all schedules and times use this zone
+          Eastern Time (Toronto). All schedules and times use this zone.
         </div>
         <p className="text-[10px] text-[var(--tx3)] mt-1.5">
-          Set APP_TIMEZONE / NEXT_PUBLIC_APP_TIMEZONE to America/Toronto in deployment if you ever need to change the business region.
+          This timezone applies across Yugo for your organization. If you need it changed, ask your administrator.
         </p>
       </div>
 

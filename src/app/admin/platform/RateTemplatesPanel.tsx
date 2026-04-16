@@ -6,6 +6,7 @@ import ModalOverlay from "../components/ModalOverlay";
 import CreateButton from "../components/CreateButton";
 import { useToast } from "../components/Toast";
 import { formatPlatformDisplay } from "@/lib/date-format";
+import { InfoHint } from "@/components/ui/InfoHint";
 
 /* ─── Types ─── */
 
@@ -227,9 +228,13 @@ function TemplateRateEditor({
     return (
       <ModalOverlay open onClose={onClose} title={`Edit: ${data.template.template_name}`} maxWidth="lg">
         <div className="p-5 space-y-4 overflow-y-auto" style={{ maxHeight: "75vh" }}>
-          <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
-            Referral partners use commission structures instead of delivery rates. Commission JSON lives on the template; use the SQL editor or a future admin tool to change it.
-          </p>
+          <div className="flex justify-end">
+            <InfoHint variant="admin" align="end" ariaLabel="Referral commission templates">
+              <p className="text-[11px] leading-relaxed">
+                Referral partners use commission structures instead of delivery rates. Commission JSON lives on the template; use the SQL editor or a future admin tool to change it.
+              </p>
+            </InfoHint>
+          </div>
           <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
             <table className="w-full text-[11px]">
               <thead>
@@ -749,7 +754,7 @@ function CreateTemplateModal({
             value={name}
             onChange={(e) => handleNameChange(e.target.value)}
             placeholder="e.g. Furniture & Design"
-            className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)]"
+            className="admin-premium-input w-full"
           />
         </div>
         <div>
@@ -757,7 +762,7 @@ function CreateTemplateModal({
           <input
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
-            className="w-full px-3 py-2 text-[11px] font-mono bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx3)]"
+            className="admin-premium-input w-full font-mono text-[var(--tx3)] admin-premium-input--compact"
           />
         </div>
         <div>
@@ -766,7 +771,7 @@ function CreateTemplateModal({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="w-full px-3 py-2 text-[11px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)] resize-none placeholder:text-[var(--tx3)]"
+            className="admin-premium-textarea w-full resize-none"
           />
         </div>
         <div>
@@ -774,7 +779,7 @@ function CreateTemplateModal({
           <select
             value={copyFrom}
             onChange={(e) => setCopyFrom(e.target.value)}
-            className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)]"
+            className="admin-premium-input w-full"
           >
             <option value="">- Start blank -</option>
             {existingTemplates.map((t) => (
@@ -843,7 +848,7 @@ function EditTemplateNameModal({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Furniture & Design"
-            className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)]"
+            className="admin-premium-input w-full"
           />
         </div>
         <div>
@@ -852,7 +857,7 @@ function EditTemplateNameModal({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="w-full px-3 py-2 text-[11px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)] resize-none placeholder:text-[var(--tx3)]"
+            className="admin-premium-textarea w-full resize-none"
           />
         </div>
         <div className="flex gap-2 pt-1">

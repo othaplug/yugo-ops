@@ -80,17 +80,17 @@ export default function AddTeamMemberModal({ open, onClose, teams, onTeamsChange
     <ModalOverlay open={open} onClose={handleClose} title="Add Team Member" maxWidth="sm">
       <form onSubmit={(e) => { e.preventDefault(); handleAdd(); }} className="p-5 space-y-4">
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Search crew member</label>
+          <label className="admin-premium-label">Search crew member</label>
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Type name to search…"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Select member</label>
+          <label className="admin-premium-label">Select member</label>
           <div className="max-h-32 overflow-y-auto flex flex-wrap gap-2 p-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg">
             {filteredCrew.map((m) => (
               <button
@@ -109,11 +109,11 @@ export default function AddTeamMemberModal({ open, onClose, teams, onTeamsChange
           </div>
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Assign to team</label>
+          <label className="admin-premium-label">Assign to team</label>
           <select
             value={selectedTeamId}
             onChange={(e) => setSelectedTeamId(e.target.value)}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input w-full"
           >
             <option value="">Choose team…</option>
             {teams.filter((t) => t.active).map((t) => (

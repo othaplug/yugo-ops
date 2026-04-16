@@ -37,6 +37,11 @@ export async function computeB2BDimensionalForOrg(
   const loaded = await loadB2BVerticalPricing(admin, opts.verticalCode, opts.partnerOrganizationId);
   if (!loaded) return null;
 
+  const { data: cfgRows } = await admin.from("platform_config").select("key, value").like("key", "truck_fee_%");
+  const platformConfig: Record<string, string> = Object.fromEntries(
+    (cfgRows ?? []).map((r) => [r.key, String(r.value ?? "")]),
+  );
+
   const raw = opts.items.filter((i) => i.quantity > 0 && i.description.trim());
   const mergedCalc = mergedRatesWithBundleTiers(loaded.mergedRates as Record<string, unknown>);
   const engineItems = prepareB2bLineItemsForDimensionalEngine(
@@ -66,6 +71,7 @@ export async function computeB2BDimensionalForOrg(
     totalDistanceKm: distKm,
     roundingNearest: opts.roundingNearest,
     parkingLongCarryTotal: 0,
+    platformConfig,
   });
 
   return {

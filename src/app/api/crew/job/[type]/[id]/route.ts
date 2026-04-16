@@ -11,6 +11,12 @@ import {
   isPreMoveChecklistComplete,
   preMoveChecklistCounts,
 } from "@/lib/pre-move-checklist";
+import {
+  capMarginAlertMinutes,
+  estimateDurationFromMoveRow,
+} from "@/lib/jobs/duration-estimate";
+import { computeOperationalJobAlerts } from "@/lib/jobs/operational-alerts";
+import { maybeNotifyOperationalInJobAlerts } from "@/lib/jobs/operational-alert-notifications";
 
 const COMPLEXITY_BADGE_LABELS: Record<string, string> = {
   specialty_transport: "Specialty transport",
@@ -161,6 +167,83 @@ export async function GET(
       partnerVertical = (org?.type as string | null) ?? null;
     }
 
+    const estDurD =
+      (d as { estimated_duration_minutes?: number | null }).estimated_duration_minutes;
+    const marginD = (d as { margin_alert_minutes?: number | null }).margin_alert_minutes;
+
+    let deliveryEstMin =
+      estDurD != null && Number.isFinite(Number(estDurD)) && Number(estDurD) > 0
+        ? Number(estDurD)
+        : null;
+    let deliveryMarginMin =
+      marginD != null && Number.isFinite(Number(marginD)) && Number(marginD) > 0
+        ? Number(marginD)
+        : null;
+    if (deliveryEstMin == null || deliveryEstMin <= 0) {
+      const n = rawItems.length;
+      deliveryEstMin = Math.max(45, Math.min(600, 30 + n * 20));
+      deliveryMarginMin = Math.round(deliveryEstMin * 1.12);
+    } else if (deliveryMarginMin == null || deliveryMarginMin <= 0) {
+      deliveryMarginMin = deliveryEstMin;
+    }
+    if (
+      deliveryEstMin != null &&
+      deliveryEstMin > 0 &&
+      deliveryMarginMin != null
+    ) {
+      deliveryMarginMin = capMarginAlertMinutes(
+        deliveryEstMin,
+        deliveryMarginMin,
+      );
+    }
+
+    const { data: delTrack } = await admin
+      .from("tracking_sessions")
+      .select("status, started_at")
+      .eq("job_id", d.id)
+      .eq("job_type", "delivery")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let delElapsedMin: number | null = null;
+    if (delTrack?.started_at) {
+      delElapsedMin =
+        (Date.now() -
+          new Date(String(delTrack.started_at)).getTime()) /
+        60000;
+    }
+    const delGross = Number(
+      (d as { total_price?: number; quoted_price?: number }).total_price ??
+        (d as { quoted_price?: number }).quoted_price ??
+        0,
+    );
+    const delIntCost = (d as { estimated_internal_cost?: number | null })
+      .estimated_internal_cost;
+    const delCost =
+      delIntCost != null && Number.isFinite(Number(delIntCost))
+        ? Number(delIntCost)
+        : null;
+
+    const deliveryOperationalAlerts = computeOperationalJobAlerts({
+      jobType: "delivery",
+      grossRevenue: delGross,
+      estimatedInternalCost: delCost,
+      allocatedMinutes: deliveryEstMin,
+      elapsedMinutes: delElapsedMin,
+      trackingStatus: delTrack?.status ? String(delTrack.status) : null,
+    });
+
+    const deliveryClientLabel =
+      `${d.customer_name || ""}${d.client_name ? ` (${d.client_name})` : ""}`.trim() || "Customer";
+    void maybeNotifyOperationalInJobAlerts({
+      jobType: "delivery",
+      jobId: d.id,
+      clientLabel: deliveryClientLabel,
+      alerts: deliveryOperationalAlerts,
+    });
+
     return NextResponse.json({
       viewerCrewMemberId: payload.crewMemberId,
       viewerCrewMemberName: payload.name,
@@ -201,6 +284,9 @@ export async function GET(
       fuelPriceCadPerLitre,
       serviceType,
       partnerVertical,
+      estimatedDurationMinutes: deliveryEstMin,
+      marginAlertMinutes: deliveryMarginMin,
+      operationalAlerts: deliveryOperationalAlerts,
     });
   }
 
@@ -264,6 +350,78 @@ export async function GET(
     preMoveChecklistCounts(checklistRaw);
   const preMoveChecklistAllComplete = isPreMoveChecklistComplete(checklistRaw);
 
+  const estDurM = (m as { estimated_duration_minutes?: number | null }).estimated_duration_minutes;
+  const marginM = (m as { margin_alert_minutes?: number | null }).margin_alert_minutes;
+
+  let moveEstMin =
+    estDurM != null && Number.isFinite(Number(estDurM)) && Number(estDurM) > 0
+      ? Number(estDurM)
+      : null;
+  let moveMarginMin =
+    marginM != null && Number.isFinite(Number(marginM)) && Number(marginM) > 0
+      ? Number(marginM)
+      : null;
+  if (moveEstMin == null || moveEstMin <= 0) {
+    const dEst = estimateDurationFromMoveRow(m as Record<string, unknown>);
+    if (dEst) {
+      moveEstMin = dEst.totalMinutes;
+      moveMarginMin = dEst.maxMinutesBeforeMarginAlert;
+    }
+  } else if (moveMarginMin == null || moveMarginMin <= 0) {
+    moveMarginMin = moveEstMin;
+  }
+  if (moveEstMin != null && moveEstMin > 0 && moveMarginMin != null) {
+    moveMarginMin = capMarginAlertMinutes(moveEstMin, moveMarginMin);
+  }
+
+  const { data: moveTrack } = await admin
+    .from("tracking_sessions")
+    .select("status, started_at")
+    .eq("job_id", m.id)
+    .eq("job_type", "move")
+    .eq("is_active", true)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let moveElapsedMin: number | null = null;
+  if (moveTrack?.started_at) {
+    moveElapsedMin =
+      (Date.now() - new Date(String(moveTrack.started_at)).getTime()) /
+      60000;
+  }
+  const moveGross = Number(
+    (m as { estimate?: number; amount?: number }).estimate ??
+      (m as { amount?: number }).amount ??
+      0,
+  );
+  const moveIntRaw = (m as { estimated_internal_cost?: number | null })
+    .estimated_internal_cost;
+  let moveIntCost =
+    moveIntRaw != null && Number.isFinite(Number(moveIntRaw))
+      ? Number(moveIntRaw)
+      : null;
+  if (moveIntCost == null) {
+    const dFallback = estimateDurationFromMoveRow(m as Record<string, unknown>);
+    if (dFallback) moveIntCost = dFallback.estimatedCost;
+  }
+
+  const operationalAlerts = computeOperationalJobAlerts({
+    jobType: "move",
+    grossRevenue: moveGross,
+    estimatedInternalCost: moveIntCost,
+    allocatedMinutes: moveEstMin,
+    elapsedMinutes: moveElapsedMin,
+    trackingStatus: moveTrack?.status ? String(moveTrack.status) : null,
+  });
+
+  void maybeNotifyOperationalInJobAlerts({
+    jobType: "move",
+    jobId: m.id,
+    clientLabel: (m.client_name || "").trim() || "Customer",
+    alerts: operationalAlerts,
+  });
+
   return NextResponse.json({
     viewerCrewMemberId: payload.crewMemberId,
     viewerCrewMemberName: payload.name,
@@ -303,5 +461,8 @@ export async function GET(
     preMoveChecklistNotifiedAt:
       (m as { pre_move_checklist_notified_at?: string | null }).pre_move_checklist_notified_at ??
       null,
+    estimatedDurationMinutes: moveEstMin,
+    marginAlertMinutes: moveMarginMin,
+    operationalAlerts,
   });
 }

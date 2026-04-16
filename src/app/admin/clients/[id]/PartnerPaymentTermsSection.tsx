@@ -81,7 +81,7 @@ export default function PartnerPaymentTermsSection({
         <select
           value={value}
           onChange={(e) => setValue(e.target.value as PaymentTermValue)}
-          className="px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--gold)] outline-none min-w-[220px]"
+          className="admin-premium-input min-w-[220px] text-[var(--tx)]"
         >
           <optgroup label="Days from invoice">
             <option value="net_15">{termLabels.net_15}</option>

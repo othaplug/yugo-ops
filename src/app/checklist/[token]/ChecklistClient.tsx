@@ -7,6 +7,7 @@ import {
   filterChecklistItems,
   drawerItemText,
 } from "@/lib/client-move-checklist";
+import { InfoHint } from "@/components/ui/InfoHint";
 
 export default function ChecklistClient({
   token,
@@ -121,10 +122,16 @@ export default function ChecklistClient({
           ))}
         </div>
 
-        <p className="text-[11px] text-[var(--tx3)] text-center mt-10 leading-relaxed">
-          Questions? Open your move from the tracking link in your email or call your
-          coordinator.
-        </p>
+        <div className="mt-10 flex justify-center items-center gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--tx3)]">
+            Need help?
+          </span>
+          <InfoHint variant="default" ariaLabel="How to reach your coordinator" align="center">
+            <p className="text-[11px] leading-relaxed">
+              Questions? Open your move from the tracking link in your email or call your coordinator.
+            </p>
+          </InfoHint>
+        </div>
       </div>
     </div>
   );

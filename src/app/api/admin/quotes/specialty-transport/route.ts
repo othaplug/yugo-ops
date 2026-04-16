@@ -11,10 +11,10 @@ import {
   weightSurchargeDollars,
   ZONE_FEES,
   ZONE_LABELS,
-  VEHICLE_BASE,
   type VehicleType,
   type ZoneTier,
 } from "@/lib/specialty-quote/cost-model";
+import { getTruckFeeSync } from "@/lib/pricing/truck-fees";
 
 export const dynamic = "force-dynamic";
 
@@ -91,6 +91,12 @@ export async function POST(req: NextRequest) {
       ? Number(body.zone_fee_override)
       : null;
 
+  const sbForCost = createAdminClient();
+  const { data: truckCfgRows } = await sbForCost.from("platform_config").select("key, value").like("key", "truck_fee_%");
+  const platformConfig: Record<string, string> = Object.fromEntries(
+    (truckCfgRows ?? []).map((r) => [r.key, String(r.value ?? "")]),
+  );
+
   const costInput = {
     crewCount,
     jobHours,
@@ -103,6 +109,7 @@ export async function POST(req: NextRequest) {
     zoneTier,
     zoneFeeOverride: Number.isFinite(zoneFeeOverride) ? zoneFeeOverride : null,
     stairFlights,
+    platformConfig,
   };
 
   const built = buildSpecialtyCostLines(costInput);
@@ -154,7 +161,7 @@ export async function POST(req: NextRequest) {
   const moveDate = body.move_date != null && String(body.move_date).trim() ? String(body.move_date).trim() : null;
   const dimensionsText = String(body.dimensions_text || "").trim();
 
-  const sb = createAdminClient();
+  const sb = sbForCost;
   const { data: configRows } = await sb.from("platform_config").select("key, value");
   const expiryDays = cfgNum(configRows ?? [], "quote_expiry_days", 7);
   const hsTok = process.env.HUBSPOT_ACCESS_TOKEN ?? null;
@@ -187,7 +194,7 @@ export async function POST(req: NextRequest) {
   }
 
   const wSur = weightSurchargeDollars(weightLbs);
-  const vBase = VEHICLE_BASE[vehicleType];
+  const vBase = getTruckFeeSync(vehicleType, platformConfig);
   const truckBreakdownLine = `${vehicleType === "sprinter" ? "Sprinter" : vehicleType === "16ft" ? "16 ft" : "26 ft"} $${vBase} + weight $${wSur}`;
 
   const tax = hstOnPrice(clientPricePreTax);

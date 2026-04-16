@@ -27,6 +27,11 @@ import {
   whiteGloveWrapAndAssemblyCounts,
   type OfficeScheduleFlags,
 } from "@/lib/pricing/non-residential-quote-calcs";
+import {
+  formatTruckBreakdownLine,
+  formatTruckResidentialUpgradeLine,
+  getTruckFeeSync,
+} from "@/lib/pricing/truck-fees";
 import { loadB2BVerticalPricing } from "@/lib/pricing/b2b-vertical-load";
 import {
   mergedRatesWithBundleTiers,
@@ -48,6 +53,14 @@ import {
   expectedInventoryScoreForMoveSize,
 } from "@/lib/pricing/margin-cost-model";
 import { evaluateServiceAreaForQuote } from "@/lib/pricing/service-area";
+import {
+  aggregateAccessSurchargesForLabourValidation,
+  aggregateSpecialtySurchargesForLabourValidation,
+  resolveLabourValidationCrewHours,
+  truckTypeForLabourValidation,
+  validateLabourRate,
+  type LabourValidationResult,
+} from "@/lib/pricing/labour-validation";
 import {
   calculateEstateDays,
   estateLoadedLabourCost,
@@ -288,6 +301,9 @@ interface QuoteInput {
   bin_linked_move_id?: string | null;
   bin_delivery_notes?: string;
   internal_notes?: string;
+  /** Provenance (e.g. widget lead conversion) */
+  quote_source?: string;
+  source_request_id?: string | null;
   // Recommended tier (coordinator's manual selection)
   recommended_tier?: "essential" | "signature" | "estate";
   // Custom crating (all service types)
@@ -439,18 +455,6 @@ function recommendedTruckFromInventoryScore(score: number): TruckKey {
   return "26ft";
 }
 
-function truckSurchargeAmount(config: Map<string, string>, truck: TruckKey): number {
-  if (truck === "none") return 0;
-  const m = parseJsonConfig<Record<string, number>>(config, "truck_surcharges", {
-    sprinter: 0,
-    "16ft": 75,
-    "20ft": 150,
-    "24ft": 200,
-    "26ft": 250,
-  });
-  return m[truck] ?? 0;
-}
-
 /** Default truck included in base rate for each move size (no surcharge if recommendation matches). */
 const BASE_TRUCK_FOR_MOVE_SIZE: Record<string, TruckKey> = {
   studio: "sprinter",
@@ -462,19 +466,8 @@ const BASE_TRUCK_FOR_MOVE_SIZE: Record<string, TruckKey> = {
   "5br_plus": "26ft",
 };
 
-const TRUCK_UPGRADE_CHAIN: TruckKey[] = ["sprinter", "16ft", "20ft", "24ft", "26ft"];
-
-function truckSizeRank(t: TruckKey): number {
-  if (t === "none") return -1;
-  const i = TRUCK_UPGRADE_CHAIN.indexOf(t);
-  return i >= 0 ? i : 2;
-}
-
-/**
- * Residential: surcharge only when recommended truck is larger than the tier default for move size.
- * Upgrade fees are per step along sprinter → 16ft → 20ft → 24ft → 26ft (config: truck_upgrade_step_surcharges).
- */
-function residentialTruckUpgradeSurcharge(
+/** Residential: add fee difference when inventory recommends a larger truck than the tier default. */
+function residentialTruckFeeUpgrade(
   config: Map<string, string>,
   moveSize: string | undefined,
   recommended: TruckKey,
@@ -482,39 +475,9 @@ function residentialTruckUpgradeSurcharge(
   if (recommended === "none") return 0;
   const ms = moveSize ?? "2br";
   const baseTruck = BASE_TRUCK_FOR_MOVE_SIZE[ms] ?? "16ft";
-  const baseRank = truckSizeRank(baseTruck);
-  const recRank = truckSizeRank(recommended);
-  if (recRank <= baseRank) return 0;
-
-  const steps = parseJsonConfig<Record<string, number>>(config, "truck_upgrade_step_surcharges", {
-    sprinter_16ft: 50,
-    "16ft_20ft": 75,
-    "20ft_24ft": 50,
-    "24ft_26ft": 50,
-  });
-
-  let total = 0;
-  for (let r = baseRank; r < recRank; r++) {
-    const from = TRUCK_UPGRADE_CHAIN[r];
-    const to = TRUCK_UPGRADE_CHAIN[r + 1];
-    const key = `${from}_${to}`;
-    total += steps[key] ?? 0;
-  }
-  return total;
-}
-
-function truckBreakdownLabel(truck: TruckKey, surcharge: number): string {
-  if (truck === "none") return "No truck (on-site)";
-  const labels: Record<TruckKey, string> = {
-    sprinter: "Sprinter",
-    "16ft": "16ft",
-    "20ft": "20ft",
-    "24ft": "24ft",
-    "26ft": "26ft",
-    none: "No truck",
-  };
-  const name = labels[truck] ?? truck;
-  return surcharge > 0 ? `Truck: ${name} (+$${surcharge})` : `Truck: ${name} (base)`;
+  const feeRec = getTruckFeeSync(recommended, config);
+  const feeBase = getTruckFeeSync(baseTruck, config);
+  return Math.max(0, feeRec - feeBase);
 }
 
 /** Defaults when platform_config `b2b_weight_surcharges` is missing or partial */
@@ -1257,7 +1220,7 @@ async function calcResidential(
   const recTruck = input.truck_type
     ? normalizeTruckType(input.truck_type)
     : recommendedTruckFromInventoryScore(truckSizingScore);
-  const truckSur = residentialTruckUpgradeSurcharge(config, input.move_size, recTruck);
+  const truckSur = residentialTruckFeeUpgrade(config, input.move_size, recTruck);
 
   const estateDayPlan = calculateEstateDays(input.move_size ?? "2br", invResult.inventoryScore);
   const loadedRateForEstateSchedule = crewLoadedHourlyRate(config);
@@ -1693,6 +1656,7 @@ async function calcResidential(
       parking_long_carry_total: plc.total,
       truck_recommended: recTruck,
       truck_surcharge: truckSur,
+      truck_breakdown_line: formatTruckResidentialUpgradeLine(recTruck, truckSur),
       packing_supplies_included: estateSuppliesAllowance,
       crating_total: cratingTotal,
       crating_pieces_count: input.crating_pieces?.length ?? 0,
@@ -1790,7 +1754,7 @@ async function calcOffice(
 
   const truckOffice = normalizeTruckType(input.truck_type ?? "16ft");
   const truckCount = Math.max(1, Math.floor(input.office_truck_count ?? 1));
-  const truckSur = officeTruckSurchargeStack(truckOffice, truckCount);
+  const truckSur = officeTruckSurchargeStack(truckOffice, truckCount, config);
   subtotal += truckSur;
 
   const minOffice = cfgNum(config, "office_minimum", 800);
@@ -1816,7 +1780,7 @@ async function calcOffice(
   const estHours = input.office_estimated_hours ?? estimateOfficeHours(workstationCount, scheduleFlags);
   const loadedRate = cfgNum(config, "crew_loaded_hourly_rate", 28);
   const estCost =
-    estCrew * estHours * loadedRate + estimateOfficeTruckOpsCost(truckOffice, truckCount);
+    estCrew * estHours * loadedRate + estimateOfficeTruckOpsCost(truckOffice, truckCount, config);
   const marginPct = price > 0 ? Math.round((1 - estCost / price) * 100) : 0;
 
   price += addonResult.total;
@@ -1897,7 +1861,7 @@ async function calcLongDistance(
 
   const plcLd = parkingLongCarryLineTotal(config, input, "both");
   const truckLd = normalizeTruckType(input.truck_type ?? "20ft");
-  price += plcLd.total + truckSurchargeAmount(config, truckLd);
+  price += plcLd.total + getTruckFeeSync(truckLd, config);
 
   price += addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
@@ -1930,7 +1894,7 @@ async function calcLongDistance(
       neighbourhood_tier: neighbourhood.tier,
       parking_long_carry_total: plcLd.total,
       truck_recommended: truckLd,
-      truck_surcharge: truckSurchargeAmount(config, truckLd),
+      truck_surcharge: getTruckFeeSync(truckLd, config),
     },
   };
 }
@@ -1992,7 +1956,7 @@ async function calcSingleItem(
   const defaultTruck =
     category === "extra_heavy" || category === "heavy" ? "16ft" : "sprinter";
   const truckSi = normalizeTruckType(input.truck_type ?? defaultTruck);
-  price += plcSi.total + truckSurchargeAmount(config, truckSi);
+  price += plcSi.total + getTruckFeeSync(truckSi, config);
 
   const roundingSi = cfgNum(config, "rounding_nearest", 25);
   price = roundTo(price, roundingSi);
@@ -2039,7 +2003,7 @@ async function calcSingleItem(
       assembly_surcharge: assemblySurcharge,
       parking_long_carry_total: plcSi.total,
       truck_recommended: truckSi,
-      truck_surcharge: truckSurchargeAmount(config, truckSi),
+      truck_surcharge: getTruckFeeSync(truckSi, config),
       single_item_hours_estimated: estHours,
       single_item_crew_estimated: estCrew,
     },
@@ -2080,7 +2044,7 @@ async function calcWhiteGlove(
   price += assemblyQty * asmEach;
 
   const truckWg = normalizeTruckType(input.truck_type ?? "sprinter");
-  price += truckSurchargeAmount(config, truckWg);
+  price += getTruckFeeSync(truckWg, config);
 
   const distFreeWg = 15;
   if (distKm > distFreeWg) {
@@ -2138,7 +2102,7 @@ async function calcWhiteGlove(
       white_glove_declared_value_premium: dvPrem,
       distance_km: distKm,
       truck_recommended: truckWg,
-      truck_surcharge: truckSurchargeAmount(config, truckWg),
+      truck_surcharge: getTruckFeeSync(truckWg, config),
       parking_long_carry_total: plcWg.total,
       access_surcharge: fromWg + toWg,
       labour_rate: crewRate,
@@ -2213,7 +2177,7 @@ async function calcSpecialty(
 
   const plcSp = parkingLongCarryLineTotal(config, input, "both");
   const truckSp = normalizeTruckType(input.truck_type ?? "20ft");
-  price += plcSp.total + truckSurchargeAmount(config, truckSp);
+  price += plcSp.total + getTruckFeeSync(truckSp, config);
 
   const spMin = cfgNum(config, "specialty_minimum_price", 500);
   if (price < spMin) price = spMin;
@@ -2255,7 +2219,7 @@ async function calcSpecialty(
       climate_surcharge: input.climate_control ? climateSur : 0,
       parking_long_carry_total: plcSp.total,
       truck_recommended: truckSp,
-      truck_surcharge: truckSurchargeAmount(config, truckSp),
+      truck_surcharge: getTruckFeeSync(truckSp, config),
       specialty_building_requirements: input.specialty_building_requirements ?? [],
       specialty_access_difficulty: input.specialty_access_difficulty || null,
     },
@@ -2403,6 +2367,7 @@ async function calcB2bOneoff(
       roundingNearest: rounding,
       parkingLongCarryTotal: plcB2b.total,
       pricingExtras: b2bExtrasForDim,
+      platformConfig: config,
     });
 
     const partnerOrgId = input.b2b_partner_organization_id?.trim() || null;
@@ -2420,6 +2385,7 @@ async function calcB2bOneoff(
           roundingNearest: rounding,
           parkingLongCarryTotal: plcB2b.total,
           pricingExtras: listUseZones ? [] : b2bLocationExtras.lines,
+          platformConfig: config,
         });
       }
     }
@@ -2439,9 +2405,7 @@ async function calcB2bOneoff(
     const deposit = price < 300 ? price : 100;
 
     const truckKey = normalizeTruckType(dim.truck);
-    const verticalTruckRates =
-      (loaded.mergedRates.truck_rates as Record<string, number> | undefined) || {};
-    const truckSurchargeDim = Number(verticalTruckRates[dim.truck] ?? 0) || 0;
+    const truckSurchargeDim = getTruckFeeSync(dim.truck, config);
 
     const b2bFeatures = await fetchTierFeatures(sb, "b2b_delivery", "custom");
     const includes = [
@@ -2540,7 +2504,7 @@ async function calcB2bOneoff(
   if (price < 200) price = 200;
 
   const truckB2b = normalizeTruckType(input.truck_type ?? "20ft");
-  price += plcB2b.total + truckSurchargeAmount(config, truckB2b);
+  price += plcB2b.total + getTruckFeeSync(truckB2b, config);
 
   price += b2bLocationExtras.lines.reduce((s, l) => s + l.amount, 0);
   price += addonResult.total;
@@ -2579,7 +2543,7 @@ async function calcB2bOneoff(
       b2b_items: input.b2b_items || null,
       parking_long_carry_total: plcB2b.total,
       truck_recommended: truckB2b,
-      truck_surcharge: truckSurchargeAmount(config, truckB2b),
+      truck_surcharge: getTruckFeeSync(truckB2b, config),
       b2b_payment_method: input.b2b_payment_method ?? "card",
       b2b_invoice_terms:
         input.b2b_payment_method === "invoice"
@@ -2822,7 +2786,7 @@ async function computeEventLegPrice(
   const lcFee = cfgNum(input.config, "long_carry_surcharge", 75);
   const longSur = (input.fromLongCarry ? lcFee : 0) + (input.toLongCarry ? lcFee : 0);
 
-  const truckSur = input.skipTruckSurcharge ? 0 : truckSurchargeAmount(input.config, input.truckType);
+  const truckSur = input.skipTruckSurcharge ? 0 : getTruckFeeSync(input.truckType, input.config);
   const [oa, va] = await Promise.all([
     getAccessSurcharge(sb, input.fromAccess),
     getAccessSurcharge(sb, input.toAccess),
@@ -2973,7 +2937,7 @@ async function calcEvent(
       event_same_location_onsite: onSite,
       event_type_label: onSite ? "On-site Event" : "Venue delivery",
       truck_surcharge: core.truckSurcharge,
-      truck_breakdown_line: truckBreakdownLabel(truckType, core.truckSurcharge),
+      truck_breakdown_line: formatTruckBreakdownLine(truckType, config),
       event_parking_surcharge: core.parkingSurcharge,
       event_long_carry_surcharge: core.longCarrySurcharge,
       distance_km: distEff?.distance_km ?? 0,
@@ -3152,7 +3116,7 @@ async function calcMultiEvent(
       same_day: false,
       event_is_luxury: isLuxury,
       event_truck_type: defaultTruck,
-      truck_breakdown_line: truckBreakdownLabel(defaultTruck, truckSurchargeAmount(config, defaultTruck)),
+      truck_breakdown_line: formatTruckBreakdownLine(defaultTruck, config),
       event_delivery_labour: totalLabourLine,
       event_distance_surcharge: totalDistSur,
       event_wrapping_surcharge: totalWrapSur,
@@ -3286,6 +3250,8 @@ function omitMarginEstimateFields(factors: unknown): unknown {
   delete o.estimated_margin_signature;
   delete o.estimated_margin_estate;
   delete o.estimated_margin_curated;
+  delete o.labour_validation;
+  delete o.labour_validation_by_tier;
   return o;
 }
 
@@ -3785,14 +3751,9 @@ export async function POST(req: NextRequest) {
     if (typeof factors.b2b_estimated_hours === "number") displayHours = factors.b2b_estimated_hours;
   }
 
-  if (
-    factors &&
-    typeof factors.truck_surcharge === "number" &&
-    factors.truck_recommended != null &&
-    factors.truck_breakdown_line == null
-  ) {
+  if (factors && factors.truck_recommended != null && factors.truck_breakdown_line == null) {
     const tk = normalizeTruckType(String(factors.truck_recommended));
-    factors = { ...factors, truck_breakdown_line: truckBreakdownLabel(tk, factors.truck_surcharge) };
+    factors = { ...factors, truck_breakdown_line: formatTruckBreakdownLine(tk, config) };
   }
 
   // For non-residential custom_price quotes, add coordinator crating lines to subtotal
@@ -4084,6 +4045,100 @@ export async function POST(req: NextRequest) {
     };
   }
 
+  const factorsRecord = factors as Record<string, unknown>
+  const distKmLabour = distInfo?.distance_km ?? 0
+  const svcForLabour =
+    svcType === "b2b_oneoff" ? "b2b_delivery" : svcType
+  const accessLabour = aggregateAccessSurchargesForLabourValidation(factorsRecord)
+  const specialtyLabour = aggregateSpecialtySurchargesForLabourValidation(svcType, factorsRecord)
+  const truckLabour = truckTypeForLabourValidation(factorsRecord)
+  const { crewSize: labCrew, estimatedHours: labHours } = resolveLabourValidationCrewHours(
+    svcType,
+    labour,
+    displayCrew,
+    displayHours,
+    factorsRecord,
+  )
+
+  let labour_validation_by_tier: Record<string, LabourValidationResult> | undefined
+  let labour_validation_primary: LabourValidationResult
+
+  if (tiers) {
+    labour_validation_by_tier = {}
+    for (const tk of ["essential", "signature", "estate"] as const) {
+      const tierRow = tiers[tk]
+      if (!tierRow) continue
+      labour_validation_by_tier[tk] = validateLabourRate(
+        {
+          serviceType: svcForLabour,
+          tier: tk,
+          totalPrice: tierRow.price,
+          crewSize: labCrew,
+          estimatedHours: labHours,
+          truckType: truckLabour,
+          distanceKm: distKmLabour,
+          specialtySurcharges: specialtyLabour,
+          accessSurcharges: accessLabour,
+        },
+        config,
+      )
+    }
+    labour_validation_primary =
+      labour_validation_by_tier.essential ??
+      labour_validation_by_tier.signature ??
+      Object.values(labour_validation_by_tier)[0] ??
+      validateLabourRate(
+        {
+          serviceType: svcForLabour,
+          tier: "essential",
+          totalPrice: 0,
+          crewSize: Math.max(1, labCrew),
+          estimatedHours: Math.max(0.25, labHours),
+          truckType: truckLabour,
+          distanceKm: distKmLabour,
+          specialtySurcharges: specialtyLabour,
+          accessSurcharges: accessLabour,
+        },
+        config,
+      )
+  } else if (custom_price) {
+    labour_validation_primary = validateLabourRate(
+      {
+        serviceType: svcForLabour,
+        tier: "essential",
+        totalPrice: custom_price.price,
+        crewSize: labCrew,
+        estimatedHours: labHours,
+        truckType: truckLabour,
+        distanceKm: distKmLabour,
+        specialtySurcharges: specialtyLabour,
+        accessSurcharges: accessLabour,
+      },
+      config,
+    )
+  } else {
+    labour_validation_primary = validateLabourRate(
+      {
+        serviceType: svcForLabour,
+        tier: "essential",
+        totalPrice: enginePreTaxHeadline,
+        crewSize: Math.max(1, labCrew),
+        estimatedHours: Math.max(0.25, labHours),
+        truckType: truckLabour,
+        distanceKm: distKmLabour,
+        specialtySurcharges: specialtyLabour,
+        accessSurcharges: accessLabour,
+      },
+      config,
+    )
+  }
+
+  factors = {
+    ...factors,
+    labour_validation: labour_validation_primary,
+    ...(labour_validation_by_tier ? { labour_validation_by_tier } : {}),
+  }
+
   const isUpdate = !isPreview && !!input.quote_id?.trim();
   let quoteId: string;
   if (isPreview) {
@@ -4134,6 +4189,8 @@ export async function POST(req: NextRequest) {
   if (!isPreview) {
     const quotePayload = {
       hubspot_deal_id: input.hubspot_deal_id || null,
+      quote_source: input.quote_source?.trim() || null,
+      source_request_id: input.source_request_id?.trim() || null,
       contact_id: contactId,
       service_type: svcType === "b2b_oneoff" ? "b2b_delivery" : svcType === "event" ? "event" : svcType === "labour_only" ? "labour_only" : svcType,
       status: "draft",
@@ -4180,6 +4237,11 @@ export async function POST(req: NextRequest) {
       crating_pieces: input.crating_pieces ?? [],
       crating_total: cratingForDisplay,
       supplies_allowance: estateSuppliesAllowance,
+      labour_rate_per_mover: labour_validation_primary.effectiveRate,
+      labour_validation_status: labour_validation_primary.status,
+      labour_validation_message: labour_validation_primary.message,
+      labour_component: labour_validation_primary.labourComponent,
+      non_labour_component: labour_validation_primary.nonLabourComponent,
     };
 
     if (isUpdate) {
@@ -4261,6 +4323,18 @@ export async function POST(req: NextRequest) {
         }
       }
     }
+
+    const reqId = input.source_request_id?.trim();
+    if (reqId && qUuidRow?.id) {
+      await sb
+        .from("quote_requests")
+        .update({
+          quote_id: qUuidRow.id,
+          converted_at: new Date().toISOString(),
+          status: "quote_sent",
+        })
+        .eq("id", reqId);
+    }
   }
 
   const expiresAtStr = new Date(Date.now() + expiryDays * 86_400_000).toISOString();
@@ -4315,6 +4389,11 @@ export async function POST(req: NextRequest) {
   } else {
     response.custom_price = custom_price;
     response.deposit_amount = custom_price?.deposit ?? primaryPrice;
+  }
+
+  response.labour_validation = labour_validation_primary;
+  if (labour_validation_by_tier) {
+    response.labour_validation_by_tier = labour_validation_by_tier;
   }
 
   response.valuation = {

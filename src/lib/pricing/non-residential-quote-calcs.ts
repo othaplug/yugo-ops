@@ -3,6 +3,8 @@
  * Used by `src/app/api/quotes/generate/route.ts` — keep free of Next/HTTP imports.
  */
 
+import { getTruckFeeSync } from "@/lib/pricing/truck-fees";
+
 export type PricingConfigMap = Map<string, string>;
 
 function cfgNum(config: PricingConfigMap, key: string, fallback: number): number {
@@ -36,31 +38,26 @@ export function estimateOfficeHours(workstations: number, flags: OfficeScheduleF
 
 export type TruckKey = "sprinter" | "16ft" | "20ft" | "24ft" | "26ft" | "none";
 
-const OFFICE_TRUCK_SURCHARGES: Record<TruckKey, number> = {
-  sprinter: 0,
-  "16ft": 75,
-  "20ft": 150,
-  "24ft": 200,
-  "26ft": 250,
-  none: 0,
-};
-
-export function officeTruckSurchargeStack(truck: TruckKey, truckCount: number): number {
-  const base = OFFICE_TRUCK_SURCHARGES[truck] ?? 0;
-  if (truckCount <= 1) return base;
-  return base + (truckCount - 1) * (base + 200);
+/** Office move: first truck bills full platform truck fee; extra trucks follow legacy spacing using increment vs sprinter. */
+export function officeTruckSurchargeStack(
+  truck: TruckKey,
+  truckCount: number,
+  config: PricingConfigMap,
+): number {
+  if (truck === "none") return 0;
+  const fee = getTruckFeeSync(truck, config);
+  const spr = getTruckFeeSync("sprinter", config);
+  const inc = Math.max(0, fee - spr);
+  if (truckCount <= 1) return fee;
+  return fee + (truckCount - 1) * (inc + 200);
 }
 
-export function estimateOfficeTruckOpsCost(truck: TruckKey, truckCount: number): number {
-  const perTruck: Record<TruckKey, number> = {
-    sprinter: 45,
-    "16ft": 85,
-    "20ft": 120,
-    "24ft": 140,
-    "26ft": 165,
-    none: 0,
-  };
-  const unit = perTruck[truck] ?? 85;
+export function estimateOfficeTruckOpsCost(
+  truck: TruckKey,
+  truckCount: number,
+  config: PricingConfigMap,
+): number {
+  const unit = Math.max(40, Math.round(getTruckFeeSync(truck, config) * 0.52));
   return unit * Math.max(1, truckCount);
 }
 

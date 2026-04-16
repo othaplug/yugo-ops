@@ -8,6 +8,7 @@ import {
   inferB2bWeightCategoryFromLbs,
   normalizeB2bWeightCategory,
 } from "./b2b-weight-helpers";
+import { getTruckFeeSync } from "@/lib/pricing/truck-fees";
 import {
   calculateWeightSurchargeForLine,
   getWeightTier,
@@ -444,6 +445,8 @@ export function calculateB2BDimensionalPrice(args: {
   parkingLongCarryTotal?: number;
   /** Applied before minimum charge / final rounding bucket. */
   pricingExtras?: B2BPricingExtraLine[];
+  /** platform_config map for truck_fee_* keys (per-job truck allocation). */
+  platformConfig?: Map<string, string> | Record<string, unknown>;
 }): B2BDimensionalPriceResult {
   const vc = args.mergedRates;
   const method = (args.vertical.pricing_method || "dimensional").toLowerCase();
@@ -752,11 +755,11 @@ export function calculateB2BDimensionalPrice(args: {
     recommendedTruckByWeight,
   );
   const truck = (args.input.truck_override || recommendedTruck).toLowerCase().replace(/\s+/g, "");
-  const truckRates = (vc.truck_rates as Record<string, number> | undefined) || {};
-  const truckSurcharge = num(truckRates[truck], 0);
-  if (truckSurcharge > 0 && method !== "flat") {
-    totalPrice += truckSurcharge;
-    breakdown.push({ label: `${truck} truck`, amount: truckSurcharge });
+  const truckFeeAmount =
+    dimOn && method !== "flat" ? getTruckFeeSync(truck, args.platformConfig ?? null) : 0;
+  if (truckFeeAmount > 0 && dimOn && method !== "flat") {
+    totalPrice += truckFeeAmount;
+    breakdown.push({ label: `${truck} truck allocation`, amount: truckFeeAmount });
   }
 
   const distKm = Math.max(0, args.totalDistanceKm);

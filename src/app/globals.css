@@ -119,6 +119,14 @@
   --font-heading: "Instrument Sans", "DM Sans", system-ui, sans-serif;
   --font-hero: "Instrument Serif", serif;
   --font-body: "DM Sans", system-ui, sans-serif;
+  /* App-wide system UI stack (Apple-adjacent); pair with var(--font-body) for brand DM Sans */
+  --app-font-ui:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    sans-serif;
+  /* Fixed chrome height (top bars, offsets); matches h-12 / 3rem */
+  --app-chrome-h: 3rem;
+  --app-r: 8px;
+  --app-r-md: 12px;
 }
 
 /* Light theme for client tracking (Yugo prototype style) */
@@ -214,18 +222,21 @@
 }
 
 [data-theme="dark"] .glass-topbar {
-  background: var(--yu-bg-chrome);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border-bottom: 0.5px solid rgba(139, 26, 58, 0.3);
+  background: color-mix(in srgb, var(--yu-bg-chrome) 82%, transparent);
+  border-bottom: 0.5px solid rgba(139, 26, 58, 0.32);
   box-shadow: none;
+  backdrop-filter: saturate(150%) blur(28px);
+  -webkit-backdrop-filter: saturate(150%) blur(28px);
 }
 
 [data-theme="dark"] .glass-sidebar {
-  background: var(--yu-bg-sidebar);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border-right: 0.5px solid rgba(139, 26, 58, 0.25);
+  background: color-mix(in srgb, var(--yu-bg-sidebar) 86%, transparent);
+  border-right: 0.5px solid rgba(139, 26, 58, 0.28);
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
+  backdrop-filter: saturate(145%) blur(32px);
+  -webkit-backdrop-filter: saturate(145%) blur(32px);
 }
 
 [data-theme="dark"] .glass-card {
@@ -281,7 +292,7 @@
 }
 
 [data-theme="dark"] .sidebar-nav-lift:hover {
-  transform: translateX(3px);
+  transform: translateX(2px);
   background-color: rgba(139, 26, 58, 0.12) !important;
   color: var(--tx) !important;
   box-shadow: none;
@@ -395,7 +406,7 @@ html {
  */
 
 body {
-  font-family: var(--font-body);
+  font-family: var(--app-font-ui), var(--font-body);
   font-size: 16px;
   line-height: 1.5;
   background: var(--bg);
@@ -966,7 +977,7 @@ html:has(.estate-welcome-root) {
     border-color 0.15s var(--ease-smooth);
 }
 .sidebar-nav-lift:hover {
-  transform: translateX(3px);
+  transform: translateX(2px);
   background-color: rgba(201, 169, 98, 0.1) !important;
   color: var(--gold) !important;
   box-shadow:
@@ -978,14 +989,15 @@ html:has(.estate-welcome-root) {
   color: var(--gold) !important;
 }
 
-html[data-theme="light"] .admin-app .sidebar-nav-lift:hover {
+html[data-theme="light"] :is(.admin-app, .crew-app) .sidebar-nav-lift:hover {
   background-color: rgba(102, 20, 61, 0.09) !important;
   color: var(--yugo-primary-text) !important;
-  box-shadow:
-    0 1px 4px rgba(0, 0, 0, 0.06),
-    inset 0 0 0 1px rgba(102, 20, 61, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
-html[data-theme="light"] .admin-app .sidebar-nav-lift:hover .sidebar-icon {
+html[data-theme="light"]
+  :is(.admin-app, .crew-app)
+  .sidebar-nav-lift:hover
+  .sidebar-icon {
   color: var(--gold) !important;
 }
 
@@ -1057,9 +1069,24 @@ html[data-theme="light"] .admin-app .admin-row-hover:hover {
   --font-heading: var(--font-body);
   /* Wine page canvas — does not depend on Tailwind resolving `bg-[var(--bg)]` */
   background-color: var(--yu-bg-page);
-  /* Architectural chrome — tight corners (partner / quote-adjacent) */
-  --admin-r: 2px;
-  --admin-r-md: 4px;
+  --admin-chrome-h: var(--app-chrome-h);
+  --admin-r: var(--app-r);
+  --admin-r-md: var(--app-r-md);
+  --admin-font-ui: var(--app-font-ui);
+  font-family: var(--app-font-ui), var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Partner + crew shells: same system typography as root (explicit for nested resets) */
+.partner-app,
+.crew-app {
+  font-family: var(--app-font-ui), var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.crew-app {
+  --admin-chrome-h: var(--app-chrome-h);
 }
 html[data-theme="light"] .admin-app {
   background-color: var(--bg);
@@ -1084,6 +1111,193 @@ html[data-theme="light"] .admin-app a:focus-visible,
 html[data-theme="light"] .admin-app button:focus-visible,
 html[data-theme="light"] .admin-app [role="button"]:focus-visible {
   outline-color: var(--yugo-accent);
+}
+
+/* Admin + crew: premium line fields (uppercase label + single bottom rule; cream canvas) */
+:is(.admin-app, .crew-app, .premium-field-host) {
+  --admin-field-forest: #2c3e2d;
+  --admin-field-rule: color-mix(in srgb, var(--tx3) 62%, var(--brd) 38%);
+}
+html[data-theme="light"] :is(.admin-app, .crew-app, .premium-field-host) {
+  --admin-field-rule: color-mix(in srgb, var(--tx3) 48%, #7a6a58 52%);
+}
+[data-theme="dark"] :is(.admin-app, .crew-app, .premium-field-host) {
+  --admin-field-rule: color-mix(in srgb, var(--tx3) 55%, var(--brd) 45%);
+}
+
+:is(.admin-app, .crew-app, .premium-field-host) .admin-premium-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tx3);
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+  font-family: var(--font-body);
+}
+
+:is(.admin-app, .crew-app, .premium-field-host) .admin-premium-label--tight {
+  margin-bottom: 0.375rem;
+}
+
+:is(.admin-app, .crew-app, .premium-field-host) .admin-premium-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tx3);
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+  font-family: var(--font-body);
+}
+
+:is(.admin-app, .crew-app, .premium-field-host) .admin-premium-input,
+:is(.admin-app, .crew-app, .premium-field-host) .admin-premium-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-bottom: 1px solid var(--admin-field-rule);
+  border-radius: 0;
+  background: transparent;
+  color: var(--tx);
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition-fast) var(--ease-smooth);
+}
+
+:is(.admin-app, .crew-app, .premium-field-host) .admin-premium-input {
+  font-size: 16px;
+  line-height: 1.45;
+  padding: 10px 0;
+}
+@media (min-width: 640px) {
+  :is(.admin-app, .crew-app, .premium-field-host) .admin-premium-input {
+    font-size: 13px;
+    padding: 8px 0;
+  }
+}
+
+:is(.admin-app, .crew-app, .premium-field-host)
+  .admin-premium-input::placeholder,
+:is(.admin-app, .crew-app, .premium-field-host)
+  .admin-premium-textarea::placeholder {
+  color: color-mix(in srgb, var(--tx3) 52%, var(--tx2) 48%);
+}
+
+:is(.admin-app, .crew-app, .premium-field-host) .admin-premium-input:focus,
+:is(.admin-app, .crew-app, .premium-field-host) .admin-premium-textarea:focus {
+  border-bottom-color: var(--admin-field-forest);
+  box-shadow: none;
+}
+
+html[data-theme="light"]
+  :is(.admin-app, .crew-app, .premium-field-host)
+  .admin-premium-input:focus,
+html[data-theme="light"]
+  :is(.admin-app, .crew-app, .premium-field-host)
+  .admin-premium-textarea:focus {
+  border-bottom-color: var(--admin-field-forest);
+}
+
+[data-theme="dark"]
+  :is(.admin-app, .crew-app, .premium-field-host)
+  .admin-premium-input:focus,
+[data-theme="dark"]
+  :is(.admin-app, .crew-app, .premium-field-host)
+  .admin-premium-textarea:focus {
+  border-bottom-color: color-mix(in srgb, var(--yugo-accent) 75%, #fff 25%);
+}
+
+/* Native selects share the line treatment; chevron on the right */
+:is(.admin-app, .crew-app, .premium-field-host) select.admin-premium-input {
+  appearance: none;
+  padding-right: 1.75rem;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%238a8782' viewBox='0 0 256 256'%3E%3Cpath d='M213.66 101.66l-80 80a8 8 0 0 1-11.32 0l-80-80A8 8 0 0 1 53.66 90.34L128 164.69l74.34-74.35a8 8 0 0 1 11.32 11.32z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.1rem center;
+  background-size: 1rem 1rem;
+}
+
+html[data-theme="light"]
+  :is(.admin-app, .crew-app, .premium-field-host)
+  select.admin-premium-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23675648' viewBox='0 0 256 256'%3E%3Cpath d='M213.66 101.66l-80 80a8 8 0 0 1-11.32 0l-80-80A8 8 0 0 1 53.66 90.34L128 164.69l74.34-74.35a8 8 0 0 1 11.32 11.32z'/%3E%3C/svg%3E");
+}
+
+:is(.admin-app, .crew-app, .premium-field-host) .admin-premium-textarea {
+  display: block;
+  min-height: 4.5rem;
+  resize: vertical;
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 10px 0;
+}
+@media (min-width: 640px) {
+  :is(.admin-app, .crew-app, .premium-field-host) .admin-premium-textarea {
+    font-size: 13px;
+    padding: 8px 0;
+    min-height: 3.75rem;
+  }
+}
+
+:is(.admin-app, .crew-app, .premium-field-host) .admin-premium-input--compact {
+  font-size: 11px !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+@media (min-width: 640px) {
+  :is(.admin-app, .crew-app, .premium-field-host)
+    .admin-premium-input--compact {
+    font-size: 11px !important;
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+  }
+}
+
+:is(.admin-app, .crew-app, .premium-field-host)
+  select.admin-premium-input.admin-premium-input--compact {
+  background-size: 0.875rem 0.875rem;
+  padding-right: 1.5rem;
+}
+
+/* Leading icon or prefix: base padding is vertical-only */
+:is(.admin-app, .crew-app, .premium-field-host)
+  .admin-premium-input.admin-premium-input--leading {
+  padding-left: 1.25rem;
+  padding-right: 0;
+}
+
+/* Toolbar search: icon offset + horizontal padding (utility padding pairs with vertical-only base) */
+:is(.admin-app, .crew-app, .premium-field-host) .admin-premium-input.pl-10 {
+  padding-left: 2.5rem !important;
+}
+:is(.admin-app, .crew-app, .premium-field-host) .admin-premium-input.pr-3 {
+  padding-right: 0.75rem !important;
+}
+
+:is(.admin-app, .crew-app, .premium-field-host)
+  .admin-premium-input.admin-premium-input--trailing {
+  padding-right: 2.5rem;
+}
+
+:is(.admin-app, .crew-app, .premium-field-host)
+  .admin-premium-input.admin-premium-input--otp {
+  font-size: 20px !important;
+  letter-spacing: 0.5em;
+  text-align: center;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+@media (min-width: 640px) {
+  :is(.admin-app, .crew-app, .premium-field-host)
+    .admin-premium-input.admin-premium-input--otp {
+    font-size: 20px !important;
+  }
 }
 
 /* Admin: one scale for primary page titles — wine ink on light, cream on wine */
@@ -1517,6 +1731,9 @@ button:focus-visible,
 .admin-main-offset {
   padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));
 }
+.admin-app .admin-main-offset {
+  padding-top: calc(var(--app-chrome-h) + env(safe-area-inset-top, 0px));
+}
 
 /* Bottom padding for mobile nav bar (bar height + device safe area) */
 .pb-mobile-nav {
@@ -1582,8 +1799,11 @@ button:focus-visible,
   border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 [data-theme="light"] .glass-sidebar {
-  background: #faf7f2;
-  border-right-color: #d4cdc3;
+  background: rgba(250, 247, 242, 0.82);
+  border: none;
+  border-right: 0.5px solid color-mix(in srgb, var(--brd) 55%, transparent);
+  backdrop-filter: saturate(160%) blur(24px);
+  -webkit-backdrop-filter: saturate(160%) blur(24px);
 }
 
 .glass-topbar {
@@ -1591,9 +1811,11 @@ button:focus-visible,
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 [data-theme="light"] .glass-topbar {
-  background: #ffffff;
-  border-bottom-color: #d4cdc3;
+  background: rgba(255, 255, 255, 0.72);
+  border-bottom: 0.5px solid color-mix(in srgb, var(--brd) 55%, transparent);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .glass-card {
@@ -1666,6 +1888,55 @@ button:focus-visible,
     0 28px 64px -16px rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(36px) saturate(1.32);
   -webkit-backdrop-filter: blur(36px) saturate(1.32);
+}
+
+/* Wine sidebars using yugo-glass (e.g. admin): frosted strip; base .yugo-glass stays for cards/toasts */
+html[data-theme="light"] aside.yugo-glass {
+  background: rgba(255, 251, 247, 0.78);
+  border: none;
+  border-right: 0.5px solid rgba(43, 4, 22, 0.09);
+  backdrop-filter: saturate(160%) blur(28px);
+  -webkit-backdrop-filter: saturate(160%) blur(28px);
+}
+html[data-theme="dark"] aside.yugo-glass {
+  background: color-mix(in srgb, var(--yu-bg-sidebar) 86%, transparent);
+  border: none;
+  border-right: 0.5px solid rgba(139, 26, 58, 0.28);
+  backdrop-filter: saturate(145%) blur(32px);
+  -webkit-backdrop-filter: saturate(145%) blur(32px);
+}
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme="light"] .glass-topbar,
+  html[data-theme="dark"] .glass-topbar,
+  html[data-theme="light"] .glass-sidebar,
+  html[data-theme="dark"] .glass-sidebar,
+  html[data-theme="light"] aside.yugo-glass,
+  html[data-theme="dark"] aside.yugo-glass {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  html[data-theme="light"] .glass-topbar {
+    background: #ffffff;
+  }
+  html[data-theme="dark"] .glass-topbar {
+    background: var(--yu-bg-chrome);
+  }
+  html[data-theme="light"] .glass-sidebar {
+    background: #faf7f2;
+    border-right: 1px solid #d4cdc3;
+  }
+  html[data-theme="dark"] .glass-sidebar {
+    background: var(--yu-bg-sidebar);
+    border-right: 0.5px solid rgba(139, 26, 58, 0.25);
+  }
+  html[data-theme="light"] aside.yugo-glass {
+    background: #fffbf7;
+    border: 1px solid rgba(43, 4, 22, 0.08);
+  }
+  html[data-theme="dark"] aside.yugo-glass {
+    background: var(--yu-bg-sidebar);
+    border: 1px solid rgba(249, 237, 228, 0.1);
+  }
 }
 
 .map-fullscreen {

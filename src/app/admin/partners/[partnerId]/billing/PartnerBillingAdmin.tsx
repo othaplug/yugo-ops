@@ -215,7 +215,7 @@ export default function PartnerBillingAdmin({
                 type="date"
                 value={form.periodStart}
                 onChange={(e) => setForm((f) => ({ ...f, periodStart: e.target.value }))}
-                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)]/60 rounded-xl text-[13px] text-[var(--tx)] outline-none focus:border-[var(--gold)]/50"
+                className="admin-premium-input w-full"
               />
             </div>
             <div>
@@ -226,7 +226,7 @@ export default function PartnerBillingAdmin({
                 type="date"
                 value={form.periodEnd}
                 onChange={(e) => setForm((f) => ({ ...f, periodEnd: e.target.value }))}
-                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)]/60 rounded-xl text-[13px] text-[var(--tx)] outline-none focus:border-[var(--gold)]/50"
+                className="admin-premium-input w-full"
               />
             </div>
           </div>

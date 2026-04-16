@@ -66,11 +66,14 @@ type DeliveryCopy = {
 function getDeliveryCopy(vertical: string | null): DeliveryCopy {
   const base: DeliveryCopy = {
     thankYouSub: "Your delivery has been completed.",
-    thankYouNote: "A signed delivery record has been saved. If you notice any concealed damage within 24 hours, please contact us immediately.",
+    thankYouNote:
+      "A signed delivery record has been saved. If you notice any concealed damage within 24 hours, please contact us immediately.",
     noIssuesLabel: "No issues experienced during this delivery",
     preExistingLabel: "Pre-existing conditions were noted before the delivery",
-    itemsConfirmSubtitle: "Review and confirm all items were received in good condition.",
-    legalNote: "By signing, I confirm all items listed were received as described. I understand I have 24 hours from this sign-off to report any concealed damage not visible during the walkthrough.",
+    itemsConfirmSubtitle:
+      "Review and confirm all items were received in good condition.",
+    legalNote:
+      "By signing, I confirm all items listed were received as described. I understand I have 24 hours from this sign-off to report any concealed damage not visible during the walkthrough.",
   };
 
   const v = (vertical || "").toLowerCase();
@@ -79,22 +82,30 @@ function getDeliveryCopy(vertical: string | null): DeliveryCopy {
     return {
       ...base,
       thankYouSub: "Your client's pieces have been placed as directed.",
-      thankYouNote: "A signed delivery record has been saved. Please report any concerns within 24 hours.",
+      thankYouNote:
+        "A signed delivery record has been saved. Please report any concerns within 24 hours.",
       noIssuesLabel: "No issues experienced during this delivery",
-      preExistingLabel: "Pre-existing conditions were noted before this delivery",
-      itemsConfirmSubtitle: "Confirm all pieces were placed per your client's plan.",
+      preExistingLabel:
+        "Pre-existing conditions were noted before this delivery",
+      itemsConfirmSubtitle:
+        "Confirm all pieces were placed per your client's plan.",
     };
   }
 
   if (v === "art_gallery" || v === "gallery" || v === "antique_dealer") {
     return {
       ...base,
-      thankYouSub: "Your piece has been delivered and placed with the care it deserves.",
-      thankYouNote: "A signed delivery record has been saved. Please report any damage or concerns within 24 hours.",
+      thankYouSub:
+        "Your piece has been delivered and placed with the care it deserves.",
+      thankYouNote:
+        "A signed delivery record has been saved. Please report any damage or concerns within 24 hours.",
       noIssuesLabel: "No issues experienced during this delivery",
-      preExistingLabel: "Pre-existing conditions were noted before this delivery",
-      itemsConfirmSubtitle: "Confirm each piece was received in the expected condition.",
-      legalNote: "By signing, I confirm all items were received as described. Any concealed damage must be reported within 24 hours.",
+      preExistingLabel:
+        "Pre-existing conditions were noted before this delivery",
+      itemsConfirmSubtitle:
+        "Confirm each piece was received in the expected condition.",
+      legalNote:
+        "By signing, I confirm all items were received as described. Any concealed damage must be reported within 24 hours.",
     };
   }
 
@@ -102,10 +113,13 @@ function getDeliveryCopy(vertical: string | null): DeliveryCopy {
     return {
       ...base,
       thankYouSub: "Your cabinetry has been delivered and placed.",
-      thankYouNote: "A signed delivery record has been saved. Please report any damage within 24 hours.",
+      thankYouNote:
+        "A signed delivery record has been saved. Please report any damage within 24 hours.",
       noIssuesLabel: "No issues experienced during this delivery",
-      preExistingLabel: "Pre-existing conditions were noted before this delivery",
-      itemsConfirmSubtitle: "Confirm all cabinetry components were received in good condition.",
+      preExistingLabel:
+        "Pre-existing conditions were noted before this delivery",
+      itemsConfirmSubtitle:
+        "Confirm all cabinetry components were received in good condition.",
     };
   }
 
@@ -113,10 +127,13 @@ function getDeliveryCopy(vertical: string | null): DeliveryCopy {
     return {
       ...base,
       thankYouSub: "Your materials have been delivered.",
-      thankYouNote: "A signed delivery record has been saved. Please report any concerns within 24 hours.",
+      thankYouNote:
+        "A signed delivery record has been saved. Please report any concerns within 24 hours.",
       noIssuesLabel: "No issues experienced during this delivery",
-      preExistingLabel: "Pre-existing conditions were noted before this delivery",
-      itemsConfirmSubtitle: "Confirm all materials were received in good condition.",
+      preExistingLabel:
+        "Pre-existing conditions were noted before this delivery",
+      itemsConfirmSubtitle:
+        "Confirm all materials were received in good condition.",
     };
   }
 
@@ -124,10 +141,13 @@ function getDeliveryCopy(vertical: string | null): DeliveryCopy {
     return {
       ...base,
       thankYouSub: "Your items have been delivered and set in place.",
-      thankYouNote: "A signed delivery record has been saved. Please report any concerns within 24 hours.",
+      thankYouNote:
+        "A signed delivery record has been saved. Please report any concerns within 24 hours.",
       noIssuesLabel: "No issues experienced during this delivery",
-      preExistingLabel: "Pre-existing conditions were noted before this delivery",
-      itemsConfirmSubtitle: "Confirm all items were received and placed correctly.",
+      preExistingLabel:
+        "Pre-existing conditions were noted before this delivery",
+      itemsConfirmSubtitle:
+        "Confirm all items were received and placed correctly.",
     };
   }
 
@@ -135,10 +155,13 @@ function getDeliveryCopy(vertical: string | null): DeliveryCopy {
     return {
       ...base,
       thankYouSub: "Your equipment has been delivered and positioned.",
-      thankYouNote: "A signed delivery record has been saved. Please verify equipment condition and report any concerns within 24 hours.",
+      thankYouNote:
+        "A signed delivery record has been saved. Please verify equipment condition and report any concerns within 24 hours.",
       noIssuesLabel: "No issues experienced during this delivery",
-      preExistingLabel: "Pre-existing conditions were noted before this delivery",
-      itemsConfirmSubtitle: "Confirm all equipment was received and positioned correctly.",
+      preExistingLabel:
+        "Pre-existing conditions were noted before this delivery",
+      itemsConfirmSubtitle:
+        "Confirm all equipment was received and positioned correctly.",
     };
   }
 
@@ -146,10 +169,13 @@ function getDeliveryCopy(vertical: string | null): DeliveryCopy {
     return {
       ...base,
       thankYouSub: "Your AV equipment has been delivered and positioned.",
-      thankYouNote: "A signed delivery record has been saved. Please report any concerns within 24 hours.",
+      thankYouNote:
+        "A signed delivery record has been saved. Please report any concerns within 24 hours.",
       noIssuesLabel: "No issues experienced during this delivery",
-      preExistingLabel: "Pre-existing conditions were noted before this delivery",
-      itemsConfirmSubtitle: "Confirm all AV equipment was received in good condition.",
+      preExistingLabel:
+        "Pre-existing conditions were noted before this delivery",
+      itemsConfirmSubtitle:
+        "Confirm all AV equipment was received in good condition.",
     };
   }
 
@@ -157,10 +183,13 @@ function getDeliveryCopy(vertical: string | null): DeliveryCopy {
     return {
       ...base,
       thankYouSub: "Your appliances have been delivered and placed.",
-      thankYouNote: "A signed delivery record has been saved. Please report any damage within 24 hours.",
+      thankYouNote:
+        "A signed delivery record has been saved. Please report any damage within 24 hours.",
       noIssuesLabel: "No issues experienced during this delivery",
-      preExistingLabel: "Pre-existing conditions were noted before this delivery",
-      itemsConfirmSubtitle: "Confirm all appliances were received in good condition.",
+      preExistingLabel:
+        "Pre-existing conditions were noted before this delivery",
+      itemsConfirmSubtitle:
+        "Confirm all appliances were received in good condition.",
     };
   }
 
@@ -168,10 +197,12 @@ function getDeliveryCopy(vertical: string | null): DeliveryCopy {
   return {
     ...base,
     thankYouSub: "Your pieces have been carefully delivered and placed.",
-    thankYouNote: "A signed delivery record has been saved. If you notice any damage within 24 hours, please contact us immediately.",
+    thankYouNote:
+      "A signed delivery record has been saved. If you notice any damage within 24 hours, please contact us immediately.",
     noIssuesLabel: "No issues experienced during this delivery",
     preExistingLabel: "Pre-existing conditions were noted before this delivery",
-    itemsConfirmSubtitle: "Review and confirm all items were received in good condition.",
+    itemsConfirmSubtitle:
+      "Review and confirm all items were received in good condition.",
   };
 }
 // ─────────────────────────────────────────────────────────────────────────────
@@ -206,7 +237,9 @@ const CONDITION_OPTIONS = [
 ];
 
 function StarIcon({ filled, size = 28 }: { filled: boolean; size?: number }) {
-  return <PhStar size={size} color={WINE} weight={filled ? "fill" : "regular"} />;
+  return (
+    <PhStar size={size} color={WINE} weight={filled ? "fill" : "regular"} />
+  );
 }
 
 function ChevronLeft({
@@ -229,7 +262,10 @@ function CheckMark({ size = 10 }: { size?: number }) {
 
 function YugoWordmark() {
   return (
-    <span className="font-hero text-[20px] font-semibold tracking-tight" style={{ color: WINE }}>
+    <span
+      className="font-hero text-[20px] font-semibold tracking-tight"
+      style={{ color: WINE }}
+    >
       yugo
     </span>
   );
@@ -310,13 +346,17 @@ export default function ClientSignOffPage({
 
   // Phase 1
   const [photosReviewedByClient, setPhotosReviewedByClient] = useState(false);
-  const [inventoryReviewedByClient, setInventoryReviewedByClient] = useState(false);
+  const [inventoryReviewedByClient, setInventoryReviewedByClient] =
+    useState(false);
   const [allItemsReceived, setAllItemsReceived] = useState(true);
   const [itemsLeftBehind, setItemsLeftBehind] = useState("");
   const [conditionAccepted, setConditionAccepted] = useState(true);
-  const [walkthroughConductedByClient, setWalkthroughConductedByClient] = useState(false);
-  const [clientPresentDuringUnloading, setClientPresentDuringUnloading] = useState(false);
-  const [preExistingConditionsNoted, setPreExistingConditionsNoted] = useState(false);
+  const [walkthroughConductedByClient, setWalkthroughConductedByClient] =
+    useState(false);
+  const [clientPresentDuringUnloading, setClientPresentDuringUnloading] =
+    useState(false);
+  const [preExistingConditionsNoted, setPreExistingConditionsNoted] =
+    useState(false);
   const [exceptions, setExceptions] = useState("");
 
   // Phase 2
@@ -325,9 +365,12 @@ export default function ClientSignOffPage({
   const [noIssuesDuringMove, setNoIssuesDuringMove] = useState(false);
   const [noDamages, setNoDamages] = useState(false);
   const [walkthroughCompleted, setWalkthroughCompleted] = useState(false);
-  const [crewConductedProfessionally, setCrewConductedProfessionally] = useState(false);
+  const [crewConductedProfessionally, setCrewConductedProfessionally] =
+    useState(false);
   const [crewWoreProtection, setCrewWoreProtection] = useState(false);
-  const [furnitureReassembled, setFurnitureReassembled] = useState<boolean | null>(null);
+  const [furnitureReassembled, setFurnitureReassembled] = useState<
+    boolean | null
+  >(null);
   const [itemsPlacedCorrectly, setItemsPlacedCorrectly] = useState(false);
   const [propertyLeftClean, setPropertyLeftClean] = useState(false);
   const [noPropertyDamage, setNoPropertyDamage] = useState(false);
@@ -360,8 +403,11 @@ export default function ClientSignOffPage({
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => { setGeoLat(pos.coords.latitude); setGeoLng(pos.coords.longitude); },
-        () => {}
+        (pos) => {
+          setGeoLat(pos.coords.latitude);
+          setGeoLng(pos.coords.longitude);
+        },
+        () => {},
       );
     }
   }, []);
@@ -388,29 +434,43 @@ export default function ClientSignOffPage({
         ]);
         if (cancelled) return;
         const signoffData = signoffRes.ok ? await signoffRes.json() : null;
-        const photosData = photosRes.ok ? await photosRes.json() : { photos: [] };
-        const invData = inventoryRes.ok ? await inventoryRes.json() : { items: [] };
+        const photosData = photosRes.ok
+          ? await photosRes.json()
+          : { photos: [] };
+        const invData = inventoryRes.ok
+          ? await inventoryRes.json()
+          : { items: [] };
         if (signoffData?.id) setExisting(signoffData);
-        if (signoffData?.partnerVertical) setPartnerVertical(signoffData.partnerVertical);
-        const photos = Array.isArray(photosData) ? photosData : photosData?.photos || [];
+        if (signoffData?.partnerVertical)
+          setPartnerVertical(signoffData.partnerVertical);
+        const photos = Array.isArray(photosData)
+          ? photosData
+          : photosData?.photos || [];
         setJobPhotos(photos);
         const items: string[] = invData?.items || [];
         setInventoryItems(items);
         if (items.length > 0) {
-          setItemConditions(items.map((name: string) => ({
-            item_name: name,
-            condition: "pristine" as const,
-            notes: "",
-          })));
+          setItemConditions(
+            items.map((name: string) => ({
+              item_name: name,
+              condition: "pristine" as const,
+              notes: "",
+            })),
+          );
         }
       } catch {
         // continue with empty state
       } finally {
-        if (!cancelled) { setPhotosLoading(false); setLoading(false); }
+        if (!cancelled) {
+          setPhotosLoading(false);
+          setLoading(false);
+        }
       }
     };
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [id, jobType]);
 
   const startDrawing = (e: React.TouchEvent | React.MouseEvent) => {
@@ -422,8 +482,14 @@ export default function ClientSignOffPage({
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    const x = ("touches" in e ? e.touches[0].clientX - rect.left : (e as React.MouseEvent).clientX - rect.left) * scaleX;
-    const y = ("touches" in e ? e.touches[0].clientY - rect.top : (e as React.MouseEvent).clientY - rect.top) * scaleY;
+    const x =
+      ("touches" in e
+        ? e.touches[0].clientX - rect.left
+        : (e as React.MouseEvent).clientX - rect.left) * scaleX;
+    const y =
+      ("touches" in e
+        ? e.touches[0].clientY - rect.top
+        : (e as React.MouseEvent).clientY - rect.top) * scaleY;
     ctx.beginPath();
     ctx.moveTo(x, y);
   };
@@ -437,8 +503,14 @@ export default function ClientSignOffPage({
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    const x = ("touches" in e ? e.touches[0].clientX - rect.left : (e as React.MouseEvent).clientX - rect.left) * scaleX;
-    const y = ("touches" in e ? e.touches[0].clientY - rect.top : (e as React.MouseEvent).clientY - rect.top) * scaleY;
+    const x =
+      ("touches" in e
+        ? e.touches[0].clientX - rect.left
+        : (e as React.MouseEvent).clientX - rect.left) * scaleX;
+    const y =
+      ("touches" in e
+        ? e.touches[0].clientY - rect.top
+        : (e as React.MouseEvent).clientY - rect.top) * scaleY;
     ctx.lineTo(x, y);
     ctx.stroke();
     e.preventDefault();
@@ -454,7 +526,10 @@ export default function ClientSignOffPage({
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext("2d");
-      if (ctx) { ctx.clearRect(0, 0, canvas.width, canvas.height); setSignature(""); }
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        setSignature("");
+      }
     }
   };
 
@@ -482,7 +557,8 @@ export default function ClientSignOffPage({
           walkthroughConductedByClient,
           clientPresentDuringUnloading,
           preExistingConditionsNoted,
-          photosReviewedByClient: jobPhotos.length > 0 ? photosReviewedByClient : true,
+          photosReviewedByClient:
+            jobPhotos.length > 0 ? photosReviewedByClient : true,
           satisfactionRating: rating,
           npsScore,
           noIssuesDuringMove,
@@ -490,16 +566,23 @@ export default function ClientSignOffPage({
           walkthroughCompleted,
           crewConductedProfessionally,
           crewWoreProtection,
-          furnitureReassembled: furnitureReassembled === null ? null : furnitureReassembled,
+          furnitureReassembled:
+            furnitureReassembled === null ? null : furnitureReassembled,
           itemsPlacedCorrectly,
           propertyLeftClean,
           noPropertyDamage,
           feedbackNote: feedbackNote.trim() || null,
-          exceptions: [
-            itemsLeftBehind.trim() ? `Items not received / left behind: ${itemsLeftBehind.trim()}` : null,
-            exceptions.trim() || null,
-          ].filter(Boolean).join("\n\n") || null,
-          itemConditions: itemConditions.length > 0 ? itemConditions : undefined,
+          exceptions:
+            [
+              itemsLeftBehind.trim()
+                ? `Items not received / left behind: ${itemsLeftBehind.trim()}`
+                : null,
+              exceptions.trim() || null,
+            ]
+              .filter(Boolean)
+              .join("\n\n") || null,
+          itemConditions:
+            itemConditions.length > 0 ? itemConditions : undefined,
         }),
       });
       const data = await res.json();
@@ -507,7 +590,7 @@ export default function ClientSignOffPage({
         setError(
           data.code === "SCHEMA_UPDATE_REQUIRED"
             ? "A system update is needed. Please contact your dispatch or try again in a few minutes."
-            : data.error || "Failed to submit"
+            : data.error || "Failed to submit",
         );
         setSubmitting(false);
         return;
@@ -541,23 +624,38 @@ export default function ClientSignOffPage({
     }
   };
 
-  const updateItemCondition = (index: number, field: keyof ItemCondition, value: string) => {
-    setItemConditions((prev) => prev.map((ic, i) => i === index ? { ...ic, [field]: value } : ic));
+  const updateItemCondition = (
+    index: number,
+    field: keyof ItemCondition,
+    value: string,
+  ) => {
+    setItemConditions((prev) =>
+      prev.map((ic, i) => (i === index ? { ...ic, [field]: value } : ic)),
+    );
   };
 
-  const hasNewDamage = itemConditions.some((ic) => ic.condition === "new_damage");
-  const itemConditionsValid = itemConditions.length === 0 || itemConditions.every(
-    (ic) => ic.condition !== "new_damage" || (ic.notes.trim().length > 0)
+  const hasNewDamage = itemConditions.some(
+    (ic) => ic.condition === "new_damage",
   );
+  const itemConditionsValid =
+    itemConditions.length === 0 ||
+    itemConditions.every(
+      (ic) => ic.condition !== "new_damage" || ic.notes.trim().length > 0,
+    );
 
   const copy = jobType === "delivery" ? getDeliveryCopy(partnerVertical) : null;
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center" style={{ background: BG }}>
+      <main
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: BG }}
+      >
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 rounded-full border-2 border-[#2C3E2D]/30 border-t-[#2C3E2D] animate-spin" />
-          <p className="text-[13px]" style={{ color: MUTED }}>Loading…</p>
+          <p className="text-[13px]" style={{ color: MUTED }}>
+            Loading…
+          </p>
         </div>
       </main>
     );
@@ -565,7 +663,10 @@ export default function ClientSignOffPage({
 
   if (existing) {
     return (
-      <main className="min-h-screen flex items-center justify-center p-4" style={{ background: BG }}>
+      <main
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: BG }}
+      >
         <div className="text-center max-w-sm">
           <div
             className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
@@ -573,17 +674,29 @@ export default function ClientSignOffPage({
           >
             <Check size={24} color={WINE} weight="bold" />
           </div>
-          <h1 className="font-hero text-[26px] sm:text-[28px] font-normal mb-2 tracking-tight" style={{ color: WINE }}>
+          <h1
+            className="font-hero text-[26px] sm:text-[28px] font-normal mb-2 tracking-tight"
+            style={{ color: WINE }}
+          >
             Already signed
           </h1>
-          <p className="text-[14px] mb-8 leading-relaxed max-w-[280px] mx-auto [font-family:var(--font-body)]" style={{ color: MUTED }}>
+          <p
+            className="text-[14px] mb-8 leading-relaxed max-w-[280px] mx-auto [font-family:var(--font-body)]"
+            style={{ color: MUTED }}
+          >
             This job has already been signed off.
           </p>
           <Link
             href={`/crew/dashboard/job/${jobType}/${id}`}
             className={SIGNOFF_BACK_LINK}
           >
-            <PhCaretLeft size={14} weight="bold" color={WINE} className="shrink-0 opacity-90" aria-hidden />
+            <PhCaretLeft
+              size={14}
+              weight="bold"
+              color={WINE}
+              className="shrink-0 opacity-90"
+              aria-hidden
+            />
             Back to job
           </Link>
         </div>
@@ -591,13 +704,16 @@ export default function ClientSignOffPage({
     );
   }
 
-  const phase1Valid = itemConditionsValid && (itemConditions.length === 0 || true);
+  const phase1Valid =
+    itemConditionsValid && (itemConditions.length === 0 || true);
 
   const phase2Valid =
     (jobPhotos.length === 0 || photosReviewedByClient) &&
     inventoryReviewedByClient &&
     walkthroughConductedByClient &&
-    ((allItemsReceived && conditionAccepted) || exceptions.trim().length > 0 || itemsLeftBehind.trim().length > 0);
+    ((allItemsReceived && conditionAccepted) ||
+      exceptions.trim().length > 0 ||
+      itemsLeftBehind.trim().length > 0);
 
   const allConfirmed =
     noIssuesDuringMove &&
@@ -622,12 +738,17 @@ export default function ClientSignOffPage({
   const phase3Valid =
     !!rating &&
     npsScore !== null &&
-    (allConfirmed ? true : hasIssuesOrConcerns && feedbackNote.trim().length > 0);
+    (allConfirmed
+      ? true
+      : hasIssuesOrConcerns && feedbackNote.trim().length > 0);
 
   const STEP_LABELS = ["Condition", "Items", "Experience", "Sign"];
 
   return (
-    <main className="min-h-screen" style={{ background: BG, fontFamily: "'DM Sans', sans-serif" }}>
+    <main
+      className="min-h-screen"
+      style={{ background: BG, fontFamily: "'DM Sans', sans-serif" }}
+    >
       <style>{`
         @keyframes fadeSlideUp {
           from { opacity: 0; transform: translateY(14px); }
@@ -648,7 +769,6 @@ export default function ClientSignOffPage({
       `}</style>
 
       <div className="max-w-[420px] mx-auto px-4 pb-16 pt-[max(1.5rem,env(safe-area-inset-top))]">
-
         {/* Header bar */}
         <div className="flex items-center justify-between mb-6">
           <Link
@@ -669,15 +789,18 @@ export default function ClientSignOffPage({
               const done = phase > step;
               const active = phase === step;
               return (
-                <div key={label} className="flex items-center gap-1.5 flex-1 last:flex-none">
+                <div
+                  key={label}
+                  className="flex items-center gap-1.5 flex-1 last:flex-none"
+                >
                   <div className="flex flex-col items-center">
                     <div
                       className={`w-6 h-6 flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
                         done
                           ? "bg-[#5C1A33] text-[#FFFBF7]"
                           : active
-                          ? "bg-[#5C1A33] text-[#FFFBF7] shadow-sm"
-                          : "bg-[#FFFBF7] text-[#5A6B5E] border border-[#5C1A33]/20"
+                            ? "bg-[#5C1A33] text-[#FFFBF7] shadow-sm"
+                            : "bg-[#FFFBF7] text-[#5A6B5E] border border-[#5C1A33]/20"
                       }`}
                     >
                       {done ? <CheckMark size={9} /> : step}
@@ -693,7 +816,8 @@ export default function ClientSignOffPage({
                     <div
                       className="flex-1 h-px transition-colors duration-300 mt-[-14px]"
                       style={{
-                        backgroundColor: phase > step ? "rgba(92, 26, 51, 0.35)" : BORDER,
+                        backgroundColor:
+                          phase > step ? "rgba(92, 26, 51, 0.35)" : BORDER,
                       }}
                     />
                   )}
@@ -729,10 +853,16 @@ export default function ClientSignOffPage({
 
             {itemConditions.length === 0 ? (
               <div className="text-center py-10">
-                <p className="text-[13px] [font-family:var(--font-body)]" style={{ color: MUTED }}>
+                <p
+                  className="text-[13px] [font-family:var(--font-body)]"
+                  style={{ color: MUTED }}
+                >
                   No inventory items found for this job.
                 </p>
-                <p className="text-[11px] mt-1 [font-family:var(--font-body)]" style={{ color: MUTED }}>
+                <p
+                  className="text-[11px] mt-1 [font-family:var(--font-body)]"
+                  style={{ color: MUTED }}
+                >
                   You can continue to the next step.
                 </p>
               </div>
@@ -767,7 +897,9 @@ export default function ClientSignOffPage({
                           <button
                             key={opt.value}
                             type="button"
-                            onClick={() => updateItemCondition(idx, "condition", opt.value)}
+                            onClick={() =>
+                              updateItemCondition(idx, "condition", opt.value)
+                            }
                             className={`px-3 py-2.5 text-left text-[11px] font-semibold transition-colors border flex items-center gap-2 [font-family:var(--font-body)] leading-snug ${
                               selected
                                 ? isNewDamage
@@ -781,7 +913,9 @@ export default function ClientSignOffPage({
                                 size={14}
                                 weight="bold"
                                 className="shrink-0"
-                                style={{ color: isNewDamage ? "#991B1B" : WINE }}
+                                style={{
+                                  color: isNewDamage ? "#991B1B" : WINE,
+                                }}
                                 aria-hidden
                               />
                             ) : (
@@ -799,7 +933,9 @@ export default function ClientSignOffPage({
                       <div className="mt-2">
                         <textarea
                           value={ic.notes}
-                          onChange={(e) => updateItemCondition(idx, "notes", e.target.value)}
+                          onChange={(e) =>
+                            updateItemCondition(idx, "notes", e.target.value)
+                          }
                           placeholder="Describe the damage (required)…"
                           className="w-full p-3 border text-[12px] outline-none [font-family:var(--font-body)] focus:border-red-400"
                           style={{
@@ -815,7 +951,9 @@ export default function ClientSignOffPage({
                       <input
                         type="text"
                         value={ic.notes}
-                        onChange={(e) => updateItemCondition(idx, "notes", e.target.value)}
+                        onChange={(e) =>
+                          updateItemCondition(idx, "notes", e.target.value)
+                        }
                         placeholder="Optional notes…"
                         className="w-full px-3 py-2.5 border text-[12px] outline-none mt-1 [font-family:var(--font-body)] focus:border-[#5C1A33]/50"
                         style={{
@@ -831,11 +969,10 @@ export default function ClientSignOffPage({
             )}
 
             {hasNewDamage && (
-              <div
-                className="p-3.5 mb-4 border border-red-300 bg-red-50"
-              >
+              <div className="p-3.5 mb-4 border border-red-300 bg-red-50">
                 <p className="text-[11px] font-semibold text-red-800 [font-family:var(--font-body)] leading-snug">
-                  New damage detected, this will be flagged for a potential claim.
+                  New damage detected, this will be flagged for a potential
+                  claim.
                 </p>
               </div>
             )}
@@ -878,20 +1015,32 @@ export default function ClientSignOffPage({
                 className="text-[13px] mt-2 leading-relaxed [font-family:var(--font-body)]"
                 style={{ color: MUTED }}
               >
-                {copy?.itemsConfirmSubtitle ?? "Review and confirm all belongings were received in good condition."}
+                {copy?.itemsConfirmSubtitle ??
+                  "Review and confirm all belongings were received in good condition."}
               </p>
             </div>
 
             {/* Photo gallery */}
             {!photosLoading && jobPhotos.length > 0 && (
               <div className="mb-5">
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: MUTED }}>
+                <p
+                  className="text-[10px] font-bold uppercase tracking-widest mb-2.5"
+                  style={{ color: MUTED }}
+                >
                   Crew Photos ({jobPhotos.length})
                 </p>
                 <div className="grid grid-cols-3 gap-1.5 mb-3">
                   {jobPhotos.slice(0, 9).map((p) => (
-                    <div key={p.id} className="aspect-square overflow-hidden border border-[#5C1A33]/12" style={{ background: NOTE_FILL }}>
-                      <img src={p.url} alt={p.category} className="w-full h-full object-cover" />
+                    <div
+                      key={p.id}
+                      className="aspect-square overflow-hidden border border-[#5C1A33]/12"
+                      style={{ background: NOTE_FILL }}
+                    >
+                      <img
+                        src={p.url}
+                        alt={p.category}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                   ))}
                   {jobPhotos.length > 9 && (
@@ -925,7 +1074,12 @@ export default function ClientSignOffPage({
               />
               {!allItemsReceived && (
                 <div className="pl-2">
-                  <p className="text-[11px] font-semibold mb-1.5" style={{ color: MUTED }}>Items not received or left behind</p>
+                  <p
+                    className="text-[11px] font-semibold mb-1.5"
+                    style={{ color: MUTED }}
+                  >
+                    Items not received or left behind
+                  </p>
                   <textarea
                     value={itemsLeftBehind}
                     onChange={(e) => setItemsLeftBehind(e.target.value)}
@@ -936,10 +1090,29 @@ export default function ClientSignOffPage({
                   />
                 </div>
               )}
-              <ToggleCard checked={conditionAccepted} onChange={setConditionAccepted} label="Everything in good condition" />
-              <ToggleCard checked={walkthroughConductedByClient} onChange={setWalkthroughConductedByClient} label="Walkthrough conducted by client" />
-              <ToggleCard checked={clientPresentDuringUnloading} onChange={setClientPresentDuringUnloading} label="I was present during unloading" />
-              <ToggleCard checked={preExistingConditionsNoted} onChange={setPreExistingConditionsNoted} label={copy?.preExistingLabel ?? "Pre-existing conditions were noted before the move"} />
+              <ToggleCard
+                checked={conditionAccepted}
+                onChange={setConditionAccepted}
+                label="Everything in good condition"
+              />
+              <ToggleCard
+                checked={walkthroughConductedByClient}
+                onChange={setWalkthroughConductedByClient}
+                label="Walkthrough conducted by client"
+              />
+              <ToggleCard
+                checked={clientPresentDuringUnloading}
+                onChange={setClientPresentDuringUnloading}
+                label="I was present during unloading"
+              />
+              <ToggleCard
+                checked={preExistingConditionsNoted}
+                onChange={setPreExistingConditionsNoted}
+                label={
+                  copy?.preExistingLabel ??
+                  "Pre-existing conditions were noted before the move"
+                }
+              />
               {!conditionAccepted && (
                 <textarea
                   value={exceptions}
@@ -996,7 +1169,12 @@ export default function ClientSignOffPage({
 
             {/* Star rating */}
             <div className="mb-6">
-              <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: MUTED }}>Overall Rating</p>
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest mb-3"
+                style={{ color: MUTED }}
+              >
+                Overall Rating
+              </p>
               <div className="flex justify-center gap-3 mb-2.5">
                 {[1, 2, 3, 4, 5].map((n) => {
                   const isFilled = rating != null && n <= rating;
@@ -1013,7 +1191,10 @@ export default function ClientSignOffPage({
                 })}
               </div>
               {rating && (
-                <p className="text-center text-[13px] font-semibold pop-in" style={{ color: WINE }}>
+                <p
+                  className="text-center text-[13px] font-semibold pop-in"
+                  style={{ color: WINE }}
+                >
                   {RATING_LABELS[rating]}
                 </p>
               )}
@@ -1021,10 +1202,15 @@ export default function ClientSignOffPage({
 
             {/* NPS */}
             <div className="mb-6">
-              <p className="text-[13px] font-semibold mb-0.5" style={{ color: INK }}>
+              <p
+                className="text-[13px] font-semibold mb-0.5"
+                style={{ color: INK }}
+              >
                 How likely are you to recommend us?
               </p>
-              <p className="text-[11px] mb-3.5" style={{ color: MUTED }}>0 = Not at all &nbsp;·&nbsp; 10 = Absolutely</p>
+              <p className="text-[11px] mb-3.5" style={{ color: MUTED }}>
+                0 = Not at all &nbsp;·&nbsp; 10 = Absolutely
+              </p>
               <div className="flex flex-nowrap justify-center gap-1">
                 {Array.from({ length: 11 }, (_, i) => i).map((n) => {
                   const isSelected = npsScore === n;
@@ -1033,9 +1219,16 @@ export default function ClientSignOffPage({
                   let bd = "1px solid rgba(44, 62, 45, 0.15)";
                   if (isSelected) {
                     bd = "1px solid transparent";
-                    if (n <= 6) { bg = "#EF4444"; textC = "#FFFBF7"; }
-                    else if (n <= 8) { bg = "#B45309"; textC = "#FFFBF7"; }
-                    else { bg = WINE; textC = "#FFFBF7"; }
+                    if (n <= 6) {
+                      bg = "#EF4444";
+                      textC = "#FFFBF7";
+                    } else if (n <= 8) {
+                      bg = "#B45309";
+                      textC = "#FFFBF7";
+                    } else {
+                      bg = WINE;
+                      textC = "#FFFBF7";
+                    }
                   }
                   return (
                     <button
@@ -1053,7 +1246,14 @@ export default function ClientSignOffPage({
               {npsScore !== null && (
                 <p
                   className="text-center text-[11px] mt-2 font-semibold pop-in"
-                  style={{ color: npsScore >= 9 ? WINE : npsScore >= 7 ? "#B45309" : "#EF4444" }}
+                  style={{
+                    color:
+                      npsScore >= 9
+                        ? WINE
+                        : npsScore >= 7
+                          ? "#B45309"
+                          : "#EF4444",
+                  }}
                 >
                   {NPS_LABELS[npsScore]}
                 </p>
@@ -1062,30 +1262,66 @@ export default function ClientSignOffPage({
 
             {/* Confirmation checkboxes */}
             <div className="mb-5">
-              <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: MUTED }}>
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest mb-3"
+                style={{ color: MUTED }}
+              >
                 Please confirm the following
               </p>
               <p className="text-[11px] mb-3" style={{ color: MUTED }}>
-                Uncheck any box or select &quot;No&quot; if something wasn&apos;t as expected, you&apos;ll be asked to describe below.
+                Uncheck any box or select &quot;No&quot; if something
+                wasn&apos;t as expected, you&apos;ll be asked to describe below.
               </p>
               <div className="space-y-2.5">
-                <ToggleCard checked={noIssuesDuringMove} onChange={setNoIssuesDuringMove} label={copy?.noIssuesLabel ?? "No issues experienced during my move"} />
-                <ToggleCard checked={noDamages} onChange={setNoDamages} label="No damages to my belongings" />
-                <ToggleCard checked={noPropertyDamage} onChange={setNoPropertyDamage} label="No damage to walls, floors, or doorways" />
-                <ToggleCard checked={walkthroughCompleted} onChange={setWalkthroughCompleted} label="Walkthrough completed with the crew" />
-                <ToggleCard checked={crewConductedProfessionally} onChange={setCrewConductedProfessionally} label="Crew conducted themselves professionally" />
-                <ToggleCard checked={crewWoreProtection} onChange={setCrewWoreProtection} label="Crew used floor and wall protection" />
+                <ToggleCard
+                  checked={noIssuesDuringMove}
+                  onChange={setNoIssuesDuringMove}
+                  label={
+                    copy?.noIssuesLabel ??
+                    "No issues experienced during my move"
+                  }
+                />
+                <ToggleCard
+                  checked={noDamages}
+                  onChange={setNoDamages}
+                  label="No damages to my belongings"
+                />
+                <ToggleCard
+                  checked={noPropertyDamage}
+                  onChange={setNoPropertyDamage}
+                  label="No damage to walls, floors, or doorways"
+                />
+                <ToggleCard
+                  checked={walkthroughCompleted}
+                  onChange={setWalkthroughCompleted}
+                  label="Walkthrough completed with the crew"
+                />
+                <ToggleCard
+                  checked={crewConductedProfessionally}
+                  onChange={setCrewConductedProfessionally}
+                  label="Crew conducted themselves professionally"
+                />
+                <ToggleCard
+                  checked={crewWoreProtection}
+                  onChange={setCrewWoreProtection}
+                  label="Crew used floor and wall protection"
+                />
 
                 {/* Furniture reassembly */}
                 <div className="flex flex-col gap-4 py-3">
-                  <p className="text-[15px] font-semibold" style={{ color: INK }}>
+                  <p
+                    className="text-[15px] font-semibold"
+                    style={{ color: INK }}
+                  >
                     All disassembled furniture was reassembled
                   </p>
                   <div className="flex items-center gap-6">
                     {(["yes", "no", "na"] as const).map((opt) => {
-                      const value = opt === "yes" ? true : opt === "no" ? false : null;
+                      const value =
+                        opt === "yes" ? true : opt === "no" ? false : null;
                       const isSelected = furnitureReassembled === value;
-                      const label = opt === "yes" ? "Yes" : opt === "no" ? "No" : "N/A";
+                      const label =
+                        opt === "yes" ? "Yes" : opt === "no" ? "No" : "N/A";
                       return (
                         <label
                           key={opt}
@@ -1099,24 +1335,42 @@ export default function ClientSignOffPage({
                             className="w-5 h-5 appearance-none outline-none cursor-pointer border border-[#5C1A33]/28"
                             style={{
                               backgroundColor: isSelected ? WINE : NOTE_FILL,
-                              boxShadow: isSelected ? "inset 0 0 0 2px #FFFBF7" : "none",
+                              boxShadow: isSelected
+                                ? "inset 0 0 0 2px #FFFBF7"
+                                : "none",
                             }}
                           />
-                          <span className="text-[15px] font-medium" style={{ color: INK }}>{label}</span>
+                          <span
+                            className="text-[15px] font-medium"
+                            style={{ color: INK }}
+                          >
+                            {label}
+                          </span>
                         </label>
                       );
                     })}
                   </div>
                 </div>
 
-                <ToggleCard checked={itemsPlacedCorrectly} onChange={setItemsPlacedCorrectly} label="All items placed in the correct rooms" />
-                <ToggleCard checked={propertyLeftClean} onChange={setPropertyLeftClean} label="Property left clean and free of debris" />
+                <ToggleCard
+                  checked={itemsPlacedCorrectly}
+                  onChange={setItemsPlacedCorrectly}
+                  label="All items placed in the correct rooms"
+                />
+                <ToggleCard
+                  checked={propertyLeftClean}
+                  onChange={setPropertyLeftClean}
+                  label="Property left clean and free of debris"
+                />
               </div>
             </div>
 
             {hasIssuesOrConcerns ? (
               <div className="mb-5">
-                <p className="text-[12px] font-semibold mb-2" style={{ color: INK }}>
+                <p
+                  className="text-[12px] font-semibold mb-2"
+                  style={{ color: INK }}
+                >
                   Please describe your concerns (required)
                 </p>
                 <textarea
@@ -1182,7 +1436,10 @@ export default function ClientSignOffPage({
             </div>
 
             <div className="mb-5">
-              <label className="block text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: MUTED }}>
+              <label
+                className="block text-[10px] font-bold uppercase tracking-widest mb-2"
+                style={{ color: MUTED }}
+              >
                 Your full name
               </label>
               <input
@@ -1198,7 +1455,10 @@ export default function ClientSignOffPage({
             {/* Signature canvas, ink-on-paper look */}
             <div className="mb-5">
               <div className="flex justify-between items-center mb-2">
-                <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: MUTED }}>
+                <label
+                  className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest"
+                  style={{ color: MUTED }}
+                >
                   <PenLine size={11} /> Signature
                 </label>
                 <button
@@ -1241,26 +1501,45 @@ export default function ClientSignOffPage({
                   onTouchEnd={stopDrawing}
                 />
               </div>
-              <p className="flex items-center gap-1.5 text-[11px] mt-1.5" style={{ color: MUTED }}>
+              <p
+                className="flex items-center gap-1.5 text-[11px] mt-1.5"
+                style={{ color: MUTED }}
+              >
                 <PenLine size={10} /> Sign with your finger or stylus
               </p>
             </div>
 
             {/* Legal disclosure */}
-            <div
-              className="p-4 mb-5 border border-[#5C1A33]/18 bg-[#FFFBF7]"
-            >
-              <p className="text-[11px] leading-relaxed" style={{ color: FOREST }}>
-                {copy?.legalNote
-                  ? <>{copy.legalNote} I understand I have <strong style={{ color: INK }}>24 hours</strong> from this sign-off to report any damage. After this period, the condition of items is considered accepted.</>
-                  : <>By signing, I confirm all items listed were received as described. I understand I have <strong style={{ color: INK }}>24 hours</strong> from this sign-off to report any concealed damage not visible during the walkthrough. After this period, the condition of items is considered accepted.</>
-                }
+            <div className="p-4 mb-5 border border-[#5C1A33]/18 bg-[#FFFBF7]">
+              <p
+                className="text-[11px] leading-relaxed"
+                style={{ color: FOREST }}
+              >
+                {copy?.legalNote ? (
+                  <>
+                    {copy.legalNote} I understand I have{" "}
+                    <strong style={{ color: INK }}>24 hours</strong> from this
+                    sign-off to report any damage. After this period, the
+                    condition of items is considered accepted.
+                  </>
+                ) : (
+                  <>
+                    By signing, I confirm all items listed were received as
+                    described. I understand I have{" "}
+                    <strong style={{ color: INK }}>24 hours</strong> from this
+                    sign-off to report any concealed damage not visible during
+                    the walkthrough. After this period, the condition of items
+                    is considered accepted.
+                  </>
+                )}
               </p>
             </div>
 
             {error && (
               <div className="mb-4 p-3.5 bg-red-50 border border-red-200">
-                <p className="text-[12px] text-red-700 font-semibold">{error}</p>
+                <p className="text-[12px] text-red-700 font-semibold">
+                  {error}
+                </p>
               </div>
             )}
 
@@ -1295,11 +1574,17 @@ export default function ClientSignOffPage({
             <div className="relative inline-flex items-center justify-center mb-7">
               <div
                 className="absolute w-20 h-20 rounded-full"
-                style={{ backgroundColor: "rgba(92, 26, 51, 0.14)", animation: "sparkleRing 2s ease-out 0.15s infinite" }}
+                style={{
+                  backgroundColor: "rgba(92, 26, 51, 0.14)",
+                  animation: "sparkleRing 2s ease-out 0.15s infinite",
+                }}
               />
               <div
                 className="absolute w-20 h-20 rounded-full"
-                style={{ backgroundColor: "rgba(92, 26, 51, 0.08)", animation: "sparkleRing 2s ease-out 0.7s infinite" }}
+                style={{
+                  backgroundColor: "rgba(92, 26, 51, 0.08)",
+                  animation: "sparkleRing 2s ease-out 0.7s infinite",
+                }}
               />
               <div
                 className="w-16 h-16 rounded-full flex items-center justify-center pop-in"
@@ -1309,28 +1594,48 @@ export default function ClientSignOffPage({
               </div>
             </div>
 
-            <h1 className="font-hero text-[30px] sm:text-[32px] font-normal mb-3 tracking-tight" style={{ color: WINE }}>
+            <h1
+              className="font-hero text-[30px] sm:text-[32px] font-normal mb-3 tracking-tight"
+              style={{ color: WINE }}
+            >
               Thank you{clientName ? `, ${clientName.split(" ")[0]}` : ""}!
             </h1>
             {copy ? (
               <>
-                <p className="text-[15px] mb-1 leading-snug [font-family:var(--font-body)]" style={{ color: MUTED }}>
+                <p
+                  className="text-[15px] mb-1 leading-snug [font-family:var(--font-body)]"
+                  style={{ color: MUTED }}
+                >
                   {copy.thankYouSub}
                 </p>
-                <p className="text-[12px] mt-5 mb-8 max-w-[280px] mx-auto leading-relaxed [font-family:var(--font-body)]" style={{ color: MUTED }}>
+                <p
+                  className="text-[12px] mt-5 mb-8 max-w-[280px] mx-auto leading-relaxed [font-family:var(--font-body)]"
+                  style={{ color: MUTED }}
+                >
                   {copy.thankYouNote}
                 </p>
               </>
             ) : (
               <>
-                <p className="text-[15px] mb-1 leading-snug [font-family:var(--font-body)]" style={{ color: MUTED }}>
+                <p
+                  className="text-[15px] mb-1 leading-snug [font-family:var(--font-body)]"
+                  style={{ color: MUTED }}
+                >
                   We hope you love your new space.
                 </p>
-                <p className="text-[14px] font-semibold [font-family:var(--font-body)]" style={{ color: WINE }}>
+                <p
+                  className="text-[14px] font-semibold [font-family:var(--font-body)]"
+                  style={{ color: WINE }}
+                >
                   Welcome home.
                 </p>
-                <p className="text-[12px] mt-5 mb-8 max-w-[280px] mx-auto leading-relaxed [font-family:var(--font-body)]" style={{ color: MUTED }}>
-                  A confirmation receipt has been generated. If you notice any concealed damage within 24 hours, please contact us immediately.
+                <p
+                  className="text-[12px] mt-5 mb-8 max-w-[280px] mx-auto leading-relaxed [font-family:var(--font-body)]"
+                  style={{ color: MUTED }}
+                >
+                  A confirmation receipt has been generated. If you notice any
+                  concealed damage within 24 hours, please contact us
+                  immediately.
                 </p>
               </>
             )}
@@ -1338,7 +1643,13 @@ export default function ClientSignOffPage({
               href={`/crew/dashboard/job/${jobType}/${id}`}
               className={SIGNOFF_BACK_LINK}
             >
-              <PhCaretLeft size={14} weight="bold" color={WINE} className="shrink-0 opacity-90" aria-hidden />
+              <PhCaretLeft
+                size={14}
+                weight="bold"
+                color={WINE}
+                className="shrink-0 opacity-90"
+                aria-hidden
+              />
               Back to job
             </Link>
           </div>
@@ -1348,10 +1659,16 @@ export default function ClientSignOffPage({
         {phase === 6 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <h1 className="font-hero text-[26px] sm:text-[28px] font-normal tracking-tight" style={{ color: WINE }}>
+              <h1
+                className="font-hero text-[26px] sm:text-[28px] font-normal tracking-tight"
+                style={{ color: WINE }}
+              >
                 Skip sign-off
               </h1>
-              <p className="text-[13px] mt-2 leading-relaxed [font-family:var(--font-body)]" style={{ color: MUTED }}>
+              <p
+                className="text-[13px] mt-2 leading-relaxed [font-family:var(--font-body)]"
+                style={{ color: MUTED }}
+              >
                 Please provide a reason for skipping the client sign-off.
               </p>
             </div>
@@ -1382,7 +1699,12 @@ export default function ClientSignOffPage({
                     }`}
                   >
                     {skipReason === r.value && (
-                      <Check size={10} weight="bold" color="#FFFBF7" aria-hidden />
+                      <Check
+                        size={10}
+                        weight="bold"
+                        color="#FFFBF7"
+                        aria-hidden
+                      />
                     )}
                   </div>
                   <span
@@ -1405,7 +1727,10 @@ export default function ClientSignOffPage({
             />
 
             {geoLat && (
-              <p className="text-[10px] mb-4 [font-family:var(--font-body)]" style={{ color: MUTED }}>
+              <p
+                className="text-[10px] mb-4 [font-family:var(--font-body)]"
+                style={{ color: MUTED }}
+              >
                 Location captured ({geoLat.toFixed(4)}, {geoLng?.toFixed(4)})
               </p>
             )}
@@ -1413,7 +1738,11 @@ export default function ClientSignOffPage({
             <button
               type="button"
               onClick={handleSkipSubmit}
-              disabled={skipSubmitting || !skipReason || (skipReason === "other" && !skipNote.trim())}
+              disabled={
+                skipSubmitting ||
+                !skipReason ||
+                (skipReason === "other" && !skipNote.trim())
+              }
               className="w-full inline-flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 mb-3 border border-red-700/80 text-[10px] font-bold tracking-[0.12em] uppercase text-red-800 bg-[#FFFBF7] hover:bg-red-50 transition-colors disabled:opacity-40 disabled:pointer-events-none [font-family:var(--font-body)] leading-none active:scale-[0.99]"
             >
               {skipSubmitting ? (
@@ -1421,7 +1750,12 @@ export default function ClientSignOffPage({
               ) : (
                 <>
                   Confirm skip
-                  <PhCaretRight size={14} weight="bold" className="shrink-0 opacity-70" aria-hidden />
+                  <PhCaretRight
+                    size={14}
+                    weight="bold"
+                    className="shrink-0 opacity-70"
+                    aria-hidden
+                  />
                 </>
               )}
             </button>

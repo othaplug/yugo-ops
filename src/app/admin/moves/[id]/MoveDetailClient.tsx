@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -30,6 +30,12 @@ import { formatMoveDate, formatPlatformDisplay, parseDateOnly } from "@/lib/date
 import { ProfitabilityBreakdownHint } from "@/components/admin/AdminContextHints";
 import PostCompletionPriceEdit from "../../components/PostCompletionPriceEdit";
 import MoveWaiversSection, { type MoveWaiverRow } from "./MoveWaiversSection";
+import CrewJobTimer from "@/app/crew/components/CrewJobTimer";
+import {
+  capMarginAlertMinutes,
+  estimateDurationFromMoveRow,
+} from "@/lib/jobs/duration-estimate";
+import type { OperationalJobAlerts } from "@/lib/jobs/operational-alerts";
 
 function isEstateTierMove(m: {
   tier_selected?: string | null;
@@ -297,7 +303,7 @@ function BinOrderPickupBlock({
             max={binCount}
             value={binsReturned}
             onChange={(e) => setBinsReturned(Math.min(binCount, Math.max(0, parseInt(e.target.value, 10) || 0)))}
-            className="mt-0.5 w-full bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
+            className="mt-0.5 admin-premium-input w-full"
           />
         </label>
         <label className="text-[10px] text-[var(--tx3)]">
@@ -308,7 +314,7 @@ function BinOrderPickupBlock({
             max={binCount}
             value={missing}
             onChange={(e) => setMissing(Math.min(binCount, Math.max(0, parseInt(e.target.value, 10) || 0)))}
-            className="mt-0.5 w-full bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
+            className="mt-0.5 admin-premium-input w-full"
           />
         </label>
         {wProv != null && wProv > 0 ? (
@@ -320,7 +326,7 @@ function BinOrderPickupBlock({
               max={wProv}
               value={wardrobeRet}
               onChange={(e) => setWardrobeRet(Math.min(wProv, Math.max(0, parseInt(e.target.value, 10) || 0)))}
-              className="mt-0.5 w-full bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
+              className="mt-0.5 admin-premium-input w-full"
             />
           </label>
         ) : (
@@ -328,7 +334,7 @@ function BinOrderPickupBlock({
         )}
         <label className="text-[10px] text-[var(--tx3)] col-span-2 sm:col-span-1">
           Condition
-          <select value={condition} onChange={(e) => setCondition(e.target.value)} className="mt-0.5 w-full bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]">
+          <select value={condition} onChange={(e) => setCondition(e.target.value)} className="mt-0.5 admin-premium-input w-full">
             <option value="good">Good</option>
             <option value="some_damaged">Some damaged</option>
             <option value="many_damaged">Many damaged</option>
@@ -473,15 +479,51 @@ export default function MoveDetailClient({
     };
   }, [move.id]);
 
+  // Session row updates sometimes land before the move row sync; keep admin status in sync with crew completion
+  useEffect(() => {
+    const channel = supabase
+      .channel(`move-sess-${move.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tracking_sessions", filter: `job_id=eq.${move.id}` },
+        (payload) => {
+          if (payload.eventType !== "INSERT" && payload.eventType !== "UPDATE") return;
+          const row = payload.new as Record<string, unknown> | undefined;
+          if (!row || String(row.job_type || "") !== "move") return;
+          const st = String(row.status || "").toLowerCase();
+          const completedAt = row.completed_at as string | null | undefined;
+          const inactive = row.is_active === false;
+          if (st === "completed" || (inactive && !!completedAt)) {
+            setMove((prev: any) => ({
+              ...prev,
+              status: "completed",
+              stage: "completed",
+              completed_at: completedAt ?? prev.completed_at,
+              updated_at: (row.updated_at as string) ?? prev.updated_at,
+            }));
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [move.id]);
+
   // Polling fallback for live status when move is in progress (in case realtime lags)
   const isInProgress = !["completed", "delivered", "cancelled"].includes((move.status || "").toLowerCase());
   useEffect(() => {
     if (!isInProgress) return;
     const poll = () =>
       fetch(`/api/admin/moves/${move.id}/stage`)
-        .then((r) => r.json())
-        .then((d) => {
-          if (d?.stage != null || d?.status != null) setMove((prev: any) => ({ ...prev, ...d }));
+        .then((r) =>
+          r.json().then((d) => ({
+            ok: r.ok,
+            d,
+          })),
+        )
+        .then(({ ok, d }) => {
+          if (ok && d && !(d as { error?: string }).error) setMove((prev: any) => ({ ...prev, ...d }));
         })
         .catch(() => {});
     poll();
@@ -515,6 +557,32 @@ export default function MoveDetailClient({
       })()
     : null;
 
+  const jobTimeTracker = useMemo(() => {
+    const raw = move.estimated_duration_minutes;
+    const rawN =
+      typeof raw === "string" ? Number.parseFloat(raw) : Number(raw);
+    if (Number.isFinite(rawN) && rawN > 0) {
+      const m = Math.round(rawN);
+      const margRaw = move.margin_alert_minutes;
+      const margN =
+        typeof margRaw === "string"
+          ? Number.parseFloat(margRaw)
+          : Number(margRaw);
+      const uncapped =
+        Number.isFinite(margN) && margN > 0 ? Math.round(margN) : m;
+      return {
+        minutes: m,
+        margin: capMarginAlertMinutes(m, uncapped),
+      };
+    }
+    const d = estimateDurationFromMoveRow(move as Record<string, unknown>);
+    if (!d) return null;
+    return {
+      minutes: d.totalMinutes,
+      margin: d.maxMinutesBeforeMarginAlert,
+    };
+  }, [move]);
+
   const toggleMember = (name: string) => {
     setAssignedMembers((prev) => {
       const next = new Set(prev);
@@ -538,6 +606,9 @@ export default function MoveDetailClient({
       })
     : null;
 
+  const operationalAlerts = (move as { operationalAlerts?: OperationalJobAlerts | null })
+    .operationalAlerts;
+
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-3 animate-fade-up">
       <div className="flex items-center gap-2 mb-1">
@@ -557,6 +628,38 @@ export default function MoveDetailClient({
           This move is complete. Some fields are locked for transparency.
         </div>
       )}
+
+      {!isCompleted &&
+        operationalAlerts &&
+        (operationalAlerts.marginBelowHalf ||
+          operationalAlerts.projectedFinishAfterAllocated) && (
+          <div
+            className={`rounded-xl border px-4 py-3 text-[12px] leading-snug ${
+              operationalAlerts.marginBelowHalf
+                ? "border-red-500/35 bg-red-500/[0.08] text-[var(--tx)]"
+                : "border-amber-500/40 bg-amber-500/[0.08] text-[var(--tx)]"
+            }`}
+            role="status"
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)] mb-1">
+              Operational alert
+            </p>
+            {operationalAlerts.marginBelowHalf && (
+              <p className="mb-1">
+                Projected profit margin is below half of the planned margin at current pace.
+              </p>
+            )}
+            {operationalAlerts.projectedFinishAfterAllocated && (
+              <p>
+                Projected job length exceeds allocated time
+                {operationalAlerts.projectedTotalMinutes != null
+                  ? ` (~${Math.round(operationalAlerts.projectedTotalMinutes)} min vs ${operationalAlerts.allocatedMinutes ?? "?"} min allocated)`
+                  : ""}
+                .
+              </p>
+            )}
+          </div>
+        )}
 
       {/* Hero - compact header */}
       <div className="rounded-2xl border border-[var(--brd)]/60 bg-[var(--card)] overflow-hidden p-4 sm:p-5">
@@ -941,7 +1044,7 @@ export default function MoveDetailClient({
             </p>
           )}
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Select Crew</label>
+            <label className="admin-premium-label">Select Crew</label>
             <select
               value={move.crew_id || ""}
               disabled={moveInProgress}
@@ -966,7 +1069,7 @@ export default function MoveDetailClient({
                   toast(err instanceof Error ? err.message : "Failed to assign", "alertTriangle");
                 }
               }}
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              className="admin-premium-input w-full transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <option value="">No crew assigned</option>
               {crews.map((c) => (
@@ -1022,7 +1125,7 @@ export default function MoveDetailClient({
       <ModalOverlay open={vehicleModalOpen} onClose={() => setVehicleModalOpen(false)} title="Assign Vehicle" maxWidth="sm">
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Primary Vehicle</label>
+            <label className="admin-premium-label">Primary Vehicle</label>
             <select
               value={move.truck_primary || ""}
               onChange={async (e) => {
@@ -1032,7 +1135,7 @@ export default function MoveDetailClient({
                 if (data) setMove(data);
                 router.refresh();
               }}
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+              className="admin-premium-input w-full"
             >
               <option value="">No vehicle assigned</option>
               {VEHICLE_OPTIONS.map(([val, label]) => (
@@ -1041,7 +1144,7 @@ export default function MoveDetailClient({
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Secondary Vehicle (Optional)</label>
+            <label className="admin-premium-label">Secondary Vehicle (Optional)</label>
             <select
               value={move.truck_secondary || ""}
               onChange={async (e) => {
@@ -1050,7 +1153,7 @@ export default function MoveDetailClient({
                 if (data) setMove(data);
                 router.refresh();
               }}
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+              className="admin-premium-input w-full"
             >
               <option value="">None</option>
               {VEHICLE_OPTIONS.map(([val, label]) => (
@@ -1059,7 +1162,7 @@ export default function MoveDetailClient({
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Vehicle Notes</label>
+            <label className="admin-premium-label">Vehicle Notes</label>
             <textarea
               defaultValue={move.truck_notes || ""}
               onBlur={async (e) => {
@@ -1071,7 +1174,7 @@ export default function MoveDetailClient({
               }}
               placeholder="e.g. Use truck #3 (newer lift gate)"
               rows={2}
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none resize-none"
+              className="admin-premium-textarea w-full resize-none"
             />
           </div>
           <button type="button" onClick={() => setVehicleModalOpen(false)} className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors">
@@ -1108,7 +1211,7 @@ export default function MoveDetailClient({
               value={restartOverrideTyped}
               onChange={(e) => setRestartOverrideTyped(e.target.value)}
               placeholder="Type OVERRIDE"
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+              className="admin-premium-input w-full"
               autoComplete="off"
             />
             <div className="flex gap-2">
@@ -1179,7 +1282,7 @@ export default function MoveDetailClient({
               <select
                 value={overrideStatusNewStatus}
                 onChange={(e) => setOverrideStatusNewStatus(e.target.value)}
-                className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
+                className="admin-premium-input w-full"
               >
                 {MOVE_STATUS_OPTIONS.filter((s) => !["completed", "cancelled"].includes(s.value)).map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
@@ -1194,7 +1297,7 @@ export default function MoveDetailClient({
               value={overrideStatusTyped}
               onChange={(e) => setOverrideStatusTyped(e.target.value)}
               placeholder="Type OVERRIDE"
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
+              className="admin-premium-input w-full"
               autoComplete="off"
             />
             <div className="flex gap-2">
@@ -1254,10 +1357,55 @@ export default function MoveDetailClient({
             </span>
           )}
           <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Time & Intelligence</div>
+          {jobTimeTracker && !isCompleted && (
+            <div className="mb-4 max-w-[440px]">
+              <CrewJobTimer
+                elapsedMs={jobDuration?.startedAt ? jobDurationElapsed : 0}
+                estimatedMinutes={jobTimeTracker.minutes}
+                marginAlertMinutes={jobTimeTracker.margin}
+                startedAtIso={jobDuration?.startedAt ?? null}
+                operationalAlerts={operationalAlerts ?? null}
+              />
+            </div>
+          )}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-1">
             <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Date</span><div className="text-[13px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
             <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Time Window</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.arrival_window || "-"}</div></div>
             <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Job duration</span><div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">{jobDurationStr ?? "-"}</div></div>
+            {jobTimeTracker && (
+                <div>
+                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                    Estimated duration
+                  </span>
+                  <div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">
+                    {(() => {
+                      const m = Math.round(jobTimeTracker.minutes);
+                      const h = Math.floor(m / 60);
+                      const r = m % 60;
+                      if (h === 0) return `${r}m`;
+                      if (r === 0) return `${h}h`;
+                      return `${h}h ${r}m`;
+                    })()}
+                  </div>
+                </div>
+              )}
+            {jobTimeTracker && (
+                <div>
+                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                    Margin alert at
+                  </span>
+                  <div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">
+                    {(() => {
+                      const m = Math.round(jobTimeTracker.margin);
+                      const h = Math.floor(m / 60);
+                      const r = m % 60;
+                      if (h === 0) return `${r}m`;
+                      if (r === 0) return `${h}h`;
+                      return `${h}h ${r}m`;
+                    })()}
+                  </div>
+                </div>
+              )}
             <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Completed at</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.completed_at ? formatPlatformDisplay(move.completed_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }, "-") : "-"}</div></div>
             <div>
               <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Days Left</span>

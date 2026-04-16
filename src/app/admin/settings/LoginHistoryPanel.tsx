@@ -24,7 +24,7 @@ export default function LoginHistoryPanel() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/admin/login-history")
+    fetch("/api/admin/login-history", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => { if (Array.isArray(d)) setEntries(d); })
       .catch(() => {})

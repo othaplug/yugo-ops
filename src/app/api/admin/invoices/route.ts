@@ -11,7 +11,7 @@ export async function GET() {
     const { data: invoices, error } = await supabase
       .from("invoices")
       .select(
-        "id, invoice_number, client_name, amount, move_id, delivery_id, due_date, status, file_path, organization_id, square_invoice_id, square_invoice_url, square_receipt_url, created_at, deliveries!delivery_id(delivery_number), moves!move_id(move_code)"
+        "id, invoice_number, client_name, amount, move_id, delivery_id, due_date, status, file_path, organization_id, square_invoice_id, square_invoice_url, square_receipt_url, created_at, deliveries!delivery_id(delivery_number, final_price, calculated_price, override_price, admin_adjusted_price, total_price, quoted_price), moves!move_id(move_code)"
       )
       .order("created_at", { ascending: false });
 

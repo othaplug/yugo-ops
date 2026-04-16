@@ -301,13 +301,13 @@ export default function PartnersManagement() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search partners, users, emails..."
-              className="w-full rounded-lg border border-[var(--brd)] bg-[var(--bg)] py-2 pl-10 pr-3 text-[12px] text-[var(--tx)] outline-none focus:border-[var(--brd)]"
+              className="admin-premium-input w-full pl-10 pr-3 py-2 text-[12px]"
             />
           </div>
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[11px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input admin-premium-input--compact min-w-[140px] text-[var(--tx)]"
           >
             <option value="all">All Types</option>
             <optgroup label="Furniture & Design">
@@ -342,7 +342,7 @@ export default function PartnersManagement() {
           <select
             value={filterAccess}
             onChange={(e) => setFilterAccess(e.target.value as "all" | "active" | "none")}
-            className="px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[11px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="admin-premium-input admin-premium-input--compact min-w-[140px] text-[var(--tx)]"
           >
             <option value="all">All Access</option>
             <option value="active">Has Portal Access</option>
@@ -519,7 +519,7 @@ export default function PartnersManagement() {
               Set a new temporary password for <strong>{resetTarget.user.name || resetTarget.user.email}</strong>. They will receive an email with the new password and login link.
             </p>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New Temporary Password *</label>
+              <label className="admin-premium-label">New Temporary Password *</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -528,7 +528,7 @@ export default function PartnersManagement() {
                   placeholder="Min 8 characters"
                   required
                   minLength={8}
-                  className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                  className="admin-premium-input flex-1"
                 />
                 <button type="button" onClick={() => setResetPassword(generatePwd())} className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]">
                   Generate
@@ -669,28 +669,28 @@ export default function PartnersManagement() {
               Invite someone at <strong>{addUserOrg.name}</strong> to access the partner portal.
             </p>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email *</label>
+              <label className="admin-premium-label">Email *</label>
               <input
                 type="email"
                 value={addEmail}
                 onChange={(e) => setAddEmail(e.target.value)}
                 placeholder="user@company.com"
                 required
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                className="admin-premium-input w-full"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Name</label>
+              <label className="admin-premium-label">Name</label>
               <input
                 type="text"
                 value={addName}
                 onChange={(e) => setAddName(e.target.value)}
                 placeholder="Jane Smith"
-                className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                className="admin-premium-input w-full"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Temporary Password *</label>
+              <label className="admin-premium-label">Temporary Password *</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -699,7 +699,7 @@ export default function PartnersManagement() {
                   placeholder="Min 8 characters"
                   required
                   minLength={8}
-                  className="flex-1 px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                  className="admin-premium-input flex-1"
                 />
                 <button type="button" onClick={() => setAddPassword(generatePwd())} className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]">
                   Generate

@@ -151,7 +151,7 @@ function AdminScheduleModal({
           {isEdit ? (
             <div>
               <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Partner</label>
-              <div className="w-full text-[13px] bg-[var(--bg)]/50 border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx2)]">
+              <div className="admin-premium-input w-full text-[var(--tx2)]">
                 {existing.organizations?.name ?? "-"}
               </div>
             </div>
@@ -163,7 +163,7 @@ function AdminScheduleModal({
                 onChange={(e) => { setOrgSearch(e.target.value); setOrgDropOpen(true); }}
                 onFocus={() => setOrgDropOpen(true)}
                 placeholder="Search partners…"
-                className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
+                className="admin-premium-input w-full"
               />
               {orgDropOpen && filteredOrgs.length > 0 && (
                 <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-xl max-h-[180px] overflow-y-auto">
@@ -182,7 +182,7 @@ function AdminScheduleModal({
           <div>
             <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Schedule Name</label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Weekly GTA Deliveries"
-              className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none" />
+              className="admin-premium-input w-full" />
           </div>
 
           <div>
@@ -217,7 +217,7 @@ function AdminScheduleModal({
             <div>
               <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Booking Type</label>
               <select value={bookingType} onChange={(e) => setBookingType(e.target.value)}
-                className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none">
+                className="admin-premium-input w-full">
                 <option value="day_rate">Day Rate</option>
                 <option value="per_delivery">Per Delivery</option>
               </select>
@@ -226,7 +226,7 @@ function AdminScheduleModal({
               <div>
                 <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Vehicle</label>
                 <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)}
-                  className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none">
+                  className="admin-premium-input w-full">
                   {Object.entries(VEHICLE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
@@ -237,7 +237,7 @@ function AdminScheduleModal({
             <div>
               <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Day Type</label>
               <select value={dayType} onChange={(e) => setDayType(e.target.value)}
-                className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none">
+                className="admin-premium-input w-full">
                 <option value="full_day">Full Day</option>
                 <option value="half_day">Half Day</option>
               </select>
@@ -245,14 +245,14 @@ function AdminScheduleModal({
             <div>
               <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Default Stops</label>
               <input type="number" value={numStops} onChange={(e) => setNumStops(e.target.value)} placeholder="e.g. 6" min={1}
-                className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none" />
+                className="admin-premium-input w-full" />
             </div>
           </div>
 
           <div>
             <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Time Window</label>
             <select value={timeWindow} onChange={(e) => setTimeWindow(e.target.value)}
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none">
+              className="admin-premium-input w-full">
               {B2B_PARTNER_TIME_WINDOW_OPTIONS.map((w) => (
                 <option key={w} value={w}>{w}</option>
               ))}

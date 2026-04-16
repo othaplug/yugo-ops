@@ -449,7 +449,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                                       value={editItemName}
                                       onChange={(e) => setEditItemName(e.target.value)}
                                       placeholder="Item name"
-                                      className="w-full min-w-[120px] text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                                      className="admin-premium-input w-full min-w-[120px] admin-premium-input--compact"
                                       autoFocus
                                     />
                                   ) : (
@@ -588,7 +588,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                     onChange={(e) => setBulkText(e.target.value)}
                     placeholder={"Table x1, Couch x2\nCoffee Table"}
                     rows={3}
-                    className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none resize-y"
+                    className="admin-premium-textarea w-full resize-y"
                   />
                 </div>
                 {parsedBulkItems.length > 0 && (
@@ -646,7 +646,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                     onChange={(e) => setNewItemName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleAdd()}
                     placeholder="e.g. Couch x2"
-                    className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
+                    className="admin-premium-input w-full"
                   />
                 </div>
                 <div className="w-14">
@@ -657,7 +657,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                     max={99}
                     value={newItemQty}
                     onChange={(e) => setNewItemQty(Math.max(1, Math.min(99, parseInt(e.target.value, 10) || 1)))}
-                    className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                    className="admin-premium-input w-full"
                   />
                 </div>
                 <button
@@ -721,7 +721,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
               placeholder="0"
               value={approveExtraFeeDollars}
               onChange={(e) => setApproveExtraFeeDollars(e.target.value)}
-              className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none mb-4"
+              className="admin-premium-input w-full mb-4"
             />
             <div className="flex gap-2 justify-end">
               <button

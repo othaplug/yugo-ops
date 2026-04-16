@@ -343,7 +343,7 @@ export default function PartnerBuildingsTab({
               <input
                 value={form.building_name}
                 onChange={(e) => setForm((f) => ({ ...f, building_name: e.target.value }))}
-                className="w-full px-3 py-2 text-[13px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg text-[var(--tx)]"
+                className="admin-premium-input w-full"
               />
             </div>
             <div>
@@ -351,7 +351,7 @@ export default function PartnerBuildingsTab({
               <input
                 value={form.address}
                 onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-                className="w-full px-3 py-2 text-[13px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg text-[var(--tx)]"
+                className="admin-premium-input w-full"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -360,7 +360,7 @@ export default function PartnerBuildingsTab({
                 <input
                   value={form.postal_code}
                   onChange={(e) => setForm((f) => ({ ...f, postal_code: e.target.value }))}
-                  className="w-full px-3 py-2 text-[13px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg text-[var(--tx)]"
+                  className="admin-premium-input w-full"
                 />
               </div>
               <div>
@@ -370,7 +370,7 @@ export default function PartnerBuildingsTab({
                   min={0}
                   value={form.total_units}
                   onChange={(e) => setForm((f) => ({ ...f, total_units: e.target.value }))}
-                  className="w-full px-3 py-2 text-[13px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg text-[var(--tx)]"
+                  className="admin-premium-input w-full"
                 />
               </div>
             </div>
@@ -410,7 +410,7 @@ export default function PartnerBuildingsTab({
                     has_move_elevator: e.target.value !== "" && e.target.value !== "none",
                   }))
                 }
-                className="w-full px-3 py-2 text-[13px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg text-[var(--tx)]"
+                className="admin-premium-input w-full"
               >
                 <option value="">—</option>
                 <option value="dedicated">Dedicated</option>
@@ -429,7 +429,7 @@ export default function PartnerBuildingsTab({
                     ...(e.target.value !== "custom" ? { custom_move_hours: "" } : {}),
                   }))
                 }
-                className="w-full px-3 py-2 text-[13px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg text-[var(--tx)]"
+                className="admin-premium-input w-full"
               >
                 <option value="8to6">8:00 AM – 6:00 PM</option>
                 <option value="24_7">24/7</option>
@@ -442,7 +442,7 @@ export default function PartnerBuildingsTab({
                 <input
                   value={form.custom_move_hours}
                   onChange={(e) => setForm((f) => ({ ...f, custom_move_hours: e.target.value }))}
-                  className="w-full px-3 py-2 text-[13px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg text-[var(--tx)]"
+                  className="admin-premium-input w-full"
                   placeholder="e.g. 7 AM – 8 PM weekdays"
                 />
               </div>
@@ -452,7 +452,7 @@ export default function PartnerBuildingsTab({
               <input
                 value={form.parking_type}
                 onChange={(e) => setForm((f) => ({ ...f, parking_type: e.target.value }))}
-                className="w-full px-3 py-2 text-[13px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg text-[var(--tx)]"
+                className="admin-premium-input w-full"
                 placeholder="Dedicated loading / street / none"
               />
             </div>
@@ -462,7 +462,7 @@ export default function PartnerBuildingsTab({
                 <input
                   value={form.building_contact_name}
                   onChange={(e) => setForm((f) => ({ ...f, building_contact_name: e.target.value }))}
-                  className="w-full px-3 py-2 text-[13px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg text-[var(--tx)]"
+                  className="admin-premium-input w-full"
                 />
               </div>
               <div>
@@ -471,7 +471,7 @@ export default function PartnerBuildingsTab({
                   type="tel"
                   value={form.building_contact_phone}
                   onChange={(e) => setForm((f) => ({ ...f, building_contact_phone: e.target.value }))}
-                  className="w-full px-3 py-2 text-[13px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg text-[var(--tx)]"
+                  className="admin-premium-input w-full"
                 />
               </div>
             </div>
@@ -481,7 +481,7 @@ export default function PartnerBuildingsTab({
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                 rows={2}
-                className="w-full px-3 py-2 text-[13px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg text-[var(--tx)] resize-none"
+                className="admin-premium-input w-full resize-none"
               />
             </div>
             <div className="flex gap-2 pt-2">

@@ -181,7 +181,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
               ${sidebarCollapsed ? "md:w-14 w-[220px]" : "w-[220px]"}
             `}
           >
-            <div className="h-14 flex items-center shrink-0 bg-white/35 border-b border-[#5C1A33]/[0.1]">
+            <div className="h-12 flex items-center shrink-0 bg-white/35 border-b border-[#5C1A33]/[0.1]">
               {/* Rail: expand only */}
               <div
                 className={`hidden md:flex w-full items-center justify-center transition-all duration-200 ${sidebarCollapsed ? "" : "opacity-0 pointer-events-none absolute"}`}
@@ -358,7 +358,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
               className={`relative min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y tab-content ${
                 immersiveNav
                   ? "pt-0 pb-0"
-                  : "max-md:pt-[calc(3rem+env(safe-area-inset-top,0px))] md:pt-[env(safe-area-inset-top,0px)] pb-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px))] md:pb-0"
+                  : "max-md:pt-[calc(var(--app-chrome-h)_+_env(safe-area-inset-top,0px))] md:pt-[env(safe-area-inset-top,0px)] pb-[calc(var(--admin-mobile-nav-bar)_+_env(safe-area-inset-bottom,0px))] md:pb-0"
               }`}
             >
               {children}

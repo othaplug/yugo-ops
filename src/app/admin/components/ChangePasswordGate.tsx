@@ -83,7 +83,7 @@ export default function ChangePasswordGate({ children }: { children: React.React
                 </div>
               )}
               <div>
-                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New password</label>
+                <label className="admin-premium-label">New password</label>
                 <input
                   type="password"
                   value={password}
@@ -91,18 +91,18 @@ export default function ChangePasswordGate({ children }: { children: React.React
                   placeholder="Min 8 characters"
                   required
                   minLength={8}
-                  className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                  className="admin-premium-input w-full"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Confirm password</label>
+                <label className="admin-premium-label">Confirm password</label>
                 <input
                   type="password"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   placeholder="Re-enter password"
                   required
-                  className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                  className="admin-premium-input w-full"
                 />
               </div>
               <button

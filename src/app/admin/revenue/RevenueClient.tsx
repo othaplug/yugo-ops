@@ -36,7 +36,10 @@ import {
   partnerRevenueTotalForMonth,
   partnerRevenueLifetime,
 } from "@/lib/partner-revenue";
-import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
+import {
+  deliveryPreTaxForAdminList,
+  invoicePreTaxForDisplay,
+} from "@/lib/delivery-pricing";
 
 type Period = "6mo" | "year" | "ytd" | "monthly" | "all";
 
@@ -318,12 +321,12 @@ export default function RevenueClient({
 
   const outstanding = all
     .filter((i) => invoiceStatusIsOutstanding(i.status))
-    .reduce((s, i) => s + Number(i.amount ?? 0), 0);
+    .reduce((s, i) => s + invoicePreTaxForDisplay(i), 0);
 
   const byClient: Record<string, number> = {};
   invoicesForBreakdown.forEach((i) => {
     const name = i.client_name ?? "-";
-    byClient[name] = (byClient[name] || 0) + Number(i.amount);
+    byClient[name] = (byClient[name] || 0) + invoicePreTaxForDisplay(i);
   });
   paidMovesList.forEach((m) => {
     const name = m.client_name || "-";
@@ -435,7 +438,7 @@ export default function RevenueClient({
         if (d.getFullYear() === year && d.getMonth() === month) {
           const day = d.getDate();
           byDayPartnerInv[day] =
-            (byDayPartnerInv[day] || 0) + Number(inv.amount);
+            (byDayPartnerInv[day] || 0) + invoicePreTaxForDisplay(inv);
         }
       });
       paidMovesList.forEach((m) => {
@@ -449,7 +452,7 @@ export default function RevenueClient({
       const covered = deliveryIdsCoveredByAnyInvoice(all);
       const PAID_D = new Set(["delivered", "completed"]);
       for (const raw of deliveries || []) {
-        const d = raw as Parameters<typeof effectiveDeliveryPrice>[0] & {
+        const d = raw as Parameters<typeof deliveryPreTaxForAdminList>[0] & {
           id: string;
           status?: string | null;
           scheduled_date?: string | null;
@@ -466,7 +469,7 @@ export default function RevenueClient({
         )
           continue;
         const day = dt.getDate();
-        byDayDlv[day] = (byDayDlv[day] || 0) + effectiveDeliveryPrice(d);
+        byDayDlv[day] = (byDayDlv[day] || 0) + deliveryPreTaxForAdminList(d);
       }
       return Array.from({ length: daysInMonth }, (_, i) => {
         const day = i + 1;
@@ -531,12 +534,12 @@ export default function RevenueClient({
       getInvoicePartnerType(inv, orgIdToType, clientTypeMap),
     );
     byTypeRaw[cat] =
-      (byTypeRaw[cat] || 0) + Number(inv.amount ?? 0);
+      (byTypeRaw[cat] || 0) + invoicePreTaxForDisplay(inv);
   }
   const coveredForBreakdown = deliveryIdsCoveredByAnyInvoice(all);
   const PAID_DLV = new Set(["delivered", "completed"]);
   for (const raw of deliveryRows) {
-    const d = raw as Parameters<typeof effectiveDeliveryPrice>[0] & {
+    const d = raw as Parameters<typeof deliveryPreTaxForAdminList>[0] & {
       id: string;
       organization_id?: string | null;
       status?: string | null;
@@ -548,7 +551,7 @@ export default function RevenueClient({
       (oid && orgIdToType[oid]) || "retail";
     const cat = normalizePartnerCategoryForBreakdown(orgType);
     byTypeRaw[cat] =
-      (byTypeRaw[cat] || 0) + effectiveDeliveryPrice(d);
+      (byTypeRaw[cat] || 0) + deliveryPreTaxForAdminList(d);
   }
   byTypeRaw.b2c = (byTypeRaw.b2c || 0) + moveRevenue;
   const byType = [
@@ -1115,7 +1118,7 @@ export default function RevenueClient({
                         {getInvoiceStatusLabel(inv.status)}
                       </span>
                       <span className="font-bold text-[var(--tx)] shrink-0">
-                        {formatCurrency(inv.amount)}
+                        {formatCurrency(invoicePreTaxForDisplay(inv))}
                       </span>
                     </li>
                   ))}
@@ -1149,7 +1152,10 @@ export default function RevenueClient({
                     </span>
                     <span className="tabular-nums">
                       {formatCurrency(
-                        invoicesByType.reduce((s, i) => s + Number(i.amount), 0),
+                        invoicesByType.reduce(
+                          (s, i) => s + invoicePreTaxForDisplay(i),
+                          0,
+                        ),
                       )}
                     </span>
                   </div>
