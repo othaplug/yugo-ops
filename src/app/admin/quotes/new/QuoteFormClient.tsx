@@ -2305,6 +2305,86 @@ export default function QuoteFormClient({
     })();
   }, [hubspotDealId]);
 
+  const copyQuoteParam = searchParams.get("copy_quote")?.trim() || "";
+  const copyQuotePrefillDone = useRef(false);
+
+  // ── Copy from existing quote (B2B / commercial edit entry) ─────────────
+  useEffect(() => {
+    if (!copyQuoteParam || copyQuotePrefillDone.current) return;
+    copyQuotePrefillDone.current = true;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/admin/quotes/copy-prefill?quote_id=${encodeURIComponent(copyQuoteParam)}`,
+        );
+        if (!res.ok) return;
+        const data = (await res.json()) as { quote?: Record<string, unknown> };
+        const Q = data.quote;
+        if (!Q) return;
+        const st = String(Q.service_type || "");
+        const nextService =
+          st === "b2b_oneoff" || st === "b2b_delivery" ? "b2b_delivery" : st;
+        if (nextService && SERVICE_TYPES.some((x) => x.value === nextService)) {
+          setServiceType(nextService);
+        }
+        const contacts = Q.contacts as
+          | Record<string, unknown>
+          | Record<string, unknown>[]
+          | null
+          | undefined;
+        const contact = Array.isArray(contacts) ? contacts[0] : contacts;
+        const cStr = (v: unknown) => (v != null ? String(v).trim() : "");
+        const nm = cStr(contact?.name);
+        if (nm) {
+          const parts = nm.split(/\s+/);
+          setFirstName(parts[0] || "");
+          setLastName(parts.slice(1).join(" ") || "");
+        }
+        if (cStr(contact?.email)) setEmail(cStr(contact?.email).toLowerCase());
+        if (cStr(contact?.phone)) setPhone(formatPhone(cStr(contact?.phone)));
+        if (cStr(Q.from_address)) setFromAddress(cStr(Q.from_address));
+        if (cStr(Q.to_address)) setToAddress(cStr(Q.to_address));
+        if (cStr(Q.move_date)) setMoveDate(cStr(Q.move_date).slice(0, 10));
+        if (cStr(Q.from_access)) setFromAccess(cStr(Q.from_access));
+        if (cStr(Q.to_access)) setToAccess(cStr(Q.to_access));
+
+        const fa =
+          Q.factors_applied &&
+          typeof Q.factors_applied === "object" &&
+          !Array.isArray(Q.factors_applied)
+            ? (Q.factors_applied as Record<string, unknown>)
+            : null;
+        if (fa) {
+          const vc = cStr(fa.b2b_vertical_code);
+          if (vc) setB2bVerticalCode(vc);
+          const linesRaw = fa.b2b_line_items;
+          if (Array.isArray(linesRaw) && linesRaw.length > 0) {
+            const mapped: B2bLineRow[] = linesRaw.map((row) => {
+              const r = row as Record<string, unknown>;
+              const qtyRaw = r.quantity ?? r.qty;
+              const qty = Math.max(1, Number(qtyRaw) || 1);
+              return {
+                description: cStr(r.description) || "Item",
+                qty,
+                fragile: Boolean(r.fragile),
+                handling_type: cStr(fa.b2b_handling_type) || undefined,
+              };
+            });
+            setB2bLines(mapped);
+          }
+          const biz = cStr(fa.b2b_retailer_source);
+          if (biz) setB2bBusinessName(biz);
+        }
+
+        setLeadQuoteBanner(
+          `Loaded ${cStr(Q.quote_id) || copyQuoteParam}. Review fields, adjust pricing, then generate.`,
+        );
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [copyQuoteParam]);
+
   // ── Lead pre-fill (Send Quote from Leads dashboard) ────
   useEffect(() => {
     if (!leadIdParam) {
@@ -2337,7 +2417,7 @@ export default function QuoteFormClient({
         if (num) {
           setLeadQuoteBanner(
             nm
-              ? `Creating quote for lead ${num} — ${nm}`
+              ? `Creating quote for lead ${num} · ${nm}`
               : `Creating quote for lead ${num}`,
           );
         }

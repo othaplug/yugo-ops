@@ -9,6 +9,7 @@ import {
   getOfflineDepositInclusiveFromQuote,
   getQuoteTotalWithTaxFromRow,
 } from "@/app/quote/[quoteId]/quote-shared";
+import { quoteRowEligibleForHubSpotDeal } from "@/lib/quotes/hubspot-quote-eligibility";
 
 interface Props {
   params: Promise<{ quoteId: string }>;
@@ -63,7 +64,11 @@ export default async function QuoteDetailPage({ params }: Props) {
     parseInt(maxFuRow?.value || "3", 10) || 3,
   );
 
-  const engagementMetrics = await computeQuoteEngagementMetrics(db, quote.id);
+  const engagementMetrics = await computeQuoteEngagementMetrics(
+    db,
+    quote.id,
+    (quote as { sent_at?: string | null }).sent_at ?? null,
+  );
 
   const paymentPipelineMode = await getQuotePaymentPipelineMode(
     quote.service_type as string | null,
@@ -85,6 +90,11 @@ export default async function QuoteDetailPage({ params }: Props) {
     .eq("source_quote_id", quote.id)
     .maybeSingle();
 
+  const hubspotDealId =
+    typeof (quote as { hubspot_deal_id?: string | null }).hubspot_deal_id === "string"
+      ? (quote as { hubspot_deal_id: string }).hubspot_deal_id.trim() || null
+      : null;
+
   return (
     <div className="max-w-[1400px] mx-auto px-5 md:px-6 py-5 md:py-6">
       <QuoteDetailClient
@@ -100,6 +110,8 @@ export default async function QuoteDetailPage({ params }: Props) {
         offlineDepositAmount={offlineDepositAmount}
         linkedMoveCode={linkedMoveRow?.move_code ?? null}
         linkedDeliveryNumber={linkedDelRow?.delivery_number ?? null}
+        hubspotDealId={hubspotDealId}
+        hubspotEligible={quoteRowEligibleForHubSpotDeal(quote as Record<string, unknown>)}
       />
     </div>
   );

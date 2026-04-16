@@ -58,6 +58,22 @@ export async function POST(req: Request) {
     }
 
     const supabase = createAdminClient();
+
+    const { data: quoteRow } = await supabase
+      .from("quotes")
+      .select("id, status")
+      .eq("quote_id", quote_id)
+      .maybeSingle();
+
+    if (!quoteRow) {
+      return NextResponse.json({ error: "Quote not found" }, { status: 404 });
+    }
+
+    // Draft opens are coordinator previews; do not log client engagement or legacy events.
+    if (String(quoteRow.status || "").toLowerCase() === "draft") {
+      return NextResponse.json({ ok: true });
+    }
+
     const cfg = await getFeatureConfig(["quote_engagement_tracking"]);
     const trackingEnabled = cfg.quote_engagement_tracking === "true";
 
@@ -70,21 +86,13 @@ export async function POST(req: Request) {
     }
 
     if (trackingEnabled && ENGAGEMENT_EVENTS.has(event_type)) {
-      const { data: quoteRow } = await supabase
-        .from("quotes")
-        .select("id")
-        .eq("quote_id", quote_id)
-        .single();
-
-      if (quoteRow) {
-        await supabase.from("quote_engagement").insert({
-          quote_id: quoteRow.id,
-          event_type,
-          event_data: event_data ?? metadata ?? {},
-          session_duration_seconds: session_duration_seconds ?? null,
-          device_type: device_type ?? null,
-        });
-      }
+      await supabase.from("quote_engagement").insert({
+        quote_id: quoteRow.id,
+        event_type,
+        event_data: event_data ?? metadata ?? {},
+        session_duration_seconds: session_duration_seconds ?? null,
+        device_type: device_type ?? null,
+      });
     }
 
     // Feed notable client engagement events to the admin activity feed

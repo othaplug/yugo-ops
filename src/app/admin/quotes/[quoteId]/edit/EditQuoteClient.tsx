@@ -432,11 +432,6 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
     contact, oq, factors, extraFromStops, extraToStops,
   ]);
 
-  useEffect(() => {
-    if (!isB2bQuote || !oq.quote_id) return;
-    router.replace(`/admin/quotes/${encodeURIComponent(oq.quote_id)}`);
-  }, [isB2bQuote, oq.quote_id, router]);
-
   // After multi-stop rows load, capture baseline so we do not call pricing until the user changes scope.
   useEffect(() => {
     if (isB2bQuote || !jobStopsLoaded) return;
@@ -580,15 +575,6 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
 
   const inputClass = "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/82 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
   const labelClass = "admin-premium-label admin-premium-label--tight mb-1";
-
-  if (isB2bQuote) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 py-20 text-[var(--tx3)] text-sm" role="status">
-        <Loader2 size={22} className="animate-spin text-[var(--gold)]" aria-hidden />
-        <span>Opening quote…</span>
-      </div>
-    );
-  }
 
   if (done) {
     return (

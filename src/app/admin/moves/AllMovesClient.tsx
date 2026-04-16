@@ -92,6 +92,12 @@ const MARGIN_FILTERS = [
   { value: "green", label: "Green (≥35%)", dot: "bg-emerald-400" },
 ];
 
+function marginBandFromPct(pct: number): "green" | "yellow" | "red" {
+  if (pct >= 35) return "green";
+  if (pct >= 25) return "yellow";
+  return "red";
+}
+
 function normalizeType(move: Move): string {
   const mt = (move.move_type || move.service_type || "").toLowerCase();
   if (mt.includes("office") || mt.includes("commercial")) return "office";
@@ -339,7 +345,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
         const pct = isCompleted ? m.margin_percent : m.est_margin_percent;
         if (pct == null) return <span className="block text-right dt-text-muted">-</span>;
 
-        const flag = m.margin_flag || (pct >= 35 ? "green" : pct >= 25 ? "yellow" : "red");
+        const flag = marginBandFromPct(Number(pct));
         const dotColor = flag === "green"
           ? "bg-emerald-400"
           : flag === "yellow"
@@ -468,7 +474,7 @@ export default function AllMovesClient({
       const isCompleted = ["completed", "delivered", "paid"].includes(effectiveMoveStatus(m).toLowerCase());
       const pct = isCompleted ? m.margin_percent : m.est_margin_percent;
       if (pct == null) return false;
-      const flag = m.margin_flag || (pct >= 35 ? "green" : pct >= 25 ? "yellow" : "red");
+      const flag = marginBandFromPct(Number(pct));
       return flag === activeMargin;
     });
   }, [afterStatusFilter, activeMargin]);

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getQuoteIdPrefix, quoteNumericSuffixForHubSpot } from "@/lib/quotes/quote-id";
+import { resolveHubSpotPipelineId } from "@/lib/hubspot/hubspot-pipeline";
 import { resolveHubSpotStageInternalId } from "@/lib/hubspot/resolve-hubspot-stage-id";
 
 const HS_CONTACTS_SEARCH = "https://api.hubapi.com/crm/v3/objects/contacts/search";
@@ -105,22 +106,33 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
   clientPhone?: string | null;
 }): Promise<{ dealId: string } | null> {
   const token = process.env.HUBSPOT_ACCESS_TOKEN;
-  if (!token) return null;
+  if (!token) {
+    console.error("[HubSpot] HUBSPOT_ACCESS_TOKEN is not set. Cannot create deals.")
+    return null
+  }
 
   const { sb, quote, quoteIdText, quoteUrl, clientEmail, firstName, lastName, clientPhone } = opts;
 
+  const pipelineId = await resolveHubSpotPipelineId(sb);
+  if (!pipelineId) {
+    console.error(
+      "[HubSpot] hubspot_pipeline_id is not set in platform_config and HUBSPOT_PIPELINE_ID is not set. " +
+        "Deals in a custom pipeline need both pipeline and dealstage. Cannot create deal.",
+    )
+    return null
+  }
+
   const stageId = await resolveHubSpotStageInternalId(sb, "quote_sent");
   if (!stageId) {
-    console.warn("[hubspot] auto-create deal skipped: hubspot_stage_quote_sent not configured");
-    return null;
+    return null
   }
 
   const prefix = await getQuoteIdPrefix(sb);
   const jobNo = quoteNumericSuffixForHubSpot(quoteIdText, prefix);
   const price = essentialPrice(quote);
-  const dealName = [firstName, lastName, "—", tierOrServiceLabel(quote), "—", quote.move_date || ""]
+  const dealName = [firstName, lastName, tierOrServiceLabel(quote), quote.move_date || ""]
     .filter((x) => String(x).trim().length > 0)
-    .join(" ")
+    .join(" · ")
     .trim() || `Quote ${quoteIdText}`;
 
   const contactId = await findOrCreateHubSpotContact(token, {
@@ -132,6 +144,7 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
 
   const properties: Record<string, string> = {
     dealname: dealName.slice(0, 200),
+    pipeline: pipelineId,
     dealstage: stageId,
     quote_url: quoteUrl,
     service_type: String(quote.service_type || "").trim(),
@@ -174,7 +187,11 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
 
   if (!dealRes.ok) {
     const t = await dealRes.text();
-    console.warn("[hubspot] create deal failed:", dealRes.status, t);
+    console.error(
+      `[HubSpot] create deal failed for quote ${quoteIdText}:`,
+      dealRes.status,
+      t.slice(0, 2000),
+    )
     return null;
   }
 

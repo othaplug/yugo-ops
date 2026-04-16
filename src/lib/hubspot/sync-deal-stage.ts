@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LOGICAL_STAGE_PLATFORM_KEYS, YUGO_TRIGGER_TO_LOGICAL_STAGE } from "@/lib/hubspot/logical-deal-stages";
+import { resolveHubSpotPipelineId } from "@/lib/hubspot/hubspot-pipeline";
 import { resolveHubSpotStageInternalId } from "@/lib/hubspot/resolve-hubspot-stage-id";
 
 const HS_DEALS = "https://api.hubapi.com/crm/v3/objects/deals";
@@ -39,9 +40,18 @@ export async function syncDealStage(
   try {
     const sb = createAdminClient();
     const stageId = await resolveHubSpotStageInternalId(sb, logical);
-    if (!stageId) return;
+    if (!stageId) {
+      return
+    }
 
+    const pipelineId = await resolveHubSpotPipelineId(sb);
+    if (!pipelineId) {
+      console.error(
+        "[HubSpot] hubspot_pipeline_id is not set. Stage updates may fail for deals in a custom pipeline.",
+      )
+    }
     const properties: Record<string, string> = {
+      ...(pipelineId ? { pipeline: pipelineId } : {}),
       dealstage: stageId,
       ...stringifyHubSpotProps(extraProperties),
     };

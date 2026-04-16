@@ -21,16 +21,15 @@ export async function GET(
   const { data, error: fetchErr } = await (byUuid
     ? admin
         .from("moves")
-        .select(
-          "id, stage, status, updated_at, completed_at, estimate, amount, estimated_internal_cost, estimated_duration_minutes, factors_applied, service_type, move_type, distance_km, drive_time_min, est_crew_size, est_hours, inventory_score, from_access, to_access, from_long_carry, to_long_carry, tier_selected, truck_primary, client_name",
-        )
+        // Select `*` so this route stays compatible when DB schema lags behind repo migrations.
+        // The caller only needs a subset of these fields, and missing columns should not break polling.
+        .select("*")
         .eq("id", rawSlug)
         .single()
     : admin
         .from("moves")
-        .select(
-          "id, stage, status, updated_at, completed_at, estimate, amount, estimated_internal_cost, estimated_duration_minutes, factors_applied, service_type, move_type, distance_km, drive_time_min, est_crew_size, est_hours, inventory_score, from_access, to_access, from_long_carry, to_long_carry, tier_selected, truck_primary, client_name",
-        )
+        // Select `*` so this route stays compatible when DB schema lags behind repo migrations.
+        .select("*")
         .ilike("move_code", rawSlug.replace(/^#/, "").toUpperCase())
         .single());
 

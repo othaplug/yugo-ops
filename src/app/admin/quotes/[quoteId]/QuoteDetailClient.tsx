@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   ArrowLeft,
   ArrowSquareOut as ExternalLink,
@@ -19,6 +19,8 @@ import {
   CaretDown as ChevronDown,
   CaretRight,
   PencilSimple as Pencil,
+  LinkSimple,
+  WarningCircle,
 } from "@phosphor-icons/react";
 import {
   ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS,
@@ -32,6 +34,7 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { formatPhone } from "@/lib/phone";
 import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
 import { quoteDetailDateLabel } from "@/lib/quotes/quote-field-labels";
+import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
 import type { QuoteEngagementMetrics } from "@/lib/quotes/comparison-intelligence";
 import { formatCurrency } from "@/lib/format-currency";
 import type { QuotePaymentPipelineMode } from "@/lib/quotes/payment-pipeline-mode";
@@ -68,6 +71,10 @@ interface Props {
   offlineDepositAmount?: number;
   linkedMoveCode?: string | null;
   linkedDeliveryNumber?: string | null;
+  /** Set when a HubSpot deal id exists on the quote row */
+  hubspotDealId?: string | null;
+  /** False for sample or training quotes (no HubSpot sync) */
+  hubspotEligible?: boolean;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -177,13 +184,108 @@ function fmtDuration(seconds: number): string {
   return s > 0 ? `${m}m ${s}s` : `${m}m`;
 }
 
+function hasResidentialTiers(tiers: unknown): boolean {
+  if (!tiers) return false;
+  try {
+    const obj: Record<string, unknown> =
+      typeof tiers === "string"
+        ? (JSON.parse(tiers) as Record<string, unknown>)
+        : (tiers as Record<string, unknown>);
+    if (!obj || typeof obj !== "object") return false;
+    const keys = Object.keys(obj).map((k) => k.toLowerCase());
+    return keys.some((k) =>
+      ["essential", "curated", "signature", "estate", "premier", "essentials"].includes(k),
+    );
+  } catch {
+    return false;
+  }
+}
+
+function truncateAdminText(s: string, max: number): string {
+  const t = s.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1)}…`;
+}
+
+function ContractSignedEngagementDetail({
+  data,
+  isSuperAdmin,
+}: {
+  data: Record<string, unknown> | null | undefined;
+  isSuperAdmin: boolean;
+}) {
+  if (!data || typeof data !== "object") return null;
+  const str = (v: unknown) => (v != null && v !== "" ? String(v).trim() : "");
+  const typedName = str(data.typed_name);
+  const signedRaw = str(data.signed_at);
+  const signedLabel =
+    signedRaw && !Number.isNaN(Date.parse(signedRaw))
+      ? formatPlatformDisplay(signedRaw, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : signedRaw || "-";
+  const deposit = str(data.deposit);
+  const total = str(data.grand_total);
+  const pkg = str(data.package_label);
+  const ver = str(data.agreement_version);
+  const ip = str(data.ip_address);
+  const ua = str(data.user_agent);
+  const uaShort = ua ? truncateAdminText(ua, isSuperAdmin ? 120 : 72) : "";
+
+  const Row = ({ label, value }: { label: string; value: string }) => (
+    <div className="min-w-0">
+      <dt className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/88">
+        {label}
+      </dt>
+      <dd className="text-[11px] font-medium text-[var(--tx)] mt-0.5 break-words">
+        {value || "-"}
+      </dd>
+    </div>
+  );
+
+  return (
+    <dl className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 text-left max-w-xl">
+      {typedName ? <Row label="Signed name" value={typedName} /> : null}
+      <Row label="Signed at" value={signedLabel} />
+      {deposit && Number.isFinite(Number(deposit)) ? (
+        <Row label="Deposit" value={fmtCurrency(Number(deposit))} />
+      ) : null}
+      {total && Number.isFinite(Number(total)) ? (
+        <Row label="Grand total" value={fmtCurrency(Number(total))} />
+      ) : null}
+      {pkg ? <Row label="Package" value={pkg} /> : null}
+      {ver ? <Row label="Agreement version" value={ver} /> : null}
+      {isSuperAdmin && ip ? <Row label="IP" value={ip} /> : null}
+      {uaShort ? (
+        <div className="sm:col-span-2 min-w-0">
+          <dt className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/88">
+            {isSuperAdmin ? "User agent" : "Browser"}
+          </dt>
+          <dd className="text-[11px] font-medium text-[var(--tx)] mt-0.5 break-all">
+            {uaShort}
+          </dd>
+        </div>
+      ) : null}
+    </dl>
+  );
+}
+
 /** Human-readable engagement payload (never raw DB keys like service_type, scroll_pct). */
 function formatEngagementEventDetail(
   eventType: string,
   data: Record<string, unknown> | null | undefined,
   quoteServiceType: string | null,
+  showTierFields: boolean,
 ): string {
   if (!data || typeof data !== "object") return "";
+
+  if (eventType === "contract_signed") {
+    return "";
+  }
 
   if (eventType === "engagement_ping") {
     const sp = data.scroll_pct;
@@ -202,12 +304,8 @@ function formatEngagementEventDetail(
     else parts.push(toTitleCase(String(data.source)));
   }
 
-  if (data.service_type != null && data.service_type !== "") {
-    const st = String(data.service_type);
-    if (!quoteServiceType || st !== quoteServiceType) {
-      parts.push(serviceTypeDisplayLabel(st));
-    }
-  }
+  // Do not show `event_data.service_type`. It is often stale/incorrect for non-residential flows
+  // and causes confusing labels like "(Local Move)" on commercial delivery quotes.
 
   const skip = new Set(["source", "service_type", "scroll_pct", "elapsed_seconds"]);
 
@@ -215,6 +313,9 @@ function formatEngagementEventDetail(
     if (v == null || v === "") continue;
     if (skip.has(k)) continue;
 
+    if ((k === "tier" || k === "selected_tier") && !showTierFields) {
+      continue;
+    }
     if (k === "tier" || k === "selected_tier") {
       const t = String(v).toLowerCase();
       const label =
@@ -305,8 +406,15 @@ export default function QuoteDetailClient({
   offlineDepositAmount = 0,
   linkedMoveCode = null,
   linkedDeliveryNumber = null,
+  hubspotDealId = null,
+  hubspotEligible = true,
 }: Props) {
   const router = useRouter();
+  const [hubspotLinkedId, setHubspotLinkedId] = useState<string | null>(
+    hubspotDealId?.trim() ? hubspotDealId.trim() : null,
+  );
+  const [hubspotRetryBusy, setHubspotRetryBusy] = useState(false);
+  const [hubspotRetryError, setHubspotRetryError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showRecoverConfirm, setShowRecoverConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -343,6 +451,40 @@ export default function QuoteDetailClient({
       setLossOtherNote("");
     }
   }, [quote.status, quote.auto_followup_active, quote.loss_reason]);
+
+  useEffect(() => {
+    const v = hubspotDealId?.trim();
+    setHubspotLinkedId(v ? v : null);
+  }, [hubspotDealId]);
+
+  const handleHubspotRetry = async () => {
+    setHubspotRetryBusy(true);
+    setHubspotRetryError(null);
+    try {
+      const res = await fetch(
+        `/api/admin/quotes/${encodeURIComponent(quote.quote_id)}/hubspot-retry`,
+        { method: "POST", credentials: "same-origin" },
+      );
+      const data = (await res.json().catch(() => ({}))) as {
+        message?: string;
+        dealId?: string;
+      };
+      if (!res.ok) {
+        setHubspotRetryError(
+          typeof data.message === "string" ? data.message : "Could not create HubSpot deal",
+        );
+        return;
+      }
+      if (data.dealId) {
+        setHubspotLinkedId(String(data.dealId));
+        router.refresh();
+      }
+    } catch {
+      setHubspotRetryError("Request failed");
+    } finally {
+      setHubspotRetryBusy(false);
+    }
+  };
 
   async function patchQuote(payload: Record<string, unknown>) {
     setPipelineSaving(true);
@@ -485,10 +627,52 @@ export default function QuoteDetailClient({
   const showCreateMoveFromAcceptedQuote =
     quote.service_type !== "bin_rental";
   const factors = quote.factors_applied as Record<string, unknown> | null;
-  const signal = engagementSignal(engagement);
+  const showTieredEngagement = hasResidentialTiers(quote.tiers);
+
+  /** Draft previews can log real timestamps before send; clip to post-send for an accurate client timeline. */
+  const engagementAfterSend = useMemo(() => {
+    const raw = (quote as { sent_at?: string | null }).sent_at;
+    if (raw == null || String(raw).trim() === "") return engagement;
+    const clip = Date.parse(String(raw));
+    if (!Number.isFinite(clip)) return engagement;
+    return engagement.filter((e) => {
+      const t = Date.parse(String(e.created_at || ""));
+      return Number.isFinite(t) && t >= clip;
+    });
+  }, [engagement, quote.sent_at]);
+
+  const legacyAfterSend = useMemo(() => {
+    const raw = (quote as { sent_at?: string | null }).sent_at;
+    if (raw == null || String(raw).trim() === "") return legacyEvents;
+    const clip = Date.parse(String(raw));
+    if (!Number.isFinite(clip)) return legacyEvents;
+    return legacyEvents.filter((e) => {
+      const t = Date.parse(String(e.created_at || ""));
+      return Number.isFinite(t) && t >= clip;
+    });
+  }, [legacyEvents, quote.sent_at]);
+
+  const signal = showTieredEngagement
+    ? engagementSignal(engagementAfterSend)
+    : (() => {
+        const types = new Set(engagementAfterSend.map((e) => e.event_type));
+        if (types.has("payment_started"))
+          return { label: "Hot, started payment", color: "text-green-400" };
+        if (types.has("contract_viewed"))
+          return { label: "Warm, reviewed contract", color: "text-emerald-400" };
+        if (types.has("page_view")) {
+          const maxDur = Math.max(
+            ...engagementAfterSend.map((e) => e.session_duration_seconds ?? 0),
+          );
+          if (maxDur < 30)
+            return { label: "Cold, quick glance", color: "text-red-400" };
+          return { label: "Lukewarm, browsed briefly", color: "text-amber-400" };
+        }
+        return { label: "No engagement", color: "text-[var(--tx3)]" };
+      })();
 
   const allEvents = [
-    ...engagement.map((e) => ({
+    ...engagementAfterSend.map((e) => ({
       id: e.id,
       type: e.event_type,
       data: e.event_data,
@@ -497,10 +681,10 @@ export default function QuoteDetailClient({
       at: e.created_at,
       source: "engagement" as const,
     })),
-    ...legacyEvents
+    ...legacyAfterSend
       .filter(
         (e) =>
-          !engagement.some(
+          !engagementAfterSend.some(
             (eg) =>
               Math.abs(
                 new Date(eg.created_at).getTime() -
@@ -518,7 +702,14 @@ export default function QuoteDetailClient({
         at: e.created_at,
         source: "legacy" as const,
       })),
-  ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+  ]
+    .filter((e) => {
+      if (showTieredEngagement) return true;
+      return !["tier_clicked", "tier_hovered", "tier_selected", "comparison_viewed"].includes(
+        String(e.type || ""),
+      );
+    })
+    .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 
   return (
     <>
@@ -561,12 +752,72 @@ export default function QuoteDetailClient({
             })}
           </p>
 
+          {(quote.sent_at || hubspotLinkedId) && (
+            <div className="pt-2">
+              {hubspotLinkedId ? (
+                <div className="rounded-lg border border-[var(--brd)] bg-[var(--card)] px-3 py-2.5 flex flex-wrap items-center gap-2 text-[12px]">
+                  <LinkSimple className="w-4 h-4 shrink-0 text-[var(--tx3)]" aria-hidden weight="duotone" />
+                  <span className="font-semibold text-[var(--tx)]">HubSpot</span>
+                  <span className="text-[var(--tx2)]">Deal linked</span>
+                  <code className="text-[11px] font-mono bg-[var(--bg)] px-1.5 py-0.5 rounded border border-[var(--brd)] text-[var(--tx)]">
+                    {hubspotLinkedId}
+                  </code>
+                  <InfoHint variant="admin" align="start" ariaLabel="About HubSpot deal id">
+                    Search this deal id in HubSpot (Sales deals) if it does not open from a direct link. Stage updates depend on pipeline settings in Platform Settings.
+                  </InfoHint>
+                </div>
+              ) : quote.sent_at && !hubspotEligible ? (
+                <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2.5 text-[12px] text-[var(--tx2)]">
+                  <span className="font-semibold text-[var(--tx)]">HubSpot</span>
+                  {" "}
+                  Not synced for sample or training quotes.
+                </div>
+              ) : quote.sent_at && hubspotEligible ? (
+                <div className="rounded-lg border border-amber-500/35 bg-amber-500/5 px-3 py-3 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <WarningCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" aria-hidden weight="fill" />
+                    <div className="min-w-0 space-y-1">
+                      <p className="text-[12px] font-semibold text-[var(--tx)]">No HubSpot deal linked</p>
+                      <p className="text-[11px] text-[var(--tx2)] leading-relaxed">
+                        Deals are created when the quote is sent, if the integration token and pipeline or stage ids are set. If something failed at send time, fix settings then try again here. This does not resend email.
+                      </p>
+                    </div>
+                  </div>
+                  {hubspotRetryError ? (
+                    <p className="text-[11px] text-red-600 pl-6">{hubspotRetryError}</p>
+                  ) : null}
+                  <div className="flex flex-wrap items-center gap-2 pl-6">
+                    <button
+                      type="button"
+                      onClick={() => void handleHubspotRetry()}
+                      disabled={hubspotRetryBusy}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:opacity-95 disabled:opacity-50"
+                    >
+                      {hubspotRetryBusy ? "Working…" : "Create HubSpot deal"}
+                    </button>
+                    <Link
+                      href="/admin/platform?tab=app"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] underline underline-offset-2"
+                    >
+                      Platform Settings
+                      <CaretRight className="w-3 h-3" weight="bold" aria-hidden />
+                    </Link>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
+
           {/* Row 4: action buttons, wrap on mobile */}
           <div className="flex items-center gap-2 flex-wrap pt-1">
             <button
               type="button"
               onClick={() =>
-                router.push(`/admin/quotes/${quote.quote_id}/edit`)
+                router.push(
+                  isB2BDeliveryQuoteServiceType(String(quote.service_type || ""))
+                    ? `/admin/quotes/new?copy_quote=${encodeURIComponent(quote.quote_id)}`
+                    : `/admin/quotes/${quote.quote_id}/edit`,
+                )
               }
               className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
             >
@@ -1159,7 +1410,8 @@ export default function QuoteDetailClient({
                 </span>
               </div>
 
-              {engagement.length === 0 && legacyEvents.length === 0 ? (
+              {engagementAfterSend.length === 0 &&
+              legacyAfterSend.length === 0 ? (
                 <p className="text-[11px] text-[var(--tx3)] italic">
                   No engagement recorded yet. The client has not opened this
                   quote.
@@ -1181,11 +1433,15 @@ export default function QuoteDetailClient({
                           color: "text-[var(--tx3)]",
                         };
                         const Icon = cfg.icon;
-                        const detail = formatEngagementEventDetail(
-                          ev.type,
-                          ev.data,
-                          quote.service_type ?? null,
-                        );
+                        const detail =
+                          ev.type === "contract_signed"
+                            ? ""
+                            : formatEngagementEventDetail(
+                                ev.type,
+                                ev.data,
+                                quote.service_type ?? null,
+                                showTieredEngagement,
+                              );
 
                         return (
                           <div
@@ -1213,6 +1469,12 @@ export default function QuoteDetailClient({
                                   </span>
                                 )}
                               </div>
+                              {ev.type === "contract_signed" ? (
+                                <ContractSignedEngagementDetail
+                                  data={ev.data}
+                                  isSuperAdmin={isSuperAdmin}
+                                />
+                              ) : null}
                               <div className="flex items-center gap-2 mt-0.5">
                                 <span className="text-[9px] text-[var(--tx3)]/82">
                                   {timeAgo(ev.at)}
@@ -1408,7 +1670,7 @@ export default function QuoteDetailClient({
             </div>
 
             {/* Client engagement (metrics + legacy stats) */}
-            {(engagement.length > 0 || engagementMetrics) && (
+            {(engagementAfterSend.length > 0 || engagementMetrics) && (
               <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
                 <h2 className="admin-section-h2 mb-3">Client engagement</h2>
                 {engagementMetrics && (
@@ -1434,14 +1696,16 @@ export default function QuoteDetailClient({
                           : "—"}
                       </span>
                     </div>
-                    <div className="flex justify-between gap-3">
-                      <span className="text-[var(--tx3)] uppercase tracking-wide shrink-0">
-                        Tier interest
-                      </span>
-                      <span className="text-[var(--tx)] font-medium text-right">
-                        {tierInterestLine(engagementMetrics)}
-                      </span>
-                    </div>
+                    {showTieredEngagement && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-[var(--tx3)] uppercase tracking-wide shrink-0">
+                          Tier interest
+                        </span>
+                        <span className="text-[var(--tx)] font-medium text-right">
+                          {tierInterestLine(engagementMetrics)}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between gap-3">
                       <span className="text-[var(--tx3)] uppercase tracking-wide shrink-0">
                         Time on page
@@ -1462,19 +1726,20 @@ export default function QuoteDetailClient({
                       <span
                         className={`font-medium text-right ${engagementMetrics.comparingRecommended ? "text-amber-500" : "text-[var(--tx)]"}`}
                       >
-                        {engagementMetrics.comparingLabel}
+                        {showTieredEngagement ? engagementMetrics.comparingLabel : "Engaged"}
                       </span>
                     </div>
                   </div>
                 )}
-                {engagement.length > 0 && (
+                {engagementAfterSend.length > 0 && (
                   <div className="space-y-2 text-[11px]">
                     <div className="flex justify-between">
                       <span className="text-[var(--tx3)]">Raw page views</span>
                       <span className="text-[var(--tx)] font-medium">
                         {
-                          engagement.filter((e) => e.event_type === "page_view")
-                            .length
+                          engagementAfterSend.filter(
+                            (e) => e.event_type === "page_view",
+                          ).length
                         }
                       </span>
                     </div>
@@ -1483,7 +1748,7 @@ export default function QuoteDetailClient({
                       <span className="text-[var(--tx)] font-medium">
                         {fmtDuration(
                           Math.max(
-                            ...engagement.map(
+                            ...engagementAfterSend.map(
                               (e) => e.session_duration_seconds ?? 0,
                             ),
                           ),
@@ -1493,14 +1758,14 @@ export default function QuoteDetailClient({
                     <div className="flex justify-between">
                       <span className="text-[var(--tx3)]">Total events</span>
                       <span className="text-[var(--tx)] font-medium">
-                        {engagement.length}
+                        {engagementAfterSend.length}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[var(--tx3)]">Device</span>
                       <span className="text-[var(--tx)] font-medium uppercase">
-                        {engagement.find((e) => e.device_type)?.device_type ??
-                          "-"}
+                        {engagementAfterSend.find((e) => e.device_type)
+                          ?.device_type ?? "-"}
                       </span>
                     </div>
                   </div>

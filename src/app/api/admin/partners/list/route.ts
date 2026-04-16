@@ -2,6 +2,37 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 
+/** Resolve auth profile for partner portal user ids. Avoids listUsers() (single page + fragile destructuring). */
+async function buildAuthMapForUserIds(
+  admin: ReturnType<typeof createAdminClient>,
+  userIds: string[]
+): Promise<Map<string, { email: string; name: string; last_sign_in_at: string | null }>> {
+  const authMap = new Map<string, { email: string; name: string; last_sign_in_at: string | null }>();
+  const chunkSize = 30;
+  for (let i = 0; i < userIds.length; i += chunkSize) {
+    const chunk = userIds.slice(i, i + chunkSize);
+    const results = await Promise.all(
+      chunk.map(async (uid) => {
+        const { data, error } = await admin.auth.admin.getUserById(uid);
+        if (error || !data?.user) return null;
+        const u = data.user;
+        return {
+          uid,
+          info: {
+            email: u.email ?? "",
+            name: (u.user_metadata?.full_name as string) || "",
+            last_sign_in_at: u.last_sign_in_at ?? null,
+          },
+        };
+      })
+    );
+    for (const r of results) {
+      if (r) authMap.set(r.uid, r.info);
+    }
+  }
+  return authMap;
+}
+
 export async function GET() {
   const { error: authError } = await requireStaff();
   if (authError) return authError;
@@ -28,20 +59,8 @@ export async function GET() {
 
     const userIds = [...new Set((allPartnerUsers ?? []).map((p) => p.user_id).filter(Boolean))];
 
-    let authMap = new Map<string, { email: string; name: string; last_sign_in_at: string | null }>();
-    if (userIds.length > 0) {
-      const { data: { users: authUsers } } = await admin.auth.admin.listUsers();
-      authMap = new Map(
-        (authUsers ?? []).map((u) => [
-          u.id,
-          {
-            email: u.email ?? "",
-            name: (u.user_metadata?.full_name as string) || "",
-            last_sign_in_at: u.last_sign_in_at ?? null,
-          },
-        ])
-      );
-    }
+    const authMap =
+      userIds.length > 0 ? await buildAuthMapForUserIds(admin, userIds) : new Map();
 
     const puByOrg: Record<string, { user_id: string; email: string; name: string; status: string; last_sign_in_at: string | null }[]> = {};
     (allPartnerUsers ?? []).forEach((pu) => {

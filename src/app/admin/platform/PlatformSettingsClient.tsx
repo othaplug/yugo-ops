@@ -21,6 +21,8 @@ import PricingControlPanel from "./PricingControlPanel";
 import DeliveryVerticalsPanel from "./DeliveryVerticalsPanel";
 import RateTemplatesPanel from "./RateTemplatesPanel";
 import QuoteResidentialDisplaySection from "./QuoteResidentialDisplaySection";
+import HubSpotIntegrationSection from "./HubSpotIntegrationSection";
+import AppSettingsCollapsibleSection from "./AppSettingsCollapsibleSection";
 import { useRouter } from "next/navigation";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
 import { Phone, EnvelopeSimple as Envelope, ShareNetwork, CaretDown, X, CurrencyDollar, ListBullets, UsersThree, DeviceMobile, Sliders, Handshake, UserCircleGear, ClipboardText, GasPump, Package } from "@phosphor-icons/react";
@@ -118,16 +120,32 @@ function ReadinessChecklistSection() {
     setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, label } : x)));
   };
 
-  if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading…</p></div>;
+  if (loading) {
+    return (
+      <AppSettingsCollapsibleSection
+        id="app-readiness-checklist"
+        title={
+          <>
+            <Icon name="clipboard" className="w-[14px] h-[14px]" /> Readiness Checklist
+          </>
+        }
+        subtitle="Configure items for crew pre-trip readiness check"
+      >
+        <p className="text-[12px] text-[var(--tx3)] py-2">Loading…</p>
+      </AppSettingsCollapsibleSection>
+    );
+  }
 
   return (
-    <section className="pt-6 border-t border-[var(--brd)]/30">
-      <div className="mb-4">
-        <h2 className="admin-section-h2 flex items-center gap-2">
+    <AppSettingsCollapsibleSection
+      id="app-readiness-checklist"
+      title={
+        <>
           <Icon name="clipboard" className="w-[14px] h-[14px]" /> Readiness Checklist
-        </h2>
-        <p className="text-[11px] text-[var(--tx3)] mt-1">Configure items for crew pre-trip readiness check</p>
-      </div>
+        </>
+      }
+      subtitle="Configure items for crew pre-trip readiness check"
+    >
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
         <div className="space-y-2">
           {items.map((item, i) => (
@@ -174,7 +192,7 @@ function ReadinessChecklistSection() {
           {saving ? "Saving…" : "Save checklist"}
         </button>
       </div>
-    </section>
+    </AppSettingsCollapsibleSection>
   );
 }
 
@@ -558,8 +576,6 @@ function BusinessInfoSection() {
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
-
   const inputCls = "admin-premium-input w-full";
   const labelCls = "admin-premium-label admin-premium-label--tight";
   const subheadCls = "text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]/82 mb-3 flex items-center gap-1.5";
@@ -577,12 +593,7 @@ function BusinessInfoSection() {
     </div>
   );
 
-  return (
-    <section className="pt-6 border-t border-[var(--brd)]/30">
-      <div className="mb-4">
-        <h2 className="admin-section-h2">Business Information</h2>
-        <p className="text-[11px] text-[var(--tx3)] mt-1">Company details used across quotes, invoices, emails, and customer-facing pages. Update here instead of in code.</p>
-      </div>
+  const businessCard = (
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-6">
 
         {/* Core company details */}
@@ -641,7 +652,28 @@ function BusinessInfoSection() {
           {saving ? "Saving..." : "Save Business Info"}
         </button>
       </div>
-    </section>
+  );
+
+  if (loading) {
+    return (
+      <AppSettingsCollapsibleSection
+        id="app-business-info"
+        title="Business Information"
+        subtitle="Company details used across quotes, invoices, emails, and customer-facing pages. Update here instead of in code."
+      >
+        <p className="text-[12px] text-[var(--tx3)] py-2">Loading...</p>
+      </AppSettingsCollapsibleSection>
+    );
+  }
+
+  return (
+    <AppSettingsCollapsibleSection
+      id="app-business-info"
+      title="Business Information"
+      subtitle="Company details used across quotes, invoices, emails, and customer-facing pages. Update here instead of in code."
+    >
+      {businessCard}
+    </AppSettingsCollapsibleSection>
   );
 }
 
@@ -695,24 +727,30 @@ function FuelPricingSection() {
 
   const activePrice = fuelType === "diesel" ? diesel : gas;
 
+  const fuelTitle = (
+    <>
+      <GasPump className="w-[16px] h-[16px]" weight="duotone" aria-hidden /> Fuel pricing (CAD/L)
+    </>
+  );
+
   if (loading) {
     return (
-      <section className="pt-6 border-t border-[var(--brd)]/30">
-        <p className="text-[12px] text-[var(--tx3)] py-4">Loading…</p>
-      </section>
+      <AppSettingsCollapsibleSection
+        id="app-fuel-pricing"
+        title={fuelTitle}
+        subtitle="Used for crew navigation fuel estimates, dispatch map route comparisons, and logged fuel cost on moves when navigation completes. Set both gasoline and diesel prices, then choose which fuel the fleet is running for estimates."
+      >
+        <p className="text-[12px] text-[var(--tx3)] py-2">Loading…</p>
+      </AppSettingsCollapsibleSection>
     );
   }
 
   return (
-    <section className="pt-6 border-t border-[var(--brd)]/30">
-      <div className="mb-4">
-        <h2 className="admin-section-h2 flex items-center gap-2">
-          <GasPump className="w-[16px] h-[16px]" weight="duotone" aria-hidden /> Fuel pricing (CAD/L)
-        </h2>
-        <p className="text-[11px] text-[var(--tx3)] mt-1">
-          Used for crew navigation fuel estimates, dispatch map route comparisons, and logged fuel cost on moves when navigation completes. Set both gasoline and diesel prices, then choose which fuel the fleet is running for estimates.
-        </p>
-      </div>
+    <AppSettingsCollapsibleSection
+      id="app-fuel-pricing"
+      title={fuelTitle}
+      subtitle="Used for crew navigation fuel estimates, dispatch map route comparisons, and logged fuel cost on moves when navigation completes. Set both gasoline and diesel prices, then choose which fuel the fleet is running for estimates."
+    >
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -764,7 +802,7 @@ function FuelPricingSection() {
           {saving ? "Saving…" : "Save fuel settings"}
         </button>
       </div>
-    </section>
+    </AppSettingsCollapsibleSection>
   );
 }
 
@@ -812,17 +850,23 @@ function QuotingDefaultsSection() {
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
+  const quotingTitle = (
+    <>
+      <Icon name="fileText" className="w-[14px] h-[14px]" /> Quoting Defaults
+      <QuotesFollowupAutomationHint iconSize={15} ariaLabel="Automated quote follow-ups" />
+    </>
+  );
+
+  if (loading) {
+    return (
+      <AppSettingsCollapsibleSection id="app-quoting-defaults" title={quotingTitle} subtitle="Default settings for quote generation">
+        <p className="text-[12px] text-[var(--tx3)] py-2">Loading...</p>
+      </AppSettingsCollapsibleSection>
+    );
+  }
 
   return (
-    <section className="pt-6 border-t border-[var(--brd)]/30">
-      <div className="mb-4">
-        <h2 className="admin-section-h2 flex items-center gap-2 flex-wrap">
-          <Icon name="fileText" className="w-[14px] h-[14px]" /> Quoting Defaults
-          <QuotesFollowupAutomationHint iconSize={15} ariaLabel="Automated quote follow-ups" />
-        </h2>
-        <p className="text-[11px] text-[var(--tx3)] mt-1">Default settings for quote generation</p>
-      </div>
+    <AppSettingsCollapsibleSection id="app-quoting-defaults" title={quotingTitle} subtitle="Default settings for quote generation">
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
@@ -904,7 +948,7 @@ function QuotingDefaultsSection() {
           {saving ? "Saving..." : "Save Quoting Defaults"}
         </button>
       </div>
-    </section>
+    </AppSettingsCollapsibleSection>
   );
 }
 
@@ -950,8 +994,6 @@ function FeatureTogglesSection() {
 
   const [embedCopied, setEmbedCopied] = useState(false);
 
-  if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
-
   const features = [
     { key: "tipping_enabled", label: "Tipping System", desc: "Allow clients to tip crew after move completion" },
     { key: "quote_engagement_tracking", label: "Quote Engagement Tracking", desc: "Track client behaviour on the quote page" },
@@ -995,14 +1037,7 @@ function FeatureTogglesSection() {
     });
   };
 
-  return (
-    <section className="pt-5 border-t border-[var(--brd)]/30">
-      <div className="mb-3">
-        <h2 className="admin-section-h2 flex items-center gap-2">
-          <Icon name="toggleRight" className="w-[14px] h-[14px]" /> Feature Toggles
-        </h2>
-        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Enable or disable platform features</p>
-      </div>
+  const featureBody = (
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
       <div className="px-4 py-4 space-y-0">
         {features.map((f) => {
@@ -1069,7 +1104,20 @@ function FeatureTogglesSection() {
         })}
       </div>
       </div>
-    </section>
+  );
+
+  if (loading) {
+    return (
+      <AppSettingsCollapsibleSection id="app-feature-toggles" title={<><Icon name="toggleRight" className="w-[14px] h-[14px]" /> Feature Toggles</>} subtitle="Enable or disable platform features">
+        <p className="text-[12px] text-[var(--tx3)] py-2">Loading...</p>
+      </AppSettingsCollapsibleSection>
+    );
+  }
+
+  return (
+    <AppSettingsCollapsibleSection id="app-feature-toggles" title={<><Icon name="toggleRight" className="w-[14px] h-[14px]" /> Feature Toggles</>} subtitle="Enable or disable platform features">
+      {featureBody}
+    </AppSettingsCollapsibleSection>
   );
 }
 
@@ -1118,19 +1166,9 @@ function EmailTemplatesSection() {
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
-
   const previewTpl = templates.find((t) => t.template_slug === previewSlug);
 
-  return (
-    <>
-    <section className="pt-6 border-t border-[var(--brd)]/30">
-      <div className="mb-4">
-        <h2 className="admin-section-h2 flex items-center gap-2">
-          <Icon name="mail" className="w-[14px] h-[14px]" /> Email Templates
-        </h2>
-        <p className="text-[11px] text-[var(--tx3)] mt-1">Customize client-facing emails. Use merge variables like {"{{client_name}}"}, {"{{move_date}}"}, {"{{quote_link}}"}</p>
-      </div>
+  const emailListSection = (
       <div className="space-y-2">
         {templates.length === 0 ? (
           <p className="text-[12px] text-[var(--tx3)] py-4 text-center">No email templates configured yet. Run the migration to seed defaults.</p>
@@ -1147,7 +1185,39 @@ function EmailTemplatesSection() {
           </div>
         ))}
       </div>
-    </section>
+  );
+
+  if (loading) {
+    return (
+      <>
+        <AppSettingsCollapsibleSection
+          id="app-email-templates"
+          title={
+            <>
+              <Icon name="mail" className="w-[14px] h-[14px]" /> Email Templates
+            </>
+          }
+          subtitle={`Customize client-facing emails. Use merge variables like {{client_name}}, {{move_date}}, {{quote_link}}`}
+        >
+          <p className="text-[12px] text-[var(--tx3)] py-2">Loading...</p>
+        </AppSettingsCollapsibleSection>
+      </>
+    );
+  }
+
+  return (
+    <>
+    <AppSettingsCollapsibleSection
+      id="app-email-templates"
+      title={
+        <>
+          <Icon name="mail" className="w-[14px] h-[14px]" /> Email Templates
+        </>
+      }
+      subtitle={`Customize client-facing emails. Use merge variables like {{client_name}}, {{move_date}}, {{quote_link}}`}
+    >
+      {emailListSection}
+    </AppSettingsCollapsibleSection>
 
     {/* Edit Template Modal */}
     {editing && (
@@ -2307,13 +2377,16 @@ export default function PlatformSettingsClient({
       {/* App toggles - Notifications, Auto-Invoice, etc */}
       {activeTab === "app" && (
       <div id="app" className="space-y-5 scroll-mt-4">
-      <section className="pt-0 first:pt-0">
-        <div className="mb-3">
-          <h2 className="admin-section-h2 flex items-center gap-2">
+      <AppSettingsCollapsibleSection
+        id="app-core-toggles"
+        sectionClassName="pt-0 border-t-0"
+        title={
+          <>
             <Icon name="settings" className="w-[14px] h-[14px]" /> App
-          </h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Platform-wide settings</p>
-        </div>
+          </>
+        }
+        subtitle="Platform-wide settings"
+      >
         <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
         <div className="px-4 py-4 space-y-3">
           {[
@@ -2475,7 +2548,7 @@ export default function PlatformSettingsClient({
           </div>
         </div>
         </div>
-      </section>
+      </AppSettingsCollapsibleSection>
 
       {/* Business Information */}
       <BusinessInfoSection />
@@ -2497,17 +2570,22 @@ export default function PlatformSettingsClient({
       {/* Email Templates */}
       <EmailTemplatesSection />
 
+      <HubSpotIntegrationSection />
+
       {/* Readiness Checklist - configurable items for crew pre-trip check */}
       <ReadinessChecklistSection />
 
       {/* Danger Zone - in App Settings */}
-      <section className="pt-6 border-t border-[var(--brd)]/30">
-        <div className="mb-4">
-          <h2 className="admin-section-h2 flex items-center gap-2">
+      <AppSettingsCollapsibleSection
+        id="app-danger-zone"
+        defaultOpen={false}
+        title={
+          <>
             <Icon name="alertTriangle" className="w-[14px] h-[14px] text-[var(--red)]" /> Danger Zone
-          </h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-1">Irreversible platform actions</p>
-        </div>
+          </>
+        }
+        subtitle="Irreversible platform actions"
+      >
         <div className="rounded-xl border border-[var(--red)]/20 bg-[rgba(209,67,67,0.04)] p-5 space-y-3">
           <div className="flex items-center justify-between py-3">
             <div>
@@ -2519,7 +2597,7 @@ export default function PlatformSettingsClient({
             </button>
           </div>
         </div>
-      </section>
+      </AppSettingsCollapsibleSection>
       </div>
       )}
 

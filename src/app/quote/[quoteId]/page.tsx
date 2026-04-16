@@ -145,14 +145,17 @@ export default async function QuotePage({
           syncDealStage(quote.hubspot_deal_id, "viewed").catch(() => {});
         }
       });
-    admin
-      .from("quote_events")
-      .insert({
-        quote_id: quote.quote_id,
-        event_type: "quote_viewed",
-        metadata: { source: "server", service_type: quote.service_type },
-      })
-      .then(() => {});
+    // Only log server-side "view" once the quote is client-facing (sent). Draft previews stay off the timeline.
+    if (quote.status === "sent") {
+      admin
+        .from("quote_events")
+        .insert({
+          quote_id: quote.quote_id,
+          event_type: "quote_viewed",
+          metadata: { source: "server", service_type: quote.service_type },
+        })
+        .then(() => {});
+    }
   }
 
   // Fetch contact, add-ons, crew count, move count, and valuation data in parallel

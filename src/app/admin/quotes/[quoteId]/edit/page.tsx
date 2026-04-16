@@ -23,6 +23,11 @@ export default async function EditQuotePage({ params }: Props) {
 
   if (!quote) redirect("/admin/quotes");
 
+  const st = String(quote.service_type || "").toLowerCase();
+  if (st === "b2b_delivery" || st === "b2b_oneoff") {
+    redirect(`/admin/quotes/new?copy_quote=${encodeURIComponent(quoteId)}`);
+  }
+
   const [{ data: addons }, { data: configRows }, { data: itemWeights }] = await Promise.all([
     db
       .from("addons")

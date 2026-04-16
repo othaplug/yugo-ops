@@ -528,6 +528,7 @@ export default function QuotePageClient({
 
   const trackEngagement = useCallback(
     (event_type: string, event_data?: Record<string, unknown>) => {
+      if (String(quote.status || "").toLowerCase() === "draft") return;
       const elapsed = Math.round((Date.now() - pageStartTime.current) / 1000);
       const device =
         typeof window !== "undefined" && window.innerWidth < 768
@@ -546,11 +547,12 @@ export default function QuotePageClient({
         keepalive: true,
       }).catch(() => {});
     },
-    [quote.quote_id],
+    [quote.quote_id, quote.status],
   );
 
   const trackEvent = useCallback(
     (event_type: string, metadata?: Record<string, unknown>) => {
+      if (String(quote.status || "").toLowerCase() === "draft") return;
       fetch("/api/quotes/track", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -562,7 +564,7 @@ export default function QuotePageClient({
         keepalive: true,
       }).catch(() => {});
     },
-    [quote.quote_id],
+    [quote.quote_id, quote.status],
   );
 
   // Track page view once on mount
@@ -1246,6 +1248,20 @@ export default function QuotePageClient({
     scrollToComparisonThenContract();
   }, [scrollToComparisonThenContract]);
 
+  const handleB2bPayInFull = useCallback(() => {
+    if (!confirmed) {
+      handleConfirm();
+      return;
+    }
+    if (!contractSigned && contractRef.current) {
+      contractRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    if (paymentRef.current) {
+      paymentRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [confirmed, contractSigned, handleConfirm]);
+
   const isConfirmed = confirmed && selectedTier != null;
 
   const factorsApplied = useMemo(
@@ -1685,6 +1701,7 @@ export default function QuotePageClient({
               <B2BOneOffLayout
                 quote={quoteForDisplay}
                 onConfirm={handleConfirm}
+                onPayInFull={handleB2bPayInFull}
                 confirmed={confirmed}
               />
             </>
@@ -2286,7 +2303,7 @@ export default function QuotePageClient({
                   role="status"
                 >
                   This quote has expired. Refresh the page or contact us for a
-                  new quote — payment is disabled.
+                  new quote. Payment is disabled.
                 </div>
               )}
               <div className="mb-6">

@@ -14,6 +14,7 @@ import { updateLeadAfterQuoteSent } from "@/lib/leads/update-from-quote";
 import { pickupLocationsFromQuote, dropoffLocationsFromQuote } from "@/lib/quotes/quote-address-display";
 import { normalizePhone } from "@/lib/phone";
 import { getQuoteIdPrefix, quoteNumericSuffixForHubSpot } from "@/lib/quotes/quote-id";
+import { quoteRowEligibleForHubSpotDeal } from "@/lib/quotes/hubspot-quote-eligibility";
 import { randomBytes } from "crypto";
 
 const SERVICE_TO_TEMPLATE: Record<string, string> = {
@@ -385,7 +386,11 @@ export async function POST(req: NextRequest) {
         : null);
 
     const hsToken = process.env.HUBSPOT_ACCESS_TOKEN;
-    if (!effectiveDealId && hsToken) {
+    if (
+      !effectiveDealId &&
+      hsToken &&
+      quoteRowEligibleForHubSpotDeal(quote as Record<string, unknown>)
+    ) {
       const lName = fullName ? fullName.split(/\s+/).slice(1).join(" ").trim() : "";
       const created = await autoCreateHubSpotDealForSentQuote({
         sb: supabase,

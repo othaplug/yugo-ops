@@ -90,15 +90,19 @@ export default function PartnersManagement() {
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/partners/list");
-      if (!res.ok) throw new Error("Failed");
-      const d = await res.json();
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = typeof d.error === "string" ? d.error : "Could not load partner organizations";
+        throw new Error(msg);
+      }
       setData(d);
-    } catch {
+    } catch (e) {
       setData(null);
+      toast(e instanceof Error ? e.message : "Could not load partner organizations", "x");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -293,9 +297,9 @@ export default function PartnersManagement() {
           </div>
         )}
 
-        {/* Filters */}
-        <div className="px-5 py-3 border-b border-[var(--brd)] flex flex-wrap gap-2 items-center">
-          <div className="relative flex-1 min-w-[200px] max-w-[320px]">
+        {/* Filters: search + selects on one row; selects are width-capped because .admin-premium-input is width 100% */}
+        <div className="px-5 py-3 border-b border-[var(--brd)] flex flex-row flex-wrap items-end gap-x-3 gap-y-2 sm:flex-nowrap sm:items-center">
+          <div className="relative min-w-0 flex-1 basis-[min(100%,14rem)] sm:basis-auto sm:min-w-[12rem] sm:max-w-xl">
             <MagnifyingGlass size={14} weight="regular" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx2)]" aria-hidden />
             <input
               value={search}
@@ -304,50 +308,54 @@ export default function PartnersManagement() {
               className="admin-premium-input w-full pl-10 pr-3 py-2 text-[12px]"
             />
           </div>
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="admin-premium-input admin-premium-input--compact min-w-[140px] text-[var(--tx)]"
-          >
-            <option value="all">All Types</option>
-            <optgroup label="Furniture & Design">
-              <option value="furniture_retailer">Furniture Retailer</option>
-              <option value="interior_designer">Interior Designer</option>
-              <option value="cabinetry">Cabinetry</option>
-              <option value="flooring">Flooring</option>
-            </optgroup>
-            <optgroup label="Art & Specialty">
-              <option value="art_gallery">Art Gallery</option>
-              <option value="antique_dealer">Antique Dealer</option>
-            </optgroup>
-            <optgroup label="Hospitality & Commercial">
-              <option value="hospitality">Hospitality</option>
-            </optgroup>
-            <optgroup label="Medical & Technical">
-              <option value="medical_equipment">Medical Equipment</option>
-              <option value="av_technology">AV / Technology</option>
-              <option value="appliances">Appliances</option>
-            </optgroup>
-            <optgroup label="Referral Partners">
-              <option value="realtor">Realtor</option>
-              <option value="property_manager">Property Manager</option>
-              <option value="developer">Developer</option>
-            </optgroup>
-            <optgroup label="Legacy">
-              <option value="retail">Retail (legacy)</option>
-              <option value="designer">Designer (legacy)</option>
-              <option value="gallery">Gallery (legacy)</option>
-            </optgroup>
-          </select>
-          <select
-            value={filterAccess}
-            onChange={(e) => setFilterAccess(e.target.value as "all" | "active" | "none")}
-            className="admin-premium-input admin-premium-input--compact min-w-[140px] text-[var(--tx)]"
-          >
-            <option value="all">All Access</option>
-            <option value="active">Has Portal Access</option>
-            <option value="none">No Portal Access</option>
-          </select>
+          <div className="w-[min(100%,11rem)] shrink-0 sm:w-[10.5rem]">
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="admin-premium-input admin-premium-input--compact w-full text-[var(--tx)]"
+            >
+              <option value="all">All Types</option>
+              <optgroup label="Furniture & Design">
+                <option value="furniture_retailer">Furniture Retailer</option>
+                <option value="interior_designer">Interior Designer</option>
+                <option value="cabinetry">Cabinetry</option>
+                <option value="flooring">Flooring</option>
+              </optgroup>
+              <optgroup label="Art & Specialty">
+                <option value="art_gallery">Art Gallery</option>
+                <option value="antique_dealer">Antique Dealer</option>
+              </optgroup>
+              <optgroup label="Hospitality & Commercial">
+                <option value="hospitality">Hospitality</option>
+              </optgroup>
+              <optgroup label="Medical & Technical">
+                <option value="medical_equipment">Medical Equipment</option>
+                <option value="av_technology">AV / Technology</option>
+                <option value="appliances">Appliances</option>
+              </optgroup>
+              <optgroup label="Referral Partners">
+                <option value="realtor">Realtor</option>
+                <option value="property_manager">Property Manager</option>
+                <option value="developer">Developer</option>
+              </optgroup>
+              <optgroup label="Legacy">
+                <option value="retail">Retail (legacy)</option>
+                <option value="designer">Designer (legacy)</option>
+                <option value="gallery">Gallery (legacy)</option>
+              </optgroup>
+            </select>
+          </div>
+          <div className="w-[min(100%,9.5rem)] shrink-0 sm:w-[9rem]">
+            <select
+              value={filterAccess}
+              onChange={(e) => setFilterAccess(e.target.value as "all" | "active" | "none")}
+              className="admin-premium-input admin-premium-input--compact w-full text-[var(--tx)]"
+            >
+              <option value="all">All Access</option>
+              <option value="active">Has Portal Access</option>
+              <option value="none">No Portal Access</option>
+            </select>
+          </div>
         </div>
 
         {/* Partner List */}

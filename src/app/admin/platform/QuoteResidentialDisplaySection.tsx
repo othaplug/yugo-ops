@@ -21,6 +21,7 @@ import {
 } from "@/lib/quotes/residential-tier-quote-display";
 import { TIER_ORDER } from "@/app/quote/[quoteId]/quote-shared";
 import type { TierFeature } from "@/app/quote/[quoteId]/quote-shared";
+import AppSettingsCollapsibleSection from "./AppSettingsCollapsibleSection";
 
 const TIER_TABS: { id: (typeof TIER_ORDER)[number]; label: string }[] = [
   { id: "essential", label: "Essential" },
@@ -287,25 +288,16 @@ export default function QuoteResidentialDisplaySection({
   const showConvert = isLegacyFullTier(storage, "signature") || isLegacyFullTier(storage, "estate");
 
   return (
-    <section className="pt-6 border-t border-[var(--brd)]/30">
-      <div className="mb-4">
-        <h2 className="admin-section-h2 flex items-center gap-2">
+    <AppSettingsCollapsibleSection
+      id="app-quote-residential-display"
+      title={
+        <>
           <ListBullets className="w-[14px] h-[14px]" aria-hidden />
           Client quote — residential tiers
-        </h2>
-        <p className="text-[11px] text-[var(--tx3)] mt-1 max-w-2xl">
-          <strong className="font-semibold text-[var(--tx)]">Essential</strong> is the full bullet list on the Essential tier
-          card. <strong className="font-semibold text-[var(--tx)]">Signature</strong> and{" "}
-          <strong className="font-semibold text-[var(--tx)]">Estate</strong> use{" "}
-          <strong className="font-semibold text-[var(--tx)]">additions</strong> after “Everything in Essential / Signature,
-          plus:” on those cards only. The client-facing <strong className="font-semibold text-[var(--tx)]">Your Move Includes</strong>{" "}
-          section uses built-in complete lists per selected tier (not merged from these rows). Optional{" "}
-          <strong className="font-semibold text-[var(--tx)]">merge key</strong> and{" "}
-          <strong className="font-semibold text-[var(--tx)]">highlight</strong> still apply to how additions appear on tier
-          cards. Truck and crew lines on cards still follow live quote data.
-        </p>
-      </div>
-
+        </>
+      }
+      subtitle="Essential is the full bullet list on the Essential tier card. Signature and Estate use additions after “Everything in Essential / Signature, plus:” on those cards only. The client-facing Your Move Includes section uses built-in complete lists per selected tier (not merged from these rows). Optional merge key and highlight still apply to how additions appear on tier cards. Truck and crew lines on cards still follow live quote data."
+    >
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 space-y-5">
         {showConvert ? (
           <div className="rounded-lg border border-[var(--gold)]/30 bg-[var(--gold)]/5 px-3 py-2.5 flex flex-wrap items-center justify-between gap-2">
@@ -631,6 +623,6 @@ export default function QuoteResidentialDisplaySection({
           </button>
         </div>
       </div>
-    </section>
+    </AppSettingsCollapsibleSection>
   );
 }

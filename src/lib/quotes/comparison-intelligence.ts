@@ -24,12 +24,24 @@ function dayKey(iso: string): string {
 export async function computeQuoteEngagementMetrics(
   sb: SupabaseClient,
   quoteInternalId: string,
+  /** When set, ignore engagement rows recorded before the quote was sent (draft previews). */
+  engagementNotBefore?: string | null,
 ): Promise<QuoteEngagementMetrics> {
   const { data: rows } = await sb
     .from("quote_engagement")
     .select("event_type, event_data, session_duration_seconds, created_at")
     .eq("quote_id", quoteInternalId)
     .order("created_at", { ascending: true });
+
+  const clipMs =
+    typeof engagementNotBefore === "string" && engagementNotBefore.trim()
+      ? Date.parse(engagementNotBefore)
+      : NaN;
+  const passesClip = (createdIso: string) => {
+    if (!Number.isFinite(clipMs)) return true;
+    const ms = Date.parse(createdIso);
+    return Number.isFinite(ms) && ms >= clipMs;
+  };
 
   const pageViewDays = new Set<string>();
   let pageViewCount = 0;
@@ -41,6 +53,7 @@ export async function computeQuoteEngagementMetrics(
   for (const r of rows ?? []) {
     const t = String(r.event_type || "");
     const created = String(r.created_at || "");
+    if (!passesClip(created)) continue;
     if (created) lastEngagementAt = created;
 
     if (r.session_duration_seconds != null && r.session_duration_seconds > maxSessionSeconds) {
@@ -75,7 +88,7 @@ export async function computeQuoteEngagementMetrics(
 
   let comparingLabel = "No strong comparison signal";
   if (comparingRecommended) {
-    comparingLabel = "Comparing — call recommended";
+    comparingLabel = "Comparing, call recommended";
   } else if (pageViewCount >= 2 || tierClickTotal >= 2) {
     comparingLabel = "Moderate interest";
   }
@@ -126,10 +139,10 @@ function formatMoveDateLabel(moveDate: string | null | undefined): string {
  * Daily cron: notify coordinators when a quote shows comparison shopping patterns.
  */
 export async function runQuoteComparisonCron(sb: SupabaseClient): Promise<{ scanned: number; notified: number }> {
-  const { data: quotes } = await sb
+    const { data: quotes } = await sb
     .from("quotes")
     .select(
-      "id, quote_id, comparison_alert_sent_at, contact_id, tiers, move_date, from_address, to_address, move_size, essential_price",
+      "id, quote_id, comparison_alert_sent_at, contact_id, tiers, move_date, from_address, to_address, move_size, essential_price, sent_at",
     )
     .in("status", ["sent", "viewed", "reactivated"])
     .is("comparison_alert_sent_at", null)
@@ -137,7 +150,11 @@ export async function runQuoteComparisonCron(sb: SupabaseClient): Promise<{ scan
 
   let notified = 0;
   for (const q of quotes ?? []) {
-    const metrics = await computeQuoteEngagementMetrics(sb, q.id as string);
+    const metrics = await computeQuoteEngagementMetrics(
+      sb,
+      q.id as string,
+      (q as { sent_at?: string | null }).sent_at ?? null,
+    );
     if (!metrics.comparingRecommended) continue;
 
     const { data: contact } = q.contact_id

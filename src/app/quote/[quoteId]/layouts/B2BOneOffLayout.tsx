@@ -1,23 +1,35 @@
-import { MapPin, ArrowRight, Check } from "@phosphor-icons/react";
+import { MapPin, ArrowRight, Check, CaretRight } from "@phosphor-icons/react";
 import {
   type Quote,
   WINE,
   FOREST,
+  FOREST_BODY,
+  FOREST_MUTED,
+  QUOTE_EYEBROW_CLASS,
   TAX_RATE,
   fmtPrice,
 } from "../quote-shared";
 import { toTitleCase } from "@/lib/format-text";
-import { getB2BDeliveryFeatureList } from "@/lib/quotes/b2b-quote-copy";
+
+function friendlyFleetLine(raw: string): string {
+  let s = raw.trim();
+  s = s.replace(/^(vehicle|truck)\s*:\s*/i, "").trim();
+  s = s.replace(/^truck\s*:\s*/i, "").trim();
+  return s || raw.trim();
+}
 
 interface Props {
   quote: Quote;
   onConfirm: () => void;
+  /** Second action: scroll to agreement (if needed) or to payment after signing */
+  onPayInFull?: () => void;
   confirmed: boolean;
 }
 
 export default function B2BOneOffLayout({
   quote,
   onConfirm,
+  onPayInFull,
   confirmed,
 }: Props) {
   const f = quote.factors_applied as Record<string, unknown> | null;
@@ -25,6 +37,8 @@ export default function B2BOneOffLayout({
   const tax = Math.round(price * TAX_RATE);
   const specialtyTransport = f?.specialty_b2b_transport === true;
   const payInvoice = f?.b2b_payment_method === "invoice";
+  const splitCardActions =
+    specialtyTransport && !payInvoice && typeof onPayInFull === "function";
   const retailer =
     typeof f?.b2b_retailer_source === "string"
       ? f.b2b_retailer_source.trim()
@@ -37,12 +51,6 @@ export default function B2BOneOffLayout({
   const verticalTitle =
     typeof f?.b2b_vertical_name === "string" && f.b2b_vertical_name.trim()
       ? f.b2b_vertical_name.trim()
-      : null;
-  const verticalCode =
-    typeof f?.b2b_vertical_code === "string" ? f.b2b_vertical_code : null;
-  const crewFromFactors =
-    typeof f?.b2b_crew === "number" && Number.isFinite(f.b2b_crew)
-      ? Math.round(f.b2b_crew as number)
       : null;
   const lineItems = Array.isArray(f?.b2b_line_items)
     ? (f.b2b_line_items as {
@@ -57,23 +65,6 @@ export default function B2BOneOffLayout({
   const handlingRaw =
     typeof f?.b2b_handling_type === "string" ? f.b2b_handling_type : null;
   const handlingLabel = handlingRaw ? handlingRaw.replace(/_/g, " ") : "";
-  const assemblyRequired = f?.b2b_assembly_required === true;
-  const debrisRemoval = f?.b2b_debris_removal === true;
-  const coordinatorIncludes =
-    specialtyTransport &&
-    Array.isArray(f?.includes) &&
-    (f.includes as string[]).length > 0
-      ? (f.includes as string[])
-      : null;
-  const serviceIncludes =
-    coordinatorIncludes ??
-    getB2BDeliveryFeatureList(
-      verticalCode,
-      crewFromFactors ?? quote.est_crew_size,
-      verticalTitle,
-      handlingRaw,
-      { assemblyRequired, debrisRemoval },
-    );
   const truckBreakdown =
     typeof f?.truck_breakdown_line === "string" &&
     f.truck_breakdown_line.trim().length > 0
@@ -193,36 +184,98 @@ export default function B2BOneOffLayout({
           ) : null}
         </div>
 
-        {/* Items (dimensional) */}
+        {/* Items (dimensional): receipt-style rows, qty aligned, handling as own block */}
         {dimensional && (lineItems.length > 0 || legacyItems.length > 0) ? (
           <div className="pt-4 border-t border-[var(--brd)]/30">
-            <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853] mb-2">
-              ITEMS
-            </p>
-            <ul
-              className="space-y-1 text-[12px] font-medium"
-              style={{ color: FOREST }}
+            <div
+              className="rounded-2xl border border-[#2C3E2D]/14 bg-[#FFFCF9] px-4 py-4 sm:px-5"
+              style={{ boxShadow: "0 2px 12px rgba(44,62,45,0.06)" }}
             >
-              {lineItems.length > 0
-                ? lineItems.map((row, i) => (
-                    <li key={i}>
-                      {row.description ?? "Item"}
-                      {row.quantity != null && row.quantity > 1
-                        ? ` ×${row.quantity}`
-                        : ""}
-                      {row.fragile ? " (fragile)" : ""}
-                    </li>
-                  ))
-                : legacyItems.map((s, i) => <li key={i}>{s}</li>)}
-            </ul>
-            {handlingLabel ? (
-              <p className="text-[11px] mt-2" style={{ color: `${FOREST}72` }}>
-                <span className="font-semibold" style={{ color: FOREST }}>
-                  Handling:{" "}
-                </span>
-                {toTitleCase(handlingLabel)}
+              <p
+                className={`${QUOTE_EYEBROW_CLASS} mb-3`}
+                style={{ color: FOREST_MUTED }}
+              >
+                Line items
               </p>
-            ) : null}
+              {lineItems.length > 0 ? (
+                <ul className="divide-y divide-[#2C3E2D]/10">
+                  {lineItems.map((row, i) => {
+                    const desc = String(row.description ?? "Item").trim() || "Item";
+                    const qty =
+                      row.quantity != null && Number(row.quantity) > 0
+                        ? Math.round(Number(row.quantity))
+                        : null;
+                    return (
+                      <li
+                        key={i}
+                        className="flex flex-col gap-2 py-3 first:pt-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className="text-[13px] font-medium leading-snug"
+                            style={{ color: FOREST }}
+                          >
+                            {desc}
+                          </p>
+                          {row.fragile ? (
+                            <span
+                              className="mt-1.5 inline-block text-[9px] font-bold tracking-[0.12em] uppercase"
+                              style={{ color: FOREST_MUTED }}
+                            >
+                              Fragile
+                            </span>
+                          ) : null}
+                        </div>
+                        {qty != null ? (
+                          <div className="flex shrink-0 items-baseline gap-2 sm:flex-col sm:items-end sm:gap-0 sm:text-right">
+                            <span
+                              className="text-[9px] font-bold tracking-[0.14em] uppercase"
+                              style={{ color: FOREST_MUTED }}
+                            >
+                              Qty
+                            </span>
+                            <span
+                              className="text-[13px] font-semibold tabular-nums leading-none"
+                              style={{ color: FOREST }}
+                            >
+                              {qty}
+                            </span>
+                          </div>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <ul className="space-y-2.5">
+                  {legacyItems.map((s, i) => (
+                    <li
+                      key={i}
+                      className="text-[13px] font-medium leading-snug"
+                      style={{ color: FOREST }}
+                    >
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {handlingLabel ? (
+                <div className="mt-4 border-t border-[#2C3E2D]/12 pt-4">
+                  <p
+                    className={`${QUOTE_EYEBROW_CLASS} mb-1.5`}
+                    style={{ color: FOREST_MUTED }}
+                  >
+                    Handling
+                  </p>
+                  <p
+                    className="text-[13px] font-medium leading-snug"
+                    style={{ color: FOREST_BODY }}
+                  >
+                    {toTitleCase(handlingLabel)}
+                  </p>
+                </div>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
@@ -312,8 +365,8 @@ export default function B2BOneOffLayout({
           </div>
           {quote.distance_km != null && (
             <p
-              className="text-[10px] text-center mt-2"
-              style={{ color: `${FOREST}50` }}
+              className="text-[10px] text-center mt-2 font-medium"
+              style={{ color: `${FOREST}CC` }}
             >
               {quote.distance_km} km
               {quote.drive_time_min
@@ -322,34 +375,14 @@ export default function B2BOneOffLayout({
             </p>
           )}
         </div>
-
-        {/* Includes */}
-        <div className="pt-4 mt-4 border-t border-[var(--brd)]/30">
-          <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853] mb-2">
-            YOUR DELIVERY INCLUDES
-          </p>
-          <div className="flex flex-wrap gap-x-5 gap-y-1.5">
-            {serviceIncludes.map((item, i) => (
-              <div key={i} className="flex items-center gap-1.5">
-                <Check className="w-3 h-3" style={{ color: FOREST }} />
-                <span className="text-[11px]" style={{ color: FOREST }}>
-                  {item}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Price + CTA */}
-      <div
-        className="bg-white rounded-2xl border-2 shadow-sm p-6 text-center"
-        style={{ borderColor: FOREST }}
-      >
+      <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
         {(weightSurcharge > 0 || truckBreakdown) && (
           <div
             className="text-left text-[11px] space-y-1 mb-4 pb-4 border-b"
-            style={{ borderColor: "#E2DDD5", color: `${FOREST}75` }}
+            style={{ borderColor: "#E2DDD5", color: `${FOREST}B8` }}
           >
             {weightSurcharge > 0 ? (
               <p>
@@ -360,11 +393,19 @@ export default function B2BOneOffLayout({
               </p>
             ) : null}
             {truckBreakdown ? (
-              <p>
-                <span className="font-semibold" style={{ color: FOREST }}>
-                  Vehicle:{" "}
+              <p className="inline-flex flex-wrap items-baseline gap-x-1 gap-y-0">
+                <span
+                  className="text-[9px] font-bold tracking-[0.14em] uppercase shrink-0 leading-none"
+                  style={{ color: FOREST }}
+                >
+                  Fleet
                 </span>
-                {truckBreakdown}
+                <span
+                  className="text-[9px] font-semibold tracking-[0.12em] uppercase leading-none"
+                  style={{ color: `${FOREST}B8` }}
+                >
+                  {friendlyFleetLine(truckBreakdown).toUpperCase()}
+                </span>
               </p>
             ) : null}
           </div>
@@ -375,33 +416,83 @@ export default function B2BOneOffLayout({
         >
           {fmtPrice(price)}
         </p>
-        <p className="text-[12px] mt-1 mb-5" style={{ color: `${FOREST}70` }}>
+        <p
+          className="text-[12px] mt-1 mb-5 font-medium"
+          style={{ color: `${FOREST}C9` }}
+        >
           +{fmtPrice(tax)} HST &middot; Total {fmtPrice(price + tax)}
         </p>
-        <button
-          type="button"
-          onClick={onConfirm}
-          className={`w-full max-w-xs mx-auto py-3.5 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90 ${
-            confirmed ? "opacity-80" : ""
-          }`}
-          style={{ backgroundColor: FOREST }}
+        {splitCardActions && !confirmed ? (
+          <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 max-w-lg mx-auto">
+            <button
+              type="button"
+              onClick={onConfirm}
+              className="flex-1 min-h-[48px] inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-none border-2 text-[10px] font-bold tracking-[0.12em] uppercase transition-opacity hover:opacity-90"
+              style={{ borderColor: FOREST, color: FOREST, backgroundColor: "transparent" }}
+            >
+              Continue to agreement
+              <CaretRight className="w-3.5 h-3.5 shrink-0" weight="bold" aria-hidden />
+            </button>
+            <button
+              type="button"
+              onClick={onPayInFull}
+              className="flex-1 min-h-[48px] inline-flex items-center justify-center py-3 px-4 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: FOREST }}
+            >
+              Pay in full ({fmtPrice(price + tax)})
+            </button>
+          </div>
+        ) : splitCardActions && confirmed ? (
+          <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 max-w-lg mx-auto">
+            <button
+              type="button"
+              disabled
+              className="flex-1 min-h-[48px] inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-none border-2 text-[10px] font-bold tracking-[0.12em] uppercase opacity-70 cursor-default"
+              style={{ borderColor: FOREST, color: FOREST, backgroundColor: "transparent" }}
+            >
+              <Check className="w-4 h-4 shrink-0" aria-hidden />
+              Scope confirmed
+            </button>
+            <button
+              type="button"
+              onClick={onPayInFull}
+              className="flex-1 min-h-[48px] inline-flex items-center justify-center py-3 px-4 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: FOREST }}
+            >
+              Pay in full ({fmtPrice(price + tax)})
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onConfirm}
+            className={`w-full max-w-xs mx-auto py-3.5 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90 ${
+              confirmed ? "opacity-80" : ""
+            }`}
+            style={{ backgroundColor: FOREST }}
+          >
+            {confirmed ? (
+              <span className="flex items-center justify-center gap-2">
+                <Check className="w-4 h-4" /> CONFIRMED
+              </span>
+            ) : payInvoice ? (
+              "CONFIRM BOOKING"
+            ) : specialtyTransport ? (
+              `CONFIRM DELIVERY (${fmtPrice(price + tax)})`
+            ) : (
+              `CONFIRM DELIVERY (${fmtPrice(price + tax)})`
+            )}
+          </button>
+        )}
+        <p
+          className="text-[10px] mt-2 font-medium leading-snug max-w-md mx-auto"
+          style={{ color: `${FOREST}C4` }}
         >
-          {confirmed ? (
-            <span className="flex items-center justify-center gap-2">
-              <Check className="w-4 h-4" /> CONFIRMED
-            </span>
-          ) : payInvoice ? (
-            "CONFIRM BOOKING"
-          ) : specialtyTransport ? (
-            `CONFIRM DELIVERY — ${fmtPrice(price + tax)}`
-          ) : (
-            "CONFIRM DELIVERY — FULL PAYMENT"
-          )}
-        </button>
-        <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
           {payInvoice
             ? "Net 30 invoice. No card required. Confirm below after you sign the agreement."
-            : "Full payment required to confirm booking."}
+            : splitCardActions
+              ? "Continue confirms your scope, then sign. Pay in full after signing to confirm your booking."
+              : "Full payment required to confirm booking."}
         </p>
       </div>
     </section>
