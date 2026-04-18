@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { promiseWithTimeout } from "@/lib/promise-with-timeout";
 import { useRouter } from "next/navigation";
 import YugoLogo from "@/components/YugoLogo";
+
+const SESSION_CHECK_TIMEOUT_MS = 20_000
 
 export default function ChangePasswordGate({ children }: { children: React.ReactNode }) {
   const [showModal, setShowModal] = useState(false);
@@ -16,14 +19,28 @@ export default function ChangePasswordGate({ children }: { children: React.React
 
   useEffect(() => {
     const supabase = createClient();
+    let cancelled = false;
     const check = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setLoading(false);
-      if (user?.user_metadata?.must_change_password === true) {
-        setShowModal(true);
+      try {
+        const { data: { user } } = await promiseWithTimeout(
+          supabase.auth.getUser(),
+          SESSION_CHECK_TIMEOUT_MS,
+          "Session check timed out"
+        );
+        if (cancelled) return;
+        if (user?.user_metadata?.must_change_password === true) {
+          setShowModal(true);
+        }
+      } catch {
+        /* Server layout already authenticated; do not block the shell on a stuck client getUser */
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
-    check();
+    void check();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

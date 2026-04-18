@@ -20,17 +20,17 @@ const PIPELINE_STATUSES = new Set([
 ]);
 
 /**
- * PATCH /api/admin/quotes/[id] — coordinator status & nurture controls (UUID).
+ * PATCH /api/admin/quotes/[quoteId] — coordinator status & nurture controls (UUID).
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ quoteId: string }> },
 ) {
   const { error } = await requireStaff();
   if (error) return error;
 
-  const { id } = await params;
-  if (!id) {
+  const { quoteId } = await params;
+  if (!quoteId) {
     return NextResponse.json({ error: "Quote id required" }, { status: 400 });
   }
 
@@ -45,7 +45,7 @@ export async function PATCH(
   const { data: quote, error: fetchErr } = await admin
     .from("quotes")
     .select("id, quote_id, status, hubspot_deal_id")
-    .eq("id", id)
+    .eq("id", quoteId)
     .single();
 
   if (fetchErr || !quote) {
@@ -104,7 +104,7 @@ export async function PATCH(
     }
   }
 
-  const { error: upErr } = await admin.from("quotes").update(patch).eq("id", id);
+  const { error: upErr } = await admin.from("quotes").update(patch).eq("id", quoteId);
   if (upErr) {
     return NextResponse.json({ error: upErr.message }, { status: 500 });
   }
@@ -116,7 +116,7 @@ export async function PATCH(
         typeof body.loss_reason === "string" && body.loss_reason.trim()
           ? body.loss_reason.trim()
           : null;
-      await scheduleWinBackEmail(admin, id, lr).catch(() => {});
+      await scheduleWinBackEmail(admin, quoteId, lr).catch(() => {});
     }
   }
 
@@ -124,19 +124,19 @@ export async function PATCH(
 }
 
 /**
- * DELETE /api/admin/quotes/[id]
+ * DELETE /api/admin/quotes/[quoteId]
  * Hard-delete by UUID (quotes.id). Staff: drafts only. Superadmin: also sent/viewed/expired/declined/superseded.
  * Never deletes accepted quotes or any quote linked to a move.
  */
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ quoteId: string }> }
 ) {
   const { user, error } = await requireStaff();
   if (error) return error;
 
-  const { id } = await params;
-  if (!id) {
+  const { quoteId } = await params;
+  if (!quoteId) {
     return NextResponse.json({ error: "Quote ID required" }, { status: 400 });
   }
 
@@ -144,7 +144,7 @@ export async function DELETE(
   const { data: quote, error: fetchErr } = await admin
     .from("quotes")
     .select("id, status, quote_id")
-    .eq("id", id)
+    .eq("id", quoteId)
     .single();
 
   if (fetchErr || !quote) {
@@ -161,7 +161,7 @@ export async function DELETE(
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 
-  const { data: moveRow } = await admin.from("moves").select("id").eq("quote_id", id).maybeSingle();
+  const { data: moveRow } = await admin.from("moves").select("id").eq("quote_id", quoteId).maybeSingle();
   if (moveRow) {
     return NextResponse.json(
       { error: "Cannot delete a quote that has a linked move. Remove or reassign the move first." },
@@ -169,7 +169,7 @@ export async function DELETE(
     );
   }
 
-  const { error: deleteErr } = await admin.from("quotes").delete().eq("id", id);
+  const { error: deleteErr } = await admin.from("quotes").delete().eq("id", quoteId);
 
   if (deleteErr) {
     return NextResponse.json(

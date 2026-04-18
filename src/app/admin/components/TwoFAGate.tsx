@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useToast } from "./Toast";
 import GlobalModal from "@/components/ui/Modal";
 import YugoLogo from "@/components/YugoLogo";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+
+const TWO_FA_STATUS_TIMEOUT_MS = 20_000
 
 export default function TwoFAGate({ children }: { children: React.ReactNode }) {
   const [showModal, setShowModal] = useState(false);
@@ -48,23 +51,28 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     const check = async () => {
       try {
-        const res = await fetch("/api/account/2fa/status");
+        const res = await fetchWithTimeout(
+          "/api/account/2fa/status",
+          TWO_FA_STATUS_TIMEOUT_MS
+        );
         if (cancelled) return;
-        if (!res.ok) { setLoading(false); return; }
-        const { needsVerify } = await res.json() as { trusted: boolean; needsVerify: boolean };
-        setLoading(false);
+        if (!res.ok) return;
+        const { needsVerify } = (await res.json()) as { trusted: boolean; needsVerify: boolean };
         if (needsVerify) {
           setShowModal(true);
           // Auto-send exactly once per mount
           sendCode(true);
         }
       } catch {
+        /* Timeouts and network errors: unblock shell; user can refresh or use Resend if a modal appears */
+      } finally {
         if (!cancelled) setLoading(false);
       }
     };
-    check();
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    void check();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleVerify = async (e: React.FormEvent) => {

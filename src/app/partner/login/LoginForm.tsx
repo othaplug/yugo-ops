@@ -13,9 +13,13 @@ import {
   Envelope,
 } from "@phosphor-icons/react";
 import { createClient } from "@/lib/supabase/client";
+import { promiseWithTimeout } from "@/lib/promise-with-timeout";
 import { resolveLoginPortal } from "@/lib/auth/resolve-login-portal";
 import { useRouter } from "next/navigation";
 import YugoLogo from "@/components/YugoLogo";
+
+const SIGN_IN_TIMEOUT_MS = 45_000;
+const PORTAL_RESOLVE_TIMEOUT_MS = 25_000;
 
 interface LoginFormProps {
   title: string;
@@ -57,50 +61,58 @@ export default function PartnerLoginForm({
     }
     setLoading(true);
     setError("");
-    const { data: signData, error: authError } =
-      await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
-      return;
-    }
-    if (!signData.user) {
-      setError("Sign-in did not return a user. Please try again.");
-      setLoading(false);
-      return;
-    }
-    const portal = await resolveLoginPortal(supabase, signData.user);
-    const token = signData.session?.access_token;
-    if (token) {
-      try {
-        await fetch("/api/auth/audit-login", {
+    try {
+      const { data: signData, error: authError } = await promiseWithTimeout(
+        supabase.auth.signInWithPassword({
+          email,
+          password,
+        }),
+        SIGN_IN_TIMEOUT_MS,
+        "Sign-in timed out. Check your connection and try again."
+      );
+      if (authError) {
+        setError(authError.message);
+        return;
+      }
+      if (!signData.user) {
+        setError("Sign-in did not return a user. Please try again.");
+        return;
+      }
+      const portal = await promiseWithTimeout(
+        resolveLoginPortal(supabase, signData.user),
+        PORTAL_RESOLVE_TIMEOUT_MS,
+        "Could not finish sign-in. Check your connection and try again."
+      );
+      const token = signData.session?.access_token;
+      /* Do not await: slow audit or tracking routes must not block navigation. */
+      if (token) {
+        void fetch("/api/auth/audit-login", {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => {
+          /* best-effort */
         });
-      } catch {
-        /* best-effort */
       }
-    }
-    if (portal === "partner") {
-      try {
-        await fetch("/api/partner/login-track", { method: "POST" });
-      } catch {
-        /* best-effort */
+      if (portal === "partner") {
+        void fetch("/api/partner/login-track", { method: "POST" }).catch(() => {
+          /* best-effort */
+        });
+        router.replace(redirectTo);
+      } else if (portal === "admin") {
+        router.replace("/admin");
+      } else {
+        setError(
+          "Your account doesn't have partner portal access.\n\nWe don't see a partner organization tied to this login. Contact your YUGO+ contact or support to get access.",
+        );
+        await supabase.auth.signOut();
       }
-      router.replace(redirectTo);
-    } else if (portal === "admin") {
-      router.replace("/admin");
-    } else {
-      setError(
-        "Your account doesn't have partner portal access.\n\nWe don't see a partner organization tied to this login. Contact your YUGO+ contact or support to get access.",
-      );
-      await supabase.auth.signOut();
+      router.refresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-    router.refresh();
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {

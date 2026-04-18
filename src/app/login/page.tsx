@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useMemo } from "react";
+import { useState, useLayoutEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { resolveLoginPortal } from "@/lib/auth/resolve-login-portal";
 import { useRouter, useSearchParams } from "next/navigation";
 import YugoLogo from "@/components/YugoLogo";
 import { CaretRight, Eye, EyeSlash, EnvelopeSimple as Envelope } from "@phosphor-icons/react";
 import { applyDocumentLightTheme } from "@/lib/document-theme-tokens";
+import { promiseWithTimeout } from "@/lib/promise-with-timeout";
+
+const SIGN_IN_TIMEOUT_MS = 45_000
+const PORTAL_RESOLVE_TIMEOUT_MS = 25_000
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -38,10 +42,14 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError("");
     try {
-      const { data: signData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data: signData, error: authError } = await promiseWithTimeout(
+        supabase.auth.signInWithPassword({
+          email,
+          password,
+        }),
+        SIGN_IN_TIMEOUT_MS,
+        "Sign-in timed out. Check your connection and try again."
+      )
       if (authError) {
         setError(authError.message);
         return;
@@ -52,17 +60,20 @@ export default function AdminLoginPage() {
         return;
       }
 
-      const portal = await resolveLoginPortal(supabase, user);
+      const portal = await promiseWithTimeout(
+        resolveLoginPortal(supabase, user),
+        PORTAL_RESOLVE_TIMEOUT_MS,
+        "Could not finish sign-in. Check your connection and try again."
+      )
       const token = signData.session?.access_token;
+      /* Do not await: a slow /api/auth/audit-login must not block navigation or leave the button stuck. */
       if (token) {
-        try {
-          await fetch("/api/auth/audit-login", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-          });
-        } catch {
+        void fetch("/api/auth/audit-login", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => {
           /* best-effort audit */
-        }
+        })
       }
       if (portal === "client") router.replace("/client");
       else if (portal === "partner") router.replace("/partner");

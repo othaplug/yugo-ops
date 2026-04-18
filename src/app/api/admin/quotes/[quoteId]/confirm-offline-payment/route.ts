@@ -28,19 +28,19 @@ import {
 } from "@/app/quote/[quoteId]/quote-shared";
 
 /**
- * POST /api/admin/quotes/[id]/confirm-offline-payment
+ * POST /api/admin/quotes/[quoteId]/confirm-offline-payment
  * Record cash/wire/cheque payment and create move or B2B delivery + confirmation automation.
  * Body: { kind: "deposit" | "full" }
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ quoteId: string }> },
 ) {
   const { error: authError } = await requireStaff();
   if (authError) return authError;
 
-  const { id } = await params;
-  if (!id) {
+  const { quoteId } = await params;
+  if (!quoteId) {
     return NextResponse.json({ error: "Quote id required" }, { status: 400 });
   }
 
@@ -63,7 +63,7 @@ export async function POST(
   const { data: quote, error: qErr } = await admin
     .from("quotes")
     .select("*, contacts:contact_id(name, email, phone)")
-    .eq("id", id)
+    .eq("id", quoteId)
     .single();
 
   if (qErr || !quote) {
@@ -98,7 +98,7 @@ export async function POST(
   const { data: existingMove } = await admin
     .from("moves")
     .select("id, move_code")
-    .eq("quote_id", id)
+    .eq("quote_id", quoteId)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -116,7 +116,7 @@ export async function POST(
   const { data: existingDel } = await admin
     .from("deliveries")
     .select("id, delivery_number")
-    .eq("source_quote_id", id)
+    .eq("source_quote_id", quoteId)
     .maybeSingle();
 
   if (isB2BDeliveryQuoteServiceType(svc) && existingDel?.id) {
@@ -176,7 +176,7 @@ export async function POST(
     );
   }
 
-  const paymentId = `offline-admin-${id}-${Date.now()}`;
+  const paymentId = `offline-admin-${quoteId}-${Date.now()}`;
   const selectedTier = quote.selected_tier ?? null;
   const selectedAddons = quote.selected_addons ?? [];
 
@@ -225,7 +225,7 @@ export async function POST(
           payment_failed_at: null,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", id);
+        .eq("id", quoteId);
 
       const { trackingToken } = await issueDeliveryTrackingTokens(d.deliveryId);
       await sendB2BTrackingNotifications(d.deliveryId);
@@ -244,7 +244,7 @@ export async function POST(
 
       await logActivity({
         entity_type: "quote",
-        entity_id: id,
+        entity_id: quoteId,
         event_type: "offline_booking",
         description: `Offline payment recorded (${kind}), delivery ${d.deliveryNumber}`,
         icon: "payment",
@@ -282,7 +282,7 @@ export async function POST(
         payment_failed_at: null,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", id);
+      .eq("id", quoteId);
 
     runPostPaymentActions({
       quoteId: humanQuoteId,
@@ -296,7 +296,7 @@ export async function POST(
 
     await logActivity({
       entity_type: "quote",
-      entity_id: id,
+      entity_id: quoteId,
       event_type: "offline_booking",
       description: `Offline payment recorded (${kind}), move ${moveResult.moveCode}`,
       icon: "payment",
