@@ -22,6 +22,14 @@ function shortCalAddr(addr: string | null | undefined): string {
   return `${t.slice(0, 41)}…`;
 }
 
+/** Postgres TIME / ISO time → HH:MM for calendar slots */
+function pgTimeToHHMM(t: unknown): string | null {
+  if (t == null) return null;
+  const s = String(t);
+  const m = /^(\d{1,2}):(\d{2})/.exec(s);
+  return m ? `${m[1]!.padStart(2, "0")}:${m[2]}` : null;
+}
+
 function binOrderCalendarStatus(st: string | null | undefined): "scheduled" | "completed" | "cancelled" | "in_progress" {
   const s = (st || "").toLowerCase();
   if (s === "cancelled") return "cancelled";
@@ -165,7 +173,7 @@ export async function GET(req: NextRequest) {
       db
         .from("move_project_days")
         .select(
-          "id, date, day_number, label, day_type, crew_size, truck_type, estimated_hours, status, project_id, move_projects(project_name)",
+          "id, date, day_number, label, day_type, crew_size, crew_ids, truck_type, estimated_hours, status, project_id, origin_address, destination_address, start_time, end_time, arrival_window, move_projects(project_name)",
         )
         .gte("date", startDate)
         .lte("date", endDate)
@@ -474,40 +482,62 @@ export async function GET(req: NextRequest) {
     for (const row of moveProjectDays || []) {
       const dk = toDateKey(row.date as string | Date | null);
       if (!dk) continue;
-      if (crewFilter) continue;
+      const crewIds = (row.crew_ids as string[] | null) || [];
+      if (crewFilter) {
+        if (crewIds.length > 0 && !crewIds.includes(crewFilter)) continue;
+      }
       if (typeFilter && typeFilter !== "move_project_day") continue;
+      const rawSt = String(row.status || "scheduled");
+      if (statusFilter) {
+        const calSt =
+          rawSt === "completed" ? "completed" : rawSt === "cancelled" ? "cancelled" : "scheduled";
+        if (calSt !== statusFilter) continue;
+      }
       const mpRaw = row.move_projects as unknown;
       const mpName =
         (Array.isArray(mpRaw) ? (mpRaw[0] as { project_name?: string } | undefined)?.project_name : (mpRaw as { project_name?: string } | null)?.project_name) ||
         "Move project";
       const dayNum = row.day_number != null ? Number(row.day_number) : 0;
-      const totalHint = ""; // optional: fetch project total_days in a future pass
+      const primaryCrewId = crewIds[0] ?? null;
+      const crewN = primaryCrewId ? crewListForLookup.find((c) => c.id === primaryCrewId) : null;
+      const startT = pgTimeToHHMM(row.start_time);
+      const endT = pgTimeToHHMM(row.end_time);
+      const origin = (row.origin_address as string | null)?.trim() || null;
+      const dest = (row.destination_address as string | null)?.trim() || null;
+      const arrival = (row.arrival_window as string | null)?.trim();
+      const descParts = [toTitleCase(String(row.day_type || "day"))];
+      if (arrival) descParts.push(`Window: ${arrival}`);
       events.push({
         id: String(row.id),
         type: "move_project_day",
         blockType: "move_project_day",
         name: `${mpName} — ${String(row.label || "Day")}`,
-        description: `${toTitleCase(String(row.day_type || "day"))}${totalHint}`.trim(),
+        description: descParts.join(" · ").trim(),
         date: dk,
-        start: null,
-        end: null,
+        start: startT,
+        end: endT,
         durationHours: row.estimated_hours != null ? Number(row.estimated_hours) : null,
-        crewId: null,
-        crewName: null,
+        crewId: primaryCrewId,
+        crewName: crewN?.name ?? (crewIds.length > 1 ? `${crewIds.length} crews` : null),
         truckId: null,
         truckName: row.truck_type ? String(row.truck_type) : null,
-        status: String(row.status || "scheduled"),
-        calendarStatus: (row.status === "completed" ? "completed" : row.status === "cancelled" ? "cancelled" : "scheduled") as CalendarStatus,
+        status: rawSt,
+        calendarStatus: (rawSt === "completed"
+          ? "completed"
+          : rawSt === "cancelled"
+            ? "cancelled"
+            : "scheduled") as CalendarStatus,
         color: JOB_COLORS.move_project_day,
         href: `/admin/move-projects/${row.project_id}`,
         clientName: mpName,
-        fromAddress: null,
-        toAddress: null,
+        fromAddress: origin,
+        toAddress: dest,
         deliveryAddress: null,
         category: "move_project",
         moveSize: row.crew_size != null ? `${row.crew_size} crew` : null,
         itemCount: dayNum > 0 ? dayNum : null,
         scheduleBlockId: null,
+        moveProjectId: String(row.project_id),
       });
     }
 

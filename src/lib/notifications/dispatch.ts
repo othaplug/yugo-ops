@@ -263,6 +263,7 @@ export function buildNotificationTitle(
     crew_idle_off_route: "Crew idle off job stops",
     lead_new: "New lead",
     partner_pm_booking: "PM booking request",
+    building_profile_pending: "Building profile review",
   };
   return titles[slug] || "Notification";
 }
@@ -271,6 +272,9 @@ export function buildNotificationBody(
   slug: string,
   data: NotificationData
 ): string {
+  if (slug === "building_profile_pending") {
+    return typeof data.description === "string" ? data.description : "A building access report needs verification";
+  }
   if (slug === "partner_job_request") {
     const parts: string[] = [];
     if (data.partnerName) parts.push(String(data.partnerName));

@@ -116,6 +116,8 @@ import OfficeLayout from "./layouts/OfficeLayout";
 import MoveProjectQuoteTimeline, {
   type MoveProjectQuotePayload,
 } from "./MoveProjectQuoteTimeline";
+import ClientBuildingIntelCard from "./ClientBuildingIntelCard";
+import type { ProjectQuoteBreakdown } from "@/lib/move-projects/residential-project-quote-lines";
 import SingleItemLayout from "./layouts/SingleItemLayout";
 import WhiteGloveLayout from "./layouts/WhiteGloveLayout";
 import SpecialtyLayout from "./layouts/SpecialtyLayout";
@@ -1269,6 +1271,12 @@ export default function QuotePageClient({
     [quote.factors_applied],
   );
 
+  const moveProjectQuoteBreakdown = useMemo((): ProjectQuoteBreakdown | null => {
+    const raw = factorsApplied?.project_quote_breakdown;
+    if (!raw || typeof raw !== "object") return null;
+    return raw as ProjectQuoteBreakdown;
+  }, [factorsApplied]);
+
   /** Truck surcharge is included in the total; never show as a priced line to clients. */
   const truckBreakdownClientNote = useMemo(() => null as string | null, []);
 
@@ -1567,6 +1575,15 @@ export default function QuotePageClient({
           {/* ═══ Tier cards (residential) or service-type layouts ═══ */}
           {isResidential && tiers ? (
             <section ref={tiersRef} className="scroll-mt-6">
+              {!booked && (
+                <ClientBuildingIntelCard
+                  quoteId={quote.quote_id}
+                  publicActionToken={publicActionToken}
+                  shellKind={shellKind}
+                  fromAccess={quote.from_access}
+                  onDarkSurface={premiumShell}
+                />
+              )}
               <ResidentialLayout
                 quote={quoteForDisplay}
                 tiers={tiers}
@@ -1869,6 +1886,7 @@ export default function QuotePageClient({
                 data={moveProjectData}
                 shellKind={shellKind}
                 forceOffice={quote.service_type === "office_move"}
+                projectQuoteBreakdown={moveProjectQuoteBreakdown}
               />
             </section>
           )}

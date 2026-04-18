@@ -142,6 +142,12 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
         Icon: Icons.recycle,
         minRole: "coordinator",
       },
+      {
+        href: "/admin/buildings",
+        label: "Buildings",
+        Icon: Icons.building,
+        minRole: "coordinator",
+      },
     ],
   },
   {

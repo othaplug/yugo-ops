@@ -9,6 +9,7 @@ import {
   FOREST,
   TAX_RATE,
 } from "./quote-shared";
+import type { ProjectQuoteBreakdown } from "@/lib/move-projects/residential-project-quote-lines";
 import { ESTATE_ON_WINE } from "./estate-quote-ui";
 import { premiumShellInk, type PremiumShellKind } from "./quote-premium-shell";
 
@@ -45,14 +46,27 @@ type Props = {
   shellKind: PremiumShellKind;
   /** Commercial quotes always use cream / forest styling (not wine). */
   forceOffice?: boolean;
+  /** Optional line-item breakdown from coordinator project pricing (local_move). */
+  projectQuoteBreakdown?: ProjectQuoteBreakdown | null;
 };
 
-export default function MoveProjectQuoteTimeline({ data, shellKind, forceOffice }: Props) {
+export default function MoveProjectQuoteTimeline({
+  data,
+  shellKind,
+  forceOffice,
+  projectQuoteBreakdown = null,
+}: Props) {
   const p = data.project;
   const phases = data.phases ?? [];
   const totalDays = typeof p.total_days === "number" ? p.total_days : 0;
   const paymentSchedule = (p.payment_schedule as { milestone?: string; amount?: number }[] | null) ?? [];
   const totalPrice = typeof p.total_price === "number" ? p.total_price : null;
+  const originsRaw = p.origins as
+    | { label?: string; address?: string; is_partial?: boolean }[]
+    | undefined;
+  const destsRaw = p.destinations as { label?: string; address?: string }[] | undefined;
+  const origins = Array.isArray(originsRaw) ? originsRaw : [];
+  const destinations = Array.isArray(destsRaw) ? destsRaw : [];
 
   if (phases.length === 0) return null;
 
@@ -67,7 +81,7 @@ export default function MoveProjectQuoteTimeline({ data, shellKind, forceOffice 
             Your schedule
           </p>
           <h2 className="text-2xl font-serif mb-6" style={{ color: "#2B0416" }}>
-            Relocation schedule — {totalDays || phases.reduce((a, ph) => a + (ph.days?.length ?? 0), 0)} days
+            Relocation schedule, {totalDays || phases.reduce((a, ph) => a + (ph.days?.length ?? 0), 0)} days
           </h2>
           {phases.map((phase) => (
             <div key={String(phase.id ?? phase.phase_name)} className="mb-8">
@@ -154,6 +168,107 @@ export default function MoveProjectQuoteTimeline({ data, shellKind, forceOffice 
         <h2 className="text-2xl md:text-3xl font-serif mb-8 leading-tight" style={{ color: title }}>
           {totalDays || phases.reduce((a, ph) => a + (ph.days?.length ?? 0), 0)} days, handled with intention
         </h2>
+
+        {origins.length > 0 && (
+          <div className="mb-10 space-y-3">
+            <p className={`${QUOTE_EYEBROW_CLASS} mb-2`} style={{ color: kicker }}>
+              Locations
+            </p>
+            <div className="space-y-3">
+              {origins.map((o, i) => (
+                <div key={`o-${i}`} className="flex items-start gap-3">
+                  <span
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-medium"
+                    style={{
+                      backgroundColor: shellKind === "wine" ? "rgba(102,20,61,0.25)" : `${FOREST}18`,
+                      color: body,
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-medium leading-snug" style={{ color: body }}>
+                      {o.label?.trim() || `Pickup ${i + 1}`}
+                      {o.is_partial ? (
+                        <span className="text-[11px] font-normal opacity-60 ml-2">Partial</span>
+                      ) : null}
+                    </p>
+                    <p className="text-[12px] mt-0.5 opacity-60 leading-relaxed" style={{ color: muted }}>
+                      {o.address}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {destinations.length > 0 && (
+                <div className="flex items-start gap-3 pt-1">
+                  <span
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px]"
+                    style={{
+                      backgroundColor: `${FOREST}22`,
+                      color: body,
+                    }}
+                  >
+                    →
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-medium leading-snug" style={{ color: body }}>
+                      {destinations[0]?.label?.trim() || "Destination"}
+                    </p>
+                    <p className="text-[12px] mt-0.5 opacity-60 leading-relaxed" style={{ color: muted }}>
+                      {destinations[0]?.address}
+                    </p>
+                    {destinations.length > 1 && (
+                      <ul className="mt-2 space-y-2 list-none pl-0">
+                        {destinations.slice(1).map((d, j) => (
+                          <li key={`d-extra-${j}`} className="text-[12px] opacity-75" style={{ color: muted }}>
+                            <span className="font-medium" style={{ color: body }}>
+                              {d.label?.trim() || `Drop-off ${j + 2}`}
+                            </span>
+                            <span className="block">{d.address}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {projectQuoteBreakdown &&
+          Array.isArray(projectQuoteBreakdown.line_items) &&
+          projectQuoteBreakdown.line_items.length > 0 && (
+            <div className="mb-10 border-t pt-8" style={{ borderColor: rule }}>
+              <p className={`${QUOTE_EYEBROW_CLASS} mb-3`} style={{ color: kicker }}>
+                Project estimate detail
+              </p>
+              <div className="space-y-3">
+                {projectQuoteBreakdown.line_items.map((item, idx) => (
+                  <div key={idx} className="flex justify-between gap-4 text-sm" style={{ color: body }}>
+                    <div className="min-w-0">
+                      <p className="font-medium leading-snug">{item.description}</p>
+                      <p className="text-[12px] opacity-55 mt-0.5 leading-relaxed">{item.detail}</p>
+                    </div>
+                    <span className="font-serif shrink-0">{formatCurrency(item.amount)}</span>
+                  </div>
+                ))}
+              </div>
+              <div
+                className="flex justify-between text-sm mt-4 pt-3 border-t"
+                style={{ borderColor: rule }}
+              >
+                <span className="opacity-70">Subtotal (pre-tax)</span>
+                <span className="font-serif font-medium">
+                  {formatCurrency(projectQuoteBreakdown.subtotal_pre_tax)}
+                </span>
+              </div>
+              <div className="flex justify-between text-[13px] mt-1 opacity-70">
+                <span>HST (13%)</span>
+                <span>{formatCurrency(projectQuoteBreakdown.hst)}</span>
+              </div>
+            </div>
+          )}
 
         {phases.map((phase) => (
           <div key={String(phase.id ?? phase.phase_name)} className="mb-10">

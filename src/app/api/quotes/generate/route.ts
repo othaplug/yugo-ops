@@ -70,6 +70,8 @@ import {
 import { moveProjectPayloadSchema } from "@/lib/move-projects/schema";
 import { upsertMoveProjectForQuote, clearMoveProjectFromQuote } from "@/lib/move-projects/persist";
 import { computeMoveProjectPricingPreview, priceFromCostAndMargin } from "@/lib/move-projects/pricing";
+import { buildResidentialProjectQuoteBreakdown } from "@/lib/move-projects/residential-project-quote-lines";
+import type { ProjectQuoteBreakdown } from "@/lib/move-projects/residential-project-quote-lines";
 import { pickupDropoffFactorsFromPayload } from "@/lib/quotes/quote-address-display";
 import {
   generateNextQuoteId,
@@ -80,6 +82,9 @@ import {
 import { patchHubSpotDealJobNo } from "@/lib/hubspot/sync-deal-job-no";
 import { getResolvedMoveIncludeTitles } from "@/lib/quotes/residential-tier-quote-display";
 import { normalizePhone } from "@/lib/phone";
+import { matchBuildingProfile } from "@/lib/buildings/matcher";
+import { buildingComplexitySurchargePreTax } from "@/lib/buildings/complexity-pricing";
+import { parseBuildingAccessFlags } from "@/lib/buildings/types";
 // ═══════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════
@@ -92,6 +97,8 @@ interface InventoryItem {
   weight_tier_code?: string;
   actual_weight_lbs?: number;
   fragile?: boolean;
+  /** Multi-pickup quote: pickup index (0-based) */
+  origin_index?: number;
 }
 
 /** DB `quotes_recommended_tier_check` allows essential | signature | estate only */
@@ -330,6 +337,14 @@ interface QuoteInput {
   move_project?: unknown;
   /** When true, detach and delete linked move_projects row for this quote. */
   clear_move_project?: boolean;
+  /** Mapbox geocode (primary stop) for building profile proximity match */
+  from_lat?: number;
+  from_lng?: number;
+  to_lat?: number;
+  to_lng?: number;
+  /** When no DB profile, coordinator-reported access flags (origin / destination) */
+  origin_building_access_flags?: string[];
+  destination_building_access_flags?: string[];
 }
 
 /** Payload line for event inventory (admin quote form + generate API). */
@@ -1253,7 +1268,65 @@ async function calcResidential(
     return 0;
   })();
 
-  const surchargesTotal = accessSurcharge + specialtySurcharge + plc.total + truckSur + deadheadSurcharge + mobilizationFee;
+  const originBf = parseBuildingAccessFlags(input.origin_building_access_flags);
+  const destBf = parseBuildingAccessFlags(input.destination_building_access_flags);
+  const [fromBuilding, toBuilding] = await Promise.all([
+    matchBuildingProfile(sb, input.from_address, input.from_lat ?? null, input.from_lng ?? null),
+    matchBuildingProfile(sb, input.to_address, input.to_lat ?? null, input.to_lng ?? null),
+  ]);
+  const bMargin = cfgNum(config, "building_complexity_margin_multiplier", 1.45);
+  const bRound = cfgNum(config, "rounding_nearest", 50);
+  const loadedForBuilding = crewLoadedHourlyRate(config);
+  const invScore = invResult.inventoryScore;
+
+  let buildingComplexityCharge = 0;
+  const buildingComplexityFlags: string[] = [];
+  let buildingLoadingExtraMin = 0;
+  let buildingUnloadingExtraMin = 0;
+
+  if (fromBuilding?.id && toBuilding?.id && fromBuilding.id === toBuilding.id) {
+    const c = buildingComplexitySurchargePreTax({
+      building: fromBuilding,
+      inventoryScore: invScore,
+      crewLoadedHourlyRate: loadedForBuilding,
+      marginMultiplier: bMargin,
+      roundingNearest: bRound,
+    });
+    buildingComplexityCharge = c.charge;
+    buildingComplexityFlags.push(...c.flags);
+    buildingLoadingExtraMin = c.loadingExtraMinutes;
+    buildingUnloadingExtraMin = c.unloadingExtraMinutes;
+  } else {
+    const cFrom = buildingComplexitySurchargePreTax({
+      building: fromBuilding,
+      syntheticFlags: fromBuilding ? undefined : originBf,
+      inventoryScore: invScore,
+      crewLoadedHourlyRate: loadedForBuilding,
+      marginMultiplier: bMargin,
+      roundingNearest: bRound,
+    });
+    const cTo = buildingComplexitySurchargePreTax({
+      building: toBuilding,
+      syntheticFlags: toBuilding ? undefined : destBf,
+      inventoryScore: invScore,
+      crewLoadedHourlyRate: loadedForBuilding,
+      marginMultiplier: bMargin,
+      roundingNearest: bRound,
+    });
+    buildingComplexityCharge = cFrom.charge + cTo.charge;
+    buildingComplexityFlags.push(...cFrom.flags, ...cTo.flags);
+    buildingLoadingExtraMin = cFrom.loadingExtraMinutes;
+    buildingUnloadingExtraMin = cTo.unloadingExtraMinutes;
+  }
+
+  const surchargesTotal =
+    accessSurcharge +
+    specialtySurcharge +
+    plc.total +
+    truckSur +
+    deadheadSurcharge +
+    mobilizationFee +
+    buildingComplexityCharge;
   operationalPrice += surchargesTotal;
 
   pd("Step 4 — fixed surcharges (additive):", {
@@ -1261,6 +1334,7 @@ async function calcResidential(
     access_to: toAccess,
     access_total: accessSurcharge,
     specialtySurcharge,
+    building_complexity_surcharge: buildingComplexityCharge,
     parking_long_carry_total: plc.total,
     truck_recommended: recTruck,
     truck_surcharge: truckSur,
@@ -1680,6 +1754,14 @@ async function calcResidential(
       },
       estate_multi_day_labour_uplift: estateMultiDayLabourUplift,
       estate_loaded_labour_cost: estateLoadedMultiDayCost,
+      building_complexity_surcharge: buildingComplexityCharge,
+      building_complexity_flags: buildingComplexityFlags,
+      building_profiles: {
+        from_id: fromBuilding?.id ?? null,
+        to_id: toBuilding?.id ?? null,
+      },
+      building_loading_extra_minutes: buildingLoadingExtraMin,
+      building_unloading_extra_minutes: buildingUnloadingExtraMin,
       estate_schedule_headline: estateScheduleHeadline(estateDayPlan),
       estate_schedule_lines: buildEstateScheduleLines(
         estateDayPlan,
@@ -3252,6 +3334,7 @@ function omitMarginEstimateFields(factors: unknown): unknown {
   delete o.estimated_margin_curated;
   delete o.labour_validation;
   delete o.labour_validation_by_tier;
+  delete o.building_profiles;
   return o;
 }
 
@@ -3965,6 +4048,23 @@ export async function POST(req: NextRequest) {
         suggested_pre_tax_at_estate_margin: priceFromCostAndMargin(pricing.totalCostEstimate, marginFrac),
       },
     };
+    if (svcType === "local_move" && tiers) {
+      const br = buildResidentialProjectQuoteBreakdown({
+        config,
+        recommendedTier: normalizeRecommendedTierForDb(input.recommended_tier),
+        primaryMoveSize: input.move_size ?? "2br",
+        tiers: {
+          essential: { price: tiers.essential.price },
+          signature: { price: tiers.signature.price },
+          estate: { price: tiers.estate.price },
+        },
+        moveProject: moveProjectParsed.data,
+        inventoryItems: (input.inventory_items ?? []) as Parameters<
+          typeof buildResidentialProjectQuoteBreakdown
+        >[0]["inventoryItems"],
+      });
+      factors = { ...factors, project_quote_breakdown: br };
+    }
   }
 
   const enginePreTaxHeadline = tiers ? tiers.essential.price : custom_price?.price ?? 0;
@@ -4187,6 +4287,7 @@ export async function POST(req: NextRequest) {
   const expiryDays = cfgNum(config, "quote_expiry_days", 7);
 
   if (!isPreview) {
+    const mpForFlags = moveProjectPayloadSchema.safeParse(input.move_project);
     const quotePayload = {
       hubspot_deal_id: input.hubspot_deal_id || null,
       quote_source: input.quote_source?.trim() || null,
@@ -4194,6 +4295,9 @@ export async function POST(req: NextRequest) {
       contact_id: contactId,
       service_type: svcType === "b2b_oneoff" ? "b2b_delivery" : svcType === "event" ? "event" : svcType === "labour_only" ? "labour_only" : svcType,
       status: "draft",
+      is_project: mpForFlags.success,
+      origin_count: mpForFlags.success ? mpForFlags.data.origins.length : null,
+      destination_count: mpForFlags.success ? mpForFlags.data.destinations.length : null,
       from_address: input.from_address,
       from_access: input.from_access || null,
       from_postal: neighbourhood.postalPrefix || null,
@@ -4306,11 +4410,22 @@ export async function POST(req: NextRequest) {
         const parsedMp = moveProjectPayloadSchema.safeParse(input.move_project);
         if (parsedMp.success) {
           try {
+            const fa = factors as Record<string, unknown>;
+            const br = fa.project_quote_breakdown as ProjectQuoteBreakdown | undefined;
+            let mpPayload = parsedMp.data;
+            if (br && typeof br.subtotal_pre_tax === "number") {
+              mpPayload = {
+                ...mpPayload,
+                total_price: br.subtotal_pre_tax,
+                deposit: br.deposit,
+                payment_schedule: br.payment_schedule,
+              };
+            }
             await upsertMoveProjectForQuote(sb, {
               quoteUuid: qUuidRow.id,
               contactId,
               partnerId: null,
-              payload: parsedMp.data,
+              payload: mpPayload,
               persist: true,
             });
           } catch (e) {

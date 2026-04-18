@@ -78,6 +78,7 @@ export default function CalendarHeader({
                 { value: "delivery", label: "Deliveries" },
                 { value: "bin_rental", label: "Bin rentals" },
                 { value: "project_phase", label: "Projects" },
+                { value: "move_project_day", label: "Move project days" },
                 { value: "blocked", label: "Blocked" },
               ],
             },
@@ -155,6 +156,7 @@ export default function CalendarHeader({
           <option value="delivery">Deliveries</option>
           <option value="bin_rental">Bin rentals</option>
           <option value="project_phase">Projects</option>
+          <option value="move_project_day">Move project days</option>
           <option value="blocked">Blocked</option>
         </select>
         <select

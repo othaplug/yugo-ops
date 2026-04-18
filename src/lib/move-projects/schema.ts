@@ -4,6 +4,14 @@ export const addressStopSchema = z.object({
   address: z.string(),
   access: z.string().optional(),
   label: z.string().optional(),
+  /** Parking at this stop (residential multi-stop) */
+  parking: z.string().optional(),
+  floor: z.string().optional(),
+  unit: z.string().optional(),
+  /** When true, pricing and inventory treat this pickup as partial */
+  is_partial: z.boolean().optional(),
+  /** Coordinator-selected size for this origin (multi-pickup quotes) */
+  move_size: z.string().optional(),
 });
 
 export const paymentMilestoneSchema = z.object({
@@ -103,3 +111,18 @@ export const completeDayBodySchema = z.object({
   completion_notes: z.string().optional().nullable(),
   status: z.enum(["completed", "cancelled", "rescheduled"]).default("completed"),
 });
+
+/** Staff updates to a project day (schedule, crew, stops). */
+export const updateMoveProjectDayBodySchema = z.object({
+  crew_ids: z.array(z.string().uuid()).optional().nullable(),
+  start_time: z.string().optional().nullable(),
+  end_time: z.string().optional().nullable(),
+  arrival_window: z.string().optional().nullable(),
+  origin_address: z.string().optional().nullable(),
+  destination_address: z.string().optional().nullable(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  label: z.string().min(1).optional(),
+  description: z.string().optional().nullable(),
+});
+
+export type UpdateMoveProjectDayBody = z.infer<typeof updateMoveProjectDayBodySchema>;

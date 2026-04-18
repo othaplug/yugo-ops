@@ -4,6 +4,7 @@ import React, { useEffect, useMemo } from "react";
 import { Plus, Trash, CaretDown, CaretRight } from "@phosphor-icons/react";
 import type { MoveProjectPayload, MoveProjectPhaseInput, MoveProjectDayInput } from "@/lib/move-projects/schema";
 import { computeMoveProjectPricingPreview, priceFromCostAndMargin } from "@/lib/move-projects/pricing";
+import { autoGenerateResidentialProjectPhases } from "@/lib/move-projects/auto-schedule";
 
 const TRUCK_OPTS = ["", "sprinter", "16ft", "20ft", "26ft"] as const;
 const PHASE_TYPES = ["pack", "load", "transport", "unload", "unpack", "stage", "install", "cleanup", "custom"] as const;
@@ -105,6 +106,17 @@ export function buildDefaultMoveProjectPayload(args: {
   };
 }
 
+const RES_MOVE_SIZES = [
+  { value: "", label: "Same as quote" },
+  { value: "studio", label: "Studio" },
+  { value: "1br", label: "1 bedroom" },
+  { value: "2br", label: "2 bedroom" },
+  { value: "3br", label: "3 bedroom" },
+  { value: "4br", label: "4 bedroom" },
+  { value: "5br_plus", label: "5+ bedroom" },
+  { value: "partial", label: "Partial" },
+] as const;
+
 type Props = {
   value: MoveProjectPayload | null;
   onChange: (next: MoveProjectPayload) => void;
@@ -121,6 +133,10 @@ type Props = {
   labourRateHint?: number;
   marginTargetPct?: number;
   quoteFactors?: Record<string, unknown> | null;
+  /** Primary move size from the quote form (drives auto-schedule defaults). */
+  primaryMoveSize?: string;
+  /** Per-pickup inventory score totals (labour weight), for buffer-day heuristic. */
+  inventoryScoresByOrigin?: number[];
 };
 
 export default function MoveProjectPlannerSection({
@@ -139,6 +155,8 @@ export default function MoveProjectPlannerSection({
   labourRateHint = 55,
   marginTargetPct = 45,
   quoteFactors,
+  primaryMoveSize = "2br",
+  inventoryScoresByOrigin = [],
 }: Props) {
   const p = value;
   const previewFromQuote = quoteFactors?.move_project_pricing_preview as
@@ -162,6 +180,33 @@ export default function MoveProjectPlannerSection({
       receptionFlat: 600,
     });
   }, [p, labourRateHint]);
+
+  const scheduleSummary = useMemo(() => {
+    if (!value) {
+      return {
+        dayRows: 0,
+        crewDays: 0,
+        estHours: 0,
+        originCount: 0,
+      };
+    }
+    let dayRows = 0;
+    let crewDays = 0;
+    let estHours = 0;
+    for (const ph of value.phases) {
+      for (const d of ph.days) {
+        dayRows += 1;
+        crewDays += Number(d.crew_size ?? 0);
+        estHours += Number(d.estimated_hours ?? 0);
+      }
+    }
+    return {
+      dayRows,
+      crewDays,
+      estHours,
+      originCount: value.origins.length,
+    };
+  }, [value]);
 
   useEffect(() => {
     if (!p) return;
@@ -253,7 +298,19 @@ export default function MoveProjectPlannerSection({
     updatePhase(pi, { days: ph.days.filter((_, j) => j !== di) });
   };
 
-  const updateOrigin = (i: number, patch: { address?: string; access?: string; label?: string }) => {
+  const updateOrigin = (
+    i: number,
+    patch: Partial<{
+      address: string;
+      access: string;
+      label: string;
+      parking: string;
+      floor: string;
+      unit: string;
+      is_partial: boolean;
+      move_size: string;
+    }>,
+  ) => {
     const origins = p.origins.map((o, j) => (j === i ? { ...o, ...patch } : o));
     onChange({ ...p, origins });
   };
@@ -267,9 +324,49 @@ export default function MoveProjectPlannerSection({
     onChange({ ...p, origins: p.origins.filter((_, j) => j !== i) });
   };
 
-  const updateDest = (i: number, patch: { address?: string; access?: string; label?: string }) => {
+  const updateDest = (
+    i: number,
+    patch: Partial<{
+      address: string;
+      access: string;
+      label: string;
+      parking: string;
+      floor: string;
+      unit: string;
+    }>,
+  ) => {
     const destinations = p.destinations.map((o, j) => (j === i ? { ...o, ...patch } : o));
     onChange({ ...p, destinations });
+  };
+
+  const handleAutoGenerateSchedule = () => {
+    const phases = autoGenerateResidentialProjectPhases({
+      payload: p,
+      primaryMoveSize: primaryMoveSize || "2br",
+      inventoryScoresByOrigin,
+    });
+    onChange({ ...p, phases, start_date: p.start_date });
+  };
+
+  const applyDayLocation = (pi: number, di: number, raw: string) => {
+    const [kind, idxStr] = raw.split(":");
+    const idx = Number(idxStr);
+    if (!Number.isFinite(idx)) return;
+    const primaryDest = p.destinations[0]?.address?.trim();
+    const primaryOrig = p.origins[0]?.address?.trim();
+    if (kind === "o") {
+      const o = p.origins[idx]?.address?.trim();
+      updateDay(pi, di, {
+        origin_address: o || null,
+        destination_address: primaryDest || null,
+      });
+    } else if (kind === "d") {
+      const d = p.destinations[idx]?.address?.trim();
+      updateDay(pi, di, {
+        destination_address: d || null,
+        origin_address: primaryOrig || null,
+      });
+    }
   };
 
   const addDest = () => {
@@ -433,35 +530,96 @@ export default function MoveProjectPlannerSection({
 
       <div>
         <p className={labelCls()}>Origins</p>
-        <div className="mt-2 space-y-2">
+        <div className="mt-2 space-y-3">
           {p.origins.map((o, i) => (
-            <div key={i} className="flex flex-col sm:flex-row gap-2 items-start">
+            <div
+              key={i}
+              className="rounded-lg border border-[var(--brd)]/90 bg-[var(--bg2)]/20 p-3 space-y-2"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--gdim)] text-[10px] font-bold text-[var(--tx)]">
+                    {i + 1}
+                  </span>
+                  <input
+                    className={`${fieldInputCls()} flex-1 min-w-[120px] border-none bg-transparent font-semibold`}
+                    placeholder={`Label (e.g. Primary pickup)`}
+                    value={o.label ?? ""}
+                    onChange={(e) => updateOrigin(i, { label: e.target.value })}
+                  />
+                </div>
+                {p.origins.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeOrigin(i)}
+                    className="p-1.5 text-[var(--tx3)] hover:text-red-600"
+                    aria-label="Remove origin"
+                  >
+                    <Trash className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
               <input
                 className={fieldInputCls()}
                 placeholder="Address"
                 value={o.address}
                 onChange={(e) => updateOrigin(i, { address: e.target.value })}
               />
-              <input
-                className={`${fieldInputCls()} sm:w-36`}
-                placeholder="Access"
-                value={o.access ?? ""}
-                onChange={(e) => updateOrigin(i, { access: e.target.value })}
-              />
-              <input
-                className={`${fieldInputCls()} sm:w-36`}
-                placeholder="Label"
-                value={o.label ?? ""}
-                onChange={(e) => updateOrigin(i, { label: e.target.value })}
-              />
-              <button
-                type="button"
-                onClick={() => removeOrigin(i)}
-                className="p-2 text-[var(--tx3)] hover:text-red-600"
-                aria-label="Remove origin"
-              >
-                <Trash className="w-4 h-4" />
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input
+                  className={fieldInputCls()}
+                  placeholder="Access (stairs, elevator)"
+                  value={o.access ?? ""}
+                  onChange={(e) => updateOrigin(i, { access: e.target.value })}
+                />
+                <select
+                  className={fieldInputCls()}
+                  value={o.parking ?? ""}
+                  onChange={(e) => updateOrigin(i, { parking: e.target.value })}
+                >
+                  <option value="">Parking</option>
+                  <option value="dedicated">Dedicated / loading dock</option>
+                  <option value="street">Street parking</option>
+                  <option value="no_parking">No dedicated parking</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  className={fieldInputCls()}
+                  placeholder="Floor"
+                  value={o.floor ?? ""}
+                  onChange={(e) => updateOrigin(i, { floor: e.target.value })}
+                />
+                <input
+                  className={fieldInputCls()}
+                  placeholder="Unit"
+                  value={o.unit ?? ""}
+                  onChange={(e) => updateOrigin(i, { unit: e.target.value })}
+                />
+              </div>
+              {!isOffice && (
+                <div className="flex flex-wrap items-center gap-3">
+                  <select
+                    className={fieldInputCls()}
+                    value={o.move_size ?? ""}
+                    onChange={(e) => updateOrigin(i, { move_size: e.target.value })}
+                  >
+                    {RES_MOVE_SIZES.map((s) => (
+                      <option key={s.value || "same"} value={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={o.is_partial === true}
+                      onChange={(e) => updateOrigin(i, { is_partial: e.target.checked })}
+                    />
+                    Partial pickup
+                  </label>
+                </div>
+              )}
             </div>
           ))}
           <button
@@ -540,16 +698,27 @@ export default function MoveProjectPlannerSection({
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)]">Schedule</p>
-        <button
-          type="button"
-          onClick={addPhase}
-          className="inline-flex items-center gap-1 rounded-md border border-[var(--brd)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--tx)] hover:bg-[var(--gdim)]"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Add phase
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {!isOffice && (
+            <button
+              type="button"
+              onClick={handleAutoGenerateSchedule}
+              className="inline-flex items-center gap-1 rounded-md border border-[var(--brd)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--tx)] hover:bg-[var(--gdim)]"
+            >
+              Auto-generate schedule
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={addPhase}
+            className="inline-flex items-center gap-1 rounded-md border border-[var(--brd)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--tx)] hover:bg-[var(--gdim)]"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add phase
+          </button>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -681,7 +850,29 @@ export default function MoveProjectPlannerSection({
                       />
                     </div>
                   </div>
-                  <div className="grid sm:grid-cols-2 gap-2">
+                  <div className="grid sm:grid-cols-3 gap-2">
+                    <select
+                      className={fieldInputCls()}
+                      value=""
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v) applyDayLocation(pi, di, v);
+                        e.target.value = "";
+                      }}
+                      aria-label="Apply saved stop to this day"
+                    >
+                      <option value="">Quick fill from stops</option>
+                      {p.origins.map((o, oi) => (
+                        <option key={`o-${oi}`} value={`o:${oi}`}>
+                          Pickup: {o.label || o.address || `Origin ${oi + 1}`}
+                        </option>
+                      ))}
+                      {p.destinations.map((o, di2) => (
+                        <option key={`d-${di2}`} value={`d:${di2}`}>
+                          Drop-off: {o.label || o.address || `Destination ${di2 + 1}`}
+                        </option>
+                      ))}
+                    </select>
                     <input
                       className={fieldInputCls()}
                       placeholder="Origin (this day)"
@@ -708,6 +899,32 @@ export default function MoveProjectPlannerSection({
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="rounded-lg border border-[var(--brd)] bg-[var(--card)] p-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)] mb-2">
+          Project schedule summary
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[11px]">
+          <div>
+            <p className="text-[9px] uppercase tracking-wide text-[var(--tx3)]">Day rows</p>
+            <p className="font-semibold text-[var(--tx)] tabular-nums">{scheduleSummary.dayRows}</p>
+          </div>
+          <div>
+            <p className="text-[9px] uppercase tracking-wide text-[var(--tx3)]">Crew-days</p>
+            <p className="font-semibold text-[var(--tx)] tabular-nums">{scheduleSummary.crewDays}</p>
+          </div>
+          <div>
+            <p className="text-[9px] uppercase tracking-wide text-[var(--tx3)]">Est. hours</p>
+            <p className="font-semibold text-[var(--tx)] tabular-nums">
+              {scheduleSummary.estHours.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+            </p>
+          </div>
+          <div>
+            <p className="text-[9px] uppercase tracking-wide text-[var(--tx3)]">Origins</p>
+            <p className="font-semibold text-[var(--tx)] tabular-nums">{scheduleSummary.originCount}</p>
+          </div>
+        </div>
       </div>
 
       {(previewFromQuote || localPreview) && (

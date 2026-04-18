@@ -48,6 +48,7 @@ import { InfoHint } from "@/components/ui/InfoHint";
 import JobPhotos from "./JobPhotos";
 import JobInventory from "./JobInventory";
 import DayRateStopFlow from "./DayRateStopFlow";
+import CrewBuildingReportCard from "@/components/crew/CrewBuildingReportCard";
 import WalkthroughModal from "./WalkthroughModal";
 import CrewJobTimer from "@/app/crew/components/CrewJobTimer";
 import type { OperationalJobAlerts } from "@/lib/jobs/operational-alerts";
@@ -1072,6 +1073,15 @@ export default function CrewJobPage({
                 Open
               </span>
             </Link>
+          )}
+
+          {jobCompleted && jobType === "move" && (
+            <CrewBuildingReportCard
+              moveId={job.id}
+              address={job.toAddress}
+              lat={job.toLat ?? null}
+              lng={job.toLng ?? null}
+            />
           )}
 
           {/* Live tracking tips: compact label + InfoHint so the main column stays clear */}

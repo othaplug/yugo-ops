@@ -24,6 +24,8 @@ export default async function AdminMoveProjectDetailPage({
     .order("sent_at", { ascending: false })
     .limit(30);
 
+  const { data: crewRows } = await db.from("crews").select("id, name").order("name");
+
   return (
     <div className="max-w-4xl mx-auto px-5 md:px-6 py-6 space-y-6">
       <div>
@@ -40,8 +42,10 @@ export default async function AdminMoveProjectDetailPage({
 
       <MoveProjectDetailClient
         projectId={id}
+        project={project as Record<string, unknown>}
         initialPhases={phases}
         initialComms={comms ?? []}
+        crews={(crewRows ?? []) as { id: string; name: string }[]}
       />
     </div>
   );

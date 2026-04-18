@@ -73,11 +73,15 @@ import SpecialtyTransportQuoteBuilder from "./SpecialtyTransportQuoteBuilder";
 import MoveProjectPlannerSection, {
   buildDefaultMoveProjectPayload,
 } from "./MoveProjectPlannerSection";
+import BuildingProfileQuoteAlert from "./BuildingProfileQuoteAlert";
+import type { BuildingAccessFlag } from "@/lib/buildings/types";
 import {
+  describeAutoProjectModeReason,
   moveProjectPlannerAutoQualifies,
   shouldShowMoveProjectPlanner,
 } from "@/lib/move-projects/visibility";
 import type { MoveProjectPayload } from "@/lib/move-projects/schema";
+import type { ProjectQuoteBreakdown } from "@/lib/move-projects/residential-project-quote-lines";
 import type { LabourValidationResult } from "@/lib/pricing/labour-validation";
 import B2BJobsDeliveryForm, {
   type B2BJobsEmbedSnapshot,
@@ -751,13 +755,20 @@ type B2bLineRow = {
   hookup_required?: boolean;
 };
 
-function inventoryItemToPayload(i: InventoryItemEntry) {
+function inventoryItemToPayload(i: InventoryItemEntry, originIndex?: number) {
+  const ox =
+    typeof originIndex === "number"
+      ? originIndex
+      : typeof i.origin_index === "number"
+        ? i.origin_index
+        : undefined
   return {
     slug: i.slug,
     name: i.name,
     quantity: i.quantity,
     weight_score: i.weight_score,
     fragile: i.fragile,
+    ...(ox !== undefined ? { origin_index: ox } : {}),
     ...(i.weight_tier_code ? { weight_tier_code: i.weight_tier_code } : {}),
     ...(i.actual_weight_lbs != null && i.actual_weight_lbs > 0
       ? { actual_weight_lbs: Math.round(i.actual_weight_lbs) }
@@ -1278,6 +1289,22 @@ export default function QuoteFormClient({
   >("dedicated");
   const [fromLongCarry, setFromLongCarry] = useState(false);
   const [toLongCarry, setToLongCarry] = useState(false);
+  const [fromLat, setFromLat] = useState<number | null>(null);
+  const [fromLng, setFromLng] = useState<number | null>(null);
+  const [toLat, setToLat] = useState<number | null>(null);
+  const [toLng, setToLng] = useState<number | null>(null);
+  const [fromBuildingMatch, setFromBuildingMatch] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
+  const [toBuildingMatch, setToBuildingMatch] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
+  const [originBuildingFlags, setOriginBuildingFlags] = useState<string[]>([]);
+  const [destBuildingFlags, setDestBuildingFlags] = useState<string[]>([]);
+  const [originFloor, setOriginFloor] = useState("");
+  const [destFloor, setDestFloor] = useState("");
   const [moveDate, setMoveDate] = useState("");
   const [preferredTime, setPreferredTime] = useState("");
   const [arrivalWindow, setArrivalWindow] = useState(
@@ -1307,6 +1334,68 @@ export default function QuoteFormClient({
     setServiceAreaOverride(false);
     setServiceAreaBlock(null);
   }, [fromAddress, toAddress]);
+
+  const toggleOriginFlag = useCallback((f: BuildingAccessFlag) => {
+    setOriginBuildingFlags((prev) =>
+      prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f],
+    );
+  }, []);
+
+  const toggleDestFlag = useCallback((f: BuildingAccessFlag) => {
+    setDestBuildingFlags((prev) =>
+      prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f],
+    );
+  }, []);
+
+  useEffect(() => {
+    if (serviceType !== "local_move" && serviceType !== "long_distance") return;
+    if (fromAddress.trim().length < 10) {
+      setFromBuildingMatch(null);
+      return;
+    }
+    const t = window.setTimeout(() => {
+      fetch("/api/admin/buildings/match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          address: fromAddress,
+          lat: fromLat,
+          lng: fromLng,
+        }),
+      })
+        .then((r) => r.json())
+        .then((d: { profile?: Record<string, unknown> | null }) =>
+          setFromBuildingMatch(d.profile ?? null),
+        )
+        .catch(() => setFromBuildingMatch(null));
+    }, 500);
+    return () => window.clearTimeout(t);
+  }, [fromAddress, fromLat, fromLng, serviceType]);
+
+  useEffect(() => {
+    if (serviceType !== "local_move" && serviceType !== "long_distance") return;
+    if (toAddress.trim().length < 10) {
+      setToBuildingMatch(null);
+      return;
+    }
+    const t = window.setTimeout(() => {
+      fetch("/api/admin/buildings/match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          address: toAddress,
+          lat: toLat,
+          lng: toLng,
+        }),
+      })
+        .then((r) => r.json())
+        .then((d: { profile?: Record<string, unknown> | null }) =>
+          setToBuildingMatch(d.profile ?? null),
+        )
+        .catch(() => setToBuildingMatch(null));
+    }, 500);
+    return () => window.clearTimeout(t);
+  }, [toAddress, toLat, toLng, serviceType]);
 
   useEffect(() => {
     if (serviceTypeUrlAppliedRef.current) return;
@@ -1768,6 +1857,35 @@ export default function QuoteFormClient({
   const [inventoryItems, setInventoryItems] = useState<InventoryItemEntry[]>(
     [],
   );
+  /** When there are multiple pickup addresses, inventory is captured per pickup. */
+  const [perPickupInventory, setPerPickupInventory] = useState<
+    InventoryItemEntry[][]
+  >([]);
+  const pickupAddressList = useMemo(
+    () =>
+      [fromAddress, ...extraFromStops.map((s) => s.address)]
+        .map((a) => a.trim())
+        .filter(Boolean),
+    [fromAddress, extraFromStops],
+  );
+  const dropAddressList = useMemo(
+    () =>
+      [toAddress, ...extraToStops.map((s) => s.address)]
+        .map((a) => a.trim())
+        .filter(Boolean),
+    [toAddress, extraToStops],
+  );
+  const pickupCount = pickupAddressList.length;
+  const multiPickupInventoryMode = useMemo(
+    () =>
+      pickupCount > 1 &&
+      (serviceType === "local_move" ||
+        serviceType === "long_distance" ||
+        serviceType === "white_glove" ||
+        serviceType === "office_move"),
+    [pickupCount, serviceType],
+  );
+
   const [leadIntelSummary, setLeadIntelSummary] = useState<string | null>(null);
   const [leadInventoryReview, setLeadInventoryReview] = useState<
     LeadInvReviewRow[]
@@ -2138,22 +2256,35 @@ export default function QuoteFormClient({
     }
   }, []);
 
+  const inventoryLinesForScore = useMemo(() => {
+    if (multiPickupInventoryMode && perPickupInventory.length > 0) {
+      return perPickupInventory.flat();
+    }
+    return inventoryItems;
+  }, [multiPickupInventoryMode, perPickupInventory, inventoryItems]);
+
   const inventoryScore = useMemo(() => {
-    return inventoryItems.reduce(
+    return inventoryLinesForScore.reduce(
       (sum, i) => sum + residentialInventoryLineScore(i),
       0,
     );
-  }, [inventoryItems]);
+  }, [inventoryLinesForScore]);
 
   const inventoryTotalItems = useMemo(() => {
-    return inventoryItems.reduce((sum, i) => sum + i.quantity, 0);
-  }, [inventoryItems]);
+    return inventoryLinesForScore.reduce((sum, i) => sum + i.quantity, 0);
+  }, [inventoryLinesForScore]);
 
   const clientBoxCountNum = Number(clientBoxCount) || 0;
   const boxScore = clientBoxCountNum * 0.3;
   const inventoryScoreWithBoxes = inventoryScore + boxScore;
 
   const workstationCountN = Number(wsCount) || 0;
+  const extraPickupStopCount = extraFromStops.filter((s) =>
+    s.address.trim(),
+  ).length;
+  const extraDropoffStopCount = extraToStops.filter((s) =>
+    s.address.trim(),
+  ).length;
   const plannerAutoQualifies = useMemo(
     () =>
       moveProjectPlannerAutoQualifies({
@@ -2161,8 +2292,35 @@ export default function QuoteFormClient({
         moveSize,
         recommendedTier,
         workstationCount: workstationCountN,
+        extraPickupStopCount,
+        extraDropoffStopCount,
       }),
-    [serviceType, moveSize, recommendedTier, workstationCountN],
+    [
+      serviceType,
+      moveSize,
+      recommendedTier,
+      workstationCountN,
+      extraPickupStopCount,
+      extraDropoffStopCount,
+    ],
+  );
+
+  const autoProjectModeReason = useMemo(
+    () =>
+      describeAutoProjectModeReason({
+        serviceType,
+        moveSize,
+        recommendedTier,
+        extraPickupStopCount,
+        extraDropoffStopCount,
+      }),
+    [
+      serviceType,
+      moveSize,
+      recommendedTier,
+      extraPickupStopCount,
+      extraDropoffStopCount,
+    ],
   );
 
   const showMoveProjectPlanner = useMemo(
@@ -2175,6 +2333,8 @@ export default function QuoteFormClient({
             recommendedTier,
             multiDayEnabled,
             workstationCount: workstationCountN,
+            extraPickupStopCount,
+            extraDropoffStopCount,
           }),
     [
       multiDayPlannerOptOut,
@@ -2183,6 +2343,8 @@ export default function QuoteFormClient({
       recommendedTier,
       multiDayEnabled,
       workstationCountN,
+      extraPickupStopCount,
+      extraDropoffStopCount,
     ],
   );
   const movePlannerVisible = showMoveProjectPlanner;
@@ -2243,14 +2405,88 @@ export default function QuoteFormClient({
     officeEstHours,
   ]);
 
+  const moveProjectStopsSyncSig = useRef<string>("");
+  useEffect(() => {
+    if (!movePlannerVisible) {
+      moveProjectStopsSyncSig.current = "";
+      return;
+    }
+    const pickups = pickupAddressList;
+    const drops = dropAddressList;
+    if (pickups.length === 0 || drops.length === 0) return;
+    const sig = `${pickups.join("|")}::${drops.join("|")}::${fromAccess}::${toAccess}::${moveDate}`;
+    if (moveProjectStopsSyncSig.current === sig) return;
+    moveProjectStopsSyncSig.current = sig;
+    setMoveProjectPayload((prev) => {
+      if (!prev) return prev;
+      const nextOrigins = pickups.map((address, i) => ({
+        ...(prev.origins[i] ?? {}),
+        address,
+        ...(i === 0 ? { access: fromAccess } : {}),
+        label:
+          prev.origins[i]?.label?.trim() ||
+          (i === 0 ? "Primary pickup" : `Pickup ${i + 1}`),
+      }));
+      const nextDest = drops.map((address, i) => ({
+        ...(prev.destinations[i] ?? {}),
+        address,
+        ...(i === 0 ? { access: toAccess } : {}),
+        label:
+          prev.destinations[i]?.label?.trim() ||
+          (i === 0 ? "Primary drop-off" : `Drop-off ${i + 1}`),
+      }));
+      return {
+        ...prev,
+        origins: nextOrigins,
+        destinations: nextDest,
+        start_date: moveDate || prev.start_date,
+      };
+    });
+  }, [
+    movePlannerVisible,
+    pickupAddressList,
+    dropAddressList,
+    fromAccess,
+    toAccess,
+    moveDate,
+  ]);
+
+  useEffect(() => {
+    if (!multiPickupInventoryMode) {
+      if (perPickupInventory.length > 0) {
+        const merged = perPickupInventory.flat();
+        if (merged.length > 0) setInventoryItems(merged);
+        setPerPickupInventory([]);
+      }
+      return;
+    }
+    setPerPickupInventory((prev) => {
+      const n = pickupCount;
+      if (prev.length === n) return prev;
+      return Array.from({ length: n }, (_, i) => {
+        if (i < prev.length) return prev[i]!;
+        if (prev.length === 0 && i === 0) return inventoryItems;
+        return [];
+      });
+    });
+  }, [multiPickupInventoryMode, pickupCount, inventoryItems]);
+
   const moveSizeSuggestion = useMemo(() => {
-    if (inventoryItems.length === 0) return null;
+    if (inventoryLinesForScore.length === 0) return null;
     return suggestMoveSizeFromInventory(
-      inventoryItems.map((i) => ({ name: i.name, quantity: i.quantity })),
+      inventoryLinesForScore.map((i) => ({ name: i.name, quantity: i.quantity })),
       clientBoxCountNum,
       inventoryScore,
     );
-  }, [inventoryItems, clientBoxCountNum, inventoryScore]);
+  }, [inventoryLinesForScore, clientBoxCountNum, inventoryScore]);
+
+  const inventoryScoresByOrigin = useMemo(
+    () =>
+      perPickupInventory.map((g) =>
+        g.reduce((s, i) => s + residentialInventoryLineScore(i), 0),
+      ),
+    [perPickupInventory],
+  );
 
   useEffect(() => {
     if (
@@ -3659,8 +3895,24 @@ export default function QuoteFormClient({
             : 0;
         base.specialty_items =
           specialtyItems.length > 0 ? specialtyItems : undefined;
-        if (inventoryItems.length > 0) {
-          base.inventory_items = inventoryItems.map(inventoryItemToPayload);
+        if (multiPickupInventoryMode && perPickupInventory.length > 0) {
+          base.inventory_items = perPickupInventory.flatMap((items, idx) =>
+            items.map((it) => inventoryItemToPayload(it, idx)),
+          );
+        } else if (inventoryItems.length > 0) {
+          base.inventory_items = inventoryItems.map((i) =>
+            inventoryItemToPayload(i),
+          );
+        }
+        if (fromLat != null && Number.isFinite(fromLat)) base.from_lat = fromLat;
+        if (fromLng != null && Number.isFinite(fromLng)) base.from_lng = fromLng;
+        if (toLat != null && Number.isFinite(toLat)) base.to_lat = toLat;
+        if (toLng != null && Number.isFinite(toLng)) base.to_lng = toLng;
+        if (originBuildingFlags.length > 0) {
+          base.origin_building_access_flags = originBuildingFlags;
+        }
+        if (destBuildingFlags.length > 0) {
+          base.destination_building_access_flags = destBuildingFlags;
         }
       }
       if (
@@ -3706,8 +3958,14 @@ export default function QuoteFormClient({
         base.office_estimated_hours = officeEstHours || undefined;
         base.office_truck_count =
           officeTruckCount >= 2 ? officeTruckCount : undefined;
-        if (inventoryItems.length > 0) {
-          base.inventory_items = inventoryItems.map(inventoryItemToPayload);
+        if (multiPickupInventoryMode && perPickupInventory.length > 0) {
+          base.inventory_items = perPickupInventory.flatMap((items, idx) =>
+            items.map((it) => inventoryItemToPayload(it, idx)),
+          );
+        } else if (inventoryItems.length > 0) {
+          base.inventory_items = inventoryItems.map((i) =>
+            inventoryItemToPayload(i),
+          );
         }
       }
       if (serviceType === "single_item") {
@@ -3729,8 +3987,14 @@ export default function QuoteFormClient({
         base.declared_value = Number(declaredValue) || undefined;
         base.stair_carry = stairCarry;
         base.stair_flights = stairFlights;
-        if (inventoryItems.length > 0) {
-          base.inventory_items = inventoryItems.map(inventoryItemToPayload);
+        if (multiPickupInventoryMode && perPickupInventory.length > 0) {
+          base.inventory_items = perPickupInventory.flatMap((items, idx) =>
+            items.map((it) => inventoryItemToPayload(it, idx)),
+          );
+        } else if (inventoryItems.length > 0) {
+          base.inventory_items = inventoryItems.map((i) =>
+            inventoryItemToPayload(i),
+          );
         }
         base.client_box_count =
           clientBoxCount !== "" && clientBoxCount != null
@@ -4017,6 +4281,12 @@ export default function QuoteFormClient({
       serviceType,
       fromAddress,
       toAddress,
+      fromLat,
+      fromLng,
+      toLat,
+      toLng,
+      originBuildingFlags,
+      destBuildingFlags,
       fromAccess,
       toAccess,
       moveDate,
@@ -4030,6 +4300,8 @@ export default function QuoteFormClient({
       serviceAreaOverride,
       specialtyItems,
       inventoryItems,
+      multiPickupInventoryMode,
+      perPickupInventory,
       sqft,
       wsCount,
       hasIt,
@@ -5180,7 +5452,10 @@ export default function QuoteFormClient({
                             placeholder="Where bins are delivered"
                             stops={[{ address: toAddress }]}
                             onChange={(stops) => {
-                              setToAddress(stops[0]?.address ?? "");
+                              const p = stops[0];
+                              setToAddress(p?.address ?? "");
+                              setToLat(p?.lat ?? null);
+                              setToLng(p?.lng ?? null);
                             }}
                             inputClassName={fieldInput}
                           />
@@ -5232,20 +5507,23 @@ export default function QuoteFormClient({
                               label="Pickup address *"
                               placeholder="Where bins are collected"
                               stops={[{ address: fromAddress }]}
-                              onChange={(stops) => {
-                                setFromAddress(stops[0]?.address ?? "");
-                              }}
-                              inputClassName={fieldInput}
-                            />
-                          </div>
-                          <div className="w-full sm:w-[150px] shrink-0">
-                            <Field label="Access">
-                              <select
-                                value={fromAccess}
-                                onChange={(e) => setFromAccess(e.target.value)}
-                                className={fieldInput}
-                              >
-                                {BIN_RENTAL_ACCESS_OPTIONS.map((o) => (
+                            onChange={(stops) => {
+                              const p = stops[0];
+                              setFromAddress(p?.address ?? "");
+                              setFromLat(p?.lat ?? null);
+                              setFromLng(p?.lng ?? null);
+                            }}
+                            inputClassName={fieldInput}
+                          />
+                        </div>
+                        <div className="w-full sm:w-[150px] shrink-0">
+                          <Field label="Access">
+                            <select
+                              value={fromAccess}
+                              onChange={(e) => setFromAccess(e.target.value)}
+                              className={fieldInput}
+                            >
+                              {BIN_RENTAL_ACCESS_OPTIONS.map((o) => (
                                   <option key={o.value} value={o.value}>
                                     {o.label}
                                   </option>
@@ -5280,7 +5558,10 @@ export default function QuoteFormClient({
                               ...extraFromStops,
                             ]}
                             onChange={(stops) => {
-                              setFromAddress(stops[0]?.address ?? "");
+                              const p = stops[0];
+                              setFromAddress(p?.address ?? "");
+                              setFromLat(p?.lat ?? null);
+                              setFromLng(p?.lng ?? null);
                               setExtraFromStops(stops.slice(1));
                             }}
                             inputClassName={fieldInput}
@@ -5313,7 +5594,10 @@ export default function QuoteFormClient({
                             placeholder="Destination address"
                             stops={[{ address: toAddress }, ...extraToStops]}
                             onChange={(stops) => {
-                              setToAddress(stops[0]?.address ?? "");
+                              const p = stops[0];
+                              setToAddress(p?.address ?? "");
+                              setToLat(p?.lat ?? null);
+                              setToLng(p?.lng ?? null);
                               setExtraToStops(stops.slice(1));
                             }}
                             inputClassName={fieldInput}
@@ -5336,6 +5620,152 @@ export default function QuoteFormClient({
                         </div>
                       </div>
                     )}
+                  {(serviceType === "local_move" ||
+                    serviceType === "long_distance") && (
+                    <div className="space-y-3 pt-2">
+                      <BuildingProfileQuoteAlert
+                        profile={fromBuildingMatch}
+                        end="origin"
+                        inventoryScore={inventoryScoreWithBoxes}
+                      />
+                      <BuildingProfileQuoteAlert
+                        profile={toBuildingMatch}
+                        end="destination"
+                        inventoryScore={inventoryScoreWithBoxes}
+                      />
+                      {!fromBuildingMatch && fromAccess === "elevator" && (
+                        <div className="rounded-lg border border-[var(--brd)] bg-[#F9F0E8] px-3 py-3 space-y-2">
+                          <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)]">
+                            Origin building details
+                          </p>
+                          <p className="text-[10px] text-[var(--tx2)] leading-snug">
+                            Help us plan accurately. These details affect crew time and pricing when
+                            no building profile is on file.
+                          </p>
+                          <label className="flex items-start gap-2.5 text-[11px] text-[var(--tx)] cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="mt-0.5 accent-[#2C3E2D]"
+                              checked={originBuildingFlags.includes(
+                                "commercial_tenants",
+                              )}
+                              onChange={() =>
+                                toggleOriginFlag("commercial_tenants")
+                              }
+                            />
+                            <span>Building has commercial stores (grocery, retail, restaurants)</span>
+                          </label>
+                          {originBuildingFlags.includes("commercial_tenants") && (
+                            <div className="ml-6 rounded-md border border-amber-200/80 bg-amber-50/80 px-2.5 py-2 text-[10px] leading-relaxed text-amber-950">
+                              Mixed-use buildings often use split elevator systems with transfers
+                              between freight and residential elevators. That can add significant move
+                              time. We may add a building access surcharge when no verified profile
+                              exists yet.
+                            </div>
+                          )}
+                          <label className="flex items-start gap-2.5 text-[11px] text-[var(--tx)] cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="mt-0.5 accent-[#2C3E2D]"
+                              checked={originBuildingFlags.includes(
+                                "multi_elevator_transfer",
+                              )}
+                              onChange={() =>
+                                toggleOriginFlag("multi_elevator_transfer")
+                              }
+                            />
+                            <span>Multiple elevator transfers needed to reach the unit</span>
+                          </label>
+                          <label className="flex items-start gap-2.5 text-[11px] text-[var(--tx)] cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="mt-0.5 accent-[#2C3E2D]"
+                              checked={originBuildingFlags.includes(
+                                "dock_restrictions",
+                              )}
+                              onChange={() => toggleOriginFlag("dock_restrictions")}
+                            />
+                            <span>Loading dock has time restrictions or is shared</span>
+                          </label>
+                          <div>
+                            <label className="text-[10px] text-[var(--tx3)] block mb-1">
+                              Floor number (optional)
+                            </label>
+                            <input
+                              type="number"
+                              value={originFloor}
+                              onChange={(e) => setOriginFloor(e.target.value)}
+                              placeholder="e.g. 32"
+                              className={`${fieldInput} max-w-[120px]`}
+                            />
+                          </div>
+                        </div>
+                      )}
+                      {!toBuildingMatch && toAccess === "elevator" && (
+                        <div className="rounded-lg border border-[var(--brd)] bg-[#F9F0E8] px-3 py-3 space-y-2">
+                          <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)]">
+                            Destination building details
+                          </p>
+                          <p className="text-[10px] text-[var(--tx2)] leading-snug">
+                            Help us plan accurately when no building profile is on file.
+                          </p>
+                          <label className="flex items-start gap-2.5 text-[11px] text-[var(--tx)] cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="mt-0.5 accent-[#2C3E2D]"
+                              checked={destBuildingFlags.includes(
+                                "commercial_tenants",
+                              )}
+                              onChange={() => toggleDestFlag("commercial_tenants")}
+                            />
+                            <span>Building has commercial stores (grocery, retail, restaurants)</span>
+                          </label>
+                          {destBuildingFlags.includes("commercial_tenants") && (
+                            <div className="ml-6 rounded-md border border-amber-200/80 bg-amber-50/80 px-2.5 py-2 text-[10px] leading-relaxed text-amber-950">
+                              Mixed-use buildings often use split elevator systems with transfers
+                              between freight and residential elevators. That can add significant move
+                              time. We may add a building access surcharge when no verified profile
+                              exists yet.
+                            </div>
+                          )}
+                          <label className="flex items-start gap-2.5 text-[11px] text-[var(--tx)] cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="mt-0.5 accent-[#2C3E2D]"
+                              checked={destBuildingFlags.includes(
+                                "multi_elevator_transfer",
+                              )}
+                              onChange={() =>
+                                toggleDestFlag("multi_elevator_transfer")
+                              }
+                            />
+                            <span>Multiple elevator transfers needed to reach the unit</span>
+                          </label>
+                          <label className="flex items-start gap-2.5 text-[11px] text-[var(--tx)] cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="mt-0.5 accent-[#2C3E2D]"
+                              checked={destBuildingFlags.includes("dock_restrictions")}
+                              onChange={() => toggleDestFlag("dock_restrictions")}
+                            />
+                            <span>Loading dock has time restrictions or is shared</span>
+                          </label>
+                          <div>
+                            <label className="text-[10px] text-[var(--tx3)] block mb-1">
+                              Floor number (optional)
+                            </label>
+                            <input
+                              type="number"
+                              value={destFloor}
+                              onChange={(e) => setDestFloor(e.target.value)}
+                              placeholder="e.g. 32"
+                              className={`${fieldInput} max-w-[120px]`}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {serviceType !== "labour_only" &&
                     serviceType !== "bin_rental" && (
                       <div className="grid grid-cols-1 min-[500px]:grid-cols-2 gap-3 pt-2">
@@ -6020,45 +6450,162 @@ export default function QuoteFormClient({
                 itemWeights.length > 0 && (
                   <>
                     <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
-                    <InventoryInput
-                      itemWeights={
-                        itemWeights as {
-                          slug: string;
-                          item_name: string;
-                          weight_score: number;
-                          category: string;
-                          room?: string;
-                          is_common: boolean;
-                          display_order?: number;
-                          active?: boolean;
-                        }[]
-                      }
-                      value={inventoryItems}
-                      onChange={setInventoryItems}
-                      moveSize={
-                        moveSize || moveSizeSuggestion?.suggested || "partial"
-                      }
-                      fromAccess={fromAccess}
-                      toAccess={toAccess}
-                      showLabourEstimate={
-                        (!!moveSize ||
-                          !!moveSizeSuggestion ||
-                          inventoryItems.length > 0) &&
-                        (serviceType === "local_move" ||
-                          serviceType === "long_distance" ||
-                          serviceType === "white_glove" ||
-                          serviceType === "office_move")
-                      }
-                      boxCount={Number(clientBoxCount) || 0}
-                      onBoxCountChange={(n) =>
-                        setClientBoxCount(n > 0 ? String(n) : "")
-                      }
-                      mode={
-                        serviceType === "office_move"
-                          ? "commercial"
-                          : "residential"
-                      }
-                    />
+                    {multiPickupInventoryMode ? (
+                      <div className="space-y-6">
+                        <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">
+                          Inventory by pickup
+                        </p>
+                        {pickupAddressList.map((addr, idx) => (
+                          <div
+                            key={`pickup-inv-${idx}`}
+                            className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-3 space-y-2"
+                          >
+                            <div className="flex items-start gap-2">
+                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--gdim)] text-[10px] font-bold text-[var(--tx)]">
+                                {idx + 1}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="text-[11px] font-semibold text-[var(--tx)]">
+                                  Pickup {idx + 1}
+                                </p>
+                                <p className="text-[10px] text-[var(--tx3)] break-words">
+                                  {addr || "Add this pickup above"}
+                                </p>
+                              </div>
+                            </div>
+                            {movePlannerVisible &&
+                              moveProjectPayload &&
+                              (serviceType === "local_move" ||
+                                serviceType === "long_distance") && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  <Field label="Size at this location">
+                                    <select
+                                      className={fieldInput}
+                                      value={
+                                        moveProjectPayload.origins[idx]
+                                          ?.move_size ?? ""
+                                      }
+                                      onChange={(e) => {
+                                        const v = e.target.value;
+                                        setMoveProjectPayload((prev) => {
+                                          if (!prev) return prev;
+                                          const origins = [...prev.origins];
+                                          while (origins.length <= idx) {
+                                            origins.push({
+                                              address:
+                                                pickupAddressList[idx] ?? "",
+                                              label: `Pickup ${idx + 1}`,
+                                            });
+                                          }
+                                          origins[idx] = {
+                                            ...origins[idx]!,
+                                            move_size: v || undefined,
+                                          };
+                                          return { ...prev, origins };
+                                        });
+                                      }}
+                                    >
+                                      <option value="">Same as quote</option>
+                                      <option value="studio">Studio</option>
+                                      <option value="1br">1 bedroom</option>
+                                      <option value="2br">2 bedroom</option>
+                                      <option value="3br">3 bedroom</option>
+                                      <option value="4br">4 bedroom</option>
+                                      <option value="5br_plus">5+ bedroom</option>
+                                      <option value="partial">Partial</option>
+                                    </select>
+                                  </Field>
+                                </div>
+                              )}
+                            <InventoryInput
+                              itemWeights={
+                                itemWeights as {
+                                  slug: string;
+                                  item_name: string;
+                                  weight_score: number;
+                                  category: string;
+                                  room?: string;
+                                  is_common: boolean;
+                                  display_order?: number;
+                                  active?: boolean;
+                                }[]
+                              }
+                              value={perPickupInventory[idx] ?? []}
+                              onChange={(next) => {
+                                setPerPickupInventory((prev) => {
+                                  const copy = [...prev];
+                                  while (copy.length <= idx) copy.push([]);
+                                  copy[idx] = next;
+                                  return copy;
+                                });
+                              }}
+                              moveSize={
+                                moveSize ||
+                                moveSizeSuggestion?.suggested ||
+                                "partial"
+                              }
+                              fromAccess={fromAccess}
+                              toAccess={toAccess}
+                              showLabourEstimate={false}
+                              boxCount={
+                                idx === 0 ? Number(clientBoxCount) || 0 : 0
+                              }
+                              onBoxCountChange={
+                                idx === 0
+                                  ? (n) =>
+                                      setClientBoxCount(n > 0 ? String(n) : "")
+                                  : undefined
+                              }
+                              mode={
+                                serviceType === "office_move"
+                                  ? "commercial"
+                                  : "residential"
+                              }
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <InventoryInput
+                        itemWeights={
+                          itemWeights as {
+                            slug: string;
+                            item_name: string;
+                            weight_score: number;
+                            category: string;
+                            room?: string;
+                            is_common: boolean;
+                            display_order?: number;
+                            active?: boolean;
+                          }[]
+                        }
+                        value={inventoryItems}
+                        onChange={setInventoryItems}
+                        moveSize={
+                          moveSize || moveSizeSuggestion?.suggested || "partial"
+                        }
+                        fromAccess={fromAccess}
+                        toAccess={toAccess}
+                        showLabourEstimate={
+                          (!!moveSize ||
+                            !!moveSizeSuggestion ||
+                            inventoryItems.length > 0) &&
+                          (serviceType === "local_move" ||
+                            serviceType === "long_distance" ||
+                            serviceType === "white_glove" ||
+                            serviceType === "office_move")
+                        }
+                        boxCount={Number(clientBoxCount) || 0}
+                        onBoxCountChange={(n) =>
+                          setClientBoxCount(n > 0 ? String(n) : "")
+                        }
+                        mode={
+                          serviceType === "office_move"
+                            ? "commercial"
+                            : "residential"
+                        }
+                      />
+                    )}
                   </>
                 )}
 
@@ -6263,6 +6810,11 @@ export default function QuoteFormClient({
                             ? "This quote qualifies for the multi-day planner. Uncheck to turn the planner off, or adjust phases and days below when it is on."
                             : "Turn on to plan pack, move, and setup as separate days, or for custom milestones."}
                         </p>
+                        {plannerAutoQualifies && !multiDayEnabled && !multiDayPlannerOptOut && (
+                          <p className="text-[10px] text-[var(--yu-accent)] mt-2 font-medium">
+                            Auto-enabled: {autoProjectModeReason}
+                          </p>
+                        )}
                       </div>
                       <label className="flex items-center gap-2 text-[11px] font-medium text-[var(--tx)] cursor-pointer select-none shrink-0">
                         <input
@@ -6273,6 +6825,18 @@ export default function QuoteFormClient({
                         />
                         Enable multi-day planner
                       </label>
+                    </div>
+                    <div className="mt-3 rounded-lg border border-[var(--brd)]/80 bg-[#F9EDE4]/90 px-3 py-2.5">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[11px] font-semibold text-[#2B0416]">
+                            Multi-location or multi-day move
+                          </p>
+                          <p className="text-[10px] text-[var(--tx3)] mt-0.5 max-w-xl leading-snug">
+                            Use multiple pickups or drop-offs above, then build phases here. Pack days, crew splits, and truck days stay on the project record for the client timeline.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   {movePlannerVisible && moveProjectPayload && (
@@ -6291,6 +6855,10 @@ export default function QuoteFormClient({
                       workstationCount={workstationCountN}
                       companyName={b2bBusinessName}
                       officeEstHours={officeEstHours}
+                      primaryMoveSize={
+                        moveSize || moveSizeSuggestion?.suggested || "2br"
+                      }
+                      inventoryScoresByOrigin={inventoryScoresByOrigin}
                       quoteFactors={
                         (quoteResult?.factors as Record<
                           string,
@@ -8887,17 +9455,126 @@ export default function QuoteFormClient({
                 {quoteResult ? (
                   <>
                     {quoteResult.tiers ? (
-                      <TiersDisplay
-                        tiers={quoteResult.tiers}
-                        recommendedTier={recommendedTier}
-                        estateMultiDayUplift={(() => {
-                          const f = quoteResult.factors as
-                            | Record<string, unknown>
-                            | undefined;
-                          const u = f?.estate_multi_day_labour_uplift;
-                          return typeof u === "number" && u > 0 ? u : 0;
-                        })()}
-                      />
+                      <>
+                        <TiersDisplay
+                          tiers={quoteResult.tiers}
+                          recommendedTier={recommendedTier}
+                          estateMultiDayUplift={(() => {
+                            const f = quoteResult.factors as
+                              | Record<string, unknown>
+                              | undefined;
+                            const u = f?.estate_multi_day_labour_uplift;
+                            return typeof u === "number" && u > 0 ? u : 0;
+                          })()}
+                        />
+                        {quoteResult.factors &&
+                          serviceType === "local_move" &&
+                          typeof (quoteResult.factors as Record<string, unknown>)
+                            .building_complexity_surcharge === "number" &&
+                          ((quoteResult.factors as Record<string, unknown>)
+                            .building_complexity_surcharge as number) > 0 && (
+                            <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2.5 mt-2 space-y-1">
+                              <div className="flex justify-between text-[11px] text-[var(--tx2)]">
+                                <span>Building access complexity (pre-tax)</span>
+                                <span className="font-medium text-[var(--tx)]">
+                                  {fmtPrice(
+                                    (quoteResult.factors as Record<string, unknown>)
+                                      .building_complexity_surcharge as number,
+                                  )}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        {(serviceType === "local_move" ||
+                          serviceType === "long_distance") &&
+                          (() => {
+                            const br = (quoteResult.factors as
+                              | Record<string, unknown>
+                              | undefined)?.project_quote_breakdown as
+                              | ProjectQuoteBreakdown
+                              | undefined;
+                            if (!br?.line_items?.length) return null;
+                            return (
+                              <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2.5 space-y-2 text-[11px]">
+                                <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">
+                                  Project estimate (line items)
+                                </p>
+                                <ul className="space-y-1.5">
+                                  {br.line_items.map((ln, i) => (
+                                    <li
+                                      key={i}
+                                      className="flex justify-between gap-2 text-[var(--tx2)]"
+                                    >
+                                      <span className="min-w-0">
+                                        <span className="block font-medium text-[var(--tx)]">
+                                          {ln.description}
+                                        </span>
+                                        {ln.detail ? (
+                                          <span className="block text-[10px] text-[var(--tx3)]">
+                                            {ln.detail}
+                                          </span>
+                                        ) : null}
+                                      </span>
+                                      <span className="shrink-0 font-medium text-[var(--tx)]">
+                                        {fmtPrice(ln.amount)}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                                <div className="pt-2 border-t border-[var(--brd)]/60 space-y-1">
+                                  <div className="flex justify-between text-[var(--tx2)]">
+                                    <span>Subtotal (pre-tax)</span>
+                                    <span className="font-medium text-[var(--tx)]">
+                                      {fmtPrice(br.subtotal_pre_tax)}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between text-[var(--tx3)]">
+                                    <span>HST</span>
+                                    <span>{fmtPrice(br.hst)}</span>
+                                  </div>
+                                  <div className="flex justify-between font-semibold text-[var(--tx)]">
+                                    <span>Total with tax</span>
+                                    <span>{fmtPrice(br.total_with_tax)}</span>
+                                  </div>
+                                  <div className="flex justify-between text-[var(--tx2)]">
+                                    <span>Deposit</span>
+                                    <span className="font-medium">
+                                      {fmtPrice(br.deposit)}
+                                    </span>
+                                  </div>
+                                </div>
+                                {br.payment_schedule?.length ? (
+                                  <div className="pt-2 border-t border-[var(--brd)]/60">
+                                    <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">
+                                      Payment schedule
+                                    </p>
+                                    <ul className="space-y-1 text-[10px] text-[var(--tx2)]">
+                                      {br.payment_schedule.map((m, i) => (
+                                        <li
+                                          key={i}
+                                          className="flex justify-between gap-2"
+                                        >
+                                          <span>
+                                            {m.milestone}
+                                            {m.due ? (
+                                              <span className="text-[var(--tx3)]">
+                                                {" "}
+                                                ({m.due})
+                                              </span>
+                                            ) : null}
+                                          </span>
+                                          <span className="font-medium text-[var(--tx)]">
+                                            {fmtPrice(m.amount)}
+                                          </span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                ) : null}
+                              </div>
+                            );
+                          })()}
+                      </>
                     ) : quoteResult.custom_price && serviceType === "event" ? (
                       <EventPriceDisplay
                         price={quoteResult.custom_price}

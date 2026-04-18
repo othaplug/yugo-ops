@@ -69,6 +69,8 @@ export interface CalendarEvent {
   scheduleBlockId: string | null;
   isRecurring?: boolean;
   scheduleName?: string | null;
+  /** When type is move_project_day, links PATCH and admin project page */
+  moveProjectId?: string | null;
   // Event booking fields
   eventGroupId?: string | null;
   eventPhase?: "delivery" | "setup" | "return" | "single_day" | null;

@@ -66,6 +66,8 @@ interface DataTableProps<T> {
   keyField: keyof T | ((row: T) => string);
   searchable?: boolean;
   searchPlaceholder?: string;
+  /** Pre-fills the search box (e.g. deep link from Buildings with `?q=`). */
+  initialSearch?: string;
   pagination?: boolean;
   defaultPerPage?: number;
   perPageOptions?: number[];
@@ -228,6 +230,7 @@ export default function DataTable<T>({
   keyField,
   searchable = true,
   searchPlaceholder = "Search…",
+  initialSearch = "",
   pagination = true,
   defaultPerPage = 50,
   perPageOptions = [25, 50, 100],
@@ -254,7 +257,7 @@ export default function DataTable<T>({
   clearSelectionSignal,
 }: DataTableProps<T>) {
   /* ── State ── */
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [sortColInternal, setSortColInternal] = useState<string | null>(
     () => loadViewSnapshot(tableId)?.sortCol ?? defaultSortCol ?? null,
   );

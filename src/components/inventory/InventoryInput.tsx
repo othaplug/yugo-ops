@@ -36,6 +36,8 @@ export interface InventoryItemEntry {
   isCustom?: boolean;
   /** Coordinator / auto: high-care handling */
   fragile?: boolean;
+  /** Multi-pickup quote: which pickup index this line belongs to (0-based). */
+  origin_index?: number;
 }
 
 export interface ItemWeightRow {

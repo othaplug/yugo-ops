@@ -32,6 +32,7 @@ const TYPE_LABELS: Record<string, string> = {
   bin_pickup: "Bin pickup",
   project_phase: "Project Phase",
   project: "Project",
+  move_project_day: "Move project day",
   blocked: "Blocked Time",
 };
 
@@ -90,7 +91,12 @@ export default function JobDetailPanel({
       : formatTime12(event.start)
     : "Time not set";
 
-  const canReassign = REASSIGNABLE.includes(event.type) && canEditEvent(event);
+  const canReassign =
+    (REASSIGNABLE.includes(event.type) && canEditEvent(event)) ||
+    (event.type === "move_project_day" &&
+      !!event.moveProjectId &&
+      event.calendarStatus !== "cancelled" &&
+      event.calendarStatus !== "completed");
 
   const hasContact = !!(
     event.clientName?.trim() ||
@@ -107,8 +113,41 @@ export default function JobDetailPanel({
       : null;
 
   const handleSaveReassign = async () => {
-    if (!reassignCrewId || !reassignDate || !reassignStart || !reassignEnd)
+    if (!reassignDate) return;
+    if (event.type === "move_project_day" && event.moveProjectId) {
+      if (!reassignStart || !reassignEnd) return;
+      setSaving(true);
+      setSaveError(null);
+      try {
+        const res = await fetch(
+          `/api/admin/move-projects/${event.moveProjectId}/days/${event.id}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              crew_ids: reassignCrewId ? [reassignCrewId] : [],
+              date: reassignDate,
+              start_time: reassignStart,
+              end_time: reassignEnd,
+            }),
+          },
+        );
+        const data = await res.json();
+        if (!res.ok) {
+          setSaveError(data.error || "Failed to update project day");
+        } else {
+          onRescheduled?.();
+          onClose();
+        }
+      } catch {
+        setSaveError("Network error");
+      } finally {
+        setSaving(false);
+      }
       return;
+    }
+
+    if (!reassignCrewId || !reassignStart || !reassignEnd) return;
     setSaving(true);
     setSaveError(null);
     try {
@@ -316,9 +355,12 @@ export default function JobDetailPanel({
         )}
 
         {/* Team & Truck */}
-        {(event.crewName || event.truckName) && (
+        {(event.type === "move_project_day" || event.crewName || event.truckName) && (
           <section className={`${cardSurface} px-4 py-3.5`}>
             <div className={`${eyebrowCls} mb-2`}>Assignment</div>
+            {event.type === "move_project_day" && !event.crewName && (
+              <div className={`text-[13px] ${inkMuted}`}>No crew assigned yet</div>
+            )}
             {event.crewName && (
               <div className={`flex items-center gap-2 text-[14px] ${ink}`}>
                 <Icon
@@ -422,7 +464,7 @@ export default function JobDetailPanel({
                   className="w-4 h-4 shrink-0 stroke-[1.75] stroke-current"
                   style={{ color: accentIcon }}
                 />
-                Reassign / Reschedule
+                {event.type === "move_project_day" ? "Update project day" : "Reassign / Reschedule"}
               </span>
               <CaretDown
                 size={16}
@@ -518,7 +560,13 @@ export default function JobDetailPanel({
                 <button
                   type="button"
                   onClick={handleSaveReassign}
-                  disabled={saving || !reassignCrewId || !reassignDate}
+                  disabled={
+                    saving ||
+                    !reassignDate ||
+                    !reassignStart ||
+                    !reassignEnd ||
+                    (event.type !== "move_project_day" && !reassignCrewId)
+                  }
                   className={
                     wineMode
                       ? "w-full py-3 rounded-lg text-[11px] font-bold uppercase tracking-[0.12em] bg-[#6E2442] text-[#FCF8F5] hover:bg-[#823052] transition-colors disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
@@ -532,7 +580,7 @@ export default function JobDetailPanel({
                     </>
                   ) : (
                     <>
-                      Confirm reassignment
+                      {event.type === "move_project_day" ? "Save project day" : "Confirm reassignment"}
                       <CaretRight
                         className="w-4 h-4"
                         weight="bold"

@@ -423,6 +423,7 @@ export default function AllMovesClient({
   const activeType = searchParams.get("type") || "";
   const activeStatus = searchParams.get("status") || "";
   const activeMargin = searchParams.get("margin") || "";
+  const movesSearchQ = searchParams.get("q") || "";
 
   const setFilter = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -629,9 +630,11 @@ export default function AllMovesClient({
           data={filtered}
           keyField="id"
           tableId="all-moves"
+          key={`all-moves-${movesSearchQ}`}
           defaultSortCol="created_at"
           defaultSortDir="desc"
           searchable
+          initialSearch={movesSearchQ}
           searchPlaceholder="Search by client, address, code…"
           pagination
           defaultPerPage={50}

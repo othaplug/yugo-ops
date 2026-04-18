@@ -114,6 +114,14 @@ export async function POST(req: NextRequest) {
         }
       }
       docFiles = formData.getAll("documents") as File[];
+      const additionalStopsRaw = formData.get("additional_stops");
+      if (typeof additionalStopsRaw === "string" && additionalStopsRaw.trim()) {
+        try {
+          body.additional_stops = JSON.parse(additionalStopsRaw);
+        } catch {
+          /* ignore */
+        }
+      }
     } else {
       body = await req.json();
     }
@@ -157,10 +165,35 @@ export async function POST(req: NextRequest) {
 
     const labourDescription = (body.labour_description as string)?.trim() || "";
     const internalNotesBase = (body.internal_notes as string)?.trim() || null;
-    const internalNotesMerged =
+
+    const additionalStopsNote = (() => {
+      const raw = body.additional_stops;
+      if (!raw || typeof raw !== "object") return null;
+      const o = raw as {
+        extra_pickups?: { address?: string }[];
+        extra_dropoffs?: { address?: string }[];
+      };
+      const lines: string[] = [];
+      (o.extra_pickups ?? []).forEach((s, i) => {
+        const a = typeof s.address === "string" ? s.address.trim() : "";
+        if (a) lines.push(`Additional pickup ${i + 2}: ${a}`);
+      });
+      (o.extra_dropoffs ?? []).forEach((s, i) => {
+        const a = typeof s.address === "string" ? s.address.trim() : "";
+        if (a) lines.push(`Additional drop-off ${i + 2}: ${a}`);
+      });
+      if (lines.length === 0) return null;
+      return ["Additional stops (coordinator)", ...lines].join("\n");
+    })();
+
+    let internalNotesMerged =
       moveType === "labour_only" && labourDescription
         ? [internalNotesBase, `Labour scope: ${labourDescription}`].filter(Boolean).join("\n\n") || null
         : internalNotesBase;
+    if (additionalStopsNote) {
+      internalNotesMerged =
+        [internalNotesMerged, additionalStopsNote].filter(Boolean).join("\n\n") || null;
+    }
 
     if (!clientName) return NextResponse.json({ error: "Client name is required" }, { status: 400 });
     if (!fromAddress) return NextResponse.json({ error: "From address is required" }, { status: 400 });

@@ -16,6 +16,9 @@ import {
 } from "@/hooks/useHubSpotContactSuggest";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
+import MultiStopAddressField, {
+  type StopEntry,
+} from "@/components/ui/MultiStopAddressField";
 import DraftBanner from "@/components/ui/DraftBanner";
 import { Plus, Trash as Trash2, FileText, CaretRight, Check } from "@phosphor-icons/react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
@@ -157,6 +160,8 @@ export default function CreateMoveForm({
   const [toLng, setToLng] = useState<number | null>(null);
   const [fromAccess, setFromAccess] = useState("");
   const [toAccess, setToAccess] = useState("");
+  const [extraFromStops, setExtraFromStops] = useState<StopEntry[]>([]);
+  const [extraToStops, setExtraToStops] = useState<StopEntry[]>([]);
   const [estimate, setEstimate] = useState("");
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
@@ -551,6 +556,15 @@ export default function CreateMoveForm({
       formData.append("arrival_window", arrivalWindow);
       formData.append("access_notes", accessNotes);
       formData.append("internal_notes", internalNotes);
+      if (extraFromStops.length > 0 || extraToStops.length > 0) {
+        formData.append(
+          "additional_stops",
+          JSON.stringify({
+            extra_pickups: extraFromStops,
+            extra_dropoffs: extraToStops,
+          }),
+        );
+      }
       formData.append("complexity_indicators", JSON.stringify(complexityIndicators));
       formData.append("preferred_contact", preferredContact);
       formData.append("coordinator_name", coordinatorName.trim());
@@ -1166,80 +1180,163 @@ export default function CreateMoveForm({
             {moveType === "labour_only" && (
               <p className="text-[10px] text-[var(--tx3)]">Work site or primary location, you can use the same address twice.</p>
             )}
-            <div className="space-y-1.5">
-              <div className="flex flex-col sm:flex-row gap-2 items-start">
-                <div className="flex-1 min-w-0 w-full">
-                  <AddressAutocomplete
-                    value={fromAddress}
-                    onRawChange={setFromAddress}
-                    onChange={(r) => {
-                      setFromAddress(r.fullAddress);
-                      setFromLat(r.lat);
-                      setFromLng(r.lng);
-                    }}
-                    placeholder="Origin address"
-                    label="From"
-                    required
-                    className={fieldInput}
-                  />
+            {moveType === "labour_only" ? (
+              <div className="space-y-1.5">
+                <div className="flex flex-col sm:flex-row gap-2 items-start">
+                  <div className="flex-1 min-w-0 w-full">
+                    <AddressAutocomplete
+                      value={fromAddress}
+                      onRawChange={setFromAddress}
+                      onChange={(r) => {
+                        setFromAddress(r.fullAddress);
+                        setFromLat(r.lat);
+                        setFromLng(r.lng);
+                      }}
+                      placeholder="Origin address"
+                      label="From"
+                      required
+                      className={fieldInput}
+                    />
+                  </div>
+                  <div className="w-full sm:w-[140px] shrink-0">
+                    <Field label="From Access">
+                      <select
+                        name="from_access"
+                        value={fromAccess}
+                        onChange={(e) => setFromAccess(e.target.value)}
+                        className={fieldInput}
+                      >
+                        <option value="">Select…</option>
+                        <option value="Elevator">Elevator</option>
+                        <option value="Stairs">Stairs</option>
+                        <option value="Loading dock">Loading dock</option>
+                        <option value="Parking">Parking</option>
+                        <option value="Gate / Buzz code">Gate / Buzz code</option>
+                        <option value="Ground floor">Ground floor</option>
+                        <option value="Building access required">Building access required</option>
+                      </select>
+                    </Field>
+                  </div>
                 </div>
-                <div className="w-full sm:w-[140px] shrink-0">
-                  <Field label="From Access">
-                    <select
-                    name="from_access"
-                    value={fromAccess}
-                    onChange={(e) => setFromAccess(e.target.value)}
-                    className={fieldInput}
-                  >
-                    <option value="">Select…</option>
-                    <option value="Elevator">Elevator</option>
-                    <option value="Stairs">Stairs</option>
-                    <option value="Loading dock">Loading dock</option>
-                    <option value="Parking">Parking</option>
-                    <option value="Gate / Buzz code">Gate / Buzz code</option>
-                    <option value="Ground floor">Ground floor</option>
-                    <option value="Building access required">Building access required</option>
-                  </select>
-                  </Field>
+                <div className="flex flex-col sm:flex-row gap-2 items-start">
+                  <div className="flex-1 min-w-0 w-full">
+                    <AddressAutocomplete
+                      value={toAddress}
+                      onRawChange={setToAddress}
+                      onChange={(r) => {
+                        setToAddress(r.fullAddress);
+                        setToLat(r.lat);
+                        setToLng(r.lng);
+                      }}
+                      placeholder="Destination address"
+                      label="To"
+                      required
+                      className={fieldInput}
+                    />
+                  </div>
+                  <div className="w-full sm:w-[140px] shrink-0">
+                    <Field label="To Access">
+                      <select
+                        name="to_access"
+                        value={toAccess}
+                        onChange={(e) => setToAccess(e.target.value)}
+                        className={fieldInput}
+                      >
+                        <option value="">Select…</option>
+                        <option value="Elevator">Elevator</option>
+                        <option value="Stairs">Stairs</option>
+                        <option value="Loading dock">Loading dock</option>
+                        <option value="Parking">Parking</option>
+                        <option value="Gate / Buzz code">Gate / Buzz code</option>
+                        <option value="Ground floor">Ground floor</option>
+                        <option value="Building access required">Building access required</option>
+                      </select>
+                    </Field>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2 items-start">
-                <div className="flex-1 min-w-0 w-full">
-                  <AddressAutocomplete
-                    value={toAddress}
-                    onRawChange={setToAddress}
-                    onChange={(r) => {
-                      setToAddress(r.fullAddress);
-                      setToLat(r.lat);
-                      setToLng(r.lng);
-                    }}
-                    placeholder="Destination address"
-                    label="To"
-                    required
-                    className={fieldInput}
-                  />
+            ) : (
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row gap-3 items-start">
+                  <div className="flex-1 min-w-0 w-full max-w-2xl">
+                    <MultiStopAddressField
+                      label="From"
+                      placeholder="Origin address"
+                      stops={[{ address: fromAddress, lat: fromLat, lng: fromLng }, ...extraFromStops]}
+                      onChange={(stops) => {
+                        const first = stops[0];
+                        setFromAddress(first?.address ?? "");
+                        setFromLat(first?.lat ?? null);
+                        setFromLng(first?.lng ?? null);
+                        setExtraFromStops(stops.slice(1));
+                      }}
+                      inputClassName={fieldInput}
+                    />
+                  </div>
+                  <div className="w-full sm:w-[140px] shrink-0">
+                    <Field label="From Access">
+                      <select
+                        name="from_access"
+                        value={fromAccess}
+                        onChange={(e) => setFromAccess(e.target.value)}
+                        className={fieldInput}
+                      >
+                        <option value="">Select…</option>
+                        <option value="Elevator">Elevator</option>
+                        <option value="Stairs">Stairs</option>
+                        <option value="Loading dock">Loading dock</option>
+                        <option value="Parking">Parking</option>
+                        <option value="Gate / Buzz code">Gate / Buzz code</option>
+                        <option value="Ground floor">Ground floor</option>
+                        <option value="Building access required">Building access required</option>
+                      </select>
+                    </Field>
+                  </div>
                 </div>
-                <div className="w-full sm:w-[140px] shrink-0">
-                  <Field label="To Access">
-                    <select
-                    name="to_access"
-                    value={toAccess}
-                    onChange={(e) => setToAccess(e.target.value)}
-                    className={fieldInput}
-                  >
-                    <option value="">Select…</option>
-                    <option value="Elevator">Elevator</option>
-                    <option value="Stairs">Stairs</option>
-                    <option value="Loading dock">Loading dock</option>
-                    <option value="Parking">Parking</option>
-                    <option value="Gate / Buzz code">Gate / Buzz code</option>
-                    <option value="Ground floor">Ground floor</option>
-                    <option value="Building access required">Building access required</option>
-                  </select>
-                  </Field>
+                <div className="flex flex-col sm:flex-row gap-3 items-start">
+                  <div className="flex-1 min-w-0 w-full max-w-2xl">
+                    <MultiStopAddressField
+                      label="To"
+                      placeholder="Destination address"
+                      stops={[{ address: toAddress, lat: toLat, lng: toLng }, ...extraToStops]}
+                      onChange={(stops) => {
+                        const first = stops[0];
+                        setToAddress(first?.address ?? "");
+                        setToLat(first?.lat ?? null);
+                        setToLng(first?.lng ?? null);
+                        setExtraToStops(stops.slice(1));
+                      }}
+                      inputClassName={fieldInput}
+                    />
+                  </div>
+                  <div className="w-full sm:w-[140px] shrink-0">
+                    <Field label="To Access">
+                      <select
+                        name="to_access"
+                        value={toAccess}
+                        onChange={(e) => setToAccess(e.target.value)}
+                        className={fieldInput}
+                      >
+                        <option value="">Select…</option>
+                        <option value="Elevator">Elevator</option>
+                        <option value="Stairs">Stairs</option>
+                        <option value="Loading dock">Loading dock</option>
+                        <option value="Parking">Parking</option>
+                        <option value="Gate / Buzz code">Gate / Buzz code</option>
+                        <option value="Ground floor">Ground floor</option>
+                        <option value="Building access required">Building access required</option>
+                      </select>
+                    </Field>
+                  </div>
                 </div>
+                {(extraFromStops.some((s) => s.address.trim()) ||
+                  extraToStops.some((s) => s.address.trim())) && (
+                  <p className="text-[10px] text-[var(--tx3)] leading-snug">
+                    Extra stops are saved on the move and listed in internal notes for coordinators. For full project scheduling and per-location pricing, create the job from Generate Quote with project mode.
+                  </p>
+                )}
               </div>
-            </div>
+            )}
           </div>
 
           <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />

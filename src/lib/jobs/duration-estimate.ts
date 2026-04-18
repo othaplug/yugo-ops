@@ -103,6 +103,10 @@ export function estimateJobDuration(input: {
   truckType: string | null
   grossRevenue: number
   bookedHours: number | null
+  /** From quote factors: extra loading time from building access (origin trips) */
+  buildingLoadingExtraMinutes?: number
+  /** From quote factors: extra unloading time at destination */
+  buildingUnloadingExtraMinutes?: number
 }): JobDurationEstimate {
   const st = (input.serviceType || "").toLowerCase()
   let loadingMinutes = 60
@@ -157,6 +161,11 @@ export function estimateJobDuration(input: {
     loadingMinutes *= 1.1
     unloadingMinutes *= 1.1
   }
+
+  const loadExtra = input.buildingLoadingExtraMinutes ?? 0
+  const unloadExtra = input.buildingUnloadingExtraMinutes ?? 0
+  if (loadExtra > 0) loadingMinutes += loadExtra
+  if (unloadExtra > 0) unloadingMinutes += unloadExtra
 
   const rawTotal = loadingMinutes + driveMinutes + unloadingMinutes
   const bufferMinutes = Math.round(rawTotal * 0.1)
@@ -250,6 +259,18 @@ export function estimateMoveDurationFromQuoteRow(params: {
       ? params.factors.est_job_hours
       : null)
 
+  const f = params.factors
+  const loadExtra =
+    typeof f.building_loading_extra_minutes === "number" &&
+    Number.isFinite(f.building_loading_extra_minutes)
+      ? Math.max(0, f.building_loading_extra_minutes)
+      : 0
+  const unloadExtra =
+    typeof f.building_unloading_extra_minutes === "number" &&
+    Number.isFinite(f.building_unloading_extra_minutes)
+      ? Math.max(0, f.building_unloading_extra_minutes)
+      : 0
+
   return estimateJobDuration({
     serviceType: st,
     inventoryScore: inv,
@@ -264,6 +285,8 @@ export function estimateMoveDurationFromQuoteRow(params: {
     truckType: params.truckPrimary,
     grossRevenue: params.grossRevenue,
     bookedHours: labourHrs,
+    buildingLoadingExtraMinutes: loadExtra > 0 ? loadExtra : undefined,
+    buildingUnloadingExtraMinutes: unloadExtra > 0 ? unloadExtra : undefined,
   })
 }
 
