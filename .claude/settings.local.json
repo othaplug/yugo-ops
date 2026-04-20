@@ -21,7 +21,10 @@
       "Bash(grep -n \"cancelled\\\\|status.*change\\\\|onChange.*e\\\\.\\\\|select.*status\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/admin/moves/[id]/MoveDetailClient.tsx)",
       "Bash(grep -n \"cancelConfirm\\\\|cancelOverride\\\\|setCancelConfirm\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/admin/moves/[id]/MoveDetailClient.tsx)",
       "Bash(grep -n \"useState\\\\|const \\\\[\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/admin/moves/[id]/MoveDetailClient.tsx)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git pull *)",
+      "Bash(gh pr *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
