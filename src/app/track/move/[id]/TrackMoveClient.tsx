@@ -260,10 +260,7 @@ function BinRentalTrackingSection({
   const MARKETING_QUOTE_URL = "https://helloyugo.com";
 
   return (
-    <div
-      className="rounded-2xl border p-4 mb-4 space-y-4"
-      style={{ borderColor: `${FOREST}35`, background: `${FOREST}0A` }}
-    >
+    <div className="mb-4 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <Recycle
@@ -3198,7 +3195,7 @@ export default function TrackMoveClient({
 
           {/* Tabs (hidden for completed moves, perks hub is the permanent view) */}
           {!isCompleted && (
-            <div className="sticky top-0 z-20 -mx-4 px-4 mb-3 pt-1 pb-0.5 bg-[#F9EDE4] border-b sm:static sm:z-auto sm:mx-0 sm:px-0 sm:mb-3 sm:border-b-0 sm:bg-transparent sm:pt-0 sm:pb-0" style={{ borderColor: `${FOREST}10` }}>
+            <div className="sticky top-0 z-20 -mx-4 px-4 mb-5 pt-1 pb-0.5 bg-[#F9EDE4] border-b sm:static sm:z-auto sm:mx-0 sm:px-0 sm:mb-5 sm:border-b-0 sm:bg-transparent sm:pt-0 sm:pb-0" style={{ borderColor: `${FOREST}10` }}>
               <div
                 className="flex flex-nowrap justify-start gap-x-0 overflow-x-auto overflow-y-hidden scrollbar-hide scroll-smooth snap-x snap-mandatory"
                 style={{ WebkitOverflowScrolling: "touch" }}
@@ -3233,7 +3230,7 @@ export default function TrackMoveClient({
 
           {/* Tab content */}
           {activeTab === "dash" && !isCompleted && (
-            <div>
+            <>
               {binOrder && (
                 <BinRentalTrackingSection
                   binOrder={binOrder}
@@ -4258,7 +4255,7 @@ export default function TrackMoveClient({
                   </div>
                 </div>
               )}
-            </div>
+            </>
           )}
 
           {activeTab === "track" && (
