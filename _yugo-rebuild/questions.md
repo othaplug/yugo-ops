@@ -4,24 +4,13 @@ Per the execution prompt: "If a reference image is ambiguous, ask in the form of
 
 Each question lists the default interpretation taken (so work can proceed) and the information needed to confirm or override. Revisit at each phase gate.
 
-## Q1. Purple admin replacing the live wine/gold theme — is this cutover immediate?
+## Q1. Purple admin replacing the live wine/gold theme — RESOLVED
 
-**Context:** `src/app/globals.css` today defines a dark wine (`--yu-bg-page: #2b0416`) and gold (`--gold: #c9a962`) admin palette that is live in production. PRD §0 mandates neutral + purple `#5E56F0` with no wine/rose in admin. §2.1 gives the full light palette.
+**Decision (2026-04-22):** No wine or gold anywhere in admin. Admin uses PRD §2.1 neutral + purple light palette exactly, matching the reference screenshots (Meetalo, ChartMogul, Switch). Dark mode toggleable per PRD §2.1 dark table. Estate tier uses the Brand purple chip (PRD §3.2). Wine/gold vars in `globals.css` stay scoped to client-facing routes (`/quote`, `/estate`, `/track`, `/welcome`) only.
 
-**Default:** New tokens file (`src/styles/tokens.css`) and Phase 1 primitives use the PRD palette. Existing wine variables remain untouched in `globals.css` so legacy components keep rendering until migrated in Phases 4-7. Admin default is light; dark is toggleable.
+## Q2. Phosphor → Lucide — RESOLVED
 
-**Needs confirmation:**
-- Are any live admin screens expected to keep the wine palette until a full cutover date?
-- Does "estate tier indicated through status tags only" (PRD §0) mean the purple Brand chip variant doubles as the Estate tier chip, or do you want a distinct rose-accent chip just for Estate tier labels on B2C records?
-
-## Q2. Phosphor → Lucide: full migration or Phase 4+ scope only?
-
-**Context:** `@phosphor-icons/react` is used across ~60+ files (sidebar, top bar, data table, admin module pages). PRD §1.2 rule 11 and Phase 1.6 mandate Lucide only.
-
-**Default:** Install `lucide-react`. All **new** components (`src/components/primitives/`, `composites/`, `layout/`, `modules/`) use Lucide. Existing Phosphor imports in legacy files stay until that file is touched in a module rebuild. Add an ESLint rule in Phase 7 polish that bans Phosphor imports outside a short legacy allowlist.
-
-**Needs confirmation:**
-- Acceptable, or do you want a dedicated pre-Phase-1 migration commit that rips Phosphor out wholesale?
+**Decision (2026-04-22):** Keep Phosphor. Do not install `lucide-react`. The `Icon.tsx` primitive at `src/components/primitives/Icon.tsx` wraps `@phosphor-icons/react` and exposes PRD size props (xs=12, sm=14, md=16, lg=20, xl=24) and weight props. PRD §1.2 Rule 11 (Lucide only) and Phase 1.6 "Lucide icons" are **overridden by explicit user direction**. All new components import icons via the `Icon` primitive to keep the indirection in place for future swaps.
 
 ## Q3. Tailwind v4 vs. `tailwind.config.ts` snippet in the prompt
 
@@ -136,4 +125,4 @@ Each question lists the default interpretation taken (so work can proceed) and t
 
 ---
 
-These questions do not block Phase 0. They are blockers for Phase 1 (Q1, Q2, Q3, Q6, Q9) and Phase 4+ (Q4, Q5, Q11, Q12, Q13). Q7, Q8, Q10 can be resolved at the relevant phase gate.
+These questions do not block Phase 0. Phase 1 blockers resolved: Q1 (palette), Q2 (Phosphor kept), Q3 (TW v4 `@theme`), Q6 (npm), Q9 (supabase types via `--linked`). Phase 4+ blockers still open: Q4, Q5, Q11, Q12, Q13. Q7, Q8, Q10 resolve at their phase gate.
