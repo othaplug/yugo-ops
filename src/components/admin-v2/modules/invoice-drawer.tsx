@@ -55,7 +55,7 @@ export const InvoiceDrawer = ({
           { label: "Customer", value: invoice.customerName },
           {
             label: "Linked move",
-            value: invoice.moveId ?? "—",
+            value: invoice.moveId ?? "–",
           },
           {
             label: "Subtotal",
@@ -72,7 +72,7 @@ export const InvoiceDrawer = ({
           { label: "Due", value: formatShortDate(invoice.dueAt) },
           {
             label: "Paid",
-            value: invoice.paidAt ? formatShortDate(invoice.paidAt) : "—",
+            value: invoice.paidAt ? formatShortDate(invoice.paidAt) : "–",
           },
           {
             label: "Status",

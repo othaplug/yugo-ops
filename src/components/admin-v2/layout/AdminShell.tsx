@@ -52,7 +52,7 @@ export const AdminShell = ({
             aria-label="Navigation"
           >
             <div
-              className="absolute inset-0 bg-black/60 backdrop-blur-[4px]"
+              className="absolute inset-0 bg-black/60 backdrop-blur-xs"
               onClick={() => setMobileOpen(false)}
               aria-hidden
             />

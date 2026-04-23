@@ -92,7 +92,7 @@ export const TopBar = ({
         <IconButton
           onClick={onOpenCommandPalette}
           aria-label="Search (⌘K)"
-          title="Search — ⌘K"
+          title="Search · ⌘K"
         >
           <Icon name="search" size="md" />
         </IconButton>

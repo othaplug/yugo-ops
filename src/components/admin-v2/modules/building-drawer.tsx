@@ -74,7 +74,7 @@ export const BuildingDrawer = ({
             label: "Last move",
             value: building.lastMoveAt
               ? formatShortDate(building.lastMoveAt)
-              : "—",
+              : "–",
           },
         ]}
       />

@@ -153,7 +153,7 @@ export const DashboardClient = () => {
             <CardSubtitle>Monthly recurring revenue · current vs prior period</CardSubtitle>
           </div>
           <Button variant="secondary" size="sm">
-            2025 — 2026
+            2025 – 2026
           </Button>
         </div>
         <div className="mt-4 h-[280px] px-3 pb-6">

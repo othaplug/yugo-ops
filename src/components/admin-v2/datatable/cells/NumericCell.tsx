@@ -39,7 +39,7 @@ export const NumericCell = ({
   className,
 }: NumericCellProps) => {
   if (value === null || value === undefined) {
-    return <span className={cn("body-sm text-fg-subtle tabular-nums", className)}>—</span>
+    return <span className={cn("body-sm text-fg-subtle tabular-nums", className)}>–</span>
   }
   const display = format ? format(value) : defaultFormat(value, { currency, precision })
   return (

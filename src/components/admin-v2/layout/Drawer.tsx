@@ -24,7 +24,7 @@ export const DrawerContent = React.forwardRef<
   <RadixDialog.Portal>
     <RadixDialog.Overlay
       className={cn(
-        "fixed inset-0 z-40 bg-black/60 backdrop-blur-[4px]",
+        "fixed inset-0 z-40 bg-black/60 backdrop-blur-xs",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
       )}

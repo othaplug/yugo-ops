@@ -259,7 +259,7 @@ export const CalendarClient = () => {
               </div>
               <div className="min-h-[64px] p-2 space-y-1">
                 {inSlot.length === 0 ? (
-                  <span className="body-xs text-fg-subtle">—</span>
+                  <span className="body-xs text-fg-subtle">–</span>
                 ) : (
                   inSlot.map(renderMovePill)
                 )}

@@ -30,7 +30,7 @@ export const DateCell = ({
 }: DateCellProps) => {
   const date = normalize(value)
   if (!date) {
-    return <span className={cn("body-sm text-fg-subtle", className)}>—</span>
+    return <span className={cn("body-sm text-fg-subtle", className)}>–</span>
   }
   const recent = emphasizeRecent
     ? isToday(date) || Math.abs(differenceInHours(new Date(), date)) < 24
