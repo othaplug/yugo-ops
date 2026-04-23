@@ -1,0 +1,320 @@
+/* ============================================================================
+ * Yugo+ Admin Design Tokens — PRD §2.1
+ * ----------------------------------------------------------------------------
+ * Scope: `.yugo-admin` (applied to the new AdminShell root).
+ *   Legacy wine/gold palette in globals.css remains default for client-facing
+ *   routes (/quote, /estate, /track, /welcome) and any legacy admin pages not
+ *   yet migrated.
+ * Dark mode: `<html data-theme="dark">`. Default is light (screenshot parity).
+ * Tailwind v4 @theme forwards these vars as utilities: bg-surface-page,
+ *   text-primary, bg-accent, text-success-fg, shadow-md, rounded-lg,
+ *   duration-normal, ease-standard. Because @theme values reference CSS vars,
+ *   utilities are reactive to the `.yugo-admin` scope AND to data-theme.
+ * ============================================================================ */
+
+/* -------------------------- Light (default, admin scope) ------------------- */
+.yugo-admin {
+  color-scheme: light;
+
+  /* Surfaces */
+  --surface-page: #F7F8FA;
+  --surface-card: #FFFFFF;
+  --surface-raised: #FFFFFF;
+  --surface-sunken: #F2F4F7;
+  --surface-overlay: rgba(16, 24, 40, 0.40);
+  --surface-hover: rgba(16, 24, 40, 0.04);
+  --surface-active: rgba(16, 24, 40, 0.08);
+
+  /* Borders */
+  --border-subtle: #EAECF0;
+  --border-default: #D0D5DD;
+  --border-strong: #98A2B3;
+  --border-focus: #5E56F0;
+
+  /* Text */
+  --text-primary: #101828;
+  --text-secondary: #475467;
+  --text-tertiary: #667085;
+  --text-quaternary: #98A2B3;
+  --text-disabled: #D0D5DD;
+  --text-inverse: #FFFFFF;
+  --text-link: #5E56F0;
+
+  /* Brand / Accent — purple */
+  --accent: #5E56F0;
+  --accent-hover: #4A42D8;
+  --accent-active: #3E37B8;
+  --accent-subtle: #EEEBFF;
+  --accent-subtle-hover: #DDD7FF;
+  --accent-fg: #FFFFFF;
+  --accent-border: #BFB6FF;
+
+  /* Status — Success */
+  --success-fg: #067647;
+  --success-bg: #ECFDF3;
+  --success-border: #ABEFC6;
+  --success-solid: #17B26A;
+
+  /* Status — Warning */
+  --warning-fg: #B54708;
+  --warning-bg: #FFFAEB;
+  --warning-border: #FEDF89;
+  --warning-solid: #F79009;
+
+  /* Status — Danger */
+  --danger-fg: #B42318;
+  --danger-bg: #FEF3F2;
+  --danger-border: #FECDCA;
+  --danger-solid: #F04438;
+
+  /* Status — Info */
+  --info-fg: #175CD3;
+  --info-bg: #EFF8FF;
+  --info-border: #B2DDFF;
+  --info-solid: #2E90FA;
+
+  /* Status — Neutral (muted chip) */
+  --neutral-fg: #344054;
+  --neutral-bg: #F2F4F7;
+  --neutral-border: #EAECF0;
+  --neutral-solid: #667085;
+
+  /* Graph palette (categorical, 8-way) */
+  --graph-1: #5E56F0;
+  --graph-2: #17B26A;
+  --graph-3: #F79009;
+  --graph-4: #2E90FA;
+  --graph-5: #F04438;
+  --graph-6: #7A5AF8;
+  --graph-7: #EE46BC;
+  --graph-8: #15B79E;
+
+  /* Elevation shadows */
+  --admin-shadow-xs: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
+  --admin-shadow-sm: 0 1px 3px 0 rgba(16, 24, 40, 0.10), 0 1px 2px -1px rgba(16, 24, 40, 0.06);
+  --admin-shadow-md: 0 4px 8px -2px rgba(16, 24, 40, 0.10), 0 2px 4px -2px rgba(16, 24, 40, 0.06);
+  --admin-shadow-lg: 0 12px 16px -4px rgba(16, 24, 40, 0.08), 0 4px 6px -2px rgba(16, 24, 40, 0.03);
+  --admin-shadow-xl: 0 20px 24px -4px rgba(16, 24, 40, 0.08), 0 8px 8px -4px rgba(16, 24, 40, 0.03);
+  --admin-shadow-focus: 0 0 0 4px rgba(94, 86, 240, 0.16);
+  --admin-shadow-focus-danger: 0 0 0 4px rgba(240, 68, 56, 0.16);
+}
+
+/* -------------------------- Dark (admin scope) ----------------------------- */
+[data-theme="dark"] .yugo-admin,
+.yugo-admin[data-theme="dark"] {
+  color-scheme: dark;
+
+  --surface-page: #0B0B0F;
+  --surface-card: #14141A;
+  --surface-raised: #1C1C24;
+  --surface-sunken: #09090D;
+  --surface-overlay: rgba(0, 0, 0, 0.60);
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --surface-active: rgba(255, 255, 255, 0.10);
+
+  --border-subtle: #1F1F28;
+  --border-default: #2A2A34;
+  --border-strong: #3D3D4A;
+  --border-focus: #7C74FF;
+
+  --text-primary: #F5F5F7;
+  --text-secondary: #B4B4BE;
+  --text-tertiary: #8B8B96;
+  --text-quaternary: #6B6B78;
+  --text-disabled: #3D3D4A;
+  --text-inverse: #0B0B0F;
+  --text-link: #9089FF;
+
+  --accent: #7C74FF;
+  --accent-hover: #918BFF;
+  --accent-active: #A69FFF;
+  --accent-subtle: #1F1A4D;
+  --accent-subtle-hover: #2A2460;
+  --accent-fg: #FFFFFF;
+  --accent-border: #3E37B8;
+
+  --success-fg: #75E0A7;
+  --success-bg: #0E2A1D;
+  --success-border: #1F5B3D;
+  --success-solid: #17B26A;
+
+  --warning-fg: #FDB022;
+  --warning-bg: #2B1D06;
+  --warning-border: #6B4A10;
+  --warning-solid: #F79009;
+
+  --danger-fg: #FDA29B;
+  --danger-bg: #2B0F0C;
+  --danger-border: #6B1F18;
+  --danger-solid: #F04438;
+
+  --info-fg: #84CAFF;
+  --info-bg: #08204A;
+  --info-border: #1849A9;
+  --info-solid: #2E90FA;
+
+  --neutral-fg: #CECFD2;
+  --neutral-bg: #1F1F28;
+  --neutral-border: #2A2A34;
+  --neutral-solid: #8B8B96;
+
+  --graph-1: #7C74FF;
+  --graph-2: #32D583;
+  --graph-3: #FDB022;
+  --graph-4: #53B1FD;
+  --graph-5: #F97066;
+  --graph-6: #9E77ED;
+  --graph-7: #F670C7;
+  --graph-8: #2ED3B7;
+
+  --admin-shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.30);
+  --admin-shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.40), 0 1px 2px -1px rgba(0, 0, 0, 0.30);
+  --admin-shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.40), 0 2px 4px -2px rgba(0, 0, 0, 0.25);
+  --admin-shadow-lg: 0 12px 16px -4px rgba(0, 0, 0, 0.45), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+  --admin-shadow-xl: 0 20px 24px -4px rgba(0, 0, 0, 0.50), 0 8px 8px -4px rgba(0, 0, 0, 0.30);
+  --admin-shadow-focus: 0 0 0 4px rgba(124, 116, 255, 0.24);
+  --admin-shadow-focus-danger: 0 0 0 4px rgba(249, 112, 102, 0.24);
+}
+
+/* -------------------------- Motion (global, mode-agnostic) ----------------- */
+.yugo-admin {
+  --duration-instant: 80ms;
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 500ms;
+
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ============================================================================
+ * Tailwind v4 @theme bridge
+ * ----------------------------------------------------------------------------
+ * @theme must be top-level. Each --color-* here maps to a CSS var resolved at
+ * the consuming element — which means utilities are live-bound to whatever
+ * scope the element is inside (e.g. `.yugo-admin`). Elements outside the
+ * admin scope will inherit the wine/gold legacy vars from globals.css, which
+ * is the desired behavior for client-facing routes.
+ *
+ * NOTE: we namespace admin tokens with `admin-` prefix for colors that could
+ * collide with existing `--text-primary` / `--surface-card` in globals.css.
+ * Utilities are named `bg-admin-surface`, `text-admin-primary`, etc.
+ * ============================================================================ */
+@theme {
+  /* Surfaces */
+  --color-admin-surface: var(--surface-page);
+  --color-admin-card: var(--surface-card);
+  --color-admin-raised: var(--surface-raised);
+  --color-admin-sunken: var(--surface-sunken);
+  --color-admin-hover: var(--surface-hover);
+  --color-admin-active: var(--surface-active);
+
+  /* Borders */
+  --color-admin-border: var(--border-default);
+  --color-admin-border-subtle: var(--border-subtle);
+  --color-admin-border-strong: var(--border-strong);
+  --color-admin-border-focus: var(--border-focus);
+
+  /* Text */
+  --color-admin-fg: var(--text-primary);
+  --color-admin-fg-secondary: var(--text-secondary);
+  --color-admin-fg-tertiary: var(--text-tertiary);
+  --color-admin-fg-quaternary: var(--text-quaternary);
+  --color-admin-fg-disabled: var(--text-disabled);
+  --color-admin-fg-inverse: var(--text-inverse);
+  --color-admin-fg-link: var(--text-link);
+
+  /* Accent */
+  --color-admin-accent: var(--accent);
+  --color-admin-accent-hover: var(--accent-hover);
+  --color-admin-accent-active: var(--accent-active);
+  --color-admin-accent-subtle: var(--accent-subtle);
+  --color-admin-accent-subtle-hover: var(--accent-subtle-hover);
+  --color-admin-accent-fg: var(--accent-fg);
+  --color-admin-accent-border: var(--accent-border);
+
+  /* Status */
+  --color-admin-success-fg: var(--success-fg);
+  --color-admin-success-bg: var(--success-bg);
+  --color-admin-success-border: var(--success-border);
+  --color-admin-success-solid: var(--success-solid);
+
+  --color-admin-warning-fg: var(--warning-fg);
+  --color-admin-warning-bg: var(--warning-bg);
+  --color-admin-warning-border: var(--warning-border);
+  --color-admin-warning-solid: var(--warning-solid);
+
+  --color-admin-danger-fg: var(--danger-fg);
+  --color-admin-danger-bg: var(--danger-bg);
+  --color-admin-danger-border: var(--danger-border);
+  --color-admin-danger-solid: var(--danger-solid);
+
+  --color-admin-info-fg: var(--info-fg);
+  --color-admin-info-bg: var(--info-bg);
+  --color-admin-info-border: var(--info-border);
+  --color-admin-info-solid: var(--info-solid);
+
+  --color-admin-neutral-fg: var(--neutral-fg);
+  --color-admin-neutral-bg: var(--neutral-bg);
+  --color-admin-neutral-border: var(--neutral-border);
+  --color-admin-neutral-solid: var(--neutral-solid);
+
+  /* Graph */
+  --color-admin-graph-1: var(--graph-1);
+  --color-admin-graph-2: var(--graph-2);
+  --color-admin-graph-3: var(--graph-3);
+  --color-admin-graph-4: var(--graph-4);
+  --color-admin-graph-5: var(--graph-5);
+  --color-admin-graph-6: var(--graph-6);
+  --color-admin-graph-7: var(--graph-7);
+  --color-admin-graph-8: var(--graph-8);
+
+  /* Radius */
+  --radius-admin-xs: 4px;
+  --radius-admin-sm: 6px;
+  --radius-admin-md: 8px;
+  --radius-admin-lg: 12px;
+  --radius-admin-xl: 16px;
+  --radius-admin-2xl: 20px;
+  --radius-admin-full: 9999px;
+
+  /* Shadows */
+  --shadow-admin-xs: var(--admin-shadow-xs);
+  --shadow-admin-sm: var(--admin-shadow-sm);
+  --shadow-admin-md: var(--admin-shadow-md);
+  --shadow-admin-lg: var(--admin-shadow-lg);
+  --shadow-admin-xl: var(--admin-shadow-xl);
+  --shadow-admin-focus: var(--admin-shadow-focus);
+  --shadow-admin-focus-danger: var(--admin-shadow-focus-danger);
+
+  /* Fonts */
+  --font-admin-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-admin-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* Motion */
+  --duration-admin-instant: 80ms;
+  --duration-admin-fast: 120ms;
+  --duration-admin-normal: 200ms;
+  --duration-admin-slow: 300ms;
+  --duration-admin-slower: 500ms;
+
+  --ease-admin-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-admin-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-admin-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-admin-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-admin-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* -------------------------- Focus ring utility ----------------------------- */
+.yugo-admin .focus-ring {
+  outline: none;
+  box-shadow: var(--admin-shadow-focus);
+}
+.yugo-admin .focus-ring-danger {
+  outline: none;
+  box-shadow: var(--admin-shadow-focus-danger);
+}
