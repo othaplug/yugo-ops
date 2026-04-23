@@ -1,11 +1,5 @@
-import { PlaceholderPage } from "../_placeholders/placeholder-page"
+import { BuildingsClient } from "./buildings-client"
 
-const BuildingsPage = () => (
-  <PlaceholderPage
-    title="Buildings"
-    description="Elevator config, complexity, crew notes. Lands in Phase 6."
-    icon="buildings"
-  />
-)
+const BuildingsPage = () => <BuildingsClient />
 
 export default BuildingsPage

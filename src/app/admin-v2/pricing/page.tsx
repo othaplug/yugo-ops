@@ -1,11 +1,5 @@
-import { PlaceholderPage } from "../_placeholders/placeholder-page"
+import { PricingClient } from "./pricing-client"
 
-const PricingPage = () => (
-  <PlaceholderPage
-    title="Pricing"
-    description="Rates, simulator, zones. Lands in Phase 6."
-    icon="pricing"
-  />
-)
+const PricingPage = () => <PricingClient />
 
 export default PricingPage

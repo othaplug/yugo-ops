@@ -1,0 +1,335 @@
+"use client"
+
+import * as React from "react"
+import { toast } from "sonner"
+import { PageHeader } from "@/components/admin-v2/composites/PageHeader"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/admin-v2/primitives/Tabs"
+import { Button } from "@/components/admin-v2/primitives/Button"
+import { Input } from "@/components/admin-v2/primitives/Input"
+import { Icon } from "@/components/admin-v2/primitives/Icon"
+import { Chip } from "@/components/admin-v2/primitives/Chip"
+import { formatCurrency } from "@/lib/admin-v2/format"
+import { cn } from "@/components/admin-v2/lib/cn"
+
+type RateRow = {
+  id: string
+  label: string
+  category: "Base" | "Truck" | "Labour" | "Modifier"
+  value: number
+  unit: string
+}
+
+const INITIAL_RATES: RateRow[] = [
+  { id: "r1", label: "Studio / 1-bed base", category: "Base", value: 520, unit: "flat" },
+  { id: "r2", label: "2-bed base", category: "Base", value: 780, unit: "flat" },
+  { id: "r3", label: "3-bed base", category: "Base", value: 980, unit: "flat" },
+  { id: "r4", label: "4+ bed base", category: "Base", value: 1240, unit: "flat" },
+  { id: "r5", label: "16' truck", category: "Truck", value: 140, unit: "per move" },
+  { id: "r6", label: "20' truck", category: "Truck", value: 180, unit: "per move" },
+  { id: "r7", label: "26' truck", category: "Truck", value: 240, unit: "per move" },
+  { id: "r8", label: "2-mover crew", category: "Labour", value: 140, unit: "/ hr" },
+  { id: "r9", label: "3-mover crew", category: "Labour", value: 200, unit: "/ hr" },
+  { id: "r10", label: "4-mover crew", category: "Labour", value: 260, unit: "/ hr" },
+  { id: "r11", label: "Weekend", category: "Modifier", value: 15, unit: "%" },
+  { id: "r12", label: "Peak (Jun–Sep)", category: "Modifier", value: 12, unit: "%" },
+  { id: "r13", label: "Long-carry > 150 ft", category: "Modifier", value: 8, unit: "%" },
+]
+
+const ZONES = [
+  { id: "z1", label: "Downtown Toronto", multiplier: 1.25 },
+  { id: "z2", label: "North York", multiplier: 1.05 },
+  { id: "z3", label: "Scarborough", multiplier: 1.0 },
+  { id: "z4", label: "Mississauga", multiplier: 1.1 },
+  { id: "z5", label: "Vaughan", multiplier: 1.1 },
+  { id: "z6", label: "Out-of-area", multiplier: 1.3 },
+]
+
+const RatesTab = () => {
+  const [rates, setRates] = React.useState<RateRow[]>(INITIAL_RATES)
+
+  const categories = ["Base", "Truck", "Labour", "Modifier"] as const
+
+  return (
+    <div className="space-y-4">
+      {categories.map((cat) => (
+        <section
+          key={cat}
+          className="overflow-hidden rounded-lg border border-line bg-surface"
+        >
+          <header className="flex items-center justify-between border-b border-line px-4 py-3">
+            <div className="flex items-center gap-2">
+              <h3 className="heading-sm text-fg">{cat}</h3>
+              <span className="body-xs text-fg-subtle">
+                {rates.filter((r) => r.category === cat).length} rates
+              </span>
+            </div>
+            <Button
+              size="sm"
+              variant="secondary"
+              leadingIcon={<Icon name="plus" size="sm" weight="bold" />}
+              onClick={() => toast.message(`New ${cat.toLowerCase()} rate`)}
+            >
+              Add rate
+            </Button>
+          </header>
+          <ul className="divide-y divide-line">
+            {rates
+              .filter((r) => r.category === cat)
+              .map((row) => (
+                <li
+                  key={row.id}
+                  className="flex items-center gap-4 px-4 py-3"
+                >
+                  <p className="flex-1 body-sm text-fg">{row.label}</p>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      size="sm"
+                      containerClassName="w-24"
+                      type="number"
+                      value={row.value}
+                      onChange={(event) => {
+                        const next = Number(event.target.value)
+                        setRates((prev) =>
+                          prev.map((r) =>
+                            r.id === row.id ? { ...r, value: next } : r,
+                          ),
+                        )
+                      }}
+                    />
+                    <span className="body-xs text-fg-subtle min-w-[52px]">
+                      {row.unit}
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => toast.success(`${row.label} saved`)}
+                  >
+                    Save
+                  </Button>
+                </li>
+              ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  )
+}
+
+const SimulatorTab = () => {
+  const [size, setSize] = React.useState(3)
+  const [distance, setDistance] = React.useState(18)
+  const [weekend, setWeekend] = React.useState(false)
+  const [peak, setPeak] = React.useState(true)
+  const [crew, setCrew] = React.useState(3)
+
+  const base = size >= 4 ? 1240 : size === 3 ? 980 : size === 2 ? 780 : 520
+  const truck = size >= 3 ? 240 : 180
+  const labour = crew === 4 ? 260 * 5 : crew === 3 ? 200 * 5 : 140 * 5
+  const distanceFee = distance * 4
+  const modifier =
+    (weekend ? 0.15 : 0) + (peak ? 0.12 : 0)
+  const preModSubtotal = base + truck + labour + distanceFee
+  const surcharge = preModSubtotal * modifier
+  const subtotal = preModSubtotal + surcharge
+  const tax = subtotal * 0.13
+  const total = subtotal + tax
+
+  const rows = [
+    { label: "Base", value: base },
+    { label: "Truck", value: truck },
+    { label: "Labour (5 hr)", value: labour },
+    { label: "Distance", value: distanceFee },
+    { label: "Surcharges", value: surcharge },
+    { label: "Subtotal", value: subtotal },
+    { label: "HST (13%)", value: tax },
+  ]
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+      <div className="rounded-lg border border-line bg-surface p-5 space-y-5">
+        <h3 className="heading-sm text-fg">Inputs</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5">
+            <span className="label-sm text-fg-subtle">Size</span>
+            <select
+              value={size}
+              onChange={(event) => setSize(Number(event.target.value))}
+              className="h-9 rounded-sm border border-line-strong bg-surface px-2 body-sm text-fg outline-none focus:border-accent"
+            >
+              <option value={1}>Studio / 1-bed</option>
+              <option value={2}>2-bed</option>
+              <option value={3}>3-bed</option>
+              <option value={4}>4+ bed</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="label-sm text-fg-subtle">Crew size</span>
+            <select
+              value={crew}
+              onChange={(event) => setCrew(Number(event.target.value))}
+              className="h-9 rounded-sm border border-line-strong bg-surface px-2 body-sm text-fg outline-none focus:border-accent"
+            >
+              <option value={2}>2 movers</option>
+              <option value={3}>3 movers</option>
+              <option value={4}>4 movers</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="label-sm text-fg-subtle">Distance (km)</span>
+            <Input
+              size="md"
+              type="number"
+              value={distance}
+              onChange={(event) => setDistance(Number(event.target.value))}
+            />
+          </label>
+          <label className="flex items-center gap-2 mt-6">
+            <input
+              type="checkbox"
+              checked={weekend}
+              onChange={(event) => setWeekend(event.target.checked)}
+              className="size-4 rounded-sm border-line-strong accent-accent"
+            />
+            <span className="body-sm text-fg">Weekend</span>
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={peak}
+              onChange={(event) => setPeak(event.target.checked)}
+              className="size-4 rounded-sm border-line-strong accent-accent"
+            />
+            <span className="body-sm text-fg">Peak season</span>
+          </label>
+        </div>
+      </div>
+
+      <aside className="rounded-lg border border-line bg-surface p-5">
+        <p className="label-sm text-fg-subtle">Estimate</p>
+        <p className="mt-1 display-md text-fg tabular-nums">
+          {formatCurrency(total)}
+        </p>
+        <ul className="mt-4 divide-y divide-line">
+          {rows.map((row) => (
+            <li
+              key={row.label}
+              className="flex items-center justify-between py-2"
+            >
+              <span className="body-sm text-fg-muted">{row.label}</span>
+              <span className="body-sm text-fg tabular-nums">
+                {formatCurrency(row.value)}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <Button
+          variant="primary"
+          size="sm"
+          className="mt-4 w-full"
+          onClick={() => toast.success("Quote draft created from simulator")}
+        >
+          Create draft quote
+        </Button>
+      </aside>
+    </div>
+  )
+}
+
+const ZonesTab = () => {
+  const [zones, setZones] = React.useState(ZONES)
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+      <div className="relative h-[420px] overflow-hidden rounded-lg border border-line bg-surface-sunken">
+        <div
+          aria-hidden
+          className="absolute inset-0 [background-image:linear-gradient(var(--line)_1px,transparent_1px),linear-gradient(90deg,var(--line)_1px,transparent_1px)] [background-size:40px_40px] opacity-40"
+        />
+        {zones.map((zone, index) => (
+          <div
+            key={zone.id}
+            className={cn(
+              "absolute rounded-full border-2 border-accent/40 bg-accent-subtle/60 px-3 py-1 label-sm text-accent",
+            )}
+            style={{
+              left: `${10 + (index % 3) * 30}%`,
+              top: `${15 + Math.floor(index / 3) * 40}%`,
+            }}
+          >
+            {zone.label} · ×{zone.multiplier.toFixed(2)}
+          </div>
+        ))}
+        <div className="absolute bottom-4 left-4 rounded-md bg-surface px-3 py-2 shadow-sm body-xs text-fg-subtle">
+          Mapbox zones placeholder
+        </div>
+      </div>
+      <aside className="rounded-lg border border-line bg-surface p-4 space-y-2">
+        <header className="flex items-center justify-between pb-2">
+          <h3 className="heading-sm text-fg">Zone multipliers</h3>
+          <Chip label="6 ZONES" variant="neutral" />
+        </header>
+        <ul className="divide-y divide-line">
+          {zones.map((zone) => (
+            <li
+              key={zone.id}
+              className="flex items-center gap-3 py-2"
+            >
+              <span className="flex-1 body-sm text-fg">{zone.label}</span>
+              <Input
+                size="sm"
+                containerClassName="w-24"
+                type="number"
+                step="0.05"
+                value={zone.multiplier}
+                onChange={(event) => {
+                  const next = Number(event.target.value)
+                  setZones((prev) =>
+                    prev.map((z) =>
+                      z.id === zone.id ? { ...z, multiplier: next } : z,
+                    ),
+                  )
+                }}
+              />
+            </li>
+          ))}
+        </ul>
+        <Button
+          variant="primary"
+          size="sm"
+          className="w-full"
+          onClick={() => toast.success("Zones saved")}
+        >
+          Save zones
+        </Button>
+      </aside>
+    </div>
+  )
+}
+
+export const PricingClient = () => (
+  <div className="flex flex-col gap-6">
+    <PageHeader title="Pricing" />
+    <Tabs defaultValue="rates">
+      <TabsList>
+        <TabsTrigger value="rates">Rates</TabsTrigger>
+        <TabsTrigger value="simulator">Simulator</TabsTrigger>
+        <TabsTrigger value="zones">Zones</TabsTrigger>
+      </TabsList>
+      <TabsContent value="rates" className="pt-6">
+        <RatesTab />
+      </TabsContent>
+      <TabsContent value="simulator" className="pt-6">
+        <SimulatorTab />
+      </TabsContent>
+      <TabsContent value="zones" className="pt-6">
+        <ZonesTab />
+      </TabsContent>
+    </Tabs>
+  </div>
+)

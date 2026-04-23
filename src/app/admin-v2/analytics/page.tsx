@@ -1,11 +1,5 @@
-import { PlaceholderPage } from "../_placeholders/placeholder-page"
+import { AnalyticsClient } from "./analytics-client"
 
-const AnalyticsPage = () => (
-  <PlaceholderPage
-    title="Analytics"
-    description="Revenue, operations, customer, and marketing. Lands in Phase 6."
-    icon="analytics"
-  />
-)
+const AnalyticsPage = () => <AnalyticsClient />
 
 export default AnalyticsPage
