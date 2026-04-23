@@ -1,11 +1,5 @@
-import { PlaceholderPage } from "../_placeholders/placeholder-page"
+import { SettingsClient } from "./settings-client"
 
-const SettingsPage = () => (
-  <PlaceholderPage
-    title="Settings"
-    description="Platform rates, team, integrations, notifications, and audit log. Lands in Phase 7."
-    icon="settings"
-  />
-)
+const SettingsPage = () => <SettingsClient />
 
 export default SettingsPage
