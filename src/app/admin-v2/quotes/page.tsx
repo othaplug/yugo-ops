@@ -1,11 +1,5 @@
-import { PlaceholderPage } from "../_placeholders/placeholder-page"
+import { QuotesClient } from "./quotes-client"
 
-const QuotesPage = () => (
-  <PlaceholderPage
-    title="Quotes"
-    description="Drafts, sent, viewed, and won. Table lands in Phase 4."
-    icon="quotes"
-  />
-)
+const QuotesPage = () => <QuotesClient />
 
 export default QuotesPage

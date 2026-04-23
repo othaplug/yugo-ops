@@ -1,11 +1,5 @@
-import { PlaceholderPage } from "../_placeholders/placeholder-page"
+import { MovesClient } from "./moves-client"
 
-const MovesPage = () => (
-  <PlaceholderPage
-    title="Moves"
-    description="Scheduled, in-transit, and completed moves. Board + calendar views land in Phase 4."
-    icon="moves"
-  />
-)
+const MovesPage = () => <MovesClient />
 
 export default MovesPage
