@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { toast } from "sonner"
-import { PageHeader } from "@/components/admin-v2/composites/PageHeader"
-import { MetricStrip } from "@/components/admin-v2/composites/MetricCard"
-import { Button } from "@/components/admin-v2/primitives/Button"
-import { Icon } from "@/components/admin-v2/primitives/Icon"
+import * as React from "react";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/admin-v2/composites/PageHeader";
+import { MetricStrip } from "@/components/admin-v2/composites/MetricCard";
+import { Button } from "@/components/admin-v2/primitives/Button";
+import { Icon } from "@/components/admin-v2/primitives/Icon";
 import {
   DropdownContent,
   DropdownItem,
   DropdownRoot,
   DropdownSeparator,
   DropdownTrigger,
-} from "@/components/admin-v2/primitives/Dropdown"
+} from "@/components/admin-v2/primitives/Dropdown";
 import {
   ChipCell,
   DataTable,
@@ -23,58 +23,58 @@ import {
   TextCell,
   type BulkAction,
   type ColumnConfig,
-} from "@/components/admin-v2/datatable"
-import { variantForStatus } from "@/components/admin-v2/primitives/Chip"
-import { LeadDrawer } from "@/components/admin-v2/modules/lead-drawer"
-import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
-import {
-  LEAD_STATUS_LABEL,
-} from "@/lib/admin-v2/labels"
-import { formatCurrency, formatCurrencyCompact } from "@/lib/admin-v2/format"
-import type { Lead } from "@/lib/admin-v2/mock/types"
+} from "@/components/admin-v2/datatable";
+import { variantForStatus } from "@/components/admin-v2/primitives/Chip";
+import { LeadDrawer } from "@/components/admin-v2/modules/lead-drawer";
+import { useDrawer } from "@/components/admin-v2/layout/useDrawer";
+import { LEAD_STATUS_LABEL } from "@/lib/admin-v2/labels";
+import { formatCurrency, formatCurrencyCompact } from "@/lib/admin-v2/format";
+import type { Lead } from "@/lib/admin-v2/mock/types";
 
-const DAY_MS = 24 * 60 * 60 * 1000
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const leadsInWindow = (leads: Lead[], days: number) => {
-  const now = Date.now()
-  return leads.filter((l) => now - new Date(l.lastAction).getTime() < days * DAY_MS)
-}
+  const now = Date.now();
+  return leads.filter(
+    (l) => now - new Date(l.lastAction).getTime() < days * DAY_MS,
+  );
+};
 
 export type LeadsClientProps = {
-  initialLeads: Lead[]
-}
+  initialLeads: Lead[];
+};
 
 export const LeadsClient = ({ initialLeads }: LeadsClientProps) => {
-  const [leads, setLeads] = React.useState<Lead[]>(() => initialLeads)
+  const [leads, setLeads] = React.useState<Lead[]>(() => initialLeads);
 
   React.useEffect(() => {
-    setLeads(initialLeads)
-  }, [initialLeads])
-  const drawer = useDrawer("lead")
+    setLeads(initialLeads);
+  }, [initialLeads]);
+  const drawer = useDrawer("lead");
   const activeLead = React.useMemo(
     () => leads.find((lead) => lead.id === drawer.id) ?? null,
     [drawer.id, leads],
-  )
+  );
 
   const metrics = React.useMemo(() => {
-    const last7 = leadsInWindow(leads, 7)
-    const newCount = last7.filter((l) => l.status === "new").length
-    const closedCount = last7.filter((l) => l.status === "closed").length
-    const lostCount = last7.filter((l) => l.status === "lost").length
+    const last7 = leadsInWindow(leads, 7);
+    const newCount = last7.filter((l) => l.status === "new").length;
+    const closedCount = last7.filter((l) => l.status === "closed").length;
+    const lostCount = last7.filter((l) => l.status === "lost").length;
     const totalClosed = leads
       .filter((l) => l.status === "closed")
-      .reduce((sum, l) => sum + l.size, 0)
+      .reduce((sum, l) => sum + l.size, 0);
     const sparkline = (status: Lead["status"]) =>
       Array.from({ length: 7 }).map((_, index) => {
-        const windowStart = Date.now() - (7 - index) * DAY_MS
-        const windowEnd = Date.now() - (6 - index) * DAY_MS
+        const windowStart = Date.now() - (7 - index) * DAY_MS;
+        const windowEnd = Date.now() - (6 - index) * DAY_MS;
         return leads.filter((l) => {
-          const t = new Date(l.lastAction).getTime()
-          return l.status === status && t >= windowStart && t < windowEnd
-        }).length
-      })
-    return { newCount, closedCount, lostCount, totalClosed, sparkline }
-  }, [leads])
+          const t = new Date(l.lastAction).getTime();
+          return l.status === status && t >= windowStart && t < windowEnd;
+        }).length;
+      });
+    return { newCount, closedCount, lostCount, totalClosed, sparkline };
+  }, [leads]);
 
   const columns = React.useMemo<ColumnConfig<Lead>[]>(
     () => [
@@ -164,7 +164,7 @@ export const LeadsClient = ({ initialLeads }: LeadsClientProps) => {
       },
     ],
     [],
-  )
+  );
 
   const bulkActions = React.useMemo<BulkAction<Lead>[]>(
     () => [
@@ -172,21 +172,21 @@ export const LeadsClient = ({ initialLeads }: LeadsClientProps) => {
         id: "engage",
         label: "Engage",
         handler: (rows) => {
-          toast.success(`Engaged ${rows.length} leads`)
+          toast.success(`Engaged ${rows.length} leads`);
         },
       },
       {
         id: "group",
         label: "Create group",
         handler: (rows) => {
-          toast.info(`Group created from ${rows.length} leads`)
+          toast.info(`Group created from ${rows.length} leads`);
         },
       },
       {
         id: "export",
         label: "Download as .CSV",
         handler: (rows) => {
-          toast.info(`Exported ${rows.length} leads`)
+          toast.info(`Exported ${rows.length} leads`);
         },
       },
       {
@@ -194,14 +194,14 @@ export const LeadsClient = ({ initialLeads }: LeadsClientProps) => {
         label: "Delete leads",
         destructive: true,
         handler: (rows) => {
-          const ids = new Set(rows.map((r) => r.id))
-          setLeads((prev) => prev.filter((r) => !ids.has(r.id)))
-          toast.error(`Deleted ${rows.length} leads`)
+          const ids = new Set(rows.map((r) => r.id));
+          setLeads((prev) => prev.filter((r) => !ids.has(r.id)));
+          toast.error(`Deleted ${rows.length} leads`);
         },
       },
     ],
     [],
-  )
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -291,14 +291,14 @@ export const LeadsClient = ({ initialLeads }: LeadsClientProps) => {
           {
             id: "closing",
             label: "Closing",
-            filters: [
-              { columnId: "status", operator: "is", value: "closing" },
-            ],
+            filters: [{ columnId: "status", operator: "is", value: "closing" }],
             sort: [{ columnId: "size", direction: "desc" }],
           },
         ]}
         renderBoard={(rows) => <LeadsBoard rows={rows} onOpen={drawer.open} />}
-        renderPipeline={(rows) => <LeadsBoard rows={rows} onOpen={drawer.open} />}
+        renderPipeline={(rows) => (
+          <LeadsBoard rows={rows} onOpen={drawer.open} />
+        )}
         onRowClick={(row) => drawer.open(row.id)}
       />
 
@@ -308,8 +308,8 @@ export const LeadsClient = ({ initialLeads }: LeadsClientProps) => {
         onOpenChange={drawer.setOpen}
       />
     </div>
-  )
-}
+  );
+};
 
 const PIPELINE_ORDER: Lead["status"][] = [
   "new",
@@ -317,26 +317,26 @@ const PIPELINE_ORDER: Lead["status"][] = [
   "closing",
   "closed",
   "lost",
-]
+];
 
 const LeadsBoard = ({
   rows,
   onOpen,
 }: {
-  rows: Lead[]
-  onOpen: (id: string) => void
+  rows: Lead[];
+  onOpen: (id: string) => void;
 }) => {
   const byStatus = React.useMemo(() => {
-    const map = new Map<Lead["status"], Lead[]>()
-    for (const status of PIPELINE_ORDER) map.set(status, [])
-    for (const row of rows) map.get(row.status)?.push(row)
-    return map
-  }, [rows])
+    const map = new Map<Lead["status"], Lead[]>();
+    for (const status of PIPELINE_ORDER) map.set(status, []);
+    for (const row of rows) map.get(row.status)?.push(row);
+    return map;
+  }, [rows]);
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
       {PIPELINE_ORDER.map((status) => {
-        const items = byStatus.get(status) ?? []
+        const items = byStatus.get(status) ?? [];
         return (
           <section
             key={status}
@@ -374,8 +374,8 @@ const LeadsBoard = ({
               ) : null}
             </ul>
           </section>
-        )
+        );
       })}
     </div>
-  )
-}
+  );
+};

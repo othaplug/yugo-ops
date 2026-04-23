@@ -6,6 +6,7 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 import { notifyAdmins } from "@/lib/notifications/dispatch"
 import type { OperationalJobAlerts } from "@/lib/jobs/operational-alerts"
+import { formatMinutesAsHhMm } from "@/lib/duration-hhmm"
 
 const RENOTIFY_COOLDOWN_MS = 6 * 60 * 60 * 1000
 
@@ -86,7 +87,7 @@ export const maybeNotifyOperationalInJobAlerts = async (input: {
       const proj = alerts.projectedTotalMinutes
       const detail =
         alloc != null && proj != null
-          ? `About ${Math.round(proj)} min projected vs ${alloc} min allocated.`
+          ? `About ${formatMinutesAsHhMm(Math.round(proj))} projected vs ${formatMinutesAsHhMm(Math.round(alloc))} allocated.`
           : "Projected finish time exceeds the allocated duration."
       await notifyAdmins("in_job_schedule_alert", {
         subject: `Schedule risk: ${clientLabel}`,
@@ -143,7 +144,7 @@ export const maybeNotifyOperationalInJobAlerts = async (input: {
     const proj = alerts.projectedTotalMinutes
     const detail =
       alloc != null && proj != null
-        ? `About ${Math.round(proj)} min projected vs ${alloc} min allocated.`
+        ? `About ${formatMinutesAsHhMm(Math.round(proj))} projected vs ${formatMinutesAsHhMm(Math.round(alloc))} allocated.`
         : "Projected finish time exceeds the allocated duration."
     await notifyAdmins("in_job_schedule_alert", {
       subject: `Schedule risk: ${clientLabel}`,

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { StatPctChange } from "../components/StatPctChange";
 import CreateMovesDropdown from "../components/CreateMovesDropdown";
-import MoveNotifyButton from "./MoveNotifyButton";
 import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
 import { useToast } from "../components/Toast";
 import { formatMoveDate, formatAdminCreatedAt } from "@/lib/date-format";
@@ -262,21 +261,13 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       id: "client",
       label: "Client",
       accessor: (m) => m.client_name || "",
-      render: (m) => {
-        const isComplete = ["completed", "delivered"].includes(effectiveMoveStatus(m).toLowerCase());
-        return (
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="dt-text-strong truncate" title={m.client_name || "-"}>
-              {m.client_name || "-"}
-            </span>
-            {!isComplete && (
-              <span onClick={(e) => e.stopPropagation()}>
-                <MoveNotifyButton move={m} />
-              </span>
-            )}
-          </div>
-        );
-      },
+      render: (m) => (
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="dt-text-strong truncate" title={m.client_name || "-"}>
+            {m.client_name || "-"}
+          </span>
+        </div>
+      ),
       minWidth: "180px",
     },
     {

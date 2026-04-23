@@ -3,6 +3,7 @@
 import { useMemo } from "react"
 import { formatTime } from "@/lib/client-timezone"
 import type { OperationalJobAlerts } from "@/lib/jobs/operational-alerts"
+import { formatMinutesAsHhMm } from "@/lib/duration-hhmm"
 
 type Props = {
   /** Wall-clock elapsed from job start (ms) */
@@ -79,8 +80,10 @@ export default function CrewJobTimer({
     }
   }, [startedAtIso, target])
 
-  const primaryNumber = startedAtIso ? remainMin : Math.round(target)
-  const primarySuffix = startedAtIso ? "min left" : "min planned"
+  const primaryHhMm = startedAtIso
+    ? formatMinutesAsHhMm(remainMin)
+    : formatMinutesAsHhMm(Math.round(target))
+  const primarySuffix = startedAtIso ? "time left" : "planned"
 
   return (
     <div
@@ -105,7 +108,7 @@ export default function CrewJobTimer({
             <p className="leading-snug">
               Projected finish beyond allocated time
               {operationalAlerts?.projectedTotalMinutes != null
-                ? ` (~${Math.round(operationalAlerts.projectedTotalMinutes)} min total)`
+                ? ` (~${formatMinutesAsHhMm(Math.round(operationalAlerts.projectedTotalMinutes))} total)`
                 : ""}
               .
             </p>
@@ -155,7 +158,7 @@ export default function CrewJobTimer({
                 : "text-[#2C3E2D]"
           }`}
         >
-          {primaryNumber}
+          {primaryHhMm}
         </span>
         <span className="pb-0.5 text-[11px] font-medium text-zinc-500 [font-family:var(--font-body)]">
           {primarySuffix}
@@ -179,11 +182,12 @@ export default function CrewJobTimer({
           </span>
         ) : remainMin <= 15 && remainMin > 0 ? (
           <span className="text-amber-900/90">
-            Under 15 minutes remaining at planned pace
+            Only {formatMinutesAsHhMm(remainMin)} left at planned pace
           </span>
         ) : (
           <span className="text-zinc-500">
-            {percentUsed}% of allocated window used · {target} min allocated
+            {percentUsed}% of allocated window used ·{" "}
+            {formatMinutesAsHhMm(Math.round(target))} allocated
           </span>
         )}
       </p>

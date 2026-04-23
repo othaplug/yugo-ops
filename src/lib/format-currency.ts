@@ -84,3 +84,33 @@ export function formatTotalWithHST(preTax: number | string | null | undefined): 
   if (Number.isNaN(n) || n <= 0) return "$0";
   return formatCurrency(n + calcHST(n));
 }
+
+const round2 = (n: number) => Math.round(n * 100) / 100
+
+/**
+ * Job contract display: `estimate` is usually pre-tax; `amount` (when set and
+ * higher) is tax-inclusive total. When both match a single value, treat it as
+ * tax-inclusive and split 13% for display.
+ */
+export function contractTaxLines(estimate: number, amount: number): {
+  preTax: number
+  hst: number
+  inclusive: number
+} {
+  const est = round2(estimate)
+  const amt = round2(amount)
+  if (est > 0 && amt > est + 0.5) {
+    return { preTax: est, hst: round2(amt - est), inclusive: amt }
+  }
+  if (est > 0 && (amt < 0.01 || Math.abs(amt - est) < 0.02)) {
+    return splitOntarioTaxInclusive(est)
+  }
+  if (est > 0) {
+    const hst = calcHST(est)
+    return { preTax: est, hst, inclusive: round2(est + hst) }
+  }
+  if (amt > 0) {
+    return splitOntarioTaxInclusive(amt)
+  }
+  return { preTax: 0, hst: 0, inclusive: 0 }
+}

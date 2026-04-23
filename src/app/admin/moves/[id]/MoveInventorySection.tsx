@@ -63,7 +63,8 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
   const [deleteConfirm, setDeleteConfirm] = useState<InventoryItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [extraActioning, setExtraActioning] = useState<string | null>(null);
-  const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
+  /** Rooms in this set are expanded; default empty = all rooms collapsed */
+  const [expandedRooms, setExpandedRooms] = useState<Set<string>>(new Set());
   const [approveExtraModal, setApproveExtraModal] = useState<{ itemId: string } | null>(null);
   const [approveExtraFeeDollars, setApproveExtraFeeDollars] = useState("");
   const { toast } = useToast();
@@ -319,14 +320,14 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
   };
 
   const toggleRoom = (room: string) => {
-    setCollapsedRooms((prev) => {
+    setExpandedRooms((prev) => {
       const next = new Set(prev);
       if (next.has(room)) next.delete(room);
       else next.add(room);
       return next;
     });
   };
-  const isExpanded = (room: string) => !collapsedRooms.has(room);
+  const isExpanded = (room: string) => expandedRooms.has(room);
 
   const saveBoxCount = async () => {
     const val = Math.max(0, parseInt(boxCountInput, 10) || 0);

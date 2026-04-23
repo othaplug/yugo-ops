@@ -142,6 +142,22 @@ export async function createMoveFromQuote(
 
   const factors = (quote.factors_applied ?? {}) as Record<string, unknown>;
 
+  const clientBoxCountForMove = (): number | null => {
+    const rawQ = (quote as { client_box_count?: number | null }).client_box_count;
+    const nQ =
+      typeof rawQ === "string" ? Number.parseFloat(rawQ) : Number(rawQ);
+    if (Number.isFinite(nQ) && nQ > 0) return Math.round(nQ);
+    const rawF = factors.client_box_count;
+    const nF =
+      typeof rawF === "number"
+        ? rawF
+        : typeof rawF === "string"
+          ? Number.parseFloat(rawF)
+          : Number(rawF);
+    if (Number.isFinite(nF) && nF > 0) return Math.round(nF);
+    return null;
+  };
+
   const officeFields =
     quote.service_type === "office_move"
       ? {
@@ -284,6 +300,8 @@ export async function createMoveFromQuote(
     lead_source: "quote",
 
     move_project_id: (quote as { move_project_id?: string | null }).move_project_id ?? null,
+
+    client_box_count: clientBoxCountForMove(),
 
     ...officeFields,
     ...singleItemFields,

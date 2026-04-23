@@ -1,11 +1,12 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { toast } from "sonner"
-import { PageHeader } from "@/components/admin-v2/composites/PageHeader"
-import { MetricStrip } from "@/components/admin-v2/composites/MetricCard"
-import { Button } from "@/components/admin-v2/primitives/Button"
-import { Icon } from "@/components/admin-v2/primitives/Icon"
+import * as React from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/admin-v2/composites/PageHeader";
+import { MetricStrip } from "@/components/admin-v2/composites/MetricCard";
+import { Button } from "@/components/admin-v2/primitives/Button";
+import { Icon } from "@/components/admin-v2/primitives/Icon";
 import {
   ChipCell,
   DataTable,
@@ -14,52 +15,53 @@ import {
   TextCell,
   type BulkAction,
   type ColumnConfig,
-} from "@/components/admin-v2/datatable"
-import { variantForStatus } from "@/components/admin-v2/primitives/Chip"
-import { QuoteDrawer } from "@/components/admin-v2/modules/quote-drawer"
-import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
+} from "@/components/admin-v2/datatable";
+import { variantForStatus } from "@/components/admin-v2/primitives/Chip";
+import { QuoteDrawer } from "@/components/admin-v2/modules/quote-drawer";
+import { useDrawer } from "@/components/admin-v2/layout/useDrawer";
 import {
   QUOTE_STATUS_LABEL,
   SERVICE_TYPE_LABEL,
   TIER_LABEL,
-} from "@/lib/admin-v2/labels"
-import { formatCurrencyCompact } from "@/lib/admin-v2/format"
-import type { Quote } from "@/lib/admin-v2/mock/types"
+} from "@/lib/admin-v2/labels";
+import { formatCurrencyCompact } from "@/lib/admin-v2/format";
+import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav";
+import type { Quote } from "@/lib/admin-v2/mock/types";
 
-const DAY_MS = 24 * 60 * 60 * 1000
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const countIn7Days = (quotes: Quote[], pick: (q: Quote) => string | null) =>
   quotes.filter((q) => {
-    const ts = pick(q)
-    if (!ts) return false
-    return Date.now() - new Date(ts).getTime() < 7 * DAY_MS
-  }).length
+    const ts = pick(q);
+    if (!ts) return false;
+    return Date.now() - new Date(ts).getTime() < 7 * DAY_MS;
+  }).length;
 
 export type QuotesClientProps = {
-  initialQuotes: Quote[]
-}
+  initialQuotes: Quote[];
+};
 
 export const QuotesClient = ({ initialQuotes }: QuotesClientProps) => {
-  const [quotes, setQuotes] = React.useState<Quote[]>(() => initialQuotes)
+  const [quotes, setQuotes] = React.useState<Quote[]>(() => initialQuotes);
   React.useEffect(() => {
-    setQuotes(initialQuotes)
-  }, [initialQuotes])
-  const drawer = useDrawer("quote")
+    setQuotes(initialQuotes);
+  }, [initialQuotes]);
+  const drawer = useDrawer("quote");
   const activeQuote = React.useMemo(
     () => quotes.find((q) => q.id === drawer.id) ?? null,
     [drawer.id, quotes],
-  )
+  );
 
   const metrics = React.useMemo(() => {
-    const sentCount = countIn7Days(quotes, (q) => q.sentAt)
-    const viewedCount = countIn7Days(quotes, (q) => q.viewedAt)
-    const acceptedCount = quotes.filter((q) => q.status === "accepted").length
-    const expiredCount = quotes.filter((q) => q.status === "expired").length
+    const sentCount = countIn7Days(quotes, (q) => q.sentAt);
+    const viewedCount = countIn7Days(quotes, (q) => q.viewedAt);
+    const acceptedCount = quotes.filter((q) => q.status === "accepted").length;
+    const expiredCount = quotes.filter((q) => q.status === "expired").length;
     const totalValue = quotes
       .filter((q) => q.status === "accepted")
-      .reduce((sum, q) => sum + q.total, 0)
-    return { sentCount, viewedCount, acceptedCount, expiredCount, totalValue }
-  }, [quotes])
+      .reduce((sum, q) => sum + q.total, 0);
+    return { sentCount, viewedCount, acceptedCount, expiredCount, totalValue };
+  }, [quotes]);
 
   const columns = React.useMemo<ColumnConfig<Quote>[]>(
     () => [
@@ -91,8 +93,8 @@ export const QuotesClient = ({ initialQuotes }: QuotesClientProps) => {
               ? "brand"
               : row.tier === "signature"
                 ? "info"
-                : "neutral"
-          return <ChipCell label={TIER_LABEL[row.tier]} variant={variant} />
+                : "neutral";
+          return <ChipCell label={TIER_LABEL[row.tier]} variant={variant} />;
         },
       },
       {
@@ -105,7 +107,10 @@ export const QuotesClient = ({ initialQuotes }: QuotesClientProps) => {
         groupable: true,
         value: (row) => row.serviceType,
         render: (row) => (
-          <ChipCell label={SERVICE_TYPE_LABEL[row.serviceType]} variant="neutral" />
+          <ChipCell
+            label={SERVICE_TYPE_LABEL[row.serviceType]}
+            variant="neutral"
+          />
         ),
       },
       {
@@ -162,7 +167,7 @@ export const QuotesClient = ({ initialQuotes }: QuotesClientProps) => {
       },
     ],
     [],
-  )
+  );
 
   const bulkActions = React.useMemo<BulkAction<Quote>[]>(
     () => [
@@ -170,14 +175,14 @@ export const QuotesClient = ({ initialQuotes }: QuotesClientProps) => {
         id: "resend",
         label: "Resend",
         handler: (rows) => {
-          toast.success(`Resent ${rows.length} quotes`)
+          toast.success(`Resent ${rows.length} quotes`);
         },
       },
       {
         id: "export",
         label: "Download as .CSV",
         handler: (rows) => {
-          toast.info(`Exported ${rows.length} quotes`)
+          toast.info(`Exported ${rows.length} quotes`);
         },
       },
       {
@@ -185,27 +190,25 @@ export const QuotesClient = ({ initialQuotes }: QuotesClientProps) => {
         label: "Delete quotes",
         destructive: true,
         handler: (rows) => {
-          const ids = new Set(rows.map((r) => r.id))
-          setQuotes((prev) => prev.filter((r) => !ids.has(r.id)))
-          toast.error(`Deleted ${rows.length} quotes`)
+          const ids = new Set(rows.map((r) => r.id));
+          setQuotes((prev) => prev.filter((r) => !ids.has(r.id)));
+          toast.error(`Deleted ${rows.length} quotes`);
         },
       },
     ],
     [],
-  )
+  );
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Quotes"
         actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            leadingIcon={<Icon name="plus" size="sm" weight="bold" />}
-            onClick={() => toast.message("Create quote flow opens here")}
-          >
-            New quote
+          <Button variant="secondary" size="sm" asChild>
+            <Link href={`${ADMIN_V2_BASE}/quotes/new`}>
+              <Icon name="plus" size="sm" weight="bold" aria-hidden />
+              New quote
+            </Link>
           </Button>
         }
       />
@@ -253,5 +256,5 @@ export const QuotesClient = ({ initialQuotes }: QuotesClientProps) => {
         onOpenChange={drawer.setOpen}
       />
     </div>
-  )
-}
+  );
+};

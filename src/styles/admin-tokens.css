@@ -232,3 +232,72 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 24%, transparent);
   border-color: var(--color-accent);
 }
+
+/* ==========================================================================
+   New Quote form (admin v2) — legacy var bridge + sans hero
+   Applied when QuoteFormClient sets .quote-form-v2-scope
+   ========================================================================== */
+
+.quote-form-v2-scope {
+  --tx: var(--color-fg);
+  --tx2: var(--color-fg-muted);
+  --tx3: var(--color-fg-subtle);
+  --brd: var(--color-line);
+  --card: var(--color-surface);
+  --bg: var(--color-surface-subtle);
+  /* Legacy quote form uses these for inset panels and tint strokes */
+  --bg2: var(--color-surface-sunken);
+  --gdim: color-mix(in srgb, var(--color-fg) 6%, transparent);
+  --text-base: var(--color-fg);
+  --gold: var(--color-accent);
+  --gold2: var(--color-accent-hover);
+  --grn: var(--color-success);
+  --admin-primary-fill: var(--color-accent);
+  --admin-primary-fill-hover: var(--color-accent-hover);
+  --btn-text-on-accent: #ffffff;
+  --red: var(--color-danger);
+  --yu-accent: var(--color-accent);
+}
+
+/* Underline fields in the embedded quote form: globals use gold focus; v2 uses accent. */
+.quote-form-v2-scope .field-input:focus,
+.quote-form-v2-scope .field-input-compact:focus {
+  border-bottom-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
+}
+
+.quote-form-v2-scope textarea.field-input:focus,
+.quote-form-v2-scope textarea.field-input-compact:focus {
+  border-color: color-mix(in srgb, var(--color-accent) 50%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.quote-form-v2-scope textarea.field-input-compact.field-input-compact--multiline-underline:focus {
+  border-bottom-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
+}
+
+.quote-form-v2-scope h1.admin-page-hero,
+.quote-form-v2-scope h1 {
+  font-family: var(--font-sans) !important;
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--color-fg) !important;
+}
+
+@media (min-width: 640px) {
+  .quote-form-v2-scope h1.admin-page-hero,
+  .quote-form-v2-scope h1 {
+    font-size: 1.75rem !important;
+  }
+}
+
+.quote-form-v2-scope .admin-section-h2 {
+  font-family: var(--font-sans) !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+  text-transform: none !important;
+  color: var(--color-fg) !important;
+  padding-bottom: 0.5rem !important;
+}

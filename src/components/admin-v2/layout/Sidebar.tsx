@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Icon, type IconName } from "../primitives/Icon"
@@ -108,21 +109,43 @@ export const Sidebar = ({ user, badges, onSignOut, className }: SidebarProps) =>
           {collapsed ? (
             <Link
               href={`${ADMIN_V2_BASE}/dashboard`}
-              className="flex size-9 items-center justify-center rounded-md bg-fg text-[13px] font-semibold text-surface"
+              className="flex size-9 items-center justify-center rounded-md"
               aria-label="Yugo"
             >
-              Y
+              <Image
+                src="/yugo-symbol.png"
+                alt="Yugo"
+                width={28}
+                height={28}
+                className="size-7 select-none object-contain"
+                priority
+                unoptimized
+              />
             </Link>
           ) : (
             <Link
               href={`${ADMIN_V2_BASE}/dashboard`}
-              className="flex items-center gap-2"
+              className="flex items-center"
               aria-label="Yugo admin home"
             >
-              <span className="flex size-8 items-center justify-center rounded-md bg-fg text-[13px] font-semibold text-surface">
-                Y
-              </span>
-              <span className="display-sm text-fg leading-none">Yugo</span>
+              <Image
+                src="/images/yugo-logo-black.png"
+                alt="Yugo"
+                width={96}
+                height={24}
+                className="h-6 w-auto select-none object-contain dark:hidden"
+                priority
+                unoptimized
+              />
+              <Image
+                src="/images/yugo-logo-cream.png"
+                alt="Yugo"
+                width={96}
+                height={24}
+                className="hidden h-6 w-auto select-none object-contain dark:block"
+                priority
+                unoptimized
+              />
             </Link>
           )}
           <button

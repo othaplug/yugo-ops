@@ -1,7 +1,9 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { toast } from "sonner"
+import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav"
 import { Button } from "../primitives/Button"
 import {
   DrawerSection,
@@ -127,12 +129,8 @@ export const BuildingDrawer = ({
       >
         Adjust surcharge
       </Button>
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={() => toast.success("New move scoped to building")}
-      >
-        New move
+      <Button variant="primary" size="sm" asChild>
+        <Link href={`${ADMIN_V2_BASE}/moves/new`}>New move</Link>
       </Button>
     </div>
   )

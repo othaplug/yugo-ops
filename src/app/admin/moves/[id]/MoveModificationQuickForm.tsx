@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CaretDown as ChevronDown, CaretRight as ChevronRight } from "@phosphor-icons/react";
 import { useToast } from "../../components/Toast";
 
 export default function MoveModificationQuickForm({
@@ -19,6 +20,7 @@ export default function MoveModificationQuickForm({
   const [newTo, setNewTo] = useState("");
   const [newPrice, setNewPrice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   async function submit() {
     setBusy(true);
@@ -61,11 +63,32 @@ export default function MoveModificationQuickForm({
   if (disabled) return null;
 
   return (
-    <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 mb-6">
-      <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)] mb-3">
-        Modify booking
-      </h3>
-      <p className="text-[10px] text-[var(--tx3)] mb-3 leading-relaxed">
+    <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] mb-6 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setExpanded((e) => !e)}
+        className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-[var(--bg)]/50 transition-colors"
+        aria-expanded={expanded}
+        aria-controls="modify-booking-panel"
+        id="modify-booking-heading"
+      >
+        {expanded ? (
+          <ChevronDown className="w-4 h-4 text-[var(--tx3)] shrink-0" aria-hidden />
+        ) : (
+          <ChevronRight className="w-4 h-4 text-[var(--tx3)] shrink-0" aria-hidden />
+        )}
+        <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)]">
+          Modify booking
+        </h3>
+      </button>
+      {expanded && (
+        <div
+          id="modify-booking-panel"
+          className="px-4 pb-4 pt-0 border-t border-[var(--brd)]/50"
+          role="region"
+          aria-labelledby="modify-booking-heading"
+        >
+      <p className="text-[10px] text-[var(--tx3)] mb-3 leading-relaxed pt-3">
         Record a date, address, or price adjustment. If the price increases, the client must approve
         the change from their track-your-move link before it applies.
       </p>
@@ -128,6 +151,8 @@ export default function MoveModificationQuickForm({
       >
         {busy ? "Saving…" : "Save modification"}
       </button>
+        </div>
+      )}
     </div>
   );
 }

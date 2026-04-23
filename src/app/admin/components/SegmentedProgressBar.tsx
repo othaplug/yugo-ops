@@ -81,7 +81,7 @@ export default function SegmentedProgressBar({
                   }}
                 >
                   <div
-                    className="rounded-lg px-3 py-1.5 whitespace-nowrap min-w-[120px] text-center"
+                    className="flex flex-col items-center justify-center gap-0.5 rounded-md px-2.5 py-1 text-center min-w-0 max-w-[14rem] whitespace-nowrap"
                     style={{
                       background:
                         "linear-gradient(160deg, #1e1e1e 0%, #161616 100%)",
@@ -90,22 +90,19 @@ export default function SegmentedProgressBar({
                         "0 8px 24px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)",
                     }}
                   >
-                    <div className="text-[10px] font-semibold text-white/90 mb-0.5 leading-tight tracking-wide">
+                    <div className="text-[10px] font-semibold leading-none tracking-wide text-white">
                       {step.label}
                     </div>
                     {step.timestamp ? (
-                      <div
-                        className="text-[9px] font-medium"
-                        style={{ color: "var(--gold)" }}
-                      >
+                      <div className="text-[9px] font-medium leading-tight text-white/80">
                         {formatTs(step.timestamp)}
                       </div>
                     ) : isComplete || isCurrent ? (
-                      <div className="text-[9px] text-white/30">
+                      <div className="text-[9px] leading-tight text-white/45">
                         No timestamp recorded
                       </div>
                     ) : (
-                      <div className="text-[9px] text-white/20 italic">
+                      <div className="text-[9px] leading-tight italic text-white/30">
                         Not yet reached
                       </div>
                     )}

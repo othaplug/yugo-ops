@@ -194,7 +194,14 @@ function hasResidentialTiers(tiers: unknown): boolean {
     if (!obj || typeof obj !== "object") return false;
     const keys = Object.keys(obj).map((k) => k.toLowerCase());
     return keys.some((k) =>
-      ["essential", "curated", "signature", "estate", "premier", "essentials"].includes(k),
+      [
+        "essential",
+        "curated",
+        "signature",
+        "estate",
+        "premier",
+        "essentials",
+      ].includes(k),
     );
   } catch {
     return false;
@@ -307,7 +314,12 @@ function formatEngagementEventDetail(
   // Do not show `event_data.service_type`. It is often stale/incorrect for non-residential flows
   // and causes confusing labels like "(Local Move)" on commercial delivery quotes.
 
-  const skip = new Set(["source", "service_type", "scroll_pct", "elapsed_seconds"]);
+  const skip = new Set([
+    "source",
+    "service_type",
+    "scroll_pct",
+    "elapsed_seconds",
+  ]);
 
   for (const [k, v] of Object.entries(data)) {
     if (v == null || v === "") continue;
@@ -340,7 +352,9 @@ function formatEngagementEventDetail(
       continue;
     }
     if (k === "contract_signed") {
-      parts.push(typeof v === "boolean" && v ? "Contract signed" : "Contract not signed");
+      parts.push(
+        typeof v === "boolean" && v ? "Contract signed" : "Contract not signed",
+      );
       continue;
     }
 
@@ -388,9 +402,7 @@ function engagementSignal(events: EngagementEvent[]): {
 function tierInterestLine(metrics: QuoteEngagementMetrics): string {
   const entries = Object.entries(metrics.tierClickCounts);
   if (entries.length === 0) return "—";
-  return entries
-    .map(([k, v]) => `${toTitleCase(k)} ${v}×`)
-    .join(", ");
+  return entries.map(([k, v]) => `${toTitleCase(k)} ${v}×`).join(", ");
 }
 
 export default function QuoteDetailClient({
@@ -414,7 +426,9 @@ export default function QuoteDetailClient({
     hubspotDealId?.trim() ? hubspotDealId.trim() : null,
   );
   const [hubspotRetryBusy, setHubspotRetryBusy] = useState(false);
-  const [hubspotRetryError, setHubspotRetryError] = useState<string | null>(null);
+  const [hubspotRetryError, setHubspotRetryError] = useState<string | null>(
+    null,
+  );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showRecoverConfirm, setShowRecoverConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -423,7 +437,9 @@ export default function QuoteDetailClient({
   const [recoverError, setRecoverError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const [pipelineStatus, setPipelineStatus] = useState(String(quote.status || "draft"));
+  const [pipelineStatus, setPipelineStatus] = useState(
+    String(quote.status || "draft"),
+  );
   const [lossReasonKey, setLossReasonKey] = useState<string>("competitor");
   const [lossOtherNote, setLossOtherNote] = useState("");
   const [autoFollowup, setAutoFollowup] = useState(
@@ -431,7 +447,9 @@ export default function QuoteDetailClient({
   );
   const [pipelineSaving, setPipelineSaving] = useState(false);
   const [pipelineMsg, setPipelineMsg] = useState<string | null>(null);
-  const [offlineModalKind, setOfflineModalKind] = useState<"deposit" | "full" | null>(null);
+  const [offlineModalKind, setOfflineModalKind] = useState<
+    "deposit" | "full" | null
+  >(null);
   const [offlineLoading, setOfflineLoading] = useState(false);
   const [offlineError, setOfflineError] = useState<string | null>(null);
   const [offlineSuccess, setOfflineSuccess] = useState<string | null>(null);
@@ -471,7 +489,9 @@ export default function QuoteDetailClient({
       };
       if (!res.ok) {
         setHubspotRetryError(
-          typeof data.message === "string" ? data.message : "Could not create HubSpot deal",
+          typeof data.message === "string"
+            ? data.message
+            : "Could not create HubSpot deal",
         );
         return;
       }
@@ -624,8 +644,7 @@ export default function QuoteDetailClient({
     isSuperAdmin,
   );
   /** Bin rental jobs are tracked separately; “Create Move” is the wrong affordance here. */
-  const showCreateMoveFromAcceptedQuote =
-    quote.service_type !== "bin_rental";
+  const showCreateMoveFromAcceptedQuote = quote.service_type !== "bin_rental";
   const factors = quote.factors_applied as Record<string, unknown> | null;
   const showTieredEngagement = hasResidentialTiers(quote.tiers);
 
@@ -659,14 +678,20 @@ export default function QuoteDetailClient({
         if (types.has("payment_started"))
           return { label: "Hot, started payment", color: "text-green-400" };
         if (types.has("contract_viewed"))
-          return { label: "Warm, reviewed contract", color: "text-emerald-400" };
+          return {
+            label: "Warm, reviewed contract",
+            color: "text-emerald-400",
+          };
         if (types.has("page_view")) {
           const maxDur = Math.max(
             ...engagementAfterSend.map((e) => e.session_duration_seconds ?? 0),
           );
           if (maxDur < 30)
             return { label: "Cold, quick glance", color: "text-red-400" };
-          return { label: "Lukewarm, browsed briefly", color: "text-amber-400" };
+          return {
+            label: "Lukewarm, browsed briefly",
+            color: "text-amber-400",
+          };
         }
         return { label: "No engagement", color: "text-[var(--tx3)]" };
       })();
@@ -705,9 +730,12 @@ export default function QuoteDetailClient({
   ]
     .filter((e) => {
       if (showTieredEngagement) return true;
-      return !["tier_clicked", "tier_hovered", "tier_selected", "comparison_viewed"].includes(
-        String(e.type || ""),
-      );
+      return ![
+        "tier_clicked",
+        "tier_hovered",
+        "tier_selected",
+        "comparison_viewed",
+      ].includes(String(e.type || ""));
     })
     .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 
@@ -744,8 +772,7 @@ export default function QuoteDetailClient({
 
           {/* Row 3: subtitle */}
           <p className="text-[12px] text-[var(--tx3)]">
-            {serviceTypeDisplayLabel(quote.service_type)}{" "}
-            &middot; Created{" "}
+            {serviceTypeDisplayLabel(quote.service_type)} &middot; Created{" "}
             {formatPlatformDisplay(quote.created_at, {
               month: "short",
               day: "numeric",
@@ -756,35 +783,59 @@ export default function QuoteDetailClient({
             <div className="pt-2">
               {hubspotLinkedId ? (
                 <div className="rounded-lg border border-[var(--brd)] bg-[var(--card)] px-3 py-2.5 flex flex-wrap items-center gap-2 text-[12px]">
-                  <LinkSimple className="w-4 h-4 shrink-0 text-[var(--tx3)]" aria-hidden weight="duotone" />
-                  <span className="font-semibold text-[var(--tx)]">HubSpot</span>
+                  <LinkSimple
+                    className="w-4 h-4 shrink-0 text-[var(--tx3)]"
+                    aria-hidden
+                    weight="duotone"
+                  />
+                  <span className="font-semibold text-[var(--tx)]">
+                    HubSpot
+                  </span>
                   <span className="text-[var(--tx2)]">Deal linked</span>
                   <code className="text-[11px] font-mono bg-[var(--bg)] px-1.5 py-0.5 rounded border border-[var(--brd)] text-[var(--tx)]">
                     {hubspotLinkedId}
                   </code>
-                  <InfoHint variant="admin" align="start" ariaLabel="About HubSpot deal id">
-                    Search this deal id in HubSpot (Sales deals) if it does not open from a direct link. Stage updates depend on pipeline settings in Platform Settings.
+                  <InfoHint
+                    variant="admin"
+                    align="start"
+                    ariaLabel="About HubSpot deal id"
+                  >
+                    Search this deal id in HubSpot (Sales deals) if it does not
+                    open from a direct link. Stage updates depend on pipeline
+                    settings in Platform Settings.
                   </InfoHint>
                 </div>
               ) : quote.sent_at && !hubspotEligible ? (
                 <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2.5 text-[12px] text-[var(--tx2)]">
-                  <span className="font-semibold text-[var(--tx)]">HubSpot</span>
-                  {" "}
+                  <span className="font-semibold text-[var(--tx)]">
+                    HubSpot
+                  </span>{" "}
                   Not synced for sample or training quotes.
                 </div>
               ) : quote.sent_at && hubspotEligible ? (
                 <div className="rounded-lg border border-amber-500/35 bg-amber-500/5 px-3 py-3 space-y-2">
                   <div className="flex items-start gap-2">
-                    <WarningCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" aria-hidden weight="fill" />
+                    <WarningCircle
+                      className="w-4 h-4 shrink-0 text-amber-600 mt-0.5"
+                      aria-hidden
+                      weight="fill"
+                    />
                     <div className="min-w-0 space-y-1">
-                      <p className="text-[12px] font-semibold text-[var(--tx)]">No HubSpot deal linked</p>
+                      <p className="text-[12px] font-semibold text-[var(--tx)]">
+                        No HubSpot deal linked
+                      </p>
                       <p className="text-[11px] text-[var(--tx2)] leading-relaxed">
-                        Deals are created when the quote is sent, if the integration token and pipeline or stage ids are set. If something failed at send time, fix settings then try again here. This does not resend email.
+                        Deals are created when the quote is sent, if the
+                        integration token and pipeline or stage ids are set. If
+                        something failed at send time, fix settings then try
+                        again here. This does not resend email.
                       </p>
                     </div>
                   </div>
                   {hubspotRetryError ? (
-                    <p className="text-[11px] text-red-600 pl-6">{hubspotRetryError}</p>
+                    <p className="text-[11px] text-red-600 pl-6">
+                      {hubspotRetryError}
+                    </p>
                   ) : null}
                   <div className="flex flex-wrap items-center gap-2 pl-6">
                     <button
@@ -800,7 +851,11 @@ export default function QuoteDetailClient({
                       className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] underline underline-offset-2"
                     >
                       Platform Settings
-                      <CaretRight className="w-3 h-3" weight="bold" aria-hidden />
+                      <CaretRight
+                        className="w-3 h-3"
+                        weight="bold"
+                        aria-hidden
+                      />
                     </Link>
                   </div>
                 </div>
@@ -814,16 +869,26 @@ export default function QuoteDetailClient({
               type="button"
               onClick={() =>
                 router.push(
-                  isB2BDeliveryQuoteServiceType(String(quote.service_type || ""))
+                  isB2BDeliveryQuoteServiceType(
+                    String(quote.service_type || ""),
+                  )
                     ? `/admin/quotes/new?copy_quote=${encodeURIComponent(quote.quote_id)}`
                     : `/admin/quotes/${quote.quote_id}/edit`,
                 )
               }
               className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
             >
-              <Pencil weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
+              <Pencil
+                weight="regular"
+                className="w-3 h-3 shrink-0"
+                aria-hidden
+              />
               Edit all details
-              <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
+              <CaretRight
+                weight="bold"
+                className="w-3 h-3 shrink-0 opacity-90"
+                aria-hidden
+              />
             </button>
             {quote.quote_url && (
               <a
@@ -832,9 +897,17 @@ export default function QuoteDetailClient({
                 rel="noreferrer"
                 className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
               >
-                <ExternalLink weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
+                <ExternalLink
+                  weight="regular"
+                  className="w-3 h-3 shrink-0"
+                  aria-hidden
+                />
                 Client view
-                <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
+                <CaretRight
+                  weight="bold"
+                  className="w-3 h-3 shrink-0 opacity-90"
+                  aria-hidden
+                />
               </a>
             )}
             {quote.status === "accepted" && showCreateMoveFromAcceptedQuote && (
@@ -860,7 +933,12 @@ export default function QuoteDetailClient({
                 onClick={() => setShowDeleteConfirm(true)}
                 className={ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS}
               >
-                <Trash2 weight="regular" className="w-3 h-3 shrink-0" aria-hidden /> Delete
+                <Trash2
+                  weight="regular"
+                  className="w-3 h-3 shrink-0"
+                  aria-hidden
+                />{" "}
+                Delete
               </button>
             )}
             {deleting && (
@@ -873,11 +951,17 @@ export default function QuoteDetailClient({
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="admin-section-h2 mb-0">Status &amp; follow-ups</h2>
-                <QuotesFollowupAutomationHint iconSize={15} ariaLabel="Automated quote follow-ups" />
+                <h2 className="admin-section-h2 mb-0">
+                  Status &amp; follow-ups
+                </h2>
+                <QuotesFollowupAutomationHint
+                  iconSize={15}
+                  ariaLabel="Automated quote follow-ups"
+                />
               </div>
               <p className="text-[11px] text-[var(--tx3)] mt-1">
-                Automated emails sent: {followupsSentCount} of {followupMaxAttempts}
+                Automated emails sent: {followupsSentCount} of{" "}
+                {followupMaxAttempts}
               </p>
             </div>
             {quote.status === "accepted" && (
@@ -916,7 +1000,9 @@ export default function QuoteDetailClient({
                     type="checkbox"
                     checked={autoFollowup}
                     disabled={pipelineSaving}
-                    onChange={(e) => void saveAutoFollowupToggle(e.target.checked)}
+                    onChange={(e) =>
+                      void saveAutoFollowupToggle(e.target.checked)
+                    }
                     className="accent-[#2C3E2D]"
                   />
                   Auto follow-up emails
@@ -966,7 +1052,11 @@ export default function QuoteDetailClient({
                   className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
                 >
                   Save status
-                  <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
+                  <CaretRight
+                    weight="bold"
+                    className="w-3 h-3 shrink-0 opacity-90"
+                    aria-hidden
+                  />
                 </button>
                 {!autoFollowup && (
                   <span className="text-[11px] text-[var(--tx3)]">
@@ -998,7 +1088,9 @@ export default function QuoteDetailClient({
                 side="bottom"
               >
                 <p className="text-[12px] leading-relaxed max-w-[min(100vw-2rem,320px)]">
-                  When the client paid outside the quote page (cash, wire, or cheque), record it here. This creates the move or delivery and runs the same confirmation steps as card checkout.
+                  When the client paid outside the quote page (cash, wire, or
+                  cheque), record it here. This creates the move or delivery and
+                  runs the same confirmation steps as card checkout.
                 </p>
               </InfoHint>
             </div>
@@ -1027,7 +1119,9 @@ export default function QuoteDetailClient({
                 {(offlineSuccess || offlineError) && (
                   <p
                     className={`text-[10px] w-full text-right leading-snug ${
-                      offlineError ? "text-[var(--red)]" : "text-emerald-600 dark:text-emerald-400"
+                      offlineError
+                        ? "text-[var(--red)]"
+                        : "text-emerald-600 dark:text-emerald-400"
                     }`}
                   >
                     {offlineError ?? offlineSuccess}
@@ -1046,7 +1140,11 @@ export default function QuoteDetailClient({
                       className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
                     >
                       Record full payment and confirm booking
-                      <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
+                      <CaretRight
+                        weight="bold"
+                        className="w-3 h-3 shrink-0 opacity-90"
+                        aria-hidden
+                      />
                     </button>
                   ) : (
                     <>
@@ -1061,7 +1159,11 @@ export default function QuoteDetailClient({
                         className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
                       >
                         Record deposit received
-                        <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
+                        <CaretRight
+                          weight="bold"
+                          className="w-3 h-3 shrink-0 opacity-90"
+                          aria-hidden
+                        />
                       </button>
                       <button
                         type="button"
@@ -1074,14 +1176,21 @@ export default function QuoteDetailClient({
                         className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
                       >
                         Record full payment (complete job)
-                        <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
+                        <CaretRight
+                          weight="bold"
+                          className="w-3 h-3 shrink-0 opacity-90"
+                          aria-hidden
+                        />
                       </button>
                     </>
                   )}
                   <p className="text-[10px] text-[var(--tx3)] tabular-nums whitespace-nowrap">
                     Total {formatCurrency(offlineTotalWithTax)} incl. tax
                     {paymentPipelineMode === "deposit_then_balance" ? (
-                      <> · First payment {formatCurrency(offlineDepositAmount)}</>
+                      <>
+                        {" "}
+                        · First payment {formatCurrency(offlineDepositAmount)}
+                      </>
                     ) : null}
                   </p>
                 </div>
@@ -1243,11 +1352,14 @@ export default function QuoteDetailClient({
                   </p>
                   <p className="text-[15px] font-semibold text-[var(--tx)] leading-tight">
                     {quote.move_date
-                      ? formatPlatformDisplay(new Date(quote.move_date + "T00:00:00"), {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                        })
+                      ? formatPlatformDisplay(
+                          new Date(quote.move_date + "T00:00:00"),
+                          {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                          },
+                        )
                       : "TBD"}
                   </p>
                 </div>
@@ -1276,9 +1388,13 @@ export default function QuoteDetailClient({
                   {(() => {
                     const HST = 0.13;
                     const systemPreTax =
-                      typeof quote.system_price === "number" ? quote.system_price : null;
+                      typeof quote.system_price === "number"
+                        ? quote.system_price
+                        : null;
                     const overridePreTax =
-                      typeof quote.override_price === "number" ? quote.override_price : null;
+                      typeof quote.override_price === "number"
+                        ? quote.override_price
+                        : null;
                     if (quote.tiers) {
                       const t = quote.tiers as Record<string, any>;
                       const prices = Object.values(t).map(
@@ -1298,13 +1414,19 @@ export default function QuoteDetailClient({
                           {overridePreTax != null ? (
                             <div className="mt-2 rounded-lg border border-[var(--brd)]/60 bg-[var(--bg)] px-3 py-2 space-y-1">
                               <div className="flex items-center justify-between text-[11px]">
-                                <span className="text-[var(--tx3)]">System (engine)</span>
+                                <span className="text-[var(--tx3)]">
+                                  System (engine)
+                                </span>
                                 <span className="font-medium text-[var(--tx)]">
-                                  {systemPreTax != null ? fmtCurrency(systemPreTax) : "—"}
+                                  {systemPreTax != null
+                                    ? fmtCurrency(systemPreTax)
+                                    : "—"}
                                 </span>
                               </div>
                               <div className="flex items-center justify-between text-[11px]">
-                                <span className="text-[var(--tx3)]">Override (pre-tax)</span>
+                                <span className="text-[var(--tx3)]">
+                                  Override (pre-tax)
+                                </span>
                                 <span className="font-semibold text-[var(--tx)]">
                                   {fmtCurrency(overridePreTax)}
                                 </span>
@@ -1332,13 +1454,19 @@ export default function QuoteDetailClient({
                         {overridePreTax != null ? (
                           <div className="mt-2 rounded-lg border border-[var(--brd)]/60 bg-[var(--bg)] px-3 py-2 space-y-1">
                             <div className="flex items-center justify-between text-[11px]">
-                              <span className="text-[var(--tx3)]">System (engine)</span>
+                              <span className="text-[var(--tx3)]">
+                                System (engine)
+                              </span>
                               <span className="font-medium text-[var(--tx)]">
-                                {systemPreTax != null ? fmtCurrency(systemPreTax) : "—"}
+                                {systemPreTax != null
+                                  ? fmtCurrency(systemPreTax)
+                                  : "—"}
                               </span>
                             </div>
                             <div className="flex items-center justify-between text-[11px]">
-                              <span className="text-[var(--tx3)]">Override (pre-tax)</span>
+                              <span className="text-[var(--tx3)]">
+                                Override (pre-tax)
+                              </span>
                               <span className="font-semibold text-[var(--tx)]">
                                 {fmtCurrency(overridePreTax)}
                               </span>
@@ -1726,7 +1854,9 @@ export default function QuoteDetailClient({
                       <span
                         className={`font-medium text-right ${engagementMetrics.comparingRecommended ? "text-amber-500" : "text-[var(--tx)]"}`}
                       >
-                        {showTieredEngagement ? engagementMetrics.comparingLabel : "Engaged"}
+                        {showTieredEngagement
+                          ? engagementMetrics.comparingLabel
+                          : "Engaged"}
                       </span>
                     </div>
                   </div>

@@ -39,6 +39,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const toastPosition =
     "fixed left-4 right-4 md:left-auto md:right-4 bottom-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px)+8px)] md:bottom-4 md:max-w-sm z-[100000] min-w-0";
 
+  /** Portaled at document root, outside themed shells: do not use legacy `--tx` (often light-on-dark) on white surfaces. */
+  const attentionShell =
+    "rounded-xl px-4 py-3.5 flex items-start gap-3 text-[13px] font-semibold leading-snug text-zinc-900 bg-white border shadow-lg animate-toast-attention";
+  const attentionIconOffset = "mt-0.5";
+
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
@@ -48,16 +53,24 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           aria-live={isAttention ? "assertive" : "polite"}
           className={
             isError
-              ? `${toastPosition} yugo-toast-error rounded-xl px-4 py-3.5 flex items-start gap-3 text-[13px] font-semibold leading-snug text-[var(--tx)] animate-toast-attention shadow-lg`
+              ? `${toastPosition} yugo-toast-error ${attentionShell} border-red-200/90`
               : isWarning
-                ? `${toastPosition} yugo-toast-warning rounded-xl px-4 py-3.5 flex items-start gap-3 text-[13px] font-semibold leading-snug text-[var(--tx)] animate-toast-attention shadow-lg`
+                ? `${toastPosition} yugo-toast-warning ${attentionShell} border-amber-200/90`
                 : `${toastPosition} yugo-glass rounded-lg px-3.5 py-2.5 shadow-lg flex items-center gap-2 text-[11px] font-medium animate-fade-up`
           }
         >
           {isError ? (
-            <WarningCircle weight="bold" className="w-5 h-5 shrink-0 text-[var(--red)] mt-0.5" aria-hidden />
+            <WarningCircle
+              weight="bold"
+              className={`w-5 h-5 shrink-0 text-red-600 ${attentionIconOffset}`}
+              aria-hidden
+            />
           ) : isWarning ? (
-            <Warning weight="bold" className="w-5 h-5 shrink-0 text-[var(--org)] mt-0.5" aria-hidden />
+            <Warning
+              weight="bold"
+              className={`w-5 h-5 shrink-0 text-amber-700 ${attentionIconOffset}`}
+              aria-hidden
+            />
           ) : (
             <span className="text-[var(--grn)]">
               <Icon name={iconKey} className="w-[14px] h-[14px]" />

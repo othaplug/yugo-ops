@@ -3,8 +3,6 @@
 import * as React from "react"
 import {
   House,
-  Tray,
-  CheckSquare,
   Calendar,
   Megaphone,
   CurrencyDollar,
@@ -90,8 +88,6 @@ const iconVariants = cva("inline-block shrink-0", {
 
 export const ICONS = {
   home: House,
-  inbox: Tray,
-  mywork: CheckSquare,
   calendar: Calendar,
   campaigns: Megaphone,
   deals: CurrencyDollar,

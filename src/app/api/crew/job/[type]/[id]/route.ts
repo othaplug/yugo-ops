@@ -362,12 +362,13 @@ export async function GET(
       ? Number(marginM)
       : null;
   if (moveEstMin == null || moveEstMin <= 0) {
-    const dEst = estimateDurationFromMoveRow(m as Record<string, unknown>);
-    if (dEst) {
-      moveEstMin = dEst.totalMinutes;
-      moveMarginMin = dEst.maxMinutesBeforeMarginAlert;
+    const eh = (m as { est_hours?: number | null }).est_hours;
+    const ehN = typeof eh === "string" ? Number.parseFloat(eh) : Number(eh);
+    if (Number.isFinite(ehN) && ehN > 0) {
+      moveEstMin = Math.round(ehN * 60);
     }
-  } else if (moveMarginMin == null || moveMarginMin <= 0) {
+  }
+  if (moveEstMin != null && moveEstMin > 0 && (moveMarginMin == null || moveMarginMin <= 0)) {
     moveMarginMin = moveEstMin;
   }
   if (moveEstMin != null && moveEstMin > 0 && moveMarginMin != null) {

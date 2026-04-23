@@ -9,6 +9,11 @@ import { useToast } from "../../components/Toast";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { CaretDown as ChevronDown, CaretRight as ChevronRight } from "@phosphor-icons/react";
+import { capMarginAlertMinutes } from "@/lib/jobs/duration-estimate";
+import {
+  formatMinutesAsHhMm,
+  parseHhMmToMinutes,
+} from "@/lib/duration-hhmm";
 
 const COMPLEXITY_PRESETS = ["White Glove", "Piano", "High Value Client", "Repeat Client", "Artwork", "Antiques", "Storage"];
 const IN_PROGRESS_STATUSES = [
@@ -42,6 +47,9 @@ interface EditMoveDetailsModalProps {
     coordinator_name?: string | null;
     scheduled_date?: string | null;
     arrival_window?: string | null;
+    /** On-site work time (minutes), not the arrival window span */
+    estimated_duration_minutes?: number | null;
+    margin_alert_minutes?: number | null;
     from_access?: string | null;
     to_access?: string | null;
     access_notes?: string | null;
@@ -96,6 +104,13 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
   const parsed = parseAccessNotes(initial.access_notes);
   const [scheduledDate, setScheduledDate] = useState(() => toDateInput(initial.scheduled_date));
   const [arrivalWindow, setArrivalWindow] = useState(initial.arrival_window || "");
+  const [allocatedJobHhMm, setAllocatedJobHhMm] = useState(() => {
+    const v = initial.estimated_duration_minutes;
+    if (v != null && Number.isFinite(Number(v)) && Number(v) > 0) {
+      return formatMinutesAsHhMm(Math.round(Number(v)));
+    }
+    return "";
+  });
   const [fromAccess, setFromAccess] = useState(initial.from_access || parsed.fromAccess);
   const [toAccess, setToAccess] = useState(initial.to_access || parsed.toAccess);
   const [complexityIndicators, setComplexityIndicators] = useState<string[]>(Array.isArray(initial.complexity_indicators) ? initial.complexity_indicators : []);
@@ -117,6 +132,14 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
     setToLng(initial.to_lng ?? null);
     setScheduledDate(toDateInput(initial.scheduled_date));
     setArrivalWindow(initial.arrival_window || "");
+    {
+      const v = initial.estimated_duration_minutes;
+      if (v != null && Number.isFinite(Number(v)) && Number(v) > 0) {
+        setAllocatedJobHhMm(formatMinutesAsHhMm(Math.round(Number(v))));
+      } else {
+        setAllocatedJobHhMm("");
+      }
+    }
     const p = parseAccessNotes(initial.access_notes);
     setFromAccess(initial.from_access || p.fromAccess);
     setToAccess(initial.to_access || p.toAccess);
@@ -144,6 +167,32 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
       [fromAccess.trim() && `From: ${fromAccess.trim()}`, toAccess.trim() && `To: ${toAccess.trim()}`].filter(Boolean).join("\n") || null;
 
     const updatePayload: Record<string, unknown> = { updated_at };
+    if (section !== "notes") {
+      const trimmedAlloc = allocatedJobHhMm.trim();
+      if (trimmedAlloc === "") {
+        Object.assign(updatePayload, {
+          estimated_duration_minutes: null,
+          margin_alert_minutes: null,
+        });
+      } else {
+        const parsed = parseHhMmToMinutes(trimmedAlloc);
+        if (!parsed.ok) {
+          toast(parsed.message, "alertTriangle");
+          setSaving(false);
+          return;
+        }
+        const M = parsed.minutes;
+        const prev = initial.margin_alert_minutes;
+        const prevN =
+          typeof prev === "string" ? Number.parseFloat(prev) : Number(prev);
+        const uncapped =
+          Number.isFinite(prevN) && prevN > 0 ? Math.max(prevN, M) : M * 2;
+        Object.assign(updatePayload, {
+          estimated_duration_minutes: M,
+          margin_alert_minutes: capMarginAlertMinutes(M, uncapped),
+        });
+      }
+    }
     if (section === "notes") {
       updatePayload.internal_notes = internalNotes.trim() || null;
     } else if (section === "addresses") {
@@ -310,6 +359,27 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
                     <option value={arrivalWindow}>{arrivalWindow}</option>
                   )}
                 </select>
+              </Field>
+              <Field label="Allocated job time (hours:minutes)" className="sm:col-span-2">
+                <input
+                  type="text"
+                  inputMode="text"
+                  autoComplete="off"
+                  value={allocatedJobHhMm}
+                  onChange={(e) => setAllocatedJobHhMm(e.target.value)}
+                  placeholder="e.g. 6:00"
+                  className={inputBase}
+                  aria-describedby="allocated-job-time-hint"
+                />
+                <p
+                  id="allocated-job-time-hint"
+                  className="mt-1.5 text-[10px] text-[var(--tx3)] leading-snug"
+                >
+                  On-site work time for this job, separate from the arrival
+                  window. Use hours and minutes (for example 2:30). Leave blank to
+                  clear; the move can still fall back to quote estimated hours if
+                  those are set.
+                </p>
               </Field>
             </div>
           </section>

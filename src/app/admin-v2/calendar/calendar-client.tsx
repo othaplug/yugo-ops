@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { toast } from "sonner"
+import Link from "next/link"
 import { PageHeader } from "@/components/admin-v2/composites/PageHeader"
 import { Button } from "@/components/admin-v2/primitives/Button"
 import { Icon } from "@/components/admin-v2/primitives/Icon"
@@ -15,6 +15,7 @@ import { MOVE_STATUS_LABEL, TIER_LABEL } from "@/lib/admin-v2/labels"
 import { formatTimeOfDay } from "@/lib/admin-v2/format"
 import type { Move } from "@/lib/admin-v2/mock/types"
 import { cn } from "@/components/admin-v2/lib/cn"
+import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav"
 
 type CalendarView = "month" | "week" | "day"
 
@@ -277,13 +278,11 @@ export const CalendarClient = ({ moves }: CalendarClientProps) => {
       <PageHeader
         title="Calendar"
         actions={
-          <Button
-            size="sm"
-            variant="secondary"
-            leadingIcon={<Icon name="plus" size="sm" weight="bold" />}
-            onClick={() => toast.message("New move flow opens here")}
-          >
-            New move
+          <Button size="sm" variant="secondary" asChild>
+            <Link href={`${ADMIN_V2_BASE}/moves/new`}>
+              <Icon name="plus" size="sm" weight="bold" aria-hidden />
+              New move
+            </Link>
           </Button>
         }
       />

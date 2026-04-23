@@ -29,11 +29,32 @@ export async function GET(
         .order("room")
         .order("sort_order")
         .order("item_name"),
-      db.from("moves").select("client_box_count").eq("id", moveId).single(),
+      db.from("moves").select("client_box_count, quote_id").eq("id", moveId).single(),
     ]);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-    return NextResponse.json({ items: items ?? [], boxCount: moveRow?.client_box_count ?? 0 });
+
+    let boxCount =
+      moveRow?.client_box_count != null && Number.isFinite(Number(moveRow.client_box_count))
+        ? Math.round(Number(moveRow.client_box_count))
+        : 0;
+    if (
+      boxCount <= 0 &&
+      moveRow?.quote_id &&
+      typeof moveRow.quote_id === "string"
+    ) {
+      const { data: qRow } = await db
+        .from("quotes")
+        .select("client_box_count")
+        .eq("id", moveRow.quote_id)
+        .maybeSingle();
+      const qb = qRow?.client_box_count;
+      if (qb != null && Number.isFinite(Number(qb)) && Number(qb) > 0) {
+        boxCount = Math.round(Number(qb));
+      }
+    }
+
+    return NextResponse.json({ items: items ?? [], boxCount });
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to fetch inventory" },

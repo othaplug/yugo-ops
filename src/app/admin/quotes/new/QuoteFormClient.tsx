@@ -6,6 +6,7 @@ import React, {
   useCallback,
   useMemo,
   useRef,
+  useContext,
 } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import BackButton from "../../components/BackButton";
@@ -643,6 +644,12 @@ const TAX_RATE = 0.13;
 /** No fourth-step catalog add-ons or coordinator pre-tax override; pricing options live in job details. */
 const SKIP_CATALOG_ADDONS_QUOTE_STEP = new Set<string>(["bin_rental"]);
 
+const QuoteFormV2Context = React.createContext(false);
+
+function useQuoteFormIsV2(): boolean {
+  return useContext(QuoteFormV2Context);
+}
+
 // ─── Helpers ────────────────────────────────────
 
 const fieldInput = "field-input-compact w-full";
@@ -1199,6 +1206,9 @@ export default function QuoteFormClient({
   userRole = "coordinator",
   isSuperAdmin = false,
   binInventorySnapshot = null,
+  /** When `"v2"`, Yugo+ admin shell tokens (surface, line, purple accent) replace legacy gold/wine. */
+  uiVariant = "v1",
+  backFallback = "/admin",
 }: {
   addons: Addon[];
   config: Record<string, string>;
@@ -1216,7 +1226,26 @@ export default function QuoteFormClient({
     out: number;
     available: number;
   } | null;
+  uiVariant?: "v1" | "v2";
+  /** Used when `router.back()` has no history (e.g. `/admin-v2/quotes` for the v2 list). */
+  backFallback?: string;
 }) {
+  const isV2 = uiVariant === "v2";
+  const checkboxAccentClass = isV2
+    ? "accent-[var(--color-accent)]"
+    : "accent-[#2C3E2D]";
+  const buildingElevatorPanelClass = isV2
+    ? "rounded-lg border border-line bg-accent-subtle/50 px-3 py-3 space-y-2"
+    : "rounded-lg border border-[var(--brd)] bg-[#F9F0E8] px-3 py-3 space-y-2";
+  const multiDayCalloutClass = isV2
+    ? "mt-3 rounded-lg border border-line bg-accent-subtle/35 px-3 py-2.5"
+    : "mt-3 rounded-lg border border-[var(--brd)]/80 bg-[#F9EDE4]/90 px-3 py-2.5";
+  const multiDayTitleClass = isV2
+    ? "text-[11px] font-semibold text-fg"
+    : "text-[11px] font-semibold text-[#2B0416]";
+  const eventQuickAddBtnClass = isV2
+    ? "inline-flex items-center rounded-md border border-line px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-fg hover:bg-accent/10"
+    : "inline-flex items-center rounded-md border border-[#2C3E2D]/35 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-[var(--tx)] hover:bg-[#2C3E2D]/8";
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -4776,12 +4805,17 @@ export default function QuoteFormClient({
 
   // ── Render ────────────────────────────────
   return (
+    <QuoteFormV2Context.Provider value={isV2}>
     <div
-      className="transition-opacity duration-700 ease-out"
+      className={`transition-opacity duration-700 ease-out${isV2 ? " quote-form-v2-scope" : ""}`}
       style={{ opacity: dissolving ? 0 : 1 }}
     >
       <div className="mb-4">
-        <BackButton label="Back" />
+        <BackButton
+          label="Back"
+          variant={isV2 ? "v2" : "v1"}
+          fallback={backFallback}
+        />
       </div>
 
       {quoteHasDraft && (
@@ -4789,65 +4823,117 @@ export default function QuoteFormClient({
           <DraftBanner
             onRestore={handleRestoreQuoteDraft}
             onDismiss={quoteDismissDraft}
+            variant={isV2 ? "v2" : "v1"}
           />
         </div>
       )}
 
       {hubspotBanner && (
-        <div className="mb-4 px-4 py-2.5 rounded-lg bg-[rgba(250,247,242,0.08)] border border-[rgba(250,247,242,0.22)] text-[12px] font-medium text-[#EDE6DC] flex items-center gap-2">
+        <div
+          className={
+            isV2
+              ? "mb-4 flex items-center gap-2 rounded-lg border border-line bg-surface-subtle px-4 py-2.5 text-[12px] font-medium text-fg"
+              : "mb-4 px-4 py-2.5 rounded-lg bg-[rgba(250,247,242,0.08)] border border-[rgba(250,247,242,0.22)] text-[12px] font-medium text-[#EDE6DC] flex items-center gap-2"
+          }
+        >
           <Check className="w-4 h-4 shrink-0" />
           {hubspotBanner}
         </div>
       )}
 
       {leadQuoteBanner && (
-        <div className="mb-4 px-4 py-2.5 rounded-lg bg-[var(--gold)]/12 border border-[var(--gold)]/35 text-[12px] font-medium text-[var(--tx)] flex items-center gap-2">
-          <Users className="w-4 h-4 shrink-0 text-[var(--gold)]" aria-hidden />
+        <div
+          className={
+            isV2
+              ? "mb-4 flex items-center gap-2 rounded-lg border border-accent/25 bg-accent-subtle/50 px-4 py-2.5 text-[12px] font-medium text-fg"
+              : "mb-4 px-4 py-2.5 rounded-lg bg-[var(--gold)]/12 border border-[var(--gold)]/35 text-[12px] font-medium text-[var(--tx)] flex items-center gap-2"
+          }
+        >
+          <Users
+            className={
+              isV2 ? "h-4 w-4 shrink-0 text-accent" : "w-4 h-4 shrink-0 text-[var(--gold)]"
+            }
+            aria-hidden
+          />
           {leadQuoteBanner}
         </div>
       )}
 
       {widgetQuoteBanner && (
-        <div className="mb-4 px-4 py-2.5 rounded-lg bg-[var(--gold)]/12 border border-[var(--gold)]/35 text-[12px] font-medium text-[var(--tx)] flex items-center gap-2">
-          <Check className="w-4 h-4 shrink-0" aria-hidden />
+        <div
+          className={
+            isV2
+              ? "mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-line bg-surface-subtle px-4 py-2.5 text-[12px] font-medium text-fg"
+              : "mb-4 px-4 py-2.5 rounded-lg bg-[var(--gold)]/12 border border-[var(--gold)]/35 text-[12px] font-medium text-[var(--tx)] flex items-center gap-2"
+          }
+        >
+          <Check className="h-4 w-4 shrink-0" aria-hidden />
           {widgetQuoteBanner}
-          <span className="text-[11px] text-[var(--tx3)] font-normal">
+          <span
+            className={
+              isV2 ? "text-[11px] font-normal text-fg-muted" : "text-[11px] text-[var(--tx3)] font-normal"
+            }
+          >
             Review details before generating the quote.
           </span>
         </div>
       )}
 
       {showSpecialtyQuoteBanner && (
-        <div className="mb-4 px-4 py-3 rounded-lg border border-[var(--brd)] bg-[var(--card)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-start gap-2 min-w-0">
+        <div
+          className={
+            isV2
+              ? "mb-4 flex flex-col gap-3 rounded-lg border border-line bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+              : "mb-4 px-4 py-3 rounded-lg border border-[var(--brd)] bg-[var(--card)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+          }
+        >
+          <div className="flex min-w-0 items-start gap-2">
             <Wrench
-              className="w-4 h-4 shrink-0 text-[var(--gold)] mt-0.5"
+              className={
+                isV2
+                  ? "mt-0.5 h-4 w-4 shrink-0 text-accent"
+                  : "w-4 h-4 shrink-0 text-[var(--gold)] mt-0.5"
+              }
               weight="duotone"
               aria-hidden
             />
-            <div className="min-w-0 text-[12px] text-[var(--tx2)]">
-              <p className="font-bold text-[var(--tx)]">
+            <div
+              className={
+                isV2
+                  ? "min-w-0 text-[12px] text-fg-muted"
+                  : "min-w-0 text-[12px] text-[var(--tx2)]"
+              }
+            >
+              <p className={isV2 ? "font-bold text-fg" : "font-bold text-[var(--tx)]"}>
                 Specialty Quote Builder
               </p>
-              <p className="text-[11px] mt-0.5 leading-snug">
+              <p className="mt-0.5 text-[11px] leading-snug">
                 One-off B2B or heavy transport: use the cost builder, then send
                 the quote from the quote page. Full payment at confirmation on
                 the client quote.
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 shrink-0">
+          <div className="flex shrink-0 flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setSpecialtyBuilderOpen(true)}
-              className="px-3 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
+              className={
+                isV2
+                  ? "rounded-md bg-accent px-3 py-2 text-[11px] font-bold text-white"
+                  : "px-3 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
+              }
             >
               Open builder
             </button>
             <button
               type="button"
               onClick={() => setSpecialtyBannerDismissed(true)}
-              className="px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]"
+              className={
+                isV2
+                  ? "rounded-md border border-line px-3 py-2 text-[11px] font-semibold text-fg-subtle"
+                  : "px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]"
+              }
             >
               Dismiss
             </button>
@@ -4856,14 +4942,30 @@ export default function QuoteFormClient({
       )}
 
       {leadIntelSummary && (
-        <div className="mb-4 px-4 py-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] flex gap-3">
+        <div
+          className={
+            isV2
+              ? "mb-4 flex gap-3 rounded-lg border border-line bg-surface-subtle px-4 py-3 text-[12px] text-fg"
+              : "mb-4 px-4 py-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] flex gap-3"
+          }
+        >
           <Lightbulb
-            className="w-4 h-4 shrink-0 text-[var(--gold)] mt-0.5"
+            className={
+              isV2
+                ? "mt-0.5 h-4 w-4 shrink-0 text-accent"
+                : "w-4 h-4 shrink-0 text-[var(--gold)] mt-0.5"
+            }
             weight="fill"
             aria-hidden
           />
           <div className="min-w-0 space-y-1">
-            <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+            <p
+              className={
+                isV2
+                  ? "text-[10px] font-bold uppercase tracking-[0.14em] text-fg-subtle"
+                  : "text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]"
+              }
+            >
               Lead intelligence
             </p>
             <p className="leading-snug">{leadIntelSummary}</p>
@@ -4960,12 +5062,34 @@ export default function QuoteFormClient({
         <div
           className={`flex flex-col transition-all duration-300 w-full max-w-none min-w-0 ${previewOpen ? "min-[480px]:w-[60%]" : "min-[480px]:w-full"}`}
         >
-          <div className="mb-6 pb-6 border-b border-[var(--brd)]/70">
-            <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx2)] mb-1.5">
+          <div
+            className={
+              isV2
+                ? "mb-6 border-b border-line/80 pb-6"
+                : "mb-6 pb-6 border-b border-[var(--brd)]/70"
+            }
+          >
+            <p
+              className={
+                isV2
+                  ? "mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-fg-subtle"
+                  : "text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx2)] mb-1.5"
+              }
+            >
               Sales
             </p>
-            <h1 className="admin-page-hero text-[var(--tx)]">Generate Quote</h1>
-            <p className="text-[11px] text-[var(--tx2)] mt-1.5 max-w-2xl leading-relaxed">
+            <h1
+              className={isV2 ? "text-fg" : "admin-page-hero text-[var(--tx)]"}
+            >
+              Generate Quote
+            </h1>
+            <p
+              className={
+                isV2
+                  ? "body-sm text-fg-muted mt-1.5 max-w-2xl leading-relaxed"
+                  : "text-[11px] text-[var(--tx2)] mt-1.5 max-w-2xl leading-relaxed"
+              }
+            >
               Move through each step in order. The live preview updates as you type.
             </p>
             <nav className="mt-5 w-full" aria-label="Quote form steps">
@@ -4975,6 +5099,40 @@ export default function QuoteFormClient({
                   const active = i === quoteFlowStep;
                   const canJumpBack = i < quoteFlowStep;
                   const segmentFilled = quoteFlowStep > i;
+                  const stepCircleV2 = active
+                    ? "bg-accent-subtle text-accent ring-2 ring-accent/30 ring-offset-2 ring-offset-[var(--color-canvas)]"
+                    : done
+                      ? "border border-line bg-surface text-accent"
+                      : "border border-line bg-surface text-fg-muted"
+                  const stepCircleV1 = active
+                    ? "bg-[#FAF7F2] text-[#3D1624] shadow-md shadow-black/20 ring-2 ring-[rgba(250,247,242,0.45)] ring-offset-2 ring-offset-[var(--bg)]"
+                    : done
+                      ? "bg-[#FAF7F2] text-[#3D1624]"
+                      : "border border-[var(--brd)] bg-[var(--card)] text-[var(--tx2)]"
+                  const connectorTrack = isV2
+                    ? "bg-line/60"
+                    : "bg-[var(--brd)]/65"
+                  const connectorFill = isV2
+                    ? "bg-gradient-to-r from-accent/50 via-accent/35 to-accent/20"
+                    : "bg-gradient-to-r from-[#FAF7F2] via-[#EDE4DA] to-[#D8CDC1] shadow-[0_0_12px_rgba(250,247,242,0.12)]"
+                  const textTone = isV2
+                    ? active
+                      ? "text-fg"
+                      : done
+                        ? "text-fg-muted"
+                        : "text-fg-subtle/90"
+                    : active
+                      ? "text-[var(--tx)]"
+                      : done
+                        ? "text-[var(--tx2)]"
+                        : "text-[var(--tx2)]/85"
+                  const textHoverV2 = canJumpBack ? "hover:text-fg" : ""
+                  const textHoverV1 = canJumpBack ? "hover:text-[var(--tx)]" : ""
+                  const stepNavCursor = canJumpBack
+                    ? `cursor-pointer ${isV2 ? textHoverV2 : textHoverV1}`
+                    : !active
+                      ? "cursor-default"
+                      : ""
                   return (
                     <React.Fragment key={label}>
                       <button
@@ -4984,23 +5142,11 @@ export default function QuoteFormClient({
                         }}
                         disabled={!canJumpBack && !active}
                         aria-current={active ? "step" : undefined}
-                        className={`flex min-w-0 flex-1 flex-col items-center gap-2 px-0.5 text-center transition-colors duration-300 ${
-                          active
-                            ? "text-[var(--tx)]"
-                            : done
-                              ? "text-[var(--tx2)]"
-                              : "text-[var(--tx2)]/85"
-                        } ${canJumpBack ? "cursor-pointer hover:text-[var(--tx)]" : ""} ${
-                          !canJumpBack && !active ? "cursor-default" : ""
-                        }`}
+                        className={`flex min-w-0 flex-1 flex-col items-center gap-2 px-0.5 text-center transition-colors duration-300 ${textTone} ${stepNavCursor}`}
                       >
                         <span
                           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-all duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] ${
-                            active
-                              ? "bg-[#FAF7F2] text-[#3D1624] shadow-md shadow-black/20 ring-2 ring-[rgba(250,247,242,0.45)] ring-offset-2 ring-offset-[var(--bg)]"
-                              : done
-                                ? "bg-[#FAF7F2] text-[#3D1624]"
-                                : "border border-[var(--brd)] bg-[var(--card)] text-[var(--tx2)]"
+                            isV2 ? stepCircleV2 : stepCircleV1
                           }`}
                         >
                           {done ? (
@@ -5015,11 +5161,11 @@ export default function QuoteFormClient({
                       </button>
                       {i < quoteFlowNavLabels.length - 1 ? (
                         <div
-                          className="pointer-events-none mt-[13px] h-[3px] w-2 min-[380px]:w-4 sm:flex-1 sm:max-w-[6rem] shrink-0 self-start rounded-full bg-[var(--brd)]/65 overflow-hidden"
+                          className={`pointer-events-none mt-[13px] h-[3px] w-2 min-[380px]:w-4 sm:flex-1 sm:max-w-[6rem] shrink-0 self-start overflow-hidden rounded-full ${connectorTrack}`}
                           aria-hidden
                         >
                           <div
-                            className="h-full w-full origin-left rounded-full bg-gradient-to-r from-[#FAF7F2] via-[#EDE4DA] to-[#D8CDC1] shadow-[0_0_12px_rgba(250,247,242,0.12)] transition-transform duration-700 ease-out [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]"
+                            className={`h-full w-full origin-left rounded-full transition-transform duration-700 ease-out [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] ${connectorFill}`}
                             style={{
                               transform: segmentFilled ? "scaleX(1)" : "scaleX(0)",
                             }}
@@ -5038,37 +5184,67 @@ export default function QuoteFormClient({
               {/* ── 1. Service type ── */}
               {quoteFlowStep === 0 && (
               <div>
-                <label className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx2)] mb-2">
+                <label
+                  className={
+                    isV2
+                      ? "mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-fg-subtle"
+                      : "block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx2)] mb-2"
+                  }
+                >
                   Service Type
                 </label>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
                   {SERVICE_TYPES.map((card) => {
                     const sel = serviceType === card.value;
+                    const cardV2 = sel
+                      ? "border-accent bg-accent text-white shadow-md shadow-accent/25"
+                      : "border-line bg-surface shadow-sm hover:border-accent/50 hover:bg-surface-subtle"
+                    const cardV1 = sel
+                      ? "bg-gradient-to-br from-[#2C3E2D] to-[#5C1A33] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
+                      : "bg-[var(--card)] border-[1.5px] border-[var(--brd)] shadow-sm shadow-black/[0.04] hover:border-[var(--gold)]/50 hover:bg-[var(--bg)]"
+                    const iconV2 = sel
+                      ? "text-white"
+                      : "text-accent"
+                    const iconV1 = sel
+                      ? "text-white"
+                      : "text-[var(--gold)]"
                     return (
                       <button
                         key={card.value}
                         type="button"
                         onClick={() => setServiceType(card.value)}
-                        className={`relative text-left px-3 py-2 rounded-lg border transition-all duration-200 ${
-                          sel
-                            ? "bg-gradient-to-br from-[#2C3E2D] to-[#5C1A33] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
-                            : "bg-[var(--card)] border-[1.5px] border-[var(--brd)] shadow-sm shadow-black/[0.04] hover:border-[var(--gold)]/50 hover:bg-[var(--bg)]"
+                        className={`relative rounded-lg border px-3 py-2 text-left transition-all duration-200 ${
+                          isV2 ? cardV2 : cardV1
                         }`}
                       >
                         <div className="flex items-start gap-2">
                           <card.Icon
-                            className={`w-4 h-4 shrink-0 mt-0.5 ${sel ? "text-white" : "text-[var(--gold)]"}`}
+                            className={`mt-0.5 h-4 w-4 shrink-0 ${
+                              isV2 ? iconV2 : iconV1
+                            }`}
                             weight="regular"
                             aria-hidden
                           />
                           <div className="min-w-0 flex-1">
                             <div
-                              className={`text-[11px] leading-tight tracking-tight font-semibold ${sel ? "text-white" : "text-[var(--tx)]"}`}
+                              className={`text-[11px] font-semibold leading-tight tracking-tight ${
+                                sel
+                                  ? "text-white"
+                                  : isV2
+                                    ? "text-fg"
+                                    : "text-[var(--tx)]"
+                              }`}
                             >
                               {card.label}
                             </div>
                             <div
-                              className={`text-[9px] mt-0.5 leading-snug ${sel ? "text-white/90" : "text-[var(--tx2)]/90"}`}
+                              className={`mt-0.5 text-[9px] leading-snug ${
+                                sel
+                                  ? "text-white/90"
+                                  : isV2
+                                    ? "text-fg-muted"
+                                    : "text-[var(--tx2)]/90"
+                              }`}
                             >
                               {card.desc}
                             </div>
@@ -5634,7 +5810,7 @@ export default function QuoteFormClient({
                         inventoryScore={inventoryScoreWithBoxes}
                       />
                       {!fromBuildingMatch && fromAccess === "elevator" && (
-                        <div className="rounded-lg border border-[var(--brd)] bg-[#F9F0E8] px-3 py-3 space-y-2">
+                        <div className={buildingElevatorPanelClass}>
                           <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)]">
                             Origin building details
                           </p>
@@ -5645,7 +5821,7 @@ export default function QuoteFormClient({
                           <label className="flex items-start gap-2.5 text-[11px] text-[var(--tx)] cursor-pointer">
                             <input
                               type="checkbox"
-                              className="mt-0.5 accent-[#2C3E2D]"
+                              className={`mt-0.5 ${checkboxAccentClass}`}
                               checked={originBuildingFlags.includes(
                                 "commercial_tenants",
                               )}
@@ -5666,7 +5842,7 @@ export default function QuoteFormClient({
                           <label className="flex items-start gap-2.5 text-[11px] text-[var(--tx)] cursor-pointer">
                             <input
                               type="checkbox"
-                              className="mt-0.5 accent-[#2C3E2D]"
+                              className={`mt-0.5 ${checkboxAccentClass}`}
                               checked={originBuildingFlags.includes(
                                 "multi_elevator_transfer",
                               )}
@@ -5679,7 +5855,7 @@ export default function QuoteFormClient({
                           <label className="flex items-start gap-2.5 text-[11px] text-[var(--tx)] cursor-pointer">
                             <input
                               type="checkbox"
-                              className="mt-0.5 accent-[#2C3E2D]"
+                              className={`mt-0.5 ${checkboxAccentClass}`}
                               checked={originBuildingFlags.includes(
                                 "dock_restrictions",
                               )}
@@ -5702,7 +5878,7 @@ export default function QuoteFormClient({
                         </div>
                       )}
                       {!toBuildingMatch && toAccess === "elevator" && (
-                        <div className="rounded-lg border border-[var(--brd)] bg-[#F9F0E8] px-3 py-3 space-y-2">
+                        <div className={buildingElevatorPanelClass}>
                           <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)]">
                             Destination building details
                           </p>
@@ -5712,7 +5888,7 @@ export default function QuoteFormClient({
                           <label className="flex items-start gap-2.5 text-[11px] text-[var(--tx)] cursor-pointer">
                             <input
                               type="checkbox"
-                              className="mt-0.5 accent-[#2C3E2D]"
+                              className={`mt-0.5 ${checkboxAccentClass}`}
                               checked={destBuildingFlags.includes(
                                 "commercial_tenants",
                               )}
@@ -5731,7 +5907,7 @@ export default function QuoteFormClient({
                           <label className="flex items-start gap-2.5 text-[11px] text-[var(--tx)] cursor-pointer">
                             <input
                               type="checkbox"
-                              className="mt-0.5 accent-[#2C3E2D]"
+                              className={`mt-0.5 ${checkboxAccentClass}`}
                               checked={destBuildingFlags.includes(
                                 "multi_elevator_transfer",
                               )}
@@ -5744,7 +5920,7 @@ export default function QuoteFormClient({
                           <label className="flex items-start gap-2.5 text-[11px] text-[var(--tx)] cursor-pointer">
                             <input
                               type="checkbox"
-                              className="mt-0.5 accent-[#2C3E2D]"
+                              className={`mt-0.5 ${checkboxAccentClass}`}
                               checked={destBuildingFlags.includes("dock_restrictions")}
                               onChange={() => toggleDestFlag("dock_restrictions")}
                             />
@@ -6826,10 +7002,10 @@ export default function QuoteFormClient({
                         Enable multi-day planner
                       </label>
                     </div>
-                    <div className="mt-3 rounded-lg border border-[var(--brd)]/80 bg-[#F9EDE4]/90 px-3 py-2.5">
+                    <div className={multiDayCalloutClass}>
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <p className="text-[11px] font-semibold text-[#2B0416]">
+                          <p className={multiDayTitleClass}>
                             Multi-location or multi-day move
                           </p>
                           <p className="text-[10px] text-[var(--tx3)] mt-0.5 max-w-xl leading-snug">
@@ -8240,7 +8416,7 @@ export default function QuoteFormClient({
                               },
                             ])
                           }
-                          className="inline-flex items-center rounded-md border border-[#2C3E2D]/35 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-[var(--tx)] hover:bg-[#2C3E2D]/8"
+                          className={eventQuickAddBtnClass}
                         >
                           <Plus
                             className="w-3 h-3 mr-0.5 shrink-0"
@@ -8406,7 +8582,7 @@ export default function QuoteFormClient({
                                     ),
                                   )
                                 }
-                                className="accent-[#2C3E2D] w-3.5 h-3.5"
+                                className={`${checkboxAccentClass} w-3.5 h-3.5`}
                               />
                               <span className="text-[11px] text-[var(--tx2)]">
                                 Needs wrapping / white-glove handling
@@ -8429,7 +8605,7 @@ export default function QuoteFormClient({
                                     ),
                                   )
                                 }
-                                className="accent-[#2C3E2D] w-3.5 h-3.5"
+                                className={`${checkboxAccentClass} w-3.5 h-3.5`}
                               />
                               <span className="text-[11px] text-[var(--tx2)]">
                                 Extra protection (pads / vault)
@@ -9355,7 +9531,11 @@ export default function QuoteFormClient({
                   window.open(`/quote/${quoteResult.quote_id}`, "_blank")
                 }
                 disabled={!quoteResult}
-                className="min-h-11 py-2.5 px-4 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 touch-manipulation sm:shrink-0 w-full sm:w-auto"
+                className={
+                  isV2
+                    ? "flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-line px-4 py-2.5 text-[11px] font-semibold text-fg-muted transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto touch-manipulation sm:shrink-0"
+                    : "min-h-11 py-2.5 px-4 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 touch-manipulation sm:shrink-0 w-full sm:w-auto"
+                }
               >
                 <Eye className="w-3.5 h-3.5" /> Preview
               </button>
@@ -9371,7 +9551,11 @@ export default function QuoteFormClient({
           <button
             type="button"
             onClick={() => setPreviewOpen(true)}
-            className="hidden min-[480px]:flex fixed right-0 top-24 z-20 items-center gap-1.5 px-2 py-4 rounded-l-lg bg-[var(--card)] border border-r-0 border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)]/40 transition-colors shadow-lg"
+            className={
+              isV2
+                ? "fixed right-0 top-24 z-20 hidden min-[480px]:flex items-center gap-1.5 rounded-l-lg border border-r-0 border-line bg-surface px-2 py-4 text-fg-subtle shadow-lg transition-colors hover:border-accent/40 hover:text-accent"
+                : "hidden min-[480px]:flex fixed right-0 top-24 z-20 items-center gap-1.5 px-2 py-4 rounded-l-lg bg-[var(--card)] border border-r-0 border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)]/40 transition-colors shadow-lg"
+            }
             title="Show preview"
           >
             <PanelRightOpen className="w-4 h-4" />
@@ -9385,16 +9569,40 @@ export default function QuoteFormClient({
           className={`transition-all duration-300 shrink-0 ${previewOpen ? "w-full min-[480px]:w-[40%] min-[480px]:min-w-[240px]" : "hidden min-[480px]:block min-[480px]:w-0 min-[480px]:overflow-hidden min-[480px]:opacity-0 pointer-events-none"}`}
         >
           <div className="sticky top-6 space-y-4">
-            <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-              <div className="px-5 py-3 border-b border-[var(--brd)] flex items-center justify-between">
+            <div
+              className={
+                isV2
+                  ? "overflow-hidden rounded-xl border border-line bg-surface"
+                  : "bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden"
+              }
+            >
+              <div
+                className={
+                  isV2
+                    ? "flex items-center justify-between border-b border-line px-5 py-3"
+                    : "px-5 py-3 border-b border-[var(--brd)] flex items-center justify-between"
+                }
+              >
                 <div>
-                  <h2 className="admin-section-h2">
+                  <h2
+                    className={
+                      isV2
+                        ? "text-base font-semibold text-fg"
+                        : "admin-section-h2"
+                    }
+                  >
                     {quoteResult
                       ? `Quote ${quoteResult.quote_id}`
                       : "Live Quote Preview"}
                   </h2>
                   {!quoteResult && (
-                    <p className="text-[10px] text-[var(--tx2)] mt-0.5">
+                    <p
+                      className={
+                        isV2
+                          ? "body-xs text-fg-muted mt-0.5"
+                          : "text-[10px] text-[var(--tx2)] mt-0.5"
+                      }
+                    >
                       Updates as you fill in the form
                     </p>
                   )}
@@ -9402,7 +9610,11 @@ export default function QuoteFormClient({
                 <button
                   type="button"
                   onClick={() => setPreviewOpen(false)}
-                  className="hidden min-[480px]:flex p-1.5 rounded-lg text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--bg)] transition-colors"
+                  className={
+                    isV2
+                      ? "hidden min-[480px]:flex rounded-lg p-1.5 text-fg-subtle transition-colors hover:bg-surface-subtle hover:text-accent"
+                      : "hidden min-[480px]:flex p-1.5 rounded-lg text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--bg)] transition-colors"
+                  }
                   title="Collapse preview"
                 >
                   <PanelRightClose className="w-4 h-4" />
@@ -10808,6 +11020,7 @@ export default function QuoteFormClient({
         toast={toast}
       />
     </div>
+    </QuoteFormV2Context.Provider>
   );
 }
 
@@ -10823,8 +11036,8 @@ const PRICE_CARD = {
   legPanel: "rounded-lg border border-[var(--brd)]/60 bg-[var(--bg)]/40",
 } as const;
 
-/** Light cream Signature cards on admin wine: pair explicit dark ink so text is never light-on-cream. */
-const CREAM_TIER_INK = {
+/** Legacy admin (v1) cream / wine ink for quote preview cards. */
+const CREAM_TIER_INK_V1 = {
   accent: "text-[#241820] dark:text-[#F4F1E8]",
   muted: "text-[#4a4039] dark:text-[#B8B3A8]",
   body: "text-[#2A1F24] dark:text-[#F4F1E8]",
@@ -10834,15 +11047,156 @@ const CREAM_TIER_INK = {
   check: "text-[#5C1A33] dark:text-[#C9A84C]",
 } as const;
 
-/** Same ink for Event / Bin / Labour cream preview panels (replaces PRICE_CARD there only). */
-const CREAM_CARD_PREVIEW = {
-  muted: CREAM_TIER_INK.muted,
-  body: CREAM_TIER_INK.body,
-  list: CREAM_TIER_INK.list,
+const CREAM_CARD_PREVIEW_V1 = {
+  muted: CREAM_TIER_INK_V1.muted,
+  body: CREAM_TIER_INK_V1.body,
+  list: CREAM_TIER_INK_V1.list,
   borderTop: "border-t border-[rgba(36,24,32,0.15)] dark:border-[var(--brd)]/50",
   legPanel:
     "rounded-lg border border-[rgba(36,24,32,0.2)] dark:border-[var(--brd)]/60 bg-[rgba(255,251,247,0.45)] dark:bg-[var(--bg)]/40",
 } as const;
+
+type CreamTierInk = {
+  accent: string;
+  muted: string;
+  body: string;
+  list: string;
+  border: string;
+  deposit: string;
+  check: string;
+};
+
+function getCreamTierInk(v2: boolean): CreamTierInk {
+  if (v2) {
+    return {
+      accent: "text-fg",
+      muted: "text-fg-muted",
+      body: "text-fg",
+      list: "text-fg-muted",
+      border: "border-line",
+      deposit: "font-bold text-accent",
+      check: "text-accent",
+    };
+  }
+  return CREAM_TIER_INK_V1;
+}
+
+type CreamCardPreview = {
+  muted: string;
+  body: string;
+  list: string;
+  borderTop: string;
+  legPanel: string;
+};
+
+function getCreamCardPreview(v2: boolean): CreamCardPreview {
+  if (v2) {
+    return {
+      muted: "text-fg-muted",
+      body: "text-fg",
+      list: "text-fg-muted",
+      borderTop: "border-t border-line/80",
+      legPanel:
+        "rounded-lg border border-line bg-surface-subtle/90",
+    };
+  }
+  return CREAM_CARD_PREVIEW_V1;
+}
+
+/** Shell for “cream” price panels (local move tiers, event, bin, labour single card). */
+function getQuotePricePanelShell(v2: boolean): string {
+  if (v2) {
+    return "rounded-xl border-2 border-line bg-surface p-5";
+  }
+  return "rounded-xl border-2 border-[#5C1A33]/28 dark:border-[#2C3E2D]/40 bg-[#F9EDE4] dark:bg-[#2A2520] p-5";
+}
+
+function getAdminOverrideCalloutShell(v2: boolean): string {
+  if (v2) {
+    return "rounded-lg border border-line bg-surface-subtle px-3 py-2 text-[10px] space-y-1";
+  }
+  return "rounded-lg border border-[#5C1A33]/25 px-3 py-2 text-[10px] space-y-1";
+}
+
+type TierCardStyle = {
+  bg: string;
+  border: string;
+  accent: string;
+  muted: string;
+  body: string;
+  list: string;
+  deposit: string;
+  check: string;
+};
+
+function getResidentialTierCardStyles(v2: boolean): Record<string, TierCardStyle> {
+  if (!v2) {
+    return {
+      essential: {
+        bg: "bg-[var(--bg)]",
+        border: "border-[var(--brd)]",
+        accent: "text-[var(--tx)]",
+        muted: "text-[var(--tx3)]",
+        body: "text-[var(--tx)]",
+        list: "text-[var(--tx2)]",
+        deposit: "font-bold text-[var(--gold)]",
+        check: "text-[#EDE6DC]",
+      },
+      signature: {
+        bg: "bg-[#F9EDE4] dark:bg-[#2A2520]",
+        border: `border-2 ${CREAM_TIER_INK_V1.border} border-l-4 border-l-[#5C1A33]/45 dark:border-l-[var(--gold)]`,
+        accent: CREAM_TIER_INK_V1.accent,
+        muted: CREAM_TIER_INK_V1.muted,
+        body: CREAM_TIER_INK_V1.body,
+        list: CREAM_TIER_INK_V1.list,
+        deposit: CREAM_TIER_INK_V1.deposit,
+        check: CREAM_TIER_INK_V1.check,
+      },
+      estate: {
+        bg: "bg-[#1a1a2e] dark:bg-[#1a1a2e]",
+        border: "border-[#C9A84C]/60",
+        accent: "text-[#C9A84C]",
+        muted: "text-[#B8B3A8]",
+        body: "text-[#F4F1E8]",
+        list: "text-[#D4CFC4]",
+        deposit: "font-bold text-[#C9A84C]",
+        check: "text-[#C9A84C]",
+      },
+    };
+  }
+  return {
+    essential: {
+      bg: "bg-surface-subtle",
+      border: "border-line",
+      accent: "text-fg",
+      muted: "text-fg-muted",
+      body: "text-fg",
+      list: "text-fg-muted",
+      deposit: "font-bold text-accent",
+      check: "text-accent",
+    },
+    signature: {
+      bg: "bg-accent-subtle",
+      border: "border-2 border-line border-l-4 border-l-accent/45",
+      accent: "text-fg",
+      muted: "text-fg-muted",
+      body: "text-fg",
+      list: "text-fg-muted",
+      deposit: "font-bold text-accent",
+      check: "text-accent",
+    },
+    estate: {
+      bg: "bg-surface-sunken",
+      border: "border-2 border-line border-l-4 border-l-accent/35",
+      accent: "text-fg",
+      muted: "text-fg-muted",
+      body: "text-fg",
+      list: "text-fg-muted",
+      deposit: "font-bold text-accent",
+      check: "text-accent",
+    },
+  };
+}
 
 function TiersDisplay({
   tiers,
@@ -10854,51 +11208,12 @@ function TiersDisplay({
   /** Pre-tax amount included in Estate tier for multi-day loaded labour vs single-day baseline (from generate factors). */
   estateMultiDayUplift?: number;
 }) {
+  const isV2 = useQuoteFormIsV2();
   const tierOrder = ["essential", "signature", "estate"] as const;
-  const tierColors: Record<
-    string,
-    {
-      bg: string;
-      border: string;
-      accent: string;
-      muted: string;
-      body: string;
-      list: string;
-      deposit: string;
-      check: string;
-    }
-  > = {
-    essential: {
-      bg: "bg-[var(--bg)]",
-      border: "border-[var(--brd)]",
-      accent: "text-[var(--tx)]",
-      muted: "text-[var(--tx3)]",
-      body: "text-[var(--tx)]",
-      list: "text-[var(--tx2)]",
-      deposit: "font-bold text-[var(--gold)]",
-      check: "text-[#EDE6DC]",
-    },
-    signature: {
-      bg: "bg-[#F9EDE4] dark:bg-[#2A2520]",
-      border: `border-2 ${CREAM_TIER_INK.border} border-l-4 border-l-[#5C1A33]/45 dark:border-l-[var(--gold)]`,
-      accent: CREAM_TIER_INK.accent,
-      muted: CREAM_TIER_INK.muted,
-      body: CREAM_TIER_INK.body,
-      list: CREAM_TIER_INK.list,
-      deposit: CREAM_TIER_INK.deposit,
-      check: CREAM_TIER_INK.check,
-    },
-    estate: {
-      bg: "bg-[#1a1a2e] dark:bg-[#1a1a2e]",
-      border: "border-[#C9A84C]/60",
-      accent: "text-[#C9A84C]",
-      muted: "text-[#B8B3A8]",
-      body: "text-[#F4F1E8]",
-      list: "text-[#D4CFC4]",
-      deposit: "font-bold text-[#C9A84C]",
-      check: "text-[#C9A84C]",
-    },
-  };
+  const tierColors = useMemo(
+    () => getResidentialTierCardStyles(isV2),
+    [isV2],
+  );
   const tierLabels: Record<string, string> = {
     essential: "Essential",
     signature: "Signature",
@@ -10925,7 +11240,11 @@ function TiersDisplay({
                   {tierLabels[name]}
                 </span>
                 {isRecommended && (
-                  <span className="dt-badge text-[var(--gold)]">
+                  <span
+                    className={
+                      isV2 ? "dt-badge text-accent" : "dt-badge text-[var(--gold)]"
+                    }
+                  >
                     Recommended
                   </span>
                 )}
@@ -10999,42 +11318,37 @@ function SinglePriceDisplay({
   price: TierResult;
   label: string;
 }) {
+  const isV2 = useQuoteFormIsV2();
+  const ink = getCreamTierInk(isV2);
+  const shell = getQuotePricePanelShell(isV2);
   return (
-    <div
-      className={`rounded-xl border-2 ${CREAM_TIER_INK.border} bg-[#F9EDE4] dark:bg-[#2A2520] p-5 space-y-2`}
-    >
+    <div className={`${shell} space-y-2`}>
       <div className="flex items-center justify-between">
-        <span
-          className={`text-[13px] font-bold uppercase ${CREAM_TIER_INK.accent}`}
-        >
+        <span className={`text-[13px] font-bold uppercase ${ink.accent}`}>
           {label}
         </span>
-        <span
-          className={`text-3xl font-black tabular-nums ${CREAM_TIER_INK.accent}`}
-        >
+        <span className={`text-3xl font-black tabular-nums ${ink.accent}`}>
           {fmtPrice(t.price)}
         </span>
       </div>
       <div
-        className={`flex items-center justify-between text-[11px] ${CREAM_TIER_INK.muted}`}
+        className={`flex items-center justify-between text-[11px] ${ink.muted}`}
       >
         <span>
           HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}
         </span>
-        <span className={`font-bold ${CREAM_TIER_INK.body}`}>
-          Total: {fmtPrice(t.total)}
-        </span>
+        <span className={`font-bold ${ink.body}`}>Total: {fmtPrice(t.total)}</span>
       </div>
       <div
-        className={`flex items-center justify-between text-[11px] ${CREAM_TIER_INK.muted}`}
+        className={`flex items-center justify-between text-[11px] ${ink.muted}`}
       >
         <span>Deposit to book</span>
-        <span className={CREAM_TIER_INK.deposit}>{fmtPrice(t.deposit)}</span>
+        <span className={ink.deposit}>{fmtPrice(t.deposit)}</span>
       </div>
       {t.includes.length > 0 && (
         <details className="group">
           <summary
-            className={`text-[9px] font-bold uppercase cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden ${CREAM_TIER_INK.muted}`}
+            className={`text-[9px] font-bold uppercase cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden ${ink.muted}`}
           >
             <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
             What&apos;s included ▾
@@ -11043,10 +11357,10 @@ function SinglePriceDisplay({
             {t.includes.map((inc, i) => (
               <li
                 key={i}
-                className={`text-[10px] flex items-start gap-1.5 ${CREAM_TIER_INK.list}`}
+                className={`text-[10px] flex items-start gap-1.5 ${ink.list}`}
               >
                 <Check
-                  className={`w-3 h-3 shrink-0 mt-0.5 ${CREAM_TIER_INK.check}`}
+                  className={`w-3 h-3 shrink-0 mt-0.5 ${ink.check}`}
                   weight="bold"
                   aria-hidden
                 />
@@ -11122,29 +11436,35 @@ function EventPriceDisplay({
     ? (factors.event_legs as AdminEventLegFactor[])
     : [];
 
+  const isV2 = useQuoteFormIsV2();
+  const ink = getCreamTierInk(isV2);
+  const card = getCreamCardPreview(isV2);
+  const pricePanelShell = getQuotePricePanelShell(isV2);
+  const overrideCallout = getAdminOverrideCalloutShell(isV2);
+
   const totalsFooter = (
     <>
       <div
-        className={`pt-1.5 flex justify-between font-semibold ${CREAM_CARD_PREVIEW.borderTop}`}
+        className={`pt-1.5 flex justify-between font-semibold ${card.borderTop}`}
       >
-        <span className={CREAM_CARD_PREVIEW.muted}>Subtotal</span>
-        <span className={CREAM_CARD_PREVIEW.body}>{fmtPrice(t.price)}</span>
+        <span className={card.muted}>Subtotal</span>
+        <span className={card.body}>{fmtPrice(t.price)}</span>
       </div>
       <div
-        className={`flex items-center justify-between text-[11px] ${CREAM_CARD_PREVIEW.muted}`}
+        className={`flex items-center justify-between text-[11px] ${card.muted}`}
       >
         <span>
           HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}
         </span>
-        <span className={`font-bold ${CREAM_CARD_PREVIEW.body}`}>
+        <span className={`font-bold ${card.body}`}>
           Total: {fmtPrice(t.total)}
         </span>
       </div>
       <div
-        className={`flex items-center justify-between text-[11px] ${CREAM_CARD_PREVIEW.muted}`}
+        className={`flex items-center justify-between text-[11px] ${card.muted}`}
       >
         <span>Deposit (25% pre-tax)</span>
-        <span className={CREAM_TIER_INK.deposit}>{fmtPrice(t.deposit)}</span>
+        <span className={ink.deposit}>{fmtPrice(t.deposit)}</span>
       </div>
     </>
   );
@@ -11153,7 +11473,7 @@ function EventPriceDisplay({
     t.includes.length > 0 ? (
       <details className="group pt-1">
         <summary
-          className={`text-[9px] font-bold uppercase cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden ${CREAM_CARD_PREVIEW.muted}`}
+          className={`text-[9px] font-bold uppercase cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden ${card.muted}`}
         >
           <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
           What&apos;s included ▾
@@ -11162,10 +11482,10 @@ function EventPriceDisplay({
           {t.includes.map((inc, i) => (
             <li
               key={i}
-              className={`text-[10px] flex items-start gap-1.5 ${CREAM_CARD_PREVIEW.list}`}
+              className={`text-[10px] flex items-start gap-1.5 ${card.list}`}
             >
               <Check
-                className={`w-3 h-3 shrink-0 mt-0.5 ${CREAM_TIER_INK.check}`}
+                className={`w-3 h-3 shrink-0 mt-0.5 ${ink.check}`}
                 weight="bold"
                 aria-hidden
               />
@@ -11178,52 +11498,52 @@ function EventPriceDisplay({
 
   if (isMulti && eventLegs.length > 0) {
     return (
-      <div className="rounded-xl border-2 border-[#5C1A33]/28 dark:border-[#2C3E2D]/40 bg-[#F9EDE4] dark:bg-[#2A2520] p-5 space-y-3">
+      <div className={`${pricePanelShell} space-y-3`}>
         <div className="flex items-center justify-between gap-2">
           <div>
-            <span className={`text-[13px] font-bold ${CREAM_TIER_INK.accent}`}>
+            <span className={`text-[13px] font-bold ${ink.accent}`}>
               Event quote
             </span>
             <p
-              className={`text-[9px] mt-0.5 font-medium uppercase tracking-wide ${CREAM_CARD_PREVIEW.muted}`}
+              className={`text-[9px] mt-0.5 font-medium uppercase tracking-wide ${card.muted}`}
             >
               Multi-event bundle, {eventLegs.length} round trip
               {eventLegs.length === 1 ? "" : "s"}
             </p>
           </div>
           <span
-            className={`text-2xl sm:text-3xl font-black tabular-nums shrink-0 ${CREAM_TIER_INK.accent}`}
+            className={`text-2xl sm:text-3xl font-black tabular-nums shrink-0 ${ink.accent}`}
           >
             {fmtPrice(t.price)}
           </span>
         </div>
         <div className="space-y-3 text-[11px]">
           {eventLegs.map((leg, idx) => (
-            <div key={idx} className={`p-3 space-y-2 ${CREAM_CARD_PREVIEW.legPanel}`}>
+            <div key={idx} className={`p-3 space-y-2 ${card.legPanel}`}>
               <p
-                className={`text-[9px] font-bold tracking-wider uppercase ${CREAM_TIER_INK.accent}`}
+                className={`text-[9px] font-bold tracking-wider uppercase ${ink.accent}`}
               >
                 {leg.label?.trim() || `Event ${idx + 1}`}
               </p>
               {(leg.from_address || leg.to_address) && (
                 <p
-                  className={`text-[9px] leading-snug opacity-90 ${CREAM_CARD_PREVIEW.muted}`}
+                  className={`text-[9px] leading-snug opacity-90 ${card.muted}`}
                 >
                   {leg.from_address || "Origin"} → {leg.to_address || "Venue"}
                 </p>
               )}
-              <p className={`text-[9px] opacity-80 ${CREAM_CARD_PREVIEW.muted}`}>
+              <p className={`text-[9px] opacity-80 ${card.muted}`}>
                 Deliver {fmtShortEventAdmin(leg.delivery_date)} → Return{" "}
                 {fmtShortEventAdmin(leg.return_date)}
                 {leg.same_day ? " (same day)" : ""}
                 {leg.is_on_site ? (
-                  <span className={`ml-1 font-semibold ${CREAM_CARD_PREVIEW.body}`}>
+                  <span className={`ml-1 font-semibold ${card.body}`}>
                     · On-site Event
                   </span>
                 ) : null}
               </p>
               <div className="flex justify-between gap-2">
-                <span className={CREAM_CARD_PREVIEW.muted}>
+                <span className={card.muted}>
                   Delivery ({fmtShortEventAdmin(leg.delivery_date)})
                   {leg.event_crew && leg.event_hours ? (
                     <span className="ml-1 opacity-75">
@@ -11232,13 +11552,13 @@ function EventPriceDisplay({
                   ) : null}
                 </span>
                 <span
-                  className={`font-medium tabular-nums shrink-0 ${CREAM_CARD_PREVIEW.body}`}
+                  className={`font-medium tabular-nums shrink-0 ${card.body}`}
                 >
                   {fmtPrice(leg.delivery_charge ?? 0)}
                 </span>
               </div>
               <div className="flex justify-between gap-2">
-                <span className={CREAM_CARD_PREVIEW.muted}>
+                <span className={card.muted}>
                   Return ({fmtShortEventAdmin(leg.return_date)})
                   {leg.return_discount !== undefined ? (
                     <span className="ml-1 opacity-75">
@@ -11251,7 +11571,7 @@ function EventPriceDisplay({
                   ) : null}
                 </span>
                 <span
-                  className={`font-medium tabular-nums shrink-0 ${CREAM_CARD_PREVIEW.body}`}
+                  className={`font-medium tabular-nums shrink-0 ${card.body}`}
                 >
                   {fmtPrice(leg.return_charge ?? 0)}
                 </span>
@@ -11260,8 +11580,8 @@ function EventPriceDisplay({
           ))}
           {(setupFee ?? 0) > 0 && (
             <div className="flex justify-between">
-              <span className={CREAM_CARD_PREVIEW.muted}>Setup service (program)</span>
-              <span className={`font-medium ${CREAM_CARD_PREVIEW.body}`}>
+              <span className={card.muted}>Setup service (program)</span>
+              <span className={`font-medium ${card.body}`}>
                 {fmtPrice(setupFee!)}
               </span>
             </div>
@@ -11274,19 +11594,19 @@ function EventPriceDisplay({
   }
 
   return (
-    <div className="rounded-xl border-2 border-[#5C1A33]/28 dark:border-[#2C3E2D]/40 bg-[#F9EDE4] dark:bg-[#2A2520] p-5 space-y-3">
+    <div className={`${pricePanelShell} space-y-3`}>
       <div className="flex items-center justify-between">
-        <span className={`text-[13px] font-bold ${CREAM_TIER_INK.accent}`}>
+        <span className={`text-[13px] font-bold ${ink.accent}`}>
           Event Quote
         </span>
-        <span className={`text-3xl font-black tabular-nums ${CREAM_TIER_INK.accent}`}>
+        <span className={`text-3xl font-black tabular-nums ${ink.accent}`}>
           {fmtPrice(t.price)}
         </span>
       </div>
       {/* Breakdown, single round trip */}
       <div className="space-y-1.5 text-[11px]">
         {typeof sysEstHours === "number" && sysEstHours > 0 && (
-          <p className={`text-[9px] leading-snug ${CREAM_CARD_PREVIEW.muted}`}>
+          <p className={`text-[9px] leading-snug ${card.muted}`}>
             System hours estimate: {sysEstHours}h
             {typeof eventHours === "number" ? (
               <>
@@ -11301,11 +11621,11 @@ function EventPriceDisplay({
         )}
         {typeof labourLine === "number" && labourLine > 0 && (
           <div className="flex justify-between gap-2">
-            <span className={CREAM_CARD_PREVIEW.muted}>
+            <span className={card.muted}>
               Delivery labour (crew × hours × rate)
             </span>
             <span
-              className={`font-medium tabular-nums shrink-0 ${CREAM_CARD_PREVIEW.body}`}
+              className={`font-medium tabular-nums shrink-0 ${card.body}`}
             >
               {fmtPrice(labourLine)}
             </span>
@@ -11313,9 +11633,9 @@ function EventPriceDisplay({
         )}
         {typeof distSur === "number" && distSur > 0 && (
           <div className="flex justify-between gap-2">
-            <span className={CREAM_CARD_PREVIEW.muted}>Distance (over free km)</span>
+            <span className={card.muted}>Distance (over free km)</span>
             <span
-              className={`font-medium tabular-nums shrink-0 ${CREAM_CARD_PREVIEW.body}`}
+              className={`font-medium tabular-nums shrink-0 ${card.body}`}
             >
               {fmtPrice(distSur)}
             </span>
@@ -11323,11 +11643,11 @@ function EventPriceDisplay({
         )}
         {typeof wrapSur === "number" && wrapSur > 0 && (
           <div className="flex justify-between gap-2">
-            <span className={CREAM_CARD_PREVIEW.muted}>
+            <span className={card.muted}>
               Wrapping / handling surcharge
             </span>
             <span
-              className={`font-medium tabular-nums shrink-0 ${CREAM_CARD_PREVIEW.body}`}
+              className={`font-medium tabular-nums shrink-0 ${card.body}`}
             >
               {fmtPrice(wrapSur)}
             </span>
@@ -11335,7 +11655,7 @@ function EventPriceDisplay({
         )}
         {deliveryCharge !== undefined && (
           <div className="flex justify-between">
-            <span className={CREAM_CARD_PREVIEW.muted}>
+            <span className={card.muted}>
               Delivery day total ({deliveryDate ?? "TBD"})
               {eventCrew && eventHours ? (
                 <span className="ml-1 opacity-75">
@@ -11343,22 +11663,22 @@ function EventPriceDisplay({
                 </span>
               ) : null}
             </span>
-            <span className={`font-medium ${CREAM_CARD_PREVIEW.body}`}>
+            <span className={`font-medium ${card.body}`}>
               {fmtPrice(deliveryCharge)}
             </span>
           </div>
         )}
         {(setupFee ?? 0) > 0 && (
           <div className="flex justify-between">
-            <span className={CREAM_CARD_PREVIEW.muted}>Setup service</span>
-            <span className={`font-medium ${CREAM_CARD_PREVIEW.body}`}>
+            <span className={card.muted}>Setup service</span>
+            <span className={`font-medium ${card.body}`}>
               {fmtPrice(setupFee!)}
             </span>
           </div>
         )}
         {returnCharge !== undefined && (
           <div className="flex justify-between">
-            <span className={CREAM_CARD_PREVIEW.muted}>
+            <span className={card.muted}>
               Return ({returnDate ?? "TBD"})
               {returnDiscount !== undefined ? (
                 <span className="ml-1 opacity-75">
@@ -11366,17 +11686,15 @@ function EventPriceDisplay({
                 </span>
               ) : null}
             </span>
-            <span className={`font-medium ${CREAM_CARD_PREVIEW.body}`}>
+            <span className={`font-medium ${card.body}`}>
               {fmtPrice(returnCharge)}
             </span>
           </div>
         )}
       </div>
       {overrideApplied && typeof systemPreTax === "number" ? (
-        <div
-          className={`rounded-lg border border-[#5C1A33]/25 px-3 py-2 text-[10px] space-y-1 ${CREAM_CARD_PREVIEW.muted}`}
-        >
-          <p className={`font-semibold ${CREAM_TIER_INK.accent}`}>
+        <div className={`${overrideCallout} ${card.muted}`}>
+          <p className={`font-semibold ${ink.accent}`}>
             Admin pre-tax override applied
           </p>
           <p>System total before override: {fmtPrice(systemPreTax)}</p>
@@ -11431,10 +11749,24 @@ function B2BPriceDisplay({
   const fullOverrideApplied =
     factors.b2b_full_pre_tax_override_applied === true;
 
+  const isV2 = useQuoteFormIsV2();
+
   return (
-    <div className="rounded-xl border-2 border-[var(--brd)] bg-[var(--card)]/90 p-5 space-y-3">
+    <div
+      className={
+        isV2
+          ? "rounded-xl border-2 border-line bg-surface p-5 space-y-3"
+          : "rounded-xl border-2 border-[var(--brd)] bg-[var(--card)]/90 p-5 space-y-3"
+      }
+    >
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold text-[var(--gold)]">
+        <span
+          className={
+            isV2
+              ? "text-[13px] font-bold text-accent"
+              : "text-[13px] font-bold text-[var(--gold)]"
+          }
+        >
           B2B One-Off
         </span>
         <span className="text-3xl font-black tabular-nums text-[var(--tx)]">
@@ -11543,7 +11875,13 @@ function B2BPriceDisplay({
             </span>
           </div>
           {partnerDiscountPct != null && partnerDiscountPct > 0 ? (
-            <p className="text-[#EDE6DC] font-medium">
+            <p
+              className={
+                isV2
+                  ? "text-fg-muted font-medium"
+                  : "text-[#EDE6DC] font-medium"
+              }
+            >
               Partner discount vs list: {partnerDiscountPct}%
             </p>
           ) : null}
@@ -11563,7 +11901,11 @@ function B2BPriceDisplay({
         className={`flex items-center justify-between text-[11px] ${PRICE_CARD.muted}`}
       >
         <span>Deposit to book</span>
-        <span className="font-bold text-[var(--gold)]">
+        <span
+          className={
+            isV2 ? "font-bold text-accent" : "font-bold text-[var(--gold)]"
+          }
+        >
           {fmtPrice(t.deposit)}
         </span>
       </div>
@@ -11603,13 +11945,17 @@ function BinRentalPriceDisplay({
           day: "numeric",
         })
       : "—";
+  const isV2 = useQuoteFormIsV2();
+  const ink = getCreamTierInk(isV2);
+  const card = getCreamCardPreview(isV2);
+  const pricePanelShell = getQuotePricePanelShell(isV2);
   return (
-    <div className="rounded-xl border-2 border-[#5C1A33]/28 dark:border-[#2C3E2D]/40 bg-[#F9EDE4] dark:bg-[#2A2520] p-5 space-y-3">
+    <div className={`${pricePanelShell} space-y-3`}>
       <div className="flex items-center justify-between">
-        <span className={`text-[13px] font-bold ${CREAM_TIER_INK.accent}`}>
+        <span className={`text-[13px] font-bold ${ink.accent}`}>
           Bin Rental
         </span>
-        <span className={`text-3xl font-black tabular-nums ${CREAM_TIER_INK.accent}`}>
+        <span className={`text-3xl font-black tabular-nums ${ink.accent}`}>
           {fmtPrice(t.total)}
         </span>
       </div>
@@ -11617,13 +11963,13 @@ function BinRentalPriceDisplay({
         {lines.map((l, i) => (
           <div key={i}>
             <div className="flex justify-between gap-2">
-              <span className={CREAM_CARD_PREVIEW.muted}>{l.label}</span>
-              <span className={`font-medium shrink-0 ${CREAM_CARD_PREVIEW.body}`}>
+              <span className={card.muted}>{l.label}</span>
+              <span className={`font-medium shrink-0 ${card.body}`}>
                 {fmtPrice(Number(l.amount) || 0)}
               </span>
             </div>
             {l.key === "bundle" && bundleSpec ? (
-              <p className={`${CREAM_CARD_PREVIEW.muted} pl-0 pt-0.5 text-[10px]`}>
+              <p className={`${card.muted} pl-0 pt-0.5 text-[10px]`}>
                 {bundleSpec.bins} bins + {bundleSpec.wardrobeBoxes} wardrobe
                 boxes
               </p>
@@ -11631,34 +11977,34 @@ function BinRentalPriceDisplay({
           </div>
         ))}
         <div
-          className={`flex justify-between pt-1 font-semibold ${CREAM_CARD_PREVIEW.borderTop}`}
+          className={`flex justify-between pt-1 font-semibold ${card.borderTop}`}
         >
-          <span className={CREAM_CARD_PREVIEW.muted}>Subtotal</span>
-          <span className={CREAM_CARD_PREVIEW.body}>{fmtPrice(t.price)}</span>
+          <span className={card.muted}>Subtotal</span>
+          <span className={card.body}>{fmtPrice(t.price)}</span>
         </div>
       </div>
-      <div className={`text-[11px] space-y-0.5 ${CREAM_CARD_PREVIEW.muted}`}>
+      <div className={`text-[11px] space-y-0.5 ${card.muted}`}>
         <div className="flex justify-between">
           <span>HST ({(TAX_RATE * 100).toFixed(0)}%)</span>
           <span>{fmtPrice(t.tax)}</span>
         </div>
-        <div className={`flex justify-between font-bold ${CREAM_CARD_PREVIEW.body}`}>
+        <div className={`flex justify-between font-bold ${card.body}`}>
           <span>Total</span>
           <span>{fmtPrice(t.total)}</span>
         </div>
       </div>
-      <p className={`text-[10px] ${CREAM_CARD_PREVIEW.muted}`}>
+      <p className={`text-[10px] ${card.muted}`}>
         Payment: Full at booking
       </p>
       <div className="text-[10px] space-y-0.5 pt-2 border-t border-[var(--brd)]/40">
         <p>
-          <span className={CREAM_CARD_PREVIEW.muted}>Delivery:</span> {fmtShort(drop)}
+          <span className={card.muted}>Delivery:</span> {fmtShort(drop)}
         </p>
         <p>
-          <span className={CREAM_CARD_PREVIEW.muted}>Move:</span> {fmtShort(move)}
+          <span className={card.muted}>Move:</span> {fmtShort(move)}
         </p>
         <p>
-          <span className={CREAM_CARD_PREVIEW.muted}>Pickup:</span> {fmtShort(pick)}
+          <span className={card.muted}>Pickup:</span> {fmtShort(pick)}
         </p>
         {cycle != null && (
           <p className="text-[var(--tx3)]">Rental cycle: {cycle} days</p>
@@ -11695,90 +12041,94 @@ function LabourOnlyPriceDisplay({
       ? factors.storage_weekly_rate
       : null;
 
+  const isV2 = useQuoteFormIsV2();
+  const ink = getCreamTierInk(isV2);
+  const card = getCreamCardPreview(isV2);
+  const pricePanelShell = getQuotePricePanelShell(isV2);
   return (
-    <div className="rounded-xl border-2 border-[#5C1A33]/28 dark:border-[#2C3E2D]/40 bg-[#F9EDE4] dark:bg-[#2A2520] p-5 space-y-3">
+    <div className={`${pricePanelShell} space-y-3`}>
       <div className="flex items-center justify-between">
-        <span className={`text-[13px] font-bold ${CREAM_TIER_INK.accent}`}>
+        <span className={`text-[13px] font-bold ${ink.accent}`}>
           Labour Only
         </span>
-        <span className={`text-3xl font-black tabular-nums ${CREAM_TIER_INK.accent}`}>
+        <span className={`text-3xl font-black tabular-nums ${ink.accent}`}>
           {fmtPrice(t.price)}
         </span>
       </div>
       <div className="space-y-1.5 text-[11px]">
         {crewSize && hours && labourRate && (
           <div className="flex justify-between">
-            <span className={CREAM_CARD_PREVIEW.muted}>
+            <span className={card.muted}>
               {crewSize}-person crew × {hours}hr × ${labourRate}/hr
             </span>
-            <span className={`font-medium ${CREAM_CARD_PREVIEW.body}`}>
+            <span className={`font-medium ${card.body}`}>
               {fmtPrice(crewSize * hours * labourRate)}
             </span>
           </div>
         )}
         {truckFee > 0 && (
           <div className="flex justify-between">
-            <span className={CREAM_CARD_PREVIEW.muted}>Truck</span>
-            <span className={`font-medium ${CREAM_CARD_PREVIEW.body}`}>
+            <span className={card.muted}>Truck</span>
+            <span className={`font-medium ${card.body}`}>
               {fmtPrice(truckFee)}
             </span>
           </div>
         )}
         {accessSurcharge > 0 && (
           <div className="flex justify-between">
-            <span className={CREAM_CARD_PREVIEW.muted}>Access surcharge</span>
-            <span className={`font-medium ${CREAM_CARD_PREVIEW.body}`}>
+            <span className={card.muted}>Access surcharge</span>
+            <span className={`font-medium ${card.body}`}>
               {fmtPrice(accessSurcharge)}
             </span>
           </div>
         )}
         {labourStorageFee > 0 && (
           <div className="flex justify-between">
-            <span className={CREAM_CARD_PREVIEW.muted}>
+            <span className={card.muted}>
               Storage
               {storageWeeks != null && storageWeeklyRate != null
                 ? ` (${storageWeeks} wk × ${fmtPrice(storageWeeklyRate)}/wk)`
                 : null}
             </span>
-            <span className={`font-medium ${CREAM_CARD_PREVIEW.body}`}>
+            <span className={`font-medium ${card.body}`}>
               {fmtPrice(labourStorageFee)}
             </span>
           </div>
         )}
         {visits >= 2 && visit2Price !== undefined && (
           <div className="flex justify-between">
-            <span className={CREAM_CARD_PREVIEW.muted}>
+            <span className={card.muted}>
               Visit 2 ({visit2Date ?? "TBD"}), return discount
             </span>
-            <span className={`font-medium ${CREAM_CARD_PREVIEW.body}`}>
+            <span className={`font-medium ${card.body}`}>
               {fmtPrice(visit2Price)}
             </span>
           </div>
         )}
         {visits >= 2 && visit1Price !== undefined && (
           <div
-            className={`pt-1 flex justify-between font-semibold ${CREAM_CARD_PREVIEW.borderTop}`}
+            className={`pt-1 flex justify-between font-semibold ${card.borderTop}`}
           >
-            <span className={CREAM_CARD_PREVIEW.muted}>Subtotal</span>
-            <span className={CREAM_CARD_PREVIEW.body}>{fmtPrice(t.price)}</span>
+            <span className={card.muted}>Subtotal</span>
+            <span className={card.body}>{fmtPrice(t.price)}</span>
           </div>
         )}
       </div>
       <div
-        className={`flex items-center justify-between text-[11px] ${CREAM_CARD_PREVIEW.muted}`}
+        className={`flex items-center justify-between text-[11px] ${card.muted}`}
       >
         <span>
           HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}
         </span>
-        <span className={`font-bold ${CREAM_CARD_PREVIEW.body}`}>
+        <span className={`font-bold ${card.body}`}>
           Total: {fmtPrice(t.total)}
         </span>
       </div>
       <div
-        className={`flex items-center justify-between text-[11px] ${CREAM_CARD_PREVIEW.muted}`}
+        className={`flex items-center justify-between text-[11px] ${card.muted}`}
       >
         <span>Deposit to book</span>
-        <span className={CREAM_TIER_INK.deposit}>{fmtPrice(t.deposit)}</span>
+        <span className={ink.deposit}>{fmtPrice(t.deposit)}</span>
       </div>
     </div>
   );

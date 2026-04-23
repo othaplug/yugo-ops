@@ -37,8 +37,8 @@ export function getDraftCreatePath(type: DraftFormType): string {
     delivery: "/admin/deliveries/new",
     delivery_b2b: "/admin/deliveries/new?choice=b2b_oneoff",
     delivery_dayrate: "/admin/deliveries/new?choice=day_rate",
-    move: "/admin/moves/new",
-    quote: "/admin/quotes/new",
+    move: "/admin-v2/moves/new",
+    quote: "/admin-v2/quotes/new",
     project: "/admin/projects/new",
   };
   return paths[type] ?? "/admin";

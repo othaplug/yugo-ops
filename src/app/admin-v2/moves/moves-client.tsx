@@ -1,12 +1,13 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { toast } from "sonner"
-import { PageHeader } from "@/components/admin-v2/composites/PageHeader"
-import { MetricStrip } from "@/components/admin-v2/composites/MetricCard"
-import { Button } from "@/components/admin-v2/primitives/Button"
-import { Icon } from "@/components/admin-v2/primitives/Icon"
-import { AvatarStack } from "@/components/admin-v2/primitives/AvatarStack"
+import * as React from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/admin-v2/composites/PageHeader";
+import { MetricStrip } from "@/components/admin-v2/composites/MetricCard";
+import { Button } from "@/components/admin-v2/primitives/Button";
+import { Icon } from "@/components/admin-v2/primitives/Icon";
+import { AvatarStack } from "@/components/admin-v2/primitives/AvatarStack";
 import {
   ChipCell,
   DataTable,
@@ -15,55 +16,60 @@ import {
   TextCell,
   type BulkAction,
   type ColumnConfig,
-} from "@/components/admin-v2/datatable"
-import { variantForStatus } from "@/components/admin-v2/primitives/Chip"
-import { MoveDrawer } from "@/components/admin-v2/modules/move-drawer"
-import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
+} from "@/components/admin-v2/datatable";
+import { variantForStatus } from "@/components/admin-v2/primitives/Chip";
+import { MoveDrawer } from "@/components/admin-v2/modules/move-drawer";
+import { useDrawer } from "@/components/admin-v2/layout/useDrawer";
 import {
   MOVE_STATUS_LABEL,
   SERVICE_TYPE_LABEL,
   TIER_LABEL,
-} from "@/lib/admin-v2/labels"
-import { formatCurrencyCompact, formatPercent } from "@/lib/admin-v2/format"
-import type { Move } from "@/lib/admin-v2/mock/types"
+} from "@/lib/admin-v2/labels";
+import { formatCurrencyCompact, formatPercent } from "@/lib/admin-v2/format";
+import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav";
+import type { Move } from "@/lib/admin-v2/mock/types";
 
-const DAY_MS = 24 * 60 * 60 * 1000
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type MovesClientProps = {
-  initialMoves: Move[]
-}
+  initialMoves: Move[];
+};
 
 export const MovesClient = ({ initialMoves }: MovesClientProps) => {
-  const [moves, setMoves] = React.useState<Move[]>(() => initialMoves)
+  const [moves, setMoves] = React.useState<Move[]>(() => initialMoves);
   React.useEffect(() => {
-    setMoves(initialMoves)
-  }, [initialMoves])
-  const drawer = useDrawer("move")
+    setMoves(initialMoves);
+  }, [initialMoves]);
+  const drawer = useDrawer("move");
   const activeMove = React.useMemo(
     () => moves.find((m) => m.id === drawer.id) ?? null,
     [drawer.id, moves],
-  )
+  );
 
   const metrics = React.useMemo(() => {
-    const now = Date.now()
+    const now = Date.now();
     const today = moves.filter((m) => {
-      const diff = new Date(m.scheduledAt).getTime() - now
-      return Math.abs(diff) < DAY_MS
-    }).length
+      const diff = new Date(m.scheduledAt).getTime() - now;
+      return Math.abs(diff) < DAY_MS;
+    }).length;
     const week = moves.filter((m) => {
-      const diff = new Date(m.scheduledAt).getTime() - now
-      return diff > 0 && diff < 7 * DAY_MS
-    }).length
-    const completed = moves.filter((m) => m.status === "completed")
+      const diff = new Date(m.scheduledAt).getTime() - now;
+      return diff > 0 && diff < 7 * DAY_MS;
+    }).length;
+    const completed = moves.filter((m) => m.status === "completed");
     const onTimePct = completed.length
       ? (completed.filter((m) => m.onTime).length / completed.length) * 100
-      : 100
-    const atRisk = moves.filter((m) => m.status === "pre-move" && !m.onTime).length
+      : 100;
+    const atRisk = moves.filter(
+      (m) => m.status === "pre-move" && !m.onTime,
+    ).length;
     const revenueBooked = moves
-      .filter((m) => ["scheduled", "pre-move", "in-transit", "completed"].includes(m.status))
-      .reduce((sum, m) => sum + m.total, 0)
-    return { today, week, onTimePct, atRisk, revenueBooked }
-  }, [moves])
+      .filter((m) =>
+        ["scheduled", "pre-move", "in-transit", "completed"].includes(m.status),
+      )
+      .reduce((sum, m) => sum + m.total, 0);
+    return { today, week, onTimePct, atRisk, revenueBooked };
+  }, [moves]);
 
   const columns = React.useMemo<ColumnConfig<Move>[]>(
     () => [
@@ -95,8 +101,8 @@ export const MovesClient = ({ initialMoves }: MovesClientProps) => {
               ? "brand"
               : row.tier === "signature"
                 ? "info"
-                : "neutral"
-          return <ChipCell label={TIER_LABEL[row.tier]} variant={variant} />
+                : "neutral";
+          return <ChipCell label={TIER_LABEL[row.tier]} variant={variant} />;
         },
       },
       {
@@ -109,7 +115,10 @@ export const MovesClient = ({ initialMoves }: MovesClientProps) => {
         groupable: true,
         value: (row) => row.serviceType,
         render: (row) => (
-          <ChipCell label={SERVICE_TYPE_LABEL[row.serviceType]} variant="neutral" />
+          <ChipCell
+            label={SERVICE_TYPE_LABEL[row.serviceType]}
+            variant="neutral"
+          />
         ),
       },
       {
@@ -169,7 +178,7 @@ export const MovesClient = ({ initialMoves }: MovesClientProps) => {
       },
     ],
     [],
-  )
+  );
 
   const bulkActions = React.useMemo<BulkAction<Move>[]>(
     () => [
@@ -177,21 +186,21 @@ export const MovesClient = ({ initialMoves }: MovesClientProps) => {
         id: "dispatch",
         label: "Dispatch",
         handler: (rows) => {
-          toast.success(`Dispatched ${rows.length} moves`)
+          toast.success(`Dispatched ${rows.length} moves`);
         },
       },
       {
         id: "reassign",
         label: "Reassign crew",
         handler: (rows) => {
-          toast.info(`Crew picker for ${rows.length} moves`)
+          toast.info(`Crew picker for ${rows.length} moves`);
         },
       },
       {
         id: "export",
         label: "Download as .CSV",
         handler: (rows) => {
-          toast.info(`Exported ${rows.length} moves`)
+          toast.info(`Exported ${rows.length} moves`);
         },
       },
       {
@@ -199,29 +208,29 @@ export const MovesClient = ({ initialMoves }: MovesClientProps) => {
         label: "Cancel moves",
         destructive: true,
         handler: (rows) => {
-          const ids = new Set(rows.map((r) => r.id))
+          const ids = new Set(rows.map((r) => r.id));
           setMoves((prev) =>
-            prev.map((m) => (ids.has(m.id) ? { ...m, status: "cancelled" } : m)),
-          )
-          toast.error(`Cancelled ${rows.length} moves`)
+            prev.map((m) =>
+              ids.has(m.id) ? { ...m, status: "cancelled" } : m,
+            ),
+          );
+          toast.error(`Cancelled ${rows.length} moves`);
         },
       },
     ],
     [],
-  )
+  );
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Moves"
         actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            leadingIcon={<Icon name="plus" size="sm" weight="bold" />}
-            onClick={() => toast.message("New move wizard opens here")}
-          >
-            New move
+          <Button variant="secondary" size="sm" asChild>
+            <Link href={`${ADMIN_V2_BASE}/moves/new`}>
+              <Icon name="plus" size="sm" weight="bold" aria-hidden />
+              New move
+            </Link>
           </Button>
         }
       />
@@ -263,13 +272,17 @@ export const MovesClient = ({ initialMoves }: MovesClientProps) => {
           {
             id: "at-risk",
             label: "At risk",
-            filters: [{ columnId: "status", operator: "is", value: "pre-move" }],
+            filters: [
+              { columnId: "status", operator: "is", value: "pre-move" },
+            ],
             sort: [{ columnId: "scheduledAt", direction: "asc" }],
           },
           {
             id: "completed",
             label: "Completed",
-            filters: [{ columnId: "status", operator: "is", value: "completed" }],
+            filters: [
+              { columnId: "status", operator: "is", value: "completed" },
+            ],
             sort: [{ columnId: "scheduledAt", direction: "desc" }],
           },
         ]}
@@ -283,8 +296,8 @@ export const MovesClient = ({ initialMoves }: MovesClientProps) => {
         onOpenChange={drawer.setOpen}
       />
     </div>
-  )
-}
+  );
+};
 
 const BOARD_ORDER: Move["status"][] = [
   "scheduled",
@@ -292,29 +305,29 @@ const BOARD_ORDER: Move["status"][] = [
   "in-transit",
   "completed",
   "cancelled",
-]
+];
 
 const MovesBoard = ({
   rows,
   onOpen,
 }: {
-  rows: Move[]
-  onOpen: (id: string) => void
+  rows: Move[];
+  onOpen: (id: string) => void;
 }) => {
   const byStatus = React.useMemo(() => {
-    const map = new Map<Move["status"], Move[]>()
-    for (const status of BOARD_ORDER) map.set(status, [])
+    const map = new Map<Move["status"], Move[]>();
+    for (const status of BOARD_ORDER) map.set(status, []);
     for (const row of rows) {
-      const bucket = map.get(row.status)
-      if (bucket) bucket.push(row)
+      const bucket = map.get(row.status);
+      if (bucket) bucket.push(row);
     }
-    return map
-  }, [rows])
+    return map;
+  }, [rows]);
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
       {BOARD_ORDER.map((status) => {
-        const items = byStatus.get(status) ?? []
+        const items = byStatus.get(status) ?? [];
         return (
           <section
             key={status}
@@ -352,8 +365,8 @@ const MovesBoard = ({
               ) : null}
             </ul>
           </section>
-        )
+        );
       })}
     </div>
-  )
-}
+  );
+};

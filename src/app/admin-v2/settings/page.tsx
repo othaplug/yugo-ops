@@ -1,5 +1,5 @@
-import { SettingsClient } from "./settings-client"
+import { SettingsClient } from "./settings-client";
 
-const SettingsPage = () => <SettingsClient />
+const SettingsPage = () => <SettingsClient />;
 
-export default SettingsPage
+export default SettingsPage;

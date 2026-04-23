@@ -5,7 +5,11 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
-import { PencilSimple as Pencil, CaretDown as ChevronDown, Lock } from "@phosphor-icons/react";
+import {
+  PencilSimple as Pencil,
+  CaretDown as ChevronDown,
+  Lock,
+} from "@phosphor-icons/react";
 import MoveNotifyButton from "../MoveNotifyButton";
 import ResendTrackingLinkButton from "../ResendTrackingLinkButton";
 import MoveContactModal from "./MoveContactModal";
@@ -24,18 +28,23 @@ import SegmentedProgressBar from "../../components/SegmentedProgressBar";
 import { useToast } from "../../components/Toast";
 import { useRelativeTime } from "./useRelativeTime";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import { isPreMoveChecklistComplete, preMoveChecklistCounts } from "@/lib/pre-move-checklist";
+import {
+  isPreMoveChecklistComplete,
+  preMoveChecklistCounts,
+} from "@/lib/pre-move-checklist";
 import EstateServiceChecklistAdminRow from "./EstateServiceChecklistAdminRow";
-import { formatMoveDate, formatPlatformDisplay, parseDateOnly } from "@/lib/date-format";
+import {
+  formatMoveDate,
+  formatPlatformDisplay,
+  parseDateOnly,
+} from "@/lib/date-format";
 import { ProfitabilityBreakdownHint } from "@/components/admin/AdminContextHints";
 import PostCompletionPriceEdit from "../../components/PostCompletionPriceEdit";
 import MoveWaiversSection, { type MoveWaiverRow } from "./MoveWaiversSection";
 import CrewJobTimer from "@/app/crew/components/CrewJobTimer";
-import {
-  capMarginAlertMinutes,
-  estimateDurationFromMoveRow,
-} from "@/lib/jobs/duration-estimate";
+import { capMarginAlertMinutes } from "@/lib/jobs/duration-estimate";
 import type { OperationalJobAlerts } from "@/lib/jobs/operational-alerts";
+import { formatMinutesAsHhMm } from "@/lib/duration-hhmm";
 
 function isEstateTierMove(m: {
   tier_selected?: string | null;
@@ -66,7 +75,16 @@ interface ReviewRequestEntry {
   client_feedback: string | null;
 }
 
-type ItemWeightRow = { slug: string; item_name: string; weight_score: number; category: string; room?: string; is_common: boolean; display_order?: number; active?: boolean };
+type ItemWeightRow = {
+  slug: string;
+  item_name: string;
+  weight_score: number;
+  category: string;
+  room?: string;
+  is_common: boolean;
+  display_order?: number;
+  active?: boolean;
+};
 
 interface MoveRecord {
   id: string;
@@ -151,7 +169,13 @@ interface MoveDetailClientProps {
   }[];
   moveStatusEvents?: { event_type: string; created_at: string }[];
   linkedBinOrders?: Record<string, unknown>[];
-  surveyPhotos?: { id: string; room: string; photo_url: string; notes: string | null; uploaded_at: string }[];
+  surveyPhotos?: {
+    id: string;
+    room: string;
+    photo_url: string;
+    notes: string | null;
+    uploaded_at: string;
+  }[];
   pendingModifications?: {
     id: string;
     type: string;
@@ -172,7 +196,14 @@ interface MoveDetailClientProps {
   }[];
   moveWaivers?: MoveWaiverRow[];
 }
-import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_INDEX, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
+import {
+  MOVE_STATUS_OPTIONS,
+  MOVE_STATUS_COLORS_ADMIN,
+  MOVE_STATUS_INDEX,
+  LIVE_TRACKING_STAGES,
+  getStatusLabel,
+  normalizeStatus,
+} from "@/lib/move-status";
 import RecommendedCrewPanel from "./RecommendedCrewPanel";
 
 function tierDisplayLabel(tier: string | null | undefined): string | null {
@@ -207,17 +238,30 @@ function isMoveStatusCompleted(status: string | null | undefined): boolean {
 }
 
 const IN_PROGRESS_STATUSES = [
-  "en_route", "en_route_to_pickup", "arrived_at_pickup", "loading",
-  "en_route_to_destination", "arrived_at_destination", "unloading",
-  "in_progress", "in_transit",
+  "en_route",
+  "en_route_to_pickup",
+  "arrived_at_pickup",
+  "loading",
+  "en_route_to_destination",
+  "arrived_at_destination",
+  "unloading",
+  "in_progress",
+  "in_transit",
 ];
-function isMoveInProgress(status: string | null | undefined, stage: string | null | undefined): boolean {
+function isMoveInProgress(
+  status: string | null | undefined,
+  stage: string | null | undefined,
+): boolean {
   const s = (status || "").toLowerCase().replace(/-/g, "_");
   const st = (stage || "").toLowerCase().replace(/-/g, "_");
   return IN_PROGRESS_STATUSES.includes(s) || IN_PROGRESS_STATUSES.includes(st);
 }
 import { stripClientMessagesFromNotes } from "@/lib/internal-notes";
-import { formatCurrency, calcHST } from "@/lib/format-currency";
+import {
+  formatCurrency,
+  calcHST,
+  contractTaxLines,
+} from "@/lib/format-currency";
 import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
 import { formatAccessForDisplay, toTitleCase } from "@/lib/format-text";
 
@@ -253,13 +297,27 @@ function BinOrderPickupBlock({
   const { toast } = useToast();
   const id = String(bin.id ?? "");
   const binCount = Math.max(1, Math.floor(Number(bin.bin_count) || 1));
-  const wProv = bin.wardrobe_boxes_provided != null ? Math.max(0, Math.floor(Number(bin.wardrobe_boxes_provided))) : null;
-  const [binsReturned, setBinsReturned] = useState(Math.min(binCount, Math.floor(Number(bin.bins_returned ?? binCount))));
-  const [missing, setMissing] = useState(Math.max(0, Math.floor(Number(bin.bins_missing ?? 0))));
-  const [wardrobeRet, setWardrobeRet] = useState(
-    wProv != null ? Math.min(wProv, Math.floor(Number(bin.wardrobe_boxes_returned ?? wProv))) : 0,
+  const wProv =
+    bin.wardrobe_boxes_provided != null
+      ? Math.max(0, Math.floor(Number(bin.wardrobe_boxes_provided)))
+      : null;
+  const [binsReturned, setBinsReturned] = useState(
+    Math.min(binCount, Math.floor(Number(bin.bins_returned ?? binCount))),
   );
-  const [condition, setCondition] = useState(String(bin.pickup_condition ?? "good"));
+  const [missing, setMissing] = useState(
+    Math.max(0, Math.floor(Number(bin.bins_missing ?? 0))),
+  );
+  const [wardrobeRet, setWardrobeRet] = useState(
+    wProv != null
+      ? Math.min(
+          wProv,
+          Math.floor(Number(bin.wardrobe_boxes_returned ?? wProv)),
+        )
+      : 0,
+  );
+  const [condition, setCondition] = useState(
+    String(bin.pickup_condition ?? "good"),
+  );
   const [saving, setSaving] = useState(false);
   const canEdit = ["owner", "admin", "coordinator"].includes(userRole);
   if (!canEdit) return null;
@@ -293,7 +351,9 @@ function BinOrderPickupBlock({
 
   return (
     <div className="mt-2 pt-2 border-t border-[var(--brd)]/40 space-y-2">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)]">Pickup checklist</p>
+      <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)]">
+        Pickup checklist
+      </p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
         <label className="text-[10px] text-[var(--tx3)]">
           Bins returned
@@ -302,7 +362,14 @@ function BinOrderPickupBlock({
             min={0}
             max={binCount}
             value={binsReturned}
-            onChange={(e) => setBinsReturned(Math.min(binCount, Math.max(0, parseInt(e.target.value, 10) || 0)))}
+            onChange={(e) =>
+              setBinsReturned(
+                Math.min(
+                  binCount,
+                  Math.max(0, parseInt(e.target.value, 10) || 0),
+                ),
+              )
+            }
             className="mt-0.5 admin-premium-input w-full"
           />
         </label>
@@ -313,7 +380,14 @@ function BinOrderPickupBlock({
             min={0}
             max={binCount}
             value={missing}
-            onChange={(e) => setMissing(Math.min(binCount, Math.max(0, parseInt(e.target.value, 10) || 0)))}
+            onChange={(e) =>
+              setMissing(
+                Math.min(
+                  binCount,
+                  Math.max(0, parseInt(e.target.value, 10) || 0),
+                ),
+              )
+            }
             className="mt-0.5 admin-premium-input w-full"
           />
         </label>
@@ -325,16 +399,29 @@ function BinOrderPickupBlock({
               min={0}
               max={wProv}
               value={wardrobeRet}
-              onChange={(e) => setWardrobeRet(Math.min(wProv, Math.max(0, parseInt(e.target.value, 10) || 0)))}
+              onChange={(e) =>
+                setWardrobeRet(
+                  Math.min(
+                    wProv,
+                    Math.max(0, parseInt(e.target.value, 10) || 0),
+                  ),
+                )
+              }
               className="mt-0.5 admin-premium-input w-full"
             />
           </label>
         ) : (
-          <span className="text-[10px] text-[var(--tx3)] col-span-1">Wardrobe: n/a</span>
+          <span className="text-[10px] text-[var(--tx3)] col-span-1">
+            Wardrobe: n/a
+          </span>
         )}
         <label className="text-[10px] text-[var(--tx3)] col-span-2 sm:col-span-1">
           Condition
-          <select value={condition} onChange={(e) => setCondition(e.target.value)} className="mt-0.5 admin-premium-input w-full">
+          <select
+            value={condition}
+            onChange={(e) => setCondition(e.target.value)}
+            className="mt-0.5 admin-premium-input w-full"
+          >
             <option value="good">Good</option>
             <option value="some_damaged">Some damaged</option>
             <option value="many_damaged">Many damaged</option>
@@ -390,37 +477,57 @@ export default function MoveDetailClient({
   const [crewModalOpen, setCrewModalOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [detailsModalSection, setDetailsModalSection] = useState<"addresses" | "notes" | null>(null);
+  const [detailsModalSection, setDetailsModalSection] = useState<
+    "addresses" | "notes" | null
+  >(null);
   const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editingCard, setEditingCard] = useState<"status" | null>(null);
-  const [restartOverrideModal, setRestartOverrideModal] = useState<{ newStatus: string } | null>(null);
+  const [restartOverrideModal, setRestartOverrideModal] = useState<{
+    newStatus: string;
+  } | null>(null);
   const [restartOverrideTyped, setRestartOverrideTyped] = useState("");
   const [overrideStatusModalOpen, setOverrideStatusModalOpen] = useState(false);
-  const [overrideStatusNewStatus, setOverrideStatusNewStatus] = useState("confirmed");
+  const [overrideStatusNewStatus, setOverrideStatusNewStatus] =
+    useState("confirmed");
   const [overrideStatusTyped, setOverrideStatusTyped] = useState("");
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
-  const [pendingCancelStatus, setPendingCancelStatus] = useState<string | null>(null);
+  const [pendingCancelStatus, setPendingCancelStatus] = useState<string | null>(
+    null,
+  );
   const [reviewReminderLoading, setReviewReminderLoading] = useState(false);
   const selectedCrew = crews.find((c) => c.id === move.crew_id);
-  const crewMembers = selectedCrew?.members && Array.isArray(selectedCrew.members) ? selectedCrew.members : [];
+  const crewMembers =
+    selectedCrew?.members && Array.isArray(selectedCrew.members)
+      ? selectedCrew.members
+      : [];
   const snapshotRoster = Array.isArray(move.assigned_members)
-    ? move.assigned_members.filter((x: unknown) => typeof x === "string" && String(x).trim())
+    ? move.assigned_members.filter(
+        (x: unknown) => typeof x === "string" && String(x).trim(),
+      )
     : [];
   const displayCrewName =
     selectedCrew?.name?.trim() ||
-    (typeof move.assigned_crew_name === "string" && move.assigned_crew_name.trim()
+    (typeof move.assigned_crew_name === "string" &&
+    move.assigned_crew_name.trim()
       ? move.assigned_crew_name.trim()
       : "") ||
     "";
   const [assignedMembers, setAssignedMembers] = useState<Set<string>>(() => {
-    const assigned = Array.isArray(move.assigned_members) ? move.assigned_members : [];
+    const assigned = Array.isArray(move.assigned_members)
+      ? move.assigned_members
+      : [];
     return assigned.length > 0 ? new Set(assigned) : new Set(crewMembers);
   });
   useEffect(() => {
-    const members = selectedCrew?.members && Array.isArray(selectedCrew.members) ? selectedCrew.members : [];
-    const assigned = Array.isArray(move.assigned_members) ? move.assigned_members : [];
+    const members =
+      selectedCrew?.members && Array.isArray(selectedCrew.members)
+        ? selectedCrew.members
+        : [];
+    const assigned = Array.isArray(move.assigned_members)
+      ? move.assigned_members
+      : [];
     if (assigned.length > 0) {
       setAssignedMembers(new Set(assigned));
     } else if (members.length > 0) {
@@ -430,32 +537,57 @@ export default function MoveDetailClient({
     }
   }, [move.crew_id, move.assigned_members, selectedCrew?.members]);
   const estimate = Number(move.estimate ?? move.amount ?? 0);
-  const depositPaid = Number(move.deposit_amount ?? Math.round(estimate * 0.25));
-  const baseBalance = Number(move.balance_amount ?? (estimate - depositPaid));
-  const balanceDue = baseBalance + (additionalFeesCents / 100);
+  const depositPaid = Number(
+    move.deposit_amount ?? Math.round(estimate * 0.25),
+  );
+  const baseBalance = Number(move.balance_amount ?? estimate - depositPaid);
+  const balanceDue = baseBalance + additionalFeesCents / 100;
   const scheduledDateLocal = parseDateOnly(move.scheduled_date);
-  const daysUntil = scheduledDateLocal ? Math.ceil((scheduledDateLocal.getTime() - Date.now()) / 86400000) : null;
+  const daysUntil = scheduledDateLocal
+    ? Math.ceil((scheduledDateLocal.getTime() - Date.now()) / 86400000)
+    : null;
   const balanceUnpaid = balanceDue > 0 && daysUntil !== null && daysUntil <= 1;
 
   /** Timestamps for each move status step, derived from status_events + move fields */
   const stepTimestamps: Record<string, string | null> = {
     confirmed: move.created_at ?? null,
-    scheduled: moveStatusEvents?.find((e) => e.event_type === "status_changed_to_scheduled")?.created_at ?? null,
+    scheduled:
+      moveStatusEvents?.find(
+        (e) => e.event_type === "status_changed_to_scheduled",
+      )?.created_at ?? null,
     paid:
       move.payment_marked_paid_at ??
-      moveStatusEvents?.find((e) => e.event_type === "status_changed_to_paid" || e.event_type === "payment_received")?.created_at ??
+      moveStatusEvents?.find(
+        (e) =>
+          e.event_type === "status_changed_to_paid" ||
+          e.event_type === "payment_received",
+      )?.created_at ??
       null,
-    in_progress: moveStatusEvents?.find((e) => e.event_type === "status_changed_to_in_progress")?.created_at ?? null,
-    completed: move.completed_at ?? moveStatusEvents?.find((e) => e.event_type === "status_changed_to_completed")?.created_at ?? null,
+    in_progress:
+      moveStatusEvents?.find(
+        (e) => e.event_type === "status_changed_to_in_progress",
+      )?.created_at ?? null,
+    completed:
+      move.completed_at ??
+      moveStatusEvents?.find(
+        (e) => e.event_type === "status_changed_to_completed",
+      )?.created_at ??
+      null,
   };
   const lastUpdatedRelative = useRelativeTime(move.updated_at);
   const isCompleted = isMoveStatusCompleted(move.status);
   const isPaid = move.status === "paid" || !!move.payment_marked_paid;
   const moveInProgress = isMoveInProgress(move.status, move.stage);
   const isBalancePaid = !!move.balance_paid_at;
-  const [paymentBtnLoading, setPaymentBtnLoading] = useState<"deposit" | "full" | "card" | null>(null);
+  const [paymentBtnLoading, setPaymentBtnLoading] = useState<
+    "deposit" | "full" | "card" | null
+  >(null);
   const [balanceJustSettled, setBalanceJustSettled] = useState(false);
-  const [jobDuration, setJobDuration] = useState<{ startedAt: string | null; completedAt: string | null; isActive: boolean } | null>(null);
+  const [jobDuration, setJobDuration] = useState<{
+    startedAt: string | null;
+    completedAt: string | null;
+    isActive: boolean;
+  } | null>(null);
   const [jobDurationElapsed, setJobDurationElapsed] = useState(0);
 
   useEffect(() => {
@@ -469,10 +601,19 @@ export default function MoveDetailClient({
   useEffect(() => {
     const channel = supabase
       .channel(`move-${move.id}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "moves", filter: `id=eq.${move.id}` }, (payload) => {
-        const next = payload.new as Record<string, unknown>;
-        setMove((prev: any) => ({ ...prev, ...next }));
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "moves",
+          filter: `id=eq.${move.id}`,
+        },
+        (payload) => {
+          const next = payload.new as Record<string, unknown>;
+          setMove((prev: any) => ({ ...prev, ...next }));
+        },
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -485,9 +626,15 @@ export default function MoveDetailClient({
       .channel(`move-sess-${move.id}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "tracking_sessions", filter: `job_id=eq.${move.id}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "tracking_sessions",
+          filter: `job_id=eq.${move.id}`,
+        },
         (payload) => {
-          if (payload.eventType !== "INSERT" && payload.eventType !== "UPDATE") return;
+          if (payload.eventType !== "INSERT" && payload.eventType !== "UPDATE")
+            return;
           const row = payload.new as Record<string, unknown> | undefined;
           if (!row || String(row.job_type || "") !== "move") return;
           const st = String(row.status || "").toLowerCase();
@@ -511,7 +658,9 @@ export default function MoveDetailClient({
   }, [move.id]);
 
   // Polling fallback for live status when move is in progress (in case realtime lags)
-  const isInProgress = !["completed", "delivered", "cancelled"].includes((move.status || "").toLowerCase());
+  const isInProgress = !["completed", "delivered", "cancelled"].includes(
+    (move.status || "").toLowerCase(),
+  );
   useEffect(() => {
     if (!isInProgress) return;
     const poll = () =>
@@ -523,7 +672,8 @@ export default function MoveDetailClient({
           })),
         )
         .then(({ ok, d }) => {
-          if (ok && d && !(d as { error?: string }).error) setMove((prev: any) => ({ ...prev, ...d }));
+          if (ok && d && !(d as { error?: string }).error)
+            setMove((prev: any) => ({ ...prev, ...d }));
         })
         .catch(() => {});
     poll();
@@ -537,8 +687,18 @@ export default function MoveDetailClient({
       return;
     }
     const start = new Date(jobDuration.startedAt).getTime();
-    const end = jobDuration.completedAt ? new Date(jobDuration.completedAt).getTime() : Date.now();
-    const tick = () => setJobDurationElapsed(Math.max(0, (jobDuration.completedAt ? new Date(jobDuration.completedAt).getTime() : Date.now()) - start));
+    const end = jobDuration.completedAt
+      ? new Date(jobDuration.completedAt).getTime()
+      : Date.now();
+    const tick = () =>
+      setJobDurationElapsed(
+        Math.max(
+          0,
+          (jobDuration.completedAt
+            ? new Date(jobDuration.completedAt).getTime()
+            : Date.now()) - start,
+        ),
+      );
     tick();
     if (!jobDuration.completedAt) {
       const id = setInterval(tick, 1000);
@@ -548,19 +708,23 @@ export default function MoveDetailClient({
 
   const jobDurationStr = jobDuration?.startedAt
     ? (() => {
-        const ms = jobDurationElapsed || (jobDuration.completedAt ? new Date(jobDuration.completedAt).getTime() - new Date(jobDuration.startedAt).getTime() : Date.now() - new Date(jobDuration.startedAt).getTime());
-        const s = Math.floor(ms / 1000);
-        const m = Math.floor(s / 60);
-        const h = Math.floor(m / 60);
-        if (h > 0) return `${h}h ${m % 60}m`;
-        return `${m}m ${s % 60}s`;
+        const ms =
+          jobDurationElapsed ||
+          (jobDuration.completedAt
+            ? new Date(jobDuration.completedAt).getTime() -
+              new Date(jobDuration.startedAt).getTime()
+            : Date.now() - new Date(jobDuration.startedAt).getTime());
+        const fullMin = Math.max(0, Math.floor(ms / 60000));
+        return formatMinutesAsHhMm(fullMin);
       })()
     : null;
 
-  const jobTimeTracker = useMemo(() => {
+  /** Allocated on-site work time: DB column, else quote `est_hours` only (never derived from arrival window). */
+  const jobTimeTracker = useMemo(():
+    | { minutes: number; margin: number }
+    | null => {
     const raw = move.estimated_duration_minutes;
-    const rawN =
-      typeof raw === "string" ? Number.parseFloat(raw) : Number(raw);
+    const rawN = typeof raw === "string" ? Number.parseFloat(raw) : Number(raw);
     if (Number.isFinite(rawN) && rawN > 0) {
       const m = Math.round(rawN);
       const margRaw = move.margin_alert_minutes;
@@ -575,12 +739,23 @@ export default function MoveDetailClient({
         margin: capMarginAlertMinutes(m, uncapped),
       };
     }
-    const d = estimateDurationFromMoveRow(move as Record<string, unknown>);
-    if (!d) return null;
-    return {
-      minutes: d.totalMinutes,
-      margin: d.maxMinutesBeforeMarginAlert,
-    };
+    const eh = move.est_hours;
+    const ehN = typeof eh === "string" ? Number.parseFloat(eh) : Number(eh);
+    if (Number.isFinite(ehN) && ehN > 0) {
+      const m = Math.round(ehN * 60);
+      const margRaw = move.margin_alert_minutes;
+      const margN =
+        typeof margRaw === "string"
+          ? Number.parseFloat(margRaw)
+          : Number(margRaw);
+      const uncapped =
+        Number.isFinite(margN) && margN > 0 ? Math.round(margN) : m;
+      return {
+        minutes: m,
+        margin: capMarginAlertMinutes(m, uncapped),
+      };
+    }
+    return null;
   }, [move]);
 
   const toggleMember = (name: string) => {
@@ -593,10 +768,14 @@ export default function MoveDetailClient({
   };
 
   const prepChecklistRecord =
-    (move.pre_move_checklist as Record<string, boolean> | null | undefined) || undefined;
+    (move.pre_move_checklist as Record<string, boolean> | null | undefined) ||
+    undefined;
   const prepCounts = preMoveChecklistCounts(prepChecklistRecord);
   const prepAllDone = isPreMoveChecklistComplete(prepChecklistRecord);
-  const prepNotifiedAt = move.pre_move_checklist_notified_at as string | null | undefined;
+  const prepNotifiedAt = move.pre_move_checklist_notified_at as
+    | string
+    | null
+    | undefined;
   const prepNotifiedLabel = prepNotifiedAt
     ? formatPlatformDisplay(prepNotifiedAt, {
         month: "short",
@@ -606,8 +785,9 @@ export default function MoveDetailClient({
       })
     : null;
 
-  const operationalAlerts = (move as { operationalAlerts?: OperationalJobAlerts | null })
-    .operationalAlerts;
+  const operationalAlerts = (
+    move as { operationalAlerts?: OperationalJobAlerts | null }
+  ).operationalAlerts;
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-3 animate-fade-up">
@@ -646,14 +826,15 @@ export default function MoveDetailClient({
             </p>
             {operationalAlerts.marginBelowHalf && (
               <p className="mb-1">
-                Projected profit margin is below half of the planned margin at current pace.
+                Projected profit margin is below half of the planned margin at
+                current pace.
               </p>
             )}
             {operationalAlerts.projectedFinishAfterAllocated && (
               <p>
                 Projected job length exceeds allocated time
                 {operationalAlerts.projectedTotalMinutes != null
-                  ? ` (~${Math.round(operationalAlerts.projectedTotalMinutes)} min vs ${operationalAlerts.allocatedMinutes ?? "?"} min allocated)`
+                  ? ` (~${formatMinutesAsHhMm(Math.round(operationalAlerts.projectedTotalMinutes))} vs ${operationalAlerts.allocatedMinutes != null ? formatMinutesAsHhMm(Math.round(operationalAlerts.allocatedMinutes)) : "?"} allocated)`
                   : ""}
                 .
               </p>
@@ -672,7 +853,11 @@ export default function MoveDetailClient({
                 className="font-heading text-[17px] md:text-[19px] font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors text-left break-words line-clamp-2 flex items-center gap-1.5 group"
               >
                 {move.client_name}
-                <Pencil size={12} aria-hidden className="opacity-0 group-hover:opacity-50 transition-opacity shrink-0" />
+                <Pencil
+                  size={12}
+                  aria-hidden
+                  className="opacity-0 group-hover:opacity-50 transition-opacity shrink-0"
+                />
               </button>
               {move.move_code && (
                 <span className="inline-flex items-center text-[11px] font-mono font-bold tracking-wide text-[var(--gold)]">
@@ -702,14 +887,22 @@ export default function MoveDetailClient({
         <div className="mt-4 pt-4 border-t border-[var(--brd)]/40">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <div className="group/card relative flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 min-w-0">
-              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Status</span>
+              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">
+                Status
+              </span>
               {isCompleted ? (
                 <>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className={`dt-badge tracking-[0.04em] text-[11px] ${MOVE_STATUS_COLORS_ADMIN[move.status] || "text-[var(--gold)]"}`}>
+                    <span
+                      className={`dt-badge tracking-[0.04em] text-[11px] ${MOVE_STATUS_COLORS_ADMIN[move.status] || "text-[var(--gold)]"}`}
+                    >
                       {getStatusLabel(move.status)}
                     </span>
-                    <span className="p-1 rounded-md text-red-500" title="Move completed. Status is locked." aria-hidden="true">
+                    <span
+                      className="p-1 rounded-md text-red-500"
+                      title="Move completed. Status is locked."
+                      aria-hidden="true"
+                    >
                       <Lock className="w-[11px] h-[11px]" />
                     </span>
                   </span>
@@ -731,13 +924,22 @@ export default function MoveDetailClient({
                 <select
                   className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none min-w-[120px]"
                   value={(() => {
-                    const s = normalizeStatus(move.status) || move.status || "confirmed";
+                    const s =
+                      normalizeStatus(move.status) ||
+                      move.status ||
+                      "confirmed";
                     return s === "paid" ? "scheduled" : s;
                   })()}
                   onChange={async (e) => {
                     const v = e.target.value as string;
-                    const isCurrentlyCompleted = isMoveStatusCompleted(move.status);
-                    const isRestarting = isCurrentlyCompleted && !["completed", "delivered", "cancelled"].includes(v.toLowerCase());
+                    const isCurrentlyCompleted = isMoveStatusCompleted(
+                      move.status,
+                    );
+                    const isRestarting =
+                      isCurrentlyCompleted &&
+                      !["completed", "delivered", "cancelled"].includes(
+                        v.toLowerCase(),
+                      );
                     if (isRestarting) {
                       setRestartOverrideModal({ newStatus: v });
                       setRestartOverrideTyped("");
@@ -752,11 +954,22 @@ export default function MoveDetailClient({
                     const updates: Record<string, unknown> = {
                       status: v,
                       updated_at: now,
-                      ...(v.toLowerCase() === "completed" && { completed_at: now, stage: "completed" }),
+                      ...(v.toLowerCase() === "completed" && {
+                        completed_at: now,
+                        stage: "completed",
+                      }),
                     };
-                    const { data, error } = await supabase.from("moves").update(updates).eq("id", move.id).select().single();
+                    const { data, error } = await supabase
+                      .from("moves")
+                      .update(updates)
+                      .eq("id", move.id)
+                      .select()
+                      .single();
                     if (error) {
-                      toast(error.message || "Failed to update status", "alertTriangle");
+                      toast(
+                        error.message || "Failed to update status",
+                        "alertTriangle",
+                      );
                       return;
                     }
                     if (data) setMove(data);
@@ -766,54 +979,83 @@ export default function MoveDetailClient({
                     fetch(`/api/admin/moves/${move.id}`, {
                       method: "PATCH",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ action: "log_status_change", new_status: v, previous_status: move.status }),
+                      body: JSON.stringify({
+                        action: "log_status_change",
+                        new_status: v,
+                        previous_status: move.status,
+                      }),
                     }).catch(() => {});
                     if (data && isEstateTierMove(data)) {
-                      fetch(`/api/admin/moves/${move.id}/sync-estate-checklist`, {
-                        method: "POST",
-                      })
+                      fetch(
+                        `/api/admin/moves/${move.id}/sync-estate-checklist`,
+                        {
+                          method: "POST",
+                        },
+                      )
                         .then((r) => (r.ok ? r.json() : null))
                         .then((j) => {
                           if (j?.estate_service_checklist != null) {
                             setMove((p: any) => ({
                               ...p,
-                              estate_service_checklist: j.estate_service_checklist,
+                              estate_service_checklist:
+                                j.estate_service_checklist,
                             }));
                           }
                         })
                         .catch(() => {});
                     }
                     if (v.toLowerCase() === "completed") {
-                      fetch(`/api/admin/moves/${move.id}/notify-complete`, { method: "POST" }).catch(() => {});
+                      fetch(`/api/admin/moves/${move.id}/notify-complete`, {
+                        method: "POST",
+                      }).catch(() => {});
                     }
                     // Sync status to HubSpot deal (and keep deal fields in sync)
                     if (move.hubspot_deal_id) {
-                      const dealProps: Record<string, string> = { dealstage: v };
+                      const dealProps: Record<string, string> = {
+                        dealstage: v,
+                      };
                       const fullName = (move.client_name || "").trim();
                       if (fullName) {
                         const first = fullName.split(/\s+/)[0]?.trim();
-                        const last = fullName.split(/\s+/).slice(1).join(" ").trim();
+                        const last = fullName
+                          .split(/\s+/)
+                          .slice(1)
+                          .join(" ")
+                          .trim();
                         if (first) dealProps.firstname = first;
                         if (last) dealProps.lastname = last;
                       }
-                      if (move.from_address?.trim()) dealProps.pick_up_address = move.from_address.trim();
-                      const toAddr = (move.to_address?.trim()) || (move.delivery_address?.trim());
+                      if (move.from_address?.trim())
+                        dealProps.pick_up_address = move.from_address.trim();
+                      const toAddr =
+                        move.to_address?.trim() ||
+                        move.delivery_address?.trim();
                       if (toAddr) dealProps.drop_off_address = toAddr;
-                      if (move.from_access?.trim()) dealProps.access_from = move.from_access.trim();
-                      if (move.to_access?.trim()) dealProps.access_to = move.to_access.trim();
-                      if (move.service_type?.trim()) dealProps.service_type = move.service_type.trim();
-                      if (move.move_size?.trim()) dealProps.move_size = move.move_size.trim();
-                      if (move.scheduled_date?.trim()) dealProps.move_date = move.scheduled_date.trim();
+                      if (move.from_access?.trim())
+                        dealProps.access_from = move.from_access.trim();
+                      if (move.to_access?.trim())
+                        dealProps.access_to = move.to_access.trim();
+                      if (move.service_type?.trim())
+                        dealProps.service_type = move.service_type.trim();
+                      if (move.move_size?.trim())
+                        dealProps.move_size = move.move_size.trim();
+                      if (move.scheduled_date?.trim())
+                        dealProps.move_date = move.scheduled_date.trim();
                       fetch("/api/hubspot/update-deal", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ dealId: move.hubspot_deal_id, properties: dealProps }),
+                        body: JSON.stringify({
+                          dealId: move.hubspot_deal_id,
+                          properties: dealProps,
+                        }),
                       }).catch(() => {});
                     }
                   }}
                 >
                   {MOVE_STATUS_OPTIONS.map((s) => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
                   ))}
                 </select>
               ) : (
@@ -823,30 +1065,46 @@ export default function MoveDetailClient({
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-dashed border-transparent hover:border-[var(--gold)]/40 hover:opacity-90 transition-all cursor-pointer group/btn w-fit"
                   aria-label="Edit status"
                 >
-                  <span className={`dt-badge tracking-[0.04em] text-[11px] ${MOVE_STATUS_COLORS_ADMIN[move.status] || "text-[var(--gold)]"}`}>
+                  <span
+                    className={`dt-badge tracking-[0.04em] text-[11px] ${MOVE_STATUS_COLORS_ADMIN[move.status] || "text-[var(--gold)]"}`}
+                  >
                     {getStatusLabel(move.status)}
                   </span>
-                    <ChevronDown weight="regular" className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100" />
+                  <ChevronDown
+                    weight="regular"
+                    className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100"
+                  />
                 </button>
               )}
             </div>
 
             <div className="group/card relative flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 min-w-0">
               <span className="inline-flex items-center gap-1.5 text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">
-                <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden>
+                <span
+                  className="relative flex h-1.5 w-1.5 shrink-0"
+                  aria-hidden
+                >
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#22C55E]" />
                 </span>
                 Live stage
               </span>
-              <span className="text-[12px] font-medium text-[var(--tx)] truncate" title="Updated by crew from portal">
-                {LIVE_TRACKING_STAGES.find((o) => o.key === move.stage)?.label ?? "Not started"}
+              <span
+                className="text-[12px] font-medium text-[var(--tx)] truncate"
+                title="Updated by crew from portal"
+              >
+                {LIVE_TRACKING_STAGES.find((o) => o.key === move.stage)
+                  ?.label ?? "Not started"}
               </span>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 pt-2 sm:pt-0 sm:pl-6 sm:border-l sm:border-[var(--brd)]/50">
-              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80">Last updated</span>
-              <span className="text-[12px] tabular-nums text-[var(--tx2)]">{lastUpdatedRelative}</span>
+              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80">
+                Last updated
+              </span>
+              <span className="text-[12px] tabular-nums text-[var(--tx2)]">
+                {lastUpdatedRelative}
+              </span>
             </div>
           </div>
 
@@ -857,7 +1115,9 @@ export default function MoveDetailClient({
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--tx)]">
               <span
                 className={
-                  prepAllDone ? "font-bold text-emerald-700 dark:text-emerald-400" : "font-semibold"
+                  prepAllDone
+                    ? "font-bold text-emerald-700 dark:text-emerald-400"
+                    : "font-semibold"
                 }
               >
                 {prepCounts.done}/{prepCounts.total} complete
@@ -868,7 +1128,9 @@ export default function MoveDetailClient({
                 </span>
               ) : null}
               {prepAllDone && !prepNotifiedLabel ? (
-                <span className="text-[11px] text-[var(--tx3)]">· Tracked complete (no notification logged)</span>
+                <span className="text-[11px] text-[var(--tx3)]">
+                  · Tracked complete (no notification logged)
+                </span>
               ) : null}
             </div>
           </div>
@@ -881,12 +1143,19 @@ export default function MoveDetailClient({
             <div className="mt-4">
               <SegmentedProgressBar
                 label="MOVE STATUS"
-                steps={MOVE_STATUS_OPTIONS.filter((s) => s.value !== "cancelled").map((s) => ({
+                steps={MOVE_STATUS_OPTIONS.filter(
+                  (s) => s.value !== "cancelled",
+                ).map((s) => ({
                   key: s.value,
                   label: s.label,
                   timestamp: stepTimestamps[s.value] ?? null,
                 }))}
-                currentIndex={Math.max(0, MOVE_STATUS_INDEX[normalizeStatus(move.status) || move.status || "confirmed"] ?? 0)}
+                currentIndex={Math.max(
+                  0,
+                  MOVE_STATUS_INDEX[
+                    normalizeStatus(move.status) || move.status || "confirmed"
+                  ] ?? 0,
+                )}
               />
             </div>
           )}
@@ -895,24 +1164,49 @@ export default function MoveDetailClient({
 
       {/* Live Crew Tracking Map - collapsible, collapsed by default */}
       {etaSmsLog.length > 0 && (
-        <CollapsibleSection title="SMS Updates" defaultCollapsed subtitle={`${etaSmsLog.length} sent`}>
+        <CollapsibleSection
+          title="SMS Updates"
+          defaultCollapsed
+          subtitle={`${etaSmsLog.length} sent`}
+        >
           <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] overflow-hidden">
             <table className="w-full text-[11px]">
               <thead>
                 <tr className="border-b border-[var(--brd)] bg-[var(--gdim)]/30">
-                  <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">Type</th>
-                  <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">Sent</th>
-                  <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">ETA</th>
-                  <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">Twilio</th>
+                  <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">
+                    Type
+                  </th>
+                  <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">
+                    Sent
+                  </th>
+                  <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">
+                    ETA
+                  </th>
+                  <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">
+                    Twilio
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {etaSmsLog.map((row, i) => (
-                  <tr key={i} className="border-b border-[var(--brd)]/50 last:border-0">
-                    <td className="py-2 px-3 text-[var(--tx)]">{toTitleCase(row.message_type)}</td>
-                    <td className="py-2 px-3 text-[var(--tx2)]">{row.sent_at ? new Date(row.sent_at).toLocaleString() : "-"}</td>
-                    <td className="py-2 px-3 text-[var(--tx2)]">{row.eta_minutes != null ? `${row.eta_minutes} min` : "-"}</td>
-                    <td className="py-2 px-3 font-mono text-[10px] text-[var(--tx3)]">{row.twilio_sid || "Failed"}</td>
+                  <tr
+                    key={i}
+                    className="border-b border-[var(--brd)]/50 last:border-0"
+                  >
+                    <td className="py-2 px-3 text-[var(--tx)]">
+                      {toTitleCase(row.message_type)}
+                    </td>
+                    <td className="py-2 px-3 text-[var(--tx2)]">
+                      {row.sent_at
+                        ? new Date(row.sent_at).toLocaleString()
+                        : "-"}
+                    </td>
+                    <td className="py-2 px-3 text-[var(--tx2)]">
+                      {row.eta_minutes != null ? `${row.eta_minutes} min` : "-"}
+                    </td>
+                    <td className="py-2 px-3 font-mono text-[10px] text-[var(--tx3)]">
+                      {row.twilio_sid || "Failed"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -922,7 +1216,15 @@ export default function MoveDetailClient({
       )}
 
       {reviewRequest && isCompleted && (
-        <CollapsibleSection title="Review Request" defaultCollapsed={false} subtitle={reviewRequest.review_clicked ? "Clicked ✓" : toTitleCase(reviewRequest.status)}>
+        <CollapsibleSection
+          title="Review Request"
+          defaultCollapsed={false}
+          subtitle={
+            reviewRequest.review_clicked
+              ? "Clicked ✓"
+              : toTitleCase(reviewRequest.status)
+          }
+        >
           <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] p-4 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-[12px]">
@@ -930,51 +1232,82 @@ export default function MoveDetailClient({
                 <span className="font-medium text-[var(--tx)]">
                   {reviewRequest.review_clicked
                     ? `Clicked ✓${reviewRequest.review_clicked_at ? ` (${new Date(reviewRequest.review_clicked_at).toLocaleString()})` : ""}`
-                    : reviewRequest.status === "sent" || reviewRequest.status === "reminded"
+                    : reviewRequest.status === "sent" ||
+                        reviewRequest.status === "reminded"
                       ? `${toTitleCase(reviewRequest.status)}${reviewRequest.status === "reminded" && reviewRequest.reminder_sent_at ? ` (${formatReviewTime(reviewRequest.reminder_sent_at)})` : reviewRequest.email_sent_at ? ` (${formatReviewTime(reviewRequest.email_sent_at)})` : ""} · Not clicked yet`
                       : toTitleCase(reviewRequest.status)}
                 </span>
               </div>
-              {!reviewRequest.review_clicked && (reviewRequest.status === "pending" || reviewRequest.status === "sent" || reviewRequest.status === "reminded") && (
-                <button
-                  type="button"
-                  disabled={reviewReminderLoading}
-                  onClick={async () => {
-                    setReviewReminderLoading(true);
-                    try {
-                      const res = await fetch(`/api/admin/moves/${move.id}/review-reminder`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          action: reviewRequest.status === "pending" ? "send" : "remind",
-                        }),
-                      });
-                      const data = await res.json().catch(() => ({}));
-                      if (!res.ok) {
-                        toast(data?.error || "Failed", "alertTriangle");
-                        return;
+              {!reviewRequest.review_clicked &&
+                (reviewRequest.status === "pending" ||
+                  reviewRequest.status === "sent" ||
+                  reviewRequest.status === "reminded") && (
+                  <button
+                    type="button"
+                    disabled={reviewReminderLoading}
+                    onClick={async () => {
+                      setReviewReminderLoading(true);
+                      try {
+                        const res = await fetch(
+                          `/api/admin/moves/${move.id}/review-reminder`,
+                          {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              action:
+                                reviewRequest.status === "pending"
+                                  ? "send"
+                                  : "remind",
+                            }),
+                          },
+                        );
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok) {
+                          toast(data?.error || "Failed", "alertTriangle");
+                          return;
+                        }
+                        toast(
+                          reviewRequest.status === "pending"
+                            ? "Review request sent"
+                            : "Reminder sent",
+                          "check",
+                        );
+                        router.refresh();
+                      } finally {
+                        setReviewReminderLoading(false);
                       }
-                      toast(reviewRequest.status === "pending" ? "Review request sent" : "Reminder sent", "check");
-                      router.refresh();
-                    } finally {
-                      setReviewReminderLoading(false);
-                    }
-                  }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border border-[var(--gold)]/40 text-[var(--gold)] bg-[var(--gold)]/10 hover:bg-[var(--gold)]/20 transition-colors disabled:opacity-50"
-                >
-                  {reviewReminderLoading ? "Sending…" : reviewRequest.status === "pending" ? "Send request" : "Remind"}
-                </button>
-              )}
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border border-[var(--gold)]/40 text-[var(--gold)] bg-[var(--gold)]/10 hover:bg-[var(--gold)]/20 transition-colors disabled:opacity-50"
+                  >
+                    {reviewReminderLoading
+                      ? "Sending…"
+                      : reviewRequest.status === "pending"
+                        ? "Send request"
+                        : "Remind"}
+                  </button>
+                )}
             </div>
-            {(reviewRequest.client_rating != null && reviewRequest.client_rating <= 3) || (reviewRequest.client_feedback && reviewRequest.client_feedback.trim()) ? (
+            {(reviewRequest.client_rating != null &&
+              reviewRequest.client_rating <= 3) ||
+            (reviewRequest.client_feedback &&
+              reviewRequest.client_feedback.trim()) ? (
               <div className="pt-3 border-t border-[var(--brd)]">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-1.5">Client feedback (from review link)</p>
+                <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-1.5">
+                  Client feedback (from review link)
+                </p>
                 <div className="text-[12px] text-[var(--tx2)]">
-                  {reviewRequest.client_rating != null && reviewRequest.client_rating <= 5 && (
-                    <p className="mb-1"><span className="text-[var(--tx3)]">Rating:</span> {reviewRequest.client_rating}★</p>
-                  )}
+                  {reviewRequest.client_rating != null &&
+                    reviewRequest.client_rating <= 5 && (
+                      <p className="mb-1">
+                        <span className="text-[var(--tx3)]">Rating:</span>{" "}
+                        {reviewRequest.client_rating}★
+                      </p>
+                    )}
                   {reviewRequest.client_feedback?.trim() && (
-                    <p><span className="text-[var(--tx3)]">Feedback:</span> {reviewRequest.client_feedback}</p>
+                    <p>
+                      <span className="text-[var(--tx3)]">Feedback:</span>{" "}
+                      {reviewRequest.client_feedback}
+                    </p>
                   )}
                 </div>
               </div>
@@ -984,22 +1317,45 @@ export default function MoveDetailClient({
       )}
 
       {isCompleted && (
-        <CollapsibleSection title="Post-move feedback (from crew)" defaultCollapsed={false} subtitle="Client satisfaction & NPS from crew sign-off">
+        <CollapsibleSection
+          title="Post-move feedback (from crew)"
+          defaultCollapsed={false}
+          subtitle="Client satisfaction & NPS from crew sign-off"
+        >
           <MoveSignOffSection moveId={move.id} />
         </CollapsibleSection>
       )}
 
       {move.crew_id && (
-        <CollapsibleSection title="Live Crew Tracking" defaultCollapsed subtitle={displayCrewName || "Crew"}>
+        <CollapsibleSection
+          title="Live Crew Tracking"
+          defaultCollapsed
+          subtitle={displayCrewName || "Crew"}
+        >
           {!isInProgress && (
-            <p className="text-[11px] text-[var(--tx3)] mb-2">Move completed. Live tracking remains visible for vehicle and asset security.</p>
+            <p className="text-[11px] text-[var(--tx3)] mb-2">
+              Move completed. Live tracking remains visible for vehicle and
+              asset security.
+            </p>
           )}
           <LiveTrackingMap
             crewId={move.crew_id}
             crewName={displayCrewName || undefined}
-            destination={move.to_lat != null && move.to_lng != null ? { lat: move.to_lat, lng: move.to_lng } : undefined}
-            pickup={move.from_lat != null && move.from_lng != null ? { lat: move.from_lat, lng: move.from_lng } : undefined}
-            dropoff={move.to_lat != null && move.to_lng != null ? { lat: move.to_lat, lng: move.to_lng } : undefined}
+            destination={
+              move.to_lat != null && move.to_lng != null
+                ? { lat: move.to_lat, lng: move.to_lng }
+                : undefined
+            }
+            pickup={
+              move.from_lat != null && move.from_lng != null
+                ? { lat: move.from_lat, lng: move.from_lng }
+                : undefined
+            }
+            dropoff={
+              move.to_lat != null && move.to_lng != null
+                ? { lat: move.to_lat, lng: move.to_lng }
+                : undefined
+            }
             moveId={move.id}
             hideHeader
           />
@@ -1019,8 +1375,12 @@ export default function MoveDetailClient({
         onSaved={(updates) => setMove((prev: any) => ({ ...prev, ...updates }))}
       />
 
-
-      <ModalOverlay open={crewModalOpen} onClose={() => setCrewModalOpen(false)} title="Assign Crew" maxWidth="sm">
+      <ModalOverlay
+        open={crewModalOpen}
+        onClose={() => setCrewModalOpen(false)}
+        title="Assign Crew"
+        maxWidth="sm"
+      >
         <div className="p-5 space-y-4">
           {!moveInProgress && (
             <RecommendedCrewPanel
@@ -1040,7 +1400,8 @@ export default function MoveDetailClient({
           )}
           {moveInProgress && (
             <p className="text-[11px] text-amber-600 bg-amber-500/10 rounded-lg p-3">
-              Cannot reassign: this move is in progress. Reassignment is only allowed before the crew has started.
+              Cannot reassign: this move is in progress. Reassignment is only
+              allowed before the crew has started.
             </p>
           )}
           <div>
@@ -1055,41 +1416,64 @@ export default function MoveDetailClient({
                   const res = await fetch("/api/dispatch/assign", {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ jobId: move.id, jobType: "move", crewId: v }),
+                    body: JSON.stringify({
+                      jobId: move.id,
+                      jobType: "move",
+                      crewId: v,
+                    }),
                   });
                   const json = await res.json();
-                  if (!res.ok) throw new Error(json.error || "Failed to assign");
+                  if (!res.ok)
+                    throw new Error(json.error || "Failed to assign");
                   if (json.move) {
                     setMove(json.move);
-                    setAssignedMembers(new Set(Array.isArray(json.move.assigned_members) ? json.move.assigned_members : (crews.find((c) => c.id === v)?.members || [])));
+                    setAssignedMembers(
+                      new Set(
+                        Array.isArray(json.move.assigned_members)
+                          ? json.move.assigned_members
+                          : crews.find((c) => c.id === v)?.members || [],
+                      ),
+                    );
                   }
                   router.refresh();
                   toast("Crew assigned", "check");
                 } catch (err) {
-                  toast(err instanceof Error ? err.message : "Failed to assign", "alertTriangle");
+                  toast(
+                    err instanceof Error ? err.message : "Failed to assign",
+                    "alertTriangle",
+                  );
                 }
               }}
               className="admin-premium-input w-full transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <option value="">No crew assigned</option>
               {crews.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
               ))}
             </select>
           </div>
           {selectedCrew && crewMembers.length > 0 && (
             <>
-              <p className="text-[11px] text-[var(--tx3)]">Check or uncheck members to assign to this move.</p>
+              <p className="text-[11px] text-[var(--tx3)]">
+                Check or uncheck members to assign to this move.
+              </p>
               <div className="space-y-2">
                 {crewMembers.map((m) => (
-                  <label key={m} className="flex items-center gap-3 p-2.5 rounded-md border border-[var(--brd)] hover:bg-[var(--bg)] cursor-pointer transition-colors">
+                  <label
+                    key={m}
+                    className="flex items-center gap-3 p-2.5 rounded-md border border-[var(--brd)] hover:bg-[var(--bg)] cursor-pointer transition-colors"
+                  >
                     <input
                       type="checkbox"
                       checked={assignedMembers.has(m)}
                       onChange={() => toggleMember(m)}
                       className="w-4 h-4 rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--brd)]"
                     />
-                    <span className="text-[13px] font-medium text-[var(--tx)]">{m}</span>
+                    <span className="text-[13px] font-medium text-[var(--tx)]">
+                      {m}
+                    </span>
                   </label>
                 ))}
               </div>
@@ -1097,7 +1481,15 @@ export default function MoveDetailClient({
                 type="button"
                 onClick={async () => {
                   const members = Array.from(assignedMembers);
-                  const { data } = await supabase.from("moves").update({ assigned_members: members, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                  const { data } = await supabase
+                    .from("moves")
+                    .update({
+                      assigned_members: members,
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq("id", move.id)
+                    .select()
+                    .single();
                   if (data) setMove(data);
                   router.refresh();
                   setCrewModalOpen(false);
@@ -1109,7 +1501,9 @@ export default function MoveDetailClient({
             </>
           )}
           {selectedCrew && crewMembers.length === 0 && (
-            <p className="text-[11px] text-[var(--tx3)]">No members in this crew. Add members in Platform Settings → Teams.</p>
+            <p className="text-[11px] text-[var(--tx3)]">
+              No members in this crew. Add members in Platform Settings → Teams.
+            </p>
           )}
           {!selectedCrew && snapshotRoster.length > 0 && (
             <p className="text-[11px] text-[var(--tx3)]">
@@ -1117,12 +1511,19 @@ export default function MoveDetailClient({
             </p>
           )}
           {!selectedCrew && snapshotRoster.length === 0 && (
-            <p className="text-[11px] text-[var(--tx3)]">Select a crew above to assign members to this move.</p>
+            <p className="text-[11px] text-[var(--tx3)]">
+              Select a crew above to assign members to this move.
+            </p>
           )}
         </div>
       </ModalOverlay>
 
-      <ModalOverlay open={vehicleModalOpen} onClose={() => setVehicleModalOpen(false)} title="Assign Vehicle" maxWidth="sm">
+      <ModalOverlay
+        open={vehicleModalOpen}
+        onClose={() => setVehicleModalOpen(false)}
+        title="Assign Vehicle"
+        maxWidth="sm"
+      >
         <div className="p-5 space-y-4">
           <div>
             <label className="admin-premium-label">Primary Vehicle</label>
@@ -1131,7 +1532,16 @@ export default function MoveDetailClient({
               onChange={async (e) => {
                 const v = e.target.value || null;
                 const isOverride = v !== move.truck_primary;
-                const { data } = await supabase.from("moves").update({ truck_primary: v, truck_override: isOverride, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                const { data } = await supabase
+                  .from("moves")
+                  .update({
+                    truck_primary: v,
+                    truck_override: isOverride,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("id", move.id)
+                  .select()
+                  .single();
                 if (data) setMove(data);
                 router.refresh();
               }}
@@ -1139,17 +1549,29 @@ export default function MoveDetailClient({
             >
               <option value="">No vehicle assigned</option>
               {VEHICLE_OPTIONS.map(([val, label]) => (
-                <option key={val} value={val}>{label}</option>
+                <option key={val} value={val}>
+                  {label}
+                </option>
               ))}
             </select>
           </div>
           <div>
-            <label className="admin-premium-label">Secondary Vehicle (Optional)</label>
+            <label className="admin-premium-label">
+              Secondary Vehicle (Optional)
+            </label>
             <select
               value={move.truck_secondary || ""}
               onChange={async (e) => {
                 const v = e.target.value || null;
-                const { data } = await supabase.from("moves").update({ truck_secondary: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                const { data } = await supabase
+                  .from("moves")
+                  .update({
+                    truck_secondary: v,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("id", move.id)
+                  .select()
+                  .single();
                 if (data) setMove(data);
                 router.refresh();
               }}
@@ -1157,7 +1579,9 @@ export default function MoveDetailClient({
             >
               <option value="">None</option>
               {VEHICLE_OPTIONS.map(([val, label]) => (
-                <option key={val} value={val}>{label}</option>
+                <option key={val} value={val}>
+                  {label}
+                </option>
               ))}
             </select>
           </div>
@@ -1168,7 +1592,15 @@ export default function MoveDetailClient({
               onBlur={async (e) => {
                 const v = e.target.value.trim() || null;
                 if (v !== (move.truck_notes || null)) {
-                  const { data } = await supabase.from("moves").update({ truck_notes: v, updated_at: new Date().toISOString() }).eq("id", move.id).select().single();
+                  const { data } = await supabase
+                    .from("moves")
+                    .update({
+                      truck_notes: v,
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq("id", move.id)
+                    .select()
+                    .single();
                   if (data) setMove(data);
                 }
               }}
@@ -1177,7 +1609,11 @@ export default function MoveDetailClient({
               className="admin-premium-textarea w-full resize-none"
             />
           </div>
-          <button type="button" onClick={() => setVehicleModalOpen(false)} className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors">
+          <button
+            type="button"
+            onClick={() => setVehicleModalOpen(false)}
+            className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
+          >
             Done
           </button>
         </div>
@@ -1196,7 +1632,9 @@ export default function MoveDetailClient({
         >
           <div className="p-5 space-y-4">
             <p className="text-[12px] text-[var(--tx2)]">
-              This move is completed. Changing status back to <strong>{getStatusLabel(restartOverrideModal.newStatus)}</strong> will RESTART the move globally:
+              This move is completed. Changing status back to{" "}
+              <strong>{getStatusLabel(restartOverrideModal.newStatus)}</strong>{" "}
+              will RESTART the move globally:
             </p>
             <ul className="text-[11px] text-[var(--tx2)] list-disc list-inside space-y-1">
               <li>Live stage will be cleared</li>
@@ -1204,7 +1642,8 @@ export default function MoveDetailClient({
               <li>Crew will be able to start the job again from scratch</li>
             </ul>
             <p className="text-[11px] text-[var(--tx3)]">
-              Type <strong className="text-[var(--tx2)]">OVERRIDE</strong> to confirm you are an admin and understand this action.
+              Type <strong className="text-[var(--tx2)]">OVERRIDE</strong> to
+              confirm you are an admin and understand this action.
             </p>
             <input
               type="text"
@@ -1228,17 +1667,26 @@ export default function MoveDetailClient({
               </button>
               <button
                 type="button"
-                disabled={restartOverrideTyped.trim().toUpperCase() !== "OVERRIDE"}
+                disabled={
+                  restartOverrideTyped.trim().toUpperCase() !== "OVERRIDE"
+                }
                 onClick={async () => {
-                  if (restartOverrideTyped.trim().toUpperCase() !== "OVERRIDE") return;
+                  if (restartOverrideTyped.trim().toUpperCase() !== "OVERRIDE")
+                    return;
                   try {
-                    const res = await fetch(`/api/admin/moves/${move.id}/restart`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ newStatus: restartOverrideModal.newStatus }),
-                    });
+                    const res = await fetch(
+                      `/api/admin/moves/${move.id}/restart`,
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          newStatus: restartOverrideModal.newStatus,
+                        }),
+                      },
+                    );
                     const data = await res.json();
-                    if (!res.ok) throw new Error(data.error || "Failed to restart");
+                    if (!res.ok)
+                      throw new Error(data.error || "Failed to restart");
                     if (data.move) setMove(data.move);
                     setRestartOverrideModal(null);
                     setRestartOverrideTyped("");
@@ -1246,7 +1694,10 @@ export default function MoveDetailClient({
                     router.refresh();
                     toast("Move restarted", "check");
                   } catch (err) {
-                    toast(err instanceof Error ? err.message : "Failed to restart", "alertTriangle");
+                    toast(
+                      err instanceof Error ? err.message : "Failed to restart",
+                      "alertTriangle",
+                    );
                   }
                 }}
                 className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--org)] text-white hover:bg-[var(--org)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1270,7 +1721,8 @@ export default function MoveDetailClient({
         >
           <div className="p-5 space-y-4">
             <p className="text-[12px] text-[var(--tx2)]">
-              This move is completed. Changing status will <strong>restart</strong> the move globally:
+              This move is completed. Changing status will{" "}
+              <strong>restart</strong> the move globally:
             </p>
             <ul className="text-[11px] text-[var(--tx2)] list-disc list-inside space-y-1">
               <li>Live stage will be cleared</li>
@@ -1278,19 +1730,26 @@ export default function MoveDetailClient({
               <li>Crew will be able to start the job again from scratch</li>
             </ul>
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1.5">New status</label>
+              <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1.5">
+                New status
+              </label>
               <select
                 value={overrideStatusNewStatus}
                 onChange={(e) => setOverrideStatusNewStatus(e.target.value)}
                 className="admin-premium-input w-full"
               >
-                {MOVE_STATUS_OPTIONS.filter((s) => !["completed", "cancelled"].includes(s.value)).map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
+                {MOVE_STATUS_OPTIONS.filter(
+                  (s) => !["completed", "cancelled"].includes(s.value),
+                ).map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
                 ))}
               </select>
             </div>
             <p className="text-[11px] text-[var(--tx3)]">
-              Type <strong className="text-[var(--tx2)]">OVERRIDE</strong> to confirm you understand this action.
+              Type <strong className="text-[var(--tx2)]">OVERRIDE</strong> to
+              confirm you understand this action.
             </p>
             <input
               type="text"
@@ -1313,24 +1772,40 @@ export default function MoveDetailClient({
               </button>
               <button
                 type="button"
-                disabled={overrideStatusTyped.trim().toUpperCase() !== "OVERRIDE"}
+                disabled={
+                  overrideStatusTyped.trim().toUpperCase() !== "OVERRIDE"
+                }
                 onClick={async () => {
-                  if (overrideStatusTyped.trim().toUpperCase() !== "OVERRIDE") return;
+                  if (overrideStatusTyped.trim().toUpperCase() !== "OVERRIDE")
+                    return;
                   try {
-                    const res = await fetch(`/api/admin/moves/${move.id}/restart`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ newStatus: overrideStatusNewStatus }),
-                    });
+                    const res = await fetch(
+                      `/api/admin/moves/${move.id}/restart`,
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          newStatus: overrideStatusNewStatus,
+                        }),
+                      },
+                    );
                     const data = await res.json();
-                    if (!res.ok) throw new Error(data.error || "Failed to override status");
+                    if (!res.ok)
+                      throw new Error(
+                        data.error || "Failed to override status",
+                      );
                     if (data.move) setMove(data.move);
                     setOverrideStatusModalOpen(false);
                     setOverrideStatusTyped("");
                     router.refresh();
                     toast("Status overridden", "check");
                   } catch (err) {
-                    toast(err instanceof Error ? err.message : "Failed to override status", "alertTriangle");
+                    toast(
+                      err instanceof Error
+                        ? err.message
+                        : "Failed to override status",
+                      "alertTriangle",
+                    );
                   }
                 }}
                 className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--org)] text-white hover:bg-[var(--org)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1344,20 +1819,30 @@ export default function MoveDetailClient({
 
       {/* ─── Seamless info sections ─── */}
       <div className="rounded-2xl border border-[var(--brd)]/60 bg-[var(--card)] overflow-hidden px-5 mt-1">
-
         {/* Time Intelligence */}
         <div className="group/s relative py-4">
           {!isCompleted ? (
-            <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100" onClick={() => setDetailsModalOpen(true)} aria-label="Edit date & time">
+            <button
+              type="button"
+              className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100"
+              onClick={() => setDetailsModalOpen(true)}
+              aria-label="Edit date, time window, and allocated job time"
+            >
               <Pencil weight="regular" className="w-[13px] h-[13px]" />
             </button>
           ) : (
-            <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed. Editing is locked." aria-hidden="true">
+            <span
+              className="absolute top-4 right-0 p-1 rounded-md text-red-500"
+              title="Move completed. Editing is locked."
+              aria-hidden="true"
+            >
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
-          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Time & Intelligence</div>
-          {jobTimeTracker && !isCompleted && (
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
+            Time & Intelligence
+          </div>
+          {!isCompleted && jobTimeTracker && (
             <div className="mb-4 max-w-[440px]">
               <CrewJobTimer
                 elapsedMs={jobDuration?.startedAt ? jobDurationElapsed : 0}
@@ -1368,63 +1853,102 @@ export default function MoveDetailClient({
               />
             </div>
           )}
+          {!isCompleted && !jobTimeTracker && (
+            <p className="mb-4 max-w-[440px] text-[12px] text-[var(--tx2)] leading-relaxed">
+              Set{" "}
+              <span className="font-semibold text-[var(--tx)]">
+                allocated job time
+              </span>{" "}
+              in the schedule editor (pencil) so the timer and margin alert use
+              on-site work time, not the arrival window.
+            </p>
+          )}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-1">
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Date</span><div className="text-[13px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Time Window</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.arrival_window || "-"}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Job duration</span><div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">{jobDurationStr ?? "-"}</div></div>
-            {jobTimeTracker && (
-                <div>
-                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
-                    Estimated duration
-                  </span>
-                  <div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">
-                    {(() => {
-                      const m = Math.round(jobTimeTracker.minutes);
-                      const h = Math.floor(m / 60);
-                      const r = m % 60;
-                      if (h === 0) return `${r}m`;
-                      if (r === 0) return `${h}h`;
-                      return `${h}h ${r}m`;
-                    })()}
-                  </div>
-                </div>
-              )}
-            {jobTimeTracker && (
-                <div>
-                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
-                    Margin alert at
-                  </span>
-                  <div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">
-                    {(() => {
-                      const m = Math.round(jobTimeTracker.margin);
-                      const h = Math.floor(m / 60);
-                      const r = m % 60;
-                      if (h === 0) return `${r}m`;
-                      if (r === 0) return `${h}h`;
-                      return `${h}h ${r}m`;
-                    })()}
-                  </div>
-                </div>
-              )}
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Completed at</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.completed_at ? formatPlatformDisplay(move.completed_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }, "-") : "-"}</div></div>
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Days Left</span>
-              <div className={`text-[13px] font-bold tabular-nums ${
-                daysUntil === null || daysUntil === undefined
-                  ? "text-[var(--tx3)]"
-                  : daysUntil < 0
-                  ? "text-[var(--red)]"
-                  : daysUntil <= 1
-                  ? "text-amber-400"
-                  : "text-[var(--gold)]"
-              }`}>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                Date
+              </span>
+              <div className="text-[13px] font-medium text-[var(--tx)]">
+                {formatMoveDate(move.scheduled_date)}
+              </div>
+            </div>
+            <div>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                Time Window
+              </span>
+              <div className="text-[13px] font-medium text-[var(--tx)]">
+                {move.arrival_window || "-"}
+              </div>
+            </div>
+            <div>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                Job duration
+              </span>
+              <div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">
+                {jobDurationStr ?? "-"}
+              </div>
+            </div>
+            <div>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                Estimated duration
+              </span>
+              <div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">
+                {jobTimeTracker
+                  ? formatMinutesAsHhMm(Math.round(jobTimeTracker.minutes))
+                  : "Not set"}
+              </div>
+            </div>
+            <div>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                Margin alert at
+              </span>
+              <div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">
+                {jobTimeTracker
+                  ? formatMinutesAsHhMm(Math.round(jobTimeTracker.margin))
+                  : "-"}
+              </div>
+            </div>
+            <div>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                Completed at
+              </span>
+              <div className="text-[13px] font-medium text-[var(--tx)]">
+                {move.completed_at
+                  ? formatPlatformDisplay(
+                      move.completed_at,
+                      {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      },
+                      "-",
+                    )
+                  : "-"}
+              </div>
+            </div>
+            <div>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                Days Left
+              </span>
+              <div
+                className={`text-[13px] font-bold tabular-nums ${
+                  daysUntil === null || daysUntil === undefined
+                    ? "text-[var(--tx3)]"
+                    : daysUntil < 0
+                      ? "text-[var(--red)]"
+                      : daysUntil <= 1
+                        ? "text-amber-400"
+                        : "text-[var(--gold)]"
+                }`}
+              >
                 {daysUntil === null || daysUntil === undefined
                   ? "-"
                   : daysUntil < 0
-                  ? `${Math.abs(daysUntil)}d overdue`
-                  : daysUntil === 0
-                  ? "Today"
-                  : `${daysUntil}d`}
+                    ? `${Math.abs(daysUntil)}d overdue`
+                    : daysUntil === 0
+                      ? "Today"
+                      : `${daysUntil}d`}
               </div>
             </div>
           </div>
@@ -1433,25 +1957,55 @@ export default function MoveDetailClient({
         {/* Addresses */}
         <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
           {!isCompleted ? (
-            <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100" onClick={() => { setDetailsModalSection("addresses"); setDetailsModalOpen(true); }} aria-label="Edit addresses">
+            <button
+              type="button"
+              className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100"
+              onClick={() => {
+                setDetailsModalSection("addresses");
+                setDetailsModalOpen(true);
+              }}
+              aria-label="Edit addresses"
+            >
               <Pencil weight="regular" className="w-[13px] h-[13px]" />
             </button>
           ) : (
-            <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed. Editing is locked." aria-hidden="true">
+            <span
+              className="absolute top-4 right-0 p-1 rounded-md text-red-500"
+              title="Move completed. Editing is locked."
+              aria-hidden="true"
+            >
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
-          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Addresses</div>
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
+            Addresses
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">From</span>
-              <div className="text-[13px] font-medium text-[var(--tx)]">{move.from_address || "-"}</div>
-              {formatAccessForDisplay(move.from_access) && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatAccessForDisplay(move.from_access)}</div>}
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                From
+              </span>
+              <div className="text-[13px] font-medium text-[var(--tx)]">
+                {move.from_address || "-"}
+              </div>
+              {formatAccessForDisplay(move.from_access) && (
+                <div className="text-[9px] text-[var(--tx3)] mt-0.5">
+                  {formatAccessForDisplay(move.from_access)}
+                </div>
+              )}
             </div>
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">To</span>
-              <div className="text-[13px] font-medium text-[var(--tx)]">{move.to_address || move.delivery_address || "-"}</div>
-              {formatAccessForDisplay(move.to_access) && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatAccessForDisplay(move.to_access)}</div>}
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                To
+              </span>
+              <div className="text-[13px] font-medium text-[var(--tx)]">
+                {move.to_address || move.delivery_address || "-"}
+              </div>
+              {formatAccessForDisplay(move.to_access) && (
+                <div className="text-[9px] text-[var(--tx3)] mt-0.5">
+                  {formatAccessForDisplay(move.to_access)}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1459,22 +2013,75 @@ export default function MoveDetailClient({
         {/* Crew */}
         <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
           {!isCompleted ? (
-            <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent" onClick={() => !moveInProgress && setCrewModalOpen(true)} disabled={moveInProgress} aria-label="Edit crew" title={moveInProgress ? "Cannot reassign job in progress" : "Change crew"}>
+            <button
+              type="button"
+              className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              onClick={() => !moveInProgress && setCrewModalOpen(true)}
+              disabled={moveInProgress}
+              aria-label="Edit crew"
+              title={
+                moveInProgress
+                  ? "Cannot reassign job in progress"
+                  : "Change crew"
+              }
+            >
               <Pencil weight="regular" className="w-[13px] h-[13px]" />
             </button>
           ) : (
-            <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed. Editing is locked." aria-hidden="true">
+            <span
+              className="absolute top-4 right-0 p-1 rounded-md text-red-500"
+              title="Move completed. Editing is locked."
+              aria-hidden="true"
+            >
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
-          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Crew</div>
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
+            Crew
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Crew</span><div className="text-[13px] font-medium text-[var(--tx)]">{displayCrewName || "-"}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Coordinator</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.coordinator_name || "-"}</div></div>
+            <div>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                Crew
+              </span>
+              <div className="text-[13px] font-medium text-[var(--tx)]">
+                {displayCrewName || "-"}
+              </div>
+            </div>
+            <div>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                Coordinator
+              </span>
+              <div className="text-[13px] font-medium text-[var(--tx)]">
+                {move.coordinator_name || "-"}
+              </div>
+            </div>
             {isCompleted ? (
-              <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Assigned</span><div className="text-[13px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></div>
+              <div>
+                <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                  Assigned
+                </span>
+                <div className="text-[13px] font-medium text-[var(--gold)]">
+                  {assignedMembers.size} members
+                </div>
+              </div>
             ) : (
-              <button type="button" onClick={() => !moveInProgress && setCrewModalOpen(true)} disabled={moveInProgress} className={`text-left hover:opacity-90 transition-opacity ${moveInProgress ? "opacity-60 cursor-not-allowed" : ""}`} title={moveInProgress ? "Cannot reassign job in progress" : undefined}><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Assigned</span><div className="text-[13px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></button>
+              <button
+                type="button"
+                onClick={() => !moveInProgress && setCrewModalOpen(true)}
+                disabled={moveInProgress}
+                className={`text-left hover:opacity-90 transition-opacity ${moveInProgress ? "opacity-60 cursor-not-allowed" : ""}`}
+                title={
+                  moveInProgress ? "Cannot reassign job in progress" : undefined
+                }
+              >
+                <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                  Assigned
+                </span>
+                <div className="text-[13px] font-medium text-[var(--gold)]">
+                  {assignedMembers.size} members
+                </div>
+              </button>
             )}
           </div>
         </div>
@@ -1482,55 +2089,114 @@ export default function MoveDetailClient({
         {/* Vehicle */}
         <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
           {!isCompleted ? (
-            <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100" onClick={() => setVehicleModalOpen(true)} aria-label="Edit vehicle">
+            <button
+              type="button"
+              className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100"
+              onClick={() => setVehicleModalOpen(true)}
+              aria-label="Edit vehicle"
+            >
               <Pencil weight="regular" className="w-[13px] h-[13px]" />
             </button>
           ) : (
-            <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed. Editing is locked." aria-hidden="true">
+            <span
+              className="absolute top-4 right-0 p-1 rounded-md text-red-500"
+              title="Move completed. Editing is locked."
+              aria-hidden="true"
+            >
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
-          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Vehicle</div>
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
+            Vehicle
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Primary</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.truck_primary ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary : "-"}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Secondary</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.truck_secondary ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary : "-"}</div></div>
-            {move.truck_notes && <div className="col-span-2 sm:col-span-1"><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Notes</span><div className="text-[10px] text-[var(--tx3)]">{move.truck_notes}</div></div>}
+            <div>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                Primary
+              </span>
+              <div className="text-[13px] font-medium text-[var(--tx)]">
+                {move.truck_primary
+                  ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary
+                  : "-"}
+              </div>
+            </div>
+            <div>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                Secondary
+              </span>
+              <div className="text-[13px] font-medium text-[var(--tx)]">
+                {move.truck_secondary
+                  ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary
+                  : "-"}
+              </div>
+            </div>
+            {move.truck_notes && (
+              <div className="col-span-2 sm:col-span-1">
+                <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                  Notes
+                </span>
+                <div className="text-[10px] text-[var(--tx3)]">
+                  {move.truck_notes}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Valuation Protection (not applicable to bin rental) */}
         {String(move.service_type || "").toLowerCase() !== "bin_rental" &&
-          (move.valuation_tier || move.valuation_upgrade_cost || move.declaration_total) && (
-          <div className="border-t border-[var(--brd)]/30 py-4">
-            <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Valuation Protection</div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-              <div>
-                <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Tier</span>
-                <div className="text-[13px] font-medium text-[var(--tx)]">
-                  {move.valuation_tier === "full_replacement" ? "Full Replacement" : move.valuation_tier === "enhanced" ? "Enhanced Value" : "Released Value"}
-                </div>
+          (move.valuation_tier ||
+            move.valuation_upgrade_cost ||
+            move.declaration_total) && (
+            <div className="border-t border-[var(--brd)]/30 py-4">
+              <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
+                Valuation Protection
               </div>
-              {(move.valuation_upgrade_cost ?? 0) > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
                 <div>
-                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Upgrade Cost</span>
-                  <div className="text-[13px] font-medium text-[var(--gold)]">{formatCurrency(move.valuation_upgrade_cost)}</div>
+                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                    Tier
+                  </span>
+                  <div className="text-[13px] font-medium text-[var(--tx)]">
+                    {move.valuation_tier === "full_replacement"
+                      ? "Full Replacement"
+                      : move.valuation_tier === "enhanced"
+                        ? "Enhanced Value"
+                        : "Released Value"}
+                  </div>
                 </div>
-              )}
-              {(move.declaration_total ?? 0) > 0 && (
-                <div>
-                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">Declarations</span>
-                  <div className="text-[13px] font-medium text-[var(--gold)]">{formatCurrency(move.declaration_total)}</div>
-                </div>
-              )}
+                {(move.valuation_upgrade_cost ?? 0) > 0 && (
+                  <div>
+                    <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                      Upgrade Cost
+                    </span>
+                    <div className="text-[13px] font-medium text-[var(--gold)]">
+                      {formatCurrency(move.valuation_upgrade_cost)}
+                    </div>
+                  </div>
+                )}
+                {(move.declaration_total ?? 0) > 0 && (
+                  <div>
+                    <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                      Declarations
+                    </span>
+                    <div className="text-[13px] font-medium text-[var(--gold)]">
+                      {formatCurrency(move.declaration_total)}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
 
       {/* Financial Snapshot */}
       {(() => {
         const PAY_TOTAL_EPS = 0.05;
-        const quoteTotal = estimate > 0 ? estimate : (depositPaid + balanceDue);
+        const quoteTotal = estimate > 0 ? estimate : depositPaid + balanceDue;
+        const ctl = contractTaxLines(estimate, Number(move.amount ?? 0));
+        const contractInclForLabels =
+          ctl.inclusive > 0 ? ctl.inclusive : quoteTotal;
         const ledgerSumAfterTax = paymentLedger.reduce(
           (s, row) => s + Number(row.pre_tax_amount) + Number(row.hst_amount),
           0,
@@ -1543,7 +2209,8 @@ export default function MoveDetailClient({
         const fullyPaid =
           balanceDue <= PAY_TOTAL_EPS &&
           (isBalancePaid ||
-            (totalPaidNum != null && totalPaidNum >= quoteTotal - PAY_TOTAL_EPS) ||
+            (totalPaidNum != null &&
+              totalPaidNum >= quoteTotal - PAY_TOTAL_EPS) ||
             ledgerSumAfterTax >= quoteTotal - PAY_TOTAL_EPS);
         const collectedAmount = fullyPaid
           ? quoteTotal
@@ -1552,34 +2219,52 @@ export default function MoveDetailClient({
             : ledgerSumAfterTax > 0
               ? ledgerSumAfterTax
               : depositPaid;
-        const progressPct = quoteTotal > 0 ? Math.min(100, Math.round((collectedAmount / quoteTotal) * 100)) : 0;
+        const contractBarTarget = contractInclForLabels > 0 ? contractInclForLabels : quoteTotal;
+        const progressPct =
+          contractBarTarget > 0
+            ? Math.min(100, Math.round((collectedAmount / contractBarTarget) * 100))
+            : 0;
         const footerRecordedAfterTax = fullyPaid
           ? quoteTotal
-          : totalPaidNum ?? (ledgerSumAfterTax > 0 ? ledgerSumAfterTax : null);
+          : (totalPaidNum ??
+            (ledgerSumAfterTax > 0 ? ledgerSumAfterTax : null));
         const depositRowsTotalAfterTax = paymentLedger
           .filter((r) => r.entry_type === "deposit")
-          .reduce((s, r) => s + Number(r.pre_tax_amount) + Number(r.hst_amount), 0);
+          .reduce(
+            (s, r) => s + Number(r.pre_tax_amount) + Number(r.hst_amount),
+            0,
+          );
 
         const ledgerDisplayTitle = (row: (typeof paymentLedger)[0]) => {
           if (row.entry_type === "deposit") {
-            if (row.label === "Deposit" || row.label === "Contract deposit") return "Contract deposit";
+            if (row.label === "Deposit" || row.label === "Contract deposit")
+              return "Contract deposit";
             return row.label;
           }
           if (row.entry_type === "balance") {
-            if (row.label === "Balance payment" || row.label === "Final payment") return "Final payment";
+            if (
+              row.label === "Balance payment" ||
+              row.label === "Final payment"
+            )
+              return "Final payment";
             return row.label;
           }
           return row.label;
         };
 
-        const ledgerContextLine = (row: (typeof paymentLedger)[0], lineTotal: number) => {
+        const ledgerContextLine = (
+          row: (typeof paymentLedger)[0],
+          lineTotal: number,
+        ) => {
           if (row.entry_type === "deposit") {
-            return `${formatCurrency(lineTotal)} deposit on ${formatCurrency(quoteTotal)} contract total`;
+            return `${formatCurrency(lineTotal)} deposit on ${formatCurrency(contractInclForLabels)} contract total (incl. HST)`;
           }
           if (row.entry_type === "balance") {
             const depBase =
-              depositRowsTotalAfterTax > 0 ? depositRowsTotalAfterTax : Math.min(depositPaid, quoteTotal);
-            return `${formatCurrency(quoteTotal)} contract − ${formatCurrency(depBase)} deposit = ${formatCurrency(lineTotal)}`;
+              depositRowsTotalAfterTax > 0
+                ? depositRowsTotalAfterTax
+                : Math.min(depositPaid, quoteTotal);
+            return `${formatCurrency(contractInclForLabels)} contract (incl. HST) − ${formatCurrency(depBase)} deposit = ${formatCurrency(lineTotal)}`;
           }
           return null;
         };
@@ -1608,16 +2293,20 @@ export default function MoveDetailClient({
                     canEdit={canEditPostCompletionPrice}
                     previousEdits={postCompletionPriceEdits}
                     completed={isCompleted}
-                    trigger={(
+                    trigger={
                       <button
                         type="button"
                         className="shrink-0 p-1 rounded-md text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tx)]/25 transition-colors"
                         aria-label="Adjust final price"
                         title="Adjust final price"
                       >
-                        <Pencil weight="regular" className="w-3.5 h-3.5" aria-hidden />
+                        <Pencil
+                          weight="regular"
+                          className="w-3.5 h-3.5"
+                          aria-hidden
+                        />
                       </button>
-                    )}
+                    }
                   />
                 ) : null}
                 {(() => {
@@ -1639,41 +2328,62 @@ export default function MoveDetailClient({
             {/* Main amount */}
             <div className="px-5 pt-3 pb-4">
               <div>
-                  {/* Status badge sits above the number */}
-                  <div className="mb-2">
-                    {fullyPaid ? (
-                      <span className="dt-badge tracking-[0.04em] text-[var(--grn)]">
-                        Paid
-                      </span>
-                    ) : balanceUnpaid ? (
-                      <span className="dt-badge tracking-[0.04em] text-[var(--red)]">
-                        Overdue
-                      </span>
-                    ) : (
-                      <span className="dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">
-                        Pending
-                      </span>
-                    )}
-                  </div>
-                  <div className={`font-heading text-[32px] font-bold leading-none tracking-tight ${
-                    fullyPaid ? "text-[var(--grn)]" : balanceUnpaid ? "text-[var(--red)]" : "text-[var(--tx)]"
-                  }`}>
-                    {formatCurrency(fullyPaid ? quoteTotal : balanceDue)}
-                  </div>
-                  <div className="mt-1.5 flex items-center gap-2">
-                    <span className="text-[10px] text-[var(--tx3)]/82">
-                      {fullyPaid
-                        ? `Total collected${move.balance_method ? ` · Card${move.balance_auto_charged ? " (auto)" : ""}` : ""}`
-                        : `Balance due · +${formatCurrency(calcHST(balanceDue))} HST`}
+                {/* Status badge sits above the number */}
+                <div className="mb-2">
+                  {fullyPaid ? (
+                    <span className="dt-badge tracking-[0.04em] text-[var(--grn)]">
+                      Paid
                     </span>
-                  </div>
+                  ) : balanceUnpaid ? (
+                    <span className="dt-badge tracking-[0.04em] text-[var(--red)]">
+                      Overdue
+                    </span>
+                  ) : (
+                    <span className="dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">
+                      Pending
+                    </span>
+                  )}
+                </div>
+                <div
+                  className={`font-heading text-[32px] font-bold leading-none tracking-tight ${
+                    fullyPaid
+                      ? "text-[var(--grn)]"
+                      : balanceUnpaid
+                        ? "text-[var(--red)]"
+                        : "text-[var(--tx)]"
+                  }`}
+                >
+                  {fullyPaid
+                    ? formatCurrency(
+                        ctl.inclusive > 0 ? ctl.inclusive : quoteTotal,
+                      )
+                    : formatCurrency(balanceDue)}
+                </div>
+                {fullyPaid && ctl.hst > 0 && (
+                  <p className="mt-1.5 text-[11px] font-medium text-[var(--tx2)] leading-snug">
+                    Subtotal {formatCurrency(ctl.preTax)} + HST{" "}
+                    {formatCurrency(ctl.hst)} = {formatCurrency(ctl.inclusive)} total
+                    (incl. HST, Ontario 13%)
+                  </p>
+                )}
+                <div className="mt-1.5 flex items-center gap-2">
+                  <span className="text-[10px] text-[var(--tx3)]/82">
+                    {fullyPaid
+                      ? `Total collected (incl. HST)${move.balance_method ? ` · Card${move.balance_auto_charged ? " (auto)" : ""}` : ""}`
+                      : `Balance due · +${formatCurrency(calcHST(balanceDue))} HST`}
+                  </span>
+                </div>
               </div>
 
               {/* Progress bar */}
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[9px] text-[var(--tx3)]">{formatCurrency(collectedAmount)} collected</span>
-                  <span className="text-[9px] text-[var(--tx3)]">{formatCurrency(quoteTotal)} contract</span>
+                  <span className="text-[9px] text-[var(--tx3)]">
+                    {formatCurrency(collectedAmount)} collected
+                  </span>
+                  <span className="text-[9px] text-[var(--tx3)]">
+                    {formatCurrency(contractInclForLabels)} contract (incl. HST)
+                  </span>
                 </div>
                 <div className="h-1.5 rounded-full bg-[var(--brd)]/40 overflow-hidden">
                   <div
@@ -1686,21 +2396,35 @@ export default function MoveDetailClient({
 
             {paymentLedger.length > 0 && (
               <div className="px-5 py-3 border-t border-[var(--brd)]/40">
-                <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/82 mb-2">Payment transactions</div>
+                <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/82 mb-2">
+                  Payment transactions
+                </div>
                 <ul className="space-y-2">
                   {paymentLedger.map((row) => {
-                    const lineTotal = Number(row.pre_tax_amount) + Number(row.hst_amount);
+                    const lineTotal =
+                      Number(row.pre_tax_amount) + Number(row.hst_amount);
                     const paid = new Date(row.paid_at);
                     const contextLine = ledgerContextLine(row, lineTotal);
                     return (
-                      <li key={row.id} className="flex flex-wrap items-baseline justify-between gap-2 text-[11px] text-[var(--tx)]">
+                      <li
+                        key={row.id}
+                        className="flex flex-wrap items-baseline justify-between gap-2 text-[11px] text-[var(--tx)]"
+                      >
                         <div className="min-w-0">
-                          <span className="font-semibold">{ledgerDisplayTitle(row)}</span>
+                          <span className="font-semibold">
+                            {ledgerDisplayTitle(row)}
+                          </span>
                           <span className="text-[var(--tx3)]/88 ml-1.5">
-                            · {formatPlatformDisplay(paid, { month: "short", day: "numeric" })}
+                            ·{" "}
+                            {formatPlatformDisplay(paid, {
+                              month: "short",
+                              day: "numeric",
+                            })}
                           </span>
                           {row.settlement_method === "admin" && (
-                            <span className="text-[9px] text-[var(--tx3)] ml-1">(override)</span>
+                            <span className="text-[9px] text-[var(--tx3)] ml-1">
+                              (override)
+                            </span>
                           )}
                           {contextLine && (
                             <div className="text-[9px] text-[var(--tx3)]/90 mt-1 leading-snug max-w-[min(100%,280px)]">
@@ -1709,10 +2433,14 @@ export default function MoveDetailClient({
                           )}
                         </div>
                         <div className="font-medium tabular-nums text-right">
-                          <div className="text-[var(--tx)]">{formatCurrency(lineTotal)}</div>
-                          {(Number(row.hst_amount) > 0 || Number(row.pre_tax_amount) > 0) && (
+                          <div className="text-[var(--tx)]">
+                            {formatCurrency(lineTotal)}
+                          </div>
+                          {(Number(row.hst_amount) > 0 ||
+                            Number(row.pre_tax_amount) > 0) && (
                             <div className="text-[9px] text-[var(--tx3)] font-normal mt-0.5 ml-auto leading-snug">
-                              Subtotal {formatCurrency(row.pre_tax_amount)} + tax {formatCurrency(row.hst_amount)}
+                              Subtotal {formatCurrency(row.pre_tax_amount)} +
+                              tax {formatCurrency(row.hst_amount)}
                             </div>
                           )}
                         </div>
@@ -1723,7 +2451,9 @@ export default function MoveDetailClient({
                 {footerRecordedAfterTax != null && (
                   <p className="text-[10px] text-[var(--tx3)]/80 mt-3 pt-2 border-t border-[var(--brd)]/30">
                     Recorded payments (after tax):{" "}
-                    <span className="font-semibold text-[var(--tx)]">{formatCurrency(footerRecordedAfterTax)}</span>
+                    <span className="font-semibold text-[var(--tx)]">
+                      {formatCurrency(footerRecordedAfterTax)}
+                    </span>
                   </p>
                 )}
               </div>
@@ -1742,22 +2472,35 @@ export default function MoveDetailClient({
                         const res = await fetch(`/api/admin/moves/${move.id}`, {
                           method: "PATCH",
                           headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ action: "mark_deposit_collected", marked_by: "admin" }),
+                          body: JSON.stringify({
+                            action: "mark_deposit_collected",
+                            marked_by: "admin",
+                          }),
                         });
                         const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || "Failed to record deposit");
+                        if (!res.ok)
+                          throw new Error(
+                            data.error || "Failed to record deposit",
+                          );
                         if (data) setMove(data);
                         router.refresh();
                         toast("Deposit recorded", "check");
                       } catch (err) {
-                        toast(err instanceof Error ? err.message : "Failed to record deposit", "alertTriangle");
+                        toast(
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to record deposit",
+                          "alertTriangle",
+                        );
                       } finally {
                         setPaymentBtnLoading(null);
                       }
                     }}
                     className="inline-flex items-center justify-center rounded-lg border border-[var(--grn)]/40 bg-[var(--grn)]/8 px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--grn)] hover:bg-[var(--grn)]/14 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   >
-                    {paymentBtnLoading === "deposit" ? "RECORDING…" : "MARK DEPOSIT PAID"}
+                    {paymentBtnLoading === "deposit"
+                      ? "RECORDING…"
+                      : "MARK DEPOSIT PAID"}
                   </button>
                 )}
                 {!move.balance_paid_at && balanceDue > 0.005 && (
@@ -1770,22 +2513,35 @@ export default function MoveDetailClient({
                         const res = await fetch(`/api/admin/moves/${move.id}`, {
                           method: "PATCH",
                           headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ action: "mark_full_payment_collected", marked_by: "admin" }),
+                          body: JSON.stringify({
+                            action: "mark_full_payment_collected",
+                            marked_by: "admin",
+                          }),
                         });
                         const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || "Failed to record full payment");
+                        if (!res.ok)
+                          throw new Error(
+                            data.error || "Failed to record full payment",
+                          );
                         if (data) setMove(data);
                         router.refresh();
                         toast("Full payment recorded", "check");
                       } catch (err) {
-                        toast(err instanceof Error ? err.message : "Failed to record full payment", "alertTriangle");
+                        toast(
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to record full payment",
+                          "alertTriangle",
+                        );
                       } finally {
                         setPaymentBtnLoading(null);
                       }
                     }}
                     className="inline-flex items-center justify-center rounded-lg border border-[var(--grn)]/40 bg-[var(--grn)]/8 px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--grn)] hover:bg-[var(--grn)]/14 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   >
-                    {paymentBtnLoading === "full" ? "RECORDING…" : "FULL PAYMENT COLLECTED"}
+                    {paymentBtnLoading === "full"
+                      ? "RECORDING…"
+                      : "FULL PAYMENT COLLECTED"}
                   </button>
                 )}
                 {balanceDue > 0 && !move.balance_auto_charged && (
@@ -1795,29 +2551,48 @@ export default function MoveDetailClient({
                         type="button"
                         disabled={paymentBtnLoading !== null}
                         onClick={async () => {
-                          if (!window.confirm(`Charge ${formatCurrency(balanceDue)} CAD to the client's card on file?`)) return;
+                          if (
+                            !window.confirm(
+                              `Charge ${formatCurrency(balanceDue)} CAD to the client's card on file?`,
+                            )
+                          )
+                            return;
                           setPaymentBtnLoading("card");
                           try {
-                            const res = await fetch(`/api/admin/moves/${move.id}`, {
-                              method: "PATCH",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ action: "charge_card_now", marked_by: "admin" }),
-                            });
+                            const res = await fetch(
+                              `/api/admin/moves/${move.id}`,
+                              {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  action: "charge_card_now",
+                                  marked_by: "admin",
+                                }),
+                              },
+                            );
                             const data = await res.json();
-                            if (!res.ok) throw new Error(data.error || "Failed");
+                            if (!res.ok)
+                              throw new Error(data.error || "Failed");
                             setBalanceJustSettled(true);
                             setMove(data);
                             router.refresh();
                             toast("Card charged successfully", "check");
                           } catch (err) {
-                            toast(err instanceof Error ? err.message : "Failed to charge card", "alertTriangle");
+                            toast(
+                              err instanceof Error
+                                ? err.message
+                                : "Failed to charge card",
+                              "alertTriangle",
+                            );
                           } finally {
                             setPaymentBtnLoading(null);
                           }
                         }}
                         className="text-[10px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/25 hover:bg-[var(--gold)]/18 transition-colors disabled:opacity-40"
                       >
-                        {paymentBtnLoading === "card" ? "Charging…" : "Charge Card Now"}
+                        {paymentBtnLoading === "card"
+                          ? "Charging…"
+                          : "Charge Card Now"}
                       </button>
                     )}
                   </>
@@ -1832,32 +2607,48 @@ export default function MoveDetailClient({
       {userRole === "owner" && <MoveProfitCard move={move} />}
 
       {/* Distance & Logistics */}
-      <DistanceLogistics fromAddress={move.from_address} toAddress={move.to_address || move.delivery_address} />
+      <DistanceLogistics
+        fromAddress={move.from_address}
+        toAddress={move.to_address || move.delivery_address}
+      />
 
       {linkedBinOrders.length > 0 && (
-        <CollapsibleSection title="Bin rentals" subtitle={`${linkedBinOrders.length} linked`} defaultCollapsed={false}>
+        <CollapsibleSection
+          title="Bin rentals"
+          subtitle={`${linkedBinOrders.length} linked`}
+          defaultCollapsed={false}
+        >
           <div className="space-y-3">
             {linkedBinOrders.map((raw) => {
               const b = raw as Record<string, unknown>;
               const id = String(b.id ?? "");
               const stKey = String(b.status ?? "").toLowerCase();
-              const stLabel = BIN_ORDER_STATUS_ADMIN[stKey] ?? toTitleCase(stKey);
+              const stLabel =
+                BIN_ORDER_STATUS_ADMIN[stKey] ?? toTitleCase(stKey);
               return (
-                <div key={id} className="rounded-lg border border-[var(--brd)]/60 p-3 text-[11px] space-y-2 bg-[var(--bg)]/40">
+                <div
+                  key={id}
+                  className="rounded-lg border border-[var(--brd)]/60 p-3 text-[11px] space-y-2 bg-[var(--bg)]/40"
+                >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-bold text-[var(--tx)]">
                       {String(b.order_number ?? "Bin order")}
                     </span>
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--tx3)]">{stLabel}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--tx3)]">
+                      {stLabel}
+                    </span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-[var(--tx2)]">
                     <p>
                       <span className="text-[var(--tx3)]">Bundle · bins: </span>
-                      {String(b.bundle_type ?? "—")} · {String(b.bin_count ?? "—")}
+                      {String(b.bundle_type ?? "—")} ·{" "}
+                      {String(b.bin_count ?? "—")}
                     </p>
                     <p>
                       <span className="text-[var(--tx3)]">Drop-off: </span>
-                      {b.drop_off_date ? formatMoveDate(String(b.drop_off_date)) : "—"}
+                      {b.drop_off_date
+                        ? formatMoveDate(String(b.drop_off_date))
+                        : "—"}
                     </p>
                     <p>
                       <span className="text-[var(--tx3)]">Move day: </span>
@@ -1865,14 +2656,23 @@ export default function MoveDetailClient({
                     </p>
                     <p>
                       <span className="text-[var(--tx3)]">Pickup: </span>
-                      {b.pickup_date ? formatMoveDate(String(b.pickup_date)) : "—"}
+                      {b.pickup_date
+                        ? formatMoveDate(String(b.pickup_date))
+                        : "—"}
                     </p>
                   </div>
-                  {(Boolean(b.delivery_address) || Boolean(b.pickup_address)) && (
+                  {(Boolean(b.delivery_address) ||
+                    Boolean(b.pickup_address)) && (
                     <p className="text-[10px] text-[var(--tx3)] leading-snug">
-                      {b.delivery_address ? <span>Deliver: {String(b.delivery_address)}</span> : null}
+                      {b.delivery_address ? (
+                        <span>Deliver: {String(b.delivery_address)}</span>
+                      ) : null}
                       {b.pickup_address ? (
-                        <span className={b.delivery_address ? " block mt-0.5" : ""}>Pick up: {String(b.pickup_address)}</span>
+                        <span
+                          className={b.delivery_address ? " block mt-0.5" : ""}
+                        >
+                          Pick up: {String(b.pickup_address)}
+                        </span>
                       ) : null}
                     </p>
                   )}
@@ -1893,15 +2693,23 @@ export default function MoveDetailClient({
       {/* Walkthrough status (move-day crew walkthrough) */}
       {(move.walkthrough_completed || move.walkthrough_skipped) && (
         <div className="rounded-xl border border-[var(--brd)]/50 bg-[var(--bg)]/60 px-4 py-3 flex items-start gap-3">
-          <div className={`w-2 h-2 rounded-full mt-1 shrink-0 ${move.walkthrough_skipped ? "bg-amber-400" : "bg-[#22C55E]"}`} />
+          <div
+            className={`w-2 h-2 rounded-full mt-1 shrink-0 ${move.walkthrough_skipped ? "bg-amber-400" : "bg-[#22C55E]"}`}
+          />
           <div className="flex-1 min-w-0">
             <p className="text-[11px] font-bold text-[var(--tx)] uppercase tracking-wider">
-              Inventory Walkthrough {move.walkthrough_skipped ? "Skipped" : "Completed"}
+              Inventory Walkthrough{" "}
+              {move.walkthrough_skipped ? "Skipped" : "Completed"}
             </p>
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
               {move.walkthrough_completed_at && (
                 <span className="text-[10px] text-[var(--tx3)]">
-                  {formatPlatformDisplay(move.walkthrough_completed_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                  {formatPlatformDisplay(move.walkthrough_completed_at, {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
                 </span>
               )}
               {move.walkthrough_crew_member && (
@@ -1919,9 +2727,9 @@ export default function MoveDetailClient({
 
       {/* Pending inventory change (client or crew submitted) */}
       {pendingInventoryChange &&
-        ["pending", "admin_reviewing", "client_confirming"].includes(pendingInventoryChange.status) && (
-          <InventoryChangeRequestPanel request={pendingInventoryChange} />
-        )}
+        ["pending", "admin_reviewing", "client_confirming"].includes(
+          pendingInventoryChange.status,
+        ) && <InventoryChangeRequestPanel request={pendingInventoryChange} />}
 
       {pendingModifications.length > 0 && (
         <div className="rounded-xl border border-amber-500/35 bg-amber-500/[0.06] p-4 mb-6">
@@ -1934,7 +2742,8 @@ export default function MoveDetailClient({
                 <span className="font-semibold text-[var(--tx)]">
                   {toTitleCase(String(m.type || "").replace(/_/g, " "))}
                 </span>
-                {m.price_difference != null && Number(m.price_difference) !== 0 ? (
+                {m.price_difference != null &&
+                Number(m.price_difference) !== 0 ? (
                   <span className="text-[var(--tx3)]">
                     {" "}
                     · Price impact {formatCurrency(Number(m.price_difference))}
@@ -1960,18 +2769,26 @@ export default function MoveDetailClient({
           </h3>
           <div className="grid gap-3 sm:grid-cols-2">
             {Object.entries(
-              surveyPhotos.reduce<Record<string, typeof surveyPhotos>>((acc, p) => {
-                const k = p.room || "other";
-                if (!acc[k]) acc[k] = [];
-                acc[k].push(p);
-                return acc;
-              }, {}),
+              surveyPhotos.reduce<Record<string, typeof surveyPhotos>>(
+                (acc, p) => {
+                  const k = p.room || "other";
+                  if (!acc[k]) acc[k] = [];
+                  acc[k].push(p);
+                  return acc;
+                },
+                {},
+              ),
             ).map(([room, photos]) => (
-              <div key={room} className="border border-[var(--brd)]/60 rounded-lg p-3">
+              <div
+                key={room}
+                className="border border-[var(--brd)]/60 rounded-lg p-3"
+              >
                 <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx)] mb-2">
                   {toTitleCase(room.replace(/_/g, " "))}
                 </p>
-                <p className="text-[10px] text-[var(--tx3)] mb-2">{photos.length} photo(s)</p>
+                <p className="text-[10px] text-[var(--tx3)] mb-2">
+                  {photos.length} photo(s)
+                </p>
                 <a
                   href={photos[0]?.photo_url}
                   target="_blank"
@@ -1987,7 +2804,13 @@ export default function MoveDetailClient({
       )}
 
       {/* Inventory, Files & Media */}
-      <MoveInventorySection moveId={move.id} moveStatus={move.status} userRole={userRole} itemWeights={itemWeights} moveType={move.move_type} />
+      <MoveInventorySection
+        moveId={move.id}
+        moveStatus={move.status}
+        userRole={userRole}
+        itemWeights={itemWeights}
+        moveType={move.move_type}
+      />
       <MoveFilesSection moveId={move.id} moveStatus={move.status} />
 
       {/* Reported Issues from crew */}
@@ -1998,23 +2821,41 @@ export default function MoveDetailClient({
       {/* Internal Notes, seamless */}
       <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
         {!isCompleted ? (
-          <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100" onClick={() => { setDetailsModalSection("notes"); setDetailsModalOpen(true); }} aria-label="Edit internal notes">
+          <button
+            type="button"
+            className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100"
+            onClick={() => {
+              setDetailsModalSection("notes");
+              setDetailsModalOpen(true);
+            }}
+            aria-label="Edit internal notes"
+          >
             <Pencil weight="regular" className="w-[13px] h-[13px]" />
           </button>
         ) : (
-          <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed. Editing is locked." aria-hidden="true">
+          <span
+            className="absolute top-4 right-0 p-1 rounded-md text-red-500"
+            title="Move completed. Editing is locked."
+            aria-hidden="true"
+          >
             <Lock className="w-[11px] h-[11px]" />
           </span>
         )}
-        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">Internal Notes</div>
+        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
+          Internal Notes
+        </div>
         <p className="text-[11px] text-[var(--tx2)] leading-snug whitespace-pre-wrap">
-          {stripClientMessagesFromNotes(move.internal_notes) || "No internal notes. Click edit to add."}
+          {stripClientMessagesFromNotes(move.internal_notes) ||
+            "No internal notes. Click edit to add."}
         </p>
       </div>
 
       <EditMoveDetailsModal
         open={detailsModalOpen}
-        onClose={() => { setDetailsModalOpen(false); setDetailsModalSection(null); }}
+        onClose={() => {
+          setDetailsModalOpen(false);
+          setDetailsModalSection(null);
+        }}
         section={detailsModalSection}
         moveId={move.id}
         crews={crews}
@@ -2032,6 +2873,8 @@ export default function MoveDetailClient({
           coordinator_name: move.coordinator_name,
           scheduled_date: move.scheduled_date,
           arrival_window: move.arrival_window,
+          estimated_duration_minutes: move.estimated_duration_minutes ?? null,
+          margin_alert_minutes: move.margin_alert_minutes ?? null,
           from_access: move.from_access,
           to_access: move.to_access,
           access_notes: move.access_notes,
@@ -2078,8 +2921,16 @@ export default function MoveDetailClient({
           const v = pendingCancelStatus!;
           setPendingCancelStatus(null);
           const now = new Date().toISOString();
-          const { data, error } = await supabase.from("moves").update({ status: v, updated_at: now }).eq("id", move.id).select().single();
-          if (error) { toast(error.message || "Failed to update status", "alertTriangle"); return; }
+          const { data, error } = await supabase
+            .from("moves")
+            .update({ status: v, updated_at: now })
+            .eq("id", move.id)
+            .select()
+            .single();
+          if (error) {
+            toast(error.message || "Failed to update status", "alertTriangle");
+            return;
+          }
           if (data) setMove(data);
           setEditingCard(null);
           router.refresh();
@@ -2101,16 +2952,29 @@ export default function MoveDetailClient({
           fetch(`/api/admin/moves/${move.id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "log_status_change", new_status: v, previous_status: move.status }),
+            body: JSON.stringify({
+              action: "log_status_change",
+              new_status: v,
+              previous_status: move.status,
+            }),
           }).catch(() => {});
         }}
-        onCancel={() => { setCancelConfirmOpen(false); setPendingCancelStatus(null); }}
+        onCancel={() => {
+          setCancelConfirmOpen(false);
+          setPendingCancelStatus(null);
+        }}
       />
       {deleteConfirmOpen && (
-        <ModalOverlay open onClose={() => setDeleteConfirmOpen(false)} title="Delete move?" maxWidth="sm">
+        <ModalOverlay
+          open
+          onClose={() => setDeleteConfirmOpen(false)}
+          title="Delete move?"
+          maxWidth="sm"
+        >
           <div className="p-5 space-y-4">
             <p className="text-[12px] text-[var(--tx2)]">
-              This will permanently remove this move and its inventory, documents, and photos. This cannot be undone.
+              This will permanently remove this move and its inventory,
+              documents, and photos. This cannot be undone.
             </p>
             <div className="flex gap-2">
               <button
@@ -2125,13 +2989,23 @@ export default function MoveDetailClient({
                 onClick={async () => {
                   setDeleting(true);
                   try {
-                    const res = await fetch(`/api/admin/moves/${move.id}`, { method: "DELETE" });
+                    const res = await fetch(`/api/admin/moves/${move.id}`, {
+                      method: "DELETE",
+                    });
                     const data = await res.json();
-                    if (!res.ok) throw new Error(data.error || "Failed to delete");
+                    if (!res.ok)
+                      throw new Error(data.error || "Failed to delete");
                     toast("Move deleted", "check");
-                    router.push(isOffice ? "/admin/moves/office" : "/admin/moves/residential");
+                    router.push(
+                      isOffice
+                        ? "/admin/moves/office"
+                        : "/admin/moves/residential",
+                    );
                   } catch (e) {
-                    toast(e instanceof Error ? e.message : "Failed to delete move", "x");
+                    toast(
+                      e instanceof Error ? e.message : "Failed to delete move",
+                      "x",
+                    );
                   } finally {
                     setDeleting(false);
                   }
@@ -2155,9 +3029,14 @@ export default function MoveDetailClient({
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function MoveProfitCard({ move }: { move: any }) {
   const [costs, setCosts] = useState<{
-    labour: number; fuel: number; truck: number; supplies: number;
-    processing: number; totalDirect: number;
-    grossProfit: number; grossMargin: number;
+    labour: number;
+    fuel: number;
+    truck: number;
+    supplies: number;
+    processing: number;
+    totalDirect: number;
+    grossProfit: number;
+    grossMargin: number;
     paidWithCard?: boolean;
   } | null>(null);
   const [target, setTarget] = useState(40);
@@ -2168,11 +3047,15 @@ function MoveProfitCard({ move }: { move: any }) {
         const now = new Date();
         const from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
         const to = now.toISOString().slice(0, 10);
-        const res = await fetch(`/api/admin/profitability?from=${from}&to=${to}`);
+        const res = await fetch(
+          `/api/admin/profitability?from=${from}&to=${to}`,
+        );
         if (!res.ok) return;
         const data = await res.json();
         setTarget(data.summary?.targetMargin ?? 40);
-        const match = (data.rows ?? []).find((r: { id: string }) => r.id === move.id);
+        const match = (data.rows ?? []).find(
+          (r: { id: string }) => r.id === move.id,
+        );
         if (match) {
           setCosts({
             labour: match.labour,
@@ -2186,38 +3069,89 @@ function MoveProfitCard({ move }: { move: any }) {
             paidWithCard: match.paid_with_card === true,
           });
         }
-      } catch { /* silent */ }
+      } catch {
+        /* silent */
+      }
     })();
   }, [move.id]);
 
   if (!costs) return null;
 
   const revenue = move.final_amount ?? move.estimate ?? move.amount ?? 0;
-  const marginColor = costs.grossMargin >= target ? "text-emerald-400" : costs.grossMargin >= target - 5 ? "text-[var(--gold)]" : "text-red-400";
+  const marginColor =
+    costs.grossMargin >= target
+      ? "text-emerald-400"
+      : costs.grossMargin >= target - 5
+        ? "text-[var(--gold)]"
+        : "text-red-400";
 
   return (
     <div className="border-t border-[var(--brd)]/30 py-4">
       <div className="flex items-center gap-2 mb-3 flex-wrap">
-        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Profitability</div>
-        <ProfitabilityBreakdownHint iconSize={14} ariaLabel="What profitability includes" />
-        <span className="dt-badge tracking-[0.04em] text-[var(--gold)]">Owner Only</span>
+        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+          Profitability
+        </div>
+        <ProfitabilityBreakdownHint
+          iconSize={14}
+          ariaLabel="What profitability includes"
+        />
+        <span className="dt-badge tracking-[0.04em] text-[var(--gold)]">
+          Owner Only
+        </span>
       </div>
       <div className="space-y-1.5 text-[11px]">
-        <div className="flex justify-between"><span className="text-[var(--tx3)]">Revenue</span><span className="text-[var(--tx)] font-medium">{formatCurrency(revenue)}</span></div>
+        <div className="flex justify-between">
+          <span className="text-[var(--tx3)]">Revenue</span>
+          <span className="text-[var(--tx)] font-medium">
+            {formatCurrency(revenue)}
+          </span>
+        </div>
         <div className="border-t border-[var(--brd)]/30 my-1" />
-        <div className="flex justify-between"><span className="text-[var(--tx3)]">Labour</span><span className="text-red-400/80">-{formatCurrency(costs.labour)}</span></div>
-        <div className="flex justify-between"><span className="text-[var(--tx3)]">Fuel</span><span className="text-red-400/80">-{formatCurrency(costs.fuel)}</span></div>
-        <div className="flex justify-between"><span className="text-[var(--tx3)]">Truck</span><span className="text-red-400/80">-{formatCurrency(costs.truck)}</span></div>
-        <div className="flex justify-between"><span className="text-[var(--tx3)]">Supplies</span><span className="text-red-400/80">-{formatCurrency(costs.supplies)}</span></div>
+        <div className="flex justify-between">
+          <span className="text-[var(--tx3)]">Labour</span>
+          <span className="text-red-400/80">
+            -{formatCurrency(costs.labour)}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-[var(--tx3)]">Fuel</span>
+          <span className="text-red-400/80">-{formatCurrency(costs.fuel)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-[var(--tx3)]">Truck</span>
+          <span className="text-red-400/80">
+            -{formatCurrency(costs.truck)}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-[var(--tx3)]">Supplies</span>
+          <span className="text-red-400/80">
+            -{formatCurrency(costs.supplies)}
+          </span>
+        </div>
         {costs.paidWithCard && costs.processing > 0 ? (
           <div className="flex justify-between gap-3">
-            <span className="text-[var(--tx3)]">Card processing (client-paid, est.)</span>
-            <span className="text-[var(--tx2)] tabular-nums">{formatCurrency(costs.processing)}</span>
+            <span className="text-[var(--tx3)]">
+              Card processing (client-paid, est.)
+            </span>
+            <span className="text-[var(--tx2)] tabular-nums">
+              {formatCurrency(costs.processing)}
+            </span>
           </div>
         ) : null}
         <div className="border-t border-[var(--brd)]/30 my-1" />
-        <div className="flex justify-between font-medium"><span className="text-[var(--tx3)]">Direct Cost</span><span className="text-red-400">-{formatCurrency(costs.totalDirect)}</span></div>
-        <div className="flex justify-between font-semibold"><span className="text-[var(--tx)]">Gross Profit</span><span className={marginColor}>{formatCurrency(costs.grossProfit)} ({costs.grossMargin}%)</span></div>
+        <div className="flex justify-between font-medium">
+          <span className="text-[var(--tx3)]">Direct Cost</span>
+          <span className="text-red-400">
+            -{formatCurrency(costs.totalDirect)}
+          </span>
+        </div>
+        <div className="flex justify-between font-semibold">
+          <span className="text-[var(--tx)]">Gross Profit</span>
+          <span className={marginColor}>
+            {formatCurrency(costs.grossProfit)} ({costs.grossMargin}%)
+          </span>
+        </div>
       </div>
       {costs.grossMargin < target && (
         <div className="mt-3 text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5">

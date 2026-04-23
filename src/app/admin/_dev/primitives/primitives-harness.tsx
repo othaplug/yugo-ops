@@ -288,7 +288,7 @@ const Harness = () => {
             <Skeleton width={320} height={80} radius="md" />
           </div>
           <EmptyState
-            icon={<Icon name="inbox" size="lg" />}
+            icon={<Icon name="leads" size="lg" />}
             title="No leads yet"
             description="Leads will appear here once your sources start sending them in."
             action={

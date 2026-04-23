@@ -21,8 +21,6 @@ export const NAV_GROUPS: NavGroup[] = [
     id: "today",
     items: [
       { id: "dashboard", label: "Dashboard", href: `${ADMIN_V2_BASE}/dashboard`, icon: "home" },
-      { id: "inbox", label: "Inbox", href: `${ADMIN_V2_BASE}/inbox`, icon: "inbox", badgeKey: "inbox.unread" },
-      { id: "mywork", label: "My work", href: `${ADMIN_V2_BASE}/my-work`, icon: "mywork", badgeKey: "mywork.count" },
       { id: "calendar", label: "Calendar", href: `${ADMIN_V2_BASE}/calendar`, icon: "calendar" },
     ],
   },
