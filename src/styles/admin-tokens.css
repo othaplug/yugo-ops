@@ -1,0 +1,230 @@
+/* ==========================================================================
+   Yugo+ admin v2 — design tokens, typography, motion
+   Scope: lives under `[data-yugo-admin]` on the admin shell root.
+   Does NOT touch existing /quote, /estate, /track, /welcome tokens.
+   Reference: 01-YUGO-ADMIN-PRD.md §2.
+   ========================================================================== */
+
+/* Tailwind v4 theme registration — generates utilities
+   (bg-canvas, text-fg, border-line, ring-accent, rounded-lg, shadow-md, font-sans) */
+@theme {
+  /* Surfaces */
+  --color-canvas: #f4f4f5;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #fafafa;
+  --color-surface-sunken: #f5f5f5;
+
+  /* Lines */
+  --color-line: #eaeaec;
+  --color-line-strong: #d4d4d8;
+
+  /* Foreground */
+  --color-fg: #09090b;
+  --color-fg-muted: #52525b;
+  --color-fg-subtle: #a1a1aa;
+
+  /* Accent (purple) */
+  --color-accent: #5e56f0;
+  --color-accent-hover: #4f46e5;
+  --color-accent-subtle: #efeefe;
+
+  /* Semantic status */
+  --color-success: #0f7a3f;
+  --color-success-bg: #dcfce7;
+  --color-warning: #92400e;
+  --color-warning-bg: #fef3c7;
+  --color-danger: #b91c1c;
+  --color-danger-bg: #fee2e2;
+  --color-info: #1e3a8a;
+  --color-info-bg: #dbeafe;
+  --color-neutral: #3f3f46;
+  --color-neutral-bg: #f4f4f5;
+  --color-brand: #5b21b6;
+  --color-brand-bg: #ede9fe;
+
+  /* Graph */
+  --color-graph-green: #10b981;
+  --color-graph-red: #ef4444;
+  --color-graph-purple: #8b5cf6;
+
+  /* Radius */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(9, 9, 11, 0.04);
+  --shadow-md: 0 4px 12px rgba(9, 9, 11, 0.08);
+  --shadow-lg: 0 16px 40px rgba(9, 9, 11, 0.12);
+
+  /* Font stack */
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    sans-serif;
+  --font-numeric:
+    "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    sans-serif;
+
+  /* Motion */
+  --ease-default: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-instant: 100ms;
+  --duration-fast: 150ms;
+  --duration-default: 200ms;
+  --duration-slow: 300ms;
+}
+
+/* Dark variant: enabled when the admin shell root carries data-theme="dark".
+   Tailwind v4 dark: utilities respond to the same selector. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Dark palette swap. Cascades only into admin shell subtree. */
+[data-yugo-admin][data-theme="dark"],
+[data-yugo-admin] [data-theme="dark"],
+[data-theme="dark"] [data-yugo-admin] {
+  --color-canvas: #09090b;
+  --color-surface: #18181b;
+  --color-surface-subtle: #1f1f23;
+  --color-surface-sunken: #27272a;
+
+  --color-line: #27272a;
+  --color-line-strong: #3f3f46;
+
+  --color-fg: #fafafa;
+  --color-fg-muted: #a1a1aa;
+  --color-fg-subtle: #52525b;
+
+  --color-accent: #7c73ff;
+  --color-accent-hover: #8f87ff;
+  --color-accent-subtle: #2d2a52;
+
+  --color-success-bg: #0f2e1f;
+  --color-warning-bg: #3b2a0e;
+  --color-danger-bg: #3a1414;
+  --color-info-bg: #1a2847;
+  --color-neutral-bg: #27272a;
+  --color-brand-bg: #2d1f56;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* ==========================================================================
+   Spacing scale (used inline via arbitrary values or utility names).
+   Tailwind v4 default spacing scale (4px base) already matches the PRD, so
+   we only register the named values the PRD calls out explicitly.
+   ========================================================================== */
+
+/* ==========================================================================
+   Typography utilities — PRD §2.3
+   Admin-scoped so they never leak into premium/estate surfaces.
+   ========================================================================== */
+
+[data-yugo-admin] {
+  font-family: var(--font-sans);
+  color: var(--color-fg);
+  background-color: var(--color-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@utility display-xl {
+  font-size: 36px;
+  line-height: 44px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+@utility display-lg {
+  font-size: 30px;
+  line-height: 38px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+@utility display-md {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+@utility heading-lg {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+@utility heading-md {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+@utility heading-sm {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+@utility body-lg {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+}
+@utility body-md {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+}
+@utility body-sm {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 400;
+}
+@utility body-xs {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+}
+@utility label-md {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+@utility label-sm {
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+@utility numeric-lg {
+  font-size: 30px;
+  line-height: 38px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-feature-settings: "tnum" 1, "cv11" 1;
+}
+@utility numeric-md {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  font-feature-settings: "tnum" 1, "cv11" 1;
+}
+@utility numeric-sm {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  font-feature-settings: "tnum" 1, "cv11" 1;
+}
+
+/* ==========================================================================
+   Focus ring — PRD §10.6
+   ========================================================================== */
+
+@utility focus-ring {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 24%, transparent);
+  border-color: var(--color-accent);
+}
