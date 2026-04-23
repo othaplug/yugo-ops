@@ -43,3 +43,6 @@ next-env.d.ts
 
 # HubSpot config file
 hubspot.config.yml
+
+# Claude agent worktrees
+.claude/worktrees/
