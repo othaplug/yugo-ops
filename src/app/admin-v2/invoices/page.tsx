@@ -1,11 +1,5 @@
-import { PlaceholderPage } from "../_placeholders/placeholder-page"
+import { InvoicesClient } from "./invoices-client"
 
-const InvoicesPage = () => (
-  <PlaceholderPage
-    title="Invoices"
-    description="Draft, sent, paid, void. Lands in Phase 5."
-    icon="invoices"
-  />
-)
+const InvoicesPage = () => <InvoicesClient />
 
 export default InvoicesPage

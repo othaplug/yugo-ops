@@ -1,11 +1,5 @@
-import { PlaceholderPage } from "../_placeholders/placeholder-page"
+import { DispatchClient } from "./dispatch-client"
 
-const DispatchPage = () => (
-  <PlaceholderPage
-    title="Dispatch"
-    description="Live map, crew tracking, and ETA. Lands in Phase 5."
-    icon="dispatch"
-  />
-)
+const DispatchPage = () => <DispatchClient />
 
 export default DispatchPage

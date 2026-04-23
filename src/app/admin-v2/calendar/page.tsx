@@ -1,11 +1,5 @@
-import { PlaceholderPage } from "../_placeholders/placeholder-page"
+import { CalendarClient } from "./calendar-client"
 
-const CalendarPage = () => (
-  <PlaceholderPage
-    title="Calendar"
-    description="Month, week, and day views across moves and crew. Lands in Phase 5."
-    icon="calendar"
-  />
-)
+const CalendarPage = () => <CalendarClient />
 
 export default CalendarPage
