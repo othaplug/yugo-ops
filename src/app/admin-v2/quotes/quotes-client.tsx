@@ -24,7 +24,6 @@ import {
   TIER_LABEL,
 } from "@/lib/admin-v2/labels"
 import { formatCurrencyCompact } from "@/lib/admin-v2/format"
-import { getMockUniverse } from "@/lib/admin-v2/mock"
 import type { Quote } from "@/lib/admin-v2/mock/types"
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -36,9 +35,15 @@ const countIn7Days = (quotes: Quote[], pick: (q: Quote) => string | null) =>
     return Date.now() - new Date(ts).getTime() < 7 * DAY_MS
   }).length
 
-export const QuotesClient = () => {
-  const universe = React.useMemo(() => getMockUniverse(), [])
-  const [quotes, setQuotes] = React.useState<Quote[]>(() => universe.quotes)
+export type QuotesClientProps = {
+  initialQuotes: Quote[]
+}
+
+export const QuotesClient = ({ initialQuotes }: QuotesClientProps) => {
+  const [quotes, setQuotes] = React.useState<Quote[]>(() => initialQuotes)
+  React.useEffect(() => {
+    setQuotes(initialQuotes)
+  }, [initialQuotes])
   const drawer = useDrawer("quote")
   const activeQuote = React.useMemo(
     () => quotes.find((q) => q.id === drawer.id) ?? null,

@@ -19,14 +19,17 @@ import { InvoiceDrawer } from "@/components/admin-v2/modules/invoice-drawer"
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
 import { INVOICE_STATUS_LABEL } from "@/lib/admin-v2/labels"
 import { formatCurrency, formatCurrencyCompact } from "@/lib/admin-v2/format"
-import { getMockUniverse } from "@/lib/admin-v2/mock"
 import type { Invoice } from "@/lib/admin-v2/mock/types"
 
-export const InvoicesClient = () => {
-  const universe = React.useMemo(() => getMockUniverse(), [])
-  const [invoices, setInvoices] = React.useState<Invoice[]>(
-    () => universe.invoices,
-  )
+export type InvoicesClientProps = {
+  initialInvoices: Invoice[]
+}
+
+export const InvoicesClient = ({ initialInvoices }: InvoicesClientProps) => {
+  const [invoices, setInvoices] = React.useState<Invoice[]>(() => initialInvoices)
+  React.useEffect(() => {
+    setInvoices(initialInvoices)
+  }, [initialInvoices])
   const drawer = useDrawer("invoice")
   const activeInvoice = React.useMemo(
     () => invoices.find((i) => i.id === drawer.id) ?? null,

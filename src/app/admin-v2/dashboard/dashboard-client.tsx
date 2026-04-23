@@ -40,7 +40,6 @@ import {
   formatShortDate,
   formatTimeOfDay,
 } from "@/lib/admin-v2/format"
-import { getMockUniverse } from "@/lib/admin-v2/mock"
 import type {
   CrewMember,
   Lead,
@@ -70,9 +69,19 @@ const DONUT_COLORS = [
   "var(--color-graph-red)",
 ]
 
-export const DashboardClient = () => {
-  const universe = React.useMemo(() => getMockUniverse(), [])
-  const { leads, moves, quotes, crew } = universe
+export type DashboardClientProps = {
+  leads: Lead[]
+  moves: Move[]
+  quotes: Quote[]
+  crew: CrewMember[]
+}
+
+export const DashboardClient = ({
+  leads,
+  moves,
+  quotes,
+  crew,
+}: DashboardClientProps) => {
 
   const metrics = React.useMemo(() => {
     const now = Date.now()

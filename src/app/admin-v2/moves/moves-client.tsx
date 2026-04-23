@@ -25,14 +25,19 @@ import {
   TIER_LABEL,
 } from "@/lib/admin-v2/labels"
 import { formatCurrencyCompact, formatPercent } from "@/lib/admin-v2/format"
-import { getMockUniverse } from "@/lib/admin-v2/mock"
 import type { Move } from "@/lib/admin-v2/mock/types"
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-export const MovesClient = () => {
-  const universe = React.useMemo(() => getMockUniverse(), [])
-  const [moves, setMoves] = React.useState<Move[]>(() => universe.moves)
+export type MovesClientProps = {
+  initialMoves: Move[]
+}
+
+export const MovesClient = ({ initialMoves }: MovesClientProps) => {
+  const [moves, setMoves] = React.useState<Move[]>(() => initialMoves)
+  React.useEffect(() => {
+    setMoves(initialMoves)
+  }, [initialMoves])
   const drawer = useDrawer("move")
   const activeMove = React.useMemo(
     () => moves.find((m) => m.id === drawer.id) ?? null,

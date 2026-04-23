@@ -1,5 +1,12 @@
+import { getAdminUniverse } from "@/lib/admin-v2/data/server"
 import { PMClient } from "./pm-client"
 
-const PMPage = () => <PMClient />
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
+const PMPage = async () => {
+  const { pmAccounts } = await getAdminUniverse()
+  return <PMClient initialAccounts={pmAccounts} />
+}
 
 export default PMPage

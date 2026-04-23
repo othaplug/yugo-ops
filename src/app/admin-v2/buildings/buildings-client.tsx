@@ -17,7 +17,6 @@ import {
 import { BuildingDrawer } from "@/components/admin-v2/modules/building-drawer"
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
 import { BUILDING_CONFIG_LABEL } from "@/lib/admin-v2/labels"
-import { getMockUniverse } from "@/lib/admin-v2/mock"
 import type { Building } from "@/lib/admin-v2/mock/types"
 import { cn } from "@/components/admin-v2/lib/cn"
 
@@ -40,9 +39,17 @@ const ComplexityCell = ({
   </span>
 )
 
-export const BuildingsClient = () => {
-  const universe = React.useMemo(() => getMockUniverse(), [])
-  const [buildings] = React.useState<Building[]>(() => universe.buildings)
+export type BuildingsClientProps = {
+  initialBuildings: Building[]
+}
+
+export const BuildingsClient = ({ initialBuildings }: BuildingsClientProps) => {
+  const [buildings, setBuildings] = React.useState<Building[]>(
+    () => initialBuildings,
+  )
+  React.useEffect(() => {
+    setBuildings(initialBuildings)
+  }, [initialBuildings])
   const drawer = useDrawer("building")
   const activeBuilding = React.useMemo(
     () => buildings.find((b) => b.id === drawer.id) ?? null,

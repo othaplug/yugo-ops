@@ -13,7 +13,7 @@ import {
   formatShortDate,
   formatTimeOfDay,
 } from "@/lib/admin-v2/format"
-import { getMockUniverse } from "@/lib/admin-v2/mock"
+import type { Move } from "@/lib/admin-v2/mock/types"
 import { cn } from "@/components/admin-v2/lib/cn"
 
 // Dispatch view mirrors the PRD §4.1 dispatch screen: active moves list on
@@ -21,14 +21,17 @@ import { cn } from "@/components/admin-v2/lib/cn"
 // deferred to the Mapbox integration phase; for now we render a canvas
 // placeholder that keeps the exact layout so nothing shifts when Mapbox
 // plugs in.
-export const DispatchClient = () => {
-  const universe = React.useMemo(() => getMockUniverse(), [])
+export type DispatchClientProps = {
+  moves: Move[]
+}
+
+export const DispatchClient = ({ moves }: DispatchClientProps) => {
   const active = React.useMemo(
     () =>
-      universe.moves.filter((m) =>
-        m.status === "in-transit" || m.status === "pre-move",
+      moves.filter(
+        (m) => m.status === "in-transit" || m.status === "pre-move",
       ),
-    [universe.moves],
+    [moves],
   )
   const [selectedId, setSelectedId] = React.useState<string | null>(
     active[0]?.id ?? null,
@@ -216,7 +219,7 @@ export const DispatchClient = () => {
       </aside>
 
       <MoveDrawer
-        move={universe.moves.find((m) => m.id === drawer.id) ?? null}
+        move={moves.find((m) => m.id === drawer.id) ?? null}
         open={drawer.isOpen}
         onOpenChange={drawer.setOpen}
       />

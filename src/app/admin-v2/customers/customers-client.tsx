@@ -23,14 +23,17 @@ import {
   VERTICAL_LABEL,
 } from "@/lib/admin-v2/labels"
 import { formatCurrencyCompact } from "@/lib/admin-v2/format"
-import { getMockUniverse } from "@/lib/admin-v2/mock"
 import type { Customer, CustomerType } from "@/lib/admin-v2/mock/types"
 
-export const CustomersClient = () => {
-  const universe = React.useMemo(() => getMockUniverse(), [])
-  const [customers, setCustomers] = React.useState<Customer[]>(
-    () => universe.customers,
-  )
+export type CustomersClientProps = {
+  initialCustomers: Customer[]
+}
+
+export const CustomersClient = ({ initialCustomers }: CustomersClientProps) => {
+  const [customers, setCustomers] = React.useState<Customer[]>(() => initialCustomers)
+  React.useEffect(() => {
+    setCustomers(initialCustomers)
+  }, [initialCustomers])
   const [typeFilter, setTypeFilter] = React.useState<CustomerType | "all">("all")
 
   const filtered = React.useMemo(

@@ -17,12 +17,17 @@ import {
 import { PMDrawer } from "@/components/admin-v2/modules/pm-drawer"
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
 import { PM_CONTRACT_LABEL } from "@/lib/admin-v2/labels"
-import { getMockUniverse } from "@/lib/admin-v2/mock"
 import type { PMAccount } from "@/lib/admin-v2/mock/types"
 
-export const PMClient = () => {
-  const universe = React.useMemo(() => getMockUniverse(), [])
-  const [accounts] = React.useState<PMAccount[]>(() => universe.pmAccounts)
+export type PMClientProps = {
+  initialAccounts: PMAccount[]
+}
+
+export const PMClient = ({ initialAccounts }: PMClientProps) => {
+  const [accounts, setAccounts] = React.useState<PMAccount[]>(() => initialAccounts)
+  React.useEffect(() => {
+    setAccounts(initialAccounts)
+  }, [initialAccounts])
   const drawer = useDrawer("pm")
   const activeAccount = React.useMemo(
     () => accounts.find((a) => a.id === drawer.id) ?? null,

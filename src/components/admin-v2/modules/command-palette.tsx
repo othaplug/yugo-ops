@@ -7,7 +7,19 @@ import { Command } from "cmdk"
 import { Icon, type IconName } from "../primitives/Icon"
 import { Chip } from "../primitives/Chip"
 import { cn } from "../lib/cn"
-import { getMockUniverse } from "@/lib/admin-v2/mock"
+
+type SearchUniverse = {
+  leads: Array<{ id: string; name: string; email: string; source?: string }>
+  quotes: Array<{ id: string; number: string; customerName: string }>
+  moves: Array<{ id: string; number: string; customerName: string }>
+  customers: Array<{
+    id: string
+    name: string
+    email: string
+    type?: string
+  }>
+  invoices: Array<{ id: string; number: string; customerName: string }>
+}
 
 const NAV_ITEMS: Array<{
   id: string
@@ -44,7 +56,27 @@ export const CommandPalette = ({
 }: CommandPaletteProps) => {
   const router = useRouter()
   const [query, setQuery] = React.useState("")
-  const universe = React.useMemo(() => getMockUniverse(), [])
+  const [universe, setUniverse] = React.useState<SearchUniverse | null>(null)
+
+  React.useEffect(() => {
+    if (!open || universe) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch("/api/admin-v2/universe", {
+          credentials: "same-origin",
+        })
+        if (!res.ok) return
+        const data = (await res.json()) as SearchUniverse
+        if (!cancelled) setUniverse(data)
+      } catch {
+        // Search silently degrades when the endpoint is unreachable.
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [open, universe])
 
   const runAction = (href: string) => {
     onOpenChange(false)
@@ -53,7 +85,7 @@ export const CommandPalette = ({
 
   const results = React.useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return null
+    if (!q || !universe) return null
     const customers = universe.customers
       .filter(
         (c) =>
@@ -134,7 +166,12 @@ export const CommandPalette = ({
                         >
                           <Icon name="customers" size="sm" className="text-fg-subtle" />
                           <span className="flex-1 truncate">{c.name}</span>
-                          <Chip label={c.type.toUpperCase()} variant="neutral" />
+                          {c.type ? (
+                            <Chip
+                              label={c.type.toUpperCase()}
+                              variant="neutral"
+                            />
+                          ) : null}
                         </Command.Item>
                       ))}
                     </Command.Group>

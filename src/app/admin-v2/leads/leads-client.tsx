@@ -32,7 +32,6 @@ import {
 } from "@/lib/admin-v2/labels"
 import { formatCurrency, formatCurrencyCompact } from "@/lib/admin-v2/format"
 import type { Lead } from "@/lib/admin-v2/mock/types"
-import { getMockUniverse } from "@/lib/admin-v2/mock"
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -41,9 +40,16 @@ const leadsInWindow = (leads: Lead[], days: number) => {
   return leads.filter((l) => now - new Date(l.lastAction).getTime() < days * DAY_MS)
 }
 
-export const LeadsClient = () => {
-  const universe = React.useMemo(() => getMockUniverse(), [])
-  const [leads, setLeads] = React.useState<Lead[]>(() => universe.leads)
+export type LeadsClientProps = {
+  initialLeads: Lead[]
+}
+
+export const LeadsClient = ({ initialLeads }: LeadsClientProps) => {
+  const [leads, setLeads] = React.useState<Lead[]>(() => initialLeads)
+
+  React.useEffect(() => {
+    setLeads(initialLeads)
+  }, [initialLeads])
   const drawer = useDrawer("lead")
   const activeLead = React.useMemo(
     () => leads.find((lead) => lead.id === drawer.id) ?? null,

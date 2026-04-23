@@ -13,7 +13,6 @@ import { MoveDrawer } from "@/components/admin-v2/modules/move-drawer"
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
 import { MOVE_STATUS_LABEL, TIER_LABEL } from "@/lib/admin-v2/labels"
 import { formatTimeOfDay } from "@/lib/admin-v2/format"
-import { getMockUniverse } from "@/lib/admin-v2/mock"
 import type { Move } from "@/lib/admin-v2/mock/types"
 import { cn } from "@/components/admin-v2/lib/cn"
 
@@ -60,9 +59,11 @@ const weekRange = (anchor: Date) => {
   return Array.from({ length: 7 }).map((_, index) => addDays(start, index))
 }
 
-export const CalendarClient = () => {
-  const universe = React.useMemo(() => getMockUniverse(), [])
-  const moves = universe.moves
+export type CalendarClientProps = {
+  moves: Move[]
+}
+
+export const CalendarClient = ({ moves }: CalendarClientProps) => {
   const drawer = useDrawer("move")
   const activeMove = React.useMemo(
     () => moves.find((m) => m.id === drawer.id) ?? null,

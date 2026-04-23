@@ -21,7 +21,6 @@ import {
   VERTICAL_LABEL,
 } from "@/lib/admin-v2/labels"
 import { formatCurrencyCompact } from "@/lib/admin-v2/format"
-import { getMockUniverse } from "@/lib/admin-v2/mock"
 import type { B2BPartner, Vertical } from "@/lib/admin-v2/mock/types"
 import { cn } from "@/components/admin-v2/lib/cn"
 
@@ -40,9 +39,17 @@ const VERTICAL_FILTERS: Array<{ id: "all" | Vertical; label: string }> = [
   { id: "property_management", label: "Property management" },
 ]
 
-export const B2BClient = () => {
-  const universe = React.useMemo(() => getMockUniverse(), [])
-  const [partners] = React.useState<B2BPartner[]>(() => universe.b2bPartners)
+export type B2BClientProps = {
+  initialPartners: B2BPartner[]
+}
+
+export const B2BClient = ({ initialPartners }: B2BClientProps) => {
+  const [partners, setPartners] = React.useState<B2BPartner[]>(
+    () => initialPartners,
+  )
+  React.useEffect(() => {
+    setPartners(initialPartners)
+  }, [initialPartners])
   const drawer = useDrawer("b2b")
   const activePartner = React.useMemo(
     () => partners.find((p) => p.id === drawer.id) ?? null,

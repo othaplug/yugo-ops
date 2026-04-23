@@ -22,12 +22,17 @@ import {
   CREW_ROLE_LABEL,
 } from "@/lib/admin-v2/labels"
 import { formatPercent } from "@/lib/admin-v2/format"
-import { getMockUniverse } from "@/lib/admin-v2/mock"
 import type { CrewMember } from "@/lib/admin-v2/mock/types"
 
-export const CrewClient = () => {
-  const universe = React.useMemo(() => getMockUniverse(), [])
-  const [crew, setCrew] = React.useState<CrewMember[]>(() => universe.crew)
+export type CrewClientProps = {
+  initialCrew: CrewMember[]
+}
+
+export const CrewClient = ({ initialCrew }: CrewClientProps) => {
+  const [crew, setCrew] = React.useState<CrewMember[]>(() => initialCrew)
+  React.useEffect(() => {
+    setCrew(initialCrew)
+  }, [initialCrew])
   const drawer = useDrawer("crew")
   const activeMember = React.useMemo(
     () => crew.find((c) => c.id === drawer.id) ?? null,
