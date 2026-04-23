@@ -5,6 +5,10 @@
    Reference: 01-YUGO-ADMIN-PRD.md §2.
    ========================================================================== */
 
+/* Motion utilities (animate-in, fade-in-0, slide-in-from-right, zoom-in-95, etc.)
+   Powers Radix drawer/modal/dropdown/popover transitions on Tailwind v4. */
+@import "tw-animate-css";
+
 /* Tailwind v4 theme registration — generates utilities
    (bg-canvas, text-fg, border-line, ring-accent, rounded-lg, shadow-md, font-sans) */
 @theme {
