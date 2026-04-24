@@ -35,6 +35,7 @@ import {
   CaretRight,
   Plus,
   ArrowUpRight,
+  ArrowRight,
   Warning,
   UsersThree,
   CurrencyDollar,
@@ -42,7 +43,13 @@ import {
   Star,
   Clock,
   CheckCircle,
+  XCircle,
   Eye,
+  Shield,
+  MapPin,
+  PencilSimple,
+  Bell,
+  Info,
 } from "@/design-system/admin/icons"
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -328,9 +335,6 @@ export default function CommandCenterV3Client({
   )
 
   const sparkItems = React.useMemo(() => {
-    const lastThree = monthlyRevenue.slice(-3)
-    const trendFromSeries = (arr: { moves: number; partner: number }[]) =>
-      arr.map((m) => m.moves + m.partner)
     return [
       {
         id: "today-earnings",
@@ -342,11 +346,6 @@ export default function CommandCenterV3Client({
             {todayEarnings.jobCount} jobs
           </>
         ),
-        series: [
-          todayEarnings.collected,
-          todayEarnings.pending,
-          todayEarnings.potential,
-        ],
       },
       {
         id: "active-quotes",
@@ -358,7 +357,6 @@ export default function CommandCenterV3Client({
             expiring today
           </>
         ),
-        series: trendFromSeries(lastThree),
       },
       {
         id: "satisfaction",
@@ -378,7 +376,6 @@ export default function CommandCenterV3Client({
   }, [
     activeQuotesCount,
     leadPulse,
-    monthlyRevenue,
     quotePipeline.expiringToday,
     quotePipeline.viewedCount,
     satisfaction.avgRating,
@@ -386,7 +383,6 @@ export default function CommandCenterV3Client({
     satisfaction.pendingReviews,
     todayEarnings.collected,
     todayEarnings.jobCount,
-    todayEarnings.pending,
     todayEarnings.potential,
   ])
 
@@ -396,13 +392,13 @@ export default function CommandCenterV3Client({
         id: "moves",
         label: "Moves",
         value: revenueBreakdown.moves,
-        color: "var(--yu3-wine)",
+        color: "var(--yu3-ink-strong)",
       },
       {
         id: "partner",
         label: "Partner",
         value: revenueBreakdown.partner,
-        color: "var(--yu3-forest)",
+        color: "var(--yu3-success)",
       },
     ],
     [revenueBreakdown.moves, revenueBreakdown.partner],
@@ -414,19 +410,19 @@ export default function CommandCenterV3Client({
         id: "open",
         label: "Open",
         value: quotePipeline.openCount,
-        color: "var(--yu3-wine)",
+        color: "var(--yu3-ink-muted)",
       },
       {
         id: "viewed",
         label: "Viewed",
         value: quotePipeline.viewedCount,
-        color: "var(--yu3-forest)",
+        color: "var(--yu3-info)",
       },
       {
         id: "accepted",
         label: "Accepted this week",
         value: quotePipeline.acceptedThisWeek,
-        color: "var(--yu3-info)",
+        color: "var(--yu3-success)",
       },
       {
         id: "expiring",
@@ -451,7 +447,7 @@ export default function CommandCenterV3Client({
         action: e.event_type.replace(/_/g, " "),
         time: relativeTime(e.created_at),
         tone: eventTone(e.event_type),
-        icon: <CheckCircle size={14} />,
+        icon: eventIcon(e.event_type),
         onClick: () => router.push(entityHref(e.entity_type, e.entity_id)),
       })),
     [activityEvents, router],
@@ -632,8 +628,17 @@ export default function CommandCenterV3Client({
             valueLabel={formatCurrency(currentMonthRevenue)}
             valueHint={
               <>
-                {revenuePctChange >= 0 ? "+" : ""}
-                {revenuePctChange.toFixed(1)}% vs last month
+                <span
+                  className={
+                    revenuePctChange >= 0
+                      ? "text-[var(--yu3-success)] font-semibold"
+                      : "text-[var(--yu3-danger)] font-semibold"
+                  }
+                >
+                  {revenuePctChange >= 0 ? "+" : ""}
+                  {revenuePctChange.toFixed(1)}%
+                </span>
+                {" vs last month"}
               </>
             }
             segments={revenueSegments}
@@ -770,13 +775,14 @@ export default function CommandCenterV3Client({
           </header>
           <div className="grid grid-cols-7 gap-2">
             {crewCapacity.map((day) => {
-              const pct = day.total > 0 ? day.booked / day.total : 0
+              const hasCapacity = day.total > 0
+              const pct = hasCapacity ? day.booked / day.total : 0
               const tone =
                 pct >= 0.9
                   ? "var(--yu3-danger)"
                   : pct >= 0.7
                     ? "var(--yu3-warning)"
-                    : "var(--yu3-forest)"
+                    : "var(--yu3-success)"
               return (
                 <div
                   key={day.date}
@@ -785,22 +791,30 @@ export default function CommandCenterV3Client({
                   <div className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">
                     {day.label}
                   </div>
-                  <div className="yu3-num text-[18px] font-semibold text-[var(--yu3-ink-strong)] leading-none">
-                    {day.booked}
-                    <span className="text-[12px] text-[var(--yu3-ink-muted)] font-normal">
-                      {" "}
-                      / {day.total}
-                    </span>
-                  </div>
-                  <div className="h-1 rounded-full bg-[var(--yu3-line-subtle)] overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${Math.min(100, pct * 100)}%`,
-                        background: tone,
-                      }}
-                    />
-                  </div>
+                  {hasCapacity ? (
+                    <>
+                      <div className="yu3-num text-[18px] font-semibold text-[var(--yu3-ink-strong)] leading-none">
+                        {day.booked}
+                        <span className="text-[12px] text-[var(--yu3-ink-muted)] font-normal">
+                          {" "}
+                          / {day.total}
+                        </span>
+                      </div>
+                      <div className="h-1 rounded-full bg-[var(--yu3-line-subtle)] overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${Math.min(100, pct * 100)}%`,
+                            background: tone,
+                          }}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-[12px] text-[var(--yu3-ink-muted)] leading-tight">
+                      Not scheduled
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -922,17 +936,56 @@ function eventTone(
   event: string,
 ):
   | "neutral"
-  | "wine"
-  | "forest"
   | "success"
   | "warning"
-  | "danger" {
+  | "danger"
+  | "info" {
   const e = event.toLowerCase()
   if (e.includes("payment") || e.includes("paid")) return "success"
-  if (e.includes("cancel") || e.includes("reject")) return "danger"
-  if (e.includes("created")) return "wine"
-  if (e.includes("updated") || e.includes("status")) return "forest"
+  if (e.includes("cancel") || e.includes("reject") || e.includes("failed"))
+    return "danger"
+  if (
+    e.includes("skip") ||
+    e.includes("warn") ||
+    e.includes("claim") ||
+    e.includes("overdue")
+  )
+    return "warning"
+  if (
+    e.includes("created") ||
+    e.includes("updated") ||
+    e.includes("status") ||
+    e.includes("tracking") ||
+    e.includes("arrived") ||
+    e.includes("en_route") ||
+    e.includes("en route") ||
+    e.includes("change") ||
+    e.includes("notification") ||
+    e.includes("signoff")
+  )
+    return "info"
   return "neutral"
+}
+
+function eventIcon(event: string): React.ReactNode {
+  const e = event.toLowerCase()
+  if (e.includes("payment") || e.includes("paid"))
+    return <CheckCircle size={14} />
+  if (e.includes("cancel") || e.includes("reject") || e.includes("failed"))
+    return <XCircle size={14} />
+  if (e.includes("skip") || e.includes("warn") || e.includes("overdue"))
+    return <Warning size={14} />
+  if (e.includes("claim")) return <Shield size={14} />
+  if (e.includes("arrived")) return <MapPin size={14} />
+  if (e.includes("en_route") || e.includes("en route"))
+    return <ArrowRight size={14} />
+  if (e.includes("tracking")) return <MapPin size={14} />
+  if (e.includes("change")) return <PencilSimple size={14} />
+  if (e.includes("notification")) return <Bell size={14} />
+  if (e.includes("created")) return <Plus size={14} />
+  if (e.includes("updated") || e.includes("status"))
+    return <PencilSimple size={14} />
+  return <Info size={14} />
 }
 
 function entityHref(entity: string, id: string) {
