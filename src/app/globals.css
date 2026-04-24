@@ -1029,26 +1029,76 @@ html[data-theme="light"]
   background: rgba(102, 20, 61, 0.3);
 }
 
-/* Admin data table row hover - prominent gold left accent */
+/* Admin data table row hover - canonical neutral surface lift */
 .admin-row-hover {
-  transition:
-    background-color 0.12s var(--ease-smooth),
-    box-shadow 0.12s var(--ease-smooth);
-  border-left: 2px solid transparent;
+  transition: background-color 0.12s var(--ease-smooth);
 }
 .admin-row-hover:hover {
-  background-color: rgba(201, 169, 98, 0.065) !important;
-  border-left-color: var(--gold) !important;
-  box-shadow: inset 0 0 0 1px rgba(201, 169, 98, 0.1);
+  background-color: var(--yu3-bg-surface-subtle, #f7f7f7) !important;
 }
 [data-theme="light"] .admin-row-hover:hover {
-  background-color: rgba(201, 169, 98, 0.07) !important;
-  border-left-color: var(--gold) !important;
+  background-color: var(--yu3-bg-surface-subtle, #f7f7f7) !important;
 }
 html[data-theme="light"] .admin-app .admin-row-hover:hover {
-  background-color: rgba(102, 20, 61, 0.07) !important;
-  border-left-color: var(--gold) !important;
-  box-shadow: inset 0 0 0 1px rgba(102, 20, 61, 0.12);
+  background-color: var(--yu3-bg-surface-subtle, #f7f7f7) !important;
+}
+
+/* Canonical admin data table treatment.
+ * Apply `.admin-table` to a <table> to opt legacy tables into the v3 visual
+ * system: sunken header, 44px header rows, 56px body rows, no vertical
+ * column dividers, single border colour, neutral hover. */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--yu3-ink, #0a0a0b);
+}
+.admin-table thead tr {
+  background: var(--yu3-bg-surface-sunken, #f1f1f2);
+  border-bottom: 1px solid var(--yu3-line, #eaeaec);
+}
+.admin-table thead th {
+  height: 44px;
+  padding: 0 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--yu3-ink-muted, #52525b);
+  white-space: nowrap;
+  background: transparent;
+}
+.admin-table thead th[data-align="right"],
+.admin-table thead th.text-right {
+  text-align: right;
+}
+.admin-table thead th[data-align="center"],
+.admin-table thead th.text-center {
+  text-align: center;
+}
+.admin-table tbody tr {
+  border-bottom: 1px solid var(--yu3-line, #eaeaec);
+  transition: background-color 0.12s var(--ease-smooth);
+}
+.admin-table tbody tr:last-child {
+  border-bottom: 0;
+}
+.admin-table tbody tr:hover {
+  background-color: var(--yu3-bg-surface-subtle, #f7f7f7);
+}
+.admin-table tbody td {
+  height: 56px;
+  padding: 0 12px;
+  vertical-align: middle;
+  color: var(--yu3-ink, #0a0a0b);
+}
+.admin-table tbody td.t-num,
+.admin-table tbody td[data-numeric="true"],
+.admin-table thead th.t-num,
+.admin-table thead th[data-numeric="true"] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 /* Hide scrollbar but keep scroll (for tab bars, etc.) */

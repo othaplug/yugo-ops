@@ -276,21 +276,24 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
         )}
       </div>
 
-      <div className="hidden md:block overflow-x-auto border-t border-b border-[var(--brd)]">
-        <table className="w-full text-[13px]">
+      <div className="hidden md:block overflow-x-auto rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)]">
+        <table className="admin-table">
           <thead>
-            <tr className="border-b border-[var(--brd)]">
-              {["Order", "Client", "Bundle", "Move Date", "Drop-off", "Pickup", "Status", "Total"].map((h) => (
-                <th key={h} className="px-0 py-3 pr-4 first:pl-0 text-left text-[11px] font-bold tracking-widest uppercase text-[var(--tx3)]">
-                  {h}
-                </th>
-              ))}
+            <tr>
+              <th>Order</th>
+              <th>Client</th>
+              <th>Bundle</th>
+              <th>Move Date</th>
+              <th>Drop-off</th>
+              <th>Pickup</th>
+              <th>Status</th>
+              <th className="text-right">Total</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="py-10 text-center text-[var(--tx3)]">
+                <td colSpan={8} className="py-10 text-center text-[var(--yu3-ink-muted)]">
                   {search || statusFilter !== "all" ? "No orders match your filter." : "No bin orders yet."}
                 </td>
               </tr>
@@ -299,35 +302,35 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
               <tr
                 key={o.id}
                 onClick={() => router.push(`/admin/bin-rentals/${o.id}`)}
-                className="border-b border-[var(--brd)]/60 hover:bg-[var(--gdim)]/50 cursor-pointer transition-colors last:border-0"
+                className="cursor-pointer"
               >
-                <td className="py-3 pr-4 font-mono font-semibold text-[var(--gold)] whitespace-nowrap">
+                <td className="font-mono font-semibold text-[var(--yu3-ink-strong)] whitespace-nowrap">
                   {o.order_number}
                   {o.status === "overdue" && (
-                    <span className="text-red-400 text-[11px] font-semibold ml-1.5 normal-case">Overdue</span>
+                    <span className="text-[var(--red)] text-[11px] font-semibold ml-1.5 normal-case">Overdue</span>
                   )}
                 </td>
-                <td className="py-3 pr-4">
-                  <div className="font-medium text-[var(--tx)]">{o.client_name}</div>
-                  <div className="text-[11px] text-[var(--tx3)]">{o.client_email}</div>
+                <td>
+                  <div className="font-medium text-[var(--yu3-ink-strong)]">{o.client_name}</div>
+                  <div className="text-[11px] text-[var(--yu3-ink-muted)]">{o.client_email}</div>
                 </td>
-                <td className="py-3 pr-4">
+                <td>
                   <span className="font-medium">{BUNDLE_LABELS[o.bundle_type] || o.bundle_type}</span>
-                  <span className="text-[var(--tx3)] ml-1">({o.bin_count})</span>
+                  <span className="text-[var(--yu3-ink-muted)] ml-1">({o.bin_count})</span>
                 </td>
-                <td className="py-3 pr-4 text-[var(--tx2)] whitespace-nowrap">{fmtDate(o.move_date)}</td>
-                <td className="py-3 pr-4 text-[var(--tx2)] whitespace-nowrap">{fmtDate(o.drop_off_date)}</td>
-                <td className="py-3 pr-4 text-[var(--tx2)] whitespace-nowrap">{fmtDate(o.pickup_date)}</td>
-                <td className="py-3 pr-4">
+                <td className="text-[var(--yu3-ink-muted)] whitespace-nowrap [font-feature-settings:'tnum'_1]">{fmtDate(o.move_date)}</td>
+                <td className="text-[var(--yu3-ink-muted)] whitespace-nowrap [font-feature-settings:'tnum'_1]">{fmtDate(o.drop_off_date)}</td>
+                <td className="text-[var(--yu3-ink-muted)] whitespace-nowrap [font-feature-settings:'tnum'_1]">{fmtDate(o.pickup_date)}</td>
+                <td>
                   <span
                     className={`dt-badge tracking-[0.04em] ${
-                      STATUS_STYLES[o.status] || "text-[var(--tx3)]"
+                      STATUS_STYLES[o.status] || "text-[var(--yu3-ink-muted)]"
                     }`}
                   >
                     {STATUS_LABELS[o.status] || o.status}
                   </span>
                 </td>
-                <td className="py-3 font-semibold text-[var(--tx)] whitespace-nowrap">${Number(o.total).toFixed(0)}</td>
+                <td className="text-right font-semibold text-[var(--yu3-ink-strong)] whitespace-nowrap [font-feature-settings:'tnum'_1]">${Number(o.total).toFixed(0)}</td>
               </tr>
             ))}
           </tbody>

@@ -102,7 +102,7 @@ export function DataTable<Row>({
   rowActions = [],
   onRowClick,
   emptyState,
-  rowHeight = 48,
+  rowHeight = 56,
   toolbarLeft,
   toolbarRight,
   board,
@@ -455,13 +455,13 @@ export function DataTable<Row>({
   const desktopTable = (
     <div
       ref={parentRef}
-      className="hidden lg:block overflow-auto relative rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)]"
+      className="hidden lg:block overflow-auto relative rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)]"
       style={{ maxHeight: "calc(100dvh - 240px)" }}
     >
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[var(--yu3-bg-surface)]/95 backdrop-blur-sm border-b border-[var(--yu3-line-subtle)]">
+      <div className="sticky top-0 z-10 bg-[var(--yu3-bg-surface-sunken)] border-b border-[var(--yu3-line)]">
         <div
-          className="grid items-center h-9"
+          className="grid items-center h-11"
           style={{
             gridTemplateColumns: buildGridTemplate(visibleColumns, {
               hasSelection: bulkActions.length > 0,
@@ -487,8 +487,8 @@ export function DataTable<Row>({
               <div
                 key={col.id}
                 className={cn(
-                  "group/col flex items-center gap-1 px-3 h-9 border-r border-[var(--yu3-line-subtle)] last:border-r-0",
-                  "text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--yu3-ink-muted)]",
+                  "group/col flex items-center gap-1 px-3 h-11",
+                  "text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--yu3-ink-muted)]",
                   col.align === "right" && "justify-end",
                   col.align === "center" && "justify-center",
                 )}
@@ -548,7 +548,7 @@ export function DataTable<Row>({
             )
           })}
           {rowActions.length > 0 ? (
-            <div className="w-9 border-l border-[var(--yu3-line-subtle)]" />
+            <div className="w-9" />
           ) : null}
         </div>
       </div>
@@ -593,8 +593,8 @@ export function DataTable<Row>({
                 key={id}
                 data-selected={selected ? "true" : undefined}
                 className={cn(
-                  "grid items-center border-b border-[var(--yu3-line-subtle)]",
-                  "hover:bg-[var(--yu3-bg-surface-sunken)]",
+                  "grid items-center border-b border-[var(--yu3-line)] last:border-b-0",
+                  "hover:bg-[var(--yu3-bg-surface-subtle)]",
                   selected && "bg-[var(--yu3-wine-wash)]",
                   "transition-colors",
                 )}
@@ -639,6 +639,7 @@ export function DataTable<Row>({
                     className={cn(
                       "px-3 truncate text-[13px] text-[var(--yu3-ink)]",
                       "flex items-center h-full",
+                      col.numeric && "[font-feature-settings:'tnum'_1]",
                       col.align === "right" && "justify-end text-right",
                       col.align === "center" && "justify-center text-center",
                     )}

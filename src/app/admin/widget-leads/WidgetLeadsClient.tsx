@@ -207,58 +207,25 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
       </div>
 
       <section aria-label="Lead list" className="overflow-x-auto">
-        <table className="w-full min-w-[900px] border-collapse text-[13px]">
+        <table className="admin-table min-w-[900px]">
           <thead>
-            <tr className="border-b border-[var(--brd)]/50 text-left">
-                <th
-                  scope="col"
-                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
-                >
-                  Lead #
-                </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
-                >
-                  Name
-                </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
-                >
-                  Email
-                </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
-                >
-                  Size
-                </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
-                >
-                  <span className="inline-flex items-center gap-1">
-                    From
-                    <ArrowRight size={12} weight="bold" aria-hidden className="opacity-50" />
-                    To
-                  </span>
-                </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
-                >
-                  Estimate
-                </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
-                >
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody className="text-[var(--tx2)]">
+            <tr>
+              <th scope="col">Lead #</th>
+              <th scope="col">Name</th>
+              <th scope="col">Email</th>
+              <th scope="col">Size</th>
+              <th scope="col">
+                <span className="inline-flex items-center gap-1">
+                  From
+                  <ArrowRight size={12} weight="bold" aria-hidden className="opacity-50" />
+                  To
+                </span>
+              </th>
+              <th scope="col">Estimate</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
               {filtered.length === 0 ? (
                 <tr>
                   <td
@@ -272,27 +239,24 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
                 </tr>
               ) : (
                 filtered.map((l) => (
-                  <tr
-                    key={l.id}
-                    className="border-b border-[var(--brd)]/[0.35] transition-colors last:border-b-0 hover:bg-[var(--hover)]/80"
-                  >
-                    <td className="px-4 py-3.5 font-semibold text-[var(--tx)]">
+                  <tr key={l.id}>
+                    <td className="font-semibold">
                       <Link
                         href={`/admin/widget-leads/${l.id}`}
-                        className="text-[var(--tx)] hover:underline underline-offset-2"
+                        className="text-[var(--yu3-ink-strong)] hover:underline underline-offset-2"
                       >
                         {l.lead_number}
                       </Link>
                     </td>
-                    <td className="px-4 py-3.5 font-medium text-[var(--tx)]">
+                    <td className="font-medium text-[var(--yu3-ink-strong)]">
                       {l.name}
                     </td>
-                    <td className="px-4 py-3.5">{l.email}</td>
-                    <td className="px-4 py-3.5">
+                    <td className="text-[var(--yu3-ink-muted)]">{l.email}</td>
+                    <td className="text-[var(--yu3-ink-muted)]">
                       {SIZE_LABELS[l.move_size] || l.move_size}
                     </td>
-                    <td className="px-4 py-3.5">
-                      <span className="inline-flex items-center gap-1.5 tabular-nums">
+                    <td className="text-[var(--yu3-ink-muted)]">
+                      <span className="inline-flex items-center gap-1.5 [font-feature-settings:'tnum'_1]">
                         {l.from_postal?.toUpperCase()}
                         <ArrowRight
                           size={12}
@@ -303,7 +267,7 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
                         {l.to_postal?.toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-4 py-3.5 font-medium text-[var(--tx)]">
+                    <td className="font-medium text-[var(--yu3-ink-strong)] [font-feature-settings:'tnum'_1]">
                       {l.widget_estimate_low && l.widget_estimate_high
                         ? `${formatCurrency(l.widget_estimate_low)}–${formatCurrency(l.widget_estimate_high)}`
                         : ""}
