@@ -631,6 +631,9 @@ export default function AdminPageClient({
         <div className="mb-8 min-w-0">
           <div className="flex items-start justify-between gap-3 sm:gap-4 min-w-0 w-full">
             <div className="min-w-0 flex-1">
+              <p className="t-label text-[var(--tx3)] mb-1.5">
+                Command Center
+              </p>
               <h1 className="admin-page-hero">{greeting}</h1>
               <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--tx2)] [font-family:var(--font-body)] leading-snug">
                 <span>{dateStr}</span>

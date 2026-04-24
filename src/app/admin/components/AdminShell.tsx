@@ -231,9 +231,15 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
       },
       {
         href: "/admin/settings",
-        label: "Account",
+        label: "Settings",
         Icon: Icons.lock,
         minRole: "coordinator",
+      },
+      {
+        href: "/admin/audit-log",
+        label: "Audit Log",
+        Icon: Icons.clipboardList,
+        minRole: "admin",
       },
     ],
   },
