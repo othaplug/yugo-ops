@@ -793,7 +793,7 @@ export default function MoveDetailClient({
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-3 animate-fade-up">
       <div className="flex items-center gap-2 mb-1">
         <BackButton label="Back" />
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82">
+        <p className="t-label text-[var(--tx3)]/88">
           Operations ·{" "}
           {String(move.service_type || "").toLowerCase() === "bin_rental"
             ? "Bin Rental"
@@ -821,7 +821,7 @@ export default function MoveDetailClient({
             }`}
             role="status"
           >
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)] mb-1">
+            <p className="t-label text-[var(--tx3)] mb-1">
               Operational alert
             </p>
             {operationalAlerts.marginBelowHalf && (
@@ -2841,13 +2841,37 @@ export default function MoveDetailClient({
             <Lock className="w-[11px] h-[11px]" />
           </span>
         )}
-        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
-          Internal Notes
-        </div>
-        <p className="text-[11px] text-[var(--tx2)] leading-snug whitespace-pre-wrap">
-          {stripClientMessagesFromNotes(move.internal_notes) ||
-            "No internal notes. Click edit to add."}
-        </p>
+        <div className="t-label text-[var(--tx3)] mb-2">Internal Notes</div>
+        {(() => {
+          const notes = stripClientMessagesFromNotes(move.internal_notes);
+          if (notes) {
+            return (
+              <p className="text-[11px] text-[var(--tx2)] leading-snug whitespace-pre-wrap">
+                {notes}
+              </p>
+            );
+          }
+          if (isCompleted) {
+            return (
+              <p className="text-[11px] text-[var(--tx3)] leading-snug italic">
+                No internal notes were added.
+              </p>
+            );
+          }
+          return (
+            <button
+              type="button"
+              onClick={() => {
+                setDetailsModalSection("notes");
+                setDetailsModalOpen(true);
+              }}
+              className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-[var(--brd)]/60 bg-[var(--card)] px-3 py-1.5 text-[11px] font-semibold text-[var(--tx2)] transition-colors hover:bg-[var(--hover)] hover:text-[var(--tx)]"
+            >
+              <Pencil weight="regular" className="w-[11px] h-[11px]" />
+              Add the first note
+            </button>
+          );
+        })()}
       </div>
 
       <EditMoveDetailsModal
