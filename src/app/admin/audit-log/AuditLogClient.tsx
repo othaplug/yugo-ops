@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  MagnifyingGlass,
   Truck,
   CurrencyDollar,
   ChatText,
@@ -18,6 +17,7 @@ import {
   ArrowSquareOut,
 } from "@phosphor-icons/react";
 import BackButton from "../components/BackButton";
+import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import {
   type ActivityEventRow,
   formatActivityTime,
@@ -82,7 +82,7 @@ function entityBadgeLabel(entityType: string): string {
 }
 
 function humanizeEventType(eventType: string): string {
-  if (!eventType) return "-";
+  if (!eventType) return "Event";
   return eventType
     .split(/[_\s]+/)
     .filter(Boolean)
@@ -221,48 +221,138 @@ export default function AuditLogClient({
 }: {
   events: ActivityEventRow[];
 }) {
-  const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [datePreset, setDatePreset] =
     useState<(typeof DATE_PRESETS)[number]["key"]>("all");
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
     return events.filter((e) => {
       if (!matchesDatePreset(e.created_at, datePreset)) return false;
       const et = normalizeEntityType(e.entity_type);
-      if (typeFilter === "all") {
-        /* no-op */
-      } else if (typeFilter === "system") {
-        if (isKnownEntityType(et)) return false;
-      } else if (et !== typeFilter) {
-        return false;
-      }
-      if (!q) return true;
-      const hay = [
-        e.description,
-        e.event_type,
-        e.entity_type,
-        e.entity_id,
-        e.icon,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(q);
+      if (typeFilter === "all") return true;
+      if (typeFilter === "system") return !isKnownEntityType(et);
+      return et === typeFilter;
     });
-  }, [events, search, typeFilter, datePreset]);
+  }, [events, typeFilter, datePreset]);
+
+  const columns: ColumnDef<ActivityEventRow>[] = useMemo(
+    () => [
+      {
+        id: "time",
+        label: "Time",
+        accessor: (e) => new Date(e.created_at).getTime(),
+        sortable: true,
+        searchable: false,
+        minWidth: "140px",
+        defaultWidth: 140,
+        exportAccessor: (e) => new Date(e.created_at).toISOString(),
+        render: (e) => (
+          <div className="flex items-start gap-2">
+            <EventGlyph icon={e.icon} entityType={e.entity_type} />
+            <span
+              className="t-num text-[11px] font-medium text-[var(--tx2)] cursor-default"
+              title={new Date(e.created_at).toLocaleString()}
+            >
+              {formatActivityTime(e.created_at)}
+            </span>
+          </div>
+        ),
+      },
+      {
+        id: "entity",
+        label: "Entity",
+        accessor: (e) => entityBadgeLabel(e.entity_type),
+        sortable: true,
+        searchable: true,
+        minWidth: "110px",
+        defaultWidth: 110,
+        render: (e) => (
+          <span className="inline-flex items-center rounded-lg border border-[var(--brd)] bg-[var(--bg)]/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--tx2)]">
+            {entityBadgeLabel(e.entity_type)}
+          </span>
+        ),
+      },
+      {
+        id: "event",
+        label: "Event",
+        accessor: (e) => humanizeEventType(e.event_type),
+        sortable: true,
+        searchable: true,
+        minWidth: "160px",
+        defaultWidth: 160,
+        render: (e) => (
+          <span className="text-[11px] font-semibold text-[var(--tx)] leading-snug">
+            {humanizeEventType(e.event_type)}
+          </span>
+        ),
+      },
+      {
+        id: "description",
+        label: "Description",
+        accessor: (e) =>
+          formatActivityDescription(e.description || e.event_type) ?? "",
+        sortable: false,
+        searchable: true,
+        minWidth: "240px",
+        render: (e) => (
+          <p className="text-[12px] text-[var(--tx2)] leading-snug line-clamp-3">
+            {formatActivityDescription(e.description || e.event_type)}
+          </p>
+        ),
+      },
+      {
+        id: "entity_id",
+        label: "Entity ID",
+        accessor: (e) => e.entity_id ?? "",
+        sortable: false,
+        searchable: true,
+        alwaysHidden: true,
+      },
+      {
+        id: "link",
+        label: "Link",
+        accessor: () => "",
+        sortable: false,
+        searchable: false,
+        align: "right",
+        minWidth: "90px",
+        defaultWidth: 90,
+        render: (e) => {
+          const href = getEntityHref(e);
+          if (!href) return null;
+          return (
+            <Link
+              href={href}
+              onClick={(ev) => ev.stopPropagation()}
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--gold)] hover:underline"
+            >
+              Open
+              <ArrowSquareOut size={14} weight="bold" aria-hidden />
+            </Link>
+          );
+        },
+      },
+    ],
+    [],
+  );
+
+  const emptyMessage =
+    events.length === 0
+      ? "No events recorded yet"
+      : "No events match your filters";
+  const emptySubtext =
+    events.length === 0
+      ? "New moves, deliveries, invoices and quotes will appear here as they happen."
+      : "Try clearing search or widening the time range.";
 
   return (
-    <div className="max-w-[1100px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
       <div className="mb-5">
-        <BackButton label="Back" fallback="/admin" />
+        <BackButton label="Back" fallback="/admin/settings" />
       </div>
 
       <div className="mb-6">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/88 mb-1.5">
-          Operations
-        </p>
+        <p className="t-label text-[var(--tx3)]/88 mb-1.5">Operations</p>
         <h1 className="admin-page-hero text-[var(--tx)]">Audit log</h1>
         <p className="text-[12px] text-[var(--tx3)] mt-2 font-medium leading-snug max-w-xl">
           Status and activity events across moves, deliveries, billing, and
@@ -270,241 +360,80 @@ export default function AuditLogClient({
         </p>
       </div>
 
-      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] shadow-[0_1px_0_rgba(255,255,255,0.04)] overflow-hidden">
-        <div className="p-3 sm:p-4 border-b border-[var(--brd)] bg-[var(--bg)]/40 space-y-3">
-          <div className="relative">
-            <MagnifyingGlass
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx2)]"
-              size={16}
-              weight="regular"
-              aria-hidden
-            />
-            <input
-              type="search"
-              value={search}
-              onChange={(ev) => setSearch(ev.target.value)}
-              placeholder="Search description, type, entity id…"
-              className="w-full rounded-xl border border-[var(--brd)] bg-[var(--bg)] py-2.5 pl-10 pr-3 text-[12px] text-[var(--tx)] outline-none transition-shadow placeholder:text-[var(--tx3)] focus:border-[var(--gold)]/45 focus:ring-1 focus:ring-[var(--gold)]/25"
-              aria-label="Filter audit events"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <div className="flex flex-wrap gap-1.5">
-              {TYPE_PILLS.map((p) => {
-                const active = typeFilter === p.key;
-                return (
-                  <button
-                    key={p.key}
-                    type="button"
-                    onClick={() => setTypeFilter(p.key)}
-                    className={`rounded-xl px-2.5 py-1.5 text-[11px] font-semibold border transition-colors ${
-                      active
-                        ? "border-[var(--gold)]/50 bg-[var(--gdim)] text-[var(--gold)]"
-                        : "border-[var(--brd)] bg-[var(--card)] text-[var(--tx2)] hover:border-[var(--brd)] hover:text-[var(--tx)]"
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mr-0.5">
-                When
-              </span>
-              {DATE_PRESETS.map((d) => {
-                const active = datePreset === d.key;
-                return (
-                  <button
-                    key={d.key}
-                    type="button"
-                    onClick={() => setDatePreset(d.key)}
-                    className={`rounded-lg px-2 py-1 text-[11px] font-semibold transition-colors ${
-                      active
-                        ? "bg-[var(--gold)]/15 text-[var(--gold)]"
-                        : "text-[var(--tx3)] hover:text-[var(--tx2)]"
-                    }`}
-                  >
-                    {d.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-1.5">
+          {TYPE_PILLS.map((p) => {
+            const active = typeFilter === p.key;
+            return (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => setTypeFilter(p.key)}
+                className={`rounded-xl px-2.5 py-1.5 text-[11px] font-semibold border transition-colors ${
+                  active
+                    ? "border-[var(--gold)]/50 bg-[var(--gdim)] text-[var(--gold)]"
+                    : "border-[var(--brd)] bg-[var(--card)] text-[var(--tx2)] hover:border-[var(--brd)] hover:text-[var(--tx)]"
+                }`}
+              >
+                {p.label}
+              </button>
+            );
+          })}
         </div>
-
-        {filtered.length === 0 ? (
-          <div className="py-16 px-4 text-center">
-            <p className="text-[12px] font-semibold text-[var(--tx2)]">
-              No events match your filters
-            </p>
-            <p className="text-[11px] text-[var(--tx3)] mt-1">
-              Try clearing search or widening the time range.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[720px]">
-                <thead>
-                  <tr className="bg-[var(--bg)]/30">
-                    <th className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)] w-[120px]">
-                      Time
-                    </th>
-                    <th className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)] w-[100px]">
-                      Entity
-                    </th>
-                    <th className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)] w-[140px]">
-                      Event
-                    </th>
-                    <th className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)]">
-                      Description
-                    </th>
-                    <th className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)] w-[100px] text-right">
-                      Link
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((e) => {
-                    const href = getEntityHref(e);
-                    const desc = formatActivityDescription(
-                      e.description || e.event_type,
-                    );
-                    return (
-                      <tr
-                        key={e.id}
-                        className="border-b border-[var(--brd)]/60 hover:bg-[var(--bg)]/25 transition-colors"
-                      >
-                        <td className="px-4 py-3 align-top whitespace-nowrap">
-                          <div className="flex items-start gap-2">
-                            <EventGlyph
-                              icon={e.icon}
-                              entityType={e.entity_type}
-                            />
-                            <span
-                              className="text-[11px] font-medium text-[var(--tx2)] tabular-nums cursor-default"
-                              title={new Date(e.created_at).toLocaleString()}
-                            >
-                              {formatActivityTime(e.created_at)}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <span className="inline-flex items-center rounded-lg border border-[var(--brd)] bg-[var(--bg)]/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--tx2)]">
-                            {entityBadgeLabel(e.entity_type)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <span className="text-[11px] font-semibold text-[var(--tx)] leading-snug">
-                            {humanizeEventType(e.event_type)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <p className="text-[12px] text-[var(--tx2)] leading-snug line-clamp-3">
-                            {desc}
-                          </p>
-                        </td>
-                        <td className="px-4 py-3 align-top text-right">
-                          {href ? (
-                            <Link
-                              href={href}
-                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--gold)] hover:underline"
-                            >
-                              Open
-                              <ArrowSquareOut
-                                size={14}
-                                weight="bold"
-                                aria-hidden
-                              />
-                            </Link>
-                          ) : (
-                            <span className="text-[11px] text-[var(--tx3)]">
-                              -
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <ul className="md:hidden divide-y divide-[var(--brd)]">
-              {filtered.map((e) => {
-                const href = getEntityHref(e);
-                const desc = formatActivityDescription(
-                  e.description || e.event_type,
-                );
-                const inner = (
-                  <div className="flex gap-3 py-3.5 px-4">
-                    <div className="pt-0.5">
-                      <EventGlyph icon={e.icon} entityType={e.entity_type} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="inline-flex items-center rounded-lg border border-[var(--brd)] bg-[var(--bg)]/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--tx2)]">
-                          {entityBadgeLabel(e.entity_type)}
-                        </span>
-                        <span className="text-[11px] font-semibold text-[var(--tx)]">
-                          {humanizeEventType(e.event_type)}
-                        </span>
-                      </div>
-                      <p className="text-[12px] text-[var(--tx2)] mt-1.5 leading-snug">
-                        {desc}
-                      </p>
-                      <div className="flex items-center justify-between gap-2 mt-2">
-                        <span className="text-[11px] text-[var(--tx3)] font-medium">
-                          {formatActivityTime(e.created_at)}
-                        </span>
-                        {href ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--gold)]">
-                            View
-                            <ArrowSquareOut
-                              size={14}
-                              weight="bold"
-                              aria-hidden
-                            />
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-[var(--tx3)]">
-                            -
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-                return href ? (
-                  <li key={e.id}>
-                    <Link
-                      href={href}
-                      className="block active:bg-[var(--bg)]/40"
-                    >
-                      {inner}
-                    </Link>
-                  </li>
-                ) : (
-                  <li key={e.id}>{inner}</li>
-                );
-              })}
-            </ul>
-          </>
-        )}
-
-        <div className="px-4 py-2.5 border-t border-[var(--brd)] bg-[var(--bg)]/25 flex items-center justify-between gap-2">
-          <span className="text-[11px] text-[var(--tx3)] font-medium">
-            Showing {filtered.length} of {events.length} loaded
-          </span>
-          <Link
-            href="/admin/activity"
-            className="text-[11px] font-semibold text-[var(--gold)] hover:underline"
-          >
-            Live activity feed
-          </Link>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="t-label text-[var(--tx3)] mr-0.5">When</span>
+          {DATE_PRESETS.map((d) => {
+            const active = datePreset === d.key;
+            return (
+              <button
+                key={d.key}
+                type="button"
+                onClick={() => setDatePreset(d.key)}
+                className={`rounded-lg px-2 py-1 text-[11px] font-semibold transition-colors ${
+                  active
+                    ? "bg-[var(--gold)]/15 text-[var(--gold)]"
+                    : "text-[var(--tx3)] hover:text-[var(--tx2)]"
+                }`}
+              >
+                {d.label}
+              </button>
+            );
+          })}
         </div>
+      </div>
+
+      <DataTable<ActivityEventRow>
+        data={filtered}
+        columns={columns}
+        keyField="id"
+        tableId="audit-log"
+        defaultSortCol="time"
+        defaultSortDir="desc"
+        searchable
+        searchPlaceholder="Search description, type, entity id…"
+        pagination
+        defaultPerPage={50}
+        exportable
+        exportFilename="yugo-audit-log"
+        columnToggle
+        stickyHeader
+        striped
+        emptyMessage={emptyMessage}
+        emptySubtext={emptySubtext}
+        mobileCardLayout={{
+          primaryColumnId: "event",
+          subtitleColumnId: "description",
+          metaColumnIds: ["time", "entity"],
+        }}
+      />
+
+      <div className="mt-3 flex items-center justify-end">
+        <Link
+          href="/admin/activity"
+          className="text-[11px] font-semibold text-[var(--gold)] hover:underline"
+        >
+          Live activity feed
+        </Link>
       </div>
     </div>
   );
