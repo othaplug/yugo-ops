@@ -64,6 +64,7 @@ export {
   Truck,
   Recycle,
   ShippingContainer,
+  Package,
   Receipt,
   FilePlus,
   Gift,

@@ -18,7 +18,7 @@ import {
   ChartBar,
   Handshake,
   Briefcase,
-  ShippingContainer,
+  Package,
   FileText,
   Lightning,
   Path,
@@ -90,7 +90,7 @@ export const SIDEBAR_SECTIONS: NavSection[] = [
       { href: "/admin/partners", label: "All Partners", Icon: Handshake, minRole: "coordinator" },
       { href: "/admin/partners/realtors", label: "Referral Partners", Icon: Handshake, minRole: "coordinator" },
       { href: "/admin/deliveries", label: "Jobs", Icon: Briefcase, minRole: "coordinator" },
-      { href: "/admin/inbound-shipments", label: "Inbound Shipments", Icon: ShippingContainer, minRole: "coordinator" },
+      { href: "/admin/inbound-shipments", label: "Inbound Shipments", Icon: Package, minRole: "coordinator" },
     ],
   },
   {
