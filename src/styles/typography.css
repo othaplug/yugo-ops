@@ -1,0 +1,78 @@
+/* ==========================================================================
+   Yugo+ admin (v1) — PR 1 Typography utilities
+   ==========================================================================
+   Class names are intentionally prefixed `t-` so they do not collide with
+   any existing utility family:
+     - Tailwind `text-*`   (font-size utilities)
+     - globals.css `.ty-*` (legacy semantic classes)
+     - globals.css `.dt-*` (data-table cell roles)
+     - admin-tokens.css `@utility body-md / heading-sm / label-sm` etc.
+
+   Usage:
+     <h1 className="t-display">Quotes</h1>
+     <p className="t-body">…</p>
+     <span className="t-num">$1,920.00</span>
+
+   Apply `t-num` alongside any size class to enable tabular figures.
+   ========================================================================== */
+
+/* Page titles only — "Quotes", "Sandra Warren", "Alpha". Never section
+   labels. Weight stays at 600 on the brand serif so the character still
+   reads as display even at smaller zoom levels. */
+.t-display {
+  font-family: var(--font-display);
+  font-size: var(--font-size-display);
+  line-height: var(--line-height-display);
+  font-weight: var(--font-weight-display);
+  letter-spacing: var(--letter-spacing-display);
+  color: var(--color-text-primary);
+}
+
+/* Section titles inside pages — "Profitability", "Client Inventory". */
+.t-heading {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-heading);
+  line-height: var(--line-height-heading);
+  font-weight: var(--font-weight-heading);
+  letter-spacing: var(--letter-spacing-heading);
+  color: var(--color-text-primary);
+}
+
+/* Default body copy, table cells, form field values. */
+.t-body {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  font-weight: var(--font-weight-body);
+  letter-spacing: var(--letter-spacing-body);
+  color: var(--color-text-primary);
+}
+
+/* Column headers, section eyebrows. Always rendered uppercase. Use on
+   <span> or small <div> — never on headings that carry semantic weight. */
+.t-label {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-label);
+  line-height: var(--line-height-label);
+  font-weight: var(--font-weight-label);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+/* Timestamps, actor lines, chip sublabels, metadata rows. Tertiary ink. */
+.t-annotation {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-annotation);
+  line-height: var(--line-height-annotation);
+  font-weight: var(--font-weight-annotation);
+  letter-spacing: var(--letter-spacing-annotation);
+  color: var(--color-text-tertiary);
+}
+
+/* Numeric feature utility — pair with any size class on money, counts,
+   dates that render as digits, and comparison columns. */
+.t-num {
+  font-feature-settings: var(--font-feature-numeric);
+  font-variant-numeric: tabular-nums;
+}

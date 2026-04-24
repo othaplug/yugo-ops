@@ -1,0 +1,184 @@
+/* ==========================================================================
+   Yugo+ admin (v1) — PR 1 Design Tokens (foundation)
+   ==========================================================================
+   Purpose: single source of truth for type scale, color roles, spacing,
+   radius, and shadows. Nothing in the codebase consumes these yet; later
+   PRs migrate components onto these tokens.
+
+   Ordering: this file is imported BEFORE `admin-tokens.css` in globals.css
+   so that the existing admin-v2 `@theme` block wins at :root for any
+   shared names (e.g. --color-canvas). Admin-v2 rendering is unchanged.
+
+   Do not introduce new hex values or type sizes. If a need arises, discuss
+   with the team first and extend this file. See /docs/design-tokens.md.
+   ========================================================================== */
+
+:root {
+  /* ──────────────────────────────────────────────────────────────────────
+     Font stacks
+     ──────────────────────────────────────────────────────────────────── */
+  /* Reserved for page titles only ("Quotes", "Sandra Warren", "Alpha").
+     Season Mix Display is not yet loaded in the repo; Instrument Serif is
+     the current brand serif. Swap the first entry when Season Mix ships. */
+  --font-display:
+    "Season Mix Display", "Instrument Serif", "Georgia", "Times New Roman",
+    serif;
+
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    "DM Sans", "Helvetica Neue", Arial, sans-serif;
+
+  /* Same glyphs as --font-sans but consumers pair it with `tnum` features
+     for aligned monetary / numeric columns. */
+  --font-mono-numeric:
+    "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    sans-serif;
+
+  /* ──────────────────────────────────────────────────────────────────────
+     Type scale — 5 sizes + 1 numeric feature + 1 annotation
+     Each treatment exposes size / line-height / weight / letter-spacing as
+     separate atoms so typography utilities can assemble them. The `font`
+     shorthand does not carry letter-spacing, which is why we split.
+     ──────────────────────────────────────────────────────────────────── */
+
+  /* Display — page titles only */
+  --font-size-display: 28px;
+  --line-height-display: 36px;
+  --font-weight-display: 600;
+  --letter-spacing-display: -0.01em;
+
+  /* Heading — section titles inside pages */
+  --font-size-heading: 18px;
+  --line-height-heading: 26px;
+  --font-weight-heading: 600;
+  --letter-spacing-heading: 0;
+
+  /* Body — default reading text */
+  --font-size-body: 14px;
+  --line-height-body: 20px;
+  --font-weight-body: 400;
+  --letter-spacing-body: 0;
+
+  /* Label — column headers, section eyebrows, uppercase */
+  --font-size-label: 11px;
+  --line-height-label: 14px;
+  --font-weight-label: 600;
+  --letter-spacing-label: 0.08em;
+
+  /* Annotation — metadata, timestamps, small helper copy */
+  --font-size-annotation: 12px;
+  --line-height-annotation: 16px;
+  --font-weight-annotation: 500;
+  --letter-spacing-annotation: 0;
+
+  /* Numeric — not a size, a feature. Apply alongside any size token. */
+  --font-feature-numeric: "tnum" 1, "cv11" 1;
+
+  /* ──────────────────────────────────────────────────────────────────────
+     Color roles — light (default)
+     ──────────────────────────────────────────────────────────────────── */
+
+  /* Brand wine. Used ONLY for brand chrome and primary CTAs. Not for
+     money, not for status, not decorative. */
+  --color-wine: #66143D;
+  --color-wine-hover: #4F0F2D;
+  --color-wine-subtle: #FAF0F4; /* active nav wash — NOT a wine fill */
+
+  /* Surfaces. Shared names with admin-v2 — admin-v2's @theme loads after
+     this file and keeps its own values at :root for those surfaces. */
+  --color-canvas: #FAFAFA;
+  --color-surface: #FFFFFF;
+  --color-surface-subtle: #F7F7F7;
+  --color-surface-sunken: #F1F1F2;
+
+  /* Borders */
+  --color-border: #EAEAEC;
+  --color-border-strong: #D4D4D8;
+
+  /* Text */
+  --color-text-primary: #0A0A0B;
+  --color-text-secondary: #52525B;
+  --color-text-tertiary: #A1A1AA;
+
+  /* Status — only for status chips, never decorative */
+  --color-success-fg: #0F7A3F;
+  --color-success-bg: #DCFCE7;
+  --color-warning-fg: #92400E;
+  --color-warning-bg: #FEF3C7;
+  --color-danger-fg: #B91C1C;
+  --color-danger-bg: #FEE2E2;
+  --color-info-fg: #1E3A8A;
+  --color-info-bg: #DBEAFE;
+  --color-neutral-fg: #3F3F46;
+  --color-neutral-bg: #F4F4F5;
+
+  /* Money — deltas and totals. Use for numeric change, NOT decoration. */
+  --color-money-positive: #0F7A3F;
+  --color-money-negative: #B91C1C;
+
+  /* ──────────────────────────────────────────────────────────────────────
+     Spacing — 4px base unit
+     ──────────────────────────────────────────────────────────────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ──────────────────────────────────────────────────────────────────────
+     Radius
+     ──────────────────────────────────────────────────────────────────── */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ──────────────────────────────────────────────────────────────────────
+     Shadows
+     ──────────────────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px rgba(10, 10, 11, 0.04);
+  --shadow-md: 0 4px 12px rgba(10, 10, 11, 0.08);
+  --shadow-lg: 0 16px 40px rgba(10, 10, 11, 0.12);
+}
+
+/* ==========================================================================
+   Dark mode overrides
+   Applies to html[data-theme="dark"] / .dark. Shared-name values here
+   match admin-tokens.css dark values, so order of imports is irrelevant
+   for dark rendering.
+   ========================================================================== */
+
+:where(html[data-theme="dark"], html.dark, [data-theme="dark"]) {
+  --color-canvas: #09090B;
+  --color-surface: #18181B;
+  --color-surface-subtle: #1F1F23;
+  --color-surface-sunken: #27272A;
+
+  --color-border: #27272A;
+  --color-border-strong: #3F3F46;
+
+  --color-text-primary: #FAFAFA;
+  --color-text-secondary: #A1A1AA;
+  --color-text-tertiary: #52525B;
+
+  --color-wine-subtle: #2A0E1A;
+
+  /* Status backgrounds tuned for dark surfaces; foregrounds remain
+     readable on their backgrounds without re-tinting. */
+  --color-success-bg: #0F2E1F;
+  --color-warning-bg: #3B2A0E;
+  --color-danger-bg: #3A1414;
+  --color-info-bg: #1A2847;
+  --color-neutral-bg: #27272A;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+}

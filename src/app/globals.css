@@ -1,4 +1,11 @@
 @import "tailwindcss";
+/*
+ * PR 1 design tokens (foundation). Loaded BEFORE admin-tokens.css so the
+ * admin-v2 @theme block keeps its values at :root for shared names
+ * (--color-canvas, --color-surface, etc.). See /docs/design-tokens.md.
+ */
+@import "../styles/tokens.css";
+@import "../styles/typography.css";
 @import "../styles/admin-tokens.css";
 
 :root {
