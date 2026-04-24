@@ -76,3 +76,75 @@
   font-feature-settings: var(--font-feature-numeric);
   font-variant-numeric: tabular-nums;
 }
+
+/* ==========================================================================
+   Interactive card — `.a-card` (Amex / SSENSE lift)
+   ==========================================================================
+   Subtle two-layer depth for clickable dashboard tiles: default state
+   reads like a flat surface, hover and focus-visible reveal a faint
+   inner highlight + elevated shadow. Never apply to static containers;
+   reserve for rows/tiles that navigate or expand.
+
+   Usage:
+     <button class="a-card">…</button>
+     <Link class="a-card">…</Link>
+
+   Compose with Tailwind for padding/layout; `.a-card` only paints the
+   chrome (background, border, radius, shadow, transitions).
+   ========================================================================== */
+
+.a-card {
+  position: relative;
+  display: block;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color 180ms ease,
+    box-shadow 220ms ease,
+    transform 180ms ease,
+    background-color 160ms ease;
+  will-change: transform;
+}
+
+.a-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  pointer-events: none;
+  transition: opacity 180ms ease;
+  opacity: 0;
+}
+
+.a-card:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.a-card:hover::after {
+  opacity: 1;
+}
+
+.a-card:focus-visible {
+  outline: 2px solid var(--color-wine);
+  outline-offset: 2px;
+}
+
+.a-card:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+  transition-duration: 80ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .a-card,
+  .a-card:hover,
+  .a-card:active {
+    transition: none;
+    transform: none;
+  }
+}

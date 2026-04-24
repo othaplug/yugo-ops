@@ -16,6 +16,45 @@ export interface GlobalModalProps {
   noPadding?: boolean;
 }
 
+// PR 6 drawer policy: a single last-in-wins ESC target plus a dev-only
+// warning when more than one modal is open at a time. Everything is
+// client-only so the module is safe under SSR.
+type ModalHandle = { onClose: () => void };
+const modalStack: ModalHandle[] = [];
+let globalEscapeBound = false;
+
+function bindGlobalEscape() {
+  if (globalEscapeBound || typeof window === "undefined") return;
+  const handler = (e: KeyboardEvent) => {
+    if (e.key !== "Escape") return;
+    const top = modalStack[modalStack.length - 1];
+    if (!top) return;
+    e.stopPropagation();
+    top.onClose();
+  };
+  window.addEventListener("keydown", handler, { capture: true });
+  globalEscapeBound = true;
+}
+
+function pushModal(handle: ModalHandle) {
+  if (process.env.NODE_ENV !== "production" && modalStack.length >= 1) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[drawer-policy] A second GlobalModal opened while one was already visible. Close the first before opening another; stacking leads to ambiguous ESC + focus behavior.",
+    );
+  }
+  modalStack.push(handle);
+  bindGlobalEscape();
+}
+
+function popModal(handle: ModalHandle) {
+  const idx = modalStack.indexOf(handle);
+  if (idx >= 0) modalStack.splice(idx, 1);
+}
+
+const FOCUSABLE_SELECTOR =
+  "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
+
 export default function GlobalModal({
   open,
   onClose,
@@ -26,35 +65,52 @@ export default function GlobalModal({
   noPadding = false,
 }: GlobalModalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const handleEscape = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    },
-    [onClose]
-  );
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
+    const handle: ModalHandle = {
+      onClose: () => onCloseRef.current(),
+    };
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleEscape);
+    pushModal(handle);
     return () => {
       document.body.style.overflow = prev;
-      window.removeEventListener("keydown", handleEscape);
+      popModal(handle);
     };
-  }, [open, handleEscape]);
+  }, [open]);
 
-  // Focus first focusable only when the dialog opens. Must not depend on onClose /
-  // handleEscape — unstable callbacks from parents would re-run this every render
-  // and steal focus from inputs after each keystroke.
+  // Basic focus trap — Tab/Shift+Tab wraps inside the dialog. Keeps keyboard
+  // focus scoped to the currently-open drawer per PR 6 drawer policy.
+  const handleTrapTab = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== "Tab" || !containerRef.current) return;
+    const nodes = containerRef.current.querySelectorAll<HTMLElement>(
+      FOCUSABLE_SELECTOR,
+    );
+    if (nodes.length === 0) return;
+    const first = nodes[0];
+    const last = nodes[nodes.length - 1];
+    const active = document.activeElement as HTMLElement | null;
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }, []);
+
+  // Focus first focusable only when the dialog opens. Must not depend on onClose —
+  // unstable callbacks from parents would re-run this every render and steal
+  // focus from inputs after each keystroke.
   useEffect(() => {
     if (!open) return;
     const frame = requestAnimationFrame(() => {
       if (!containerRef.current) return;
-      const focusable = containerRef.current.querySelector<HTMLElement>(
-        "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])"
-      );
+      const focusable =
+        containerRef.current.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
       (focusable ?? containerRef.current).focus();
     });
     return () => cancelAnimationFrame(frame);
@@ -82,6 +138,7 @@ export default function GlobalModal({
       aria-modal="true"
       aria-labelledby={title ? "modal-title" : undefined}
       tabIndex={-1}
+      onKeyDown={handleTrapTab}
     >
       {/* Dimmed backdrop */}
       <div

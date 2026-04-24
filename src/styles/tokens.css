@@ -117,6 +117,21 @@
   --color-money-negative: #B91C1C;
 
   /* ──────────────────────────────────────────────────────────────────────
+     Stage colors — crew / delivery workflow chart palette
+     Used by Recharts bars/lines and stage chips on /admin/crew/analytics.
+     Tuned for both light and dark admin themes.
+     ──────────────────────────────────────────────────────────────────── */
+  --color-stage-pickup-route: #3B82F6;
+  --color-stage-pickup-arrived: #8B5CF6;
+  --color-stage-loading: #F59E0B;
+  --color-stage-destination-route: #06B6D4;
+  --color-stage-destination-arrived: #10B981;
+  --color-stage-unloading: #F97316;
+  --color-stage-completed: #22C55E;
+  --color-stage-idle: #64748B;
+  --color-stage-fallback: #6B7280;
+
+  /* ──────────────────────────────────────────────────────────────────────
      Spacing — 4px base unit
      ──────────────────────────────────────────────────────────────────── */
   --space-1: 4px;

@@ -105,16 +105,18 @@ const RANGE_PRESETS = [
 ] as const;
 
 const STAGE_COLORS: Record<string, string> = {
-  en_route_to_pickup: "#3B82F6",
-  arrived_at_pickup: "#8B5CF6",
-  loading: "#F59E0B",
-  en_route_to_destination: "#06B6D4",
-  arrived_at_destination: "#10B981",
-  unloading: "#F97316",
-  completed: "#22C55E",
-  en_route: "#3B82F6",
-  arrived: "#8B5CF6",
-  delivering: "#F97316",
+  en_route_to_pickup: "var(--color-stage-pickup-route)",
+  arrived_at_pickup: "var(--color-stage-pickup-arrived)",
+  loading: "var(--color-stage-loading)",
+  en_route_to_destination: "var(--color-stage-destination-route)",
+  arrived_at_destination: "var(--color-stage-destination-arrived)",
+  unloading: "var(--color-stage-unloading)",
+  completed: "var(--color-stage-completed)",
+  en_route: "var(--color-stage-pickup-route)",
+  arrived: "var(--color-stage-pickup-arrived)",
+  delivering: "var(--color-stage-unloading)",
+  /** Time with no GPS movement (injected in session checkpoints) */
+  idle: "var(--color-stage-idle)",
 };
 
 function fmtDate(d: Date) {
@@ -894,9 +896,12 @@ function CrewDetailView({
                       <Line
                         type="monotone"
                         dataKey="avgDuration"
-                        stroke="#3B82F6"
+                        stroke="var(--color-stage-pickup-route)"
                         strokeWidth={2}
-                        dot={{ r: 3, fill: "#3B82F6" }}
+                        dot={{
+                          r: 3,
+                          fill: "var(--color-stage-pickup-route)",
+                        }}
                         connectNulls
                       />
                     </LineChart>
@@ -1118,7 +1123,8 @@ function CrewDetailView({
                                 <div className="space-y-2">
                                   {job.stages.map((stage, si) => {
                                     const stageColor =
-                                      STAGE_COLORS[stage.status] || "#6B7280";
+                                      STAGE_COLORS[stage.status] ||
+                                      "var(--color-stage-fallback)";
                                     const maxDur = Math.max(
                                       ...job.stages.map((s) => s.duration || 0),
                                       1,
