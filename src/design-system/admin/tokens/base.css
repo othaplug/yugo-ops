@@ -1,0 +1,252 @@
+/*
+ * Yugo+ admin v3 — base reset and global chrome for [data-yugo-admin-v3].
+ * Scoped so it cannot leak to the marketing site, portal, or crew.
+ */
+
+[data-yugo-admin-v3] {
+  background: var(--yu3-bg-canvas);
+  color: var(--yu3-ink);
+  font-family: var(--yu3-font-ui);
+  font-size: var(--yu3-t-14);
+  line-height: var(--yu3-lh-body);
+  font-feature-settings:
+    "ss01" 1,
+    "cv08" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Selection */
+[data-yugo-admin-v3] ::selection {
+  background: var(--yu3-wine-tint);
+  color: var(--yu3-ink-strong);
+}
+
+/* Scrollbar — subtle */
+[data-yugo-admin-v3] * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--yu3-line-strong) transparent;
+}
+[data-yugo-admin-v3] *::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+[data-yugo-admin-v3] *::-webkit-scrollbar-thumb {
+  background: var(--yu3-line);
+  border-radius: 999px;
+  border: 2px solid var(--yu3-bg-canvas);
+}
+[data-yugo-admin-v3] *::-webkit-scrollbar-thumb:hover {
+  background: var(--yu3-line-strong);
+}
+
+/* Focus — one ring, wine, offset */
+[data-yugo-admin-v3] :focus-visible {
+  outline: none;
+  box-shadow: var(--yu3-ring-focus);
+  border-radius: var(--yu3-r-sm);
+}
+
+/* Tabular numbers everywhere money/metrics go */
+[data-yugo-admin-v3] .yu3-num,
+[data-yugo-admin-v3] [data-num] {
+  font-family: var(--yu3-font-num);
+  font-feature-settings:
+    "tnum" 1,
+    "cv08" 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Typography utility classes */
+[data-yugo-admin-v3] .yu3-t-eyebrow {
+  font-family: var(--yu3-font-ui);
+  font-size: var(--yu3-t-11);
+  font-weight: 700;
+  letter-spacing: var(--yu3-tracking-eyebrow);
+  line-height: var(--yu3-lh-tight);
+  text-transform: uppercase;
+  color: var(--yu3-ink-muted);
+}
+[data-yugo-admin-v3] .yu3-t-label {
+  font-family: var(--yu3-font-ui);
+  font-size: var(--yu3-t-12);
+  font-weight: 500;
+  color: var(--yu3-ink-muted);
+}
+[data-yugo-admin-v3] .yu3-t-body {
+  font-family: var(--yu3-font-ui);
+  font-size: var(--yu3-t-14);
+  line-height: var(--yu3-lh-body);
+  color: var(--yu3-ink);
+}
+[data-yugo-admin-v3] .yu3-t-title {
+  font-family: var(--yu3-font-ui);
+  font-size: var(--yu3-t-18);
+  font-weight: 600;
+  letter-spacing: var(--yu3-tracking-tight);
+  color: var(--yu3-ink-strong);
+}
+[data-yugo-admin-v3] .yu3-t-page {
+  font-family: var(--yu3-font-ui);
+  font-size: var(--yu3-t-22);
+  font-weight: 600;
+  letter-spacing: var(--yu3-tracking-tight);
+  color: var(--yu3-ink-strong);
+}
+[data-yugo-admin-v3] .yu3-t-display {
+  font-family: var(--yu3-font-display);
+  font-weight: 400;
+  font-size: var(--yu3-t-36);
+  letter-spacing: var(--yu3-tracking-tight);
+  color: var(--yu3-ink-strong);
+  line-height: var(--yu3-lh-tight);
+}
+[data-yugo-admin-v3] .yu3-t-metric {
+  font-family: var(--yu3-font-num);
+  font-weight: 600;
+  font-size: var(--yu3-t-28);
+  letter-spacing: var(--yu3-tracking-tight);
+  color: var(--yu3-ink-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--yu3-lh-tight);
+}
+[data-yugo-admin-v3] .yu3-t-metric-hero {
+  font-family: var(--yu3-font-num);
+  font-weight: 600;
+  font-size: var(--yu3-t-36);
+  letter-spacing: var(--yu3-tracking-tight);
+  color: var(--yu3-ink-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--yu3-lh-tight);
+}
+[data-yugo-admin-v3] .yu3-t-mini {
+  font-family: var(--yu3-font-ui);
+  font-size: var(--yu3-t-12);
+  font-weight: 500;
+  color: var(--yu3-ink-muted);
+  line-height: var(--yu3-lh-snug);
+}
+
+/* Glass panel (top bar, floating bulk bar) */
+[data-yugo-admin-v3] .yu3-glass {
+  background: var(--yu3-bg-glass);
+  backdrop-filter: blur(14px) saturate(110%);
+  -webkit-backdrop-filter: blur(14px) saturate(110%);
+  border-bottom: 1px solid var(--yu3-line-subtle);
+}
+
+/* Card wrapper */
+[data-yugo-admin-v3] .yu3-card {
+  background: var(--yu3-bg-surface);
+  border: 1px solid var(--yu3-line-subtle);
+  border-radius: var(--yu3-r-lg);
+  box-shadow: var(--yu3-shadow-sm);
+}
+[data-yugo-admin-v3] .yu3-card-inset {
+  background: var(--yu3-bg-surface-sunken);
+  border: 1px solid var(--yu3-line-subtle);
+  border-radius: var(--yu3-r-md);
+}
+
+/* Links */
+[data-yugo-admin-v3] a {
+  color: inherit;
+  text-decoration: none;
+}
+[data-yugo-admin-v3] a:hover {
+  color: var(--yu3-ink-strong);
+}
+
+/* Disabled state */
+[data-yugo-admin-v3] [disabled],
+[data-yugo-admin-v3] [aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Command palette item */
+[data-yugo-admin-v3] [cmdk-root] [cmdk-group-heading] {
+  display: block;
+}
+[data-yugo-admin-v3] [cmdk-root] .yu3-palette-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  height: 36px;
+  border-radius: var(--yu3-r-sm);
+  font-size: 13px;
+  color: var(--yu3-ink);
+  cursor: pointer;
+  outline: none;
+}
+[data-yugo-admin-v3] [cmdk-root] .yu3-palette-item[data-selected="true"],
+[data-yugo-admin-v3] [cmdk-root] .yu3-palette-item:hover {
+  background: var(--yu3-bg-surface-sunken);
+  color: var(--yu3-ink-strong);
+}
+
+/* Keyframes */
+@keyframes yu3-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+@keyframes yu3-slide-up {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  [data-yugo-admin-v3] *,
+  [data-yugo-admin-v3] *::before,
+  [data-yugo-admin-v3] *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Root layout hooks used by AdminShell v3 */
+[data-yugo-admin-v3] .yu3-shell {
+  display: grid;
+  grid-template-columns: var(--yu3-sidebar-w) 1fr;
+  min-height: 100dvh;
+  width: 100%;
+}
+[data-yugo-admin-v3] .yu3-shell[data-collapsed="true"] {
+  grid-template-columns: var(--yu3-sidebar-rail-w) 1fr;
+}
+@media (max-width: 1023.98px) {
+  [data-yugo-admin-v3] .yu3-shell,
+  [data-yugo-admin-v3] .yu3-shell[data-collapsed="true"] {
+    grid-template-columns: 1fr;
+  }
+}
+
+[data-yugo-admin-v3] .yu3-main {
+  min-width: 0;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--yu3-bg-canvas);
+}
+
+[data-yugo-admin-v3] .yu3-page {
+  flex: 1;
+  width: 100%;
+  max-width: var(--yu3-content-max-w);
+  margin: 0 auto;
+  padding: var(--yu3-sp-6);
+  padding-top: var(--yu3-sp-6);
+}
+@media (max-width: 767.98px) {
+  [data-yugo-admin-v3] .yu3-page {
+    padding: var(--yu3-sp-4);
+    padding-bottom: calc(var(--yu3-mobile-navbar-h) + var(--yu3-sp-4));
+  }
+}
+[data-yugo-admin-v3] .yu3-page.yu3-page-wide {
+  max-width: none;
+}

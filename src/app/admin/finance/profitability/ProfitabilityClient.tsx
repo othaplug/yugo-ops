@@ -15,7 +15,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell,
 } from "recharts";
 import {
   TrendUp as TrendingUp,
@@ -1527,14 +1526,8 @@ export default function ProfitabilityClient() {
                         dataKey="avgGP"
                         radius={[4, 4, 0, 0]}
                         activeBar={false}
-                      >
-                        {tierBreakdown.map((e) => (
-                          <Cell
-                            key={e.tier}
-                            fill={TIER_COLORS[e.tier] || "#2C3E2D"}
-                          />
-                        ))}
-                      </Bar>
+                        fill="var(--tx)"
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1623,8 +1616,7 @@ export default function ProfitabilityClient() {
                     breakdownTab === "moves"
                       ? moveTypeBreakdown
                       : deliveryTypeBreakdown;
-                  const color =
-                    breakdownTab === "moves" ? "#2C3E2D" : "#2D6A4F";
+                  const color = "var(--tx)";
                   return (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <div className="h-52">

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import PlatformSettingsClient from "./PlatformSettingsClient";
+import { PageHeader } from "@/design-system/admin/layout";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import { getPlatformToggles } from "@/lib/platform-settings";
 import {
@@ -99,11 +100,12 @@ export default async function PlatformPage() {
   }));
 
   return (
-    <div className="w-full max-w-[min(100vw-1.25rem,1580px)] 2xl:max-w-[1700px] min-w-0 mx-auto px-3 sm:px-4 md:px-5 lg:px-6 py-6 md:py-8 animate-fade-up">
-      <div className="mb-8">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Admin</p>
-        <h1 className="admin-page-hero text-[var(--tx)]">Platform Settings</h1>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        eyebrow="Settings"
+        title="Platform settings"
+        description="Operational toggles, teams, rate templates, fleet, integrations, and more. Section-indexed with inline edit."
+      />
       <PlatformSettingsClient
         initialTeams={initialTeams}
         initialToggles={initialToggles}

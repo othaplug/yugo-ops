@@ -269,7 +269,7 @@ export default function CrewAnalyticsClient({
       .map((a) => a.avgSatisfaction!);
     return ratings.length > 0
       ? (ratings.reduce((s, r) => s + r, 0) / ratings.length).toFixed(1)
-      : "-";
+      : "";
   })();
   const avgSignOff =
     sorted.length > 0
@@ -338,28 +338,28 @@ export default function CrewAnalyticsClient({
         </div>
         <Link
           href="/admin/reports"
-          className="group inline-flex shrink-0 items-center gap-2 self-start rounded-xl border border-[var(--brd)]/60 bg-[var(--card)]/60 px-3.5 py-2 transition-all duration-200 hover:border-[var(--gold)]/40 hover:bg-[var(--gold)]/5 sm:mt-0.5"
+          className="group inline-flex shrink-0 items-center gap-2 self-start rounded-xl border border-[var(--brd)]/60 bg-[var(--card)]/60 px-3.5 py-2 transition-all duration-200 hover:border-[var(--tx2)]/40 hover:bg-[var(--bg2)]/60 sm:mt-0.5"
         >
           <FileText
             size={13}
-            weight="duotone"
-            className="text-[var(--gold)] shrink-0"
+            weight="regular"
+            className="text-[var(--tx2)] shrink-0"
             aria-hidden
           />
-          <span className="text-[11px] font-semibold text-[var(--tx2)] group-hover:text-[var(--gold)] transition-colors whitespace-nowrap">
+          <span className="text-[11px] font-semibold text-[var(--tx)] whitespace-nowrap">
             EOD Reports
           </span>
           <ArrowRight
             size={11}
             weight="bold"
-            className="text-[var(--tx3)] group-hover:text-[var(--gold)] group-hover:translate-x-0.5 transition-all duration-200 shrink-0"
+            className="text-[var(--tx3)] group-hover:text-[var(--tx)] group-hover:translate-x-0.5 transition-all duration-200 shrink-0"
             aria-hidden
           />
         </Link>
       </div>
       <p className="text-[12px] text-[var(--tx3)] mt-2 mb-5 font-medium">
         {totalJobs} jobs · {sorted.length} crew{sorted.length !== 1 ? "s" : ""}
-        {avgSatAll !== "-" ? ` · ${avgSatAll}/5 avg satisfaction` : ""}
+        {avgSatAll ? ` · ${avgSatAll}/5 avg satisfaction` : ""}
         {" · "}
         {avgSignOff}% sign-off rate
       </p>
@@ -501,16 +501,14 @@ export default function CrewAnalyticsClient({
           />
           <SummaryCell
             label="Satisfaction"
-            value={avgSatAll}
-            sub="/5 avg"
-            accent
+            value={avgSatAll || "No data"}
+            sub={avgSatAll ? "/5 avg" : ""}
           />
           <SummaryCell label="Sign-off Rate" value={`${avgSignOff}%`} />
           <SummaryCell
             label="Top Performer"
-            value={bestCrew?.name || "-"}
+            value={bestCrew?.name || "No data"}
             sub={bestCrew ? `${bestCrew.jobsCompleted} jobs` : ""}
-            accent
           />
         </div>
       </div>
@@ -552,7 +550,7 @@ export default function CrewAnalyticsClient({
                   ? a.avgSatisfaction >= 4.5
                     ? "var(--grn)"
                     : a.avgSatisfaction >= 3.5
-                      ? "var(--gold)"
+                      ? "var(--org)"
                       : "var(--red)"
                   : "var(--tx3)";
               const isTopPerformer = rank === 0 && a.jobsCompleted > 0;
@@ -610,9 +608,7 @@ export default function CrewAnalyticsClient({
                     className="hidden sm:block sm:col-start-4 sm:row-start-1 text-right text-[12px] font-semibold tabular-nums self-center"
                     style={{ color: satColor }}
                   >
-                    {a.avgSatisfaction != null
-                      ? `${a.avgSatisfaction}/5`
-                      : "-"}
+                    {a.avgSatisfaction != null ? `${a.avgSatisfaction}/5` : ""}
                   </span>
                   <span
                     className={`hidden sm:block sm:col-start-5 sm:row-start-1 text-right text-[12px] font-semibold tabular-nums self-center ${a.signOffRate >= 80 ? "text-[var(--grn)]" : "text-[var(--tx2)]"}`}
@@ -620,7 +616,7 @@ export default function CrewAnalyticsClient({
                     {a.signOffRate}%
                   </span>
                   <span className="hidden sm:block sm:col-start-6 sm:row-start-1 text-right text-[12px] text-[var(--tx3)] tabular-nums self-center">
-                    {a.avgDuration > 0 ? `${a.avgDuration}m` : "-"}
+                    {a.avgDuration > 0 ? `${a.avgDuration}m` : ""}
                   </span>
 
                   {/* Chevron — column 7, spans rows */}
@@ -636,9 +632,7 @@ export default function CrewAnalyticsClient({
                       {a.jobsCompleted} jobs
                     </span>
                     <span style={{ color: satColor }}>
-                      {a.avgSatisfaction != null
-                        ? `${a.avgSatisfaction}/5`
-                        : "-"}
+                      {a.avgSatisfaction != null ? `${a.avgSatisfaction}/5` : ""}
                     </span>
                   </div>
 
@@ -740,21 +734,21 @@ function CrewDetailView({
             <KpiCard
               label="Jobs Completed"
               value={String(detail.summary.totalJobs)}
-              color="var(--gold)"
+              color="var(--tx)"
             />
             <KpiCard
               label="Avg Satisfaction"
               value={
                 detail.summary.avgRating != null
                   ? `${detail.summary.avgRating}/5`
-                  : "-"
+                  : ""
               }
               color={
                 detail.summary.avgRating != null
                   ? detail.summary.avgRating >= 4.5
                     ? "var(--grn)"
                     : detail.summary.avgRating >= 3.5
-                      ? "var(--gold)"
+                      ? "var(--org)"
                       : "var(--red)"
                   : "var(--tx3)"
               }
@@ -764,14 +758,14 @@ function CrewDetailView({
               value={
                 detail.summary.onTimeRate != null
                   ? `${detail.summary.onTimeRate}%`
-                  : "-"
+                  : ""
               }
               color={
                 detail.summary.onTimeRate != null
                   ? detail.summary.onTimeRate >= 80
                     ? "var(--grn)"
-                    : detail.summary.onTimeRate >= 60
-                      ? "var(--gold)"
+                    : detail.summary.onTimeRate >= 50
+                      ? "var(--org)"
                       : "var(--red)"
                   : "var(--tx3)"
               }
@@ -781,9 +775,9 @@ function CrewDetailView({
               value={
                 detail.summary.totalTips > 0
                   ? `$${detail.summary.totalTips.toLocaleString()}`
-                  : "-"
+                  : "$0"
               }
-              color="var(--grn)"
+              color={detail.summary.totalTips > 0 ? "var(--grn)" : "var(--tx3)"}
             />
           </div>
 
@@ -849,12 +843,12 @@ function CrewDetailView({
                           fontWeight: 600,
                           fontFamily: "var(--font-body)",
                         }}
-                        itemStyle={{ color: "var(--gold)" }}
+                        itemStyle={{ color: "var(--tx)" }}
                         cursor={{ fill: "var(--gdim)" }}
                       />
                       <Bar
                         dataKey="jobs"
-                        fill="var(--gold)"
+                        fill="var(--tx)"
                         radius={[4, 4, 0, 0]}
                       />
                     </BarChart>
@@ -994,7 +988,7 @@ function CrewDetailView({
                         ? job.rating >= 4.5
                           ? "var(--grn)"
                           : job.rating >= 3.5
-                            ? "var(--gold)"
+                            ? "var(--org)"
                             : "var(--red)"
                         : "var(--tx3)";
 
@@ -1092,13 +1086,13 @@ function CrewDetailView({
                                 ? "✓"
                                 : job.onTime === false
                                   ? "✗"
-                                  : "-"}
+                                  : ""}
                             </span>
                             <span
                               className="text-center text-[12px] font-semibold"
                               style={{ color: satColor }}
                             >
-                              {job.rating != null ? `${job.rating}/5` : "-"}
+                              {job.rating != null ? `${job.rating}/5` : ""}
                             </span>
                             <CaretRight
                               weight="regular"
@@ -1198,8 +1192,8 @@ function CrewDetailView({
                                     <div className="flex items-center gap-1 text-[11px] font-medium text-[var(--tx2)]">
                                       <CurrencyDollar
                                         size={14}
-                                        className="text-[var(--gold)] shrink-0"
-                                        weight="duotone"
+                                        className="text-[var(--grn)] shrink-0"
+                                        weight="regular"
                                         aria-hidden
                                       />
                                       ${job.tip} tip
@@ -1229,21 +1223,17 @@ function SummaryCell({
   label,
   value,
   sub,
-  accent,
 }: {
   label: string;
   value: string;
   sub?: string;
-  accent?: boolean;
 }) {
   return (
     <div className="py-3">
       <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">
         {label}
       </div>
-      <div
-        className={`text-[22px] sm:text-[26px] font-bold ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"} leading-tight truncate`}
-      >
+      <div className="text-[22px] sm:text-[26px] font-bold text-[var(--tx)] leading-tight truncate">
         {value}
         {sub && (
           <span className="text-[11px] font-normal text-[var(--tx3)] ml-1">

@@ -182,8 +182,8 @@ function KpiCard({
 }
 
 // ─── Custom Tooltip ───────────────────────────────────────────────────────────
-const CHART_PARTNER_FILL = "#5C1A33";
-const CHART_MOVES_FILL = "#2C3E2D";
+const CHART_PARTNER_FILL = "var(--tx2)";
+const CHART_MOVES_FILL = "var(--grn)";
 
 function StackedRevenueTooltip({
   active,
