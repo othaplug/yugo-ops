@@ -66,7 +66,7 @@ function quoteAmountRaw(q: Quote): number | null {
 
 function quoteAmount(q: Quote): string {
   const raw = quoteAmountRaw(q)
-  return raw != null ? formatCurrency(raw) : "—"
+  return raw != null ? formatCurrency(raw) : ""
 }
 
 function relTime(iso: string | null): string {
@@ -183,7 +183,7 @@ export default function QuotesListV3Client({
         width: 140,
         cell: (q) => (
           <span className="yu3-num text-[13px] font-medium text-[var(--yu3-ink-strong)]">
-            {q.quote_id || "—"}
+            {q.quote_id || ""}
           </span>
         ),
       },
@@ -217,7 +217,7 @@ export default function QuotesListV3Client({
         width: 140,
         cell: (q) => (
           <span className="text-[12px] text-[var(--yu3-ink)]">
-            {serviceTypeDisplayLabel(q.service_type) || "—"}
+            {serviceTypeDisplayLabel(q.service_type) || ""}
           </span>
         ),
       },
@@ -462,7 +462,7 @@ export default function QuotesListV3Client({
                 {q.client_name || "Unnamed client"}
               </div>
               <div className="text-[11px] text-[var(--yu3-ink-muted)] truncate mt-0.5">
-                {serviceTypeDisplayLabel(q.service_type) || "—"}
+                {serviceTypeDisplayLabel(q.service_type) || ""}
               </div>
             </div>
           ),

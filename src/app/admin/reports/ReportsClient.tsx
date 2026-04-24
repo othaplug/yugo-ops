@@ -346,7 +346,7 @@ export default function ReportsClient({
               </div>
               <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/78 mb-1">Per tip</p>
               <p className="text-[22px] font-bold font-heading text-[var(--tx)] leading-none">
-                {crewFinancial.tipCount > 0 ? formatCurrency(crewFinancial.avgTip) : "—"}
+                {crewFinancial.tipCount > 0 ? formatCurrency(crewFinancial.avgTip) : "$0"}
               </p>
             </section>
           </div>

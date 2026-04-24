@@ -2676,7 +2676,7 @@ export default function PlatformSettingsClient({
                         <td className="p-2.5 text-[var(--tx)] font-medium">{u.name || u.email}</td>
                         <td className="p-2.5 text-[var(--tx2)]">{roleLabel}</td>
                         <td className="p-2.5 text-[var(--tx2)] max-w-[200px] truncate" title={(u.specializations ?? []).join(", ")}>
-                          {(u.specializations ?? []).length ? (u.specializations ?? []).join(", ") : "—"}
+                          {(u.specializations ?? []).length ? (u.specializations ?? []).join(", ") : ""}
                         </td>
                         <td className="p-2.5 text-[var(--tx2)]">{u.max_open_leads ?? 20}</td>
                         <td className="p-2.5">

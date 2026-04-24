@@ -132,7 +132,7 @@ function fmtLabel(iso: string) {
 }
 
 function fmtDuration(mins: number | null) {
-  if (mins == null) return "-";
+  if (mins == null) return "";
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   if (h === 0) return `${m}m`;
@@ -140,7 +140,7 @@ function fmtDuration(mins: number | null) {
 }
 
 function fmtTime(iso: string | null) {
-  if (!iso) return "-";
+  if (!iso) return "";
   return new Date(iso).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -764,9 +764,7 @@ function CrewDetailView({
                 detail.summary.onTimeRate != null
                   ? detail.summary.onTimeRate >= 80
                     ? "var(--grn)"
-                    : detail.summary.onTimeRate >= 50
-                      ? "var(--org)"
-                      : "var(--red)"
+                    : "var(--org)"
                   : "var(--tx3)"
               }
             />
@@ -883,7 +881,7 @@ function CrewDetailView({
                           fontFamily: "var(--font-body)",
                         }}
                         formatter={(v) => [
-                          `${v != null ? `${v} min` : "-"}`,
+                          `${v != null ? `${v} min` : ""}`,
                           "Avg Duration",
                         ]}
                       />
@@ -931,7 +929,7 @@ function CrewDetailView({
                           fontFamily: "var(--font-body)",
                         }}
                         formatter={(v) => [
-                          `${v != null ? `${v}/5` : "-"}`,
+                          `${v != null ? `${v}/5` : ""}`,
                           "Avg Rating",
                         ]}
                       />
@@ -1015,7 +1013,7 @@ function CrewDetailView({
                                       month: "short",
                                       day: "numeric",
                                     })
-                                  : "-"}
+                                  : ""}
                               </span>
                               <div className="flex items-center gap-2">
                                 <span className="dt-badge tracking-[0.04em] text-[var(--tx3)]">
@@ -1057,7 +1055,7 @@ function CrewDetailView({
                                     month: "short",
                                     day: "numeric",
                                   })
-                                : "-"}
+                                : ""}
                             </span>
                             <div className="min-w-0">
                               <p className="text-[13px] font-semibold text-[var(--tx)] truncate">

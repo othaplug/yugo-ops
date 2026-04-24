@@ -1718,7 +1718,7 @@ export default function AdminPageClient({
                       <span className="font-bold text-[var(--tx)] tabular-nums">
                         {leadPulse.avgResponseMin != null
                           ? leadPulse.avgResponseMin
-                          : "—"}
+                          : "0"}
                       </span>
                     </div>
                     {(leadPulse.attentionPreview?.length ?? 0) > 0 && (

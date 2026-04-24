@@ -168,10 +168,10 @@ export default function EquipmentCatalogPanel() {
                   <td className="py-2 pr-3 text-[var(--tx2)]">{r.category}</td>
                   <td className="py-2 pr-3 tabular-nums">{r.default_quantity}</td>
                   <td className="py-2 pr-3 tabular-nums">
-                    {r.replacement_cost != null ? `$${Number(r.replacement_cost).toFixed(2)}` : "—"}
+                    {r.replacement_cost != null ? `$${Number(r.replacement_cost).toFixed(2)}` : ""}
                   </td>
                   <td className="py-2 pr-3 text-[var(--tx3)]">
-                    {r.is_consumable ? "Consumable" : "—"}
+                    {r.is_consumable ? "Consumable" : ""}
                   </td>
                   <td className="py-2 pr-2">
                     <button

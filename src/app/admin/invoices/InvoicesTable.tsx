@@ -152,7 +152,7 @@ export default function InvoicesTable({
       sortable: true,
       render: (r) => (
         <span className="text-[11px] text-[var(--tx2)] tabular-nums whitespace-nowrap">
-          {r.created_at ? formatAdminCreatedAt(r.created_at) : "—"}
+          {r.created_at ? formatAdminCreatedAt(r.created_at) : ""}
         </span>
       ),
       exportAccessor: (r) => (r.created_at ? formatAdminCreatedAt(r.created_at) : ""),

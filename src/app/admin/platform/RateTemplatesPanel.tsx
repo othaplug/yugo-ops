@@ -247,22 +247,22 @@ function TemplateRateEditor({
               <tbody className="divide-y divide-[var(--brd)]/30">
                 <tr>
                   <td className="px-2 py-2 font-semibold text-[var(--tx)]">Essential</td>
-                  <td className="px-2 py-2 text-[var(--tx)]">{rates?.essential != null ? `${Math.round(rates.essential * 100)}% of move value` : "—"}</td>
+                  <td className="px-2 py-2 text-[var(--tx)]">{rates?.essential != null ? `${Math.round(rates.essential * 100)}% of move value` : ""}</td>
                   <td className="px-2 py-2 text-[var(--tx2)]">Move completed and paid</td>
                 </tr>
                 <tr>
                   <td className="px-2 py-2 font-semibold text-[var(--tx)]">Signature</td>
-                  <td className="px-2 py-2 text-[var(--tx)]">{rates?.signature != null ? `${Math.round(rates.signature * 100)}% of move value` : "—"}</td>
+                  <td className="px-2 py-2 text-[var(--tx)]">{rates?.signature != null ? `${Math.round(rates.signature * 100)}% of move value` : ""}</td>
                   <td className="px-2 py-2 text-[var(--tx2)]">Move completed and paid</td>
                 </tr>
                 <tr>
                   <td className="px-2 py-2 font-semibold text-[var(--tx)]">Estate</td>
-                  <td className="px-2 py-2 text-[var(--tx)]">{rates?.estate != null ? `${Math.round(rates.estate * 100)}% of move value` : "—"}</td>
+                  <td className="px-2 py-2 text-[var(--tx)]">{rates?.estate != null ? `${Math.round(rates.estate * 100)}% of move value` : ""}</td>
                   <td className="px-2 py-2 text-[var(--tx2)]">Move completed and paid</td>
                 </tr>
                 <tr>
                   <td className="px-2 py-2 font-semibold text-[var(--tx)]">Flat per referral</td>
-                  <td className="px-2 py-2 text-[var(--tx)]">{cs?.flat_rate != null ? `$${Number(cs.flat_rate)}` : "—"}</td>
+                  <td className="px-2 py-2 text-[var(--tx)]">{cs?.flat_rate != null ? `$${Number(cs.flat_rate)}` : ""}</td>
                   <td className="px-2 py-2 text-[var(--tx2)]">Move completed and paid</td>
                 </tr>
               </tbody>
@@ -315,13 +315,13 @@ function TemplateRateEditor({
                   <tbody className="divide-y divide-[var(--brd)]/30">
                     {moveRates.map((row, i) => (
                       <tr key={String(row.reason_code ?? i)}>
-                        <td className="px-2 py-2 font-semibold text-[var(--tx)]">{String(row.label || row.reason_code || "—")}</td>
+                        <td className="px-2 py-2 font-semibold text-[var(--tx)]">{String(row.label || row.reason_code || "")}</td>
                         {unitCols.map((u) => {
                           const v = row[u];
                           const n = typeof v === "number" ? v : v != null ? parseFloat(String(v)) : NaN;
                           return (
                             <td key={u} className="px-2 py-2 text-right tabular-nums text-[var(--tx)]">
-                              {!Number.isNaN(n) ? `$${n}` : "—"}
+                              {!Number.isNaN(n) ? `$${n}` : ""}
                             </td>
                           );
                         })}
@@ -446,7 +446,7 @@ function TemplateRateEditor({
                       {data.volumeBonuses.map((r) => (
                         <tr key={r.id}>
                           <td className="px-2 py-2 text-[var(--tx)]">{r.min_deliveries}</td>
-                          <td className="px-2 py-2 text-[var(--tx)]">{r.max_deliveries ?? "—"}</td>
+                          <td className="px-2 py-2 text-[var(--tx)]">{r.max_deliveries ?? ""}</td>
                           <EditableCell table="volume_bonuses" id={r.id} field="discount_pct" original={r.discount_pct} isPercent />
                         </tr>
                       ))}

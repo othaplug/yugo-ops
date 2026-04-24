@@ -96,7 +96,7 @@ export default function MoveProjectsV3Client({
               {r.project_name}
             </div>
             <div className="text-[11px] text-[var(--yu3-ink-muted)] truncate">
-              {r.start_date ? formatMoveDate(r.start_date) : "—"}
+              {r.start_date ? formatMoveDate(r.start_date) : ""}
               {r.end_date ? ` → ${formatMoveDate(r.end_date)}` : ""}
             </div>
           </div>
@@ -139,7 +139,7 @@ export default function MoveProjectsV3Client({
         width: 90,
         cell: (r) => (
           <span className="yu3-num text-[12px] text-[var(--yu3-ink)]">
-            {r.total_days ?? "—"}
+            {r.total_days ?? ""}
           </span>
         ),
       },
@@ -168,7 +168,7 @@ export default function MoveProjectsV3Client({
         width: 130,
         cell: (r) => (
           <span className="yu3-num text-[12px] text-[var(--yu3-ink-muted)]">
-            {r.start_date ? formatMoveDate(r.start_date) : "—"}
+            {r.start_date ? formatMoveDate(r.start_date) : ""}
           </span>
         ),
       },

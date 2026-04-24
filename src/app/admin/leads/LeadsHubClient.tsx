@@ -415,8 +415,7 @@ export default function LeadsHubClient({
               {lead.status === "follow_up_sent" ? " · Follow-up sent" : ""}
             </p>
             <p className="text-[11px] text-[var(--tx3)] mt-1">
-              {lead.phone || "—"} | {lead.move_size || "—"} |{" "}
-              {lead.preferred_date || "—"}
+              {[lead.phone, lead.move_size, lead.preferred_date].filter(Boolean).join(" | ")}
             </p>
             {lead.intelligence_summary ? (
               <p className="text-[10px] text-[var(--tx2)] mt-1 line-clamp-2">
@@ -623,7 +622,7 @@ export default function LeadsHubClient({
                 <span className="text-[15px] font-semibold tabular-nums text-[var(--tx)]">
                   {metrics.avgResponseMin != null
                     ? `${metrics.avgResponseMin} min`
-                    : "—"}
+                    : "0 min"}
                 </span>
                 <span className="text-[11px] text-[var(--tx3)]/80">
                   Target under 5 min
@@ -693,7 +692,7 @@ export default function LeadsHubClient({
                       <span className="tabular-nums font-medium text-[var(--tx)]">
                         {metrics.pctUnder5min != null
                           ? `${metrics.pctUnder5min}%`
-                          : "—"}
+                          : "0%"}
                       </span>
                     </li>
                     <li className="flex justify-between gap-3">
@@ -701,7 +700,7 @@ export default function LeadsHubClient({
                       <span className="tabular-nums font-medium text-[var(--tx)]">
                         {metrics.pctUnder15min != null
                           ? `${metrics.pctUnder15min}%`
-                          : "—"}
+                          : "0%"}
                       </span>
                     </li>
                     <li className="flex justify-between gap-3">
@@ -709,7 +708,7 @@ export default function LeadsHubClient({
                       <span className="tabular-nums font-medium text-[var(--tx)]">
                         {metrics.pctOver1hr != null
                           ? `${metrics.pctOver1hr}%`
-                          : "—"}
+                          : "0%"}
                       </span>
                     </li>
                   </ul>
@@ -834,7 +833,7 @@ export default function LeadsHubClient({
                         <td className="px-4 py-3 tabular-nums">
                           {v.count
                             ? `$${Math.round(v.valueSum / v.count).toLocaleString()}`
-                            : "—"}
+                            : ""}
                         </td>
                       </tr>
                     ))}
@@ -922,7 +921,7 @@ export default function LeadsHubClient({
                     <td className="px-4 py-3">
                       {[lead.first_name, lead.last_name]
                         .filter(Boolean)
-                        .join(" ") || "—"}
+                        .join(" ") || "Unnamed"}
                       <div className="text-[10px] text-[var(--tx3)]">
                         {lead.phone || lead.email || ""}
                       </div>

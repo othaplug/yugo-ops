@@ -184,7 +184,7 @@ export default function AllMovesV3Client({
         width: 130,
         cell: (m) => (
           <span className="yu3-num text-[13px] font-medium text-[var(--yu3-ink-strong)]">
-            {m.move_code || "—"}
+            {m.move_code || ""}
           </span>
         ),
       },
@@ -242,7 +242,7 @@ export default function AllMovesV3Client({
         width: 120,
         cell: (m) => (
           <span className="yu3-num text-[12px] text-[var(--yu3-ink)] whitespace-nowrap">
-            {m.scheduled_date ? formatMoveDate(m.scheduled_date) : "—"}
+            {m.scheduled_date ? formatMoveDate(m.scheduled_date) : ""}
           </span>
         ),
       },
@@ -271,7 +271,7 @@ export default function AllMovesV3Client({
         width: 120,
         cell: (m) => (
           <span className="yu3-num text-[13px] font-semibold text-[var(--yu3-ink-strong)]">
-            {m.estimate ? formatCurrency(m.estimate) : "—"}
+            {m.estimate ? formatCurrency(m.estimate) : ""}
           </span>
         ),
       },
@@ -285,7 +285,7 @@ export default function AllMovesV3Client({
         width: 110,
         cell: (m) => {
           const pct = m.margin_percent ?? m.est_margin_percent
-          if (pct == null) return <span className="text-[var(--yu3-ink-faint)]">—</span>
+          if (pct == null) return null
           return (
             <StatusPill tone={marginTone(m.margin_flag)}>
               {Math.round(Number(pct))}%
@@ -302,7 +302,7 @@ export default function AllMovesV3Client({
         hiddenByDefault: true,
         cell: (m) => (
           <span className="yu3-num text-[12px] text-[var(--yu3-ink-muted)]">
-            {m.created_at ? formatAdminCreatedAt(m.created_at) : "—"}
+            {m.created_at ? formatAdminCreatedAt(m.created_at) : ""}
           </span>
         ),
       },

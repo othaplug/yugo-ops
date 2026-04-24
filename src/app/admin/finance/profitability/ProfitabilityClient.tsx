@@ -1994,7 +1994,7 @@ export default function ProfitabilityClient() {
                         className={`border-t border-[var(--brd)]/40 cursor-pointer hover:bg-[var(--bg)] transition-colors ${r.grossMargin < 25 ? "border-l-2 border-l-red-500/50" : r.grossMargin > 60 ? "border-l-2 border-l-emerald-500/50" : ""}`}
                       >
                         <td className="py-1.5 px-2 font-mono text-[10px] text-[var(--tx2)] overflow-hidden text-ellipsis whitespace-nowrap">
-                          {r.move_code || "—"}
+                          {r.move_code || ""}
                         </td>
                         <td className="py-1.5 px-2 text-[var(--tx3)] overflow-hidden text-ellipsis whitespace-nowrap">
                           {formatTableDate(r.date)}
@@ -2068,9 +2068,7 @@ export default function ProfitabilityClient() {
                               row={r}
                               onSaved={handleCostSaved}
                             />
-                          ) : (
-                            "—"
-                          )}
+                          ) : null}
                         </td>
                         <td className="py-1.5 px-2 font-medium text-rose-900 dark:text-rose-400 overflow-hidden text-ellipsis whitespace-nowrap">
                           {formatCurrency(r.totalDirect)}

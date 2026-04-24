@@ -33,9 +33,9 @@ function itemTitle(items: unknown): string {
   try {
     const arr = Array.isArray(items) ? items : [];
     const n = (arr[0] as { name?: string })?.name;
-    return n?.trim() || "—";
+    return n?.trim() || "";
   } catch {
-    return "—";
+    return "";
   }
 }
 
@@ -226,7 +226,7 @@ export default function InboundShipmentsClient() {
                             month: "short",
                             day: "numeric",
                           })
-                        : "—"}
+                        : ""}
                     </td>
                     <td className="px-4 py-3.5 text-[var(--tx3)]">
                       {s.delivery_scheduled_date

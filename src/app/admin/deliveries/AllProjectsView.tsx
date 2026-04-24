@@ -109,7 +109,7 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
     accessor: (d) => d.created_at || "",
     render: (d) => (
       <span className="text-[12px] font-normal text-[var(--tx2)] tabular-nums whitespace-nowrap">
-        {d.created_at ? formatAdminCreatedAt(d.created_at) : "—"}
+        {d.created_at ? formatAdminCreatedAt(d.created_at) : ""}
       </span>
     ),
     sortable: true,
@@ -142,7 +142,7 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
     accessor: (d) => d.delivery_number || "",
     render: (d) => (
       <span className="font-mono text-[var(--tx2)]">
-        {d.delivery_number ? formatJobId(d.delivery_number, "delivery") : "—"}
+        {d.delivery_number ? formatJobId(d.delivery_number, "delivery") : ""}
       </span>
     ),
     sortable: true,

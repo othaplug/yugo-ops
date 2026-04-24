@@ -250,7 +250,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       sortable: true,
       render: (m) => (
         <span className="dt-text-date whitespace-nowrap tabular-nums">
-          {m.created_at ? formatAdminCreatedAt(m.created_at) : "—"}
+          {m.created_at ? formatAdminCreatedAt(m.created_at) : ""}
         </span>
       ),
       minWidth: "120px",

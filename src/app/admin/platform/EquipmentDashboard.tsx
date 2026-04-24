@@ -59,7 +59,7 @@ export default function EquipmentDashboard({ refreshKey = 0 }: EquipmentDashboar
   }
 
   const fmtDate = (iso: string | null) => {
-    if (!iso) return "—";
+    if (!iso) return "";
     return new Date(iso).toLocaleDateString("en-CA", { timeZone: "America/Toronto" });
   };
 
@@ -113,7 +113,7 @@ export default function EquipmentDashboard({ refreshKey = 0 }: EquipmentDashboar
                         )}
                       </td>
                       <td className="py-2 pr-3 tabular-nums text-[var(--tx2)]">{f.itemsLabel}</td>
-                      <td className="py-2 pr-3 tabular-nums">{f.shortCount > 0 ? f.shortCount : "—"}</td>
+                      <td className="py-2 pr-3 tabular-nums">{f.shortCount > 0 ? f.shortCount : ""}</td>
                       <td className="py-2 text-[var(--tx3)]">{fmtDate(f.lastChecked)}</td>
                     </tr>
                   ))

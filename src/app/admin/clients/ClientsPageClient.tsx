@@ -91,7 +91,7 @@ export default function ClientsPageClient({
       sortable: true,
       render: (c) => (
         <span className="text-[11px] text-[var(--tx2)] tabular-nums whitespace-nowrap">
-          {c.created_at ? formatAdminCreatedAt(c.created_at) : "—"}
+          {c.created_at ? formatAdminCreatedAt(c.created_at) : ""}
         </span>
       ),
     },

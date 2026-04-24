@@ -18,7 +18,7 @@ type Row = {
 };
 
 function fmtDate(s: string | null | undefined): string {
-  if (!s) return "—";
+  if (!s) return "Never";
   const d = new Date(s);
   if (Number.isNaN(d.getTime())) return s;
   return d.toLocaleDateString("en-CA", {
@@ -120,7 +120,7 @@ export default function BuildingsAdminClient({ initial }: { initial: Row[] }) {
                 <div className="flex items-start justify-between gap-3">
                   <Link href={`/admin/buildings/${b.id}`} className="min-w-0 flex-1">
                     <p className="text-[11px] font-bold text-[var(--tx3)] uppercase tracking-wide">
-                      Complexity {b.complexity_rating ?? "—"}
+                      {b.complexity_rating != null ? `Complexity ${b.complexity_rating}` : "Unrated"}
                       {!b.verified ? " · Unverified" : ""}
                     </p>
                     <p className="text-[14px] font-medium text-[var(--tx)] mt-0.5 truncate">

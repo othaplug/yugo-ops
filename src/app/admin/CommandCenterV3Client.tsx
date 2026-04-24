@@ -363,13 +363,13 @@ export default function CommandCenterV3Client({
       {
         id: "satisfaction",
         label: "Client rating",
-        value: satisfaction.avgRating ? satisfaction.avgRating.toFixed(1) : "—",
+        value: satisfaction.avgRating ? satisfaction.avgRating.toFixed(1) : "0.0",
         hint: `${satisfaction.count} reviews · ${satisfaction.pendingReviews} pending`,
       },
       {
         id: "lead-pulse",
         label: "Leads this month",
-        value: leadPulse?.monthReceived?.toString() ?? "—",
+        value: leadPulse?.monthReceived?.toString() ?? "0",
         hint: leadPulse
           ? `${leadPulse.needsAttention} need attention${leadPulse.avgResponseMin != null ? ` · ${Math.round(leadPulse.avgResponseMin)}m avg` : ""}`
           : "Lead pulse unavailable",
