@@ -49,8 +49,7 @@ const STATUS_OPTIONS = [
 
 function statusBadge(status: string): string {
   switch (status) {
-    case "sent": return "text-[var(--gold)]";
-    case "viewed": return "text-blue-700 dark:text-sky-300";
+    case "sent": case "viewed": return "text-[var(--blue)]";
     case "accepted": return "text-[var(--grn)]";
     case "expired": case "declined": return "text-[var(--red)]";
     default: return "text-[var(--tx3)]";

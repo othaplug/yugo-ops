@@ -129,26 +129,25 @@ function typeLabel(type: string): string {
 
 function statusBarColor(status: string): string {
   const s = (status || "").toLowerCase().replace(/\s+/g, "_");
-  if (["confirmed", "completed", "paid"].includes(s)) return "bg-[var(--grn)]";
-  if (["scheduled", "in_progress"].includes(s)) return "bg-[#3B82F6]";
-  if (["quoted", "quote"].includes(s)) return "bg-[var(--admin-primary-fill)]";
-  if (s === "cancelled") return "bg-[var(--red)]";
-  return "bg-[var(--admin-primary-fill)]";
+  if (["confirmed", "completed", "paid", "accepted", "delivered"].includes(s)) return "bg-[var(--grn)]";
+  if (["scheduled", "in_progress", "en_route", "loading", "unloading", "in_transit"].includes(s)) return "bg-[var(--blue)]";
+  if (["expired", "cancelled", "failed"].includes(s)) return "bg-[var(--red)]";
+  return "bg-[var(--tx3)]";
 }
 
 function statusBadgeStyle(status: string): string {
   const s = (status || "").toLowerCase().replace(/\s+/g, "_");
-  if (["confirmed", "completed", "paid"].includes(s))
+  if (["confirmed", "completed", "paid", "accepted", "delivered"].includes(s))
     return "text-[var(--grn)]";
-  if (["scheduled", "in_progress"].includes(s)) return "text-[#3B82F6]";
-  if (["quoted", "quote"].includes(s)) return "text-[var(--gold)]";
-  if (s === "cancelled") return "text-[var(--red)]";
-  return "text-[var(--gold)]";
+  if (["scheduled", "in_progress", "en_route", "loading", "unloading", "in_transit"].includes(s))
+    return "text-[var(--blue)]";
+  if (["expired", "cancelled", "failed"].includes(s)) return "text-[var(--red)]";
+  return "text-[var(--tx3)]";
 }
 
 function tierBadgeStyle(tier: string): string {
   const t = (tier || "").toLowerCase();
-  if (t.includes("estate")) return "text-[#7C3AED]";
+  if (t.includes("estate")) return "text-[var(--gold)]";
   if (t.includes("signature") || t.includes("premier")) return "text-[var(--gold)]";
   return "text-[var(--tx3)]";
 }

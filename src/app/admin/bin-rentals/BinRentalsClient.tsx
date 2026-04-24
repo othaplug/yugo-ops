@@ -20,15 +20,15 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  confirmed: "text-blue-400",
-  drop_off_scheduled: "text-purple-400",
-  bins_delivered: "text-emerald-400",
-  in_use: "text-amber-400",
-  pickup_scheduled: "text-sky-400",
-  bins_collected: "text-teal-400",
-  completed: "text-green-400",
-  overdue: "text-red-400",
-  cancelled: "text-neutral-400",
+  confirmed: "text-[var(--grn)]",
+  drop_off_scheduled: "text-[var(--blue)]",
+  bins_delivered: "text-[var(--grn)]",
+  in_use: "text-[var(--blue)]",
+  pickup_scheduled: "text-[var(--blue)]",
+  bins_collected: "text-[var(--grn)]",
+  completed: "text-[var(--grn)]",
+  overdue: "text-[var(--red)]",
+  cancelled: "text-[var(--tx3)]",
 };
 
 const BUNDLE_LABELS: Record<string, string> = {

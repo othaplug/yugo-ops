@@ -103,7 +103,6 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
     label: string;
     sub: string;
     value: number;
-    emphasize?: boolean;
     accent?: boolean;
   }[] = [
     { key: "total", label: "Total", sub: "All time", value: leads.length },
@@ -112,7 +111,6 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
       label: "New",
       sub: "Awaiting contact",
       value: newCount,
-      emphasize: newCount > 0,
     },
     {
       key: "progress",
@@ -158,16 +156,12 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
 
       <section className="mb-10" aria-label="Lead summary">
         <ul className="list-none grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4 sm:gap-x-10">
-          {kpiItems.map(({ key, label, sub, value, emphasize, accent }) => (
+          {kpiItems.map(({ key, label, sub, value, accent }) => (
             <li key={key} className="min-w-0">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/65">{label}</p>
               <p
                 className={`mt-1.5 font-heading text-2xl font-semibold tabular-nums tracking-tight ${
-                  emphasize
-                    ? "text-[var(--red)]"
-                    : accent
-                      ? "text-[var(--grn)]"
-                      : "text-[var(--tx)]"
+                  accent ? "text-[var(--grn)]" : "text-[var(--tx)]"
                 }`}
               >
                 {value}

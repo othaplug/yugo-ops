@@ -88,12 +88,12 @@ function statusLabel(s: string): string {
 
 function statusBadge(status: string): string {
   switch (status) {
-    case "submitted": return "text-[var(--gold)]";
-    case "under_review": return "text-[#3B82F6]";
-    case "approved": return "text-[var(--grn)]";
-    case "partially_approved": return "text-amber-500";
+    case "submitted": return "text-[var(--tx3)]";
+    case "under_review": return "text-[var(--blue)]";
+    case "approved": case "settled": return "text-[var(--grn)]";
+    case "partially_approved": return "text-[var(--org)]";
     case "denied": return "text-[var(--red)]";
-    case "settled": case "closed": return "text-[var(--tx3)]";
+    case "closed": return "text-[var(--tx3)]";
     default: return "text-[var(--tx3)]";
   }
 }

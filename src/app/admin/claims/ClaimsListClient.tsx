@@ -7,9 +7,11 @@ import { formatCurrency } from "@/lib/format-currency";
 import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
 import { formatAdminCreatedAt } from "@/lib/date-format";
 import { useToast } from "../components/Toast";
-import CreateButton from "../components/CreateButton";
-import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
+import { PageHeader } from "@/design-system/admin/layout";
+import { Button } from "@/design-system/admin/primitives";
+import { KpiStrip } from "@/design-system/admin/dashboard";
+import { Plus } from "@phosphor-icons/react";
 
 interface Claim {
   id: string;
@@ -50,12 +52,12 @@ const STATUS_OPTIONS = [
 
 function statusBadge(status: string): string {
   switch (status) {
-    case "submitted": return "text-[var(--gold)]";
-    case "under_review": return "text-blue-700 dark:text-sky-300";
-    case "approved": return "text-[var(--grn)]";
-    case "partially_approved": return "text-amber-500";
+    case "submitted": return "text-[var(--tx3)]";
+    case "under_review": return "text-[var(--blue)]";
+    case "approved": case "settled": return "text-[var(--grn)]";
+    case "partially_approved": return "text-[var(--org)]";
     case "denied": return "text-[var(--red)]";
-    case "settled": case "closed": return "text-[var(--tx3)]";
+    case "closed": return "text-[var(--tx3)]";
     default: return "text-[var(--tx3)]";
   }
 }
@@ -243,21 +245,30 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
   );
 
   return (
-    <div className="p-4 sm:p-6 max-w-[1200px] mx-auto">
-      <div className="flex items-start justify-between mb-8 gap-4">
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Operations</p>
-          <h1 className="admin-page-hero text-[var(--tx)]">Claims</h1>
-        </div>
-        <CreateButton href="/admin/claims/new" title="New Claim" />
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
-        <KpiCard label="Open Claims" value={String(stats.openCount)} sub="awaiting action" warn={stats.openCount > 0} />
-        <KpiCard label="Under Review" value={String(stats.reviewCount)} sub="being assessed" />
-        <KpiCard label="Resolved (30d)" value={String(stats.resolvedCount)} sub="last 30 days" accent={stats.resolvedCount > 0} />
-        <KpiCard label="Paid Out (30d)" value={formatCurrency(stats.totalPaidOut)} sub="approved payouts" />
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        eyebrow="Operations"
+        title="Claims"
+        description="Damage, loss, and service claims across moves and deliveries."
+        actions={
+          <Button
+            variant="primary"
+            leadingIcon={<Plus size={16} />}
+            onClick={() => router.push("/admin/claims/new")}
+          >
+            New claim
+          </Button>
+        }
+      />
+      <KpiStrip
+        tiles={[
+          { id: "open", label: "Open claims", value: String(stats.openCount), hint: "awaiting action" },
+          { id: "review", label: "Under review", value: String(stats.reviewCount), hint: "being assessed" },
+          { id: "resolved", label: "Resolved 30d", value: String(stats.resolvedCount), hint: "last 30 days" },
+          { id: "paid", label: "Paid 30d", value: formatCurrency(stats.totalPaidOut), hint: "approved payouts" },
+        ]}
+        columns={4}
+      />
 
       <SectionDivider label="All Claims" />
 

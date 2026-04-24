@@ -43,18 +43,19 @@ export interface DispatchJob {
 }
 
 const STATUS_DOT: Record<string, { icon: React.ElementType; color: string; label: string }> = {
-  confirmed: { icon: Circle, color: "text-[#3B82F6]", label: "Confirmed" },
-  scheduled: { icon: Circle, color: "text-[#3B82F6]", label: "Confirmed" },
-  en_route: { icon: Circle, color: "text-[var(--grn)]", label: "En Route" },
-  en_route_to_pickup: { icon: Circle, color: "text-[var(--grn)]", label: "En Route" },
-  arrived_at_pickup: { icon: Circle, color: "text-[var(--grn)]", label: "Loading" },
-  loading: { icon: Circle, color: "text-[var(--grn)]", label: "Loading" },
-  en_route_to_destination: { icon: Circle, color: "text-[var(--grn)]", label: "In Transit" },
-  in_transit: { icon: Circle, color: "text-[var(--grn)]", label: "In Transit" },
-  arrived_at_destination: { icon: Circle, color: "text-[var(--grn)]", label: "Unloading" },
-  unloading: { icon: Circle, color: "text-[var(--grn)]", label: "Unloading" },
-  in_progress: { icon: Circle, color: "text-[var(--grn)]", label: "In Progress" },
-  dispatched: { icon: Circle, color: "text-[var(--org)]", label: "In Progress" },
+  paid: { icon: CheckCircle2, color: "text-[var(--grn)]", label: "Paid" },
+  confirmed: { icon: CheckCircle2, color: "text-[var(--grn)]", label: "Confirmed" },
+  scheduled: { icon: Circle, color: "text-[var(--blue)]", label: "Scheduled" },
+  en_route: { icon: Circle, color: "text-[var(--blue)]", label: "En Route" },
+  en_route_to_pickup: { icon: Circle, color: "text-[var(--blue)]", label: "En Route" },
+  arrived_at_pickup: { icon: Circle, color: "text-[var(--blue)]", label: "Loading" },
+  loading: { icon: Circle, color: "text-[var(--blue)]", label: "Loading" },
+  en_route_to_destination: { icon: Circle, color: "text-[var(--blue)]", label: "In Transit" },
+  in_transit: { icon: Circle, color: "text-[var(--blue)]", label: "In Transit" },
+  arrived_at_destination: { icon: Circle, color: "text-[var(--blue)]", label: "Unloading" },
+  unloading: { icon: Circle, color: "text-[var(--blue)]", label: "Unloading" },
+  in_progress: { icon: Circle, color: "text-[var(--blue)]", label: "In Progress" },
+  dispatched: { icon: Circle, color: "text-[var(--blue)]", label: "Dispatched" },
   completed: { icon: CheckCircle2, color: "text-[var(--grn)]", label: "Completed" },
   delivered: { icon: CheckCircle2, color: "text-[var(--grn)]", label: "Completed" },
   job_complete: { icon: CheckCircle2, color: "text-[var(--grn)]", label: "Completed" },
@@ -202,7 +203,7 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
           <div className="flex items-center gap-2">
             <div className="flex-1 h-1.5 rounded-full bg-[var(--gdim)] overflow-hidden">
               <div
-                className="h-full rounded-full bg-[var(--gold)] transition-all"
+                className="h-full rounded-full bg-[var(--tx)] transition-all"
                 style={{ width: `${Math.min(100, Math.max(0, job.progress))}%` }}
               />
             </div>
@@ -215,7 +216,7 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
       <div className="flex items-center gap-2 pt-0.5 flex-wrap">
         <Link
           href={job.href}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-sm font-semibold text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-sm font-semibold text-[var(--tx2)] hover:border-[var(--tx2)] hover:text-[var(--tx)] transition-colors touch-manipulation"
         >
           <ExternalLink className="w-4 h-4 shrink-0" />
           View
@@ -227,7 +228,7 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
             className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold transition-colors touch-manipulation ${
               isUnassigned
                 ? "border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
-                : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--tx2)] hover:text-[var(--tx)]"
             }`}
           >
             <Users className="w-4 h-4 shrink-0" />
@@ -238,7 +239,7 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
           <button
             type="button"
             onClick={() => onContact(job)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-sm font-semibold text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-sm font-semibold text-[var(--tx2)] hover:border-[var(--tx2)] hover:text-[var(--tx)] transition-colors touch-manipulation"
           >
             <Phone className="w-4 h-4 shrink-0" />
             Contact
