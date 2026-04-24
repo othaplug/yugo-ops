@@ -86,7 +86,7 @@ export default function BuildingEditorClient({ initial }: { initial: Building | 
         >
           ← Buildings
         </Link>
-        <h1 className="text-xl font-heading font-semibold text-[var(--tx)]">
+        <h1 className="text-[22px] font-semibold text-[var(--tx)] tracking-tight">
           {isNew ? "Add building" : "Edit building"}
         </h1>
 

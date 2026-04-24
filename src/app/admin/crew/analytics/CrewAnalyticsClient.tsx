@@ -335,6 +335,9 @@ export default function CrewAnalyticsClient({
             Operations
           </p>
           <h1 className="admin-page-hero text-[var(--tx)]">Crew Performance</h1>
+          <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
+            Performance trends across crews and individual members.
+          </p>
         </div>
         <Link
           href="/admin/reports"
@@ -888,11 +891,11 @@ function CrewDetailView({
                       <Line
                         type="monotone"
                         dataKey="avgDuration"
-                        stroke="var(--color-stage-pickup-route)"
+                        stroke="var(--tx)"
                         strokeWidth={2}
                         dot={{
                           r: 3,
-                          fill: "var(--color-stage-pickup-route)",
+                          fill: "var(--tx)",
                         }}
                         connectNulls
                       />
@@ -936,9 +939,9 @@ function CrewDetailView({
                       <Line
                         type="monotone"
                         dataKey="avgRating"
-                        stroke="var(--grn)"
+                        stroke="var(--tx)"
                         strokeWidth={2}
-                        dot={{ r: 3, fill: "var(--grn)" }}
+                        dot={{ r: 3, fill: "var(--tx)" }}
                         connectNulls
                       />
                     </LineChart>

@@ -22,12 +22,20 @@ export default function CalendarHeader({
   filters, onFiltersChange, crews,
 }: Props) {
   return (
-    <div className="px-3 sm:px-5 pt-4 pb-3 space-y-2 border-b border-[var(--brd)]/50">
-      {/* Single row: title · nav · spacer · filters · view toggle · CTA */}
+    <div className="px-3 sm:px-5 pt-4 pb-3 space-y-3 border-b border-[var(--brd)]/50">
+      {/* Title row: eyebrow + title + description */}
+      <div>
+        <p className="text-xs font-bold tracking-[0.14em] uppercase text-[var(--tx3)] leading-snug mb-1.5">
+          Operations
+        </p>
+        <h1 className="admin-page-hero text-[var(--tx)]">{headerLabel}</h1>
+        <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
+          Every move, delivery, and phase across crews.
+        </p>
+      </div>
+
+      {/* Controls row: nav · spacer · filters · view toggle · CTA */}
       <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-        <h1 className="admin-page-hero text-[var(--tx)] shrink-0 md:whitespace-nowrap">
-          {headerLabel}
-        </h1>
 
         {/* Date navigation */}
         <div className="flex items-center gap-0.5 shrink-0">

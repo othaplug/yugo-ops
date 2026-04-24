@@ -324,6 +324,9 @@ export default function DispatchBoardClient({ today }: Props) {
               Operations
             </p>
             <h1 className="admin-page-hero text-[var(--tx)]">Dispatch</h1>
+            <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
+              Today&apos;s operations at a glance. Active crews, assigned jobs, completed moves.
+            </p>
           </div>
           <Link href="/admin/crew" className="admin-btn admin-btn-primary">
             <Crosshair
