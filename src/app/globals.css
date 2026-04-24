@@ -531,46 +531,49 @@ html[data-theme="light"] .admin-app .admin-section-h2 {
 .admin-kpi-card {
   position: relative;
   flex-shrink: 0;
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--admin-r-md, 4px);
-  border: 1px solid transparent;
+  padding: 0.875rem 1rem;
+  border-radius: var(--yu3-r-lg, 12px);
+  border: 1px solid var(--yu3-line, #eaeaec);
   text-align: left;
   overflow: hidden;
-  min-width: 72px;
+  min-width: 96px;
   cursor: pointer;
   touch-action: manipulation;
+  background: var(--yu3-bg-surface, #fff);
 }
 @media (min-width: 640px) {
   .admin-kpi-card {
-    padding: 0.875rem 1rem;
-    min-width: 96px;
+    padding: 1.25rem 1.5rem;
+    min-width: 120px;
   }
 }
 .admin-kpi-label {
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
   line-height: 1.2;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--yu3-ink-muted, #52525b);
 }
 @media (min-width: 640px) {
   .admin-kpi-label {
-    font-size: 12px;
-    margin-bottom: 0.5rem;
+    font-size: 11px;
+    margin-bottom: 0.625rem;
   }
 }
 .admin-kpi-value {
-  font-size: 17px;
-  font-weight: 700;
-  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 600;
+  font-family: var(--yu3-font-num, var(--font-heading));
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  color: var(--yu3-ink-strong, #0a0a0b);
 }
 @media (min-width: 640px) {
   .admin-kpi-value {
-    font-size: 22px;
+    font-size: 28px;
   }
 }
 

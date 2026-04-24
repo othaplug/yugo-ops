@@ -137,22 +137,22 @@ function KpiCard({
   accent?: boolean;
 }) {
   const inner = (
-    <div className="group cursor-default">
-      <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/82 mb-2">
+    <div className="group cursor-default bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] rounded-[var(--yu3-r-lg)] p-5 md:p-6 flex flex-col gap-2">
+      <p className="text-[11px] font-semibold tracking-[0.08em] uppercase text-[var(--yu3-ink-muted)]">
         {label}
       </p>
       <p
-        className={`text-[28px] font-bold font-heading leading-none ${
-          accent ? "text-[var(--grn)]" : "text-[var(--tx)]"
+        className={`text-[28px] font-semibold leading-none [font-feature-settings:'tnum'_1] ${
+          accent ? "text-[var(--grn)]" : "text-[var(--yu3-ink-strong)]"
         }`}
       >
         {value}
       </p>
-      {sub && <p className="text-[9px] text-[var(--tx3)] mt-1.5">{sub}</p>}
+      {sub && <p className="text-[12px] text-[var(--yu3-ink-muted)]">{sub}</p>}
       {delta !== undefined && delta !== 0 && (
         <div
-          className={`inline-flex items-center gap-1 mt-2 text-[10px] font-semibold ${
-            delta >= 0 ? "text-[var(--grn)]" : "text-red-500"
+          className={`inline-flex items-center gap-1 text-[11px] font-semibold ${
+            delta >= 0 ? "text-[var(--grn)]" : "text-[var(--red)]"
           }`}
         >
           {delta >= 0 ? (

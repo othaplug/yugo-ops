@@ -53,14 +53,14 @@ function KpiTileCard({ tile }: { tile: KpiTile }) {
     <Wrapper
       onClick={tile.onClick}
       className={cn(
-        "bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line-subtle)] rounded-[var(--yu3-r-lg)] p-4 md:p-5 flex flex-col gap-2 text-left",
+        "bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] rounded-[var(--yu3-r-lg)] p-5 md:p-6 flex flex-col gap-2 text-left",
         "transition-colors",
-        interactive && "hover:border-[var(--yu3-line)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--yu3-bg-canvas)]",
+        interactive && "hover:border-[var(--yu3-line-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--yu3-bg-canvas)]",
       )}
     >
       <div className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">{tile.label}</div>
       <div className="flex items-end justify-between gap-3">
-        <div className="yu3-num text-[26px] md:text-[28px] font-semibold leading-none text-[var(--yu3-ink-strong)]">
+        <div className="yu3-num text-[28px] font-semibold leading-none text-[var(--yu3-ink-strong)] [font-feature-settings:'tnum'_1]">
           {tile.value}
         </div>
         {typeof tile.trendPct === "number" ? <TrendPill delta={tile.trendPct} /> : null}

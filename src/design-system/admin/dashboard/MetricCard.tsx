@@ -45,7 +45,7 @@ export const MetricCard = React.forwardRef<HTMLDivElement, MetricCardProps>(
       <div
         ref={ref}
         className={cn(
-          "bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line-subtle)] rounded-[var(--yu3-r-lg)] p-5 flex flex-col gap-3",
+          "bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] rounded-[var(--yu3-r-lg)] p-5 md:p-6 flex flex-col gap-3",
           className,
         )}
         {...rest}
@@ -67,7 +67,7 @@ export const MetricCard = React.forwardRef<HTMLDivElement, MetricCardProps>(
         </header>
         <div className="flex items-end justify-between gap-3">
           <div className="flex items-baseline gap-2">
-            <span className={cn("yu3-num font-semibold text-[var(--yu3-ink-strong)] leading-none", valueSize)}>
+            <span className={cn("yu3-num font-semibold text-[var(--yu3-ink-strong)] leading-none [font-feature-settings:'tnum'_1]", valueSize)}>
               {value}
             </span>
             {typeof trendPct === "number" ? <TrendPill delta={trendPct} /> : null}

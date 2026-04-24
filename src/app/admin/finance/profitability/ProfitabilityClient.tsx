@@ -2155,17 +2155,19 @@ function StatCard({
 }) {
   void bgClass;
   return (
-    <div className="py-3">
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
+    <div className="bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] rounded-[var(--yu3-r-lg)] p-5 md:p-6 flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-[var(--yu3-ink-muted)]">
           {label}
         </span>
         {icon && <span className={className}>{icon}</span>}
       </div>
-      <div className={`text-2xl font-heading font-bold ${className}`}>
+      <div
+        className={`text-[28px] font-semibold leading-none [font-feature-settings:'tnum'_1] ${className}`}
+      >
         {value}
       </div>
-      <div className="text-[10px] text-[var(--tx3)] mt-0.5">{sub}</div>
+      <div className="text-[12px] text-[var(--yu3-ink-muted)]">{sub}</div>
     </div>
   );
 }

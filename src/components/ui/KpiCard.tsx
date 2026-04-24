@@ -27,20 +27,23 @@ export default function KpiCard({
     ? "text-[var(--grn)]"
     : warn
       ? "text-[var(--red)]"
-      : "text-[var(--tx)]";
+      : "text-[var(--yu3-ink-strong)]";
 
   const inner = (
-    <div className={href ? "group cursor-pointer" : "group cursor-default"}>
-      <p
-        className={`text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/78 mb-1 sm:mb-2 transition-colors ${
-          href ? "group-hover:text-[var(--tx3)]/90" : ""
-        }`}
-      >
+    <div
+      className={
+        "bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] rounded-[var(--yu3-r-lg)] p-5 md:p-6 flex flex-col gap-2 transition-colors " +
+        (href
+          ? "group cursor-pointer hover:border-[var(--yu3-line-strong)]"
+          : "group cursor-default")
+      }
+    >
+      <p className="text-[11px] font-semibold tracking-[0.08em] uppercase text-[var(--yu3-ink-muted)]">
         {label}
       </p>
       <p
-        className={`text-[20px] sm:text-[28px] font-bold font-heading leading-none transition-opacity ${
-          href ? "group-hover:opacity-75" : ""
+        className={`text-[28px] font-semibold leading-none [font-feature-settings:'tnum'_1] transition-opacity ${
+          href ? "group-hover:opacity-80" : ""
         } ${valueColor}`}
       >
         {value}
@@ -49,8 +52,8 @@ export default function KpiCard({
         <p
           className={
             subVariant === "tightCaps"
-              ? "mt-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] leading-snug text-[var(--tx3)]/92 [font-family:var(--font-body)]"
-              : "text-[9px] text-[var(--tx3)] mt-1.5"
+              ? "text-[11px] font-semibold uppercase tracking-[0.08em] leading-snug text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]"
+              : "text-[12px] text-[var(--yu3-ink-muted)]"
           }
         >
           {subVariant === "tightCaps" ? sub : toSentenceCase(sub)}
@@ -58,19 +61,13 @@ export default function KpiCard({
       )}
       {delta !== undefined && delta !== 0 && (
         <div
-          className={`inline-flex items-center gap-1 mt-2 text-[10px] font-semibold ${
-            delta >= 0 ? "text-[var(--grn)]" : "text-red-500"
+          className={`inline-flex items-center gap-1 text-[11px] font-semibold ${
+            delta >= 0 ? "text-[var(--grn)]" : "text-[var(--red)]"
           }`}
         >
           <span aria-hidden>{delta >= 0 ? "\u2191" : "\u2193"}</span>
           {delta >= 0 ? "+" : ""}
           {delta}% vs prev
-        </div>
-      )}
-      {delta === 0 && (
-        <div className="inline-flex items-center gap-1 mt-2 text-[10px] text-[var(--tx3)]">
-          <span aria-hidden>—</span>
-          No change
         </div>
       )}
     </div>

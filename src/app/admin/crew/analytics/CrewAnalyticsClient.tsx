@@ -1256,11 +1256,14 @@ function KpiCard({
   color: string;
 }) {
   return (
-    <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-xl p-4">
-      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
+    <div className="bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] rounded-[var(--yu3-r-lg)] p-5 md:p-6 flex flex-col gap-2">
+      <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-[var(--yu3-ink-muted)]">
         {label}
       </div>
-      <div className="text-[22px] font-bold leading-tight" style={{ color }}>
+      <div
+        className="text-[28px] font-semibold leading-none [font-feature-settings:'tnum'_1]"
+        style={{ color }}
+      >
         {value}
       </div>
     </div>

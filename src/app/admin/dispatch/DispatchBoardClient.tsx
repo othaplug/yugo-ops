@@ -454,21 +454,21 @@ export default function DispatchBoardClient({ today }: Props) {
                   aria-pressed={filterStatus === stat.key}
                   className={`admin-kpi-card group transition-all duration-200 ${
                     filterStatus === stat.key
-                      ? "border-[var(--gold)]/70 bg-[var(--gold)]/10 shadow-sm shadow-[var(--gold)]/10"
-                      : "border-[var(--brd)]/50 bg-[var(--card)]/30 hover:border-[var(--gold)]/30 hover:bg-[var(--card)]/60"
+                      ? "border-[var(--yu3-wine)] bg-[var(--yu3-wine-wash)]"
+                      : "hover:border-[var(--yu3-line-strong)] hover:bg-[var(--yu3-bg-surface-subtle)]"
                   }`}
                 >
                   <div
-                    className={`absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl transition-all duration-200 ${
+                    className={`absolute top-0 left-0 right-0 h-[2px] rounded-t-[var(--yu3-r-lg)] transition-all duration-200 ${
                       filterStatus === stat.key ? "opacity-100" : "opacity-0"
                     }`}
-                    style={{ background: "var(--gold)" }}
+                    style={{ background: "var(--yu3-wine)" }}
                   />
                   <p
                     className={`admin-kpi-label transition-colors ${
                       filterStatus === stat.key
-                        ? "text-[var(--gold)]"
-                        : "text-[var(--tx3)]/82"
+                        ? "text-[var(--yu3-wine)]"
+                        : "text-[var(--yu3-ink-muted)]"
                     }`}
                   >
                     {stat.label}
@@ -476,7 +476,7 @@ export default function DispatchBoardClient({ today }: Props) {
                   <p
                     className={`admin-kpi-value transition-colors ${
                       filterStatus === stat.key
-                        ? "text-[var(--gold)]"
+                        ? "text-[var(--yu3-wine)]"
                         : stat.color
                     }`}
                   >
@@ -486,12 +486,10 @@ export default function DispatchBoardClient({ today }: Props) {
               ) : (
                 <div
                   key="assigned-stat"
-                  className="admin-kpi-card border-[var(--brd)]/50 bg-[var(--card)]/20"
+                  className="admin-kpi-card"
                   style={{ cursor: "default" }}
                 >
-                  <p className="admin-kpi-label text-[var(--tx3)]/82">
-                    {stat.label}
-                  </p>
+                  <p className="admin-kpi-label">{stat.label}</p>
                   <p className={`admin-kpi-value ${stat.color}`}>
                     {stat.value}
                   </p>
