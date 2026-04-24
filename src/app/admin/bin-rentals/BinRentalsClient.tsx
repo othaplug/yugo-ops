@@ -142,8 +142,11 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
       </div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-1">Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-1.5">Operations</p>
           <h1 className="admin-page-hero text-[var(--tx)]">Bin Rentals</h1>
+          <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
+            Track bin orders, drop offs, and pickups across every active rental.
+          </p>
         </div>
         <Link
           href="/admin/quotes/new?service=bin_rental"

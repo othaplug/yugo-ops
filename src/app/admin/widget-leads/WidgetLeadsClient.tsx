@@ -131,11 +131,14 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
     <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6">
       <header className="mb-10 sm:mb-12">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-          <div className="min-w-0 space-y-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--tx3)]/55">
+          <div className="min-w-0 space-y-1.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--tx3)]">
               Sales
             </p>
             <h1 className="admin-page-hero text-[var(--tx)]">Widget Leads</h1>
+            <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
+              Estimate requests submitted through the public quote widget.
+            </p>
           </div>
           <Link
             href="/widget/quote"

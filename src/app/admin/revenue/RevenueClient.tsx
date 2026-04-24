@@ -716,18 +716,21 @@ export default function RevenueClient({
       <div className="mb-6">
         <BackButton label="Back" />
       </div>
-      <div className="flex items-end justify-between gap-4 mb-2">
+      <div className="flex items-start justify-between gap-4 mb-2">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-1">
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-1.5">
             Financial Overview
           </p>
           <h1 className="admin-page-hero text-[var(--tx)]">Revenue</h1>
+          <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
+            Booked revenue, paid invoices, and outstanding balances across every source.
+          </p>
         </div>
         <Link
           href="/admin/invoices"
-          className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wide text-[var(--gold)] hover:opacity-70 transition-opacity"
+          className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-[var(--tx2)] hover:text-[var(--tx)] transition-colors"
         >
-          All Invoices <ArrowUpRight className="w-3.5 h-3.5" />
+          All invoices <ArrowUpRight className="w-3.5 h-3.5" />
         </Link>
       </div>
 

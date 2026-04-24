@@ -82,8 +82,11 @@ export default function UsersClient({ currentUserId }: UsersClientProps) {
 
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Platform</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-1.5">Platform</p>
           <h1 className="admin-page-hero text-[var(--tx)]">Users</h1>
+          <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
+            Platform accounts and access roles across the operations team.
+          </p>
         </div>
         <button
           onClick={() => setInviteOpen(true)}

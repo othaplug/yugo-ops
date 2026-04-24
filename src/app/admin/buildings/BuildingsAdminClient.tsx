@@ -63,13 +63,11 @@ export default function BuildingsAdminClient({ initial }: { initial: Row[] }) {
       <div className="max-w-4xl mx-auto space-y-6 pb-10">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--tx3)]">
+            <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-1.5">
               Operations
             </p>
-            <h1 className="text-[22px] font-semibold text-[var(--tx)] tracking-tight mt-1">
-              Buildings
-            </h1>
-            <p className="text-[13px] text-[var(--tx2)] mt-1 leading-relaxed">
+            <h1 className="admin-page-hero text-[var(--tx)]">Buildings</h1>
+            <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
               Institutional access notes for quoting and crew planning.
             </p>
           </div>

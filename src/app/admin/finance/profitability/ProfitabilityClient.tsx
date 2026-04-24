@@ -1217,24 +1217,24 @@ export default function ProfitabilityClient() {
       {/* ─── Header ─── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-1.5">
             Finance
           </p>
           <h1 className="admin-page-hero text-[var(--tx)]">Profitability</h1>
-          <p className="text-[11px] text-[var(--tx3)] mt-2">
-            Cost, profit, and margin from labour, truck, fuel, and supplies
+          <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
+            Cost, profit, and margin across labour, truck, fuel, and supplies.
           </p>
           <Link
             href="/admin/finance/forecast"
-            className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-[var(--gold)] hover:underline"
+            className="inline-flex items-center gap-1.5 mt-2 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] transition-colors"
           >
             <TrendingUp
-              size={10}
+              size={12}
               weight="regular"
               className="text-current shrink-0"
               aria-hidden
             />
-            View Revenue Forecast →
+            View revenue forecast
           </Link>
         </div>
         <div className="flex items-center gap-2 flex-wrap">

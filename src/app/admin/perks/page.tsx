@@ -590,8 +590,11 @@ export default function PerksPage() {
     <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-6 animate-fade-up">
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Growth</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-1.5">Growth</p>
           <h1 className="admin-page-hero text-[var(--tx)]">Perks & Referrals</h1>
+          <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
+            Partner perks, referral codes, and VIP client offers.
+          </p>
         </div>
         {tab === "perks" && (
           <CreateButton onClick={() => setShowCreate(true)} title="Create perk" label="Add offer" />
@@ -603,24 +606,24 @@ export default function PerksPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)] mb-6">
         <div>
-          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/82 mb-2">Active Perks</p>
-          <p className="text-[28px] font-bold font-heading leading-none text-[var(--grn)]">{activePerks}</p>
-          <p className="text-[9px] text-[var(--tx3)] mt-1.5">{perks.length} total offers</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-2">Active perks</p>
+          <p className="text-[28px] font-semibold leading-none text-[var(--tx)] tabular-nums">{activePerks}</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-1.5">{perks.length} total offers</p>
         </div>
         <div>
-          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/82 mb-2">Referrals</p>
-          <p className="text-[28px] font-bold font-heading leading-none text-[var(--tx)]">{referrals.length}</p>
-          <p className="text-[9px] text-[var(--tx3)] mt-1.5">{activeReferrals} active codes</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-2">Referrals</p>
+          <p className="text-[28px] font-semibold leading-none text-[var(--tx)] tabular-nums">{referrals.length}</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-1.5">{activeReferrals} active codes</p>
         </div>
         <div>
-          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/82 mb-2">Used (30d)</p>
-          <p className="text-[28px] font-bold font-heading leading-none text-[var(--tx)]">{usedThisMonth}</p>
-          <p className="text-[9px] text-[var(--tx3)] mt-1.5">redemptions</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-2">Used (30d)</p>
+          <p className="text-[28px] font-semibold leading-none text-[var(--tx)] tabular-nums">{usedThisMonth}</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-1.5">redemptions</p>
         </div>
         <div>
-          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/82 mb-2">Conversion</p>
-          <p className="text-[28px] font-bold font-heading leading-none text-[var(--tx)]">{convRate}%</p>
-          <p className="text-[9px] text-[var(--tx3)] mt-1.5">referral rate</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-2">Conversion</p>
+          <p className="text-[28px] font-semibold leading-none text-[var(--tx)] tabular-nums">{convRate}%</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-1.5">referral rate</p>
         </div>
       </div>
 
