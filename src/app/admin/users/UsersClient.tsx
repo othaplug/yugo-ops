@@ -87,9 +87,9 @@ export default function UsersClient({ currentUserId }: UsersClientProps) {
         </div>
         <button
           onClick={() => setInviteOpen(true)}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all mt-1"
+          className="inline-flex items-center gap-2 h-10 px-4 rounded-lg text-[11px] font-bold uppercase tracking-[0.12em] bg-[var(--yu3-wine)] text-[var(--yu3-on-wine)] border border-[var(--yu3-wine)] hover:bg-[var(--yu3-wine-hover)] hover:border-[var(--yu3-wine-hover)] transition-colors"
         >
-          + Invite User
+          + Invite user
         </button>
       </div>
 

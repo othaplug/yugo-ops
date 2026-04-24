@@ -335,7 +335,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
           <h1 className="admin-page-hero text-[var(--tx)]">Recurring Schedules</h1>
           <p className="text-[12px] text-[var(--tx3)] mt-2">{schedules.length} schedule{schedules.length !== 1 ? "s" : ""} across all partners</p>
         </div>
-        <CreateButton onClick={() => setCreateOpen(true)} title="New Schedule" />
+        <CreateButton onClick={() => setCreateOpen(true)} title="New schedule" label="Add schedule" />
       </div>
 
       {/* Search */}

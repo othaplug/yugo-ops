@@ -594,10 +594,10 @@ export default function PerksPage() {
           <h1 className="admin-page-hero text-[var(--tx)]">Perks & Referrals</h1>
         </div>
         {tab === "perks" && (
-          <CreateButton onClick={() => setShowCreate(true)} title="Create Perk" />
+          <CreateButton onClick={() => setShowCreate(true)} title="Create perk" label="Add offer" />
         )}
         {tab === "referrals" && (
-          <CreateButton onClick={() => setShowCreatePromo(true)} title="CREATE PROMO CODE" />
+          <CreateButton onClick={() => setShowCreatePromo(true)} title="Create promo code" label="Add promo" />
         )}
       </div>
 

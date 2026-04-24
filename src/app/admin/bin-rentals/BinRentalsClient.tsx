@@ -147,7 +147,7 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
         </div>
         <Link
           href="/admin/quotes/new?service=bin_rental"
-          className="group inline-flex items-center gap-2 shrink-0 rounded-lg border border-[var(--brd)] px-4 py-2.5 text-[10px] font-bold tracking-wide text-[var(--tx)] shadow-sm transition-all hover:border-[#2C3E2D]/35 hover:bg-[var(--bg2)] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C3E2D]/40"
+          className="inline-flex items-center justify-center gap-2 shrink-0 rounded-lg bg-[var(--yu3-wine)] px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-on-wine)] shadow-sm transition-colors hover:bg-[var(--yu3-wine-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)]"
         >
           Generate quote
         </Link>

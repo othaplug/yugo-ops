@@ -769,14 +769,14 @@ export default function RevenueClient({
           <div className="grid sm:grid-cols-2 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-[var(--brd)]">
             <div className="sm:pr-8 pb-4 sm:pb-0">
               <SourcePill
-                color="var(--gold)"
+                color="var(--tx2)"
                 label="Partner invoices"
                 value={invoiceRevenue}
                 pct={invPct}
               />
               <SourcePill
                 color="var(--grn)"
-                label="Move Payments"
+                label="Move payments"
                 value={moveRevenue}
                 pct={movePct}
               />

@@ -14,9 +14,10 @@ import { formatCurrency } from "@/lib/format-currency";
 import { formatDeliveryPriceForAdminList } from "@/lib/delivery-pricing";
 import RecurringSchedulesView from "./RecurringSchedulesView";
 import ProjectsListClient from "../projects/ProjectsListClient";
-import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
 import { Bell, Trash } from "@phosphor-icons/react";
+import { PageHeader as PageHeaderV3 } from "@/design-system/admin/layout";
+import { KpiStrip as KpiStripV3 } from "@/design-system/admin/dashboard";
 
 const PARTNER_TYPE_FILTERS: { key: string; label: string; categories: string[] }[] = [
   { key: "all", label: "All", categories: [] },
@@ -355,41 +356,44 @@ export default function AllDeliveriesView({
       )}
 
       {activeView === "deliveries" && (<>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">B2B Operations</p>
-          <h1 className="admin-page-hero text-[var(--tx)]">All Deliveries</h1>
-        </div>
-        <div className="relative" ref={createDropRef}>
-          <CreateButton onClick={() => setCreateDropOpen((v) => !v)} title="New Delivery" />
-          {createDropOpen && (
-            <div className="absolute right-0 top-full mt-2 z-50 w-52 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl py-1.5 overflow-hidden">
-              {[
-                { href: "/admin/deliveries/new?choice=single", label: "Single Delivery", sub: "Per-delivery from rate card" },
-                { href: "/admin/deliveries/new?choice=day_rate", label: "Day Rate", sub: "Multi-stop day rate" },
-                { href: "/admin/deliveries/new?choice=b2b_oneoff", label: "B2B One-Off", sub: "Business, no partner account" },
-              ].map((opt) => (
-                <Link
-                  key={opt.href}
-                  href={opt.href}
-                  onClick={() => setCreateDropOpen(false)}
-                  className="flex flex-col px-4 py-2.5 hover:bg-[var(--bg)] transition-colors group"
-                >
-                  <span className="text-[12px] font-semibold text-[var(--tx)] group-hover:text-[var(--gold)]">{opt.label}</span>
-                  <span className="text-[10px] text-[var(--tx3)]">{opt.sub}</span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)] mb-6">
-        <KpiCard label="Total" value={String(deliveries.length)} sub={todayCount > 0 ? `${todayCount} today` : "all deliveries"} />
-        <KpiCard label="Pending Approval" value={String(pendingApproval.length)} sub="partner requests" warn={pendingApproval.length > 0} />
-        <KpiCard label="Completed" value={String(deliveries.filter((d) => d.status === "completed" || d.status === "delivered").length)} sub="fulfilled" accent />
-        <KpiCard label="In Progress" value={String(deliveries.filter((d) => ["scheduled","confirmed","in_transit","dispatched"].includes(d.status)).length)} sub="active now" />
-      </div>
+      <PageHeaderV3
+        eyebrow="B2B Operations"
+        title="All deliveries"
+        description="Every delivery across partners, day-rates, and one-off B2B jobs."
+        actions={
+          <div className="relative" ref={createDropRef}>
+            <CreateButton onClick={() => setCreateDropOpen((v) => !v)} title="New delivery" label="Add delivery" />
+            {createDropOpen && (
+              <div className="absolute right-0 top-full mt-2 z-50 w-52 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl py-1.5 overflow-hidden">
+                {[
+                  { href: "/admin/deliveries/new?choice=single", label: "Single Delivery", sub: "Per-delivery from rate card" },
+                  { href: "/admin/deliveries/new?choice=day_rate", label: "Day Rate", sub: "Multi-stop day rate" },
+                  { href: "/admin/deliveries/new?choice=b2b_oneoff", label: "B2B One-Off", sub: "Business, no partner account" },
+                ].map((opt) => (
+                  <Link
+                    key={opt.href}
+                    href={opt.href}
+                    onClick={() => setCreateDropOpen(false)}
+                    className="flex flex-col px-4 py-2.5 hover:bg-[var(--bg)] transition-colors group"
+                  >
+                    <span className="text-[12px] font-semibold text-[var(--tx)] group-hover:text-[var(--gold)]">{opt.label}</span>
+                    <span className="text-[10px] text-[var(--tx3)]">{opt.sub}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        }
+      />
+      <KpiStripV3
+        tiles={[
+          { id: "total", label: "Total", value: String(deliveries.length), hint: todayCount > 0 ? `${todayCount} today` : "all deliveries" },
+          { id: "pending", label: "Pending approval", value: String(pendingApproval.length), hint: "partner requests" },
+          { id: "completed", label: "Completed", value: String(deliveries.filter((d) => d.status === "completed" || d.status === "delivered").length), hint: "fulfilled" },
+          { id: "in_progress", label: "In progress", value: String(deliveries.filter((d) => ["scheduled","confirmed","in_transit","dispatched"].includes(d.status)).length), hint: "active now" },
+        ]}
+        columns={4}
+      />
 
       {/* Pending approval banner */}
       {pendingApproval.length > 0 && (

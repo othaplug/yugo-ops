@@ -73,7 +73,7 @@ export default function BuildingsAdminClient({ initial }: { initial: Row[] }) {
           </div>
           <Link
             href="/admin/buildings/new"
-            className="inline-flex items-center justify-center rounded-lg border border-[var(--brd)] px-4 py-2 text-[12px] font-semibold text-[var(--tx)] hover:bg-[var(--bg)]"
+            className="inline-flex items-center justify-center rounded-lg bg-[var(--yu3-wine)] px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-on-wine)] shadow-sm transition-colors hover:bg-[var(--yu3-wine-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)]"
           >
             Add building
           </Link>
