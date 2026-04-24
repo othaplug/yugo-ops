@@ -181,7 +181,7 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
           placeholder="Search name, email, or lead #"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md rounded-lg border-0 bg-[var(--bg2)] px-3.5 py-2.5 text-[13px] text-[var(--tx)] shadow-[inset_0_0_0_1px_var(--brd)] placeholder:text-[var(--tx3)]/55 focus:shadow-[inset_0_0_0_1px_#2C3E2D33] focus:outline-none dark:focus:shadow-[inset_0_0_0_1px_var(--brd)]"
+          className="admin-input w-full max-w-md"
         />
       </div>
 

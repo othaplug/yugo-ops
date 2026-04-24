@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Buildings, MagnifyingGlass } from "@phosphor-icons/react";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 import PageContent from "@/app/admin/components/PageContent";
 
 type Row = {
@@ -63,8 +63,10 @@ export default function BuildingsAdminClient({ initial }: { initial: Row[] }) {
       <div className="max-w-4xl mx-auto space-y-6 pb-10">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <h1 className="text-xl font-heading font-semibold text-[var(--tx)] tracking-tight flex items-center gap-2">
-              <Buildings className="text-[var(--tx2)]" size={24} weight="regular" />
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--tx3)]">
+              Operations
+            </p>
+            <h1 className="text-[22px] font-semibold text-[var(--tx)] tracking-tight mt-1">
               Buildings
             </h1>
             <p className="text-[13px] text-[var(--tx2)] mt-1 leading-relaxed">
@@ -84,13 +86,13 @@ export default function BuildingsAdminClient({ initial }: { initial: Row[] }) {
             <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)]">
               High complexity (4–5)
             </p>
-            <p className="text-2xl font-heading font-semibold text-[var(--tx)] mt-1">{flagged}</p>
+            <p className="text-2xl font-semibold text-[var(--tx)] mt-1 tabular-nums">{flagged}</p>
           </div>
           <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] px-4 py-3">
             <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)]">
               Unverified
             </p>
-            <p className="text-2xl font-heading font-semibold text-[var(--tx)] mt-1">{unverified}</p>
+            <p className="text-2xl font-semibold text-[var(--tx)] mt-1 tabular-nums">{unverified}</p>
           </div>
         </div>
 
@@ -104,7 +106,7 @@ export default function BuildingsAdminClient({ initial }: { initial: Row[] }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search address or building name"
-            className="w-full rounded-lg border border-[var(--brd)] bg-[var(--card)] pl-9 pr-3 py-2.5 text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]"
+            className="admin-input pl-9"
           />
           {loading ? (
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[var(--tx3)]">

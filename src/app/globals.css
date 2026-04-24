@@ -1043,6 +1043,98 @@ html[data-theme="light"] .admin-app .admin-row-hover:hover {
   background-color: var(--yu3-bg-surface-subtle, #f7f7f7) !important;
 }
 
+/* Canonical admin form fields.
+ * Apply `.admin-input` / `.admin-select` / `.admin-textarea` to bring legacy
+ * form fields into the v3 visual system: 36px line height, surface bg,
+ * 1px line border, radius-md (8px), wine focus ring, 13px ink. Use
+ * `.admin-input-label` for the uppercase label above. */
+.admin-input,
+.admin-select,
+.admin-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--yu3-bg-surface, #fff);
+  color: var(--yu3-ink-strong, #0a0a0b);
+  border: 1px solid var(--yu3-line, #eaeaec);
+  border-radius: var(--yu3-r-md, 8px);
+  font-size: 13px;
+  line-height: 20px;
+  font-family: inherit;
+  outline: none;
+  transition:
+    border-color 0.12s var(--ease-smooth),
+    box-shadow 0.12s var(--ease-smooth);
+}
+.admin-input,
+.admin-select {
+  height: 36px;
+  padding: 0 12px;
+}
+.admin-textarea {
+  min-height: 88px;
+  padding: 8px 12px;
+  resize: vertical;
+}
+.admin-input::placeholder,
+.admin-textarea::placeholder {
+  color: var(--yu3-ink-faint, #a1a1aa);
+}
+.admin-input:hover:not(:disabled),
+.admin-select:hover:not(:disabled),
+.admin-textarea:hover:not(:disabled) {
+  border-color: var(--yu3-line-strong, #d4d4d8);
+}
+.admin-input:focus,
+.admin-select:focus,
+.admin-textarea:focus {
+  border-color: var(--yu3-wine, #5c1a33);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--yu3-wine, #5c1a33) 22%, transparent);
+}
+.admin-input:disabled,
+.admin-select:disabled,
+.admin-textarea:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.admin-select {
+  appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2352525B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+.admin-input-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--yu3-ink-muted, #52525b);
+  margin-bottom: 6px;
+  line-height: 1.2;
+}
+.admin-field-helper {
+  display: block;
+  font-size: 12px;
+  color: var(--yu3-ink-muted, #52525b);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+.admin-field-helper--error {
+  color: var(--red, #b91c1c);
+}
+.admin-input--error,
+.admin-select--error,
+.admin-textarea--error {
+  border-color: var(--red, #b91c1c);
+}
+.admin-input--error:focus,
+.admin-select--error:focus,
+.admin-textarea--error:focus {
+  border-color: var(--red, #b91c1c);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--red, #b91c1c) 22%, transparent);
+}
+
 /* Canonical admin data table treatment.
  * Apply `.admin-table` to a <table> to opt legacy tables into the v3 visual
  * system: sunken header, 44px header rows, 56px body rows, no vertical

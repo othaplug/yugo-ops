@@ -82,46 +82,46 @@ export default function BuildingEditorClient({ initial }: { initial: Building | 
       <div className="max-w-xl mx-auto space-y-6 pb-12">
         <Link
           href="/admin/buildings"
-          className="text-[12px] text-[var(--tx2)] hover:text-[var(--tx)]"
+          className="text-[12px] text-[var(--yu3-ink-muted)] hover:text-[var(--yu3-ink-strong)]"
         >
           ← Buildings
         </Link>
-        <h1 className="text-[22px] font-semibold text-[var(--tx)] tracking-tight">
+        <h1 className="text-[22px] font-semibold text-[var(--yu3-ink-strong)] tracking-tight [font-family:var(--font-body)]">
           {isNew ? "Add building" : "Edit building"}
         </h1>
 
-        <div className="space-y-3">
-          <label className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide">
-            Address *
+        <div className="space-y-4">
+          <label className="block">
+            <span className="admin-input-label">Address *</span>
             <input
               value={form.address}
               onChange={field("address")}
-              className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-[13px] text-[var(--tx)]"
+              className="admin-input"
               required
             />
           </label>
-          <label className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide">
-            Building name
+          <label className="block">
+            <span className="admin-input-label">Building name</span>
             <input
               value={form.building_name}
               onChange={field("building_name")}
-              className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-[13px] text-[var(--tx)]"
+              className="admin-input"
             />
           </label>
-          <label className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide">
-            Postal code
+          <label className="block">
+            <span className="admin-input-label">Postal code</span>
             <input
               value={form.postal_code}
               onChange={field("postal_code")}
-              className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-[13px] text-[var(--tx)]"
+              className="admin-input"
             />
           </label>
-          <label className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide">
-            Elevator system
+          <label className="block">
+            <span className="admin-input-label">Elevator system</span>
             <select
               value={form.elevator_system}
               onChange={field("elevator_system")}
-              className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-[13px] text-[var(--tx)]"
+              className="admin-select"
             >
               {[
                 "standard",
@@ -137,81 +137,81 @@ export default function BuildingEditorClient({ initial }: { initial: Building | 
             </select>
           </label>
           <div className="grid grid-cols-2 gap-3">
-            <label className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide">
-              Complexity (1–5)
+            <label className="block">
+              <span className="admin-input-label">Complexity (1 to 5)</span>
               <input
                 type="number"
                 min={1}
                 max={5}
                 value={form.complexity_rating}
                 onChange={field("complexity_rating")}
-                className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-[13px] text-[var(--tx)]"
+                className="admin-input"
               />
             </label>
-            <label className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide">
-              Extra min / trip
+            <label className="block">
+              <span className="admin-input-label">Extra min / trip</span>
               <input
                 type="number"
                 min={0}
                 value={form.estimated_extra_minutes_per_trip}
                 onChange={field("estimated_extra_minutes_per_trip")}
-                className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-[13px] text-[var(--tx)]"
+                className="admin-input"
               />
             </label>
           </div>
-          <label className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide">
-            Elevator transfers (count)
+          <label className="block">
+            <span className="admin-input-label">Elevator transfers (count)</span>
             <input
               type="number"
               min={0}
               value={form.total_elevator_transfers}
               onChange={field("total_elevator_transfers")}
-              className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-[13px] text-[var(--tx)]"
+              className="admin-input"
             />
           </label>
-          <label className="flex items-center gap-2 text-[13px] text-[var(--tx)] cursor-pointer">
+          <label className="flex items-center gap-2 text-[13px] text-[var(--yu3-ink-strong)] cursor-pointer">
             <input type="checkbox" checked={form.has_commercial_tenants} onChange={field("has_commercial_tenants")} />
             Commercial tenants on site
           </label>
-          <label className="flex items-center gap-2 text-[13px] text-[var(--tx)] cursor-pointer">
+          <label className="flex items-center gap-2 text-[13px] text-[var(--yu3-ink-strong)] cursor-pointer">
             <input type="checkbox" checked={form.elevator_shared} onChange={field("elevator_shared")} />
             Shared elevator
           </label>
-          <label className="flex items-center gap-2 text-[13px] text-[var(--tx)] cursor-pointer">
+          <label className="flex items-center gap-2 text-[13px] text-[var(--yu3-ink-strong)] cursor-pointer">
             <input type="checkbox" checked={form.loading_dock} onChange={field("loading_dock")} />
             Loading dock
           </label>
-          <label className="flex items-center gap-2 text-[13px] text-[var(--tx)] cursor-pointer">
+          <label className="flex items-center gap-2 text-[13px] text-[var(--yu3-ink-strong)] cursor-pointer">
             <input type="checkbox" checked={form.verified} onChange={field("verified")} />
             Verified
           </label>
-          <label className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide">
-            Crew notes
+          <label className="block">
+            <span className="admin-input-label">Crew notes</span>
             <textarea
               value={form.crew_notes}
               onChange={field("crew_notes")}
               rows={4}
-              className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-[13px] text-[var(--tx)]"
+              className="admin-textarea"
             />
           </label>
-          <label className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide">
-            Coordinator notes
+          <label className="block">
+            <span className="admin-input-label">Coordinator notes</span>
             <textarea
               value={form.coordinator_notes}
               onChange={field("coordinator_notes")}
               rows={3}
-              className="mt-1 w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-[13px] text-[var(--tx)]"
+              className="admin-textarea"
             />
           </label>
         </div>
 
-        {err ? <p className="text-[12px] text-red-700">{err}</p> : null}
+        {err ? <p className="admin-field-helper admin-field-helper--error">{err}</p> : null}
 
         <button
           type="button"
           onClick={handleSave}
           disabled={saving || !form.address.trim()}
-          className="rounded-lg border border-[var(--brd)] px-4 py-2.5 text-[12px] font-semibold text-[var(--tx)] hover:bg-[var(--bg)] disabled:opacity-50"
+          className="inline-flex items-center justify-center h-9 px-4 rounded-[var(--yu3-r-md)] bg-[var(--yu3-wine)] text-[var(--yu3-on-wine)] text-[13px] font-semibold hover:bg-[var(--yu3-wine-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)] focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {saving ? "Saving…" : "Save"}
         </button>
