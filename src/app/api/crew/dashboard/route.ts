@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   const deliverySelect =
     "id, delivery_number, customer_name, client_name, pickup_address, delivery_address, scheduled_date, time_slot, status, items, crew_id, booking_type, created_by_source";
 
-  const [movesRes, carryMovesRes, deliveriesRes, carryDeliveriesRes] = await Promise.all([
+  const [movesRes, deliveriesRes] = await Promise.all([
     supabase
       .from("moves")
       .select(moveSelect)
@@ -62,31 +62,15 @@ export async function GET(req: NextRequest) {
       .order("scheduled_date")
       .order("scheduled_time"),
     supabase
-      .from("moves")
-      .select(moveSelect)
-      .eq("crew_id", payload.teamId)
-      .lt("scheduled_date", today)
-      .order("scheduled_date")
-      .order("scheduled_time"),
-    supabase
       .from("deliveries")
       .select(deliverySelect)
       .eq("crew_id", payload.teamId)
       .eq("scheduled_date", today)
-      .order("scheduled_date")
-      .order("time_slot"),
-    supabase
-      .from("deliveries")
-      .select(deliverySelect)
-      .eq("crew_id", payload.teamId)
-      .lt("scheduled_date", today)
       .order("scheduled_date")
       .order("time_slot"),
   ]);
 
-  const queryErrors = [movesRes.error, carryMovesRes.error, deliveriesRes.error, carryDeliveriesRes.error].filter(
-    Boolean,
-  );
+  const queryErrors = [movesRes.error, deliveriesRes.error].filter(Boolean);
   if (queryErrors.length > 0) {
     console.error("[crew/dashboard] Supabase job queries failed:", queryErrors);
     return NextResponse.json(
@@ -95,28 +79,8 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const movesToday = movesRes.data || [];
-  const movesCarryover = (carryMovesRes.data || []).filter(
-    (m) => !isCrewCarryoverExcludedMoveRow(m as { status?: string | null; completed_at?: string | null }),
-  );
-  const deliveriesToday = deliveriesRes.data || [];
-  const deliveriesCarryover = (carryDeliveriesRes.data || []).filter((d) => !isTerminalDeliveryStatus(d.status));
-
-  const seenMove = new Set<string>();
-  const moves: typeof movesToday = [];
-  for (const m of [...movesCarryover, ...movesToday]) {
-    if (seenMove.has(m.id)) continue;
-    seenMove.add(m.id);
-    moves.push(m);
-  }
-
-  const seenDel = new Set<string>();
-  const deliveries: typeof deliveriesToday = [];
-  for (const d of [...deliveriesCarryover, ...deliveriesToday]) {
-    if (seenDel.has(d.id)) continue;
-    seenDel.add(d.id);
-    deliveries.push(d);
-  }
+  const moves = movesRes.data || [];
+  const deliveries = deliveriesRes.data || [];
 
   const moveIdsForSession = moves.map((m) => m.id);
   const latestSessionByMoveId = new Map<
@@ -202,7 +166,7 @@ export async function GET(req: NextRequest) {
         : null;
 
     const schedYmd = String(m.scheduled_date || "").trim();
-    const completionForStaleCheck = isCrewCarryoverExcludedMoveStatus(effectiveStatus, completedAtFromRow)
+    const completionForStaleCheck = isMoveClosedForStaleListFilter(effectiveStatus, completedAtFromRow)
       ? completedAtFromRow ?? sessionSnap?.completed_at ?? null
       : null;
     if (schedYmd === today && completionForStaleCheck) {
@@ -317,33 +281,21 @@ function parseTime(s: string): number {
   return h * 60 + min;
 }
 
-type MoveStatusRow = { status?: string | null; completed_at?: string | null };
-
 /**
- * True when a move row is fully closed: must not appear in the "prior days" carryover bucket.
- * Uses `isMoveStatusCompleted` (completed / delivered) plus legacy `done` and `cancelled`.
- * `paid` is only "closed" for carryover when `completed_at` is set, so prepaid moves still in progress stay visible.
+ * If a move is still booked for "today" but was completed on a prior calendar day, hide it
+ * (avoids a stuck row when `scheduled_date` was not updated in dispatch).
+ * Uses the same "closed" rules the old carryover bucket used, applied to the effective status.
  */
-function isCrewCarryoverExcludedMoveRow(m: MoveStatusRow): boolean {
-  const s = (m.status || "").toLowerCase().trim();
-  if (s === "cancelled") return true;
-  if (isMoveStatusCompleted(m.status)) return true;
-  if (s === "done") return true;
-  if ((s === "paid" || s === "final_payment_received") && m.completed_at) return true;
-  return false;
-}
-
-/** By status name only, for effective-status checks after session merge. */
-function isCrewCarryoverExcludedMoveStatus(
+function isMoveClosedForStaleListFilter(
   status: string | null | undefined,
   completedAtFromRow: string | null | undefined = null,
 ): boolean {
-  return isCrewCarryoverExcludedMoveRow({ status, completed_at: completedAtFromRow });
-}
-
-function isTerminalDeliveryStatus(status: string | null | undefined): boolean {
   const s = (status || "").toLowerCase().trim();
-  return s === "delivered" || s === "cancelled" || s === "completed";
+  if (s === "cancelled") return true;
+  if (isMoveStatusCompleted(status)) return true;
+  if (s === "done") return true;
+  if ((s === "paid" || s === "final_payment_received") && completedAtFromRow) return true;
+  return false;
 }
 
 /** Count list items for labels; tolerate JSONB shapes that are not a plain array. */

@@ -6,7 +6,7 @@ import { squareClient } from "@/lib/square";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { logAudit } from "@/lib/audit";
 import {
-  depositTaxInclusiveFromMove,
+  depositPreTaxFromMove,
   finalizeBalancePaymentSettlement,
   recordAdminDepositForMove,
 } from "@/lib/complete-balance-payment";
@@ -42,12 +42,12 @@ export async function PATCH(
       const { data: row, error: fetchErr } = await admin.from("moves").select("*").eq("id", id).single();
       if (fetchErr || !row) return NextResponse.json({ error: "Move not found" }, { status: 404 });
 
-      const depositIncl = depositTaxInclusiveFromMove(row);
+      const depositPreTax = depositPreTaxFromMove(row);
       try {
         await recordAdminDepositForMove({
           admin,
           moveId: id,
-          depositTaxInclusive: depositIncl,
+          depositPreTax,
           paymentMarkedBy: markedBy.trim(),
         });
       } catch (e) {
@@ -92,13 +92,13 @@ export async function PATCH(
         (approvedExtras ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
       let bal = Number(moveBefore.balance_amount || 0) + additionalCents / 100;
 
-      const depositIncl = depositTaxInclusiveFromMove(moveBefore);
-      if (!moveBefore.deposit_paid_at && depositIncl > 0) {
+      const depositPreTax = depositPreTaxFromMove(moveBefore);
+      if (!moveBefore.deposit_paid_at && depositPreTax > 0) {
         try {
           await recordAdminDepositForMove({
             admin,
             moveId: id,
-            depositTaxInclusive: depositIncl,
+            depositPreTax,
             paymentMarkedBy: markedBy.trim(),
           });
         } catch (e) {

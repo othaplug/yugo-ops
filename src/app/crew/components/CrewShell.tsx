@@ -64,9 +64,6 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
 
   const isDashboard =
     pathname === "/crew/dashboard" || pathname.startsWith("/crew/dashboard/job/");
-  const isStats = pathname.startsWith("/crew/stats");
-  const isExpense = pathname.startsWith("/crew/expense");
-  const isEndOfDay = pathname.startsWith("/crew/end-of-day");
   const navigationItem = useMemo(
     () => navItems.find((i) => "navigation" in i && i.navigation),
     [navItems],
@@ -133,41 +130,40 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
   return (
     <ToastProvider>
       <CrewImmersiveNavContext.Provider value={immersiveNavApi}>
-        <div className="flex h-dvh max-h-dvh min-h-0 w-full overflow-hidden bg-[var(--yu3-bg-canvas)]">
-          <a
-            href="#crew-main"
-            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-[var(--yu3-r-md)] focus:bg-[var(--yu3-forest)] focus:text-[var(--yu3-on-forest)] focus:font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--yu3-forest-tint)]"
-          >
-            Skip to main content
-          </a>
-
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            <main
-              id="crew-main"
-              key={pathname}
-              className={cn(
-                "relative min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y tab-content",
-                "bg-[var(--yu3-bg-canvas)]",
-                immersiveNav
-                  ? "pt-0 pb-0"
-                  : "pt-[env(safe-area-inset-top,0px)] pb-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px))]",
-              )}
+        <>
+          <div className="flex h-dvh max-h-dvh min-h-0 w-full overflow-hidden bg-[var(--yu3-bg-canvas)]">
+            <a
+              href="#crew-main"
+              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-[var(--yu3-r-md)] focus:bg-[var(--yu3-forest)] focus:text-[var(--yu3-on-forest)] focus:font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--yu3-forest-tint)]"
             >
-              {children}
-            </main>
-          </div>
+              Skip to main content
+            </a>
 
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+              <main
+                id="crew-main"
+                key={pathname}
+                className={cn(
+                  "relative min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y tab-content",
+                  "bg-[var(--yu3-bg-canvas)]",
+                  "px-4 sm:px-5",
+                  immersiveNav
+                    ? "pt-0 pb-0"
+                    : "pt-[env(safe-area-inset-top,0px)] pb-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px))]",
+                )}
+              >
+                {children}
+              </main>
+            </div>
+          </div>
           <CrewMobileFloatingNav
             show={!immersiveNav}
             pathname={pathname}
             isDashboard={isDashboard}
             navigation={floatNavigation}
-            isStats={isStats}
-            isExpense={isExpense}
-            isEndOfDay={isEndOfDay}
             hasActiveBinTasks={hasActiveBinTasks}
           />
-        </div>
+        </>
       </CrewImmersiveNavContext.Provider>
       <OfflineBanner />
     </ToastProvider>

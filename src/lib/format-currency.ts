@@ -53,8 +53,9 @@ export function calcHST(preTax: number | string | null | undefined): number {
 }
 
 /**
- * Split a tax-inclusive total into pre-tax + HST components (Ontario 13%).
- * Use for job deposit/balance amounts: `moves.deposit_amount` and `moves.balance_amount` are stored tax-inclusive.
+ * Split a tax-inclusive **charge total** (e.g. a card receipt) into pre-tax + HST.
+ * Quote and job subtotals use `ontarioHstBreakdownFromPreTax` / `contractTaxLines`
+ * instead, do not use this to interpret a quoted subtotal.
  */
 export function splitOntarioTaxInclusive(inclusive: number | string | null | undefined): {
   preTax: number;
@@ -88,9 +89,28 @@ export function formatTotalWithHST(preTax: number | string | null | undefined): 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
 /**
- * Job contract display: `estimate` is usually pre-tax; `amount` (when set and
- * higher) is tax-inclusive total. When both match a single value, treat it as
- * tax-inclusive and split 13% for display.
+ * Pre-tax + HST = total to collect (Ontario 13% on top of the subtotal).
+ * Quote and move `estimate` is always the pre-tax subtotal; this is the correct
+ * breakdown for job financials and ledger lines (not “backing HST out” of a total).
+ */
+export function ontarioHstBreakdownFromPreTax(
+  preTax: number,
+): { preTax: number; hst: number; inclusive: number } {
+  const p = round2(
+    typeof preTax === "string" ? parseFloat(preTax) : Number(preTax),
+  )
+  if (Number.isNaN(p) || p <= 0) {
+    return { preTax: 0, hst: 0, inclusive: 0 }
+  }
+  const hst = calcHST(p)
+  return { preTax: p, hst, inclusive: round2(p + hst) }
+}
+
+/**
+ * Job contract display: `estimate` is pre-tax. `amount` is the full contract
+ * total (subtotal + HST) when the row is well-formed. When `estimate` and
+ * `amount` match (legacy duplicate), treat that number as pre-tax, not
+ * tax-inclusive, and add HST on top.
  */
 export function contractTaxLines(estimate: number, amount: number): {
   preTax: number
@@ -103,7 +123,7 @@ export function contractTaxLines(estimate: number, amount: number): {
     return { preTax: est, hst: round2(amt - est), inclusive: amt }
   }
   if (est > 0 && (amt < 0.01 || Math.abs(amt - est) < 0.02)) {
-    return splitOntarioTaxInclusive(est)
+    return ontarioHstBreakdownFromPreTax(est)
   }
   if (est > 0) {
     const hst = calcHST(est)

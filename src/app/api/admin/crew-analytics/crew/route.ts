@@ -9,7 +9,7 @@ import {
   parseDeliveryScheduleWindow,
   parseMoveScheduleWindow,
 } from "@/lib/crew/arrival-punctuality";
-import { CREW_JOB_UUID_RE } from "@/lib/resolve-delivery-by-job-id";
+import { CREW_JOB_UUID_RE, selectDeliveryByJobId } from "@/lib/resolve-delivery-by-job-id";
 
 type Checkpoint = {
   status: string;
@@ -219,7 +219,7 @@ export async function GET(req: NextRequest) {
   const MOVE_SELECT =
     "id, client_name, from_address, to_address, move_date, quoted_hours, move_size, arrival_window, scheduled_date, scheduled_time, quote_id, move_project_id, estimated_duration_minutes, est_hours, arrived_on_time, move_code";
   const DELIVERY_SELECT =
-    "id, customer_name, client_name, business_name, pickup_address, delivery_address, scheduled_date, scheduled_start, scheduled_end, delivery_window, time_slot, source_quote_id, estimated_duration_minutes, estimated_duration_hours, day_type, delivery_number";
+    "id, customer_name, client_name, business_name, pickup_address, delivery_address, scheduled_date, scheduled_start, scheduled_end, delivery_window, time_slot, source_quote_id, estimated_duration_minutes, estimated_duration_hours, day_type, delivery_number, score_arrived_late";
 
   type MoveRow = {
     id: string;
@@ -283,6 +283,8 @@ export async function GET(req: NextRequest) {
     estimated_duration_hours?: number | null;
     day_type?: string | null;
     delivery_number?: string | null;
+    /** false = on time, true = late (see migration comment) */
+    score_arrived_late?: boolean | null;
   };
 
   const expandIdsForTextColumn = (ids: string[]) => [
@@ -458,6 +460,74 @@ export async function GET(req: NextRequest) {
           if (q.quote_id) mapPutAll(deliveryByJid, String(q.quote_id), dHit);
         }
       }
+    }
+  }
+
+  /** When batch `.in()` misses (e.g. `ilike` on codes), match tracking/start + `selectDeliveryByJobId`. */
+  const stillMissing3 = allJobIds.filter(
+    (j) => !mapGet(moveByJid, j) && !mapGet(deliveryByJid, j),
+  );
+  const jobTypeByJid = new Map<string, string>();
+  for (const s of completedSessions) {
+    const j = String(s.job_id ?? "").trim();
+    if (j) jobTypeByJid.set(j, String(s.job_type ?? ""));
+  }
+  const explicitMoveJid = new Map<string, MoveRow>();
+  const explicitDelJid = new Map<string, DeliveryRow>();
+  if (stillMissing3.length > 0) {
+    const tryMove = async (jid: string) => {
+      const raw = String(jid).trim();
+      if (!raw) return false;
+      let m: MoveRow | null = null;
+      if (CREW_JOB_UUID_RE.test(raw)) {
+        const { data } = await admin.from("moves").select(MOVE_SELECT).eq("id", raw).maybeSingle();
+        if (data) m = data as MoveRow;
+      }
+      if (!m) {
+        const { data } = await admin
+          .from("moves")
+          .select(MOVE_SELECT)
+          .ilike("move_code", raw.replace(/^#/, "").toUpperCase())
+          .maybeSingle();
+        if (data) m = data as MoveRow;
+      }
+      if (m?.id) {
+        putMove(m);
+        explicitMoveJid.set(jid, m);
+        return true;
+      }
+      return false;
+    };
+    const tryDel = async (jid: string) => {
+      const { data } = await selectDeliveryByJobId(admin, jid, DELIVERY_SELECT);
+      const d = data as DeliveryRow | null;
+      if (d?.id) {
+        putDel(d);
+        explicitDelJid.set(jid, d);
+        return true;
+      }
+      return false;
+    };
+    const resolveJid = async (jid: string) => {
+      const jt = jobTypeByJid.get(jid);
+      const moveFirst = jt === "move";
+      if (moveFirst) {
+        if (await tryMove(jid)) return;
+        await tryDel(jid);
+      } else {
+        if (await tryDel(jid)) return;
+        await tryMove(jid);
+      }
+    };
+    await Promise.all(stillMissing3.map((jid) => resolveJid(jid)));
+    if (explicitMoveJid.size > 0 || explicitDelJid.size > 0) {
+      const re = buildJidLookups();
+      moveRows = re.moveRows;
+      deliveryRows = re.deliveryRows;
+      moveByJid = re.moveByJid;
+      deliveryByJid = re.deliveryByJid;
+      for (const [jid, m] of explicitMoveJid) mapPutAll(moveByJid, jid, m);
+      for (const [jid, d] of explicitDelJid) mapPutAll(deliveryByJid, jid, d);
     }
   }
 
@@ -702,6 +772,9 @@ export async function GET(req: NextRequest) {
         arrivalIso,
       });
     }
+    if (onTime == null && (d.score_arrived_late === true || d.score_arrived_late === false)) {
+      onTime = !d.score_arrived_late;
+    }
 
     const contactName = d.source_quote_id ? mapGet(contactNameByQuoteId, d.source_quote_id) : undefined;
     const baseName =
@@ -729,45 +802,6 @@ export async function GET(req: NextRequest) {
       stages,
     };
   });
-
-  // #region agent log
-  {
-    const unresJids = allJobIds.filter((j) => !mapGet(moveByJid, j) && !mapGet(deliveryByJid, j));
-    const nClientDash = jobs.filter((j) => j.clientName === "—").length;
-    const nOnTimeSet = jobs.filter((j) => j.onTime !== null).length;
-    const _payload = {
-      sessionId: "02a6ee",
-      runId: "post-move-project",
-      hypothesisId: "H6",
-      location: "crew-analytics/crew/route.ts:jobsBuilt",
-      message: "crew resolution summary (incl move_project_id + jid map key)",
-      data: {
-        nJobs: jobs.length,
-        nDistinctJids: allJobIds.length,
-        nJidStillUnresolved: unresJids.length,
-        nClientDash,
-        nOnTimeSet,
-      },
-      timestamp: Date.now(),
-    };
-    fetch("http://127.0.0.1:7708/ingest/73e1bfae-92f4-4901-bddd-f41e1a91c881", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "02a6ee" },
-      body: JSON.stringify(_payload),
-    }).catch(() => {});
-    try {
-      const { appendFileSync } = await import("node:fs");
-      const { join } = await import("node:path");
-      appendFileSync(
-        join(process.cwd(), ".cursor", "debug-02a6ee.log"),
-        `${JSON.stringify(_payload)}\n`,
-        { encoding: "utf8" },
-      );
-    } catch {
-      /* local-only */
-    }
-  }
-  // #endregion
 
   // Build weekly trend data
   const weekMap = new Map<

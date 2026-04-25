@@ -774,24 +774,24 @@ export default function CrewJobPage({
           )}
           {session && !isCompleted && (
             <span
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold [font-family:var(--font-body)] ${
                 locationPermission === "denied" ||
                 locationPermission === "unsupported"
                   ? "bg-red-500/10 text-red-400 border border-red-500/25"
-                  : "bg-[#2C3E2D]/10 text-[#243524] border border-[#2C3E2D]/25"
+                  : "bg-[var(--yu3-wine-tint)] text-[var(--yu3-wine)] border border-[var(--yu3-wine)]/20"
               }`}
             >
               <span className="relative flex h-1.5 w-1.5">
                 {locationPermission !== "denied" &&
                   locationPermission !== "unsupported" && (
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2C3E2D] opacity-40" />
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--yu3-wine)] opacity-35" />
                   )}
                 <span
                   className={`relative inline-flex rounded-full h-1.5 w-1.5 ${
                     locationPermission === "denied" ||
                     locationPermission === "unsupported"
                       ? "bg-red-400"
-                      : "bg-[#2C3E2D]"
+                      : "bg-[var(--yu3-wine)]"
                   }`}
                 />
               </span>
@@ -906,7 +906,7 @@ export default function CrewJobPage({
                   {badges.map((b) => (
                     <span
                       key={b}
-                      className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[#B45309]/30 bg-[#B45309]/10 text-[#92400e]"
+                      className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[var(--yu3-warning)]/30 bg-[var(--yu3-warning-tint)] text-[var(--yu3-warning)] [font-family:var(--font-body)]"
                     >
                       {b}
                     </span>
@@ -1142,7 +1142,7 @@ export default function CrewJobPage({
                 type="button"
                 onClick={() => void startJob()}
                 disabled={advancing || blockedByLocation}
-                className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.12em] text-[var(--yu3-on-wine)] active:scale-[0.99] [font-family:var(--font-body)] leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--yu3-bg-canvas)]"
+                className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.12em] text-[#fffbf7] active:scale-[0.99] [font-family:var(--font-body)] leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--yu3-bg-canvas)]"
               >
                 {advancing ? (
                   "Starting…"
@@ -1262,7 +1262,7 @@ export default function CrewJobPage({
               <button
                 type="button"
                 onClick={() => setWalkthroughModalOpen(true)}
-                className="crew-premium-cta inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[48px] font-bold text-[11px] uppercase tracking-[0.1em] [font-family:var(--font-body)] leading-none"
+                className="crew-premium-cta inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[48px] font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] [font-family:var(--font-body)] leading-none"
               >
                 Start inventory check
                 <CaretRight
@@ -1279,14 +1279,14 @@ export default function CrewJobPage({
           {changeRequestSubmitted &&
             walkthroughResult &&
             !walkthroughResult.noChanges && (
-              <div className="rounded-2xl border border-[#2C3E2D]/25 bg-[#2C3E2D]/5 px-4 py-3 flex items-start gap-2.5">
+              <div className="rounded-2xl border border-[var(--yu3-wine)]/20 bg-[var(--yu3-wine-tint)] px-4 py-3 flex items-start gap-2.5">
                 <CheckCircle
                   size={16}
-                  color="#2C3E2D"
+                  color="#5C1A33"
                   className="shrink-0 mt-0.5"
                 />
                 <div>
-                  <p className="text-[12px] font-bold text-[#243524]">
+                  <p className="text-[12px] font-bold text-[var(--yu3-ink)]">
                     {jobType === "delivery"
                       ? "Walkthrough logged"
                       : "Change request submitted"}
@@ -1319,7 +1319,7 @@ export default function CrewJobPage({
             (nextStatus === "completed" ? (
               <Link
                 href={`/crew/dashboard/job/${jobType}/${id}/signoff`}
-                className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] active:scale-[0.99] [font-family:var(--font-body)] leading-none"
+                className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] active:scale-[0.99] [font-family:var(--font-body)] leading-none"
               >
                 <CheckCircle
                   size={16}
@@ -1340,7 +1340,7 @@ export default function CrewJobPage({
                 type="button"
                 onClick={advanceStatus}
                 disabled={advancing}
-                className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-semibold text-[11px] uppercase tracking-[0.08em] disabled:opacity-60 active:scale-[0.99] [font-family:var(--font-body)] leading-none"
+                className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-semibold text-[11px] uppercase tracking-[0.08em] text-[#fffbf7] disabled:opacity-100 disabled:bg-[var(--yu3-wine-press)] active:scale-[0.99] [font-family:var(--font-body)] leading-none"
               >
                 {advancing ? (
                   "Updating…"
@@ -1413,37 +1413,37 @@ export default function CrewJobPage({
                       )
                     : null;
 
-                // Dot styles — Uber-style solid circles
+                // Dot styles (yu3 wine active, forest complete): inline SVGs need resolvable colors
                 const DOT = 20;
                 const dotBg =
                   state === "done"
                     ? isLast && isCompleted
-                      ? "#2C3E2D"
-                      : "rgba(44,62,45,0.18)"
+                      ? "var(--yu3-forest)"
+                      : "color-mix(in srgb, var(--yu3-forest) 20%, transparent)"
                     : state === "act"
-                      ? "#5C1A33"
+                      ? "var(--yu3-wine)"
                       : "transparent";
                 const dotBorder =
                   state === "done"
                     ? isLast && isCompleted
-                      ? "#2C3E2D"
-                      : "rgba(44,62,45,0.5)"
+                      ? "var(--yu3-forest)"
+                      : "color-mix(in srgb, var(--yu3-forest) 50%, transparent)"
                     : state === "act"
-                      ? "#5C1A33"
-                      : "rgba(92,26,51,0.16)";
+                      ? "var(--yu3-wine)"
+                      : "color-mix(in srgb, var(--yu3-wine) 16%, transparent)";
                 const dotShadow =
                   state === "act"
-                    ? "0 0 0 5px rgba(92,26,51,0.2)"
+                    ? "0 0 0 5px color-mix(in srgb, var(--yu3-wine) 20%, transparent)"
                     : isLast && isCompleted
-                      ? "0 0 0 4px rgba(44,62,45,0.12)"
+                      ? "0 0 0 4px color-mix(in srgb, var(--yu3-forest) 12%, transparent)"
                       : "none";
 
                 const connectorColor =
                   state === "done"
-                    ? "rgba(44,62,45,0.35)"
+                    ? "color-mix(in srgb, var(--yu3-forest) 35%, transparent)"
                     : state === "act"
-                      ? "rgba(92,26,51,0.35)"
-                      : "rgba(92,26,51,0.1)";
+                      ? "color-mix(in srgb, var(--yu3-wine) 35%, transparent)"
+                      : "color-mix(in srgb, var(--yu3-wine) 10%, transparent)";
 
                 return (
                   <div key={s} className="flex gap-3.5">
@@ -1472,7 +1472,7 @@ export default function CrewJobPage({
                               background:
                                 isLast && isCompleted
                                   ? "rgba(255,255,255,0.9)"
-                                  : "#2C3E2D",
+                                  : "var(--yu3-forest)",
                               opacity: isLast && isCompleted ? 1 : 0.9,
                             }}
                           />
@@ -1493,7 +1493,8 @@ export default function CrewJobPage({
                             style={{
                               width: 6,
                               height: 6,
-                              background: "rgba(92,26,51,0.12)",
+                              background:
+                                "color-mix(in srgb, var(--yu3-wine) 12%, transparent)",
                             }}
                           />
                         )}
@@ -1857,6 +1858,7 @@ export default function CrewJobPage({
             }}
           >
             <Yu3PortaledTokenRoot
+              dataTheme="light"
               className="w-full max-w-[480px] overflow-y-auto rounded-t-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] sm:rounded-[var(--yu3-r-xl)]"
               data-crew-job-premium
               style={{ maxHeight: "min(90dvh, 90vh)" }}
@@ -1904,7 +1906,7 @@ export default function CrewJobPage({
                     setPickupModalOpen(false);
                   }}
                   disabled={pickupPhotosCount < 1 && totalItems > 0}
-                  className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.08em] disabled:opacity-50 [font-family:var(--font-body)] leading-none"
+                  className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.08em] text-[#fffbf7] disabled:opacity-50 [font-family:var(--font-body)] leading-none"
                 >
                   {pickupPhotosCount < 1 && totalItems > 0 ? (
                     "Take at least 1 photo to continue"
@@ -1963,6 +1965,7 @@ export default function CrewJobPage({
             role="presentation"
           >
             <Yu3PortaledTokenRoot
+              dataTheme="light"
               className="max-h-[min(90dvh,90vh)] w-full max-w-[360px] overflow-y-auto rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] p-5 text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)]"
               data-crew-job-premium
               role="dialog"
@@ -1977,10 +1980,10 @@ export default function CrewJobPage({
               </h3>
               {reportSubmitted ? (
                 <div className="py-4">
-                  <div className="w-10 h-10 rounded-2xl bg-[#2C3E2D]/10 flex items-center justify-center mx-auto mb-3">
-                    <Check size={18} color="#2C3E2D" weight="bold" />
+                  <div className="w-10 h-10 rounded-2xl bg-[var(--yu3-wine-tint)] flex items-center justify-center mx-auto mb-3">
+                    <Check size={18} color="#5C1A33" weight="bold" />
                   </div>
-                  <p className="text-[13px] text-[#243524] text-center mb-4">
+                  <p className="text-[13px] text-[var(--yu3-ink)] text-center mb-4">
                     Issue reported. Dispatch notified.
                   </p>
                   <button
@@ -1991,7 +1994,7 @@ export default function CrewJobPage({
                       setReportDesc("");
                       setReportUrgency(defaultUrgencyForIssue(reportType));
                     }}
-                    className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[48px] font-bold text-[11px] uppercase tracking-[0.1em] [font-family:var(--font-body)] leading-none"
+                    className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[48px] font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] [font-family:var(--font-body)] leading-none"
                   >
                     Done
                     <CaretRight
@@ -2084,7 +2087,7 @@ export default function CrewJobPage({
                         }
                       }}
                       disabled={reportSubmitting}
-                      className="flex-1 py-2 bg-[#B45309] text-white font-semibold disabled:opacity-50 transition-colors"
+                      className="flex-1 py-2 rounded-[var(--yu3-r-md)] bg-[var(--yu3-wine)] text-[#fffbf7] text-[13px] font-semibold border border-[var(--yu3-wine)] hover:brightness-[0.97] active:brightness-[0.95] disabled:opacity-50 transition-[filter,opacity] [font-family:var(--font-body)]"
                     >
                       {reportSubmitting ? "Sending..." : "Submit"}
                     </button>

@@ -527,9 +527,9 @@ export default function CommandCenterV3Client({
                 variant="ghost"
                 size="sm"
                 trailingIcon={<CaretRight size={14} />}
-                onClick={() => router.push("/admin/moves")}
+                onClick={() => router.push("/admin/dispatch")}
               >
-                All moves
+                Dispatch
               </Button>
             </div>
           </header>

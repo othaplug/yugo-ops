@@ -70,7 +70,7 @@
     },
     {
       "path": "/api/cron/crew-eod-auto",
-      "schedule": "*/5 * * * *"
+      "schedule": "* * * * *"
     },
     {
       "path": "/api/cron/quotes-expire-daily",

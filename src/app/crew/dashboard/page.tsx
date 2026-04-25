@@ -143,9 +143,11 @@ export default function CrewDashboardPage() {
   const isInProgress = (j: Job) =>
     (j.status || "").toLowerCase() === "in_progress";
 
+  const pageContentClass = "w-full min-w-0 max-w-full";
+
   if (loading) {
     return (
-      <PageContent>
+      <PageContent className={pageContentClass}>
         <div className="flex items-center justify-center min-h-[40vh]">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-[var(--yu3-wine)]/25 border-t-[var(--yu3-wine)] rounded-full animate-spin" />
@@ -160,7 +162,7 @@ export default function CrewDashboardPage() {
 
   if (error || !data) {
     return (
-      <PageContent>
+      <PageContent className={pageContentClass}>
         <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
           <div className="w-12 h-12 rounded-2xl bg-[var(--red)]/10 flex items-center justify-center mb-4">
             <X size={20} color="var(--red)" />
@@ -192,14 +194,14 @@ export default function CrewDashboardPage() {
   if (readinessRequired && !readinessCompleted) {
     if (isCrewLead) {
       return (
-        <PageContent>
+        <PageContent className={pageContentClass}>
           <ReadinessCheck onComplete={() => window.location.reload()} />
         </PageContent>
       );
     }
     return (
-      <PageContent>
-        <div className="max-w-[520px] mx-auto pt-8 text-center px-1">
+      <PageContent className={pageContentClass}>
+        <div className="max-w-[520px] mx-auto pt-8 text-center">
           <p className="yu3-t-eyebrow text-[10px] text-[var(--yu3-ink-faint)] mb-2 [font-family:var(--font-body)]">
             Crew
           </p>
@@ -247,8 +249,8 @@ export default function CrewDashboardPage() {
       : null;
 
   return (
-    <PageContent>
-      <section className="max-w-[520px] mx-auto">
+    <PageContent className={pageContentClass}>
+      <section className="w-full max-w-[520px] min-w-0 mx-auto">
         {/* Header + progress */}
         <header className="pb-2 mb-6 sm:mb-7">
           <div className="min-w-0">
@@ -274,7 +276,7 @@ export default function CrewDashboardPage() {
             )}
 
             {totalCount > 0 && (
-              <div className="mt-8 rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/80 px-4 py-3.5 sm:px-5 sm:py-4">
+              <div className="mt-8 pt-6 border-t border-[var(--yu3-line-subtle)]">
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <span className="yu3-t-eyebrow text-[10px] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
                     Day progress
@@ -314,9 +316,9 @@ export default function CrewDashboardPage() {
           </div>
         )}
 
-        <div className="flex flex-col gap-4 sm:gap-5">
+        <div>
           {jobs.length === 0 ? (
-            <div className="rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)] px-6 py-10 text-center">
+            <div className="py-12 text-center border-t border-b border-[var(--yu3-line-subtle)]">
               <p className="yu3-t-eyebrow text-[12px] text-[var(--yu3-ink)] mb-3 [font-family:var(--font-body)]">
                 No jobs on the schedule
               </p>
@@ -325,7 +327,8 @@ export default function CrewDashboardPage() {
               </p>
             </div>
           ) : (
-            jobs.map((job, index) => {
+            <div className="rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)] overflow-hidden divide-y divide-[var(--yu3-line-subtle)]">
+            {jobs.map((job, index) => {
               const completed = isCompleted(job);
               const statusKey = (job.status || "").toLowerCase();
               const forestCompleteBadge = [
@@ -338,11 +341,10 @@ export default function CrewDashboardPage() {
               const statusInfo = STATUS_MAP[statusKey];
 
               return (
-                <div
-                  key={job.id}
-                  className={`rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-5 sm:p-6 shadow-[var(--yu3-shadow-sm)]${!completed && !inProgress && !canStart ? " opacity-[0.85]" : ""}`}
-                >
-                  <article className="min-w-0">
+                  <article
+                    key={job.id}
+                    className={`min-w-0 p-4 sm:p-5${!completed && !inProgress && !canStart ? " opacity-[0.85]" : ""}`}
+                  >
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="min-w-0 flex-1 flex items-start gap-2.5">
                         <div
@@ -408,7 +410,7 @@ export default function CrewDashboardPage() {
                             className={
                               forestCompleteBadge
                                 ? "px-2.5 py-1 rounded-md bg-[var(--yu3-forest)]/[0.08] text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink)] [font-family:var(--font-body)] leading-none"
-                                : "px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-[#2C3E2D]/10 text-[#243524]"
+                                : "px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-[var(--yu3-forest-tint)] text-[var(--yu3-forest)]"
                             }
                           >
                             {getDisplayLabel(job.status, "status")}
@@ -448,26 +450,18 @@ export default function CrewDashboardPage() {
 
                     {/* Type + items */}
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-[var(--yu3-ink-faint)]">
-                      <span className="px-2 py-0.5 rounded-md bg-[var(--yu3-bg-surface-sunken)] font-medium text-[var(--yu3-ink-muted)] border border-[var(--yu3-line-subtle)]/80">
+                      <span className="px-2 py-0.5 rounded-md bg-[var(--yu3-bg-surface-sunken)] font-medium text-[var(--yu3-ink-muted)]">
                         {job.jobTypeLabel}
                       </span>
                       {job.eventPhase && (
                         <span
-                          className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider"
-                          style={{
-                            background:
-                              job.eventPhase === "delivery"
-                                ? "#7C3AED22"
-                                : job.eventPhase === "return"
-                                  ? "#2C3E2D22"
-                                  : "#B4530922",
-                            color:
-                              job.eventPhase === "delivery"
-                                ? "#7C3AED"
-                                : job.eventPhase === "return"
-                                  ? "#243524"
-                                  : "#B45309",
-                          }}
+                          className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider [font-family:var(--font-body)] ${
+                            job.eventPhase === "delivery"
+                              ? "bg-[color-mix(in_srgb,var(--yu3-c6)_18%,var(--yu3-bg-surface))] text-[var(--yu3-c6)]"
+                              : job.eventPhase === "return"
+                                ? "bg-[var(--yu3-forest-tint)] text-[var(--yu3-forest)]"
+                                : "bg-[var(--yu3-warning-tint)] text-[var(--yu3-warning)]"
+                          }`}
                         >
                           {job.eventPhase === "delivery"
                             ? "Event Delivery"
@@ -477,10 +471,7 @@ export default function CrewDashboardPage() {
                         </span>
                       )}
                       {job.isRecurring && (
-                        <span
-                          className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider"
-                          style={{ background: "#0D948820", color: "#0D9488" }}
-                        >
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-[var(--yu3-neutral-tint)] text-[var(--yu3-ink-muted)]">
                           Recurring
                         </span>
                       )}
@@ -494,7 +485,7 @@ export default function CrewDashboardPage() {
                       {completed ? (
                         <Link
                           href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
-                          className="inline-flex items-center justify-center gap-1.5 min-h-[44px] py-2.5 px-4 text-[11px] font-bold uppercase tracking-[0.12em] border-2 border-[var(--yu3-forest)] text-[var(--yu3-forest)] bg-transparent hover:bg-[var(--yu3-forest)]/[0.06] transition-colors [font-family:var(--font-body)] rounded-[var(--yu3-r-md)] w-full sm:w-auto"
+                          className="inline-flex items-center justify-center gap-1.5 min-h-[44px] py-2.5 px-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-forest)] bg-[var(--yu3-forest-tint)]/60 hover:bg-[var(--yu3-forest-tint)] transition-colors [font-family:var(--font-body)] rounded-[var(--yu3-r-md)] w-full sm:w-auto"
                         >
                           View summary
                           <CaretRight
@@ -549,9 +540,9 @@ export default function CrewDashboardPage() {
                       )}
                     </div>
                   </article>
-                </div>
               );
-            })
+            })}
+            </div>
           )}
         </div>
 
@@ -561,7 +552,7 @@ export default function CrewDashboardPage() {
           (endOfDaySubmitted ? (
             <Link
               href="/crew/end-of-day"
-              className="mt-8 flex items-center justify-center gap-1.5 min-h-[48px] py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] border-2 border-[var(--yu3-forest)] text-[var(--yu3-forest)] bg-transparent hover:bg-[var(--yu3-forest)]/[0.06] transition-colors [font-family:var(--font-body)]"
+              className="mt-8 flex items-center justify-center gap-1.5 min-h-[48px] py-2.5 px-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-forest)] bg-[var(--yu3-forest-tint)]/60 hover:bg-[var(--yu3-forest-tint)] transition-colors [font-family:var(--font-body)] rounded-[var(--yu3-r-md)] w-full sm:w-auto mx-auto"
             >
               <Check size={14} weight="bold" aria-hidden />
               Update end of day

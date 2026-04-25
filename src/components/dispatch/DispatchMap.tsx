@@ -82,7 +82,9 @@ const DispatchMapInner = dynamic(
         onJobClick: (id: string) => void;
       }) {
         const crewWithPos = crews.filter((c) => c.lat != null && c.lng != null);
-        const jobsWithPos = jobs.filter((j) => j.toLat != null && j.toLng != null);
+        const jobsWithPos = jobs.filter(
+          (j) => j.toLat != null && j.toLng != null,
+        );
         const zoom = crewWithPos.length > 1 || jobsWithPos.length > 1 ? 11 : 14;
 
         return (
@@ -97,7 +99,8 @@ const DispatchMapInner = dynamic(
             mapStyle="mapbox://styles/mapbox/dark-v11"
           >
             {crewWithPos.map((c) => {
-              const isOnJob = c.status && !["idle", "offline"].includes(c.status);
+              const isOnJob =
+                c.status && !["idle", "offline"].includes(c.status);
               const isSelected = selectedCrew === c.id;
               return (
                 <Marker
@@ -123,7 +126,10 @@ const DispatchMapInner = dynamic(
                           : "linear-gradient(135deg, #6B7280, #4B5563)",
                       }}
                     >
-                      {(c.name || "?").replace("Team ", "").slice(0, 2).toUpperCase()}
+                      {(c.name || "?")
+                        .replace("Team ", "")
+                        .slice(0, 2)
+                        .toUpperCase()}
                     </div>
                     <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-[var(--tx)] whitespace-nowrap px-1.5 py-0.5 rounded bg-[var(--card)]/95 border border-[var(--brd)]">
                       {c.name?.replace("Team ", "") || "Crew"}
@@ -150,8 +156,12 @@ const DispatchMapInner = dynamic(
                     className={`cursor-pointer transition-transform ${isSelected ? "scale-125 z-10" : "hover:scale-110"}`}
                   >
                     <div
-                      className={`w-8 h-8 rounded flex items-center justify-center text-[10px] font-bold ${
-                        isSelected ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : j.type === "move" ? "bg-[#3B82F6] text-white" : "bg-[var(--grn)] text-white"
+                      className={`w-8 h-8 rounded-[var(--yu3-r-sm)] flex items-center justify-center text-[10px] font-bold ${
+                        isSelected
+                          ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
+                          : j.type === "move"
+                            ? "bg-[var(--yu3-wine)] text-[var(--yu3-on-wine)]"
+                            : "bg-[var(--grn)] text-white"
                       }`}
                     >
                       {j.type === "move" ? "M" : "D"}
@@ -169,7 +179,14 @@ const DispatchMapInner = dynamic(
         );
       };
     }),
-  { ssr: false, loading: () => <div className="w-full h-full flex items-center justify-center text-[var(--tx3)] text-[12px]">Loading map...</div> }
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex items-center justify-center text-[var(--tx3)] text-[12px]">
+        Loading map...
+      </div>
+    ),
+  },
 );
 
 interface DispatchMapProps {
@@ -183,7 +200,9 @@ export default function DispatchMap({ crews, jobs }: DispatchMapProps) {
 
   const center = useMemo(() => {
     const withPos = [
-      ...crews.filter((c) => c.lat != null && c.lng != null).map((c) => ({ lat: c.lat!, lng: c.lng! })),
+      ...crews
+        .filter((c) => c.lat != null && c.lng != null)
+        .map((c) => ({ lat: c.lat!, lng: c.lng! })),
       ...jobs
         .filter((j) => j.toLat != null && j.toLng != null)
         .map((j) => ({ lat: j.toLat!, lng: j.toLng! })),
@@ -194,8 +213,12 @@ export default function DispatchMap({ crews, jobs }: DispatchMapProps) {
     return { lat, lng };
   }, [crews, jobs]);
 
-  const selectedCrewData = selectedCrew ? crews.find((c) => c.id === selectedCrew) : null;
-  const selectedJobData = selectedJob ? jobs.find((j) => j.id === selectedJob) : null;
+  const selectedCrewData = selectedCrew
+    ? crews.find((c) => c.id === selectedCrew)
+    : null;
+  const selectedJobData = selectedJob
+    ? jobs.find((j) => j.id === selectedJob)
+    : null;
 
   if (!HAS_MAPBOX) {
     return (
@@ -222,67 +245,84 @@ export default function DispatchMap({ crews, jobs }: DispatchMapProps) {
           setSelectedJob((prev) => (prev === id ? null : id));
         }}
       />
-      {selectedCrewData && selectedCrewData.lat != null && selectedCrewData.lng != null && (
-        <div className="absolute top-4 right-4 w-[220px] max-h-[280px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 shadow-xl z-20 animate-fade-up">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <div className="font-semibold text-[var(--text-base)] text-[var(--tx)]">{selectedCrewData.name}</div>
-            <button
-              type="button"
-              onClick={() => setSelectedCrew(null)}
-              className="p-1 rounded-lg text-[var(--tx3)] hover:bg-[var(--bg)]"
-              aria-label="Close"
-            >
-              <X className="w-4 h-4" />
-            </button>
+      {selectedCrewData &&
+        selectedCrewData.lat != null &&
+        selectedCrewData.lng != null && (
+          <div className="absolute top-4 right-4 w-[220px] max-h-[280px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 shadow-xl z-20 animate-fade-up">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="font-semibold text-[var(--text-base)] text-[var(--tx)]">
+                {selectedCrewData.name}
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedCrew(null)}
+                className="p-1 rounded-lg text-[var(--tx3)] hover:bg-[var(--bg)]"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="text-[11px] text-[var(--tx3)]">
+              {selectedCrewData.members?.length || 0} movers
+            </div>
+            {selectedCrewData.currentClientName && (
+              <div className="mt-2 text-[12px] text-[var(--tx2)]">
+                Current job: {selectedCrewData.currentClientName}
+              </div>
+            )}
+            {selectedCrewData.currentJobId && (
+              <Link
+                href={
+                  selectedCrewData.currentJobType === "move"
+                    ? `/admin/moves/${selectedCrewData.currentJobId}`
+                    : `/admin/deliveries/${selectedCrewData.currentJobId}`
+                }
+                className="block mt-2 text-[11px] font-semibold text-[var(--accent-text)] hover:underline"
+              >
+                View Job
+              </Link>
+            )}
+            <div className="text-[9px] text-[var(--tx3)] mt-2">
+              Last seen: {formatRelative(selectedCrewData.updatedAt)}
+            </div>
           </div>
-          <div className="text-[11px] text-[var(--tx3)]">{selectedCrewData.members?.length || 0} movers</div>
-          {selectedCrewData.currentClientName && (
-            <div className="mt-2 text-[12px] text-[var(--tx2)]">Current job: {selectedCrewData.currentClientName}</div>
-          )}
-          {selectedCrewData.currentJobId && (
+        )}
+      {selectedJobData &&
+        selectedJobData.toLat != null &&
+        selectedJobData.toLng != null && (
+          <div className="absolute top-4 right-4 w-[220px] max-h-[280px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 shadow-xl z-20 animate-fade-up">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="font-semibold text-[var(--text-base)] text-[var(--tx)]">
+                {selectedJobData.label} · {selectedJobData.client}
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedJob(null)}
+                className="p-1 rounded-lg text-[var(--tx3)] hover:bg-[var(--bg)]"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {selectedJobData.crewName && (
+              <div className="text-[11px] text-[var(--tx2)]">
+                Crew: {selectedJobData.crewName}
+              </div>
+            )}
+            {selectedJobData.etaMinutes != null &&
+              selectedJobData.etaMinutes > 0 && (
+                <div className="text-[11px] text-[var(--grn)]">
+                  ETA: {selectedJobData.etaMinutes} min
+                </div>
+              )}
             <Link
-              href={
-                selectedCrewData.currentJobType === "move"
-                  ? `/admin/moves/${selectedCrewData.currentJobId}`
-                  : `/admin/deliveries/${selectedCrewData.currentJobId}`
-              }
+              href={selectedJobData.href}
               className="block mt-2 text-[11px] font-semibold text-[var(--accent-text)] hover:underline"
             >
-              View Job
+              View Details
             </Link>
-          )}
-          <div className="text-[9px] text-[var(--tx3)] mt-2">Last seen: {formatRelative(selectedCrewData.updatedAt)}</div>
-        </div>
-      )}
-      {selectedJobData && selectedJobData.toLat != null && selectedJobData.toLng != null && (
-        <div className="absolute top-4 right-4 w-[220px] max-h-[280px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 shadow-xl z-20 animate-fade-up">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <div className="font-semibold text-[var(--text-base)] text-[var(--tx)]">
-              {selectedJobData.label} · {selectedJobData.client}
-            </div>
-            <button
-              type="button"
-              onClick={() => setSelectedJob(null)}
-              className="p-1 rounded-lg text-[var(--tx3)] hover:bg-[var(--bg)]"
-              aria-label="Close"
-            >
-              <X className="w-4 h-4" />
-            </button>
           </div>
-          {selectedJobData.crewName && (
-            <div className="text-[11px] text-[var(--tx2)]">Crew: {selectedJobData.crewName}</div>
-          )}
-          {selectedJobData.etaMinutes != null && selectedJobData.etaMinutes > 0 && (
-            <div className="text-[11px] text-[var(--grn)]">ETA: {selectedJobData.etaMinutes} min</div>
-          )}
-          <Link
-            href={selectedJobData.href}
-            className="block mt-2 text-[11px] font-semibold text-[var(--accent-text)] hover:underline"
-          >
-            View Details
-          </Link>
-        </div>
-      )}
+        )}
     </div>
   );
 }

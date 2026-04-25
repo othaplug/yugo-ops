@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   ArrowsClockwise as RefreshCw,
@@ -23,6 +24,7 @@ import ActivityFeed from "@/components/dispatch/ActivityFeed";
 import AlertBar from "@/components/dispatch/AlertBar";
 import RoutingSuggestionBanner from "@/components/dispatch/RoutingSuggestionBanner";
 import { useToast } from "../components/Toast";
+import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
 import { KpiStrip } from "@/design-system/admin/dashboard";
 import type { DispatchJob } from "@/components/dispatch/JobCard";
 import type { DispatchEvent } from "@/components/dispatch/ActivityFeed";
@@ -221,7 +223,7 @@ export default function DispatchBoardClient({ today }: Props) {
               />
             ))}
           </div>
-          <div className="h-px bg-[var(--brd)]/30" />
+          <div className="h-px bg-[var(--yu3-line-subtle)]" />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(320px,45%)_1fr] gap-8 lg:gap-10">
           <div className="space-y-4">
@@ -232,7 +234,7 @@ export default function DispatchBoardClient({ today }: Props) {
               />
             ))}
           </div>
-          <div className="space-y-3 pl-0 lg:pl-2 lg:border-l lg:border-[var(--brd)]/20">
+          <div className="space-y-3 pl-0 lg:pl-2 lg:border-l lg:border-[var(--yu3-line-subtle)]/80">
             {[...Array(6)].map((_, i) => (
               <div
                 key={i}
@@ -290,7 +292,7 @@ export default function DispatchBoardClient({ today }: Props) {
             key: "unassigned" as FilterStatus,
             label: "Unassigned",
             value: data?.stats.unassigned ?? 0,
-            color: "text-amber-500",
+            color: "text-[var(--yu3-warning)]",
           },
         ]
       : []),
@@ -298,7 +300,7 @@ export default function DispatchBoardClient({ today }: Props) {
       key: "active" as FilterStatus,
       label: "Active Crews",
       value: data?.stats.activeCrews ?? 0,
-      color: "text-[#3B82F6]",
+      color: "text-[var(--yu3-info)]",
     },
     {
       key: "completed" as FilterStatus,
@@ -321,11 +323,9 @@ export default function DispatchBoardClient({ today }: Props) {
         {/* Row 1: Title + primary CTA */}
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-bold tracking-[0.14em] uppercase text-[var(--tx3)] leading-snug mb-1.5">
-              Operations
-            </p>
-            <h1 className="admin-page-hero text-[var(--tx)]">Dispatch</h1>
-            <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
+            <p className="yu3-t-eyebrow mb-1.5">Operations</p>
+            <h1 className="admin-page-hero">Dispatch</h1>
+            <p className="text-[13px] text-[var(--yu3-ink-muted)] mt-1.5 max-w-[640px] leading-relaxed">
               Today&apos;s operations at a glance. Active crews, assigned jobs,
               completed moves.
             </p>
@@ -419,7 +419,7 @@ export default function DispatchBoardClient({ today }: Props) {
               />
               Auto-refresh
             </label>
-            <div className="hidden md:block w-px h-4 bg-[var(--brd)]" />
+            <div className="hidden md:block w-px h-4 bg-[var(--yu3-line-subtle)]" />
             <button
               onClick={() => load()}
               disabled={loading}
@@ -456,15 +456,16 @@ export default function DispatchBoardClient({ today }: Props) {
                       )
                   : undefined,
               selected: stat.key != null && filterStatus === stat.key,
-              valueClassName: stat.key != null && filterStatus === stat.key
-                ? undefined
-                : stat.color,
+              valueClassName:
+                stat.key != null && filterStatus === stat.key
+                  ? undefined
+                  : stat.color,
             }))}
           />
         ) : null}
 
         {/* Hairline separator */}
-        <div className="h-px bg-gradient-to-r from-[var(--brd)]/60 via-[var(--brd)]/30 to-transparent" />
+        <div className="h-px bg-gradient-to-r from-[var(--yu3-line)]/60 via-[var(--yu3-line-subtle)]/40 to-transparent" />
       </div>
 
       {/* Routing suggestion */}
@@ -483,9 +484,7 @@ export default function DispatchBoardClient({ today }: Props) {
         <div className="flex flex-col min-h-[320px] lg:min-h-0 overflow-hidden">
           <div className="flex items-start justify-between mb-5 shrink-0 gap-2">
             <div>
-              <h2 className="admin-section-h2 text-[var(--tx2)]">
-                {scheduleTitle}
-              </h2>
+              <h2 className="admin-section-h2">{scheduleTitle}</h2>
               {filterStatus !== "all" && (
                 <button
                   type="button"
@@ -501,7 +500,7 @@ export default function DispatchBoardClient({ today }: Props) {
                 </button>
               )}
             </div>
-            <span className="text-sm text-[var(--tx3)]/82 tabular-nums shrink-0 mt-0.5">
+            <span className="text-sm text-[var(--yu3-ink-muted)] tabular-nums shrink-0 mt-0.5 yu3-num">
               {filteredJobs.length} job{filteredJobs.length !== 1 ? "s" : ""}
             </span>
           </div>
@@ -534,11 +533,9 @@ export default function DispatchBoardClient({ today }: Props) {
         </div>
 
         {/* Right: Activity Feed */}
-        <div className="flex flex-col min-h-[260px] lg:min-h-0 overflow-hidden border-t border-[var(--brd)]/20 lg:border-t-0 lg:border-l lg:border-[var(--brd)]/15 pt-8 lg:pt-0 lg:pl-8 xl:pl-10">
+        <div className="flex flex-col min-h-[260px] lg:min-h-0 overflow-hidden border-t border-[var(--yu3-line-subtle)]/90 lg:border-t-0 lg:border-l lg:border-[var(--yu3-line-subtle)] pt-8 lg:pt-0 lg:pl-8 xl:pl-10">
           <div className="flex items-center justify-between mb-5 shrink-0">
-            <h2 className="admin-section-h2 text-[var(--tx2)]">
-              Activity Feed
-            </h2>
+            <h2 className="admin-section-h2">Activity Feed</h2>
             {unseenEventIds.size > 0 && (
               <button
                 type="button"
@@ -558,71 +555,80 @@ export default function DispatchBoardClient({ today }: Props) {
         </div>
       </div>
 
-      {/* Contact bottom sheet */}
-      {contactJob && (
-        <div
-          className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5 modal-overlay"
-          onClick={() => setContactJob(null)}
+      {contactJob &&
+        createPortal(
+        <ModalDialogFrame
+          onBackdropClick={() => setContactJob(null)}
+          panelClassName="max-w-sm w-full bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] border border-[var(--yu3-line-subtle)] shadow-[var(--yu3-shadow-lg)] rounded-[var(--yu3-r-xl)] p-5 sm:p-6 modal-card"
+          ariaLabelledBy="dispatch-contact-title"
+          panelStyle={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
-          <div
-            className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl p-5 shadow-xl w-full sm:max-w-sm animate-slide-up sm:animate-none"
-            style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="sm:hidden w-9 h-1 rounded-full bg-[var(--brd)] mx-auto mb-4" />
-            <div className="flex items-start justify-between mb-5">
-              <div>
-                <p className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/82 mb-0.5">
-                  Contact Client
-                </p>
-                <h3 className="font-semibold text-[var(--tx)] text-[15px]">
+            <div className="sm:hidden w-9 h-1 rounded-full bg-[var(--yu3-line)] mx-auto mb-4" />
+            <div className="flex items-start justify-between gap-3 mb-5">
+              <div className="min-w-0">
+                <p className="yu3-t-eyebrow mb-1">Contact client</p>
+                <h3
+                  id="dispatch-contact-title"
+                  className="font-semibold text-[var(--yu3-ink-strong)] text-[16px] leading-tight"
+                >
                   {contactJob.client}
                 </h3>
-                <p className="text-sm text-[var(--tx3)] mt-0.5">
+                <p className="text-sm text-[var(--yu3-ink-muted)] mt-0.5 font-mono yu3-num">
                   {contactJob.label}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setContactJob(null)}
-                className="p-2 rounded-xl text-[var(--tx3)] hover:bg-[var(--bg)] transition-colors touch-manipulation"
+                className="p-2 rounded-[var(--yu3-r-md)] text-[var(--yu3-ink-muted)] hover:bg-[var(--yu3-bg-surface-sunken)] transition-colors touch-manipulation shrink-0"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="space-y-2 pb-1">
+            <div
+              className={
+                contactJob.clientPhone || contactJob.clientEmail
+                  ? "divide-y divide-[var(--yu3-line-subtle)]"
+                  : undefined
+              }
+            >
               {contactJob.clientPhone && (
                 <>
                   <a
                     href={`tel:${String(contactJob.clientPhone).replace(/[^\d+]/g, "")}`}
-                    className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--tx2)] hover:bg-[var(--bg2)] transition-colors touch-manipulation"
+                    className="flex items-center gap-3 w-full px-1 py-3.5 text-[var(--yu3-ink)] hover:bg-[var(--yu3-bg-surface-sunken)] transition-colors touch-manipulation"
                   >
-                    <div className="w-9 h-9 rounded-full bg-[var(--grn)]/15 flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-[var(--yu3-success-tint)] flex items-center justify-center shrink-0">
                       <Phone
                         weight="regular"
-                        className="w-4 h-4 text-[var(--grn)]"
+                        className="w-4 h-4 text-[var(--yu3-success)]"
                       />
                     </div>
                     <div>
-                      <p className="text-[15px] font-semibold">Call</p>
-                      <p className="text-sm text-[var(--tx3)] tabular-nums">
+                      <p className="text-[15px] font-semibold text-[var(--yu3-ink-strong)]">
+                        Call
+                      </p>
+                      <p className="text-sm text-[var(--yu3-ink-muted)] tabular-nums yu3-num">
                         {contactJob.clientPhone}
                       </p>
                     </div>
                   </a>
                   <a
                     href={`sms:${String(contactJob.clientPhone).replace(/[^\d+]/g, "")}`}
-                    className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--tx2)] hover:bg-[var(--bg2)] transition-colors touch-manipulation"
+                    className="flex items-center gap-3 w-full px-1 py-3.5 text-[var(--yu3-ink)] hover:bg-[var(--yu3-bg-surface-sunken)] transition-colors touch-manipulation"
                   >
-                    <div className="w-9 h-9 rounded-full bg-[var(--blue)]/15 flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-[var(--yu3-info-tint)] flex items-center justify-center shrink-0">
                       <MessageSquare
                         weight="regular"
-                        className="w-4 h-4 text-[var(--blue)]"
+                        className="w-4 h-4 text-[var(--yu3-info)]"
                       />
                     </div>
                     <div>
-                      <p className="text-[15px] font-semibold">SMS</p>
-                      <p className="text-sm text-[var(--tx3)] tabular-nums">
+                      <p className="text-[15px] font-semibold text-[var(--yu3-ink-strong)]">
+                        SMS
+                      </p>
+                      <p className="text-sm text-[var(--yu3-ink-muted)] tabular-nums yu3-num">
                         {contactJob.clientPhone}
                       </p>
                     </div>
@@ -632,17 +638,19 @@ export default function DispatchBoardClient({ today }: Props) {
               {contactJob.clientEmail && (
                 <a
                   href={`mailto:${contactJob.clientEmail}`}
-                  className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--tx2)] hover:bg-[var(--bg2)] transition-colors touch-manipulation"
+                  className="flex items-center gap-3 w-full px-1 py-3.5 text-[var(--yu3-ink)] hover:bg-[var(--yu3-bg-surface-sunken)] transition-colors touch-manipulation"
                 >
-                  <div className="w-9 h-9 rounded-full bg-[var(--tx3)]/15 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-[var(--yu3-neutral-tint)] flex items-center justify-center shrink-0">
                     <Mail
                       weight="regular"
-                      className="w-4 h-4 text-[var(--tx2)]"
+                      className="w-4 h-4 text-[var(--yu3-ink-muted)]"
                     />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[15px] font-semibold">Email</p>
-                    <p className="text-sm text-[var(--tx3)] truncate break-all">
+                    <p className="text-[15px] font-semibold text-[var(--yu3-ink-strong)]">
+                      Email
+                    </p>
+                    <p className="text-sm text-[var(--yu3-ink-muted)] truncate break-all">
                       {contactJob.clientEmail}
                     </p>
                   </div>
@@ -650,7 +658,7 @@ export default function DispatchBoardClient({ today }: Props) {
               )}
               {!contactJob.clientPhone && !contactJob.clientEmail && (
                 <div className="px-4 py-6 text-center">
-                  <p className="text-sm text-[var(--tx3)]">
+                  <p className="text-sm text-[var(--yu3-ink-muted)]">
                     No contact info on file.
                   </p>
                   <Link
@@ -668,38 +676,37 @@ export default function DispatchBoardClient({ today }: Props) {
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      )}
+        </ModalDialogFrame>,
+        document.body,
+        )}
 
-      {/* Reassign bottom sheet */}
-      {reassignJob && (
-        <div
-          className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5 modal-overlay"
-          onClick={() => setReassignJob(null)}
+      {reassignJob &&
+        createPortal(
+        <ModalDialogFrame
+          onBackdropClick={() => setReassignJob(null)}
+          panelClassName="max-w-sm w-full bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] border border-[var(--yu3-line-subtle)] shadow-[var(--yu3-shadow-lg)] rounded-[var(--yu3-r-xl)] p-5 sm:p-6 modal-card"
+          ariaLabelledBy="dispatch-reassign-title"
+          panelStyle={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
-          <div
-            className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl p-5 shadow-xl w-full sm:max-w-sm animate-slide-up sm:animate-none"
-            style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="sm:hidden w-9 h-1 rounded-full bg-[var(--brd)] mx-auto mb-4" />
-            <div className="flex items-start justify-between mb-5">
-              <div>
-                <p className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/82 mb-0.5">
-                  Reassign Crew
-                </p>
-                <h3 className="font-semibold text-[var(--tx)] text-[15px]">
+            <div className="sm:hidden w-9 h-1 rounded-full bg-[var(--yu3-line)] mx-auto mb-4" />
+            <div className="flex items-start justify-between gap-3 mb-5">
+              <div className="min-w-0">
+                <p className="yu3-t-eyebrow mb-1">Reassign crew</p>
+                <h3
+                  id="dispatch-reassign-title"
+                  className="font-semibold text-[var(--yu3-ink-strong)] text-[16px] font-mono yu3-num leading-tight"
+                >
                   {reassignJob.label}
                 </h3>
-                <p className="text-sm text-[var(--tx3)] mt-0.5">
+                <p className="text-sm text-[var(--yu3-ink-muted)] mt-0.5">
                   {reassignJob.client}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setReassignJob(null)}
-                className="p-2 rounded-xl text-[var(--tx3)] hover:bg-[var(--bg)] transition-colors touch-manipulation"
+                className="p-2 rounded-[var(--yu3-r-md)] text-[var(--yu3-ink-muted)] hover:bg-[var(--yu3-bg-surface-sunken)] transition-colors touch-manipulation shrink-0"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -709,15 +716,15 @@ export default function DispatchBoardClient({ today }: Props) {
                 type="button"
                 onClick={() => handleReassign(reassignJob, null)}
                 disabled={reassigning}
-                className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-colors text-left touch-manipulation disabled:opacity-60"
+                className="flex items-center gap-3 w-full px-4 py-3.5 rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] text-[var(--yu3-ink)] hover:border-[var(--yu3-line)] hover:bg-[var(--yu3-wine-wash)] transition-colors text-left touch-manipulation disabled:opacity-60"
               >
-                <div className="w-9 h-9 rounded-full bg-[var(--gdim)] flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-full bg-[var(--yu3-neutral-tint)] flex items-center justify-center shrink-0">
                   <Users
                     weight="regular"
-                    className="w-4 h-4 text-[var(--tx3)]"
+                    className="w-4 h-4 text-[var(--yu3-ink-muted)]"
                   />
                 </div>
-                <span className="text-[15px] font-semibold text-[var(--tx2)]">
+                <span className="text-[15px] font-semibold text-[var(--yu3-ink)]">
                   Remove crew assignment
                 </span>
               </button>
@@ -727,44 +734,52 @@ export default function DispatchBoardClient({ today }: Props) {
                   type="button"
                   onClick={() => handleReassign(reassignJob, c.id)}
                   disabled={reassigning}
-                  className={`flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border text-left transition-colors touch-manipulation disabled:opacity-60 ${
+                  className={`flex items-center gap-3 w-full px-4 py-3.5 rounded-[var(--yu3-r-lg)] border text-left transition-colors touch-manipulation disabled:opacity-60 ${
                     reassignJob.crewId === c.id
-                      ? "border-[var(--gold)] bg-[var(--gold)]/10"
-                      : "border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5"
+                      ? "border-[var(--yu3-wine)] bg-[var(--yu3-wine-wash)]"
+                      : "border-[var(--yu3-line-subtle)] text-[var(--yu3-ink)] hover:border-[var(--yu3-wine)] hover:bg-[var(--yu3-wine-wash)]"
                   }`}
                 >
                   <div
                     className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
                       reassignJob.crewId === c.id
-                        ? "bg-[var(--gold)]/20"
-                        : "bg-[var(--gdim)]"
+                        ? "bg-[var(--yu3-wine-tint)]"
+                        : "bg-[var(--yu3-neutral-tint)]"
                     }`}
                   >
                     <Users
-                      className={`w-4 h-4 ${reassignJob.crewId === c.id ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}
+                      className={`w-4 h-4 ${
+                        reassignJob.crewId === c.id
+                          ? "text-[var(--yu3-wine)]"
+                          : "text-[var(--yu3-ink-muted)]"
+                      }`}
                     />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p
-                      className={`text-[15px] font-semibold ${reassignJob.crewId === c.id ? "text-[var(--gold)]" : ""}`}
+                      className={`text-[15px] font-semibold ${
+                        reassignJob.crewId === c.id
+                          ? "text-[var(--yu3-wine)]"
+                          : "text-[var(--yu3-ink-strong)]"
+                      }`}
                     >
                       {c.name}
                     </p>
                     {reassignJob.crewId === c.id && (
-                      <p className="text-xs text-[var(--tx3)]">
+                      <p className="text-xs text-[var(--yu3-ink-muted)]">
                         Currently assigned
                       </p>
                     )}
                   </div>
                   {reassignJob.crewId === c.id && (
-                    <CheckCircle2 className="w-4 h-4 text-[var(--gold)] shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-[var(--yu3-wine)] shrink-0" />
                   )}
                 </button>
               ))}
             </div>
-          </div>
-        </div>
-      )}
+        </ModalDialogFrame>,
+        document.body,
+        )}
     </div>
   );
 }

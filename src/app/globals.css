@@ -3868,40 +3868,50 @@ select:focus-visible {
   border-radius: var(--yu3-r-md) !important;
 }
 
-/* Premium crew CTAs — solid forest (no gold gradient). */
+/* Premium crew CTAs — wine primary + off-white type (Yugo+ v3). No forest fill: same as operator. */
 .crew-app .crew-premium-cta,
 [data-crew-portal] .crew-premium-cta {
-  background-color: #2c3e2d !important;
-  /* Must not inherit body --yu3-ink on green (WCAG on accent). */
-  color: #f7fbf5 !important;
+  background-color: #5c1a33 !important;
+  color: #fffbf7 !important;
+  border: 1px solid color-mix(in srgb, #5c1a33 88%, #000) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 4px 14px color-mix(in srgb, #5c1a33 22%, transparent) !important;
   transition:
     background-color 0.15s ease,
     color 0.15s ease,
     opacity 0.15s ease,
     transform 0.1s ease;
 }
-.crew-app[data-yugo-admin-v3] .crew-premium-cta {
-  background-color: var(--yu3-forest) !important;
-  color: var(--yu3-on-forest) !important;
-  box-shadow: 0 4px 16px
-    color-mix(in srgb, var(--yu3-forest) 24%, transparent) !important;
+.crew-app[data-yugo-admin-v3] .crew-premium-cta,
+[data-crew-portal] [data-yugo-admin-v3] .crew-premium-cta {
+  background-color: var(--yu3-wine) !important;
+  /* Hex: never depend on var(--yu3-on-*) in portaled / edge themes (avoids body ink on accent). */
+  color: #fffbf7 !important;
+  border: 1px solid color-mix(in srgb, var(--yu3-wine) 88%, #000) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 4px 16px color-mix(in srgb, var(--yu3-wine) 24%, transparent) !important;
 }
 .crew-app .crew-premium-cta:hover:not(:disabled),
 [data-crew-portal] .crew-premium-cta:hover:not(:disabled) {
-  background-color: #243524 !important;
-  color: #f7fbf5 !important;
+  background-color: #471426 !important;
+  color: #fffbf7 !important;
+  border-color: color-mix(in srgb, #471426 80%, #000) !important;
 }
-.crew-app[data-yugo-admin-v3] .crew-premium-cta:hover:not(:disabled) {
-  background-color: var(--yu3-forest-hover) !important;
-  color: var(--yu3-on-forest) !important;
+.crew-app[data-yugo-admin-v3] .crew-premium-cta:hover:not(:disabled),
+[data-crew-portal] [data-yugo-admin-v3] .crew-premium-cta:hover:not(:disabled) {
+  background-color: var(--yu3-wine-hover) !important;
+  color: #fffbf7 !important;
+  border-color: color-mix(in srgb, var(--yu3-wine-hover) 80%, #000) !important;
 }
 .crew-app a.crew-premium-cta:hover {
-  background-color: #243524 !important;
-  color: #f7fbf5 !important;
+  background-color: #471426 !important;
+  color: #fffbf7 !important;
 }
 .crew-app[data-yugo-admin-v3] a.crew-premium-cta:hover {
-  background-color: var(--yu3-forest-hover) !important;
-  color: var(--yu3-on-forest) !important;
+  background-color: var(--yu3-wine-hover) !important;
+  color: #fffbf7 !important;
 }
 
 /* Crew job detail premium — after square defaults: soft corners + wine primary CTAs (cream ink).
@@ -3927,30 +3937,32 @@ select:focus-visible {
   border-radius: 0 !important;
 }
 
-.crew-app .crew-job-premium .crew-premium-cta,
-.crew-app .crew-job-premium a.crew-premium-cta,
-.crew-app[data-yugo-admin-v3] .crew-job-premium .crew-premium-cta,
-.crew-app[data-yugo-admin-v3] .crew-job-premium a.crew-premium-cta,
+/* Job in main: reinforces wine primary (same as base crew CTA; kept for border/shadow parity). */
+.crew-app main#crew-main .crew-job-premium .crew-premium-cta,
+.crew-app main#crew-main .crew-job-premium a.crew-premium-cta,
+.crew-app[data-yugo-admin-v3] main#crew-main .crew-job-premium .crew-premium-cta,
+.crew-app[data-yugo-admin-v3] main#crew-main .crew-job-premium a.crew-premium-cta,
 [data-crew-portal] [data-crew-job-premium] .crew-premium-cta,
 [data-crew-portal] [data-crew-job-premium] a.crew-premium-cta {
   background-color: var(--yu3-wine) !important;
-  color: var(--yu3-on-wine) !important;
+  /* Explicit off-white: must not read as body --yu3-ink on the accent. */
+  color: #fffbf7 !important;
   border: 1px solid color-mix(in srgb, var(--yu3-wine) 88%, #000) !important;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.08) inset,
     0 4px 14px color-mix(in srgb, var(--yu3-wine) 22%, transparent) !important;
 }
 
-.crew-app .crew-job-premium .crew-premium-cta:hover:not(:disabled),
-.crew-app .crew-job-premium a.crew-premium-cta:hover,
-.crew-app[data-yugo-admin-v3] .crew-job-premium .crew-premium-cta:hover:not(:disabled),
-.crew-app[data-yugo-admin-v3] .crew-job-premium a.crew-premium-cta:hover,
+.crew-app main#crew-main .crew-job-premium .crew-premium-cta:hover:not(:disabled),
+.crew-app main#crew-main .crew-job-premium a.crew-premium-cta:hover,
+.crew-app[data-yugo-admin-v3] main#crew-main .crew-job-premium .crew-premium-cta:hover:not(:disabled),
+.crew-app[data-yugo-admin-v3] main#crew-main .crew-job-premium a.crew-premium-cta:hover,
 [data-crew-portal]
   [data-crew-job-premium]
   .crew-premium-cta:hover:not(:disabled),
 [data-crew-portal] [data-crew-job-premium] a.crew-premium-cta:hover {
   background-color: var(--yu3-wine-hover) !important;
-  color: var(--yu3-on-wine) !important;
+  color: #fffbf7 !important;
   border-color: color-mix(in srgb, var(--yu3-wine-hover) 80%, #000) !important;
 }
 

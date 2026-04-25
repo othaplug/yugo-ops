@@ -60,6 +60,23 @@ function driveTimeFromKm(distanceKm: number | null | undefined): number | null {
   return Math.max(15, Math.round(distanceKm * 1.2));
 }
 
+/** Map quote `preferred_time` (HTML time, e.g. 10:00) to move `scheduled_time` labels used on Create Move. */
+function scheduledTimeFromQuotePreferred(
+  preferred: string | null | undefined,
+): string | null {
+  const raw = (preferred ?? "").trim();
+  if (!raw) return null;
+  const m = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (!m) return null;
+  let h = Number(m[1]);
+  const min = Number(m[2]);
+  if (!Number.isFinite(h) || !Number.isFinite(min)) return null;
+  h = Math.min(23, Math.max(0, h));
+  const ampm = h < 12 ? "AM" : "PM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(min).padStart(2, "0")} ${ampm}`;
+}
+
 type EventLegStored = {
   label?: string;
   from_address?: string;
@@ -266,6 +283,22 @@ export async function createMoveFromQuote(
 
   const moveType = SERVICE_TO_MOVE_TYPE[quote.service_type] ?? "residential";
 
+  const quotePreferredRaw = (
+    quote as { preferred_time?: string | null }
+  ).preferred_time;
+  const quoteWindowRaw = (quote as { arrival_window?: string | null })
+    .arrival_window;
+  const preferredTime =
+    quotePreferredRaw != null && String(quotePreferredRaw).trim() !== ""
+      ? String(quotePreferredRaw).trim()
+      : null;
+  const arrivalWindow =
+    quoteWindowRaw != null && String(quoteWindowRaw).trim() !== ""
+      ? String(quoteWindowRaw).trim()
+      : null;
+  const scheduledTimeFromPreferred =
+    scheduledTimeFromQuotePreferred(preferredTime);
+
   const sharedStatic = {
     service_type: quote.service_type,
     status: "confirmed" as const,
@@ -302,6 +335,10 @@ export async function createMoveFromQuote(
     move_project_id: (quote as { move_project_id?: string | null }).move_project_id ?? null,
 
     client_box_count: clientBoxCountForMove(),
+
+    preferred_time: preferredTime,
+    arrival_window: arrivalWindow,
+    scheduled_time: scheduledTimeFromPreferred,
 
     ...officeFields,
     ...singleItemFields,

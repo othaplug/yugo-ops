@@ -1858,8 +1858,13 @@ export default function MoveDetailClient({
       {/* Financial Snapshot */}
       {(() => {
         const PAY_TOTAL_EPS = 0.05;
-        const quoteTotal = estimate > 0 ? estimate : depositPaid + balanceDue;
         const ctl = contractTaxLines(estimate, Number(move.amount ?? 0));
+        const quoteTotal =
+          ctl.inclusive > 0
+            ? ctl.inclusive
+            : estimate > 0
+              ? estimate
+              : depositPaid + balanceDue;
         const contractInclForLabels =
           ctl.inclusive > 0 ? ctl.inclusive : quoteTotal;
         const ledgerSumAfterTax = paymentLedger.reduce(

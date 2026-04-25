@@ -1,12 +1,15 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { splitOntarioTaxInclusive } from "@/lib/format-currency";
+import {
+  ontarioHstBreakdownFromPreTax,
+  splitOntarioTaxInclusive,
+} from "@/lib/format-currency";
 
 export type AdminClient = ReturnType<typeof createAdminClient>;
 
 export type BalanceSettlementMethod = "card" | "auto-charge" | "client" | "admin";
 
-/** Tax-inclusive deposit from move row (`deposit_amount` and contract totals are stored with HST included). */
-export const depositTaxInclusiveFromMove = (move: {
+/** Pre-tax deposit subtotal from the move (column or 25% of pre-tax `estimate`). */
+export const depositPreTaxFromMove = (move: {
   deposit_amount?: unknown;
   estimate?: unknown;
   amount?: unknown;
@@ -19,6 +22,9 @@ export const depositTaxInclusiveFromMove = (move: {
   return Math.round(estimate * 0.25 * 100) / 100;
 }
 
+/** @deprecated Use `depositPreTaxFromMove` (deposit is pre-tax, HST on top). */
+export const depositTaxInclusiveFromMove = depositPreTaxFromMove
+
 /**
  * Record an admin-confirmed deposit: ledger row + deposit_paid_at + total_paid.
  * Does not clear balance_amount (balance remains due until settled separately).
@@ -26,13 +32,13 @@ export const depositTaxInclusiveFromMove = (move: {
 export async function recordAdminDepositForMove(opts: {
   admin: AdminClient;
   moveId: string;
-  /** Dollars collected for the deposit, tax-inclusive (same units as `moves.deposit_amount`). */
-  depositTaxInclusive: number;
+  /** Pre-tax deposit subtotal (same units as `moves.deposit_amount`). HST is added on top for ledger. */
+  depositPreTax: number;
   paymentMarkedBy: string;
 }): Promise<{ recognized: number }> {
   const { admin, moveId, paymentMarkedBy } = opts;
-  const inclusive = Math.round(opts.depositTaxInclusive * 100) / 100;
-  if (inclusive <= 0) {
+  const preFromOpts = Math.round(opts.depositPreTax * 100) / 100;
+  if (preFromOpts <= 0) {
     throw new Error("Deposit amount is missing or invalid for this move");
   }
 
@@ -57,7 +63,7 @@ export async function recordAdminDepositForMove(opts: {
     throw new Error("Deposit has already been recorded for this move");
   }
 
-  const { preTax, hst } = splitOntarioTaxInclusive(inclusive);
+  const { preTax, hst, inclusive } = ontarioHstBreakdownFromPreTax(preFromOpts);
   const recognized = inclusive;
   const paidAt = new Date().toISOString();
 

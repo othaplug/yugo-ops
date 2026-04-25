@@ -1,9 +1,11 @@
-import { redirect } from "next/navigation"
+export const metadata = { title: "Dispatch" }
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 
-/**
- * Dispatch is folded into the main overview. The board is still available if we
- * add a deep link or tab on /admin in the future.
- */
-export default function DispatchRedirectPage() {
-  redirect("/admin")
+import DispatchBoardClient from "./DispatchBoardClient"
+import { getTodayString } from "@/lib/business-timezone"
+
+export default function AdminDispatchPage() {
+  const today = getTodayString()
+  return <DispatchBoardClient today={today} />
 }

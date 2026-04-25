@@ -1,26 +1,62 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { Plus } from "@phosphor-icons/react"
-import { cn } from "@/design-system/admin/lib/cn"
+import { X } from "@phosphor-icons/react"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
-type FloatingActionOption = {
+export type FloatingActionMenuOption = {
   label: string
-  description?: string
-  onClick: () => void
+  onClick?: () => void
+  href?: string
+  Icon?: React.ReactNode
+  disabled?: boolean
+  title?: string
+  active?: boolean
+  form?: string
 }
 
-type FloatingActionMenuProps = {
-  options: FloatingActionOption[]
+export type FloatingActionMenuProps = {
+  options: FloatingActionMenuOption[]
   className?: string
+  triggerIcon: React.ReactNode
+  triggerLabelClosed?: string
+  triggerLabelOpen?: string
+  align?: "left" | "right"
+  zIndexClass?: string
 }
 
-const FloatingActionMenu = ({ options, className }: FloatingActionMenuProps) => {
+/** White circular FAB: native button avoids shadcn size/ghost merging hiding or shrinking the control. */
+const triggerButtonClass = cn(
+  "inline-flex items-center justify-center",
+  "h-14 w-14 min-h-14 min-w-14 shrink-0 cursor-pointer touch-manipulation rounded-full border-0 bg-white p-0 shadow-[0_2px_14px_rgba(0,0,0,0.08)]",
+  "transition-[transform,box-shadow] active:scale-[0.97] active:shadow-[0_1px_8px_rgba(0,0,0,0.06)]",
+  "hover:bg-white hover:shadow-[0_4px_18px_rgba(0,0,0,0.1)]",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--yu3-bg-canvas)]",
+)
+
+const optionButtonClass = cn(
+  "flex h-9 items-center gap-2 rounded-xl border px-3 text-sm font-medium shadow-[var(--yu3-shadow-md)] backdrop-blur-sm transition-colors",
+  "border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)]/95 text-[var(--yu3-ink-strong)]",
+  "hover:bg-[var(--yu3-bg-surface-sunken)]",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--yu3-bg-canvas)]",
+  "disabled:pointer-events-none disabled:opacity-45",
+)
+
+export function FloatingActionMenu({
+  options,
+  className,
+  triggerIcon,
+  triggerLabelClosed = "Open menu",
+  triggerLabelOpen = "Close menu",
+  align = "left",
+  zIndexClass = "z-[var(--yu3-z-sidebar)]",
+}: FloatingActionMenuProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const ref = React.useRef<HTMLDivElement>(null)
 
-  // Close on outside click
   React.useEffect(() => {
     if (!isOpen) return
     const handleClick = (e: MouseEvent) => {
@@ -32,7 +68,6 @@ const FloatingActionMenu = ({ options, className }: FloatingActionMenuProps) => 
     return () => document.removeEventListener("mousedown", handleClick)
   }, [isOpen])
 
-  // Close on Escape
   React.useEffect(() => {
     if (!isOpen) return
     const handleKey = (e: KeyboardEvent) => {
@@ -42,104 +77,171 @@ const FloatingActionMenu = ({ options, className }: FloatingActionMenuProps) => 
     return () => document.removeEventListener("keydown", handleKey)
   }, [isOpen])
 
+  const handleToggle = () => setIsOpen((v) => !v)
+
+  const close = () => setIsOpen(false)
+
+  const positionClass =
+    align === "right"
+      ? "right-[max(1rem,env(safe-area-inset-right,0px))]"
+      : "left-[max(1rem,env(safe-area-inset-left,0px))]"
+
+  const panelSlideX = align === "right" ? 10 : -10
+  const itemSlideX = align === "right" ? 20 : -20
+
   return (
-    <div ref={ref} className={cn("fixed bottom-8 right-8 z-[var(--yu3-z-modal)]", className)}>
-      {/* Floating trigger */}
+    <div
+      ref={ref}
+      className={cn(
+        "pointer-events-auto fixed bottom-[max(2rem,env(safe-area-inset-bottom,0px)+0.5rem)]",
+        positionClass,
+        zIndexClass,
+        className,
+      )}
+      style={{ zIndex: "var(--z-top)" }}
+    >
       <button
         type="button"
-        onClick={() => setIsOpen((v) => !v)}
-        aria-label={isOpen ? "Close quick actions" : "Open quick actions"}
+        onClick={handleToggle}
+        aria-label={isOpen ? triggerLabelOpen : triggerLabelClosed}
         aria-expanded={isOpen}
-        className={cn(
-          "w-12 h-12 rounded-full",
-          "bg-[var(--yu3-wine)] text-[var(--yu3-on-wine)]",
-          "shadow-[0_4px_24px_rgba(92,26,51,0.35)]",
-          "hover:bg-[var(--yu3-wine-hover)]",
-          "active:scale-95",
-          "transition-[background-color,transform] duration-150 ease-out",
-          "flex items-center justify-center",
-          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)]",
-        )}
+        className={triggerButtonClass}
       >
-        <motion.div
-          animate={{ rotate: isOpen ? 45 : 0 }}
-          transition={{ type: "spring", stiffness: 320, damping: 22, duration: 0.25 }}
-        >
-          <Plus size={20} weight="bold" />
-        </motion.div>
+        <AnimatePresence mode="wait" initial={false}>
+          {isOpen ? (
+            <motion.div
+              key="close"
+              initial={{ opacity: 0, rotate: -45, scale: 0.85 }}
+              animate={{ opacity: 1, rotate: 0, scale: 1 }}
+              exit={{ opacity: 0, rotate: 45, scale: 0.85 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="flex items-center justify-center text-[var(--yu3-wine)]"
+            >
+              <X size={24} weight="bold" aria-hidden />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="trigger"
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="flex items-center justify-center text-[var(--yu3-ink-muted)]"
+            >
+              {triggerIcon}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </button>
 
-      {/* Action items */}
       <AnimatePresence>
-        {isOpen && (
+        {isOpen ? (
           <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.97 }}
-            transition={{ type: "spring", stiffness: 340, damping: 24, duration: 0.2 }}
-            className="absolute bottom-14 right-0 mb-2"
+            initial={{
+              opacity: 0,
+              x: panelSlideX,
+              y: 10,
+              filter: "blur(10px)",
+            }}
+            animate={{ opacity: 1, x: 0, y: 0, filter: "blur(0px)" }}
+            exit={{
+              opacity: 0,
+              x: panelSlideX,
+              y: 10,
+              filter: "blur(10px)",
+            }}
+            transition={{
+              duration: 0.6,
+              type: "spring",
+              stiffness: 300,
+              damping: 20,
+              delay: 0.1,
+            }}
+            className={cn(
+              "absolute bottom-[calc(3.5rem+0.125rem)] mb-0 flex flex-col gap-2",
+              align === "right" ? "right-0 items-end" : "left-0 items-start",
+            )}
           >
-            <div
-              className={cn(
-                "flex flex-col items-end gap-1.5",
-                "rounded-[var(--yu3-r-lg)]",
-              )}
-            >
-              {options.map((option, index) => (
+            {options.map((option, index) => {
+              const activeRing = option.active
+                ? "ring-2 ring-[var(--yu3-wine)]/30 ring-offset-2 ring-offset-[var(--yu3-bg-surface)]"
+                : ""
+
+              const inner = (
+                <>
+                  {option.Icon ? (
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center text-[var(--yu3-wine)] [&_svg]:h-4 [&_svg]:w-4">
+                      {option.Icon}
+                    </span>
+                  ) : null}
+                  <span>{option.label}</span>
+                </>
+              )
+
+              return (
                 <motion.div
-                  key={option.label}
-                  initial={{ opacity: 0, x: 16, y: 4 }}
-                  animate={{ opacity: 1, x: 0, y: 0 }}
-                  exit={{ opacity: 0, x: 16, y: 4 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 340,
-                    damping: 24,
-                    delay: index * 0.04,
-                  }}
+                  key={`${option.label}-${index}`}
+                  initial={{ opacity: 0, x: itemSlideX }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: itemSlideX }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  className={align === "left" ? "self-start" : "self-end"}
                 >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsOpen(false)
-                      option.onClick()
-                    }}
-                    className={cn(
-                      "flex items-center gap-3 h-10 pl-3 pr-4",
-                      "rounded-[var(--yu3-r-md)]",
-                      "bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)]",
-                      "shadow-[0_2px_12px_rgba(0,0,0,0.12)]",
-                      "text-left whitespace-nowrap",
-                      "hover:bg-[var(--yu3-bg-surface-sunken)] hover:border-[var(--yu3-line-strong)]",
-                      "active:scale-[0.98]",
-                      "transition-[background-color,border-color,transform] duration-100",
-          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)]",
-        )}
-      >
-                    <span
+                  {option.href && !option.disabled ? (
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="sm"
+                      className={cn(optionButtonClass, activeRing)}
+                    >
+                      <Link
+                        href={option.href}
+                        onClick={close}
+                        title={option.title}
+                        aria-current={option.active ? "page" : undefined}
+                      >
+                        {inner}
+                      </Link>
+                    </Button>
+                  ) : option.form ? (
+                    <Button
+                      type="submit"
+                      form={option.form}
+                      variant="ghost"
+                      size="sm"
+                      title={option.title}
+                      onClick={close}
                       className={cn(
-                        "flex items-center justify-center w-5 h-5 rounded-full shrink-0",
-                        "bg-[var(--yu3-wine-tint)] text-[var(--yu3-wine)]",
+                        optionButtonClass,
+                        activeRing,
+                        "text-[var(--yu3-danger)] hover:bg-[var(--yu3-danger-tint)]/60",
                       )}
                     >
-                      <Plus size={10} weight="bold" />
-                    </span>
-                    <span className="flex flex-col min-w-0">
-                      <span className="text-[13px] font-semibold text-[var(--yu3-ink-strong)] leading-tight">
-                        {option.label}
-                      </span>
-                      {option.description ? (
-                        <span className="text-[11px] text-[var(--yu3-ink-faint)] leading-tight">
-                          {option.description}
-                        </span>
-                      ) : null}
-                    </span>
-                  </button>
+                      {inner}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={option.disabled}
+                      title={option.title}
+                      onClick={() => {
+                        if (!option.disabled) {
+                          close()
+                          option.onClick?.()
+                        }
+                      }}
+                      className={cn(optionButtonClass, activeRing)}
+                    >
+                      {inner}
+                    </Button>
+                  )}
                 </motion.div>
-              ))}
-            </div>
+              )
+            })}
           </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
     </div>
   )

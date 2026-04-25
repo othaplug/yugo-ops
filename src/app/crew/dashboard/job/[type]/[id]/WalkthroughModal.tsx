@@ -534,16 +534,17 @@ export default function WalkthroughModal({
     >
       <div className="fixed inset-0 z-0 modal-overlay" aria-hidden />
       <Yu3PortaledTokenRoot
+        dataTheme="light"
         data-crew-job-premium
         className="relative z-10 flex w-full max-w-[520px] flex-col overflow-hidden rounded-t-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] sm:rounded-[var(--yu3-r-xl)] modal-card"
         style={{ maxHeight: "min(92dvh, 92vh)" }}
       >
-        <div className="sticky top-0 bg-[#FFFBF7]/80 backdrop-blur-md border-b border-[#2C3E2D]/10 px-5 py-4 z-10 flex items-start justify-between gap-3">
+        <div className="sticky top-0 bg-[var(--yu3-bg-surface)]/85 backdrop-blur-md border-b border-[var(--yu3-line-subtle)] px-5 py-4 z-10 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="font-hero text-[22px] font-semibold text-[#2b1810] tracking-[-0.02em] leading-tight">
+            <h3 className="font-hero text-[22px] font-semibold text-[var(--yu3-ink-strong)] tracking-[-0.02em] leading-tight">
               {modalTitle}
             </h3>
-            <p className="text-[11px] text-[#5C1A33]/50 mt-1.5 leading-snug [font-family:var(--font-body)]">
+            <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1.5 leading-snug [font-family:var(--font-body)]">
               {step === "intro" &&
                 (logistics
                   ? "Verify the manifest with the site contact or receiver."
@@ -615,7 +616,7 @@ export default function WalkthroughModal({
                 </p>
                 <p className="text-[12px] text-[#3d2a26] leading-relaxed [font-family:var(--font-body)]">
                   You cannot set or change prices. Just identify what&apos;s
-                  here and what&apos;s missing — your coordinator will handle
+                  here and what&apos;s missing. Your coordinator will handle
                   any price adjustments.
                 </p>
               </div>
@@ -623,7 +624,7 @@ export default function WalkthroughModal({
                 <button
                   type="button"
                   onClick={() => setStep("checklist")}
-                  className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] [font-family:var(--font-body)] leading-none active:scale-[0.99] transition-transform"
+                  className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] [font-family:var(--font-body)] leading-none active:scale-[0.99] transition-transform"
                 >
                   Start inventory check
                   <CaretRight
@@ -997,7 +998,7 @@ export default function WalkthroughModal({
                       type="button"
                       onClick={addExtraItem}
                       disabled={!selectedItem && !customItemName.trim()}
-                      className="crew-premium-cta flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-bold text-[11px] uppercase tracking-[0.08em] disabled:opacity-40 [font-family:var(--font-body)] leading-none"
+                      className="crew-premium-cta flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-bold text-[11px] uppercase tracking-[0.08em] text-[#fffbf7] disabled:opacity-40 [font-family:var(--font-body)] leading-none"
                     >
                       Add
                       <CaretRight
@@ -1207,13 +1208,13 @@ export default function WalkthroughModal({
         </div>
 
         {/* Footer actions */}
-        <div className="sticky bottom-0 bg-[#FFFBF7] border-t border-[#2C3E2D]/10 px-5 py-4 space-y-2">
+        <div className="sticky bottom-0 bg-[var(--yu3-bg-surface)] border-t border-[var(--yu3-line-subtle)] px-5 py-4 space-y-2">
           {step === "skip" && (
             <>
               <button
                 type="button"
                 onClick={() => onSkip(skipReason)}
-                className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] [font-family:var(--font-body)] leading-none"
+                className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] [font-family:var(--font-body)] leading-none"
               >
                 {logistics ? "Skip verification" : "Skip walkthrough"}
                 <CaretRight
@@ -1238,7 +1239,7 @@ export default function WalkthroughModal({
               <button
                 type="button"
                 onClick={() => setStep("extras")}
-                className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] [font-family:var(--font-body)] leading-none"
+                className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] [font-family:var(--font-body)] leading-none"
               >
                 Continue
                 <CaretRight
@@ -1259,7 +1260,7 @@ export default function WalkthroughModal({
               <button
                 type="button"
                 onClick={() => setStep("summary")}
-                className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] [font-family:var(--font-body)] leading-none"
+                className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] [font-family:var(--font-body)] leading-none"
               >
                 Review summary
                 <CaretRight
@@ -1287,7 +1288,7 @@ export default function WalkthroughModal({
                     type="button"
                     onClick={submitChangeRequest}
                     disabled={submitting}
-                    className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.08em] disabled:opacity-60 [font-family:var(--font-body)] leading-none"
+                    className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.08em] text-[#fffbf7] disabled:opacity-100 disabled:bg-[var(--yu3-wine-press)] [font-family:var(--font-body)] leading-none"
                   >
                     {submitting ? (
                       <>
@@ -1334,7 +1335,7 @@ export default function WalkthroughModal({
                   type="button"
                   onClick={() => void submitNoChanges()}
                   disabled={submitting}
-                  className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.08em] disabled:opacity-60 [font-family:var(--font-body)] leading-none"
+                  className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.08em] text-[#fffbf7] disabled:opacity-100 disabled:bg-[var(--yu3-wine-press)] [font-family:var(--font-body)] leading-none"
                 >
                   {submitting ? (
                     "Saving…"

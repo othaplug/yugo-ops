@@ -74,10 +74,25 @@ const ENTRIES: AppSearchEntry[] = [
     k: ["leads", "mine", "assigned", "own"],
   },
   {
+    name: "Dispatch",
+    href: "/admin/dispatch",
+    type: "Page",
+    sub: "Day board and crew assignments",
+    k: [
+      "dispatch",
+      "board",
+      "day",
+      "schedule",
+      "assign",
+      "jobs",
+      "operations",
+    ],
+  },
+  {
     name: "All moves",
     href: "/admin/moves",
     type: "Page",
-    k: ["moves", "residential", "relocation", "shipments"],
+    k: ["moves", "residential", "relocation", "shipments", "list"],
   },
   {
     name: "B2B jobs",
@@ -207,7 +222,16 @@ const ENTRIES: AppSearchEntry[] = [
     name: "Buildings",
     href: "/admin/buildings",
     type: "Page",
-    k: ["buildings", "condo", "strata", "access", "addresses"],
+    sub: "Platform settings · building and access records",
+    k: [
+      "buildings",
+      "condo",
+      "strata",
+      "access",
+      "addresses",
+      "platform",
+      "settings",
+    ],
   },
   {
     name: "Claims",
@@ -288,12 +312,6 @@ const ENTRIES: AppSearchEntry[] = [
       "companies",
       "customers",
     ],
-  },
-  {
-    name: "Dispatch board",
-    href: "/admin/dispatch",
-    type: "Page",
-    k: ["dispatch", "board", "day", "schedule", "assign"],
   },
   {
     name: "Change requests",

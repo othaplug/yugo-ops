@@ -52,6 +52,7 @@ export default function SettingsHubNav({
   ];
 
   const platformItems: NavItem[] = [
+    { href: "/admin/buildings", label: "Buildings" },
     {
       href: "/admin/settings/platform/feature-flags",
       label: "Feature flags",

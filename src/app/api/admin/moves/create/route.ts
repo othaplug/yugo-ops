@@ -13,6 +13,7 @@ import { isSuperAdminEmail } from "@/lib/super-admin";
 import { estimateLabourFromScore } from "@/lib/inventory-labour";
 import { calcEstimatedCost, calcEstimatedMarginPct, getMarginFlag } from "@/lib/pricing/engine";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
+import { ontarioHstBreakdownFromPreTax } from "@/lib/format-currency";
 
 /** DB `service_type` CHECK — align with `move_type` from Create Move. */
 const MOVE_TYPE_TO_SERVICE_TYPE: Record<string, string> = {
@@ -335,7 +336,10 @@ export async function POST(req: NextRequest) {
         from_lng: fromLng,
         to_lat: toLat,
         to_lng: toLng,
-        amount: estimate,
+        amount:
+          estimate > 0
+            ? ontarioHstBreakdownFromPreTax(estimate).inclusive
+            : 0,
         estimate,
         status: "confirmed",
         stage: "quote",

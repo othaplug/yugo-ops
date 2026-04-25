@@ -8,12 +8,12 @@ import {
 } from "@/lib/crew/end-of-day-report";
 
 const AUTO_NOTE =
-  "[System] End-of-day report auto-generated at 11:50 PM (app timezone) because no report had been submitted for this date.";
+  "[System] End-of-day report auto-generated at 11:59 PM (app timezone) because no report had been submitted for this date.";
 
 /**
- * Vercel Cron: runs every 5 minutes; only acts during 23:50–23:59 in APP_TIMEZONE.
- * Creates an end-of-day report for each crew team that had jobs on the board or tracking
- * activity for the calendar day, if no report exists yet for that team/date.
+ * Vercel Cron: must run at least every minute (see `vercel.json`) so 11:59 PM in APP_TIMEZONE
+ * is hit. Only that minute creates a report. Creates an EOD for each team that had work or
+ * tracking for the day if no report exists for that team/date.
  */
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -25,8 +25,8 @@ export async function GET(req: NextRequest) {
   const now = new Date();
   const { hour, minute } = getLocalClockPartsInAppTimezone(now, tz);
 
-  if (hour !== 23 || minute < 50) {
-    return NextResponse.json({ ok: true, skipped: "outside_2350_window", tz, hour, minute });
+  if (hour !== 23 || minute !== 59) {
+    return NextResponse.json({ ok: true, skipped: "not_2359", tz, hour, minute });
   }
 
   const today = getTodayString(tz);

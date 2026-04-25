@@ -53,13 +53,13 @@ export default function CrewJobTimer({
     ? "bg-red-500"
     : showTimeBanner
       ? "bg-amber-500"
-      : "bg-[#2C3E2D]"
+      : "bg-[var(--yu3-wine)]"
 
   const shellClass = showMarginBanner
-    ? "border-red-500/25 bg-white"
+    ? "border-red-500/25 bg-[var(--yu3-bg-surface)]"
     : showTimeBanner
-      ? "border-amber-500/30 bg-white"
-      : "border-[#5C1A33]/[0.1] bg-white"
+      ? "border-amber-500/30 bg-[var(--yu3-bg-surface)]"
+      : "border-[var(--yu3-wine)]/10 bg-[var(--yu3-bg-surface)]"
 
   const startFinish = useMemo(() => {
     const raw = startedAtIso?.trim()
@@ -88,7 +88,7 @@ export default function CrewJobTimer({
   return (
     <div
       data-job-time-tracker
-      className={`mb-4 overflow-hidden rounded-[20px] border shadow-[0_2px_24px_rgba(44,62,45,0.08)] [color-scheme:light] ${shellClass}`}
+      className={`mb-4 overflow-hidden rounded-[20px] border border-[var(--yu3-line-subtle)] shadow-[var(--yu3-shadow-md)] [color-scheme:light] ${shellClass}`}
       aria-label="Job time tracker"
     >
       {(showMarginBanner || showTimeBanner) && (
@@ -117,7 +117,7 @@ export default function CrewJobTimer({
       )}
 
       <div className="px-4 pt-3">
-        <div className="h-[2px] w-full overflow-hidden rounded-full bg-zinc-200/90">
+        <div className="h-[2px] w-full overflow-hidden rounded-full bg-[var(--yu3-line-subtle)]">
           <div
             className={`h-full rounded-full transition-[width] duration-700 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${barFill}`}
             style={{ width: `${percentUsed}%` }}
@@ -127,22 +127,22 @@ export default function CrewJobTimer({
 
       <div className="grid grid-cols-2 gap-4 px-5 pb-1 pt-4">
         <div className="min-w-0 text-left">
-          <p className="mb-1.5 text-[10px] font-medium uppercase leading-none tracking-[0.22em] text-zinc-400 [font-family:var(--font-body)]">
+          <p className="mb-1.5 text-[10px] font-medium uppercase leading-none tracking-[0.22em] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
             Start
           </p>
-          <p className="text-[15px] font-semibold leading-tight tracking-[-0.02em] text-zinc-800 tabular-nums [font-family:var(--font-body)]">
+          <p className="text-[15px] font-semibold leading-tight tracking-[-0.02em] text-[var(--yu3-ink)] tabular-nums [font-family:var(--font-body)]">
             {startFinish.startLabel ?? (
-              <span className="font-medium text-zinc-400">Not started</span>
+              <span className="font-medium text-[var(--yu3-ink-faint)]">Not started</span>
             )}
           </p>
         </div>
         <div className="min-w-0 text-right">
-          <p className="mb-1.5 text-[10px] font-medium uppercase leading-none tracking-[0.22em] text-zinc-400 [font-family:var(--font-body)]">
+          <p className="mb-1.5 text-[10px] font-medium uppercase leading-none tracking-[0.22em] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
             Est. finish
           </p>
-          <p className="text-[15px] font-semibold leading-tight tracking-[-0.02em] text-zinc-800 tabular-nums [font-family:var(--font-body)]">
+          <p className="text-[15px] font-semibold leading-tight tracking-[-0.02em] text-[var(--yu3-ink)] tabular-nums [font-family:var(--font-body)]">
             {startFinish.finishLabel ?? (
-              <span className="font-medium text-zinc-400">Not started</span>
+              <span className="font-medium text-[var(--yu3-ink-faint)]">Not started</span>
             )}
           </p>
         </div>
@@ -155,19 +155,19 @@ export default function CrewJobTimer({
               ? "text-red-600"
               : showTimeBanner
                 ? "text-amber-600"
-                : "text-[#2C3E2D]"
+                : "text-[var(--yu3-wine)]"
           }`}
         >
           {primaryHhMm}
         </span>
-        <span className="pb-0.5 text-[11px] font-medium text-zinc-500 [font-family:var(--font-body)]">
+        <span className="pb-0.5 text-[11px] font-medium text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
           {primarySuffix}
         </span>
       </div>
 
-      <div className="mx-5 h-px bg-zinc-200/90" aria-hidden />
+      <div className="mx-5 h-px bg-[var(--yu3-line-subtle)]" aria-hidden />
 
-      <p className="px-5 py-2.5 text-center text-[10px] font-medium leading-relaxed text-zinc-500 [font-family:var(--font-body)]">
+      <p className="px-5 py-2.5 text-center text-[10px] font-medium leading-relaxed text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
         {showMarginBanner ? (
           <span className="text-red-700/95">
             Internal model projects less than half of planned margin dollars at this pace.
@@ -177,7 +177,7 @@ export default function CrewJobTimer({
             Job is tracking past the allocated window. Finish critical path first.
           </span>
         ) : !startedAtIso ? (
-          <span className="text-zinc-500">
+          <span className="text-[var(--yu3-ink-muted)]">
             Est. finish appears once the job timer has started.
           </span>
         ) : remainMin <= 15 && remainMin > 0 ? (
@@ -185,7 +185,7 @@ export default function CrewJobTimer({
             Only {formatMinutesAsHhMm(remainMin)} left at planned pace
           </span>
         ) : (
-          <span className="text-zinc-500">
+          <span className="text-[var(--yu3-ink-muted)]">
             {percentUsed}% of allocated window used ·{" "}
             {formatMinutesAsHhMm(Math.round(target))} allocated
           </span>

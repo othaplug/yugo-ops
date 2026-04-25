@@ -3,7 +3,12 @@ import "server-only"
 import { loadRevenueForecastData } from "@/lib/admin/revenue-forecast-data"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getMoveCode } from "@/lib/move-code"
-import { getTodayString } from "@/lib/business-timezone"
+import {
+  addCalendarDaysYmd,
+  getAppTimezone,
+  getTodayString,
+  utcInstantForCalendarDateInTz,
+} from "@/lib/business-timezone"
 import { formatCompactCurrency } from "@/lib/format-currency"
 import { toTitleCase } from "@/lib/format-text"
 import {
@@ -25,6 +30,29 @@ import {
 
 const DATA_WINDOW_DAYS = 730
 const PAID_DLV_FOR_DAY = new Set(["delivered", "completed"])
+
+/** Normalize DB `date` / timestamptz to YYYY-MM-DD for calendar comparisons. */
+function scheduleDateYmd(row: { scheduled_date?: unknown }): string {
+  const v = row.scheduled_date
+  if (v == null || v === "") return ""
+  return String(v).trim().slice(0, 10)
+}
+
+function mergeRowsById(
+  primary: Record<string, unknown>[],
+  extra: Record<string, unknown>[],
+): Record<string, unknown>[] {
+  const map = new Map<string, Record<string, unknown>>()
+  for (const row of primary) {
+    const id = String((row as { id?: string }).id ?? "")
+    if (id) map.set(id, row)
+  }
+  for (const row of extra) {
+    const id = String((row as { id?: string }).id ?? "")
+    if (id && !map.has(id)) map.set(id, row)
+  }
+  return Array.from(map.values())
+}
 
 export type CommandCenterJob = {
   id: string
@@ -300,8 +328,31 @@ export const loadCommandCenterData = async () => {
   const leadPulse = leadPulseResult.data
   const revenueForecast = revenueForecastResult
 
-  const allDeliveries = (deliveries || []) as Record<string, unknown>[]
-  const allMoves = (moves || []) as Record<string, unknown>[]
+  const scheduleHorizon = addCalendarDaysYmd(today, 120)
+  const [{ data: movesScheduledExtra }, { data: deliveriesScheduledExtra }] =
+    await Promise.all([
+      admin
+        .from("moves")
+        .select("*")
+        .gte("scheduled_date", today)
+        .lte("scheduled_date", scheduleHorizon)
+        .limit(5000),
+      admin
+        .from("deliveries")
+        .select("*")
+        .gte("scheduled_date", today)
+        .lte("scheduled_date", scheduleHorizon)
+        .limit(5000),
+    ])
+
+  const allDeliveries = mergeRowsById(
+    (deliveries || []) as Record<string, unknown>[],
+    (deliveriesScheduledExtra || []) as Record<string, unknown>[],
+  )
+  const allMoves = mergeRowsById(
+    (moves || []) as Record<string, unknown>[],
+    (movesScheduledExtra || []) as Record<string, unknown>[],
+  )
   const allInvoices = (invoices || []) as Record<string, unknown>[]
 
   const moveIdList = allMoves
@@ -409,12 +460,12 @@ export const loadCommandCenterData = async () => {
   )
 
   const DONE_DELIVERY = new Set(["delivered", "cancelled", "rejected"])
+  /** Terminal job states only. Omit "paid": it is a payment flag; the move can still be on today's board (matches dispatch). */
   const DONE_MOVE = new Set([
     "completed",
     "cancelled",
     "delivered",
     "done",
-    "paid",
   ])
 
   const mapDelivery = (d: Record<string, unknown>): CommandCenterJob => {
@@ -427,7 +478,7 @@ export const loadCommandCenterData = async () => {
       subtitle,
       time: String(d.time_slot || "TBD"),
       status: String(d.status || "pending").toLowerCase(),
-      date: String(d.scheduled_date || ""),
+      date: scheduleDateYmd(d),
       tag: String(d.category || "Delivery"),
       delivery_number: d.delivery_number ? String(d.delivery_number) : null,
       fromAddress: d.pickup_address != null ? String(d.pickup_address) : null,
@@ -450,14 +501,23 @@ export const loadCommandCenterData = async () => {
         : null
     const wb = m.weather_brief
     const weatherBrief = isMoveWeatherBrief(wb) ? wb : null
+    const moveTimeRaw =
+      m.scheduled_time ||
+      m.time_slot ||
+      m.preferred_time ||
+      m.arrival_window
+    const moveTime =
+      moveTimeRaw != null && String(moveTimeRaw).trim() !== ""
+        ? String(moveTimeRaw).trim()
+        : "TBD"
     return {
       id: String(m.id),
       type: "move",
       name: String(m.client_name || "Move"),
       subtitle,
-      time: String(m.scheduled_time || m.time_slot || "TBD"),
+      time: moveTime,
       status: effectiveMoveListStatus(m) || String(m.status || "confirmed").toLowerCase(),
-      date: String(m.scheduled_date || ""),
+      date: scheduleDateYmd(m),
       tag:
         m.service_type === "office_move"
           ? "Office"
@@ -483,10 +543,10 @@ export const loadCommandCenterData = async () => {
 
   const todayJobs: CommandCenterJob[] = [
     ...activeDeliveries
-      .filter((d) => String(d.scheduled_date || "") === today)
+      .filter((d) => scheduleDateYmd(d) === today)
       .map(mapDelivery),
     ...activeMoves
-      .filter((m) => String(m.scheduled_date || "") === today)
+      .filter((m) => scheduleDateYmd(m) === today)
       .map(mapMove),
   ].sort((a, b) => {
     const ta = a.time.replace(/[^0-9:]/g, "")
@@ -497,13 +557,13 @@ export const loadCommandCenterData = async () => {
   const upcomingJobs: CommandCenterJob[] = [
     ...activeDeliveries
       .filter((d) => {
-        const sd = String(d.scheduled_date || "")
+        const sd = scheduleDateYmd(d)
         return sd > today || !d.scheduled_date
       })
       .map(mapDelivery),
     ...activeMoves
       .filter((m) => {
-        const sd = String(m.scheduled_date || "")
+        const sd = scheduleDateYmd(m)
         return sd > today || !m.scheduled_date
       })
       .map(mapMove),
@@ -733,9 +793,7 @@ export const loadCommandCenterData = async () => {
     revenueByYear.push({ label: String(y), moves: mSum, partner: pSum })
   }
 
-  const d72h = new Date()
-  d72h.setDate(d72h.getDate() + 3)
-  const cutoff72h = d72h.toISOString().slice(0, 10)
+  const cutoff72h = addCalendarDaysYmd(today, 3)
 
   type UnassignedJob = {
     id: string
@@ -748,7 +806,7 @@ export const loadCommandCenterData = async () => {
   const unassignedJobs: UnassignedJob[] = []
 
   for (const m of activeMoves) {
-    const sd = String(m.scheduled_date || "")
+    const sd = scheduleDateYmd(m)
     if (!m.crew_id && sd >= today && sd <= cutoff72h) {
       const code = m.move_code
         ? String(m.move_code).replace(/^#/, "").trim().toUpperCase()
@@ -764,7 +822,7 @@ export const loadCommandCenterData = async () => {
     }
   }
   for (const d of activeDeliveries) {
-    const sd = String(d.scheduled_date || "")
+    const sd = scheduleDateYmd(d)
     if (!d.crew_id && sd >= today && sd <= cutoff72h) {
       const code = d.delivery_number ? String(d.delivery_number) : "Delivery"
       unassignedJobs.push({
@@ -789,25 +847,25 @@ export const loadCommandCenterData = async () => {
   const crewCapacity: CrewCapacityDay[] = []
   const dayLabels = ["Today", "Tomorrow"]
   for (let offset = 0; offset < 3; offset++) {
-    const d = new Date()
-    d.setDate(d.getDate() + offset)
-    const ds = d.toISOString().slice(0, 10)
+    const ds = addCalendarDaysYmd(today, offset)
+    const tz = getAppTimezone()
     const label =
       offset < 2
         ? dayLabels[offset]
-        : d.toLocaleDateString("en-US", {
+        : new Intl.DateTimeFormat("en-US", {
             weekday: "short",
             month: "short",
             day: "numeric",
-          })
+            timeZone: tz,
+          }).format(utcInstantForCalendarDateInTz(ds, tz))
 
     const bookedCrewIds = new Set<string>()
     for (const m of activeMoves) {
-      if (String(m.scheduled_date || "") === ds && m.crew_id)
+      if (scheduleDateYmd(m) === ds && m.crew_id)
         bookedCrewIds.add(String(m.crew_id))
     }
     for (const dl of activeDeliveries) {
-      if (String(dl.scheduled_date || "") === ds && dl.crew_id)
+      if (scheduleDateYmd(dl) === ds && dl.crew_id)
         bookedCrewIds.add(String(dl.crew_id))
     }
     crewCapacity.push({
@@ -872,10 +930,10 @@ export const loadCommandCenterData = async () => {
   }
 
   const todayMovesList = allMoves.filter(
-    (m) => String(m.scheduled_date || "") === today,
+    (m) => scheduleDateYmd(m) === today,
   )
   const todayDeliveriesAll = allDeliveries.filter(
-    (d) => String(d.scheduled_date || "") === today,
+    (d) => scheduleDateYmd(d) === today,
   )
 
   let potentialEarnings = 0

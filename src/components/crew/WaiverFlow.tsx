@@ -189,7 +189,7 @@ export const WaiverFlow = ({
       style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
       role="presentation"
     >
-      <Yu3PortaledTokenRoot className="min-h-0 w-full flex-1 overflow-y-auto">
+      <Yu3PortaledTokenRoot dataTheme="light" className="min-h-0 w-full flex-1 overflow-y-auto">
         <div className="min-h-full p-4 max-w-lg mx-auto pb-8">
           {error && (
             <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[11px] text-red-800">
@@ -202,8 +202,8 @@ export const WaiverFlow = ({
               className="bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] rounded-2xl p-6 text-center shadow-2xl"
               data-crew-job-premium
             >
-              <div className="w-14 h-14 rounded-2xl bg-[#2C3E2D]/10 flex items-center justify-center mx-auto mb-4">
-                <SealCheck size={32} weight="bold" className="text-[#243524]" aria-hidden />
+              <div className="w-14 h-14 rounded-2xl bg-[var(--yu3-wine-tint)] flex items-center justify-center mx-auto mb-4">
+                <SealCheck size={32} weight="bold" className="text-[var(--yu3-wine)]" aria-hidden />
               </div>
               <h2 className="font-hero text-[22px] font-bold text-[var(--yu3-ink)] mb-2">
                 Waiver saved
@@ -214,7 +214,7 @@ export const WaiverFlow = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[48px] font-bold text-[11px] uppercase tracking-[0.1em] [font-family:var(--font-body)] leading-none"
+                className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[48px] font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] [font-family:var(--font-body)] leading-none"
               >
                 Done
                 <CaretRight size={16} weight="bold" className="shrink-0 opacity-95" aria-hidden />
@@ -363,7 +363,7 @@ export const WaiverFlow = ({
                   type="button"
                   disabled={!canGenerate}
                   onClick={() => setStep("hand_to_client")}
-                  className="flex-1 crew-premium-cta inline-flex items-center justify-center gap-1 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] disabled:opacity-40 rounded-xl"
+                  className="flex-1 crew-premium-cta inline-flex items-center justify-center gap-1 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#fffbf7] disabled:opacity-40 rounded-xl"
                 >
                   Generate waiver
                   <CaretRight size={16} weight="bold" aria-hidden />
@@ -395,7 +395,7 @@ export const WaiverFlow = ({
               <button
                 type="button"
                 onClick={() => setStep("client_view")}
-                className="w-full crew-premium-cta inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.08em] [font-family:var(--font-body)] leading-none rounded-xl"
+                className="w-full crew-premium-cta inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.08em] text-[#fffbf7] [font-family:var(--font-body)] leading-none rounded-xl"
               >
                 Ready, show waiver to client
                 <CaretRight size={18} weight="bold" aria-hidden />

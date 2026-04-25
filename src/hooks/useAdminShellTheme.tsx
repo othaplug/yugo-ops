@@ -53,16 +53,19 @@ export function useAdminShellTheme(): "light" | "dark" {
 export type Yu3PortaledTokenRootProps = {
   className?: string
   children: ReactNode
+  /** When set, locks portaled yu3 tokens (e.g. crew modals that must match `data-theme="light"` on `.crew-app`). */
+  dataTheme?: "light" | "dark"
 } & Omit<ComponentProps<"div">, "children">
 
 /**
  * Use as the direct child of `createPortal(..., document.body)` (or wrap the solid panel
  * so children resolve `var(--yu3-*)` from tokens.css).
  */
-export function Yu3PortaledTokenRoot({ className, children, ...rest }: Yu3PortaledTokenRootProps) {
-  const theme = useAdminShellTheme()
+export function Yu3PortaledTokenRoot({ className, children, dataTheme, ...rest }: Yu3PortaledTokenRootProps) {
+  const shellTheme = useAdminShellTheme()
+  const t = dataTheme ?? shellTheme
   return (
-    <div data-yugo-admin-v3="" data-theme={theme} className={className} {...rest}>
+    <div data-yugo-admin-v3="" data-theme={t} className={className} {...rest}>
       {children}
     </div>
   )
