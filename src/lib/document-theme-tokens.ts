@@ -20,12 +20,14 @@ export function applyDocumentLightTheme(): void {
   root.setProperty("--tx3", "#3F3A36");
   root.setProperty("--brd", "#CBC4B8");
   root.setProperty("--hover", "#F5F3F0");
-  root.setProperty("--gold", "#8C6E2F");
-  root.setProperty("--gold2", "#7A5E25");
-  root.setProperty("--gdim", "rgba(140, 110, 47, 0.1)");
-  root.setProperty("--text-accent", "#8C6E2F");
-  root.setProperty("--admin-primary-fill", "#8C6E2F");
-  root.setProperty("--admin-primary-fill-hover", "#7A5E25");
+  /* Gold accent retired (P2.2). All `--gold*` slots resolve to wine so legacy
+   * components render canonical brand color until they are migrated. */
+  root.setProperty("--gold", "#5C1A33");
+  root.setProperty("--gold2", "#471426");
+  root.setProperty("--gdim", "rgba(92, 26, 51, 0.08)");
+  root.setProperty("--text-accent", "#1A1410");
+  root.setProperty("--admin-primary-fill", "#5C1A33");
+  root.setProperty("--admin-primary-fill-hover", "#471426");
   root.setProperty("--btn-text-on-accent", "#FFFFFF");
   root.setProperty("--grn", "#1D8A47");
   root.setProperty("--grdim", "rgba(29, 138, 71, 0.08)");

@@ -148,13 +148,14 @@
   --bg2: #ffffff;
   --card: #ffffff;
   /* Hairline borders + strong secondary contrast on white */
-  --brd: #cbc4b8;
-  --tx: #141210;
-  --tx2: #252220;
-  --tx3: #3f3a36;
-  --gold: #8c6e2f;
-  --gold2: #7a5e25;
-  --gdim: rgba(140, 110, 47, 0.1);
+  --brd: #e1dbcb;
+  --tx: #1a1410;
+  --tx2: #2b2420;
+  --tx3: #6b6259;
+  /* Gold accent retired — all `--gold*` slots resolve to wine. */
+  --gold: #5c1a33;
+  --gold2: #471426;
+  --gdim: rgba(92, 26, 51, 0.08);
   --grn: #1d8a47;
   --grdim: rgba(29, 138, 71, 0.08);
   --org: #c27a14;
@@ -164,15 +165,18 @@
   --red: #b83030;
   --rdim: rgba(184, 48, 48, 0.1);
   --btn-text-on-accent: #ffffff;
-  --hover: #f5f3f0;
-  --surface: #f5f4f1;
+  --hover: #faf7f2;
+  --surface: #fbf9f4;
   --surface-raised: #ffffff;
   --surface-card: #ffffff;
-  --surface-border: #ddd9d2;
-  --text-primary: #141210;
-  --text-secondary: #252220;
-  --text-tertiary: #3f3a36;
-  --text-accent: #8c6e2f;
+  --surface-border: #e1dbcb;
+  --text-primary: #1a1410;
+  --text-secondary: #2b2420;
+  --text-tertiary: #6b6259;
+  --text-accent: #1a1410;
+  /* admin-primary-fill defaults to wine; gold legacy retired. */
+  --admin-primary-fill: #5c1a33;
+  --admin-primary-fill-hover: #471426;
 
   --yugo-primary-text: #2b0416;
   --yugo-accent: #66143d;
