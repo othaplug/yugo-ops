@@ -149,7 +149,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                   "px-4 sm:px-5",
                   immersiveNav
                     ? "pt-0 pb-0"
-                    : "pt-[env(safe-area-inset-top,0px)] pb-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px))]",
+                    : "pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px))]",
                 )}
               >
                 {children}

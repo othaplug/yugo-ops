@@ -38,11 +38,10 @@ const triggerButtonClass = cn(
 )
 
 const optionButtonClass = cn(
-  "flex h-9 items-center gap-2 rounded-xl border px-3 text-sm font-medium shadow-[var(--yu3-shadow-md)] backdrop-blur-sm transition-colors",
-  "border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)]/95 text-[var(--yu3-ink-strong)]",
+  "flex h-9 min-w-0 items-center gap-2 rounded-xl border-0 bg-white px-3 text-sm font-medium text-[var(--yu3-ink-strong)] shadow-[0_2px_12px_rgba(0,0,0,0.1)] transition-colors",
   "hover:bg-[var(--yu3-bg-surface-sunken)]",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--yu3-bg-canvas)]",
-  "disabled:pointer-events-none disabled:opacity-45",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+  "disabled:pointer-events-none disabled:bg-white disabled:text-[var(--yu3-ink-faint)]",
 )
 
 export function FloatingActionMenu({
@@ -164,7 +163,7 @@ export function FloatingActionMenu({
           >
             {options.map((option, index) => {
               const activeRing = option.active
-                ? "ring-2 ring-[var(--yu3-wine)]/30 ring-offset-2 ring-offset-[var(--yu3-bg-surface)]"
+                ? "ring-2 ring-[var(--yu3-wine)]/35 ring-offset-2 ring-offset-white"
                 : ""
 
               const inner = (
@@ -214,7 +213,7 @@ export function FloatingActionMenu({
                       className={cn(
                         optionButtonClass,
                         activeRing,
-                        "text-[var(--yu3-danger)] hover:bg-[var(--yu3-danger-tint)]/60",
+                        "text-[var(--yu3-danger)] hover:bg-[var(--yu3-danger-tint)]",
                       )}
                     >
                       {inner}
