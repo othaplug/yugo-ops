@@ -6,13 +6,11 @@ import { cn } from "../lib/cn"
 export function EmptyState({
   title,
   description,
-  icon,
   action,
   className,
 }: {
   title: string
   description?: React.ReactNode
-  icon?: React.ReactNode
   action?: React.ReactNode
   className?: string
 }) {
@@ -25,11 +23,6 @@ export function EmptyState({
         className,
       )}
     >
-      {icon ? (
-        <div className="h-12 w-12 rounded-full bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] inline-flex items-center justify-center text-[var(--yu3-ink-muted)]">
-          {icon}
-        </div>
-      ) : null}
       <div className="max-w-[420px]">
         <h3 className="text-[15px] font-semibold text-[var(--yu3-ink-strong)]">
           {title}

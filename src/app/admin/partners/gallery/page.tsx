@@ -10,24 +10,34 @@ import SectionDivider from "@/components/ui/SectionDivider";
 
 export default async function GalleryPage() {
   const db = createAdminClient();
-  const [
-    { data: orgs },
-    { data: projects },
-    { data: invoices },
-  ] = await Promise.all([
-    db.from("organizations").select("id, name, contact_name, email, created_at").eq("type", "gallery").order("name"),
-    db.from("gallery_projects").select("id, created_at"),
-    db.from("invoices").select("client_name, amount, status, created_at"),
-  ]);
+  const [{ data: orgs }, { data: projects }, { data: invoices }] =
+    await Promise.all([
+      db
+        .from("organizations")
+        .select("id, name, contact_name, email, created_at")
+        .eq("type", "gallery")
+        .order("name"),
+      db.from("gallery_projects").select("id, created_at"),
+      db.from("invoices").select("client_name, amount, status, created_at"),
+    ]);
 
   const galleryPartners = orgs || [];
   const projectCount = projects?.length ?? 0;
-  const galleryNames = new Set(galleryPartners.map((o) => o.name).filter(Boolean));
-  const galleryInvoices = (invoices || []).filter((i) => i.client_name && galleryNames.has(i.client_name));
+  const galleryNames = new Set(
+    galleryPartners.map((o) => o.name).filter(Boolean),
+  );
+  const galleryInvoices = (invoices || []).filter(
+    (i) => i.client_name && galleryNames.has(i.client_name),
+  );
   const paid = galleryInvoices.filter((i) => i.status === "paid");
-  const outstanding = galleryInvoices.filter((i) => i.status === "sent" || i.status === "overdue");
+  const outstanding = galleryInvoices.filter(
+    (i) => i.status === "sent" || i.status === "overdue",
+  );
   const revenueTotal = paid.reduce((s, i) => s + Number(i.amount || 0), 0);
-  const outstandingTotal = outstanding.reduce((s, i) => s + Number(i.amount || 0), 0);
+  const outstandingTotal = outstanding.reduce(
+    (s, i) => s + Number(i.amount || 0),
+    0,
+  );
 
   const now = new Date();
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -60,19 +70,41 @@ export default async function GalleryPage() {
     .reduce((s, i) => s + Number(i.amount || 0), 0);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <div className="mb-6"><BackButton label="Partners" href="/admin/platform?tab=partners" /></div>
+    <div className="w-full min-w-0 py-5 md:py-6 animate-fade-up">
+      <div className="mb-6">
+        <BackButton label="Partners" href="/admin/platform?tab=partners" />
+      </div>
 
       <div className="mb-8">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Partners</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">
+          Partners
+        </p>
         <h1 className="admin-page-hero text-[var(--tx)]">Gallery</h1>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
-        <KpiCard label="Partners" value={String(galleryPartners.length)} sub="active accounts" />
-        <KpiCard label="Projects" value={String(projectCount)} sub={`${projectsThisMonth} this month`} />
-        <KpiCard label="Revenue" value={formatCompactCurrency(revenueTotal)} sub="paid invoices" accent />
-        <KpiCard label="Outstanding" value={formatCompactCurrency(outstandingTotal)} sub="awaiting payment" warn={outstandingTotal > 0} />
+        <KpiCard
+          label="Partners"
+          value={String(galleryPartners.length)}
+          sub="active accounts"
+        />
+        <KpiCard
+          label="Projects"
+          value={String(projectCount)}
+          sub={`${projectsThisMonth} this month`}
+        />
+        <KpiCard
+          label="Revenue"
+          value={formatCompactCurrency(revenueTotal)}
+          sub="paid invoices"
+          accent
+        />
+        <KpiCard
+          label="Outstanding"
+          value={formatCompactCurrency(outstandingTotal)}
+          sub="awaiting payment"
+          warn={outstandingTotal > 0}
+        />
       </div>
 
       <SectionDivider label="Projects & Partners" />

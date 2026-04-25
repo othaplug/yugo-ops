@@ -143,7 +143,7 @@ export default function PartnerCardOnFileSection({
     <div className="rounded-xl border border-[var(--brd)]/60 bg-[var(--card)] p-4 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Icon name="creditCard" className="w-4 h-4 text-[var(--gold)]" />
+          <Icon name="creditCard" className="w-4 h-4 text-[var(--accent-text)]" />
           <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Payment Method</h3>
         </div>
       </div>
@@ -184,7 +184,7 @@ export default function PartnerCardOnFileSection({
             <button
               type="button"
               onClick={() => setShowForm(true)}
-              className="text-[10px] font-semibold px-3 py-1.5 rounded-md bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/40 hover:bg-[var(--gold)]/25 transition-colors"
+              className="text-[10px] font-semibold px-3 py-1.5 rounded-md bg-[var(--gold)]/15 text-[var(--accent-text)] border border-[var(--gold)]/40 hover:bg-[var(--gold)]/25 transition-colors"
             >
               Add Credit Card
             </button>
@@ -213,7 +213,7 @@ export default function PartnerCardOnFileSection({
               type="button"
               onClick={handleSaveCard}
               disabled={saving || !sdkReady}
-              className="text-[10px] font-semibold px-3 py-1.5 rounded-md bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/40 hover:bg-[var(--gold)]/25 transition-colors disabled:opacity-50"
+              className="text-[10px] font-semibold px-3 py-1.5 rounded-md bg-[var(--gold)]/15 text-[var(--accent-text)] border border-[var(--gold)]/40 hover:bg-[var(--gold)]/25 transition-colors disabled:opacity-50"
             >
               {saving ? "Saving…" : "Save Card"}
             </button>

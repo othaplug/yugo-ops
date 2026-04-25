@@ -166,7 +166,7 @@ export default function ClientDetailClient({
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-5 md:py-6 animate-fade-up">
+    <div className="w-full min-w-0 py-5 md:py-6 animate-fade-up">
       <button type="button" onClick={() => router.back()} className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] mb-4 transition-colors">
         ← Back
       </button>
@@ -181,18 +181,18 @@ export default function ClientDetailClient({
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="admin-page-hero text-[var(--tx)] break-words line-clamp-3">{client.name}</h1>
-              <span className={`dt-badge ${isClient ? "text-[var(--blue)]" : "text-[var(--gold)]"}`}>
+              <span className={`dt-badge ${isClient ? "text-[var(--blue)]" : "text-[var(--accent-text)]"}`}>
                 {personaLabel}
               </span>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--tx2)]">
-              <span className="font-medium text-[var(--gold)]">
+              <span className="font-medium text-[var(--accent-text)]">
                 {isClient ? "Move client" : organizationTypeLabel(client.vertical || client.type)}
               </span>
-              <button type="button" onClick={() => setContactModalOpen(true)} className="text-[var(--gold)] hover:underline font-medium">
+              <button type="button" onClick={() => setContactModalOpen(true)} className="text-[var(--accent-text)] hover:underline font-medium">
                 {client.contact_name || "-"}
               </button>
-              <a href={`mailto:${client.email}`} className="text-[var(--tx2)] hover:text-[var(--gold)] truncate">{client.email || "-"}</a>
+              <a href={`mailto:${client.email}`} className="text-[var(--tx2)] hover:text-[var(--accent-text)] truncate">{client.email || "-"}</a>
               {client.address && <span className="text-[var(--tx3)] truncate">{client.address}</span>}
             </div>
           </div>
@@ -356,7 +356,7 @@ export default function ClientDetailClient({
               }}
               className={`px-4 py-2.5 text-[10px] font-bold tracking-[0.08em] uppercase transition-all border-b-2 -mb-px whitespace-nowrap shrink-0 ${
                 activeTab === tab
-                  ? "border-[var(--gold)] text-[var(--gold)]"
+                  ? "border-[var(--gold)] text-[var(--accent-text)]"
                   : "border-transparent text-[var(--tx3)] hover:text-[var(--tx2)]"
               }`}
             >
@@ -410,7 +410,7 @@ export default function ClientDetailClient({
                     <button
                       type="button"
                       onClick={() => router.replace(`/admin/clients/${client.id}?tab=moves`)}
-                      className="text-[var(--gold)] font-semibold hover:underline"
+                      className="text-[var(--accent-text)] font-semibold hover:underline"
                     >
                       Clear filter
                     </button>
@@ -671,7 +671,7 @@ export default function ClientDetailClient({
         <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Change requests</h3>
-            <Link href="/admin/change-requests" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
+            <Link href="/admin/change-requests" className="text-[10px] font-semibold text-[var(--accent-text)] hover:underline">
               View all
             </Link>
           </div>
@@ -683,7 +683,7 @@ export default function ClientDetailClient({
                 <Link
                   key={cr.id}
                   href={getMoveDetailPath({ move_code: moveData?.move_code, id: cr.move_id })}
-                  className="flex items-center gap-2.5 py-3 first:pt-0 hover:text-[var(--gold)] transition-colors text-left w-full"
+                  className="flex items-center gap-2.5 py-3 first:pt-0 hover:text-[var(--accent-text)] transition-colors text-left w-full"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-[11px] font-semibold text-[var(--tx)]">{cr.type}</div>
@@ -691,7 +691,7 @@ export default function ClientDetailClient({
                   </div>
                   <span className="text-[9px] text-[var(--tx3)] shrink-0">{moveCode}</span>
                   <span className={`dt-badge tracking-[0.04em] shrink-0 ${
-                    cr.status === "pending" ? "text-[var(--gold)]" : cr.status === "approved" ? "text-[var(--grn)]" : "text-[var(--red)]"
+                    cr.status === "pending" ? "text-[var(--accent-text)]" : cr.status === "approved" ? "text-[var(--grn)]" : "text-[var(--red)]"
                   }`}>
                     {toTitleCase(cr.status)}
                   </span>
@@ -718,7 +718,7 @@ export default function ClientDetailClient({
               key={inv.id}
               type="button"
               onClick={() => setSummaryInvoice(inv)}
-              className="flex items-center gap-2.5 py-3 first:pt-0 hover:text-[var(--gold)] transition-colors text-left w-full"
+              className="flex items-center gap-2.5 py-3 first:pt-0 hover:text-[var(--accent-text)] transition-colors text-left w-full"
             >
               <div className="flex-1">
                 <div className="text-[11px] font-semibold">{inv.invoice_number}</div>

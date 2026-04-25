@@ -1,38 +1,31 @@
-"use client";
+"use client"
 
-import type { CSSProperties, ReactNode } from "react";
+import type { AriaRole, CSSProperties, ReactNode } from "react"
+import { useAdminShellTheme } from "@/hooks/useAdminShellTheme"
 
 export type ModalDialogFrameProps = {
-  /** z-index for the full-screen host (e.g. z-50, z-[99999]) */
-  zClassName?: string;
-  className?: string;
-  /** Yugo+ tinted modal host: dim overlay + `yugo-glass-light` panel (see globals.css). */
-  yugoGlassChrome?: boolean;
-  /** Backdrop fill (default matches GlobalModal) */
-  backdropClassName?: string;
-  onBackdropClick?: () => void;
-  /**
-   * Panel wrapper classes. Include `modal-card` for centered dialogs (fade + rise + scale),
-   * or `sheet-card sm:modal-card` for bottom sheet on small screens.
-   */
-  panelClassName: string;
-  role?: React.AriaRole;
-  ariaModal?: boolean;
-  ariaLabelledBy?: string;
-  panelStyle?: CSSProperties;
-  children: ReactNode;
-};
+  zClassName?: string
+  className?: string
+  yugoGlassChrome?: boolean
+  backdropClassName?: string
+  onBackdropClick?: () => void
+  panelClassName: string
+  role?: AriaRole
+  ariaModal?: boolean
+  ariaLabelledBy?: string
+  panelStyle?: CSSProperties
+  children: ReactNode
+}
 
 /**
- * Standard portal-style dialog: animated backdrop + animated panel (same motion as GlobalModal / add-partner flow).
- * Renders `data-modal-root` for stacking / reduced-motion rules in globals.css.
- * `yugoGlassChrome` enables `data-yugo-glass-modal` so `.yugo-glass-light` panels pick up frosted styles.
+ * Standard portal-style dialog: backdrop + panel. Panel is wrapped with
+ * `data-yugo-admin-v3` so `var(--yu3-*)` resolves when portaled to `document.body`.
  */
 export function ModalDialogFrame({
   zClassName = "z-[var(--z-modal)]",
   className = "",
-  yugoGlassChrome = true,
-  backdropClassName = "bg-black/60",
+  yugoGlassChrome = false,
+  backdropClassName = "",
   onBackdropClick,
   panelClassName,
   role = "dialog",
@@ -41,6 +34,8 @@ export function ModalDialogFrame({
   panelStyle,
   children,
 }: ModalDialogFrameProps) {
+  const adminShellTheme = useAdminShellTheme()
+
   return (
     <div
       data-modal-root
@@ -51,11 +46,13 @@ export function ModalDialogFrame({
       aria-labelledby={ariaLabelledBy}
     >
       <div
-        className={`fixed inset-0 z-0 modal-overlay ${backdropClassName}`.trim()}
+        className={`modal-overlay fixed inset-0 z-0 ${backdropClassName}`.trim()}
         aria-hidden
         onClick={onBackdropClick}
       />
       <div
+        data-yugo-admin-v3=""
+        data-theme={adminShellTheme}
         className={`relative z-10 w-full min-w-0 pointer-events-auto ${panelClassName}`.trim()}
         style={panelStyle}
         onClick={(e) => e.stopPropagation()}
@@ -63,5 +60,5 @@ export function ModalDialogFrame({
         {children}
       </div>
     </div>
-  );
+  )
 }

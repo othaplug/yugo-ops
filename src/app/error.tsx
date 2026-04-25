@@ -32,7 +32,7 @@ export default function Error({
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
             onClick={reset}
-            className="px-5 py-2.5 rounded-lg text-[13px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
+            className="admin-btn admin-btn-lg admin-btn-primary"
           >
             Try again
           </button>

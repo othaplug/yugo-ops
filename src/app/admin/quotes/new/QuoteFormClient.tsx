@@ -36,12 +36,6 @@ import {
   Plus,
   Trash as Trash2,
   Warning,
-  House,
-  Buildings,
-  OfficeChair,
-  Star,
-  Palette,
-  CalendarBlank,
   Recycle,
   MagnifyingGlass,
   Lightbulb,
@@ -51,7 +45,6 @@ import {
   CheckCircle,
   X,
   Wrench,
-  type IconProps,
 } from "@phosphor-icons/react";
 import {
   B2B_ACCESS_PILLS,
@@ -290,28 +283,14 @@ interface LeadInvReviewRow {
 
 // ─── Constants ──────────────────────────────────
 
-const SERVICE_TYPE_ICONS = {
-  House,
-  Buildings,
-  OfficeChair,
-  Star,
-  Palette,
-  CalendarBlank,
-  Truck,
-  Users,
-  Recycle,
-} as const;
-
 const SERVICE_TYPES: {
-  value: string;
-  label: string;
-  desc: string;
-  Icon: React.ComponentType<IconProps>;
+  value: string
+  label: string
+  desc: string
 }[] = QUOTE_SERVICE_TYPE_DEFINITIONS.map((d) => ({
   value: d.value,
   label: d.label,
   desc: d.description,
-  Icon: SERVICE_TYPE_ICONS[d.iconName],
 }));
 
 const MOVE_SIZES = [
@@ -1227,7 +1206,7 @@ export default function QuoteFormClient({
     available: number;
   } | null;
   uiVariant?: "v1" | "v2";
-  /** Used when `router.back()` has no history (e.g. `/admin-v2/quotes` for the v2 list). */
+  /** Used when `router.back()` has no history. */
   backFallback?: string;
 }) {
   const isV2 = uiVariant === "v2";
@@ -1310,6 +1289,10 @@ export default function QuoteFormClient({
   const [extraToStops, setExtraToStops] = useState<StopEntry[]>([]);
   const [fromAccess, setFromAccess] = useState("");
   const [toAccess, setToAccess] = useState("");
+  const [fromUnit, setFromUnit] = useState("");
+  const [fromFloor, setFromFloor] = useState("");
+  const [toUnit, setToUnit] = useState("");
+  const [toFloor, setToFloor] = useState("");
   const [fromParking, setFromParking] = useState<
     "dedicated" | "street" | "no_dedicated"
   >("dedicated");
@@ -3900,6 +3883,10 @@ export default function QuoteFormClient({
         to_address: toAddress,
         from_access: fromAccess || undefined,
         to_access: toAccess || undefined,
+        from_unit: fromUnit || undefined,
+        from_floor: fromFloor || undefined,
+        to_unit: toUnit || undefined,
+        to_floor: toFloor || undefined,
         move_date: moveDate,
         preferred_time: preferredTime || undefined,
         arrival_window: arrivalWindow || undefined,
@@ -4921,7 +4908,7 @@ export default function QuoteFormClient({
               className={
                 isV2
                   ? "rounded-md bg-accent px-3 py-2 text-[11px] font-bold text-white"
-                  : "px-3 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
+                  : "admin-btn admin-btn-sm admin-btn-primary"
               }
             >
               Open builder
@@ -5100,9 +5087,9 @@ export default function QuoteFormClient({
                   const canJumpBack = i < quoteFlowStep;
                   const segmentFilled = quoteFlowStep > i;
                   const stepCircleV2 = active
-                    ? "bg-accent-subtle text-accent ring-2 ring-accent/30 ring-offset-2 ring-offset-[var(--color-canvas)]"
+                    ? "bg-[var(--yu3-wine-wash)] text-[var(--yu3-wine)] ring-2 ring-[var(--yu3-wine)]/30 ring-offset-2 ring-offset-[var(--color-canvas)]"
                     : done
-                      ? "border border-line bg-surface text-accent"
+                      ? "border border-line bg-surface text-[var(--yu3-wine)]"
                       : "border border-line bg-surface text-fg-muted"
                   const stepCircleV1 = active
                     ? "bg-[#FAF7F2] text-[#3D1624] shadow-md shadow-black/20 ring-2 ring-[rgba(250,247,242,0.45)] ring-offset-2 ring-offset-[var(--bg)]"
@@ -5113,7 +5100,7 @@ export default function QuoteFormClient({
                     ? "bg-line/60"
                     : "bg-[var(--brd)]/65"
                   const connectorFill = isV2
-                    ? "bg-gradient-to-r from-accent/50 via-accent/35 to-accent/20"
+                    ? "bg-gradient-to-r from-[var(--yu3-wine)]/50 via-[var(--yu3-wine)]/30 to-[var(--yu3-wine)]/15"
                     : "bg-gradient-to-r from-[#FAF7F2] via-[#EDE4DA] to-[#D8CDC1] shadow-[0_0_12px_rgba(250,247,242,0.12)]"
                   const textTone = isV2
                     ? active
@@ -5179,6 +5166,13 @@ export default function QuoteFormClient({
             </nav>
           </div>
 
+          <div
+            className={
+              isV2
+                ? "flex min-w-0 flex-col overflow-hidden rounded-[var(--yu3-r-xl)] border border-line bg-surface shadow-sm"
+                : "flex min-w-0 flex-col"
+            }
+          >
           <div ref={quoteFlowContentRef} className="min-w-0">
             <div className="p-5 space-y-0">
               {/* ── 1. Service type ── */}
@@ -5197,17 +5191,11 @@ export default function QuoteFormClient({
                   {SERVICE_TYPES.map((card) => {
                     const sel = serviceType === card.value;
                     const cardV2 = sel
-                      ? "border-accent bg-accent text-white shadow-md shadow-accent/25"
-                      : "border-line bg-surface shadow-sm hover:border-accent/50 hover:bg-surface-subtle"
+                      ? "border-[var(--yu3-wine)] bg-[var(--yu3-wine)] text-[var(--yu3-on-wine)] shadow-md shadow-[color-mix(in_srgb,var(--yu3-wine)_32%,transparent)]"
+                      : "border-line bg-surface shadow-sm hover:border-[color-mix(in_srgb,var(--yu3-wine)_45%,var(--yu3-line))] hover:bg-surface-subtle"
                     const cardV1 = sel
                       ? "bg-gradient-to-br from-[#2C3E2D] to-[#5C1A33] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
                       : "bg-[var(--card)] border-[1.5px] border-[var(--brd)] shadow-sm shadow-black/[0.04] hover:border-[var(--gold)]/50 hover:bg-[var(--bg)]"
-                    const iconV2 = sel
-                      ? "text-white"
-                      : "text-accent"
-                    const iconV1 = sel
-                      ? "text-white"
-                      : "text-[var(--gold)]"
                     return (
                       <button
                         key={card.value}
@@ -5217,19 +5205,11 @@ export default function QuoteFormClient({
                           isV2 ? cardV2 : cardV1
                         }`}
                       >
-                        <div className="flex items-start gap-2">
-                          <card.Icon
-                            className={`mt-0.5 h-4 w-4 shrink-0 ${
-                              isV2 ? iconV2 : iconV1
-                            }`}
-                            weight="regular"
-                            aria-hidden
-                          />
-                          <div className="min-w-0 flex-1">
+                        <div className="min-w-0">
                             <div
                               className={`text-[11px] font-semibold leading-tight tracking-tight ${
                                 sel
-                                  ? "text-white"
+                                  ? "text-[var(--yu3-on-wine)]"
                                   : isV2
                                     ? "text-fg"
                                     : "text-[var(--tx)]"
@@ -5240,7 +5220,7 @@ export default function QuoteFormClient({
                             <div
                               className={`mt-0.5 text-[9px] leading-snug ${
                                 sel
-                                  ? "text-white/90"
+                                  ? "text-[color-mix(in_srgb,var(--yu3-on-wine)_90%,transparent)]"
                                   : isV2
                                     ? "text-fg-muted"
                                     : "text-[var(--tx2)]/90"
@@ -5248,7 +5228,6 @@ export default function QuoteFormClient({
                             >
                               {card.desc}
                             </div>
-                          </div>
                         </div>
                       </button>
                     );
@@ -5475,14 +5454,14 @@ export default function QuoteFormClient({
                           <button
                             type="button"
                             onClick={handleClientAutoFill}
-                            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
+                            className="admin-btn admin-btn-sm admin-btn-primary"
                           >
                             Auto-fill
                           </button>
                           <button
                             type="button"
                             onClick={() => setClientBannerDismissed(true)}
-                            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]/40 transition-colors"
+                            className="admin-btn admin-btn-sm admin-btn-secondary"
                           >
                             Ignore
                           </button>
@@ -5541,14 +5520,14 @@ export default function QuoteFormClient({
                           <button
                             type="button"
                             onClick={handleClientAutoFill}
-                            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
+                            className="admin-btn admin-btn-sm admin-btn-primary"
                           >
                             Auto-fill from HubSpot
                           </button>
                           <button
                             type="button"
                             onClick={() => setClientBannerDismissed(true)}
-                            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]/40 transition-colors"
+                            className="admin-btn admin-btn-sm admin-btn-secondary"
                           >
                             Ignore
                           </button>
@@ -5577,7 +5556,7 @@ export default function QuoteFormClient({
                       type="button"
                       onClick={verifyReferral}
                       disabled={!referralCode.trim()}
-                      className="px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50 transition-all"
+                      className="admin-btn admin-btn-sm admin-btn-secondary"
                     >
                       Verify
                     </button>
@@ -5717,7 +5696,7 @@ export default function QuoteFormClient({
                     !(serviceType === "event" && eventMulti) &&
                     serviceType !== "bin_rental" && (
                       <div className="flex flex-col sm:flex-row gap-3 items-start">
-                        <div className="flex-1 min-w-0 w-full max-w-2xl">
+                        <div className="flex-1 min-w-0 w-full">
                           <MultiStopAddressField
                             label={
                               serviceType === "event"
@@ -5743,6 +5722,24 @@ export default function QuoteFormClient({
                             inputClassName={fieldInput}
                           />
                         </div>
+                        <div
+                          className={`transition-all duration-200 ease-out overflow-hidden shrink-0 ${
+                            ["elevator", "concierge", "loading_dock"].includes(fromAccess)
+                              ? "max-h-[60px] opacity-100 w-full sm:w-[88px]"
+                              : "max-h-0 opacity-0 pointer-events-none w-full sm:w-0"
+                          }`}
+                        >
+                          <Field label="Unit">
+                            <input
+                              type="text"
+                              value={fromUnit}
+                              onChange={(e) => setFromUnit(e.target.value)}
+                              placeholder="1204"
+                              className={fieldInput}
+                              tabIndex={["elevator", "concierge", "loading_dock"].includes(fromAccess) ? 0 : -1}
+                            />
+                          </Field>
+                        </div>
                         <div className="w-full sm:w-[150px] shrink-0">
                           <Field label="From Access">
                             <select
@@ -5764,7 +5761,7 @@ export default function QuoteFormClient({
                     serviceType !== "labour_only" &&
                     serviceType !== "bin_rental" && (
                       <div className="flex flex-wrap flex-col sm:flex-row gap-3 items-start">
-                        <div className="flex-1 min-w-0 w-full max-w-2xl">
+                        <div className="flex-1 min-w-0 w-full">
                           <MultiStopAddressField
                             label="To"
                             placeholder="Destination address"
@@ -5778,6 +5775,24 @@ export default function QuoteFormClient({
                             }}
                             inputClassName={fieldInput}
                           />
+                        </div>
+                        <div
+                          className={`transition-all duration-200 ease-out overflow-hidden shrink-0 ${
+                            ["elevator", "concierge", "loading_dock"].includes(toAccess)
+                              ? "max-h-[60px] opacity-100 w-full sm:w-[88px]"
+                              : "max-h-0 opacity-0 pointer-events-none w-full sm:w-0"
+                          }`}
+                        >
+                          <Field label="Unit">
+                            <input
+                              type="text"
+                              value={toUnit}
+                              onChange={(e) => setToUnit(e.target.value)}
+                              placeholder="804"
+                              className={fieldInput}
+                              tabIndex={["elevator", "concierge", "loading_dock"].includes(toAccess) ? 0 : -1}
+                            />
+                          </Field>
                         </div>
                         <div className="w-full sm:w-[150px] shrink-0">
                           <Field label="To Access">
@@ -6188,7 +6203,7 @@ export default function QuoteFormClient({
                               setBinMaterialDelivery(false);
                               setBinLinkedMoveId("");
                             }}
-                            className="shrink-0 px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:opacity-95 transition-opacity"
+                            className="admin-btn admin-btn-sm admin-btn-primary shrink-0"
                           >
                             Add to quote
                           </button>
@@ -6640,13 +6655,25 @@ export default function QuoteFormClient({
                               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--gdim)] text-[10px] font-bold text-[var(--tx)]">
                                 {idx + 1}
                               </span>
-                              <div className="min-w-0">
-                                <p className="text-[11px] font-semibold text-[var(--tx)]">
-                                  Pickup {idx + 1}
-                                </p>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="text-[11px] font-semibold text-[var(--tx)]">
+                                    {moveProjectPayload?.origins[idx]?.label?.trim() || `Pickup ${idx + 1}`}
+                                  </p>
+                                  {moveProjectPayload?.origins[idx]?.is_partial && (
+                                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-700">
+                                      Partial
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="text-[10px] text-[var(--tx3)] break-words">
                                   {addr || "Add this pickup above"}
                                 </p>
+                                {moveProjectPayload?.origins[idx]?.is_partial && (
+                                  <p className="text-[10px] text-amber-600 mt-0.5">
+                                    Only selected items from this location
+                                  </p>
+                                )}
                               </div>
                             </div>
                             {movePlannerVisible &&
@@ -7883,7 +7910,7 @@ export default function QuoteFormClient({
                         <button
                           type="button"
                           onClick={addEventLeg}
-                          className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10 shrink-0"
+                          className="admin-btn admin-btn-sm admin-btn-secondary shrink-0"
                         >
                           <Plus className="w-3 h-3" aria-hidden /> Add event
                         </button>
@@ -8212,7 +8239,7 @@ export default function QuoteFormClient({
                       <button
                         type="button"
                         onClick={addEventLeg}
-                        className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-[11px] font-semibold border border-dashed border-[var(--gold)]/60 text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                        className="admin-btn admin-btn-secondary w-full border-dashed"
                       >
                         <Plus className="w-4 h-4" aria-hidden /> Add event
                       </button>
@@ -9436,7 +9463,13 @@ export default function QuoteFormClient({
           </div>
 
           {/* ── Form actions (document flow — not sticky: sticky bottom-0 overlapped fields while scrolling) ── */}
-          <div className="py-3 px-4 sm:px-5 border-t border-[var(--brd)]/60 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]">
+          <div
+            className={
+              isV2
+                ? "border-t border-line px-4 py-3 sm:px-5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
+                : "py-3 px-4 sm:px-5 border-t border-[var(--brd)]/60 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
+            }
+          >
             {showQuoteFlowNav ? (
             <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:items-stretch">
               <button
@@ -9445,14 +9478,14 @@ export default function QuoteFormClient({
                   if (quoteFlowStep === 0) router.back();
                   else handleQuoteFlowBack();
                 }}
-                className="flex-1 min-h-11 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[rgba(250,247,242,0.4)] hover:text-[var(--tx)] transition-colors"
+                className="admin-btn admin-btn-secondary flex-1"
               >
                 {quoteFlowStep === 0 ? "Cancel" : "Back"}
               </button>
               <button
                 type="button"
                 onClick={handleQuoteFlowContinue}
-                className="flex-1 min-h-11 py-2.5 rounded-lg text-[11px] font-bold inline-flex items-center justify-center gap-1.5 border border-transparent bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-none"
+                className="admin-btn admin-btn-primary flex-1"
               >
                 Continue
                 <ChevronRight className="w-3.5 h-3.5" weight="bold" aria-hidden />
@@ -9468,7 +9501,7 @@ export default function QuoteFormClient({
                   serviceType === "b2b_delivery" ||
                   serviceType === "b2b_oneoff"
                 }
-                className="flex-1 min-h-11 py-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-2 bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50 touch-manipulation active:scale-[0.99]"
+                className="admin-btn admin-btn-primary flex-1"
               >
                 {generating ? (
                   <>
@@ -9494,10 +9527,10 @@ export default function QuoteFormClient({
                   serviceType === "b2b_delivery" ||
                   serviceType === "b2b_oneoff"
                 }
-                className={`flex-1 min-h-11 py-2.5 rounded-lg text-[11px] font-bold border-2 flex items-center justify-center gap-2 touch-manipulation active:scale-[0.99] ${
+                className={`admin-btn flex-1 ${
                   sendSuccess
                     ? "border-[var(--grn)] bg-[var(--grn)]/10 text-[var(--grn)] cursor-default"
-                    : "border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10 disabled:opacity-40"
+                    : "admin-btn-secondary"
                 }`}
               >
                 {sending ? (
@@ -9534,13 +9567,14 @@ export default function QuoteFormClient({
                 className={
                   isV2
                     ? "flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-line px-4 py-2.5 text-[11px] font-semibold text-fg-muted transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto touch-manipulation sm:shrink-0"
-                    : "min-h-11 py-2.5 px-4 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 touch-manipulation sm:shrink-0 w-full sm:w-auto"
+                    : "admin-btn admin-btn-secondary w-full sm:w-auto sm:shrink-0"
                 }
               >
                 <Eye className="w-3.5 h-3.5" /> Preview
               </button>
             </div>
             )}
+          </div>
           </div>
         </div>
 
@@ -9648,14 +9682,14 @@ export default function QuoteFormClient({
                           void handleGenerate({ serviceAreaOverride: true })
                         }
                         disabled={generating}
-                        className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+                        className="admin-btn admin-btn-sm admin-btn-primary"
                       >
                         Quote anyway (manual override)
                       </button>
                       <button
                         type="button"
                         onClick={() => setServiceAreaBlock(null)}
-                        className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)]"
+                        className="admin-btn admin-btn-sm admin-btn-secondary"
                       >
                         Dismiss
                       </button>

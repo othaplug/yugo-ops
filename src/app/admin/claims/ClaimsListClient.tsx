@@ -1,42 +1,51 @@
-"use client";
+"use client"
 
-import { useState, useMemo, useEffect, useCallback } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { formatCurrency } from "@/lib/format-currency";
-import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
-import { formatAdminCreatedAt } from "@/lib/date-format";
-import { useToast } from "../components/Toast";
-import SectionDivider from "@/components/ui/SectionDivider";
-import { PageHeader } from "@/design-system/admin/layout";
-import { Button } from "@/design-system/admin/primitives";
-import { KpiStrip } from "@/design-system/admin/dashboard";
-import { Plus } from "@phosphor-icons/react";
+import { useState, useMemo, useEffect, useCallback } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { formatCurrency } from "@/lib/format-currency"
+import { formatAdminCreatedAt } from "@/lib/date-format"
+import { csvField } from "@/lib/admin-csv-field"
+import {
+  DataTable,
+  type ColumnDef,
+  type ColumnSort,
+  type BulkAction,
+  type ViewMode,
+} from "@/design-system/admin/table"
+import { useToast } from "../components/Toast"
+import SectionDivider from "@/components/ui/SectionDivider"
+import { PageHeader } from "@/design-system/admin/layout"
+import { StatusPill } from "@/design-system/admin/primitives"
+import { Button } from "@/design-system/admin/primitives"
+import { KpiStrip } from "@/design-system/admin/dashboard"
+import { Plus } from "@phosphor-icons/react"
+import type { ComponentProps } from "react"
 
 interface Claim {
-  id: string;
-  claim_number: string;
-  client_name: string;
-  client_email: string;
-  move_id: string | null;
-  move_code?: string | null;
-  delivery_id: string | null;
-  items: { name: string }[];
-  total_claimed_value: number;
-  approved_amount: number | null;
-  status: string;
-  valuation_tier: string;
-  crew_team: string | null;
-  submitted_at: string;
-  resolved_at: string | null;
-  created_at: string;
+  id: string
+  claim_number: string
+  client_name: string
+  client_email: string
+  move_id: string | null
+  move_code?: string | null
+  delivery_id: string | null
+  items: { name: string }[]
+  total_claimed_value: number
+  approved_amount: number | null
+  status: string
+  valuation_tier: string
+  crew_team: string | null
+  submitted_at: string
+  resolved_at: string | null
+  created_at: string
 }
 
 interface Stats {
-  openCount: number;
-  reviewCount: number;
-  resolvedCount: number;
-  totalPaidOut: number;
+  openCount: number
+  reviewCount: number
+  resolvedCount: number
+  totalPaidOut: number
 }
 
 const STATUS_OPTIONS = [
@@ -48,140 +57,42 @@ const STATUS_OPTIONS = [
   { value: "denied", label: "Denied" },
   { value: "settled", label: "Settled" },
   { value: "closed", label: "Closed" },
-];
+]
 
-function statusBadge(status: string): string {
-  switch (status) {
-    case "submitted": return "text-[var(--tx3)]";
-    case "under_review": return "text-[var(--blue)]";
-    case "approved": case "settled": return "text-[var(--grn)]";
-    case "partially_approved": return "text-[var(--org)]";
-    case "denied": return "text-[var(--red)]";
-    case "closed": return "text-[var(--tx3)]";
-    default: return "text-[var(--tx3)]";
+function claimStatusTone(s: string): ComponentProps<typeof StatusPill>["tone"] {
+  switch (s) {
+    case "submitted":
+      return "neutral"
+    case "under_review":
+      return "info"
+    case "approved":
+    case "settled":
+      return "success"
+    case "partially_approved":
+      return "warning"
+    case "denied":
+      return "danger"
+    case "closed":
+      return "neutral"
+    default:
+      return "neutral"
   }
 }
 
 function statusLabel(s: string): string {
-  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-const claimColumns: ColumnDef<Claim>[] = [
-  {
-    id: "claim_number",
-    label: "Claim #",
-    accessor: (c) => c.claim_number,
-    searchable: true,
-    render: (c) => (
-      <Link href={`/admin/claims/${c.id}`} className="font-semibold text-[var(--gold)] hover:underline" onClick={(e) => e.stopPropagation()}>
-        {c.claim_number}
-      </Link>
-    ),
-  },
-  {
-    id: "created_at",
-    label: "Create date",
-    accessor: (c) => c.created_at,
-    sortable: true,
-    render: (c) => (
-      <span className="text-[11px] text-[var(--tx2)] tabular-nums whitespace-nowrap">
-        {formatAdminCreatedAt(c.created_at)}
-      </span>
-    ),
-    exportAccessor: (c) => formatAdminCreatedAt(c.created_at),
-  },
-  {
-    id: "date",
-    label: "Submitted",
-    accessor: (c) => c.submitted_at || c.created_at,
-    sortable: true,
-    render: (c) => new Date(c.submitted_at || c.created_at).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
-  },
-  {
-    id: "client",
-    label: "Client",
-    accessor: (c) => c.client_name,
-    searchable: true,
-    render: (c) => (
-      <div>
-        <div className="text-[var(--tx)] font-medium">{c.client_name}</div>
-        <div className="text-[11px] text-[var(--tx3)]">{c.client_email}</div>
-      </div>
-    ),
-  },
-  {
-    id: "move",
-    label: "Move",
-    accessor: (c) => c.move_code || c.move_id || "",
-    render: (c) =>
-      c.move_code ? (
-        <Link
-          href={`/admin/moves/${c.move_code}`}
-          className="text-[11px] font-semibold text-[#2C3E2D] hover:underline"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {c.move_code}
-        </Link>
-      ) : c.move_id ? (
-        <Link
-          href={`/admin/moves/${c.move_id}`}
-          className="text-[11px] font-semibold text-[#2C3E2D] hover:underline"
-          onClick={(e) => e.stopPropagation()}
-        >
-          View move
-        </Link>
-      ) : (
-        "-"
-      ),
-    searchable: true,
-  },
-  {
-    id: "items",
-    label: "Items",
-    accessor: (c) => (Array.isArray(c.items) ? c.items.length : 0),
-    render: (c) => {
-      const n = Array.isArray(c.items) ? c.items.length : 0;
-      return `${n} item${n !== 1 ? "s" : ""}`;
-    },
-  },
-  {
-    id: "claimed",
-    label: "Claimed",
-    accessor: (c) => c.total_claimed_value,
-    render: (c) => <span className="text-[var(--tx)] font-medium">{formatCurrency(c.total_claimed_value)}</span>,
-    align: "right",
-  },
-  {
-    id: "approved",
-    label: "Approved",
-    accessor: (c) => c.approved_amount,
-    render: (c) => (c.approved_amount != null ? formatCurrency(c.approved_amount) : "-"),
-    align: "right",
-  },
-  {
-    id: "status",
-    label: "Status",
-    accessor: (c) => c.status,
-    render: (c) => (
-      <span className={`dt-badge tracking-[0.04em] ${statusBadge(c.status)}`}>
-        {statusLabel(c.status)}
-      </span>
-    ),
-  },
-  {
-    id: "crew",
-    label: "Crew",
-    accessor: (c) => c.crew_team || "",
-    render: (c) => c.crew_team || "-",
-  },
-];
-
 export default function ClaimsListClient({ claims: initialClaims, stats: initialStats }: { claims: Claim[]; stats: Stats }) {
-  const [claims, setClaims] = useState<Claim[]>(initialClaims);
-  const [stats, setStats] = useState<Stats>(initialStats);
-  const [statusFilter, setStatusFilter] = useState("");
-  const router = useRouter();
-  const { toast } = useToast();
+  const [claims, setClaims] = useState<Claim[]>(initialClaims)
+  const [stats, setStats] = useState<Stats>(initialStats)
+  const [statusFilter, setStatusFilter] = useState("")
+  const [search, setSearch] = useState("")
+  const [sort, setSort] = useState<ColumnSort | null>({ columnId: "created_at", direction: "desc" })
+  const [viewMode, setViewMode] = useState<ViewMode>("list")
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const router = useRouter()
+  const { toast } = useToast()
 
   const runBulk = useCallback(
     async (action: "resolve" | "close", ids: string[]) => {
@@ -189,60 +100,244 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, ids }),
-      });
-      const data = await res.json();
+      })
+      const data = await res.json()
       if (data.ok) {
-        const labels: Record<string, string> = { resolve: "Marked resolved", close: "Closed" };
-        toast(`${labels[action]} ${data.updated} claim${data.updated !== 1 ? "s" : ""}`, "check");
-        router.refresh();
+        const labels: Record<string, string> = { resolve: "Marked resolved", close: "Closed" }
+        toast(
+          `${labels[action]} ${data.updated} claim${data.updated !== 1 ? "s" : ""}`,
+          "check",
+        )
+        setSelectedIds(new Set())
+        router.refresh()
       } else {
-        toast("Error: " + (data.error || "Failed"), "x");
+        toast("Error: " + (data.error || "Failed"), "x")
       }
     },
     [toast, router],
-  );
+  )
 
-  const bulkActions: BulkAction[] = useMemo(
+  const bulkActions = useMemo<BulkAction<Claim>[]>(
     () => [
-      { label: "Mark Resolved", onClick: (ids) => runBulk("resolve", ids) },
-      { label: "Close", onClick: (ids) => runBulk("close", ids), variant: "danger" as const },
+      {
+        id: "resolve",
+        label: "Mark resolved",
+        run: (r) => runBulk("resolve", r.map((c) => c.id)),
+      },
+      {
+        id: "close",
+        label: "Close",
+        danger: true,
+        run: (r) => runBulk("close", r.map((c) => c.id)),
+      },
     ],
     [runBulk],
-  );
+  )
+
+  const columns = useMemo<ColumnDef<Claim>[]>(
+    () => [
+      {
+        id: "claim_number",
+        shortLabel: "Claim",
+        header: "Claim #",
+        accessor: (c) => c.claim_number,
+        width: 120,
+        cell: (c) => (
+          <Link
+            href={`/admin/claims/${c.id}`}
+            className="font-semibold text-[var(--yu3-ink)] hover:underline tabular-nums"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {c.claim_number}
+          </Link>
+        ),
+      },
+      {
+        id: "created_at",
+        shortLabel: "Created",
+        header: "Create date",
+        accessor: (c) => c.created_at,
+        sortable: true,
+        width: 160,
+        cell: (c) => (
+          <span className="text-[11px] text-[var(--yu3-ink-muted)] tabular-nums whitespace-nowrap">
+            {formatAdminCreatedAt(c.created_at)}
+          </span>
+        ),
+      },
+      {
+        id: "date",
+        header: "Submitted",
+        accessor: (c) => c.submitted_at || c.created_at,
+        sortable: true,
+        width: 100,
+        cell: (c) =>
+          new Date(c.submitted_at || c.created_at).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
+      },
+      {
+        id: "client",
+        header: "Client",
+        accessor: (c) => c.client_name,
+        width: 200,
+        cell: (c) => (
+          <div className="min-w-0">
+            <div className="text-[var(--yu3-ink)] font-medium truncate">{c.client_name}</div>
+            <div className="text-[11px] text-[var(--yu3-ink-faint)] truncate">{c.client_email}</div>
+          </div>
+        ),
+      },
+      {
+        id: "move",
+        header: "Move",
+        accessor: (c) => c.move_code || c.move_id || "",
+        width: 120,
+        cell: (c) =>
+          c.move_code ? (
+            <Link
+              href={`/admin/moves/${c.move_code}`}
+              className="text-[12px] font-semibold text-[var(--yu3-ink)] hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {c.move_code}
+            </Link>
+          ) : c.move_id ? (
+            <Link
+              href={`/admin/moves/${c.move_id}`}
+              className="text-[12px] font-semibold text-[var(--yu3-ink)] hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              View move
+            </Link>
+          ) : null,
+      },
+      {
+        id: "items",
+        header: "Items",
+        accessor: (c) => (Array.isArray(c.items) ? c.items.length : 0),
+        width: 80,
+        cell: (c) => {
+          const n = Array.isArray(c.items) ? c.items.length : 0
+          return `${n} item${n !== 1 ? "s" : ""}`
+        },
+      },
+      {
+        id: "claimed",
+        header: "Claimed",
+        accessor: (c) => c.total_claimed_value,
+        sortable: true,
+        align: "right",
+        numeric: true,
+        width: 100,
+        cell: (c) => <span className="text-[var(--yu3-ink)] font-semibold tabular-nums">{formatCurrency(c.total_claimed_value)}</span>,
+      },
+      {
+        id: "approved",
+        header: "Approved",
+        accessor: (c) => c.approved_amount ?? 0,
+        sortable: true,
+        align: "right",
+        numeric: true,
+        width: 100,
+        cell: (c) =>
+          c.approved_amount != null ? (
+            <span className="text-[var(--yu3-ink-muted)] tabular-nums">{formatCurrency(c.approved_amount)}</span>
+          ) : null,
+      },
+      {
+        id: "status",
+        header: "Status",
+        accessor: (c) => c.status,
+        sortable: true,
+        width: 150,
+        cell: (c) => <StatusPill tone={claimStatusTone(c.status)}>{statusLabel(c.status)}</StatusPill>,
+      },
+      {
+        id: "crew",
+        header: "Crew",
+        accessor: (c) => c.crew_team || "",
+        width: 100,
+        cell: (c) => (c.crew_team ? <span className="text-[var(--yu3-ink-muted)]">{c.crew_team}</span> : null),
+      },
+    ],
+    [],
+  )
 
   const refreshClaims = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/claims");
-      if (!res.ok) return;
-      const json = await res.json();
-      const allClaims: Claim[] = json.claims || [];
-      setClaims(allClaims);
-      const now = new Date();
-      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const res = await fetch("/api/admin/claims")
+      if (!res.ok) return
+      const json = await res.json()
+      const allClaims: Claim[] = json.claims || []
+      setClaims(allClaims)
+      const now = new Date()
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
       setStats({
         openCount: allClaims.filter((c) => ["submitted", "under_review"].includes(c.status)).length,
         reviewCount: allClaims.filter((c) => c.status === "under_review").length,
-        resolvedCount: allClaims.filter((c) =>
-          ["approved", "partially_approved", "denied", "settled", "closed"].includes(c.status) &&
-          c.resolved_at && c.resolved_at >= thirtyDaysAgo
+        resolvedCount: allClaims.filter(
+          (c) =>
+            ["approved", "partially_approved", "denied", "settled", "closed"].includes(c.status) &&
+            c.resolved_at &&
+            c.resolved_at >= thirtyDaysAgo,
         ).length,
         totalPaidOut: allClaims
           .filter((c) => c.approved_amount && c.resolved_at && c.resolved_at >= thirtyDaysAgo)
           .reduce((sum, c) => sum + (c.approved_amount || 0), 0),
-      });
-    } catch { /* network errors are non-fatal */ }
-  }, []);
+      })
+    } catch { /* */ }
+  }, [])
 
-  // Poll every 30s for new claims
   useEffect(() => {
-    const interval = setInterval(refreshClaims, 30_000);
-    return () => clearInterval(interval);
-  }, [refreshClaims]);
+    const interval = setInterval(refreshClaims, 30_000)
+    return () => clearInterval(interval)
+  }, [refreshClaims])
 
   const filtered = useMemo(
     () => (statusFilter ? claims.filter((c) => c.status === statusFilter) : claims),
-    [claims, statusFilter]
-  );
+    [claims, statusFilter],
+  )
+
+  const onExport = useCallback(() => {
+    const headers = [
+      "Claim #",
+      "Create date",
+      "Submitted",
+      "Client",
+      "Email",
+      "Move",
+      "Items",
+      "Claimed",
+      "Approved",
+      "Status",
+      "Crew",
+    ]
+    const lines = filtered.map((c) => {
+      const n = Array.isArray(c.items) ? c.items.length : 0
+      return [
+        c.claim_number,
+        formatAdminCreatedAt(c.created_at),
+        new Date(c.submitted_at || c.created_at).toLocaleDateString("en-CA"),
+        c.client_name,
+        c.client_email,
+        c.move_code || c.move_id || "",
+        `${n} item(s)`,
+        String(c.total_claimed_value),
+        c.approved_amount != null ? String(c.approved_amount) : "",
+        c.status,
+        c.crew_team || "",
+      ]
+        .map((x) => csvField(String(x)))
+        .join(",")
+    })
+    const csv = [headers.map(csvField).join(","), ...lines].join("\n")
+    const blob = new Blob([csv], { type: "text/csv" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "yugo-claims.csv"
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [filtered])
 
   return (
     <div className="flex flex-col gap-4">
@@ -251,11 +346,7 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
         title="Claims"
         description="Damage, loss, and service claims across moves and deliveries."
         actions={
-          <Button
-            variant="primary"
-            leadingIcon={<Plus size={16} />}
-            onClick={() => router.push("/admin/claims/new")}
-          >
+          <Button variant="primary" leadingIcon={<Plus size={16} />} onClick={() => router.push("/admin/claims/new")}>
             New claim
           </Button>
         }
@@ -272,17 +363,14 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
 
       <SectionDivider label="All Claims" />
 
-      {/* Filters */}
-      <div className="flex gap-2 mb-5 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+      <div className="flex gap-2 mb-2 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
         {STATUS_OPTIONS.map((o) => (
           <button
-            key={o.value}
+            key={o.value || "all"}
             type="button"
             onClick={() => setStatusFilter(o.value)}
-            className={`shrink-0 px-3 py-1.5 rounded-md text-[10px] font-semibold transition-all touch-manipulation border ${
-              statusFilter === o.value
-                ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
-                : "bg-[var(--bg)] text-[var(--tx)] border-[var(--brd)] hover:bg-[var(--bg2)]"
+            className={`shrink-0 admin-btn admin-btn-sm ${
+              statusFilter === o.value ? "admin-btn-primary" : "admin-btn-secondary"
             }`}
           >
             {o.label}
@@ -290,31 +378,31 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
         ))}
       </div>
 
-      {/* Table */}
       <DataTable<Claim>
-        data={filtered}
-        columns={claimColumns}
-        keyField="id"
-        tableId="claims-list"
-        defaultSortCol="created_at"
-        defaultSortDir="desc"
-        searchable
-        searchPlaceholder="Search by claim #, client, email…"
-        pagination
-        exportable
-        exportFilename="yugo-claims"
-        columnToggle
-        selectable
+        columns={columns}
+        rows={filtered}
+        rowId={(c) => c.id}
+        search={search}
+        onSearchChange={setSearch}
+        sort={sort}
+        onSortChange={setSort}
+        selectedRowIds={selectedIds}
+        onSelectedRowIdsChange={setSelectedIds}
         bulkActions={bulkActions}
-        mobileCardLayout={{
-          primaryColumnId: "client",
-          subtitleColumnId: "claim_number",
-          amountColumnId: "claimed",
-          metaColumnIds: ["created_at", "date", "move", "status", "items", "approved", "crew"],
-        }}
         onRowClick={(c) => router.push(`/admin/claims/${c.id}`)}
-        emptyMessage={claims.length === 0 ? "No claims yet" : "No claims match your filters"}
+        onExport={onExport}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        availableViews={["list"]}
+        searchPlaceholder="Search by claim #, client, email…"
+        emptyState={
+          <div className="px-2 py-8 text-center">
+            <p className="text-[15px] font-semibold text-[var(--yu3-ink)]">
+              {claims.length === 0 ? "No claims yet" : "No claims match your filters"}
+            </p>
+          </div>
+        }
       />
     </div>
-  );
+  )
 }

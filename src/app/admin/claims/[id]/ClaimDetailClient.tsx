@@ -200,7 +200,7 @@ export default function ClaimDetailClient({
   }, [claim.id, resolutionNotes, assessmentNotes, router]);
 
   return (
-    <div className="p-4 sm:p-6 max-w-[1200px] mx-auto">
+    <div className="w-full min-w-0 p-4 sm:p-6">
       {/* Back + eyebrow */}
       <div className="flex items-center gap-2 mb-3">
         <button type="button" onClick={() => router.back()} className="p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] shrink-0 transition-colors">

@@ -27,10 +27,21 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: false,
   experimental: {
     viewTransition: true,
-    /** Avoid HMR “module factory is not available” when barrel-imported Phosphor icons change (e.g. crew job page). */
-    optimizePackageImports: ["@phosphor-icons/react"],
+    // Do not use `optimizePackageImports` for `@phosphor-icons/react`: Next can elide or
+    // mis-resolve barrel exports so some icons become `undefined` at runtime (React 185:
+    // "Element type is invalid"). Subpath imports (see AppIcons) are the per-icon alternative.
   },
   serverExternalPackages: ["square"],
+  async redirects() {
+    return [
+      { source: "/admin/invoices", destination: "/admin/finance/invoices", permanent: false },
+      { source: "/admin/invoices/new", destination: "/admin/finance/invoices/new", permanent: false },
+      { source: "/admin/revenue", destination: "/admin/finance/revenue", permanent: false },
+      { source: "/admin/tips", destination: "/admin/finance/tips", permanent: false },
+      { source: "/admin/deliveries", destination: "/admin/b2b/jobs", permanent: false },
+      { source: "/admin/inbound-shipments", destination: "/admin/b2b/jobs/inbound", permanent: false },
+    ]
+  },
   async headers() {
     return [
       {

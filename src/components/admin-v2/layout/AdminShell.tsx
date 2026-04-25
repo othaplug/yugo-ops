@@ -52,7 +52,7 @@ export const AdminShell = ({
             aria-label="Navigation"
           >
             <div
-              className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+              className="absolute inset-0 modal-overlay"
               onClick={() => setMobileOpen(false)}
               aria-hidden
             />

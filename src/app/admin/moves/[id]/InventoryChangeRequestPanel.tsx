@@ -88,7 +88,7 @@ export default function InventoryChangeRequestPanel({
               return (
               <li key={`a-${i}`}>
                 {(row.item_name as string) || "Item"} ×{Number(row.quantity) || 1}{" "}
-                <span className="text-[var(--gold)]">
+                <span className="text-[var(--accent-text)]">
                   {pending ? (
                     <span className="text-[var(--tx3)] normal-case">(pending coordinator pricing)</span>
                   ) : (
@@ -120,7 +120,7 @@ export default function InventoryChangeRequestPanel({
 
       <div className="text-[11px] text-[var(--tx)] mb-2">
         Auto-calculated net:{" "}
-        <strong className={request.auto_calculated_delta >= 0 ? "text-[var(--gold)]" : "text-emerald-600"}>
+        <strong className={request.auto_calculated_delta >= 0 ? "text-[var(--accent-text)]" : "text-emerald-600"}>
           {request.auto_calculated_delta >= 0 ? "+" : ""}
           {formatCurrency(request.auto_calculated_delta)}
         </strong>
@@ -207,7 +207,7 @@ export default function InventoryChangeRequestPanel({
                   admin_notes: adjustNote.trim(),
                 })
               }
-              className="flex-1 py-2 rounded-lg bg-[var(--admin-primary-fill)] text-[11px] font-bold text-[var(--btn-text-on-accent)] disabled:opacity-50"
+              className="admin-btn admin-btn-sm admin-btn-primary flex-1"
             >
               {busy === "adjust" ? "…" : "Apply adjusted price"}
             </button>

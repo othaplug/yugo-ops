@@ -194,7 +194,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
               type="button"
               onClick={handleSendSetupSms}
               disabled={smsSending || smsSent || !createdMember.phone}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
+              className="admin-btn admin-btn-sm admin-btn-primary w-full"
             >
               <Icon name="messageSquare" className="w-3.5 h-3.5" />
               {smsSent ? "Setup Link Sent" : smsSending ? "Sending…" : "Send Setup Link via SMS"}
@@ -310,7 +310,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
           <button type="button" onClick={handleClose} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">
             Cancel
           </button>
-          <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50">
+          <button type="submit" disabled={saving} className="admin-btn admin-btn-sm admin-btn-primary flex-1">
             {saving ? (existingMemberId ? "Updating…" : "Adding…") : existingMemberId ? "Update portal access" : "Add access"}
           </button>
         </div>

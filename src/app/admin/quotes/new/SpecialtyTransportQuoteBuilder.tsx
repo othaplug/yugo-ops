@@ -17,6 +17,7 @@ import {
   type ZoneTier,
 } from "@/lib/specialty-quote/cost-model";
 import { X, Truck } from "@phosphor-icons/react";
+import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme";
 
 const VEHICLE_OPTIONS: { value: VehicleType; label: string }[] = [
   { value: "sprinter", label: "Sprinter van" },
@@ -25,7 +26,11 @@ const VEHICLE_OPTIONS: { value: VehicleType; label: string }[] = [
 ];
 
 function fmt(n: number) {
-  return n.toLocaleString("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 2 });
+  return n.toLocaleString("en-CA", {
+    style: "currency",
+    currency: "CAD",
+    maximumFractionDigits: 2,
+  });
 }
 
 type Props = {
@@ -90,7 +95,9 @@ export default function SpecialtyTransportQuoteBuilder({
   const [priceOverride, setPriceOverride] = useState(false);
   const [overrideReason, setOverrideReason] = useState("");
   const [notes, setNotes] = useState("");
-  const [lineOverrides, setLineOverrides] = useState<Record<string, number>>({});
+  const [lineOverrides, setLineOverrides] = useState<Record<string, number>>(
+    {},
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -119,7 +126,9 @@ export default function SpecialtyTransportQuoteBuilder({
     const z = zoneTierFromDistanceKm(distanceKm);
     setZoneTier(z);
     if (distanceKm != null && distanceKm > 0) {
-      setTotalKm((prev) => (prev <= 0 ? Math.round(distanceKm * 2 * 10) / 10 : prev));
+      setTotalKm((prev) =>
+        prev <= 0 ? Math.round(distanceKm * 2 * 10) / 10 : prev,
+      );
     }
   }, [open, distanceKm, weightLbs]);
 
@@ -151,8 +160,14 @@ export default function SpecialtyTransportQuoteBuilder({
             return;
           }
           setDistErr(null);
-          setDistanceKm(typeof data.distance_km === "number" ? data.distance_km : null);
-          setDriveTimeMin(typeof data.drive_time_min === "number" ? data.drive_time_min : null);
+          setDistanceKm(
+            typeof data.distance_km === "number" ? data.distance_km : null,
+          );
+          setDriveTimeMin(
+            typeof data.drive_time_min === "number"
+              ? data.drive_time_min
+              : null,
+          );
         } catch {
           if (!cancelled) setDistErr("Distance lookup failed");
         }
@@ -165,11 +180,15 @@ export default function SpecialtyTransportQuoteBuilder({
   }, [open, fromAddress, toAddress]);
 
   const equipmentKeys = useMemo(
-    () => Object.entries(equipment).filter(([, v]) => v).map(([k]) => k),
+    () =>
+      Object.entries(equipment)
+        .filter(([, v]) => v)
+        .map(([k]) => k),
     [equipment],
   );
 
-  const zoneFeeOverrideNum = zoneOverride.trim() === "" ? null : Number(zoneOverride);
+  const zoneFeeOverrideNum =
+    zoneOverride.trim() === "" ? null : Number(zoneOverride);
 
   const costBuilt = useMemo(() => {
     return buildSpecialtyCostLines({
@@ -182,7 +201,10 @@ export default function SpecialtyTransportQuoteBuilder({
       wrapLargeCount: wrapL,
       wrapSmallCount: wrapS,
       zoneTier,
-      zoneFeeOverride: zoneFeeOverrideNum != null && Number.isFinite(zoneFeeOverrideNum) ? zoneFeeOverrideNum : null,
+      zoneFeeOverride:
+        zoneFeeOverrideNum != null && Number.isFinite(zoneFeeOverrideNum)
+          ? zoneFeeOverrideNum
+          : null,
       stairFlights,
     });
   }, [
@@ -209,7 +231,10 @@ export default function SpecialtyTransportQuoteBuilder({
     [costMerged.subtotal, marginPct],
   );
 
-  const suggestedRounded = useMemo(() => defaultRoundedClientPrice(suggestedRaw), [suggestedRaw]);
+  const suggestedRounded = useMemo(
+    () => defaultRoundedClientPrice(suggestedRaw),
+    [suggestedRaw],
+  );
 
   useEffect(() => {
     if (!open || priceTouched) return;
@@ -236,7 +261,8 @@ export default function SpecialtyTransportQuoteBuilder({
       toast("Override reason is required", "alertTriangle");
       return;
     }
-    const clientName = [firstName, lastName].filter(Boolean).join(" ").trim() || "Client";
+    const clientName =
+      [firstName, lastName].filter(Boolean).join(" ").trim() || "Client";
     setBusy(true);
     try {
       const res = await fetch("/api/admin/quotes/specialty-transport", {
@@ -265,9 +291,13 @@ export default function SpecialtyTransportQuoteBuilder({
           wrap_small_count: wrapS,
           equipment_keys: equipmentKeys,
           zone_tier: zoneTier,
-          zone_fee_override: zoneFeeOverrideNum != null && Number.isFinite(zoneFeeOverrideNum) ? zoneFeeOverrideNum : null,
+          zone_fee_override:
+            zoneFeeOverrideNum != null && Number.isFinite(zoneFeeOverrideNum)
+              ? zoneFeeOverrideNum
+              : null,
           margin_percent: marginPct,
-          cost_line_overrides: Object.keys(lineOverrides).length > 0 ? lineOverrides : undefined,
+          cost_line_overrides:
+            Object.keys(lineOverrides).length > 0 ? lineOverrides : undefined,
           client_price_pre_tax: clientPrice,
           price_override: priceOverride,
           override_reason: priceOverride ? overrideReason.trim() : null,
@@ -345,19 +375,18 @@ export default function SpecialtyTransportQuoteBuilder({
   const modal = (
     <div
       data-modal-root
-      data-yugo-glass-modal
       className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5"
       role="dialog"
       aria-modal="true"
       aria-labelledby="specialty-builder-title"
     >
       <div
-        className="fixed inset-0 z-0 bg-black/60 modal-overlay"
+        className="fixed inset-0 z-0 modal-overlay"
         onClick={onClose}
         aria-hidden="true"
       />
-      <div
-        className="relative z-10 w-full max-w-3xl flex flex-col yugo-glass-light rounded-2xl shadow-xl overflow-hidden modal-card pointer-events-auto"
+      <Yu3PortaledTokenRoot
+        className="relative z-10 flex w-full max-w-3xl flex-col overflow-hidden rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] modal-card pointer-events-auto"
         style={{
           maxHeight: "min(90dvh, min(92vh, 900px))",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
@@ -366,10 +395,15 @@ export default function SpecialtyTransportQuoteBuilder({
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--brd)] shrink-0">
           <div>
-            <h2 id="specialty-builder-title" className="text-[14px] font-bold text-[var(--tx)]">
+            <h2
+              id="specialty-builder-title"
+              className="text-[14px] font-bold text-[var(--tx)]"
+            >
               Specialty Quote Builder
             </h2>
-            <p className="text-[10px] text-[var(--tx3)]">One-off B2B / heavy transport (manual pricing)</p>
+            <p className="text-[10px] text-[var(--tx3)]">
+              One-off B2B / heavy transport (manual pricing)
+            </p>
           </div>
           <button
             type="button"
@@ -383,13 +417,16 @@ export default function SpecialtyTransportQuoteBuilder({
 
         <div className="overflow-y-auto flex-1 px-4 py-4 space-y-5 text-[12px] text-[var(--tx2)]">
           <p className="text-[11px] text-[var(--tx3)] leading-snug">
-            Pre-filled from the form and lead. Distance uses Mapbox routing. Cost lines are editable; margin drives the
-            suggested price. Send the quote from the quote detail page when ready.
+            Pre-filled from the form and lead. Distance uses Mapbox routing.
+            Cost lines are editable; margin drives the suggested price. Send the
+            quote from the quote detail page when ready.
           </p>
 
           <div className="grid sm:grid-cols-2 gap-3">
             <label className="block space-y-1">
-              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Item description</span>
+              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">
+                Item description
+              </span>
               <textarea
                 value={desc}
                 onChange={(e) => setDesc(e.target.value)}
@@ -399,7 +436,9 @@ export default function SpecialtyTransportQuoteBuilder({
             </label>
             <div className="grid grid-cols-2 gap-2">
               <label className="block space-y-1">
-                <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Weight (lb)</span>
+                <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">
+                  Weight (lb)
+                </span>
                 <input
                   type="number"
                   min={1}
@@ -409,7 +448,9 @@ export default function SpecialtyTransportQuoteBuilder({
                 />
               </label>
               <label className="block space-y-1">
-                <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Dimensions</span>
+                <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">
+                  Dimensions
+                </span>
                 <input
                   value={dims}
                   onChange={(e) => setDims(e.target.value)}
@@ -422,15 +463,22 @@ export default function SpecialtyTransportQuoteBuilder({
 
           <div className="rounded-xl border border-[var(--brd)] p-3 space-y-2">
             <div className="flex items-center gap-2 text-[var(--tx)] font-semibold">
-              <Truck className="w-4 h-4 text-[var(--gold)]" weight="duotone" aria-hidden />
+              <Truck
+                className="w-4 h-4 text-[var(--gold)]"
+                weight="duotone"
+                aria-hidden
+              />
               Route
             </div>
-            {distErr ? <p className="text-[11px] text-amber-600">{distErr}</p> : null}
+            {distErr ? (
+              <p className="text-[11px] text-amber-600">{distErr}</p>
+            ) : null}
             <p className="text-[11px]">
               Linehaul:{" "}
               {distanceKm != null ? (
                 <>
-                  <span className="font-mono tabular-nums">{distanceKm}</span> km
+                  <span className="font-mono tabular-nums">{distanceKm}</span>{" "}
+                  km
                   {driveTimeMin != null ? ` · ~${driveTimeMin} min` : ""}
                 </>
               ) : (
@@ -438,10 +486,15 @@ export default function SpecialtyTransportQuoteBuilder({
               )}
             </p>
             <p className="text-[11px]">
-              Zone (auto): <span className="font-medium text-[var(--tx)]">{ZONE_LABELS[zoneTier]}</span>
+              Zone (auto):{" "}
+              <span className="font-medium text-[var(--tx)]">
+                {ZONE_LABELS[zoneTier]}
+              </span>
             </p>
             <label className="block space-y-1">
-              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Total km (incl. deadhead)</span>
+              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">
+                Total km (incl. deadhead)
+              </span>
               <input
                 type="number"
                 min={0}
@@ -455,7 +508,9 @@ export default function SpecialtyTransportQuoteBuilder({
 
           <div className="grid sm:grid-cols-2 gap-3">
             <label className="block space-y-1">
-              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Vehicle</span>
+              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">
+                Vehicle
+              </span>
               <select
                 value={vehicleType}
                 onChange={(e) => setVehicleType(e.target.value as VehicleType)}
@@ -469,7 +524,9 @@ export default function SpecialtyTransportQuoteBuilder({
               </select>
             </label>
             <label className="block space-y-1">
-              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Zone tier (manual)</span>
+              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">
+                Zone tier (manual)
+              </span>
               <select
                 value={zoneTier}
                 onChange={(e) => setZoneTier(e.target.value as ZoneTier)}
@@ -483,7 +540,9 @@ export default function SpecialtyTransportQuoteBuilder({
               </select>
             </label>
             <label className="block space-y-1">
-              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Crew size</span>
+              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">
+                Crew size
+              </span>
               <input
                 type="number"
                 min={1}
@@ -494,7 +553,9 @@ export default function SpecialtyTransportQuoteBuilder({
               />
             </label>
             <label className="block space-y-1">
-              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Est. job hours</span>
+              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">
+                Est. job hours
+              </span>
               <input
                 type="number"
                 min={0.5}
@@ -505,7 +566,9 @@ export default function SpecialtyTransportQuoteBuilder({
               />
             </label>
             <label className="block space-y-1">
-              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Stair flights (no elevator)</span>
+              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">
+                Stair flights (no elevator)
+              </span>
               <input
                 type="number"
                 min={0}
@@ -515,7 +578,9 @@ export default function SpecialtyTransportQuoteBuilder({
               />
             </label>
             <label className="block space-y-1">
-              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Zone fee override ($)</span>
+              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">
+                Zone fee override ($)
+              </span>
               <input
                 value={zoneOverride}
                 onChange={(e) => setZoneOverride(e.target.value)}
@@ -526,25 +591,38 @@ export default function SpecialtyTransportQuoteBuilder({
           </div>
 
           <div>
-            <p className="text-[10px] font-bold uppercase text-[var(--tx3)] mb-2">Equipment</p>
+            <p className="text-[10px] font-bold uppercase text-[var(--tx3)] mb-2">
+              Equipment
+            </p>
             <div className="flex flex-wrap gap-2">
-              {Object.entries(EQUIPMENT_RATES).map(([key, { label, dollars }]) => (
-                <label
-                  key={key}
-                  className={`inline-flex items-center gap-1.5 px-2 py-1.5 rounded-lg border cursor-pointer text-[11px] ${
-                    equipment[key] ? "border-[var(--gold)] bg-[var(--gold)]/10" : "border-[var(--brd)]"
-                  }`}
-                >
-                  <input type="checkbox" checked={!!equipment[key]} onChange={() => toggleEq(key)} className="accent-[var(--gold)]" />
-                  {label} (+{fmt(dollars)})
-                </label>
-              ))}
+              {Object.entries(EQUIPMENT_RATES).map(
+                ([key, { label, dollars }]) => (
+                  <label
+                    key={key}
+                    className={`inline-flex items-center gap-1.5 px-2 py-1.5 rounded-lg border cursor-pointer text-[11px] ${
+                      equipment[key]
+                        ? "border-[var(--gold)] bg-[var(--gold)]/10"
+                        : "border-[var(--brd)]"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={!!equipment[key]}
+                      onChange={() => toggleEq(key)}
+                      className="accent-[var(--gold)]"
+                    />
+                    {label} (+{fmt(dollars)})
+                  </label>
+                ),
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2 max-w-xs">
             <label className="block space-y-1">
-              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Wrap large</span>
+              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">
+                Wrap large
+              </span>
               <input
                 type="number"
                 min={0}
@@ -554,7 +632,9 @@ export default function SpecialtyTransportQuoteBuilder({
               />
             </label>
             <label className="block space-y-1">
-              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Wrap small</span>
+              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">
+                Wrap small
+              </span>
               <input
                 type="number"
                 min={0}
@@ -567,7 +647,9 @@ export default function SpecialtyTransportQuoteBuilder({
 
           <div className="rounded-xl border border-[var(--brd)] overflow-hidden">
             <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-[var(--brd)] bg-[var(--bg)]">
-              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Cost lines</span>
+              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">
+                Cost lines
+              </span>
               <button
                 type="button"
                 disabled={Object.keys(lineOverrides).length === 0}
@@ -580,7 +662,10 @@ export default function SpecialtyTransportQuoteBuilder({
             <table className="w-full text-[11px]">
               <tbody>
                 {costMerged.lines.map((row) => (
-                  <tr key={row.key} className="border-t border-[var(--brd)] first:border-t-0">
+                  <tr
+                    key={row.key}
+                    className="border-t border-[var(--brd)] first:border-t-0"
+                  >
                     <td className="px-3 py-1.5">
                       {row.label}
                       {row.key === "processing" ? (
@@ -591,7 +676,9 @@ export default function SpecialtyTransportQuoteBuilder({
                     </td>
                     <td className="px-3 py-1.5 text-right w-[1%] whitespace-nowrap">
                       {row.key === "processing" ? (
-                        <span className="font-mono tabular-nums">{fmt(row.amount)}</span>
+                        <span className="font-mono tabular-nums">
+                          {fmt(row.amount)}
+                        </span>
                       ) : (
                         <input
                           type="number"
@@ -602,7 +689,10 @@ export default function SpecialtyTransportQuoteBuilder({
                             const v = Number(e.target.value);
                             setLineOverrides((prev) => ({
                               ...prev,
-                              [row.key]: Number.isFinite(v) && v >= 0 ? Math.round(v * 100) / 100 : 0,
+                              [row.key]:
+                                Number.isFinite(v) && v >= 0
+                                  ? Math.round(v * 100) / 100
+                                  : 0,
                             }));
                           }}
                           className="field-input-compact w-[7.5rem] text-right font-mono tabular-nums"
@@ -612,8 +702,12 @@ export default function SpecialtyTransportQuoteBuilder({
                   </tr>
                 ))}
                 <tr className="border-t-2 border-[var(--brd)] bg-[var(--bg)]">
-                  <td className="px-3 py-2 font-bold text-[var(--tx)]">Subtotal (cost build)</td>
-                  <td className="px-3 py-2 text-right font-bold font-mono text-[var(--tx)]">{fmt(costMerged.subtotal)}</td>
+                  <td className="px-3 py-2 font-bold text-[var(--tx)]">
+                    Subtotal (cost build)
+                  </td>
+                  <td className="px-3 py-2 text-right font-bold font-mono text-[var(--tx)]">
+                    {fmt(costMerged.subtotal)}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -634,11 +728,19 @@ export default function SpecialtyTransportQuoteBuilder({
               />
             </label>
             <p className="text-[11px] text-[var(--tx3)]">
-              Suggested (pre-tax): <span className="font-mono text-[var(--tx)]">{fmt(suggestedRaw)}</span> · Rounded
-              default: <span className="font-mono text-[var(--tx)]">{fmt(suggestedRounded)}</span>
+              Suggested (pre-tax):{" "}
+              <span className="font-mono text-[var(--tx)]">
+                {fmt(suggestedRaw)}
+              </span>{" "}
+              · Rounded default:{" "}
+              <span className="font-mono text-[var(--tx)]">
+                {fmt(suggestedRounded)}
+              </span>
             </p>
             <label className="block space-y-1">
-              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Client price (pre-tax)</span>
+              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">
+                Client price (pre-tax)
+              </span>
               <input
                 type="number"
                 min={0}
@@ -653,7 +755,9 @@ export default function SpecialtyTransportQuoteBuilder({
             </label>
             <p className="text-[11px]">
               HST (13%): <span className="font-mono">{fmt(tax)}</span> · Total:{" "}
-              <span className="font-mono font-bold text-[var(--tx)]">{fmt(grandTotal)}</span>
+              <span className="font-mono font-bold text-[var(--tx)]">
+                {fmt(grandTotal)}
+              </span>
             </p>
             <label className="flex items-center gap-2 cursor-pointer text-[11px]">
               <input
@@ -676,7 +780,9 @@ export default function SpecialtyTransportQuoteBuilder({
           </div>
 
           <label className="block space-y-1">
-            <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Special handling notes *</span>
+            <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">
+              Special handling notes *
+            </span>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -691,7 +797,7 @@ export default function SpecialtyTransportQuoteBuilder({
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-2 rounded-lg text-[12px] border border-[var(--brd)] text-[var(--tx2)]"
+            className="admin-btn admin-btn-secondary"
           >
             Cancel
           </button>
@@ -699,12 +805,12 @@ export default function SpecialtyTransportQuoteBuilder({
             type="button"
             disabled={busy}
             onClick={() => void submit()}
-            className="px-4 py-2 rounded-lg text-[12px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+            className="admin-btn admin-btn-primary"
           >
             {busy ? "Saving…" : "Create draft quote"}
           </button>
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>
   );
 

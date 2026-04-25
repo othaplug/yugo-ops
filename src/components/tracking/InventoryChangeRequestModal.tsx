@@ -12,6 +12,7 @@ import {
 } from "@/lib/inventory-change-requests";
 import { formatCurrency } from "@/lib/format-currency";
 import { WINE, FOREST, GOLD } from "@/lib/client-theme";
+import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme";
 
 type WeightRow = { slug: string; item_name: string; weight_score: number; active?: boolean };
 
@@ -220,15 +221,14 @@ export default function InventoryChangeRequestModal({
   return (
     <div
       data-modal-root
-      data-yugo-glass-modal
       className="fixed inset-0 z-[100001] flex items-center justify-center p-3"
       role="dialog"
       aria-modal="true"
     >
       <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={close} />
-      <div
-        className="relative z-10 w-full max-w-md rounded-2xl border yugo-glass-light shadow-xl flex flex-col modal-card pointer-events-auto"
-        style={{ borderColor: `${FOREST}18`, maxHeight: "min(92dvh, 640px)" }}
+      <Yu3PortaledTokenRoot
+        className="relative z-10 flex w-full max-w-md flex-col overflow-hidden rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] modal-card pointer-events-auto"
+        style={{ maxHeight: "min(92dvh, 640px)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-2 px-4 py-3 border-b" style={{ borderColor: `${FOREST}10` }}>
@@ -474,7 +474,7 @@ export default function InventoryChangeRequestModal({
             </button>
           )}
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>
   );
 }

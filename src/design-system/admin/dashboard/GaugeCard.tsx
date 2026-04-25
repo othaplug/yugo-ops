@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "../lib/cn"
-import { chartStageHex } from "../tokens"
+import * as React from "react";
+import { cn } from "../lib/cn";
+import { chartStageHex } from "../tokens";
 
 export interface GaugeCardProps extends React.HTMLAttributes<HTMLDivElement> {
-  eyebrow?: string
-  title?: string
+  eyebrow?: string;
+  title?: string;
   /** 0 to 1 */
-  value: number
-  valueLabel?: string | number
-  valueHint?: React.ReactNode
+  value: number;
+  valueLabel?: string | number;
+  valueHint?: React.ReactNode;
   /** Segment data to color the arc as a donut. */
-  segments?: { id: string; label: string; value: number; color?: string }[]
-  rightSlot?: React.ReactNode
+  segments?: { id: string; label: string; value: number; color?: string }[];
+  rightSlot?: React.ReactNode;
 }
 
 export const GaugeCard = React.forwardRef<HTMLDivElement, GaugeCardProps>(
@@ -32,7 +32,7 @@ export const GaugeCard = React.forwardRef<HTMLDivElement, GaugeCardProps>(
     },
     ref,
   ) => {
-    const pct = Math.min(1, Math.max(0, value))
+    const pct = Math.min(1, Math.max(0, value));
 
     return (
       <div
@@ -75,78 +75,109 @@ export const GaugeCard = React.forwardRef<HTMLDivElement, GaugeCardProps>(
 
         {children}
       </div>
-    )
+    );
   },
-)
-GaugeCard.displayName = "GaugeCard"
+);
+GaugeCard.displayName = "GaugeCard";
 
 function GaugeArc({
   pct,
   segments,
 }: {
-  pct: number
-  segments?: { id: string; label: string; value: number; color?: string }[]
+  pct: number;
+  segments?: { id: string; label: string; value: number; color?: string }[];
 }) {
-  const W = 220
-  const H = 120
-  const cx = W / 2
-  const cy = H - 8
-  const r = 92
+  // Geometry — cx/cy are the origin of the semicircle; r is the track radius.
+  // PAD gives the viewBox breathing room so the 14px stroke never clips at any edge.
+  const STROKE = 14;
+  const PAD = STROKE / 2 + 6; // 13 px clear on every side
+  const r = 86;
+  const cx = 110;
+  const cy = 110;
+  // viewBox is padded on all four sides
+  const vbX = cx - r - PAD;
+  const vbY = cy - r - PAD;
+  const vbW = (r + PAD) * 2;
+  const vbH = r + PAD * 2; // semicircle only needs the top half + padding on both Y edges
+
+  const trackD = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
 
   if (segments && segments.length > 0) {
-    const total = segments.reduce((acc, s) => acc + s.value, 0) || 1
-    let cursor = 0
+    const total = segments.reduce((acc, s) => acc + s.value, 0) || 1;
+    let cursor = 0;
     return (
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
+      <svg
+        width="100%"
+        viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`}
+        className="max-w-[220px]"
+        aria-hidden
+      >
+        {/* Subtle full-track underlay */}
+        <path
+          d={trackD}
+          fill="none"
+          stroke="var(--yu3-line-subtle)"
+          strokeWidth={STROKE}
+          strokeLinecap="round"
+        />
         {segments.map((seg, i) => {
-          const start = cursor / total
-          cursor += seg.value
-          const end = cursor / total
-          const startAngle = Math.PI + start * Math.PI
-          const endAngle = Math.PI + end * Math.PI
-          const x1 = cx + Math.cos(startAngle) * r
-          const y1 = cy + Math.sin(startAngle) * r
-          const x2 = cx + Math.cos(endAngle) * r
-          const y2 = cy + Math.sin(endAngle) * r
-          const large = end - start > 0.5 ? 1 : 0
-          const color = seg.color ?? chartStageHex[i % chartStageHex.length]
+          const start = cursor / total;
+          cursor += seg.value;
+          const end = cursor / total;
+          // Inset each segment slightly so round caps produce a visible gap
+          const GAP_RAD = 0.025;
+          const startAngle = Math.PI + start * Math.PI + GAP_RAD;
+          const endAngle = Math.PI + end * Math.PI - GAP_RAD;
+          if (endAngle <= startAngle) return null;
+          const x1 = cx + Math.cos(startAngle) * r;
+          const y1 = cy + Math.sin(startAngle) * r;
+          const x2 = cx + Math.cos(endAngle) * r;
+          const y2 = cy + Math.sin(endAngle) * r;
+          const large = end - start > 0.5 ? 1 : 0;
+          const color = seg.color ?? chartStageHex[i % chartStageHex.length];
           return (
             <path
               key={seg.id}
               d={`M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`}
               fill="none"
               stroke={color}
-              strokeWidth={12}
-              strokeLinecap="butt"
+              strokeWidth={STROKE}
+              strokeLinecap="round"
             />
-          )
+          );
         })}
       </svg>
-    )
+    );
   }
 
-  const endAngle = Math.PI + pct * Math.PI
-  const x2 = cx + Math.cos(endAngle) * r
-  const y2 = cy + Math.sin(endAngle) * r
-  const large = pct > 0.5 ? 1 : 0
+  const endAngle = Math.PI + pct * Math.PI;
+  const x2 = cx + Math.cos(endAngle) * r;
+  const y2 = cy + Math.sin(endAngle) * r;
+  const large = pct > 0.5 ? 1 : 0;
 
   return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
+    <svg
+      width="100%"
+      viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`}
+      className="max-w-[220px]"
+      aria-hidden
+    >
       <path
-        d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+        d={trackD}
         fill="none"
         stroke="var(--yu3-line-subtle)"
-        strokeWidth={12}
+        strokeWidth={STROKE}
+        strokeLinecap="round"
       />
       <path
         d={`M ${cx - r} ${cy} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`}
         fill="none"
         stroke="var(--yu3-ink-strong)"
-        strokeWidth={12}
+        strokeWidth={STROKE}
         strokeLinecap="round"
       />
     </svg>
-  )
+  );
 }
 
 export function BreakdownList({
@@ -155,17 +186,22 @@ export function BreakdownList({
   currency = false,
   className,
 }: {
-  items: { id: string; label: string; value: number; color?: string }[]
-  total?: number
-  currency?: boolean
-  className?: string
+  items: { id: string; label: string; value: number; color?: string }[];
+  total?: number;
+  currency?: boolean;
+  className?: string;
 }) {
-  const sum = total ?? (items.reduce((a, i) => a + i.value, 0) || 1)
+  const sum = total ?? (items.reduce((a, i) => a + i.value, 0) || 1);
   return (
-    <ul className={cn("flex flex-col divide-y divide-[var(--yu3-line-subtle)]", className)}>
+    <ul
+      className={cn(
+        "flex flex-col divide-y divide-[var(--yu3-line-subtle)]",
+        className,
+      )}
+    >
       {items.map((it, i) => {
-        const pct = it.value / sum
-        const color = it.color ?? chartStageHex[i % chartStageHex.length]
+        const pct = it.value / sum;
+        const color = it.color ?? chartStageHex[i % chartStageHex.length];
         return (
           <li key={it.id} className="flex items-center gap-3 py-2">
             <span
@@ -178,7 +214,10 @@ export function BreakdownList({
             <span className="relative h-1.5 w-24 rounded-full bg-[var(--yu3-line-subtle)] overflow-hidden">
               <span
                 className="absolute inset-y-0 left-0 rounded-full"
-                style={{ width: `${Math.max(3, pct * 100)}%`, background: color }}
+                style={{
+                  width: `${Math.max(3, pct * 100)}%`,
+                  background: color,
+                }}
               />
             </span>
             <span className="text-[12px] text-[var(--yu3-ink-muted)] yu3-num w-10 text-right">
@@ -188,15 +227,15 @@ export function BreakdownList({
               {currency ? formatMoney(it.value) : it.value.toLocaleString()}
             </span>
           </li>
-        )
+        );
       })}
     </ul>
-  )
+  );
 }
 
 function formatMoney(n: number) {
   if (Math.abs(n) >= 1000) {
-    return `$${(n / 1000).toFixed(1)}k`
+    return `$${(n / 1000).toFixed(1)}k`;
   }
-  return `$${n.toFixed(0)}`
+  return `$${n.toFixed(0)}`;
 }

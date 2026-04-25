@@ -259,7 +259,7 @@ export default function EquipmentCatalogPanel() {
               type="button"
               onClick={save}
               disabled={saving}
-              className="px-4 py-2 rounded-xl text-[12px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+              className="admin-btn admin-btn-primary"
             >
               {saving ? "Saving…" : "Save"}
             </button>

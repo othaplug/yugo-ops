@@ -56,12 +56,21 @@ export async function GET() {
     const supabase = createAdminClient();
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
 
-    const { data: recentQuotes } = await supabase
-      .from("quotes")
-      .select(
-        "id, status, selected_tier, recommended_tier, factors_applied, created_at, service_type, custom_price, override_price, system_price, tiers, essential_price, labour_rate_per_mover, labour_validation_status, loss_reason",
-      )
-      .gte("created_at", thirtyDaysAgo);
+    const [
+      { data: recentQuotes },
+      { count: movesLast30 },
+    ] = await Promise.all([
+      supabase
+        .from("quotes")
+        .select(
+          "id, status, selected_tier, recommended_tier, factors_applied, created_at, service_type, custom_price, override_price, system_price, tiers, essential_price, labour_rate_per_mover, labour_validation_status, loss_reason",
+        )
+        .gte("created_at", thirtyDaysAgo),
+      supabase
+        .from("moves")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", thirtyDaysAgo),
+    ]);
 
     const quotes = recentQuotes || [];
     const total = quotes.length;
@@ -162,6 +171,7 @@ export async function GET() {
 
     return NextResponse.json({
       quotesSent: total,
+      movesLast30: movesLast30 ?? 0,
       conversionRate,
       avgQuoteAmount,
       mostQuotedTier,

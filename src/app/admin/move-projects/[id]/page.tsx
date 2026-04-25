@@ -27,7 +27,7 @@ export default async function AdminMoveProjectDetailPage({
   const { data: crewRows } = await db.from("crews").select("id, name").order("name");
 
   return (
-    <div className="max-w-4xl mx-auto px-5 md:px-6 py-6 space-y-6">
+    <div className="w-full min-w-0 py-6 space-y-6">
       <div>
         <Link href="/admin/move-projects" className="text-[11px] font-medium text-[var(--yu-accent)] hover:underline">
           Move projects

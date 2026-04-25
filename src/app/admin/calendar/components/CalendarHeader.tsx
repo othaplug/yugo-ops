@@ -58,7 +58,7 @@ export default function CalendarHeader({
           <button
             type="button"
             onClick={onToday}
-            className="ml-0.5 min-h-[36px] sm:min-h-0 px-3 py-2 sm:px-2 sm:py-0.5 rounded-md text-xs sm:text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--brd)] hover:text-[var(--tx)] transition-colors"
+            className="admin-btn admin-btn-sm admin-btn-secondary ml-1"
           >
             Today
           </button>
@@ -106,7 +106,7 @@ export default function CalendarHeader({
               key={idx}
               value={sel.value}
               onChange={(e) => sel.onChange(e.target.value)}
-              className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-0.5 text-[var(--tx2)] outline-none"
+              className="admin-input admin-input-sm min-w-[140px]"
             >
               {sel.options.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -136,18 +136,18 @@ export default function CalendarHeader({
         <button
           type="button"
           onClick={onScheduleJob}
-          className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-lg text-[11px] font-bold uppercase tracking-[0.12em] bg-[var(--yu3-wine)] text-[var(--yu3-on-wine)] border border-[var(--yu3-wine)] hover:bg-[var(--yu3-wine-hover)] hover:border-[var(--yu3-wine-hover)] transition-colors shrink-0 w-full sm:w-auto"
+          className="admin-btn admin-btn-primary shrink-0 w-full sm:w-auto"
         >
           + Schedule
         </button>
       </div>
 
       {/* Mobile-only filter row */}
-      <div className="flex sm:hidden items-center gap-1.5 flex-wrap">
+      <div className="flex sm:hidden items-center gap-2 flex-wrap">
         <select
           value={filters.crewId}
           onChange={(e) => onFiltersChange({ ...filters, crewId: e.target.value })}
-          className="text-xs min-h-[40px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-2 text-[var(--tx2)] outline-none"
+          className="admin-input flex-1 min-w-[120px]"
         >
           <option value="">All Teams</option>
           {crews.map((c) => (
@@ -157,7 +157,7 @@ export default function CalendarHeader({
         <select
           value={filters.type}
           onChange={(e) => onFiltersChange({ ...filters, type: e.target.value })}
-          className="text-xs min-h-[40px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-2 text-[var(--tx2)] outline-none"
+          className="admin-input flex-1 min-w-[120px]"
         >
           <option value="">All Types</option>
           <option value="move">Moves</option>
@@ -170,7 +170,7 @@ export default function CalendarHeader({
         <select
           value={filters.status}
           onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
-          className="text-xs min-h-[40px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-2 text-[var(--tx2)] outline-none"
+          className="admin-input flex-1 min-w-[120px]"
         >
           <option value="">All Statuses</option>
           <option value="scheduled">Scheduled</option>

@@ -17,7 +17,7 @@ function getStatusColor(status: string): string {
   if (["in_progress", "pending"].includes(s)) return "text-[var(--org)]";
   if (["cancelled"].includes(s)) return "text-[var(--red)]";
   if (["quote", "project"].includes(s)) return "text-[var(--tx2)]";
-  return "text-[var(--gold)]";
+  return "text-[var(--accent-text)]";
 }
 
 /** Schedule layout: time/date left, vertical bar, status + title + subtitle. Used for moves, deliveries, projects. */
@@ -85,7 +85,7 @@ export function ScheduleMoveItem({
         <div className={`text-[10px] font-bold uppercase tracking-wide mb-0.5 ${getStatusColor(status)}`}>{status}</div>
         <div className="text-[var(--text-base)] font-bold font-heading text-[var(--tx)]">{title}</div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          {price && <span className="text-[13px] font-bold text-[var(--gold)]">{price}</span>}
+          {price && <span className="text-[13px] font-bold text-[var(--accent-text)]">{price}</span>}
           <span className="text-[11px] text-[var(--tx3)] truncate">{subtitle}</span>
         </div>
       </div>

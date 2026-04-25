@@ -124,7 +124,7 @@ export default function AdminNotificationsPage() {
   const unreadOnPage = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <div className="p-4 sm:p-6 pt-[72px] max-w-[960px] mx-auto">
+    <div className="w-full min-w-0 p-4 sm:p-6 pt-[72px]">
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
@@ -137,7 +137,7 @@ export default function AdminNotificationsPage() {
         {unreadOnPage > 0 && (
           <button
             onClick={markAllRead}
-            className="text-[11px] font-semibold text-[var(--gold)] hover:underline px-3 py-1.5 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)] transition-colors"
+            className="text-[11px] font-semibold text-[var(--accent-text)] hover:underline px-3 py-1.5 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)] transition-colors"
           >
             Mark all read
           </button>
@@ -166,7 +166,7 @@ export default function AdminNotificationsPage() {
               onClick={() => setSourceFilter(f.key)}
               className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-colors ${
                 sourceFilter === f.key
-                  ? "border-[var(--gold)] bg-[var(--gdim)] text-[var(--gold)]"
+                  ? "border-[var(--gold)] bg-[var(--gdim)] text-[var(--accent-text)]"
                   : "border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)]/50 hover:text-[var(--tx2)]"
               }`}
             >
@@ -214,7 +214,7 @@ export default function AdminNotificationsPage() {
             {(search || sourceFilter || dateFrom || dateTo) && (
               <button
                 onClick={() => { setSearch(""); setSourceFilter(""); setDateFrom(""); setDateTo(""); }}
-                className="mt-2 text-[11px] text-[var(--gold)] hover:underline"
+                className="mt-2 text-[11px] text-[var(--accent-text)] hover:underline"
               >
                 Clear filters
               </button>
@@ -269,7 +269,7 @@ export default function AdminNotificationsPage() {
                       {formatRelativeTime(notif.created_at)}
                     </span>
                     {notif.link && (
-                      <span className="text-[10px] text-[var(--gold)] font-medium">
+                      <span className="text-[10px] text-[var(--accent-text)] font-medium">
                         View details
                       </span>
                     )}

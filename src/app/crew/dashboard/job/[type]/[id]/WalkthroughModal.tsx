@@ -19,6 +19,7 @@ import {
   type ExtraItemWeightTier,
 } from "@/lib/pricing/extra-item-surcharges";
 import { creditForRemovedLine } from "@/lib/inventory-change-requests";
+import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme";
 
 // ──────────────────────────────────────────────────────────────
 // Types
@@ -528,14 +529,13 @@ export default function WalkthroughModal({
     <div
       className="premium-field-host fixed inset-0 z-[99995] flex min-h-0 items-center justify-center p-4 sm:p-5"
       data-modal-root
-      data-yugo-glass-modal
       data-crew-portal
       style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
     >
       <div className="fixed inset-0 z-0 modal-overlay" aria-hidden />
-      <div
-        className="relative z-10 w-full max-w-[520px] overflow-hidden yugo-glass-light border border-[#2C3E2D]/10 rounded-t-2xl sm:rounded-2xl shadow-[0_24px_64px_-20px_rgba(44,62,45,0.25)] flex flex-col modal-card"
+      <Yu3PortaledTokenRoot
         data-crew-job-premium
+        className="relative z-10 flex w-full max-w-[520px] flex-col overflow-hidden rounded-t-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] sm:rounded-[var(--yu3-r-xl)] modal-card"
         style={{ maxHeight: "min(92dvh, 92vh)" }}
       >
         <div className="sticky top-0 bg-[#FFFBF7]/80 backdrop-blur-md border-b border-[#2C3E2D]/10 px-5 py-4 z-10 flex items-start justify-between gap-3">
@@ -1354,7 +1354,7 @@ export default function WalkthroughModal({
             </>
           )}
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>
   );
 

@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import ClientsPageClient from "./ClientsPageClient";
+import ClientsV3Client from "./ClientsV3Client";
 
 export default async function ClientsPage() {
   const db = createAdminClient();
@@ -35,5 +35,5 @@ export default async function ClientsPage() {
     }
   }
 
-  return <ClientsPageClient clients={clients} moveClientData={latestByOrg} />;
+  return <ClientsV3Client clients={clients} moveClientData={latestByOrg} />;
 }

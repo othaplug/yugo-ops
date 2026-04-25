@@ -166,7 +166,7 @@ export default function PartnerInboundShipmentsTab() {
       )}
 
       {selected && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4" role="dialog">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 modal-overlay" role="dialog">
           <div className="w-full max-w-lg rounded-2xl bg-[var(--card)] border border-[var(--brd)] shadow-xl max-h-[90vh] overflow-y-auto p-5">
             <div className="flex justify-between items-start gap-2 mb-4">
               <div>

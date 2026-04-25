@@ -4,7 +4,14 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "../../components/Toast";
 
-const STATUSES = ["pending", "scheduled", "confirmed", "dispatched", "in-transit", "delivered"];
+const STATUSES = [
+  "pending",
+  "scheduled",
+  "confirmed",
+  "dispatched",
+  "in-transit",
+  "delivered",
+];
 
 export default function StatusUpdater({
   deliveryId,
@@ -50,7 +57,9 @@ export default function StatusUpdater({
           client_name: del.client_name,
           amount,
           status: "sent",
-          due_date: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+          due_date: new Date(Date.now() + 30 * 86400000)
+            .toISOString()
+            .split("T")[0],
           line_items: JSON.stringify([
             { d: "White-glove delivery", q: del.items?.length || 1, r: 250 },
           ]),
@@ -60,14 +69,17 @@ export default function StatusUpdater({
       }
     }
 
-    toast(`Status: ${nextStatus}`, nextStatus === "delivered" ? "check" : "truck");
+    toast(
+      `Status: ${nextStatus}`,
+      nextStatus === "delivered" ? "check" : "truck",
+    );
     router.refresh();
   };
 
   return (
     <button
       onClick={handleUpdate}
-      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all active:scale-[.97]"
+      className="admin-btn admin-btn-sm admin-btn-primary"
     >
       {currentStatus === "delivered" ? "Reset" : "Update Status"}
     </button>

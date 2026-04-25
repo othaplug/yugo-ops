@@ -5,6 +5,9 @@ import Link from "next/link";
 import { CaretRight, ArrowRight } from "@phosphor-icons/react";
 import { INBOUND_SHIPMENT_STATUS_LABELS } from "@/lib/inbound-shipment-labels";
 import { RissdWorkflowHint } from "@/components/admin/AdminContextHints";
+import { KpiStrip, type KpiTile } from "@/design-system/admin/dashboard";
+import { PageHeader } from "@/design-system/admin/layout";
+import { Button } from "@/design-system/admin/primitives/Button";
 
 type Shipment = {
   id: string;
@@ -62,131 +65,89 @@ export default function InboundShipmentsClient() {
     load();
   }, [load]);
 
-  const statItems = stats
+  const statTiles: KpiTile[] = stats
     ? [
-        { key: "awaiting", label: "Awaiting", value: stats.awaiting },
-        { key: "in_transit", label: "In transit", value: stats.in_transit },
-        {
-          key: "at_facility",
-          label: "At facility",
-          value: stats.at_facility,
-        },
-        { key: "ready", label: "Ready to deliver", value: stats.ready },
-        { key: "delivered", label: "Delivered", value: stats.delivered },
+        { id: "awaiting", label: "Awaiting", value: stats.awaiting },
+        { id: "in_transit", label: "In transit", value: stats.in_transit },
+        { id: "at_facility", label: "At facility", value: stats.at_facility },
+        { id: "ready", label: "Ready to deliver", value: stats.ready },
+        { id: "delivered", label: "Delivered", value: stats.delivered },
       ]
     : [];
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6">
-      <header className="mb-10 flex flex-col gap-6 sm:mb-12 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--tx3)]/55">
-            B2B
-          </p>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="admin-page-hero text-[var(--tx)] mb-0">Inbound Shipments</h1>
+    <div className="w-full min-w-0 py-5 md:py-6">
+      <PageHeader
+        className="mb-6"
+        eyebrow="B2B"
+        title={
+          <span className="inline-flex flex-wrap items-center gap-2">
+            <span>Inbound Shipments</span>
             <RissdWorkflowHint ariaLabel="What RISSD means" />
-          </div>
-        </div>
-        <Link
-          href="/admin/inbound-shipments/new"
-          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg border border-[#2C3E2D]/30 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx)] transition-colors hover:bg-[#2C3E2D]/[0.06] dark:border-[var(--brd)] dark:text-[var(--tx2)] dark:hover:bg-[var(--hover)] sm:self-auto"
-        >
-          New inbound shipment
-          <CaretRight size={14} weight="bold" aria-hidden className="opacity-80" />
-        </Link>
-      </header>
+          </span>
+        }
+        description="Track partner-sent freight from origin to delivery scheduling."
+        actions={
+          <Button asChild variant="primary" size="md" uppercase className="self-start sm:self-auto">
+            <Link
+              href="/admin/inbound-shipments/new"
+              className="inline-flex items-center gap-1.5"
+            >
+              New inbound shipment
+              <CaretRight size={14} weight="bold" aria-hidden className="opacity-90" />
+            </Link>
+          </Button>
+        }
+      />
 
       {repeatSenders.length > 0 && (
-        <aside className="mb-8 flex flex-col gap-3 rounded-2xl bg-[var(--org)]/[0.06] px-4 py-3.5 ring-1 ring-[var(--org)]/20 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-          <div className="text-sm text-[var(--tx2)]">
-            <p className="font-semibold text-[var(--tx)]">Repeat sender</p>
+        <aside className="mb-6 flex flex-col gap-3 rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-wine-tint)]/35 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <div className="text-sm text-[var(--yu3-ink)]">
+            <p className="font-semibold text-[var(--yu3-ink-strong)]">Repeat sender</p>
             {repeatSenders.map((r) => (
-              <p key={r.email} className="mt-1 text-[var(--tx3)]">
+              <p key={r.email} className="mt-1 text-[var(--yu3-ink-muted)]">
                 {r.business_name || r.email} has {r.count} shipments without a
                 partner account. Consider creating a partner for volume pricing.
               </p>
             ))}
           </div>
-          <Link
-            href="/admin/partners"
-            className="inline-flex shrink-0 items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx)] hover:underline dark:text-[var(--tx2)]"
-          >
-            Partners
-            <ArrowRight size={14} weight="bold" aria-hidden />
-          </Link>
+          <Button asChild variant="secondary" size="sm" className="shrink-0">
+            <Link href="/admin/partners" className="inline-flex items-center gap-1.5">
+              Partners
+              <ArrowRight size={14} weight="bold" aria-hidden />
+            </Link>
+          </Button>
         </aside>
       )}
 
-      {stats && (
-        <section
-          className="mb-10 overflow-hidden rounded-2xl bg-[var(--brd)]/[0.28] p-px shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:bg-[var(--brd)]/35 dark:shadow-none"
-          aria-label="Shipment status summary"
-        >
-          <dl className="grid grid-cols-2 gap-px sm:grid-cols-5">
-            {statItems.map(({ key, label, value }) => (
-              <div key={key} className="bg-[var(--card)] px-4 py-4 sm:px-5 sm:py-5">
-                <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/65">
-                  {label}
-                </dt>
-                <dd className="mt-1.5 font-heading text-2xl font-semibold tabular-nums tracking-tight text-[var(--tx)]">
-                  {value}
-                </dd>
-              </div>
-            ))}
-          </dl>
+      {stats ? (
+        <section className="mb-8" aria-label="Shipment status summary">
+          <KpiStrip variant="pills" tiles={statTiles} />
         </section>
-      )}
+      ) : null}
 
-      <section aria-label="Inbound shipments list">
-        <div className="overflow-x-auto rounded-2xl bg-[var(--card)] shadow-[0_1px_0_rgba(0,0,0,0.04)] ring-1 ring-[var(--brd)]/40 dark:shadow-none dark:ring-[var(--brd)]/50">
-          <table className="w-full min-w-[720px] border-collapse text-sm">
+      <section
+        aria-label="Inbound shipments list"
+        className="overflow-hidden rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)]"
+      >
+        <div className="overflow-x-auto">
+          <table className="admin-table">
             <thead>
-              <tr className="border-b border-[var(--brd)]/50 text-left">
-                <th
-                  scope="col"
-                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
-                >
-                  Reference
-                </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
-                >
-                  Item
-                </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
-                >
-                  Status
-                </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
-                >
-                  Received
-                </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
-                >
-                  Delivery
-                </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/70"
-                >
-                  Customer
-                </th>
+              <tr>
+                <th scope="col">Reference</th>
+                <th scope="col">Item</th>
+                <th scope="col">Status</th>
+                <th scope="col">Received</th>
+                <th scope="col">Delivery</th>
+                <th scope="col">Customer</th>
               </tr>
             </thead>
-            <tbody className="text-[var(--tx2)]">
+            <tbody>
               {loading ? (
                 <tr>
                   <td
                     colSpan={6}
-                    className="px-4 py-16 text-center text-[var(--tx3)]"
+                    className="py-16 text-center text-[var(--yu3-ink-faint)]"
                   >
                     Loading…
                   </td>
@@ -195,32 +156,33 @@ export default function InboundShipmentsClient() {
                 <tr>
                   <td
                     colSpan={6}
-                    className="px-4 py-16 text-center text-[15px] text-[var(--tx3)]/85"
+                    className="py-16 text-center text-[var(--yu3-ink-faint)]"
                   >
                     No inbound shipments yet.
                   </td>
                 </tr>
               ) : (
                 shipments.map((s) => (
-                  <tr
-                    key={s.id}
-                    className="border-b border-[var(--brd)]/[0.35] transition-colors last:border-b-0 hover:bg-[var(--hover)]/80"
-                  >
-                    <td className="px-4 py-3.5">
+                  <tr key={s.id}>
+                    <td>
                       <Link
                         href={`/admin/inbound-shipments/${s.id}`}
-                        className="font-mono text-[0.8125rem] font-semibold text-[var(--tx)] underline-offset-2 hover:underline dark:text-[var(--tx2)]"
+                        className="font-mono text-[12px] font-semibold text-[var(--yu3-ink-strong)] hover:underline tabular-nums"
                       >
                         {s.shipment_number}
                       </Link>
                     </td>
-                    <td className="px-4 py-3.5 text-[var(--tx)]">
-                      {itemTitle(s.items)}
-                    </td>
-                    <td className="px-4 py-3.5 text-[var(--tx2)]">
+                    <td className="text-[var(--yu3-ink)]">{itemTitle(s.items)}</td>
+                    <td
+                      className={
+                        s.status === "delivered"
+                          ? "text-[var(--yu3-success)] font-medium"
+                          : "text-[var(--yu3-ink-muted)]"
+                      }
+                    >
                       {INBOUND_SHIPMENT_STATUS_LABELS[s.status] || s.status}
                     </td>
-                    <td className="px-4 py-3.5 text-[var(--tx3)]">
+                    <td className="tabular-nums text-[var(--yu3-ink-muted)]">
                       {s.received_at
                         ? new Date(s.received_at).toLocaleDateString("en-CA", {
                             month: "short",
@@ -228,7 +190,7 @@ export default function InboundShipmentsClient() {
                           })
                         : ""}
                     </td>
-                    <td className="px-4 py-3.5 text-[var(--tx3)]">
+                    <td className="tabular-nums text-[var(--yu3-ink-muted)]">
                       {s.delivery_scheduled_date
                         ? new Date(
                             s.delivery_scheduled_date + "T12:00:00",
@@ -236,9 +198,9 @@ export default function InboundShipmentsClient() {
                             month: "short",
                             day: "numeric",
                           })
-                        : "TBD"}
+                        : ""}
                     </td>
-                    <td className="px-4 py-3.5 text-[var(--tx3)]">
+                    <td className="text-[var(--yu3-ink-muted)]">
                       {s.customer_name?.trim()
                         ? s.customer_name
                         : s.organization_id

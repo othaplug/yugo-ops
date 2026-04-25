@@ -8,25 +8,51 @@ import { Icon } from "@/components/AppIcons";
 import { useToast } from "../../components/Toast";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
-import { CaretDown as ChevronDown, CaretRight as ChevronRight } from "@phosphor-icons/react";
-import { capMarginAlertMinutes } from "@/lib/jobs/duration-estimate";
 import {
-  formatMinutesAsHhMm,
-  parseHhMmToMinutes,
-} from "@/lib/duration-hhmm";
+  CaretDown as ChevronDown,
+  CaretRight as ChevronRight,
+} from "@phosphor-icons/react";
+import { capMarginAlertMinutes } from "@/lib/jobs/duration-estimate";
+import { formatMinutesAsHhMm, parseHhMmToMinutes } from "@/lib/duration-hhmm";
 
-const COMPLEXITY_PRESETS = ["White Glove", "Piano", "High Value Client", "Repeat Client", "Artwork", "Antiques", "Storage"];
-const IN_PROGRESS_STATUSES = [
-  "en_route", "en_route_to_pickup", "arrived_at_pickup", "loading",
-  "en_route_to_destination", "arrived_at_destination", "unloading",
-  "in_progress", "dispatched", "in_transit",
+const COMPLEXITY_PRESETS = [
+  "White Glove",
+  "Piano",
+  "High Value Client",
+  "Repeat Client",
+  "Artwork",
+  "Antiques",
+  "Storage",
 ];
-function isMoveInProgress(status: string | null | undefined, stage: string | null | undefined): boolean {
+const IN_PROGRESS_STATUSES = [
+  "en_route",
+  "en_route_to_pickup",
+  "arrived_at_pickup",
+  "loading",
+  "en_route_to_destination",
+  "arrived_at_destination",
+  "unloading",
+  "in_progress",
+  "dispatched",
+  "in_transit",
+];
+function isMoveInProgress(
+  status: string | null | undefined,
+  stage: string | null | undefined,
+): boolean {
   const s = (status || "").toLowerCase().replace(/-/g, "_");
   const st = (stage || "").toLowerCase().replace(/-/g, "_");
   return IN_PROGRESS_STATUSES.includes(s) || IN_PROGRESS_STATUSES.includes(st);
 }
-const ACCESS_OPTIONS = ["Elevator", "Stairs", "Loading dock", "Parking", "Gate / Buzz code", "Ground floor", "Building access required"];
+const ACCESS_OPTIONS = [
+  "Elevator",
+  "Stairs",
+  "Loading dock",
+  "Parking",
+  "Gate / Buzz code",
+  "Ground floor",
+  "Building access required",
+];
 
 interface EditMoveDetailsModalProps {
   open: boolean;
@@ -61,10 +87,20 @@ interface EditMoveDetailsModalProps {
   onSaved?: (updates: Record<string, unknown>) => void;
 }
 
-function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
+function Field({
+  label,
+  children,
+  className = "",
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div className={className}>
-      <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1.5">{label}</label>
+      <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1.5">
+        {label}
+      </label>
       {children}
     </div>
   );
@@ -73,14 +109,27 @@ function Field({ label, children, className = "" }: { label: string; children: R
 const inputBase =
   "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/82 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
 
-export default function EditMoveDetailsModal({ open, onClose, section = null, moveId, initial, crews = [], isCompleted = false, onSaved }: EditMoveDetailsModalProps) {
+export default function EditMoveDetailsModal({
+  open,
+  onClose,
+  section = null,
+  moveId,
+  initial,
+  crews = [],
+  isCompleted = false,
+  onSaved,
+}: EditMoveDetailsModalProps) {
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClient();
   const [fromAddress, setFromAddress] = useState(initial.from_address || "");
   const [toAddress, setToAddress] = useState(initial.to_address || "");
-  const [fromLat, setFromLat] = useState<number | null>(initial.from_lat ?? null);
-  const [fromLng, setFromLng] = useState<number | null>(initial.from_lng ?? null);
+  const [fromLat, setFromLat] = useState<number | null>(
+    initial.from_lat ?? null,
+  );
+  const [fromLng, setFromLng] = useState<number | null>(
+    initial.from_lng ?? null,
+  );
   const [toLat, setToLat] = useState<number | null>(initial.to_lat ?? null);
   const [toLng, setToLng] = useState<number | null>(initial.to_lng ?? null);
   const toDateInput = (d: string | null | undefined) => {
@@ -102,8 +151,12 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
     return { fromAccess, toAccess, notesOnly };
   };
   const parsed = parseAccessNotes(initial.access_notes);
-  const [scheduledDate, setScheduledDate] = useState(() => toDateInput(initial.scheduled_date));
-  const [arrivalWindow, setArrivalWindow] = useState(initial.arrival_window || "");
+  const [scheduledDate, setScheduledDate] = useState(() =>
+    toDateInput(initial.scheduled_date),
+  );
+  const [arrivalWindow, setArrivalWindow] = useState(
+    initial.arrival_window || "",
+  );
   const [allocatedJobHhMm, setAllocatedJobHhMm] = useState(() => {
     const v = initial.estimated_duration_minutes;
     if (v != null && Number.isFinite(Number(v)) && Number(v) > 0) {
@@ -111,13 +164,25 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
     }
     return "";
   });
-  const [fromAccess, setFromAccess] = useState(initial.from_access || parsed.fromAccess);
-  const [toAccess, setToAccess] = useState(initial.to_access || parsed.toAccess);
-  const [complexityIndicators, setComplexityIndicators] = useState<string[]>(Array.isArray(initial.complexity_indicators) ? initial.complexity_indicators : []);
-  const [internalNotes, setInternalNotes] = useState(initial.internal_notes || "");
+  const [fromAccess, setFromAccess] = useState(
+    initial.from_access || parsed.fromAccess,
+  );
+  const [toAccess, setToAccess] = useState(
+    initial.to_access || parsed.toAccess,
+  );
+  const [complexityIndicators, setComplexityIndicators] = useState<string[]>(
+    Array.isArray(initial.complexity_indicators)
+      ? initial.complexity_indicators
+      : [],
+  );
+  const [internalNotes, setInternalNotes] = useState(
+    initial.internal_notes || "",
+  );
   const [customComplexity, setCustomComplexity] = useState("");
   const [crewId, setCrewId] = useState(initial.crew_id || "");
-  const [coordinatorName, setCoordinatorName] = useState(initial.coordinator_name || "");
+  const [coordinatorName, setCoordinatorName] = useState(
+    initial.coordinator_name || "",
+  );
   const [saving, setSaving] = useState(false);
   const [showOptional, setShowOptional] = useState(false);
 
@@ -143,7 +208,11 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
     const p = parseAccessNotes(initial.access_notes);
     setFromAccess(initial.from_access || p.fromAccess);
     setToAccess(initial.to_access || p.toAccess);
-    setComplexityIndicators(Array.isArray(initial.complexity_indicators) ? initial.complexity_indicators : []);
+    setComplexityIndicators(
+      Array.isArray(initial.complexity_indicators)
+        ? initial.complexity_indicators
+        : [],
+    );
     setInternalNotes(initial.internal_notes || "");
     setCrewId(initial.crew_id || "");
     setCoordinatorName(initial.coordinator_name || "");
@@ -158,13 +227,21 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
     const moveInProgress = isMoveInProgress(initial.status, initial.stage);
     const crewChanging = (crewId.trim() || null) !== (initial.crew_id || null);
     if (moveInProgress && crewChanging) {
-      toast("Cannot reassign: this move is in progress. Reassignment is only allowed before the crew has started.", "alertTriangle");
+      toast(
+        "Cannot reassign: this move is in progress. Reassignment is only allowed before the crew has started.",
+        "alertTriangle",
+      );
       setSaving(false);
       return;
     }
     const updated_at = new Date().toISOString();
     const accessNotesMerged =
-      [fromAccess.trim() && `From: ${fromAccess.trim()}`, toAccess.trim() && `To: ${toAccess.trim()}`].filter(Boolean).join("\n") || null;
+      [
+        fromAccess.trim() && `From: ${fromAccess.trim()}`,
+        toAccess.trim() && `To: ${toAccess.trim()}`,
+      ]
+        .filter(Boolean)
+        .join("\n") || null;
 
     const updatePayload: Record<string, unknown> = { updated_at };
     if (section !== "notes") {
@@ -230,7 +307,9 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
         access_notes: accessNotesMerged,
         crew_id: crewId.trim() || null,
         coordinator_name: coordinatorName.trim() || null,
-        complexity_indicators: complexityIndicators.length ? complexityIndicators : null,
+        complexity_indicators: complexityIndicators.length
+          ? complexityIndicators
+          : null,
         internal_notes: internalNotes.trim() || null,
       });
     }
@@ -255,7 +334,11 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
   };
 
   const toggleComplexity = (preset: string) => {
-    setComplexityIndicators((prev) => (prev.includes(preset) ? prev.filter((p) => p !== preset) : [...prev, preset]));
+    setComplexityIndicators((prev) =>
+      prev.includes(preset)
+        ? prev.filter((p) => p !== preset)
+        : [...prev, preset],
+    );
   };
 
   const addCustomComplexity = () => {
@@ -268,229 +351,303 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
 
   const showAddresses = section === null || section === "addresses";
   const showNotes = section === null || section === "notes";
-  const modalTitle = section === "addresses" ? "Edit addresses & schedule" : section === "notes" ? "Edit internal notes" : "Edit move details";
+  const modalTitle =
+    section === "addresses"
+      ? "Edit addresses & schedule"
+      : section === "notes"
+        ? "Edit internal notes"
+        : "Edit move details";
 
   return (
-    <ModalOverlay open={open} onClose={onClose} title={modalTitle} maxWidth="lg">
+    <ModalOverlay
+      open={open}
+      onClose={onClose}
+      title={modalTitle}
+      maxWidth="lg"
+    >
       <form onSubmit={handleSave} className="flex flex-col min-h-0">
         <div className="p-5 sm:p-6 space-y-6 overflow-y-auto flex-1">
           {/* Location */}
           {showAddresses && (
-          <fieldset disabled={isCompleted} className={isCompleted ? "opacity-70" : ""}>
-          <section className="space-y-2">
-            <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
-              <Icon name="mapPin" className="w-3.5 h-3.5 text-[var(--gold)]" />
-              Location
-            </h3>
-            <div className="grid sm:grid-cols-2 gap-2">
-              <div className="space-y-3">
-                <AddressAutocomplete
-                  value={fromAddress}
-                  onRawChange={setFromAddress}
-                  onChange={(r) => {
-                    setFromAddress(r.fullAddress);
-                    setFromLat(r.lat);
-                    setFromLng(r.lng);
-                  }}
-                  placeholder="Origin address"
-                  label="From address"
-                  className={inputBase}
-                />
-                <Field label="From access">
-                  <select value={fromAccess} onChange={(e) => setFromAccess(e.target.value)} className={inputBase}>
-                    <option value="">Select…</option>
-                    {ACCESS_OPTIONS.map((o) => (
-                      <option key={o} value={o}>{o}</option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
-              <div className="space-y-3">
-                <AddressAutocomplete
-                  value={toAddress}
-                  onRawChange={setToAddress}
-                  onChange={(r) => {
-                    setToAddress(r.fullAddress);
-                    setToLat(r.lat);
-                    setToLng(r.lng);
-                  }}
-                  placeholder="Destination address"
-                  label="To address"
-                  className={inputBase}
-                />
-                <Field label="To access">
-                  <select value={toAccess} onChange={(e) => setToAccess(e.target.value)} className={inputBase}>
-                    <option value="">Select…</option>
-                    {ACCESS_OPTIONS.map((o) => (
-                      <option key={o} value={o}>{o}</option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
-            </div>
-          </section>
-          </fieldset>
+            <fieldset
+              disabled={isCompleted}
+              className={isCompleted ? "opacity-70" : ""}
+            >
+              <section className="space-y-2">
+                <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
+                  <Icon
+                    name="mapPin"
+                    className="w-3.5 h-3.5 text-[var(--gold)]"
+                  />
+                  Location
+                </h3>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  <div className="space-y-3">
+                    <AddressAutocomplete
+                      value={fromAddress}
+                      onRawChange={setFromAddress}
+                      onChange={(r) => {
+                        setFromAddress(r.fullAddress);
+                        setFromLat(r.lat);
+                        setFromLng(r.lng);
+                      }}
+                      placeholder="Origin address"
+                      label="From address"
+                      className={inputBase}
+                    />
+                    <Field label="From access">
+                      <select
+                        value={fromAccess}
+                        onChange={(e) => setFromAccess(e.target.value)}
+                        className={inputBase}
+                      >
+                        <option value="">Select…</option>
+                        {ACCESS_OPTIONS.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
+                  <div className="space-y-3">
+                    <AddressAutocomplete
+                      value={toAddress}
+                      onRawChange={setToAddress}
+                      onChange={(r) => {
+                        setToAddress(r.fullAddress);
+                        setToLat(r.lat);
+                        setToLng(r.lng);
+                      }}
+                      placeholder="Destination address"
+                      label="To address"
+                      className={inputBase}
+                    />
+                    <Field label="To access">
+                      <select
+                        value={toAccess}
+                        onChange={(e) => setToAccess(e.target.value)}
+                        className={inputBase}
+                      >
+                        <option value="">Select…</option>
+                        {ACCESS_OPTIONS.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
+                </div>
+              </section>
+            </fieldset>
           )}
 
           {/* Schedule */}
           {showAddresses && (
-          <fieldset disabled={isCompleted} className={isCompleted ? "opacity-70" : ""}>
-          <section className="space-y-4 pt-4 border-t border-[var(--brd)]/60">
-            <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
-              <Icon name="calendar" className="w-3.5 h-3.5 text-[var(--gold)]" />
-              Schedule
-            </h3>
-            <div className="grid sm:grid-cols-2 gap-2">
-              <Field label="Date">
-                <input
-                  type="date"
-                  value={scheduledDate}
-                  onChange={(e) => setScheduledDate(e.target.value)}
-                  className={inputBase}
-                />
-              </Field>
-              <Field label="Time window">
-                <select value={arrivalWindow} onChange={(e) => setArrivalWindow(e.target.value)} className={inputBase}>
-                  <option value="">Select window…</option>
-                  {TIME_WINDOW_OPTIONS.map((w) => (
-                    <option key={w} value={w}>{w}</option>
-                  ))}
-                  {arrivalWindow && !TIME_WINDOW_OPTIONS.includes(arrivalWindow) && (
-                    <option value={arrivalWindow}>{arrivalWindow}</option>
-                  )}
-                </select>
-              </Field>
-              <Field label="Allocated job time (hours:minutes)" className="sm:col-span-2">
-                <input
-                  type="text"
-                  inputMode="text"
-                  autoComplete="off"
-                  value={allocatedJobHhMm}
-                  onChange={(e) => setAllocatedJobHhMm(e.target.value)}
-                  placeholder="e.g. 6:00"
-                  className={inputBase}
-                  aria-describedby="allocated-job-time-hint"
-                />
-                <p
-                  id="allocated-job-time-hint"
-                  className="mt-1.5 text-[10px] text-[var(--tx3)] leading-snug"
-                >
-                  On-site work time for this job, separate from the arrival
-                  window. Use hours and minutes (for example 2:30). Leave blank to
-                  clear; the move can still fall back to quote estimated hours if
-                  those are set.
-                </p>
-              </Field>
-            </div>
-          </section>
-          </fieldset>
+            <fieldset
+              disabled={isCompleted}
+              className={isCompleted ? "opacity-70" : ""}
+            >
+              <section className="space-y-4 pt-4 border-t border-[var(--brd)]/60">
+                <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
+                  <Icon
+                    name="calendar"
+                    className="w-3.5 h-3.5 text-[var(--gold)]"
+                  />
+                  Schedule
+                </h3>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  <Field label="Date">
+                    <input
+                      type="date"
+                      value={scheduledDate}
+                      onChange={(e) => setScheduledDate(e.target.value)}
+                      className={inputBase}
+                    />
+                  </Field>
+                  <Field label="Time window">
+                    <select
+                      value={arrivalWindow}
+                      onChange={(e) => setArrivalWindow(e.target.value)}
+                      className={inputBase}
+                    >
+                      <option value="">Select window…</option>
+                      {TIME_WINDOW_OPTIONS.map((w) => (
+                        <option key={w} value={w}>
+                          {w}
+                        </option>
+                      ))}
+                      {arrivalWindow &&
+                        !TIME_WINDOW_OPTIONS.includes(arrivalWindow) && (
+                          <option value={arrivalWindow}>{arrivalWindow}</option>
+                        )}
+                    </select>
+                  </Field>
+                  <Field
+                    label="Allocated job time (hours:minutes)"
+                    className="sm:col-span-2"
+                  >
+                    <input
+                      type="text"
+                      inputMode="text"
+                      autoComplete="off"
+                      value={allocatedJobHhMm}
+                      onChange={(e) => setAllocatedJobHhMm(e.target.value)}
+                      placeholder="e.g. 6:00"
+                      className={inputBase}
+                      aria-describedby="allocated-job-time-hint"
+                    />
+                    <p
+                      id="allocated-job-time-hint"
+                      className="mt-1.5 text-[10px] text-[var(--tx3)] leading-snug"
+                    >
+                      On-site work time for this job, separate from the arrival
+                      window. Use hours and minutes (for example 2:30). Leave
+                      blank to clear; the move can still fall back to quote
+                      estimated hours if those are set.
+                    </p>
+                  </Field>
+                </div>
+              </section>
+            </fieldset>
           )}
 
           {/* Crew & Coordinator */}
           {showAddresses && (
-          <section className="pt-4 border-t border-[var(--brd)]/60">
-            {crews.length > 0 && (
-              <fieldset disabled={isCompleted || isMoveInProgress(initial.status, initial.stage)} className={isCompleted || isMoveInProgress(initial.status, initial.stage) ? "opacity-70" : ""}>
-                <Field label="Crew (for live tracking)">
-                  <select value={crewId} onChange={(e) => setCrewId(e.target.value)} className={inputBase}>
-                    <option value="">No crew assigned</option>
-                    {crews.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </Field>
-              </fieldset>
-            )}
-            <Field label="Coordinator" className={crews.length > 0 ? "mt-4" : ""}>
-              <input
-                type="text"
-                value={coordinatorName}
-                onChange={(e) => setCoordinatorName(e.target.value)}
-                placeholder="Coordinator name"
-                className={inputBase}
-              />
-            </Field>
-          </section>
+            <section className="pt-4 border-t border-[var(--brd)]/60">
+              {crews.length > 0 && (
+                <fieldset
+                  disabled={
+                    isCompleted ||
+                    isMoveInProgress(initial.status, initial.stage)
+                  }
+                  className={
+                    isCompleted ||
+                    isMoveInProgress(initial.status, initial.stage)
+                      ? "opacity-70"
+                      : ""
+                  }
+                >
+                  <Field label="Crew (for live tracking)">
+                    <select
+                      value={crewId}
+                      onChange={(e) => setCrewId(e.target.value)}
+                      className={inputBase}
+                    >
+                      <option value="">No crew assigned</option>
+                      {crews.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </fieldset>
+              )}
+              <Field
+                label="Coordinator"
+                className={crews.length > 0 ? "mt-4" : ""}
+              >
+                <input
+                  type="text"
+                  value={coordinatorName}
+                  onChange={(e) => setCoordinatorName(e.target.value)}
+                  placeholder="Coordinator name"
+                  className={inputBase}
+                />
+              </Field>
+            </section>
           )}
 
           {/* Internal notes, shown when section is notes only, or in full modal under optional */}
           {showNotes && (
-          <section className={showAddresses ? "pt-4 border-t border-[var(--brd)]/60" : ""}>
-            {section === "notes" ? (
-              <Field label="Internal notes">
-                <textarea
-                  value={internalNotes}
-                  onChange={(e) => setInternalNotes(e.target.value)}
-                  placeholder="Client preferences, special instructions, internal-only..."
-                  rows={5}
-                  className={`${inputBase} resize-none min-h-[120px]`}
-                />
-              </Field>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setShowOptional(!showOptional)}
-                  className="flex items-center gap-2 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--gold)] transition-colors"
-                >
-                  {showOptional ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                  {showOptional ? "Hide" : "Show"} optional details
-                </button>
-                {showOptional && (
-                  <div className="mt-4 space-y-4 pl-6 border-l-2 border-[var(--brd)]/50">
-                    <Field label="Complexity indicators">
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {COMPLEXITY_PRESETS.map((preset) => (
-                          <button
-                            key={preset}
-                            type="button"
-                            onClick={() => toggleComplexity(preset)}
-                            className={`px-3 py-1.5 rounded-md text-[11px] font-medium transition-all border ${
-                              complexityIndicators.includes(preset)
-                                ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
-                                : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
-                            }`}
-                          >
-                            {preset}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <input
-                          value={customComplexity}
-                          onChange={(e) => setCustomComplexity(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              addCustomComplexity();
+            <section
+              className={
+                showAddresses ? "pt-4 border-t border-[var(--brd)]/60" : ""
+              }
+            >
+              {section === "notes" ? (
+                <Field label="Internal notes">
+                  <textarea
+                    value={internalNotes}
+                    onChange={(e) => setInternalNotes(e.target.value)}
+                    placeholder="Client preferences, special instructions, internal-only..."
+                    rows={5}
+                    className={`${inputBase} resize-none min-h-[120px]`}
+                  />
+                </Field>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowOptional(!showOptional)}
+                    className="flex items-center gap-2 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--gold)] transition-colors"
+                  >
+                    {showOptional ? (
+                      <ChevronDown className="w-4 h-4" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
+                    {showOptional ? "Hide" : "Show"} optional details
+                  </button>
+                  {showOptional && (
+                    <div className="mt-4 space-y-4 pl-6 border-l-2 border-[var(--brd)]/50">
+                      <Field label="Complexity indicators">
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {COMPLEXITY_PRESETS.map((preset) => (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => toggleComplexity(preset)}
+                              className={`px-3 py-1.5 rounded-md text-[11px] font-medium transition-all border ${
+                                complexityIndicators.includes(preset)
+                                  ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                                  : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
+                              }`}
+                            >
+                              {preset}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            value={customComplexity}
+                            onChange={(e) =>
+                              setCustomComplexity(e.target.value)
                             }
-                          }}
-                          placeholder="Add custom (Enter to add)"
-                          className={`${inputBase} flex-1`}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                addCustomComplexity();
+                              }
+                            }}
+                            placeholder="Add custom (Enter to add)"
+                            className={`${inputBase} flex-1`}
+                          />
+                          <button
+                            type="button"
+                            onClick={addCustomComplexity}
+                            className="px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-all shrink-0"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </Field>
+                      <Field label="Internal notes">
+                        <textarea
+                          value={internalNotes}
+                          onChange={(e) => setInternalNotes(e.target.value)}
+                          placeholder="Client preferences, special instructions, internal-only..."
+                          rows={3}
+                          className={`${inputBase} resize-none min-h-[72px]`}
                         />
-                        <button
-                          type="button"
-                          onClick={addCustomComplexity}
-                          className="px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-all shrink-0"
-                        >
-                          Add
-                        </button>
-                      </div>
-                    </Field>
-                    <Field label="Internal notes">
-                      <textarea
-                        value={internalNotes}
-                        onChange={(e) => setInternalNotes(e.target.value)}
-                        placeholder="Client preferences, special instructions, internal-only..."
-                        rows={3}
-                        className={`${inputBase} resize-none min-h-[72px]`}
-                      />
-                    </Field>
-                  </div>
-                )}
-              </>
-            )}
-          </section>
+                      </Field>
+                    </div>
+                  )}
+                </>
+              )}
+            </section>
           )}
         </div>
 
@@ -499,14 +656,14 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto min-h-11 px-4 py-2.5 rounded-lg text-[12px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors touch-manipulation"
+            className="admin-btn admin-btn-ghost w-full sm:w-auto"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="w-full sm:w-auto min-h-11 px-5 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+            className="admin-btn admin-btn-primary w-full sm:w-auto"
           >
             {saving ? "Saving…" : "Save changes"}
           </button>

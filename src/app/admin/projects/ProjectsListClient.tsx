@@ -1,15 +1,21 @@
-"use client";
+"use client"
 
-import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import CreateButton from "../components/CreateButton";
-import { formatCurrency } from "@/lib/format-currency";
-import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
-import { formatAdminCreatedAt } from "@/lib/date-format";
-import KpiCard from "@/components/ui/KpiCard";
-import SectionDivider from "@/components/ui/SectionDivider";
-import { organizationTypeLabel } from "@/lib/partner-type";
+import { useState, useMemo, useCallback } from "react"
+import type { ComponentProps } from "react"
+import { useRouter } from "next/navigation"
+import CreateButton from "../components/CreateButton"
+import { formatCurrency } from "@/lib/format-currency"
+import { formatAdminCreatedAt } from "@/lib/date-format"
+import { csvField } from "@/lib/admin-csv-field"
+import {
+  DataTable,
+  type ColumnDef,
+  type ColumnSort,
+  type ViewMode,
+} from "@/design-system/admin/table"
+import { StatusPill } from "@/design-system/admin/primitives"
+import KpiCard from "@/components/ui/KpiCard"
+import { organizationTypeLabel } from "@/lib/partner-type"
 
 interface Project {
   id: string;
@@ -33,114 +39,143 @@ interface Partner {
   type: string;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  draft: "text-[var(--tx3)]",
-  proposed: "text-amber-500",
-  active: "text-emerald-500",
-  on_hold: "text-orange-500",
-  completed: "text-blue-500",
-  invoiced: "text-purple-500",
-  cancelled: "text-red-500",
-};
+const STATUS_OPTIONS = ["all", "draft", "proposed", "active", "on_hold", "completed", "invoiced", "cancelled"] as const
 
-const STATUS_OPTIONS = ["all", "draft", "proposed", "active", "on_hold", "completed", "invoiced", "cancelled"];
-
-const projectColumns: ColumnDef<Project>[] = [
-  {
-    id: "project_number",
-    label: "PRJ #",
-    accessor: (p) => p.project_number,
-    searchable: true,
-    render: (p) => <span className="text-[12px] font-semibold text-[var(--gold)]">{p.project_number}</span>,
-  },
-  {
-    id: "created_at",
-    label: "Create date",
-    accessor: (p) => p.created_at,
-    sortable: true,
-    searchable: true,
-    render: (p) => (
-      <span className="text-[11px] text-[var(--tx2)] tabular-nums whitespace-nowrap">
-        {formatAdminCreatedAt(p.created_at)}
-      </span>
-    ),
-    exportAccessor: (p) => formatAdminCreatedAt(p.created_at),
-  },
-  {
-    id: "partner",
-    label: "Partner",
-    accessor: (p) => p.organizations?.name || "",
-    searchable: true,
-    render: (p) => (
-      <div>
-        <div className="text-[12px] font-medium text-[var(--tx)]">{p.organizations?.name || "-"}</div>
-        <div className="text-[10px] text-[var(--tx3)]">
-          {p.organizations?.type ? organizationTypeLabel(p.organizations.type) : ""}
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: "project_name",
-    label: "Project Name",
-    accessor: (p) => p.project_name,
-    searchable: true,
-    render: (p) => (
-      <div>
-        <div className="text-[12px] font-semibold text-[var(--tx)]">{p.project_name}</div>
-        {p.end_client_name && <div className="text-[10px] text-[var(--tx3)]">{p.end_client_name}</div>}
-      </div>
-    ),
-  },
-  {
-    id: "status",
-    label: "Status",
-    accessor: (p) => p.status,
-    render: (p) => (
-      <span className={`dt-badge tracking-[0.04em] ${STATUS_COLORS[p.status] || "text-[var(--tx3)]"}`}>
-        {p.status.replace("_", " ")}
-      </span>
-    ),
-  },
-  {
-    id: "phase",
-    label: "Phase",
-    accessor: (p) => p.active_phase || "",
-    render: (p) => <span className="text-[11px] text-[var(--tx2)] uppercase">{p.active_phase?.replace("_", " ") || "-"}</span>,
-  },
-  {
-    id: "budget",
-    label: "Budget",
-    accessor: (p) => p.estimated_budget ?? 0,
-    render: (p) => (
-      <div>
-        <div className="text-[12px] font-medium text-[var(--tx)]">
-          {p.estimated_budget ? formatCurrency(p.estimated_budget) : "-"}
-        </div>
-        {p.actual_cost ? (
-          <div className="text-[10px] text-[var(--tx3)]">Spent: {formatCurrency(p.actual_cost)}</div>
-        ) : null}
-      </div>
-    ),
-    align: "right",
-  },
-  {
-    id: "dates",
-    label: "Dates",
-    accessor: (p) => p.start_date || "",
-    render: (p) => (
-      <span className="text-[11px] text-[var(--tx3)]">
-        {p.start_date ? new Date(p.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "-"}
-        {p.target_end_date ? ` → ${new Date(p.target_end_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}
-      </span>
-    ),
-  },
-];
+function projectStatusTone(
+  s: string,
+): ComponentProps<typeof StatusPill>["tone"] {
+  const k = s.toLowerCase()
+  if (k === "active" || k === "completed" || k === "invoiced") return "success"
+  if (k === "cancelled") return "danger"
+  if (k === "on_hold" || k === "proposed") return "warning"
+  if (k === "draft") return "neutral"
+  return "info"
+}
 
 export default function ProjectsListClient({ projects, partners }: { projects: Project[]; partners: Partner[] }) {
-  const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [partnerFilter, setPartnerFilter] = useState("all");
+  const router = useRouter()
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [partnerFilter, setPartnerFilter] = useState("all")
+  const [search, setSearch] = useState("")
+  const [sort, setSort] = useState<ColumnSort | null>({ columnId: "created_at", direction: "desc" })
+  const [viewMode, setViewMode] = useState<ViewMode>("list")
+
+  const projectColumns = useMemo<ColumnDef<Project>[]>(
+    () => [
+      {
+        id: "project_number",
+        shortLabel: "PRJ",
+        header: "PRJ #",
+        accessor: (p) => p.project_number,
+        width: 100,
+        cell: (p) => (
+          <span className="text-[12px] font-semibold text-[var(--yu3-wine)]">{p.project_number}</span>
+        ),
+      },
+      {
+        id: "created_at",
+        shortLabel: "Created",
+        header: "Create date",
+        accessor: (p) => p.created_at,
+        sortable: true,
+        width: 160,
+        cell: (p) => (
+          <span className="text-[11px] text-[var(--yu3-ink-muted)] tabular-nums whitespace-nowrap">
+            {formatAdminCreatedAt(p.created_at)}
+          </span>
+        ),
+      },
+      {
+        id: "partner",
+        header: "Partner",
+        accessor: (p) => p.organizations?.name || "",
+        width: 200,
+        cell: (p) => (
+          <div>
+            <div className="text-[12px] font-medium text-[var(--yu3-ink)]">
+              {p.organizations?.name || "—"}
+            </div>
+            <div className="text-[10px] text-[var(--yu3-ink-faint)]">
+              {p.organizations?.type ? organizationTypeLabel(p.organizations.type) : ""}
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "project_name",
+        header: "Project Name",
+        accessor: (p) => p.project_name,
+        width: 200,
+        cell: (p) => (
+          <div>
+            <div className="text-[12px] font-semibold text-[var(--yu3-ink)]">{p.project_name}</div>
+            {p.end_client_name ? (
+              <div className="text-[10px] text-[var(--yu3-ink-faint)]">{p.end_client_name}</div>
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        accessor: (p) => p.status,
+        sortable: true,
+        width: 120,
+        cell: (p) => (
+          <StatusPill tone={projectStatusTone(p.status)}>{p.status.replace(/_/g, " ")}</StatusPill>
+        ),
+      },
+      {
+        id: "phase",
+        header: "Phase",
+        accessor: (p) => p.active_phase || "",
+        width: 100,
+        cell: (p) => (
+          <span className="text-[11px] text-[var(--yu3-ink-muted)] uppercase">
+            {p.active_phase?.replace(/_/g, " ") || "—"}
+          </span>
+        ),
+      },
+      {
+        id: "budget",
+        header: "Budget",
+        accessor: (p) => p.estimated_budget ?? 0,
+        sortable: true,
+        align: "right",
+        numeric: true,
+        width: 140,
+        cell: (p) => (
+          <div>
+            <div className="text-[12px] font-medium text-[var(--yu3-ink)]">
+              {p.estimated_budget ? formatCurrency(p.estimated_budget) : "—"}
+            </div>
+            {p.actual_cost != null && p.actual_cost > 0 ? (
+              <div className="text-[10px] text-[var(--yu3-ink-faint)]">
+                Spent: {formatCurrency(p.actual_cost)}
+              </div>
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        id: "dates",
+        header: "Dates",
+        accessor: (p) => p.start_date || "",
+        width: 120,
+        cell: (p) => (
+          <span className="text-[11px] text-[var(--yu3-ink-faint)]">
+            {p.start_date
+              ? new Date(p.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
+              : "—"}
+            {p.target_end_date
+              ? ` → ${new Date(p.target_end_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+              : ""}
+          </span>
+        ),
+      },
+    ],
+    [],
+  )
 
   const filtered = useMemo(() => {
     return projects.filter((p) => {
@@ -150,8 +185,46 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
     });
   }, [projects, statusFilter, partnerFilter]);
 
-  const activeProjects = projects.filter((p) => p.status === "active").length;
-  const totalBudget = projects.reduce((s, p) => s + (p.estimated_budget ?? 0), 0);
+  const activeProjects = projects.filter((p) => p.status === "active").length
+  const totalBudget = projects.reduce((s, p) => s + (p.estimated_budget ?? 0), 0)
+
+  const onExport = useCallback(() => {
+    const headers = [
+      "PRJ #",
+      "Create date",
+      "Partner",
+      "Project",
+      "Status",
+      "Phase",
+      "Budget",
+      "Dates",
+    ]
+    const lines = filtered.map((p) => {
+      const nameLine = p.end_client_name
+        ? `${p.project_name} (${p.end_client_name})`
+        : p.project_name
+      return [
+        p.project_number,
+        formatAdminCreatedAt(p.created_at),
+        p.organizations?.name || "",
+        nameLine,
+        p.status,
+        p.active_phase || "",
+        p.estimated_budget != null ? formatCurrency(p.estimated_budget) : "",
+        [p.start_date, p.target_end_date].filter(Boolean).join(" → "),
+      ]
+        .map((c) => csvField(String(c)))
+        .join(",")
+    })
+    const csv = [headers.map(csvField).join(","), ...lines].join("\n")
+    const blob = new Blob([csv], { type: "text/csv" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "yugo-projects.csv"
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [filtered])
 
   return (
     <div className="px-4 sm:px-6 py-5">
@@ -179,7 +252,7 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
               onClick={() => setStatusFilter(s)}
               className={`px-3 py-1.5 rounded-md text-[11px] font-semibold uppercase whitespace-nowrap transition-colors ${
                 statusFilter === s
-                  ? "bg-[var(--card)] text-[var(--gold)] shadow-sm"
+                  ? "bg-[var(--card)] text-[var(--accent-text)] shadow-sm"
                   : "text-[var(--tx3)] hover:text-[var(--tx)]"
               }`}
             >
@@ -199,23 +272,30 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
         </select>
       </div>
 
-      {/* Table */}
       <DataTable<Project>
-        data={filtered}
         columns={projectColumns}
-        keyField="id"
-        tableId="projects-list"
-        defaultSortCol="created_at"
-        defaultSortDir="desc"
-        searchable
-        searchPlaceholder="Search by project #, name, partner…"
-        pagination
-        exportable
-        exportFilename="yugo-projects"
-        columnToggle
+        rows={filtered}
+        rowId={(p) => p.id}
+        search={search}
+        onSearchChange={setSearch}
+        sort={sort}
+        onSortChange={setSort}
         onRowClick={(p) => router.push(`/admin/projects/${p.id}`)}
-        emptyMessage={projects.length === 0 ? "No projects yet. Create your first project to get started." : "No projects match your filters."}
+        onExport={onExport}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        availableViews={["list"]}
+        searchPlaceholder="Search by project #, name, partner…"
+        emptyState={
+          <div className="px-2 py-8 text-center">
+            <p className="text-[15px] font-semibold text-[var(--yu3-ink)]">
+              {projects.length === 0
+                ? "No projects yet. Create your first project to get started."
+                : "No projects match your filters."}
+            </p>
+          </div>
+        }
       />
     </div>
-  );
+  )
 }

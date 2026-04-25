@@ -210,7 +210,7 @@ function CrewListAndModal({
             onClick={() => setSelectedCrew(c)}
             className="flex items-center gap-3 px-4 py-3.5 bg-[var(--card)] border border-[var(--brd)] rounded-xl hover:border-[var(--gold)] transition-all text-left group"
           >
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-[10px] font-bold text-[var(--gold)] bg-[var(--gdim)] group-hover:bg-[var(--gold)]/20 transition-colors">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-[10px] font-bold text-[var(--accent-text)] bg-[var(--gdim)] group-hover:bg-[var(--gold)]/20 transition-colors">
               {c.name?.replace("Team ", "")}
             </div>
             <div className="flex-1 min-w-0">
@@ -275,7 +275,7 @@ function CrewListAndModal({
                               >
                                 {isPast ? "✓" : i + 1}
                               </div>
-                              <span className={`text-[9px] mt-1 truncate w-full text-center ${isActive ? "text-[var(--gold)] font-semibold" : isPast ? "text-[var(--grn)]" : "text-[var(--tx3)]"}`}>
+                              <span className={`text-[9px] mt-1 truncate w-full text-center ${isActive ? "text-[var(--accent-text)] font-semibold" : isPast ? "text-[var(--grn)]" : "text-[var(--tx3)]"}`}>
                                 {STAGE_LABELS[s] || s}
                               </span>
                             </div>

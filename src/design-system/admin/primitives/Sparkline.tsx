@@ -8,6 +8,8 @@ export interface SparklineProps {
   height?: number
   /** Force a trend (positive/negative color). Otherwise inferred from values. */
   trend?: "up" | "down" | "flat"
+  /** CSS color for down trend. Defaults to `var(--yu3-danger)` (e.g. use `var(--yu3-wine)` for a maroon line). */
+  downStroke?: string
   className?: string
   strokeWidth?: number
   ariaLabel?: string
@@ -27,6 +29,7 @@ export function Sparkline({
   width = 96,
   height = 32,
   trend,
+  downStroke = "var(--yu3-danger)",
   className,
   strokeWidth = 1.5,
   ariaLabel,
@@ -40,7 +43,7 @@ export function Sparkline({
     t === "up"
       ? "var(--yu3-success)"
       : t === "down"
-        ? "var(--yu3-danger)"
+        ? downStroke
         : "var(--yu3-ink-faint)"
 
   const pts = padded.map((v, i) => {

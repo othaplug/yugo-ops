@@ -87,7 +87,7 @@ export async function ensureDeliveryForInboundShipment(
     clientName = String(org?.name || "").trim();
   }
 
-  const deliveryNumber = generateDeliveryNumber();
+  const deliveryNumber = await generateDeliveryNumber(admin);
   const customerName = String(shipment.customer_name || "").trim() || "Customer";
   const subtotal = priced.dim.subtotal;
   const trackingPrefix = (clientName || "YG").replace(/[^A-Z]/gi, "").slice(0, 2).toUpperCase() || "YG";

@@ -96,7 +96,7 @@ export default async function QuoteDetailPage({ params }: Props) {
       : null;
 
   return (
-    <div className="max-w-[1400px] mx-auto px-5 md:px-6 py-5 md:py-6">
+    <div className="w-full min-w-0 py-5 md:py-6">
       <QuoteDetailClient
         quote={quote}
         engagement={engagementRows ?? []}

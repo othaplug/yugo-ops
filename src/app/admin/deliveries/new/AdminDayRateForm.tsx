@@ -81,7 +81,7 @@ export default function AdminDayRateForm({ organizations }: { organizations: Org
         <button
           type="button"
           onClick={() => setOrganizationId("")}
-          className="text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)]"
+          className="text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--accent-text)]"
         >
           Change partner
         </button>

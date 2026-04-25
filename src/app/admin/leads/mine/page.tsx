@@ -2,8 +2,8 @@ export const metadata = { title: "My Leads" };
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-import LeadsHubClient from "../LeadsHubClient";
+import LeadsHubV3Client from "../LeadsHubV3Client";
 
 export default function MyLeadsPage() {
-  return <LeadsHubClient mode="mine" />;
+  return <LeadsHubV3Client mode="mine" />;
 }

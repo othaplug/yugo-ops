@@ -76,7 +76,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
           <p className="text-[13px] text-[var(--tx2)]">
             {user.name || user.email} is a partner with portal access. Manage them from the Clients page.
           </p>
-          <Link href={`/admin/clients/${orgId}`} className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--gold)] hover:underline">
+          <Link href={`/admin/clients/${orgId}`} className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--accent-text)] hover:underline">
             View client profile →
           </Link>
         </div>
@@ -94,7 +94,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
           <p className="text-[12px] text-[var(--tx3)]">
             Use &quot;Resend tracking link&quot; on the move to send them the tracking URL again.
           </p>
-          <Link href={`/admin/moves/${moveId}`} className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--gold)] hover:underline">
+          <Link href={`/admin/moves/${moveId}`} className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--accent-text)] hover:underline">
             View move →
           </Link>
         </div>
@@ -290,7 +290,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
             </div>
           )}
 
-          <button type="submit" disabled={saving} className="px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50">
+          <button type="submit" disabled={saving} className="admin-btn admin-btn-primary">
             {saving ? "Saving…" : "Save changes"}
           </button>
         </form>
@@ -307,7 +307,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
               minLength={8}
               className="admin-premium-input flex-1"
             />
-            <button type="submit" disabled={resetting || !newPassword} className="px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50">
+            <button type="submit" disabled={resetting || !newPassword} className="px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--accent-text)] disabled:opacity-50">
               {resetting ? "Resetting…" : "Reset"}
             </button>
           </form>

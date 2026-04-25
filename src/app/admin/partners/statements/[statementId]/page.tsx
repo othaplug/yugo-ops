@@ -23,7 +23,7 @@ export default async function PartnerStatementPage({
   if (!stmt) notFound();
 
   return (
-    <div className="max-w-[700px] mx-auto px-5 md:px-6 py-5">
+    <div className="w-full min-w-0 max-w-[min(700px,100%)] mx-auto py-5">
       <BackButton label="Back" fallback="/admin/partners/health" className="mb-3" />
       <PartnerStatementView statement={stmt} />
     </div>

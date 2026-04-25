@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useRouter } from "next/navigation"
-import { formatCurrency } from "@/lib/format-currency"
-import { formatAdminCreatedAt } from "@/lib/date-format"
-import { toTitleCase } from "@/lib/format-text"
-import { serviceTypeDisplayLabel } from "@/lib/displayLabels"
-import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility"
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { formatCurrency } from "@/lib/format-currency";
+import { formatAdminCreatedAt } from "@/lib/date-format";
+import { toTitleCase } from "@/lib/format-text";
+import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
+import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
 
-import { PageHeader } from "@/design-system/admin/layout"
-import { Button, StatusPill } from "@/design-system/admin/primitives"
+import { PageHeader } from "@/design-system/admin/layout";
+import { Button, StatusPill } from "@/design-system/admin/primitives";
 import {
   DataTable,
   type ColumnDef,
@@ -17,82 +17,85 @@ import {
   type ColumnSort,
   type RowAction,
   type ViewMode,
-} from "@/design-system/admin/table"
-import { KpiStrip } from "@/design-system/admin/dashboard"
-import {
-  PaperPlaneTilt,
-  Trash,
-  Plus,
-  Copy,
-} from "@phosphor-icons/react"
-import { useToast } from "../components/Toast"
+} from "@/design-system/admin/table";
+import { KpiStrip } from "@/design-system/admin/dashboard";
+import { PaperPlaneTilt, Trash, Plus, Copy } from "@phosphor-icons/react";
+import { useToast } from "../components/Toast";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 
 interface Quote {
-  id: string
-  quote_id: string
-  contact_id: string
-  client_name: string
-  service_type: string
-  status: string
-  tiers: unknown
-  custom_price: number | null
-  recommended_tier: string | null
-  from_address?: string
-  to_address?: string
-  move_date?: string
-  sent_at: string | null
-  viewed_at: string | null
-  accepted_at: string | null
-  expires_at: string | null
-  created_at: string
+  id: string;
+  quote_id: string;
+  contact_id: string;
+  client_name: string;
+  service_type: string;
+  status: string;
+  tiers: unknown;
+  custom_price: number | null;
+  recommended_tier: string | null;
+  from_address?: string;
+  to_address?: string;
+  move_date?: string;
+  sent_at: string | null;
+  viewed_at: string | null;
+  accepted_at: string | null;
+  expires_at: string | null;
+  created_at: string;
 }
 
 /* ── Helpers ───────────────────────────────────────────────────────────── */
 
 function quoteAmountRaw(q: Quote): number | null {
-  if (q.custom_price) return q.custom_price
+  if (q.custom_price) return q.custom_price;
   if (q.tiers && typeof q.tiers === "object") {
-    const tiers = q.tiers as Record<string, { total?: number }>
-    const recKey = (q.recommended_tier ?? "signature").toString().toLowerCase().trim()
-    const recommended = tiers[recKey]?.total
-    if (recommended != null) return recommended
-    const first = Object.values(tiers).find((t) => t?.total)
-    if (first?.total) return first.total
+    const tiers = q.tiers as Record<string, { total?: number }>;
+    const recKey = (q.recommended_tier ?? "signature")
+      .toString()
+      .toLowerCase()
+      .trim();
+    const recommended = tiers[recKey]?.total;
+    if (recommended != null) return recommended;
+    const first = Object.values(tiers).find((t) => t?.total);
+    if (first?.total) return first.total;
   }
-  return null
+  return null;
 }
 
 function quoteAmount(q: Quote): string {
-  const raw = quoteAmountRaw(q)
-  return raw != null ? formatCurrency(raw) : ""
+  const raw = quoteAmountRaw(q);
+  return raw != null ? formatCurrency(raw) : "";
+}
+
+function quoteDetailPath(q: Quote): string {
+  const slug = (q.quote_id || "").trim() || q.id;
+  return `/admin/quotes/${encodeURIComponent(slug)}`;
 }
 
 function relTime(iso: string | null): string {
-  if (!iso) return "—"
-  const ms = Date.now() - new Date(iso).getTime()
-  const min = Math.floor(ms / 60000)
-  if (min < 1) return "just now"
-  if (min < 60) return `${min}m ago`
-  const hr = Math.floor(min / 60)
-  if (hr < 24) return `${hr}h ago`
-  const d = Math.floor(hr / 24)
-  return `${d}d ago`
+  if (!iso) return "—";
+  const ms = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const d = Math.floor(hr / 24);
+  return `${d}d ago`;
 }
 
 function expiryInfo(
   expiresAt: string | null,
   status: string,
 ): { label: string; tone: "warning" | "danger" | "neutral" } | null {
-  if (!expiresAt || status === "accepted") return null
+  if (!expiresAt || status === "accepted") return null;
   const daysLeft = Math.ceil(
     (new Date(expiresAt).getTime() - Date.now()) / 86_400_000,
-  )
-  if (daysLeft <= 0) return { label: "Expired", tone: "danger" }
-  if (daysLeft <= 2) return { label: `${daysLeft}d left`, tone: "danger" }
-  if (daysLeft <= 7) return { label: `${daysLeft}d left`, tone: "warning" }
-  return null
+  );
+  if (daysLeft <= 0) return { label: "Expired", tone: "danger" };
+  if (daysLeft <= 2) return { label: `${daysLeft}d left`, tone: "danger" };
+  if (daysLeft <= 7) return { label: `${daysLeft}d left`, tone: "warning" };
+  return null;
 }
 
 function statusTone(
@@ -100,18 +103,18 @@ function statusTone(
 ): "wine" | "forest" | "neutral" | "warning" | "success" | "danger" | "info" {
   switch (status) {
     case "accepted":
-      return "success"
+      return "success";
     case "viewed":
     case "sent":
-      return "info"
+      return "info";
     case "declined":
     case "expired":
-      return "danger"
+      return "danger";
     case "cold":
     case "draft":
-      return "neutral"
+      return "neutral";
     default:
-      return "neutral"
+      return "neutral";
   }
 }
 
@@ -121,31 +124,31 @@ export default function QuotesListV3Client({
   quotes,
   isSuperAdmin = false,
 }: {
-  quotes: Quote[]
-  isSuperAdmin?: boolean
+  quotes: Quote[];
+  isSuperAdmin?: boolean;
 }) {
-  const router = useRouter()
-  const { toast } = useToast()
+  const router = useRouter();
+  const { toast } = useToast();
 
-  const [search, setSearch] = React.useState("")
+  const [search, setSearch] = React.useState("");
   const [sort, setSort] = React.useState<ColumnSort | null>({
     columnId: "created_at",
     direction: "desc",
-  })
-  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
-  const [viewMode, setViewMode] = React.useState<ViewMode>("list")
+  });
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = React.useState<ViewMode>("list");
 
   const kpis = React.useMemo(() => {
-    const total = quotes.length
+    const total = quotes.length;
     const open = quotes.filter((q) =>
       ["draft", "sent", "viewed"].includes(q.status),
-    )
-    const openValue = open.reduce((a, q) => a + (quoteAmountRaw(q) ?? 0), 0)
-    const accepted = quotes.filter((q) => q.status === "accepted").length
+    );
+    const openValue = open.reduce((a, q) => a + (quoteAmountRaw(q) ?? 0), 0);
+    const accepted = quotes.filter((q) => q.status === "accepted").length;
     const expiring = quotes.filter((q) => {
-      const i = expiryInfo(q.expires_at, q.status)
-      return i?.tone === "danger" || i?.tone === "warning"
-    }).length
+      const i = expiryInfo(q.expires_at, q.status);
+      return i?.tone === "danger" || i?.tone === "warning";
+    }).length;
     return [
       {
         id: "total",
@@ -169,8 +172,8 @@ export default function QuotesListV3Client({
         value: accepted.toString(),
         hint: `${expiring} expiring soon`,
       },
-    ]
-  }, [quotes])
+    ];
+  }, [quotes]);
 
   const columns = React.useMemo<ColumnDef<Quote>[]>(
     () => [
@@ -228,7 +231,7 @@ export default function QuotesListV3Client({
         sortable: true,
         width: 160,
         cell: (q) => {
-          const expiry = expiryInfo(q.expires_at, q.status)
+          const expiry = expiryInfo(q.expires_at, q.status);
           return (
             <div className="flex items-center gap-1.5 flex-wrap">
               <StatusPill tone={statusTone(q.status)}>
@@ -238,7 +241,7 @@ export default function QuotesListV3Client({
                 <StatusPill tone={expiry.tone}>{expiry.label}</StatusPill>
               ) : null}
             </div>
-          )
+          );
         },
       },
       {
@@ -248,7 +251,7 @@ export default function QuotesListV3Client({
         sortable: true,
         width: 120,
         cell: (q) => (
-          <span className="text-[12px] text-[var(--yu3-ink-muted)] yu3-num">
+          <span className="text-[13px] font-medium yu3-num text-[var(--yu3-ink)]">
             {relTime(q.sent_at || q.created_at)}
           </span>
         ),
@@ -273,58 +276,55 @@ export default function QuotesListV3Client({
         sortable: true,
         width: 140,
         cell: (q) => (
-          <span className="text-[12px] text-[var(--yu3-ink-muted)] yu3-num whitespace-nowrap">
+          <span className="text-[13px] font-medium yu3-num text-[var(--yu3-ink)] whitespace-nowrap">
             {formatAdminCreatedAt(q.created_at)}
           </span>
         ),
       },
     ],
     [],
-  )
+  );
 
   const runBulk = React.useCallback(
-    async (
-      action: "resend" | "expire" | "delete",
-      ids: string[],
-    ) => {
+    async (action: "resend" | "expire" | "delete", ids: string[]) => {
       if (action === "delete") {
         if (
           !window.confirm(
             `Permanently delete ${ids.length} quote${ids.length === 1 ? "" : "s"}? This cannot be undone.`,
           )
         )
-          return
+          return;
       }
       const res = await fetch("/api/admin/quotes/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, ids }),
-      })
-      const data = await res.json().catch(() => ({}))
+      });
+      const data = await res.json().catch(() => ({}));
       if (data.ok) {
         const labels: Record<string, string> = {
           resend: "Resent",
           expire: "Expired",
           delete: "Deleted",
-        }
+        };
         const count =
           typeof data.updated === "number"
             ? data.updated
             : typeof data.deleted === "number"
               ? data.deleted
-              : ids.length
+              : ids.length;
         toast(
           `${labels[action]} ${count} quote${count === 1 ? "" : "s"}`,
           "check",
-        )
-        setSelectedIds(new Set())
-        router.refresh()
+        );
+        setSelectedIds(new Set());
+        router.refresh();
       } else {
-        toast("Error: " + (data.error || "Failed"), "x")
+        toast("Error: " + (data.error || "Failed"), "x");
       }
     },
     [router, toast],
-  )
+  );
 
   const bulkActions = React.useMemo<BulkAction<Quote>[]>(
     () => [
@@ -332,44 +332,57 @@ export default function QuotesListV3Client({
         id: "resend",
         label: "Resend",
         icon: <PaperPlaneTilt size={14} />,
-        run: (rows) => runBulk("resend", rows.map((r) => r.id)),
+        run: (rows) =>
+          runBulk(
+            "resend",
+            rows.map((r) => r.id),
+          ),
       },
       {
         id: "expire",
         label: "Mark expired",
-        run: (rows) => runBulk("expire", rows.map((r) => r.id)),
+        run: (rows) =>
+          runBulk(
+            "expire",
+            rows.map((r) => r.id),
+          ),
       },
       {
         id: "delete",
         label: "Delete",
         icon: <Trash size={14} />,
         danger: true,
-        run: (rows) => runBulk("delete", rows.map((r) => r.id)),
+        run: (rows) =>
+          runBulk(
+            "delete",
+            rows.map((r) => r.id),
+          ),
       },
     ],
     [runBulk],
-  )
+  );
 
   const rowActions = React.useMemo<RowAction<Quote>[]>(
     () => [
       {
         id: "open",
         label: "Open quote",
-        run: (r) => router.push(`/admin/quotes/${r.id}`),
+        run: (r) => router.push(quoteDetailPath(r)),
       },
       {
         id: "edit",
         label: "Edit",
-        run: (r) => router.push(`/admin/quotes/${r.id}/edit`),
+        run: (r) => router.push(`${quoteDetailPath(r)}/edit`),
       },
       {
         id: "copy-link",
         label: "Copy client link",
         icon: <Copy size={14} />,
         run: async (r) => {
-          const url = `${location.origin}/quote/${r.id}`
-          await navigator.clipboard.writeText(url).catch(() => null)
-          toast("Link copied", "check")
+          const idForPublic = (r.quote_id || "").trim() || r.id;
+          const url = `${location.origin}/quote/${encodeURIComponent(idForPublic)}`;
+          await navigator.clipboard.writeText(url).catch(() => null);
+          toast("Link copied", "check");
         },
       },
       {
@@ -379,24 +392,24 @@ export default function QuotesListV3Client({
         danger: true,
         run: async (r) => {
           if (!quoteStatusAllowsHardDelete(r.status, isSuperAdmin)) {
-            toast("This quote cannot be deleted", "x")
-            return
+            toast("This quote cannot be deleted", "x");
+            return;
           }
-          if (!window.confirm("Delete this quote?")) return
+          if (!window.confirm("Delete this quote?")) return;
           const res = await fetch(`/api/admin/quotes/${r.id}`, {
             method: "DELETE",
-          })
+          });
           if (res.ok) {
-            toast("Quote deleted", "check")
-            router.refresh()
+            toast("Quote deleted", "check");
+            router.refresh();
           } else {
-            toast("Failed to delete", "x")
+            toast("Failed to delete", "x");
           }
         },
       },
     ],
     [isSuperAdmin, router, toast],
-  )
+  );
 
   const pipelineStages = React.useMemo(
     () => [
@@ -408,7 +421,7 @@ export default function QuotesListV3Client({
       { id: "declined", label: "Declined", tone: "danger" as const },
     ],
     [],
-  )
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -441,7 +454,7 @@ export default function QuotesListV3Client({
         onSelectedRowIdsChange={setSelectedIds}
         bulkActions={bulkActions}
         rowActions={rowActions}
-        onRowClick={(q) => router.push(`/admin/quotes/${q.id}`)}
+        onRowClick={(q) => router.push(quoteDetailPath(q))}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         availableViews={["list", "pipeline"]}
@@ -469,5 +482,5 @@ export default function QuotesListV3Client({
         }}
       />
     </div>
-  )
+  );
 }

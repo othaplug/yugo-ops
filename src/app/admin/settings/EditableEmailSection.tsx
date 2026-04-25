@@ -95,7 +95,7 @@ export default function EditableEmailSection({ currentEmail }: { currentEmail: s
         <button
           type="button"
           onClick={handleChangeClick}
-          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all shrink-0"
+          className="admin-btn admin-btn-sm admin-btn-primary shrink-0"
         >
           Change
         </button>
@@ -111,7 +111,7 @@ export default function EditableEmailSection({ currentEmail }: { currentEmail: s
                 <button type="button" onClick={closeModal} className="flex-1 px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] transition-all">
                   Cancel
                 </button>
-                <button type="submit" disabled={loading} className="flex-1 px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50">
+                <button type="submit" disabled={loading} className="admin-btn admin-btn-primary flex-1">
                   {loading ? "Sending…" : "Send code"}
                 </button>
               </div>
@@ -134,7 +134,7 @@ export default function EditableEmailSection({ currentEmail }: { currentEmail: s
                 <button type="button" onClick={() => { setStep("email"); setCode(""); }} className="flex-1 px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] transition-all">
                   Back
                 </button>
-                <button type="submit" disabled={loading || code.length !== 6} className="flex-1 px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50">
+                <button type="submit" disabled={loading || code.length !== 6} className="admin-btn admin-btn-primary flex-1">
                   {loading ? "Updating…" : "Confirm"}
                 </button>
               </div>

@@ -21,6 +21,7 @@ import {
   PencilSimple as Pencil,
   LinkSimple,
   WarningCircle,
+  Images,
 } from "@phosphor-icons/react";
 import {
   ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS,
@@ -454,6 +455,33 @@ export default function QuoteDetailClient({
   const [offlineError, setOfflineError] = useState<string | null>(null);
   const [offlineSuccess, setOfflineSuccess] = useState<string | null>(null);
 
+  const [photoRequestBusy, setPhotoRequestBusy] = useState(false);
+  const [photoRequestSent, setPhotoRequestSent] = useState(
+    !!quote.photo_survey_sent_at,
+  );
+  const [photoRequestError, setPhotoRequestError] = useState<string | null>(
+    null,
+  );
+
+  const handleRequestPhotos = async () => {
+    if (photoRequestBusy || photoRequestSent) return;
+    setPhotoRequestBusy(true);
+    setPhotoRequestError(null);
+    try {
+      const res = await fetch(
+        `/api/admin/quotes/${encodeURIComponent(quote.quote_id)}/request-photos`,
+        { method: "POST", credentials: "same-origin" },
+      );
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Failed to send request");
+      setPhotoRequestSent(true);
+    } catch (err) {
+      setPhotoRequestError(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setPhotoRequestBusy(false);
+    }
+  };
+
   useEffect(() => {
     setPipelineStatus(String(quote.status || "draft"));
     setAutoFollowup(quote.auto_followup_active !== false);
@@ -486,13 +514,19 @@ export default function QuoteDetailClient({
       const data = (await res.json().catch(() => ({}))) as {
         message?: string;
         dealId?: string;
+        code?: string;
+        hubspot_error?: string;
+        http_status?: number;
       };
       if (!res.ok) {
-        setHubspotRetryError(
-          typeof data.message === "string"
+        // Show the most specific error available — HubSpot's own message first,
+        // then the route message, then a generic fallback.
+        const detail = data.hubspot_error
+          ? `HubSpot (${data.http_status ?? res.status}): ${data.hubspot_error}`
+          : typeof data.message === "string"
             ? data.message
-            : "Could not create HubSpot deal",
-        );
+            : "Could not create HubSpot deal";
+        setHubspotRetryError(detail);
         return;
       }
       if (data.dealId) {
@@ -500,7 +534,7 @@ export default function QuoteDetailClient({
         router.refresh();
       }
     } catch {
-      setHubspotRetryError("Request failed");
+      setHubspotRetryError("Request failed — check network connection");
     } finally {
       setHubspotRetryBusy(false);
     }
@@ -842,7 +876,7 @@ export default function QuoteDetailClient({
                       type="button"
                       onClick={() => void handleHubspotRetry()}
                       disabled={hubspotRetryBusy}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:opacity-95 disabled:opacity-50"
+                      className="admin-btn admin-btn-sm admin-btn-primary"
                     >
                       {hubspotRetryBusy ? "Working…" : "Create HubSpot deal"}
                     </button>
@@ -926,6 +960,38 @@ export default function QuoteDetailClient({
                   </span>
                 )}
               </>
+            )}
+            <button
+              type="button"
+              onClick={() => void handleRequestPhotos()}
+              disabled={photoRequestBusy || photoRequestSent}
+              className={
+                ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS + " disabled:opacity-50"
+              }
+              title="Send client a link to upload room photos for quoting"
+            >
+              <Images
+                weight="regular"
+                className="w-3 h-3 shrink-0"
+                aria-hidden
+              />
+              {photoRequestBusy
+                ? "Sending…"
+                : photoRequestSent
+                  ? "Photos requested"
+                  : "Request photos"}
+              {!photoRequestBusy && !photoRequestSent && (
+                <CaretRight
+                  weight="bold"
+                  className="w-3 h-3 shrink-0 opacity-90"
+                  aria-hidden
+                />
+              )}
+            </button>
+            {photoRequestError && (
+              <span className="text-[11px] text-[var(--red)]">
+                {photoRequestError}
+              </span>
             )}
             {canDeleteQuote && !showDeleteConfirm && (
               <button

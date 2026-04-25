@@ -33,7 +33,8 @@ export default function DraftBanner({
               : "text-[12px] font-medium text-[var(--tx)]"
           }
         >
-          You have an unsaved draft. Would you like to continue where you left off?
+          You have an unsaved draft. Would you like to continue where you left
+          off?
         </span>
       </div>
       <div className="flex shrink-0 items-center gap-2">

@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import BackButton from "../components/BackButton";
 import SettingsHubNav from "./SettingsHubNav";
 import { isSuperAdminEmail } from "@/lib/super-admin";
+import { PageHeader } from "@/design-system/admin/layout";
 
 export default async function SettingsLayout({
   children,
@@ -28,14 +28,12 @@ export default async function SettingsLayout({
   const showPlatform = isSuperAdmin || role === "owner";
 
   return (
-    <div className="w-full max-w-[min(100vw-1.25rem,1580px)] 2xl:max-w-[1700px] min-w-0 mx-auto px-3 sm:px-4 md:px-5 lg:px-6 py-6 md:py-8 animate-fade-up">
-      <div className="mb-4">
-        <BackButton label="Back" />
-      </div>
-      <div className="mb-8">
-        <p className="t-label text-[var(--color-text-tertiary)] mb-1.5">Account</p>
-        <h1 className="admin-page-hero text-[var(--tx)]">Settings</h1>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        eyebrow="Account"
+        title="Settings"
+        description="Personal preferences, notifications, team operations, and platform controls."
+      />
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-5 sm:items-start min-h-0">
         <SettingsHubNav
           isPartner={isPartner}

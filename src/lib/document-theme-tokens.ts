@@ -58,13 +58,18 @@ export function applyDocumentDarkTheme(): void {
   root.setProperty("--tx3", "#8A857D");
   root.setProperty("--brd", "rgba(255,248,240,0.08)");
   root.setProperty("--hover", "rgba(255,248,240,0.04)");
-  root.setProperty("--gold", "#D8CFC1");
-  root.setProperty("--gold2", "#EFE8DB");
-  root.setProperty("--gdim", "rgba(255,248,240,0.06)");
-  root.setProperty("--text-accent", "#D8CFC1");
-  root.setProperty("--admin-primary-fill", "#8B1A3A");
-  root.setProperty("--admin-primary-fill-hover", "#A32049");
-  root.setProperty("--btn-text-on-accent", "#FCF8F5");
+  /* `--gold` is the legacy bridge slot. We map it to wine in both themes so
+   * any legacy button using `bg-[var(--gold)]` renders as the canonical
+   * primary CTA. Ambient accents that need a cream tint should reach for
+   * --tx / --tx2 instead. */
+  /* Cream / off-white primarys on charcoal (aligned with yu3 dark tokens) */
+  root.setProperty("--gold", "#D9CFC0");
+  root.setProperty("--gold2", "#E4DBCC");
+  root.setProperty("--gdim", "rgba(245, 240, 232, 0.1)");
+  root.setProperty("--text-accent", "#F6F3EE");
+  root.setProperty("--admin-primary-fill", "#D9CFC0");
+  root.setProperty("--admin-primary-fill-hover", "#E4DBCC");
+  root.setProperty("--btn-text-on-accent", "#12100C");
   root.setProperty("--grn", "#6DBF86");
   root.setProperty("--grdim", "rgba(42,74,53,0.18)");
   root.setProperty("--red", "#E87070");

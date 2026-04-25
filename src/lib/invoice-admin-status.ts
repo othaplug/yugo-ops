@@ -49,8 +49,8 @@ export function invoiceStatusBadgeClass(status: string | null | undefined): stri
     archived: "text-[var(--tx3)]",
     scheduled: "text-blue-700 dark:text-sky-300",
     unpaid: "text-blue-700 dark:text-sky-300",
-    partially_paid: "text-[var(--gold)]",
-    payment_pending: "text-[var(--gold)]",
+    partially_paid: "text-[var(--accent-text)]",
+    payment_pending: "text-[var(--accent-text)]",
   };
   return colors[k] ?? "text-[var(--tx)]";
 }

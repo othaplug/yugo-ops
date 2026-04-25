@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CaretRight } from "@phosphor-icons/react";
 import { formatCurrency } from "@/lib/format-currency";
+import { KpiStrip } from "@/design-system/admin/dashboard";
 
 interface Lead {
   id: string;
@@ -58,7 +59,14 @@ function statusSelectClass(status: string): string {
   }
 }
 
-export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
+export default function WidgetLeadsClient({
+  leads,
+  hidePageHeader = false,
+}: {
+  leads: Lead[]
+  /** When true, strip the in page hero (used on unified Leads with shared tabs) */
+  hidePageHeader?: boolean
+}) {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
@@ -128,51 +136,66 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6">
-      <header className="mb-10 sm:mb-12">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-          <div className="min-w-0 space-y-1.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--tx3)]">
-              Sales
-            </p>
-            <h1 className="admin-page-hero text-[var(--tx)]">Widget Leads</h1>
-            <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
-              Estimate requests submitted through the public quote widget.
-            </p>
+    <div className="w-full min-w-0 py-4 md:py-6 px-4 md:px-6">
+      {hidePageHeader ? null : (
+        <header className="mb-10 sm:mb-12">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+            <div className="min-w-0 space-y-1.5">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--tx3)]">
+                Sales
+              </p>
+              <h1 className="admin-page-hero text-[var(--tx)]">Widget Leads</h1>
+              <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
+                Estimate requests submitted through the public quote widget.
+              </p>
+            </div>
+            <Link
+              href="/widget/quote"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="admin-btn admin-btn-sm admin-btn-secondary shrink-0 self-start"
+            >
+              Quote widget
+              <CaretRight
+                size={12}
+                weight="bold"
+                className="opacity-70 transition-transform group-hover:translate-x-0.5"
+                aria-hidden
+              />
+            </Link>
           </div>
+        </header>
+      )}
+
+      {hidePageHeader ? (
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
           <Link
             href="/widget/quote"
             target="_blank"
             rel="noopener noreferrer"
-            className="group inline-flex items-center gap-1.5 shrink-0 self-start rounded-lg border border-[var(--brd)] px-3 py-2 text-[10px] font-bold tracking-wide text-[var(--tx)] shadow-sm transition-all hover:border-[#2C3E2D]/35 hover:bg-[var(--bg2)] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C3E2D]/40 sm:mt-0.5"
+            className="admin-btn admin-btn-sm admin-btn-secondary"
           >
             Quote widget
             <CaretRight
               size={12}
               weight="bold"
-              className="opacity-70 transition-transform group-hover:translate-x-0.5"
+              className="opacity-70"
               aria-hidden
             />
           </Link>
         </div>
-      </header>
+      ) : null}
 
       <section className="mb-10" aria-label="Lead summary">
-        <ul className="list-none grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4 sm:gap-x-10">
-          {kpiItems.map(({ key, label, sub, value, accent }) => (
-            <li key={key} className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/65">{label}</p>
-              <p
-                className={`mt-1.5 font-heading text-2xl font-semibold tabular-nums tracking-tight ${
-                  accent ? "text-[var(--grn)]" : "text-[var(--tx)]"
-                }`}
-              >
-                {value}
-              </p>
-              <p className="mt-1 text-[10px] text-[var(--tx3)]/75">{sub}</p>
-            </li>
-          ))}
-        </ul>
+        <KpiStrip
+          tiles={kpiItems.map(({ key, label, sub, value, accent }) => ({
+            id: key,
+            label,
+            value: String(value),
+            hint: sub,
+            valueClassName: accent ? "text-[var(--yu3-success)]" : undefined,
+          }))}
+        />
       </section>
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

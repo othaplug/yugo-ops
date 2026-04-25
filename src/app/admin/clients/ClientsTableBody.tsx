@@ -56,7 +56,7 @@ export default function ClientsTableBody({ clients }: { clients: Client[] }) {
     return (
       <tr>
         <td colSpan={6} className="px-4 py-12 text-center text-[12px] text-[var(--tx3)]">
-          No clients yet. <Link href="/admin/clients/new" className="text-[var(--gold)] hover:underline">Add one</Link>
+          No clients yet. <Link href="/admin/clients/new" className="text-[var(--accent-text)] hover:underline">Add one</Link>
         </td>
       </tr>
     );
@@ -76,7 +76,7 @@ export default function ClientsTableBody({ clients }: { clients: Client[] }) {
         >
           <td className="pl-4 sm:pl-3 pr-3 py-2 border-b border-[var(--brd)]">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold group-hover:text-[var(--gold)] transition-colors">{c.name}</span>
+              <span className="text-[10px] font-semibold group-hover:text-[var(--accent-text)] transition-colors">{c.name}</span>
               {(() => {
                 const hasBalance = (c.outstanding_balance ?? 0) > 0;
                 const isActive = Number(c.deliveries_per_month ?? 0) > 0;
@@ -109,14 +109,14 @@ export default function ClientsTableBody({ clients }: { clients: Client[] }) {
                 <div className="absolute right-0 top-full mt-1 py-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-xl z-[100] min-w-[140px]">
                   <Link
                     href={`/admin/clients/${c.id}`}
-                    className="block w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]"
+                    className="block w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--accent-text)]"
                     onClick={() => setMenuOpenId(null)}
                   >
                     View
                   </Link>
                   <Link
                     href={`/admin/clients/${c.id}?edit=1`}
-                    className="block w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]"
+                    className="block w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--accent-text)]"
                     onClick={() => setMenuOpenId(null)}
                   >
                     Edit

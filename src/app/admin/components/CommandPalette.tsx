@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Icons } from "./SidebarIcons";
 import { MagnifyingGlass, User, Truck, FileText, CaretRight, Folder } from "@phosphor-icons/react";
 import { runAdminEntitySearch } from "@/lib/admin-search";
+import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme";
 
 const QUICK_NAV: { group: string; items: { name: string; href: string; Icon: () => ReactElement }[] }[] = [
   {
@@ -20,9 +21,8 @@ const QUICK_NAV: { group: string; items: { name: string; href: string; Icon: () 
   {
     group: "Operations",
     items: [
-      { name: "Command Center", href: "/admin", Icon: Icons.home },
+      { name: "Overview", href: "/admin", Icon: Icons.home },
       { name: "Activity", href: "/admin/activity", Icon: Icons.activity },
-      { name: "Dispatch", href: "/admin/dispatch", Icon: Icons.dispatch },
       { name: "Calendar", href: "/admin/calendar", Icon: Icons.calendar },
       { name: "Live Tracking", href: "/admin/crew", Icon: Icons.mapPin },
       { name: "Crew Analytics", href: "/admin/crew/analytics", Icon: Icons.barChart },
@@ -35,8 +35,8 @@ const QUICK_NAV: { group: string; items: { name: string; href: string; Icon: () 
       { name: "All Partners", href: "/admin/partners", Icon: Icons.users },
       { name: "Partner Health", href: "/admin/partners/health", Icon: Icons.barChart },
       { name: "Referral Partners", href: "/admin/partners/realtors", Icon: Icons.handshake },
-      { name: "Jobs", href: "/admin/deliveries", Icon: Icons.briefcase },
-      { name: "Inbound Shipments", href: "/admin/inbound-shipments", Icon: Icons.shippingContainer },
+      { name: "B2B jobs", href: "/admin/b2b/jobs", Icon: Icons.briefcase },
+      { name: "Inbound shipments", href: "/admin/b2b/jobs/inbound", Icon: Icons.shippingContainer },
     ],
   },
   {
@@ -44,15 +44,14 @@ const QUICK_NAV: { group: string; items: { name: string; href: string; Icon: () 
     items: [
       { name: "All Moves", href: "/admin/moves", Icon: Icons.path },
       { name: "Quotes", href: "/admin/quotes", Icon: Icons.quoteClipboard },
-      { name: "Widget Leads", href: "/admin/widget-leads", Icon: Icons.zap },
+      { name: "Widget leads", href: "/admin/leads/widget", Icon: Icons.zap },
     ],
   },
   {
     group: "Finance",
     items: [
-      { name: "Invoices", href: "/admin/invoices", Icon: Icons.fileText },
-      { name: "Revenue", href: "/admin/revenue", Icon: Icons.dollarSign },
-      { name: "Tips", href: "/admin/tips", Icon: Icons.creditCard },
+      { name: "Invoices", href: "/admin/finance/invoices", Icon: Icons.fileText },
+      { name: "Revenue", href: "/admin/finance/revenue", Icon: Icons.dollarSign },
       { name: "Claims", href: "/admin/claims", Icon: Icons.shield },
       { name: "Profitability", href: "/admin/finance/profitability", Icon: Icons.trendingUp },
     ],
@@ -185,28 +184,27 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
   return createPortal(
     <div
       data-modal-root
-      data-yugo-glass-modal
       className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5"
       role="dialog"
       aria-modal="true"
       aria-label="Command palette"
     >
       <div
-        className="fixed inset-0 z-0 bg-black/55 modal-overlay"
+        className="fixed inset-0 z-0 modal-overlay"
         aria-hidden
         onClick={onClose}
       />
 
-      <div
-        className="relative z-10 w-full max-w-[560px] max-h-[min(85dvh,720px)] yugo-glass-light rounded-sm shadow-xl overflow-hidden flex flex-col pointer-events-auto modal-card"
+      <Yu3PortaledTokenRoot
+        className="relative z-10 flex w-full max-w-[560px] max-h-[min(85dvh,720px)] flex-col overflow-hidden rounded-[var(--yu3-r-sm)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] pointer-events-auto modal-card"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search input */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[var(--brd)]">
+        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[var(--yu3-line)]">
           {searching ? (
-            <div className="w-4 h-4 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin shrink-0" />
+            <div className="w-4 h-4 border-2 border-[var(--yu3-wine)] border-t-transparent rounded-full animate-spin shrink-0" />
           ) : (
-            <MagnifyingGlass weight="regular" className="w-4 h-4 text-[var(--tx3)] shrink-0" />
+            <MagnifyingGlass weight="regular" className="w-4 h-4 text-[var(--yu3-ink-faint)] shrink-0" />
           )}
           <input
             ref={inputRef}
@@ -215,9 +213,9 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 min-w-0 bg-transparent text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none"
+            className="flex-1 min-w-0 bg-transparent text-[13px] text-[var(--yu3-ink)] placeholder:text-[var(--yu3-ink-faint)] outline-none"
           />
-          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-[var(--bg)] border border-[var(--brd)] text-[10px] text-[var(--tx3)] font-mono shrink-0">
+          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-[var(--yu3-bg-surface-sunken)] border border-[var(--yu3-line)] text-[10px] text-[var(--yu3-ink-faint)] font-mono shrink-0">
             ESC
           </kbd>
         </div>
@@ -231,7 +229,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
                   key={r.href + idx}
                   data-idx={idx}
                   onClick={() => navigate(r.href)}
-                  className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors border-b border-[var(--brd)]/30 last:border-0 ${idx === selectedIdx ? "bg-[var(--gdim)]" : "hover:bg-[var(--gdim)]/60"}`}
+                  className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors border-b border-[var(--yu3-line)]/30 last:border-0 ${idx === selectedIdx ? "bg-[var(--yu3-bg-surface-sunken)]" : "hover:bg-[var(--yu3-bg-surface-sunken)]/60"}`}
                 >
                   <span
                     className="w-6 h-6 rounded-[2px] shrink-0 flex items-center justify-center text-[11px]"
@@ -244,11 +242,11 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
                       <MagnifyingGlass weight="regular" className="w-3 h-3 text-current" />}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-semibold text-[var(--tx)] truncate">{r.name}</div>
-                    {r.sub && <div className="text-[10px] text-[var(--tx2)] truncate">{r.sub}</div>}
+                    <div className="text-[12px] font-semibold text-[var(--yu3-ink)] truncate">{r.name}</div>
+                    {r.sub && <div className="text-[10px] text-[var(--yu3-ink-muted)] truncate">{r.sub}</div>}
                   </div>
                   <span
-                    className="shrink-0 text-[9px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 rounded-sm border border-[var(--brd)]/50"
+                    className="shrink-0 text-[9px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 rounded-sm border border-[var(--yu3-line)]/50"
                     style={{ color: TYPE_COLORS[r.type] ?? "var(--tx3)", backgroundColor: `${TYPE_COLORS[r.type] ?? "var(--tx3)"}18` }}
                   >
                     {r.type}
@@ -256,7 +254,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
                 </div>
               ))
             ) : !searching ? (
-              <div className="px-4 py-10 text-center text-[12px] text-[var(--tx2)]">
+              <div className="px-4 py-10 text-center text-[12px] text-[var(--yu3-ink-muted)]">
                 No results for &ldquo;{query}&rdquo;
               </div>
             ) : null
@@ -265,7 +263,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
             <div className="p-2">
               {QUICK_NAV.map((group) => (
                 <div key={group.group} className="mb-3 last:mb-1">
-                  <div className="px-2 py-1 text-[9px] font-bold tracking-[0.06em] uppercase text-[var(--tx2)]">
+                  <div className="px-2 py-1 text-[9px] font-bold tracking-[0.06em] uppercase text-[var(--yu3-ink-muted)]">
                     {group.group}
                   </div>
                   {group.items.map((item) => {
@@ -277,9 +275,9 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
                         key={item.href}
                         data-idx={flatIdx}
                         onClick={() => navigate(item.href)}
-                        className={`flex items-center gap-2.5 px-2 py-2 rounded-sm cursor-pointer transition-colors ${isSelected ? "bg-[var(--gdim)] text-[var(--gold)]" : "text-[var(--tx2)] hover:bg-[var(--gdim)]/60"}`}
+                        className={`flex items-center gap-2.5 px-2 py-2 rounded-sm cursor-pointer transition-colors ${isSelected ? "bg-[var(--yu3-bg-surface-sunken)] text-[var(--yu3-wine)]" : "text-[var(--yu3-ink-muted)] hover:bg-[var(--yu3-bg-surface-sunken)]/60"}`}
                       >
-                        <span className={isSelected ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
+                        <span className={isSelected ? "text-[var(--yu3-wine)]" : "text-[var(--yu3-ink-faint)]"}>
                           <ItemIcon />
                         </span>
                         <span className="text-[12px] font-medium flex-1">{item.name}</span>
@@ -294,21 +292,21 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
         </div>
 
         {/* Footer hints */}
-        <div className="flex items-center gap-4 px-4 py-2 border-t border-[var(--brd)] bg-[var(--bg)]/50">
-          <span className="flex items-center gap-1.5 text-[10px] text-[var(--tx3)]">
-            <kbd className="px-1.5 py-0.5 rounded bg-[var(--card)] border border-[var(--brd)] font-mono text-[9px]">↑↓</kbd>
+        <div className="flex items-center gap-4 border-t border-[var(--yu3-line)] bg-[var(--yu3-bg-surface-sunken)]/80 px-4 py-2">
+          <span className="flex items-center gap-1.5 text-[10px] text-[var(--yu3-ink-faint)]">
+            <kbd className="px-1.5 py-0.5 rounded bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] font-mono text-[9px]">↑↓</kbd>
             navigate
           </span>
-          <span className="flex items-center gap-1.5 text-[10px] text-[var(--tx3)]">
-            <kbd className="px-1.5 py-0.5 rounded bg-[var(--card)] border border-[var(--brd)] font-mono text-[9px]">↵</kbd>
+          <span className="flex items-center gap-1.5 text-[10px] text-[var(--yu3-ink-faint)]">
+            <kbd className="px-1.5 py-0.5 rounded bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] font-mono text-[9px]">↵</kbd>
             open
           </span>
-          <span className="flex items-center gap-1.5 text-[10px] text-[var(--tx3)]">
-            <kbd className="px-1.5 py-0.5 rounded bg-[var(--card)] border border-[var(--brd)] font-mono text-[9px]">ESC</kbd>
+          <span className="flex items-center gap-1.5 text-[10px] text-[var(--yu3-ink-faint)]">
+            <kbd className="px-1.5 py-0.5 rounded bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] font-mono text-[9px]">ESC</kbd>
             close
           </span>
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>,
     document.body,
   );

@@ -25,7 +25,7 @@ import HubSpotIntegrationSection from "./HubSpotIntegrationSection";
 import AppSettingsCollapsibleSection from "./AppSettingsCollapsibleSection";
 import { useRouter } from "next/navigation";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
-import { Phone, EnvelopeSimple as Envelope, ShareNetwork, CaretDown, X, CurrencyDollar, ListBullets, UsersThree, DeviceMobile, Sliders, Handshake, UserCircleGear, ClipboardText, GasPump, Package } from "@phosphor-icons/react";
+import { Phone, EnvelopeSimple as Envelope, ShareNetwork, CaretDown, X, GasPump } from "@phosphor-icons/react";
 import { DEFAULT_FUEL_PRICE_DIESEL, DEFAULT_FUEL_PRICE_GAS } from "@/lib/routing/fuel-config";
 import { getAppTimezone } from "@/lib/business-timezone";
 import {
@@ -38,17 +38,30 @@ import { DEFAULT_GOOGLE_REVIEW_COUNT_LABEL } from "@/lib/google-review-url";
 import { QuotesFollowupAutomationHint } from "@/components/admin/AdminContextHints";
 
 const TABS = [
-  { id: "pricing",        label: "Pricing",        desc: "Rates & service fees",      Icon: CurrencyDollar },
-  { id: "delivery-verticals", label: "B2B verticals", desc: "Rates, surcharges, weight tiers, volume discounts", Icon: Package, ownerOnly: true },
-  { id: "rate-templates", label: "Rate Templates",  desc: "Reusable rate cards",       Icon: ListBullets,   ownerOnly: true },
-  { id: "crews",          label: "Teams",           desc: "Staff & crew groups",       Icon: UsersThree },
-  { id: "devices",        label: "Devices",         desc: "Tablets, trucks & fleet",   Icon: DeviceMobile },
-  { id: "app",            label: "App Settings",    desc: "Toggles & integrations",    Icon: Sliders },
-  { id: "partners",       label: "Partners",        desc: "Partner access & perms",    Icon: Handshake },
-  { id: "users",          label: "Users",           desc: "Roles & permissions",       Icon: UserCircleGear },
-  { id: "audit",          label: "Audit Log",       desc: "Activity & access history", Icon: ClipboardText },
+  { id: "pricing",        label: "Pricing",        desc: "Rates & service fees" },
+  { id: "delivery-verticals", label: "B2B verticals", desc: "Rates, surcharges, weight tiers, volume discounts", ownerOnly: true },
+  { id: "rate-templates", label: "Rate Templates",  desc: "Reusable rate cards",        ownerOnly: true },
+  { id: "crews",          label: "Teams",           desc: "Staff & crew groups" },
+  { id: "devices",        label: "Devices",         desc: "Tablets, trucks & fleet" },
+  { id: "app",            label: "App Settings",    desc: "Toggles & integrations" },
+  { id: "partners",       label: "Partners",        desc: "Partner access & perms" },
+  { id: "users",          label: "Users",           desc: "Roles & permissions" },
+  { id: "audit",          label: "Audit Log",       desc: "Activity & access history" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
+
+/** Left nav matches account Settings hub: sentence case, no icons. */
+const PLATFORM_SIDE_NAV_LABEL: Record<TabId, string> = {
+  pricing: "Pricing",
+  "delivery-verticals": "B2B verticals",
+  "rate-templates": "Rate templates",
+  crews: "Teams",
+  devices: "Devices",
+  app: "App settings",
+  partners: "Partners",
+  users: "Users",
+  audit: "Audit log",
+}
 
 interface StaffMember { id: string; name: string; role: string; phone?: string; email?: string; is_active: boolean; deactivated_at?: string | null; hourly_rate?: number; specialties?: string[]; hire_date?: string | null; }
 
@@ -1177,8 +1190,8 @@ function EmailTemplatesSection() {
               <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">{tpl.subject}</div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
-              <button type="button" onClick={() => setPreviewSlug(tpl.template_slug)} className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)]">Preview</button>
-              <button type="button" onClick={() => { setEditing(tpl); setEditSubject(tpl.subject); setEditBody(tpl.body_html); }} className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10">Edit</button>
+              <button type="button" onClick={() => setPreviewSlug(tpl.template_slug)} className="admin-btn admin-btn-sm admin-btn-ghost">Preview</button>
+              <button type="button" onClick={() => { setEditing(tpl); setEditSubject(tpl.subject); setEditBody(tpl.body_html); }} className="admin-btn admin-btn-sm admin-btn-secondary">Edit</button>
             </div>
           </div>
         ))}
@@ -1758,60 +1771,49 @@ export default function PlatformSettingsClient({
     return true;
   });
 
+  const platformSettingsLinkClass = (active: boolean) =>
+    active
+      ? "bg-[var(--color-wine-subtle)] text-[var(--color-text-primary)] font-semibold"
+      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)]"
+
   return (
     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-5 sm:items-start min-h-0">
-      {/* ── Vertical tab sidebar (compact rail so main pricing / tier grids get more width) ── */}
-      <nav className="hidden sm:flex flex-col gap-0.5 w-44 shrink-0 sticky top-[4.5rem] pr-2 sm:pr-3 border-r border-[var(--brd)]/25">
-        {visibleTabs.map((t) => {
-          const TabIcon = t.Icon;
-          const active = activeTab === t.id;
-          return (
-            <Link
-              key={t.id}
-              id={`tab-${t.id}`}
-              href={`/admin/platform?tab=${t.id}`}
-              className={`group flex items-center gap-2 px-2 py-2 rounded-lg text-left transition-all ${
-                active
-                  ? "bg-[var(--yu3-wine-wash)] text-[var(--yu3-wine)]"
-                  : "text-[var(--tx2)] hover:bg-[var(--yu3-bg-surface-subtle)] hover:text-[var(--tx)]"
-              }`}
-            >
-              <TabIcon
-                size={15}
-                weight={active ? "fill" : "regular"}
-                className={`shrink-0 transition-colors ${active ? "text-[var(--yu3-wine)]" : "text-[var(--tx3)] group-hover:text-[var(--tx2)]"}`}
-              />
-              <div className="min-w-0 flex-1">
-                <div className={`text-[11px] font-semibold leading-snug ${active ? "text-[var(--yu3-wine)]" : ""}`}>
-                  {t.label}
-                </div>
-                <div className="text-[9px] text-[var(--tx3)] leading-tight mt-0.5 hidden xl:block line-clamp-2">
-                  {"desc" in t ? t.desc : ""}
-                </div>
-              </div>
-              {active && <span className="ml-0.5 w-1 h-1 rounded-full bg-[var(--yu3-wine)] shrink-0 self-start mt-1.5" />}
-            </Link>
-          );
-        })}
+      <nav
+        aria-label="Platform settings sections"
+        className="hidden sm:flex flex-col w-[240px] shrink-0 sticky top-[4.5rem] pr-3 border-r border-[var(--brd)]/30 min-h-[16rem]"
+      >
+        <div className="space-y-1">
+          <div className="px-2 pb-1 pt-0">
+            <span className="t-label text-[var(--color-text-tertiary)]">Sections</span>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            {visibleTabs.map((t) => {
+              const active = activeTab === t.id;
+              return (
+                <Link
+                  key={t.id}
+                  id={`tab-${t.id}`}
+                  href={`/admin/platform?tab=${t.id}`}
+                  className={`rounded-lg px-3 py-2 text-[13px] transition-colors ${platformSettingsLinkClass(active)}`}
+                >
+                  {PLATFORM_SIDE_NAV_LABEL[t.id]}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
       </nav>
 
-      {/* ── Mobile: horizontal scrollable tabs ── */}
-      <div className="sm:hidden flex overflow-x-auto gap-1 pb-1 mb-4 -mx-1 px-1 scrollbar-hide w-full shrink-0">
+      <div className="sm:hidden flex overflow-x-auto gap-0.5 pb-1 mb-4 -mx-1 px-1 scrollbar-hide w-full shrink-0">
         {visibleTabs.map((t) => {
-          const TabIcon = t.Icon;
           const active = activeTab === t.id;
           return (
             <Link
               key={t.id}
               href={`/admin/platform?tab=${t.id}`}
-              className={`flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all shrink-0 ${
-                active
-                  ? "bg-[var(--yu3-wine-wash)] text-[var(--yu3-wine)] border border-[var(--yu3-wine)]/30"
-                  : "text-[var(--tx2)] border border-transparent hover:bg-[var(--yu3-bg-surface-subtle)]"
-              }`}
+              className={`whitespace-nowrap rounded-lg px-3 py-2 text-[13px] transition-colors shrink-0 ${platformSettingsLinkClass(active)}`}
             >
-              <TabIcon size={13} weight={active ? "fill" : "regular"} />
-              {t.label}
+              {PLATFORM_SIDE_NAV_LABEL[t.id]}
             </Link>
           );
         })}
@@ -2299,7 +2301,7 @@ export default function PlatformSettingsClient({
                                   toast(d.error || "Failed", "x");
                                 }
                               }}
-                              className="shrink-0 px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                              className="admin-btn admin-btn-sm admin-btn-secondary shrink-0"
                             >
                               Set as lead
                             </button>
@@ -2307,7 +2309,7 @@ export default function PlatformSettingsClient({
                           <button
                             type="button"
                             onClick={() => { setResetPinMember(m); setResetPinValue(""); }}
-                            className="shrink-0 px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                            className="admin-btn admin-btn-sm admin-btn-secondary shrink-0"
                           >
                             Reset PIN
                           </button>
@@ -2630,7 +2632,7 @@ export default function PlatformSettingsClient({
                   <label
                     key={opt.id}
                     className={`flex items-start gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
-                      leadAssignmentMode === opt.id ? "border-[var(--gold)]/50 bg-[var(--gold)]/5" : "border-[var(--brd)] hover:border-[var(--brd)]"
+                      leadAssignmentMode === opt.id ? "border-[var(--yu3-wine)]/50 bg-[var(--yu3-wine-wash)]" : "border-[var(--brd)] hover:border-[var(--brd)]"
                     }`}
                   >
                     <input

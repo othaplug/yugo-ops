@@ -9,36 +9,73 @@ import { createClient } from "@/lib/supabase/client";
 import { User } from "@phosphor-icons/react";
 
 const NAV = [
-  { label: "Dashboard", items: [
-    { name: "Command Center", icon: "home", href: "/admin" },
-    { name: "Reports", icon: "fileText", href: "/admin/reports" },
-    { name: "Calendar", icon: "calendar", href: "/admin/calendar" },
-    { name: "Tracking", icon: "mapPin", href: "/admin/crew" },
-  ]},
-  { label: "B2B", items: [
-    { name: "Jobs", icon: "mapPin", href: "/admin/deliveries", badge: "pending_deliveries" },
-    { name: "Retail", icon: "sofa", href: "/admin/partners/retail" },
-    { name: "Designers", icon: "palette", href: "/admin/partners/designers" },
-    { name: "Hospitality", icon: "hotel", href: "/admin/partners/hospitality" },
-    { name: "Art Gallery", icon: "image", href: "/admin/partners/gallery" },
-    { name: "Referral Partners", icon: "handshake", href: "/admin/partners/realtors" },
-  ]},
-  { label: "Moves", items: [
-    { name: "All Moves", icon: "truck", href: "/admin/moves" },
-    { name: "Move Projects", icon: "calendar", href: "/admin/move-projects" },
-    { name: "Quotes", icon: "fileText", href: "/admin/quotes", badge: "pending_quotes" },
-  ]},
-  { label: "Finance", items: [
-    { name: "Invoices", icon: "fileText", href: "/admin/invoices" },
-    { name: "Revenue", icon: "dollarSign", href: "/admin/revenue" },
-    { name: "Tips", icon: "dollarSign", href: "/admin/tips" },
-    { name: "Profitability", icon: "dollarSign", href: "/admin/finance/profitability", ownerOnly: true },
-  ]},
-  { label: "CRM", items: [
-    { name: "Contacts", icon: "users", href: "/admin/clients" },
-    { name: "Perks & Referrals", icon: "gift", href: "/admin/perks" },
-    { name: "Settings", icon: "settings", href: "/admin/settings" },
-  ]},
+  {
+    label: "Dashboard",
+    items: [
+      { name: "Overview", icon: "home", href: "/admin" },
+      { name: "Reports", icon: "fileText", href: "/admin/reports" },
+      { name: "Calendar", icon: "calendar", href: "/admin/calendar" },
+      { name: "Tracking", icon: "mapPin", href: "/admin/crew" },
+    ],
+  },
+  {
+    label: "B2B",
+    items: [
+      {
+        name: "Jobs",
+        icon: "mapPin",
+        href: "/admin/b2b/jobs",
+        badge: "pending_deliveries",
+      },
+      { name: "Retail", icon: "sofa", href: "/admin/partners/retail" },
+      { name: "Designers", icon: "palette", href: "/admin/partners/designers" },
+      {
+        name: "Hospitality",
+        icon: "hotel",
+        href: "/admin/partners/hospitality",
+      },
+      { name: "Art Gallery", icon: "image", href: "/admin/partners/gallery" },
+      {
+        name: "Referral Partners",
+        icon: "handshake",
+        href: "/admin/partners/realtors",
+      },
+    ],
+  },
+  {
+    label: "Moves",
+    items: [
+      { name: "All Moves", icon: "truck", href: "/admin/moves" },
+      { name: "Move Projects", icon: "calendar", href: "/admin/move-projects" },
+      {
+        name: "Quotes",
+        icon: "fileText",
+        href: "/admin/quotes",
+        badge: "pending_quotes",
+      },
+    ],
+  },
+  {
+    label: "Finance",
+    items: [
+      { name: "Invoices", icon: "fileText", href: "/admin/finance/invoices" },
+      { name: "Revenue", icon: "dollarSign", href: "/admin/finance/revenue" },
+      {
+        name: "Profitability",
+        icon: "dollarSign",
+        href: "/admin/finance/profitability",
+        ownerOnly: true,
+      },
+    ],
+  },
+  {
+    label: "CRM",
+    items: [
+      { name: "Contacts", icon: "users", href: "/admin/clients" },
+      { name: "Perks & Referrals", icon: "gift", href: "/admin/perks" },
+      { name: "Settings", icon: "settings", href: "/admin/settings" },
+    ],
+  },
 ];
 
 export default function Sidebar() {
@@ -97,29 +134,37 @@ export default function Sidebar() {
             const ownerOnly = (item as { ownerOnly?: boolean }).ownerOnly;
             if (ownerOnly && userRole !== "owner") return null;
 
-            const isActive = pathname === item.href ||
+            const isActive =
+              pathname === item.href ||
               (item.href !== "/admin" && pathname.startsWith(item.href));
 
             let badgeCount = 0;
-            if ((item as { badge?: string }).badge === "pending_deliveries") badgeCount = pendingDeliveriesCount;
-            if ((item as { badge?: string }).badge === "pending_quotes") badgeCount = pendingQuotesCount;
+            if ((item as { badge?: string }).badge === "pending_deliveries")
+              badgeCount = pendingDeliveriesCount;
+            if ((item as { badge?: string }).badge === "pending_quotes")
+              badgeCount = pendingQuotesCount;
 
             return (
               <Link
                 key={`${section.label}-${item.name}`}
                 href={item.href}
                 className={`sidebar-nav-lift flex items-center gap-2 px-4 py-[7px] mx-2 rounded-none text-[11px] font-medium border-l-2 -ml-px
-                  ${isActive
-                    ? "bg-[color-mix(in_srgb,var(--yu-accent)_20%,transparent)] text-[var(--tx)] border-l-[var(--yu-accent)] font-semibold"
-                    : "text-[var(--tx2)] border-transparent hover:bg-[color-mix(in_srgb,var(--yu-accent)_12%,transparent)] hover:text-[var(--tx)]"
+                  ${
+                    isActive
+                      ? "bg-[color-mix(in_srgb,var(--yu-accent)_20%,transparent)] text-[var(--tx)] border-l-[var(--yu-accent)] font-semibold"
+                      : "text-[var(--tx2)] border-transparent hover:bg-[color-mix(in_srgb,var(--yu-accent)_12%,transparent)] hover:text-[var(--tx)]"
                   }`}
               >
-                <span className={`sidebar-icon transition-colors duration-150 ${isActive ? "text-[var(--tx)]" : "text-[var(--tx3)]"}`}>
+                <span
+                  className={`sidebar-icon transition-colors duration-150 ${isActive ? "text-[var(--tx)]" : "text-[var(--tx3)]"}`}
+                >
                   <Icon name={item.icon} className="w-[15px] h-[15px]" />
                 </span>
                 <span className="flex-1">{item.name}</span>
                 {badgeCount > 0 && (
-                  <span className="min-w-[18px] h-[18px] flex items-center justify-center rounded-[2px] bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[9px] font-bold px-1">{badgeCount}</span>
+                  <span className="admin-btn admin-btn-primary">
+                    {badgeCount}
+                  </span>
                 )}
               </Link>
             );
@@ -129,12 +174,21 @@ export default function Sidebar() {
 
       {/* User Footer */}
       <div className="mt-auto px-4 py-3 border-t border-[var(--brd)]">
-        <Link href="/admin/settings" className="sidebar-nav-lift flex items-center gap-2 p-1.5 mx-2 rounded-[2px] hover:bg-[var(--gdim)]">
-          <div className="w-7 h-7 rounded-[2px] bg-[var(--admin-primary-fill)] flex items-center justify-center text-[9px] font-bold text-[var(--btn-text-on-accent)]">
-            <User size={14} className="text-[var(--btn-text-on-accent)]" aria-hidden />
+        <Link
+          href="/admin/settings"
+          className="sidebar-nav-lift flex items-center gap-2 p-1.5 mx-2 rounded-[2px] hover:bg-[var(--gdim)]"
+        >
+          <div className="admin-btn admin-btn-primary">
+            <User
+              size={14}
+              className="text-[var(--btn-text-on-accent)]"
+              aria-hidden
+            />
           </div>
           <div>
-            <div className="text-[10px] font-semibold text-[var(--tx)]">Settings</div>
+            <div className="text-[10px] font-semibold text-[var(--tx)]">
+              Settings
+            </div>
             <div className="text-[9px] font-bold uppercase tracking-[0.06em] text-[var(--tx2)]">
               Account
             </div>

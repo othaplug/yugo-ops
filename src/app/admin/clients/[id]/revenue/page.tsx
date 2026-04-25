@@ -80,12 +80,12 @@ export default async function ClientRevenuePage({
   const totalOverdue = overdue.reduce((s, i) => s + Number(i.amount || 0), 0);
 
   return (
-    <div className="max-w-[900px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
+    <div className="w-full min-w-0 max-w-[min(900px,100%)] mx-auto py-5 md:py-6 animate-fade-up">
       <div className="mb-4 flex items-center justify-between">
         <BackButton label="Back" />
         <Link
           href={`/admin/clients/${orgId}`}
-          className="text-[11px] font-semibold text-[var(--gold)] hover:underline"
+          className="text-[11px] font-semibold text-[var(--accent-text)] hover:underline"
         >
           View client profile
         </Link>
@@ -115,7 +115,7 @@ export default async function ClientRevenuePage({
           <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">
             Outstanding
           </div>
-          <div className="text-lg font-bold font-heading text-[var(--gold)]">
+          <div className="text-lg font-bold font-heading text-[var(--accent-text)]">
             {formatCompactCurrency(totalOutstanding)}
           </div>
         </div>
@@ -179,7 +179,7 @@ export default async function ClientRevenuePage({
                         ? "text-[var(--grn)]"
                         : inv.status === "overdue"
                           ? "text-[var(--red)]"
-                          : "text-[var(--gold)]"
+                          : "text-[var(--accent-text)]"
                     }`}
                   >
                     {inv.status || "-"}

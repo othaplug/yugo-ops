@@ -196,7 +196,7 @@ function AddItemForm({
         <button
           type="submit"
           disabled={saving || !title.trim()}
-          className="px-4 py-2 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-40 transition-colors"
+          className="admin-btn admin-btn-primary"
         >
           {saving ? "Adding…" : "Add Item"}
         </button>
@@ -290,7 +290,7 @@ function ConditionReportForm({
           type="button"
           onClick={handleSave}
           disabled={saving || !condition}
-          className="px-3 py-1.5 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[11px] font-semibold hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-40 transition-colors"
+          className="admin-btn admin-btn-sm admin-btn-primary"
         >
           {saving ? "Saving…" : "Save Report"}
         </button>
@@ -355,7 +355,7 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
         <button
           type="button"
           onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--gold)]/10 text-[var(--gold)] text-[11px] font-semibold hover:bg-[var(--gold)]/20 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--gold)]/10 text-[var(--accent-text)] text-[11px] font-semibold hover:bg-[var(--gold)]/20 transition-colors"
         >
           <Plus size={12} weight="regular" className="text-current" />
           Add Item
@@ -484,7 +484,7 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
                           onClick={() => setConditionPhase(
                             isConditionForm && conditionPhase?.phase === "pre" ? null : { id: item.id, phase: "pre" }
                           )}
-                          className="mt-2 text-[10px] font-semibold text-[var(--gold)] hover:opacity-80 transition-opacity"
+                          className="mt-2 text-[10px] font-semibold text-[var(--accent-text)] hover:opacity-80 transition-opacity"
                         >
                           {item.pre_condition ? "Update" : "Record Condition"}
                         </button>
@@ -506,7 +506,7 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
                           onClick={() => setConditionPhase(
                             isConditionForm && conditionPhase?.phase === "post" ? null : { id: item.id, phase: "post" }
                           )}
-                          className="mt-2 text-[10px] font-semibold text-[var(--gold)] hover:opacity-80 transition-opacity"
+                          className="mt-2 text-[10px] font-semibold text-[var(--accent-text)] hover:opacity-80 transition-opacity"
                         >
                           {item.post_condition ? "Update" : "Record Condition"}
                         </button>

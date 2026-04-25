@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme";
 import {
   CaretLeft,
   CaretRight,
@@ -182,13 +183,13 @@ export const WaiverFlow = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[99990] flex flex-col bg-black/75"
+      className="fixed inset-0 z-[99990] flex flex-col modal-overlay"
       data-modal-root
       data-crew-portal
       style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
       role="presentation"
     >
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <Yu3PortaledTokenRoot className="min-h-0 w-full flex-1 overflow-y-auto">
         <div className="min-h-full p-4 max-w-lg mx-auto pb-8">
           {error && (
             <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[11px] text-red-800">
@@ -198,16 +199,16 @@ export const WaiverFlow = ({
 
           {step === "complete" && (
             <div
-              className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-6 text-center shadow-2xl"
+              className="bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] rounded-2xl p-6 text-center shadow-2xl"
               data-crew-job-premium
             >
               <div className="w-14 h-14 rounded-2xl bg-[#2C3E2D]/10 flex items-center justify-center mx-auto mb-4">
                 <SealCheck size={32} weight="bold" className="text-[#243524]" aria-hidden />
               </div>
-              <h2 className="font-hero text-[22px] font-bold text-[var(--tx)] mb-2">
+              <h2 className="font-hero text-[22px] font-bold text-[var(--yu3-ink)] mb-2">
                 Waiver saved
               </h2>
-              <p className="text-[13px] text-[var(--tx3)] mb-6 leading-relaxed">
+              <p className="text-[13px] text-[var(--yu3-ink-faint)] mb-6 leading-relaxed">
                 The signed waiver is on file. You can continue the job.
               </p>
               <button
@@ -223,13 +224,13 @@ export const WaiverFlow = ({
 
           {step === "select_category" && (
             <div
-              className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-5 shadow-2xl"
+              className="bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] rounded-2xl p-5 shadow-2xl"
               data-crew-job-premium
             >
-              <h2 className="font-hero text-[22px] font-bold text-[var(--tx)] mb-1">
+              <h2 className="font-hero text-[22px] font-bold text-[var(--yu3-ink)] mb-1">
                 What is the risk?
               </h2>
-              <p className="text-[12px] text-[var(--tx3)] mb-4 leading-relaxed">
+              <p className="text-[12px] text-[var(--yu3-ink-faint)] mb-4 leading-relaxed">
                 Select the category that best describes the situation. The client
                 must review and sign before you proceed.
               </p>
@@ -242,12 +243,12 @@ export const WaiverFlow = ({
                       setSelectedCategory(cat);
                       setStep("describe");
                     }}
-                    className="w-full text-left p-4 rounded-xl border border-[var(--brd)] bg-[var(--bg)]/40 hover:border-[#5C1A33]/40 hover:bg-[#5C1A33]/[0.04] transition-colors"
+                    className="w-full text-left p-4 rounded-xl border border-[var(--yu3-line)] bg-[var(--yu3-bg-canvas)]/40 hover:border-[#5C1A33]/40 hover:bg-[#5C1A33]/[0.04] transition-colors"
                   >
-                    <p className="text-[13px] font-semibold text-[var(--tx)]">
+                    <p className="text-[13px] font-semibold text-[var(--yu3-ink)]">
                       {cat.label}
                     </p>
-                    <p className="text-[11px] text-[var(--tx3)] mt-1 leading-snug">
+                    <p className="text-[11px] text-[var(--yu3-ink-faint)] mt-1 leading-snug">
                       {cat.description}
                     </p>
                   </button>
@@ -256,7 +257,7 @@ export const WaiverFlow = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full mt-4 py-2.5 text-[13px] text-[var(--tx3)] hover:text-[#5C1A33]"
+                className="w-full mt-4 py-2.5 text-[13px] text-[var(--yu3-ink-faint)] hover:text-[#5C1A33]"
               >
                 Cancel
               </button>
@@ -265,29 +266,29 @@ export const WaiverFlow = ({
 
           {step === "describe" && selectedCategory && (
             <div
-              className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-5 shadow-2xl"
+              className="bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] rounded-2xl p-5 shadow-2xl"
               data-crew-job-premium
             >
-              <h2 className="font-hero text-[22px] font-bold text-[var(--tx)] mb-1">
+              <h2 className="font-hero text-[22px] font-bold text-[var(--yu3-ink)] mb-1">
                 Describe the situation
               </h2>
-              <p className="text-[12px] text-[var(--tx3)] mb-4 leading-relaxed">
+              <p className="text-[12px] text-[var(--yu3-ink-faint)] mb-4 leading-relaxed">
                 Be specific. This becomes part of the signed waiver.
               </p>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-semibold text-[var(--yu3-ink-faint)] uppercase tracking-wider mb-1">
                     Item or area affected
                   </label>
                   <input
                     value={itemName}
                     onChange={(e) => setItemName(e.target.value)}
                     placeholder="e.g. King bed frame, master bedroom"
-                    className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[#5C1A33]/35 outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[var(--yu3-bg-canvas)] border border-[var(--yu3-line)] text-[var(--yu3-ink)] placeholder:text-[var(--yu3-ink-faint)] text-[13px] focus:border-[#5C1A33]/35 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-semibold text-[var(--yu3-ink-faint)] uppercase tracking-wider mb-1">
                     What is the problem?
                   </label>
                   <textarea
@@ -295,11 +296,11 @@ export const WaiverFlow = ({
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Describe the condition and why it is risky."
                     rows={4}
-                    className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[#5C1A33]/35 outline-none resize-none"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[var(--yu3-bg-canvas)] border border-[var(--yu3-line)] text-[var(--yu3-ink)] placeholder:text-[var(--yu3-ink-faint)] text-[13px] focus:border-[#5C1A33]/35 outline-none resize-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-semibold text-[var(--yu3-ink-faint)] uppercase tracking-wider mb-1">
                     Photos (required)
                   </label>
                   <input
@@ -308,7 +309,7 @@ export const WaiverFlow = ({
                     multiple
                     capture="environment"
                     onChange={(e) => handlePhotoFiles(e.target.files)}
-                    className="w-full text-[12px] text-[var(--tx2)] file:mr-2 file:py-1.5 file:px-2 file:rounded-lg file:border file:border-[var(--brd)] file:bg-[var(--bg)]"
+                    className="w-full text-[12px] text-[var(--yu3-ink-muted)] file:mr-2 file:py-1.5 file:px-2 file:rounded-lg file:border file:border-[var(--yu3-line)] file:bg-[var(--yu3-bg-canvas)]"
                   />
                   {photoFiles.length > 0 && (
                     <p className="text-[11px] text-[#243524] mt-1 font-medium">
@@ -318,7 +319,7 @@ export const WaiverFlow = ({
                   )}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-semibold text-[var(--yu3-ink-faint)] uppercase tracking-wider mb-1">
                     Your recommendation
                   </label>
                   <div className="flex gap-2">
@@ -330,7 +331,7 @@ export const WaiverFlow = ({
                       className={`flex-1 py-2.5 text-[11px] font-semibold rounded-xl border transition-colors ${
                         crewRecommendation === "proceed_with_caution"
                           ? "border-[#b45309] bg-[#b45309]/10 text-[#92400e]"
-                          : "border-[var(--brd)] text-[var(--tx3)]"
+                          : "border-[var(--yu3-line)] text-[var(--yu3-ink-faint)]"
                       }`}
                     >
                       Proceed with caution
@@ -341,7 +342,7 @@ export const WaiverFlow = ({
                       className={`flex-1 py-2.5 text-[11px] font-semibold rounded-xl border transition-colors ${
                         crewRecommendation === "do_not_recommend"
                           ? "border-red-400 bg-red-50 text-red-800"
-                          : "border-[var(--brd)] text-[var(--tx3)]"
+                          : "border-[var(--yu3-line)] text-[var(--yu3-ink-faint)]"
                       }`}
                     >
                       Do not recommend
@@ -353,7 +354,7 @@ export const WaiverFlow = ({
                 <button
                   type="button"
                   onClick={() => setStep("select_category")}
-                  className="flex-1 inline-flex items-center justify-center gap-1 py-2.5 text-[13px] font-medium border border-[var(--brd)] text-[var(--tx2)] rounded-xl hover:bg-[var(--bg)]"
+                  className="flex-1 inline-flex items-center justify-center gap-1 py-2.5 text-[13px] font-medium border border-[var(--yu3-line)] text-[var(--yu3-ink-muted)] rounded-xl hover:bg-[var(--yu3-bg-canvas)]"
                 >
                   <CaretLeft size={16} aria-hidden />
                   Back
@@ -373,7 +374,7 @@ export const WaiverFlow = ({
 
           {step === "hand_to_client" && selectedCategory && (
             <div
-              className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-6 text-center shadow-2xl"
+              className="bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] rounded-2xl p-6 text-center shadow-2xl"
               data-crew-job-premium
             >
               <div className="w-16 h-16 rounded-full bg-[#b45309]/15 flex items-center justify-center mx-auto mb-4">
@@ -384,10 +385,10 @@ export const WaiverFlow = ({
                   aria-hidden
                 />
               </div>
-              <h2 className="font-hero text-[26px] sm:text-[30px] leading-tight font-bold text-[var(--tx)] mb-3">
+              <h2 className="font-hero text-[26px] sm:text-[30px] leading-tight font-bold text-[var(--yu3-ink)] mb-3">
                 Hand the phone to the client
               </h2>
-              <p className="text-[12px] text-[var(--tx3)] leading-relaxed mb-6">
+              <p className="text-[12px] text-[var(--yu3-ink-faint)] leading-relaxed mb-6">
                 The client needs to read the waiver, understand the risks, and
                 sign if they want to proceed.
               </p>
@@ -402,7 +403,7 @@ export const WaiverFlow = ({
               <button
                 type="button"
                 onClick={() => setStep("describe")}
-                className="w-full mt-3 py-2 text-[13px] text-[var(--tx3)]"
+                className="w-full mt-3 py-2 text-[13px] text-[var(--yu3-ink-faint)]"
               >
                 Back
               </button>
@@ -425,14 +426,14 @@ export const WaiverFlow = ({
                 type="button"
                 onClick={() => setStep("hand_to_client")}
                 disabled={submitting}
-                className="w-full py-2.5 text-[13px] font-medium border border-[var(--brd)] rounded-xl text-[var(--tx2)] bg-[var(--card)] disabled:opacity-50"
+                className="w-full py-2.5 text-[13px] font-medium border border-[var(--yu3-line)] rounded-xl text-[var(--yu3-ink-muted)] bg-[var(--yu3-bg-surface)] disabled:opacity-50"
               >
                 Back (crew view)
               </button>
             </div>
           )}
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>,
     document.body,
   );

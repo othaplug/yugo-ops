@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { CaretRight, Phone, EnvelopeSimple } from "@phosphor-icons/react/ssr";
 import { formatPhone } from "@/lib/phone";
 import { formatMoveDate } from "@/lib/date-format";
+import YugoLogo from "@/components/YugoLogo";
 import EstateWelcomeFaq from "./[token]/EstateWelcomeFaq";
 import { ESTATE_WELCOME_BG, ON_WINE } from "./estate-welcome-tokens";
 
@@ -310,14 +310,7 @@ export default function EstateWelcomeGuideView({
         />
         <div className="estate-welcome-hero-inner relative z-1 max-w-3xl mx-auto px-5 pt-12 pb-20 md:pt-16 md:pb-28 text-center">
           <div className="flex justify-center mb-4">
-            <Image
-              src="/images/yugo-logo-cream.png"
-              alt="Yugo"
-              width={112}
-              height={32}
-              className="h-8 w-auto opacity-95"
-              priority
-            />
+            <YugoLogo size={32} variant="cream" className="opacity-95" />
           </div>
           <div
             className="w-12 h-px mx-auto mb-8"

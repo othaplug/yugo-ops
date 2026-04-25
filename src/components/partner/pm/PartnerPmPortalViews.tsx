@@ -1163,7 +1163,7 @@ export function PartnerPmAccountTab() {
       </section>
 
       {inviteOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-overlay">
           <div
             className="bg-[#FFFBF7] rounded-xl max-w-md w-full p-6 border border-[#2C3E2D]/12 shadow-xl"
             role="dialog"

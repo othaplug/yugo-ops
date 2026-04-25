@@ -75,7 +75,7 @@ export default function CreateDeliveryDropdown({
             href={deliveryUrl}
             className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
           >
-            <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
+            <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--accent-text)]">
               <Truck
                 size={14}
                 weight="regular"
@@ -89,7 +89,7 @@ export default function CreateDeliveryDropdown({
             href={dayRateUrl}
             className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
           >
-            <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
+            <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--accent-text)]">
               <CalendarBlank
                 size={14}
                 weight="regular"
@@ -103,7 +103,7 @@ export default function CreateDeliveryDropdown({
             href={b2bOneOffUrl}
             className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
           >
-            <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
+            <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--accent-text)]">
               <Handshake
                 size={14}
                 weight="regular"
@@ -123,7 +123,7 @@ export default function CreateDeliveryDropdown({
                 }}
                 className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors w-full text-left first:rounded-t-xl last:rounded-b-xl"
               >
-                <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
+                <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--accent-text)]">
                   <BookOpen
                     size={14}
                     weight="regular"
@@ -138,7 +138,7 @@ export default function CreateDeliveryDropdown({
                 href={createProjectHref!}
                 className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
               >
-                <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
+                <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--accent-text)]">
                   <BookOpen
                     size={14}
                     weight="regular"
@@ -154,7 +154,7 @@ export default function CreateDeliveryDropdown({
               href={addPartnerHref}
               className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
             >
-              <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--gold)]">
+              <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--accent-text)]">
                 <UsersThree
                   size={14}
                   weight="regular"

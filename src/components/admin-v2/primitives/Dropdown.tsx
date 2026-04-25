@@ -3,6 +3,7 @@
 import * as React from "react"
 import * as RadixMenu from "@radix-ui/react-dropdown-menu"
 import { Check } from "@phosphor-icons/react"
+import { useYu3PortalContainer } from "@/design-system/admin/layout/Yu3PortalContext"
 import { cn } from "../lib/cn"
 
 export const DropdownRoot = RadixMenu.Root
@@ -12,21 +13,25 @@ export const DropdownPortal = RadixMenu.Portal
 export const DropdownContent = React.forwardRef<
   React.ElementRef<typeof RadixMenu.Content>,
   React.ComponentPropsWithoutRef<typeof RadixMenu.Content>
->(({ className, sideOffset = 6, ...props }, ref) => (
-  <RadixMenu.Portal>
-    <RadixMenu.Content
-      ref={ref}
-      sideOffset={sideOffset}
-      className={cn(
-        "z-50 min-w-[220px] overflow-hidden rounded-md border border-line bg-surface p-1 text-fg shadow-md",
-        "data-[state=open]:animate-in data-[state=closed]:animate-out",
-        "data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1",
-        className,
-      )}
-      {...props}
-    />
-  </RadixMenu.Portal>
-))
+>(({ className, sideOffset = 6, ...props }, ref) => {
+  const portalContainer = useYu3PortalContainer()
+  return (
+    <RadixMenu.Portal container={portalContainer ?? undefined}>
+      <RadixMenu.Content
+        ref={ref}
+        sideOffset={sideOffset}
+        className={cn(
+          "z-50 min-w-[220px] overflow-hidden rounded-md border border-line pointer-events-auto",
+          "bg-[var(--color-surface,#ffffff)] p-1 text-fg shadow-md",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out",
+          "data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1",
+          className,
+        )}
+        {...props}
+      />
+    </RadixMenu.Portal>
+  )
+})
 DropdownContent.displayName = "DropdownContent"
 
 type DropdownItemProps = React.ComponentPropsWithoutRef<typeof RadixMenu.Item> & {

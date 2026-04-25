@@ -222,7 +222,10 @@ function crewAvatarInitials(
       return first.slice(0, 2).toUpperCase();
     }
   }
-  return (teamName || "?").replace(/^Team\s+/i, "").slice(0, 2).toUpperCase();
+  return (teamName || "?")
+    .replace(/^Team\s+/i, "")
+    .slice(0, 2)
+    .toUpperCase();
 }
 
 /** crew_locations row first, then tracking session stage, then coarse crew en-route fallback — matches CrewPopup. */
@@ -265,9 +268,15 @@ function routeTargetsPickupLeg(
   crewLocStatus: string | undefined,
 ): boolean {
   const cl = (crewLocStatus || "").toLowerCase();
-  if (cl === "en_route_delivery" || cl === "at_delivery" || cl === "unloading" || cl === "returning")
+  if (
+    cl === "en_route_delivery" ||
+    cl === "at_delivery" ||
+    cl === "unloading" ||
+    cl === "returning"
+  )
     return false;
-  if (cl === "en_route_pickup" || cl === "at_pickup" || cl === "loading") return true;
+  if (cl === "en_route_pickup" || cl === "at_pickup" || cl === "loading")
+    return true;
   const s = (sessionStatus || "").trim().toLowerCase();
   if (!s) return false;
   return SESSION_STATUS_HEADING_PICKUP.has(s);
@@ -440,7 +449,9 @@ const GodEyeMap = dynamic(
               boxShadow: "0 2px 14px rgba(0,0,0,0.55)",
             };
         const crewLabelText = mapStyleIsLight ? "#1a1816" : "#ffffff";
-        const crewFreshTone = mapStyleIsLight ? ("light" as const) : ("dark" as const);
+        const crewFreshTone = mapStyleIsLight
+          ? ("light" as const)
+          : ("dark" as const);
         const hqBadgeStyle = mapStyleIsLight
           ? {
               background: "linear-gradient(135deg, #ffffff 0%, #f2efe9 100%)",
@@ -456,12 +467,14 @@ const GodEyeMap = dynamic(
             };
         const hqDotStyle = mapStyleIsLight
           ? {
-              background: "radial-gradient(circle at 35% 35%, #4a6b4e, #2C3E2D)",
+              background:
+                "radial-gradient(circle at 35% 35%, #4a6b4e, #2C3E2D)",
               boxShadow:
                 "0 0 0 2px rgba(44,62,45,0.2), 0 0 8px rgba(44,62,45,0.25), 0 1px 3px rgba(0,0,0,0.15)",
             }
           : {
-              background: "radial-gradient(circle at 35% 35%, #4a6b4e, #2C3E2D)",
+              background:
+                "radial-gradient(circle at 35% 35%, #4a6b4e, #2C3E2D)",
               boxShadow:
                 "0 0 0 3px var(--gdim), 0 0 10px var(--gdim), 0 1px 3px rgba(0,0,0,0.4)",
             };
@@ -527,10 +540,7 @@ const GodEyeMap = dynamic(
                 <div
                   className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white shadow-md pointer-events-none"
                   style={{
-                    background:
-                      end.role === "pickup"
-                        ? "#22C55E"
-                        : "#2C3E2D",
+                    background: end.role === "pickup" ? "#22C55E" : "#2C3E2D",
                     boxShadow: "0 2px 10px rgba(0,0,0,0.28)",
                   }}
                   title={
@@ -922,7 +932,12 @@ function CrewPopup({
             className="flex items-center justify-center gap-1 py-2.5 rounded-sm border border-[var(--brd)] bg-[var(--bg)] text-[var(--tx)] text-[11px] font-bold uppercase tracking-[0.06em] hover:bg-[var(--bg2)] transition-colors [font-family:var(--font-body)]"
           >
             View job details
-            <CaretRight size={14} weight="bold" className="shrink-0" aria-hidden />
+            <CaretRight
+              size={14}
+              weight="bold"
+              className="shrink-0"
+              aria-hidden
+            />
           </Link>
         )}
       </div>
@@ -995,9 +1010,7 @@ export default function UnifiedTrackingView({
         s.teamId &&
         crews.some(
           (c) =>
-            c.id === s.teamId &&
-            c.current_lat != null &&
-            c.current_lng != null,
+            c.id === s.teamId && c.current_lat != null && c.current_lng != null,
         ),
     );
     if (withPos.length !== 1) return;
@@ -1021,7 +1034,10 @@ export default function UnifiedTrackingView({
         if (Array.isArray(d.crewLocations)) {
           setCrewLocations(
             new Map(
-              (d.crewLocations as CrewLocation[]).map((row) => [row.crew_id, row]),
+              (d.crewLocations as CrewLocation[]).map((row) => [
+                row.crew_id,
+                row,
+              ]),
             ),
           );
         }
@@ -1053,7 +1069,9 @@ export default function UnifiedTrackingView({
               next.set(loc.crew_id, {
                 ...loc,
                 nav_eta_seconds:
-                  loc.nav_eta_seconds != null ? Number(loc.nav_eta_seconds) : null,
+                  loc.nav_eta_seconds != null
+                    ? Number(loc.nav_eta_seconds)
+                    : null,
                 nav_distance_remaining_m:
                   loc.nav_distance_remaining_m != null
                     ? Number(loc.nav_distance_remaining_m)
@@ -1173,12 +1191,15 @@ export default function UnifiedTrackingView({
     };
   }, [eventSourceConnected, load]);
 
-  const routeFetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const routeFetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   // Fetch route lines: correct job (UUID), pickup vs delivery leg, moves + deliveries; debounced.
   useEffect(() => {
     if (!HAS_MAPBOX) return;
-    if (routeFetchDebounceRef.current) clearTimeout(routeFetchDebounceRef.current);
+    if (routeFetchDebounceRef.current)
+      clearTimeout(routeFetchDebounceRef.current);
     routeFetchDebounceRef.current = setTimeout(() => {
       routeFetchDebounceRef.current = null;
       void (async () => {
@@ -1210,18 +1231,32 @@ export default function UnifiedTrackingView({
           if (s.jobType === "move" && move) {
             if (pickupLeg && move.from_lat != null && move.from_lng != null) {
               destLngLat = [Number(move.from_lng), Number(move.from_lat)];
-            } else if (!pickupLeg && move.to_lat != null && move.to_lng != null) {
+            } else if (
+              !pickupLeg &&
+              move.to_lat != null &&
+              move.to_lng != null
+            ) {
               destLngLat = [Number(move.to_lng), Number(move.to_lat)];
             }
           } else if (s.jobType === "delivery" && delivery) {
-            if (pickupLeg && delivery.pickup_lat != null && delivery.pickup_lng != null) {
-              destLngLat = [Number(delivery.pickup_lng), Number(delivery.pickup_lat)];
+            if (
+              pickupLeg &&
+              delivery.pickup_lat != null &&
+              delivery.pickup_lng != null
+            ) {
+              destLngLat = [
+                Number(delivery.pickup_lng),
+                Number(delivery.pickup_lat),
+              ];
             } else if (
               !pickupLeg &&
               delivery.delivery_lat != null &&
               delivery.delivery_lng != null
             ) {
-              destLngLat = [Number(delivery.delivery_lng), Number(delivery.delivery_lat)];
+              destLngLat = [
+                Number(delivery.delivery_lng),
+                Number(delivery.delivery_lat),
+              ];
             }
           }
 
@@ -1229,10 +1264,16 @@ export default function UnifiedTrackingView({
           if (!destLngLat) {
             if (pickupLeg) {
               destAddr =
-                loc?.current_from_address || move?.from_address || delivery?.pickup_address || null;
+                loc?.current_from_address ||
+                move?.from_address ||
+                delivery?.pickup_address ||
+                null;
             } else {
               destAddr =
-                loc?.current_to_address || move?.to_address || delivery?.delivery_address || null;
+                loc?.current_to_address ||
+                move?.to_address ||
+                delivery?.delivery_address ||
+                null;
             }
           }
 
@@ -1266,7 +1307,10 @@ export default function UnifiedTrackingView({
             );
             if (res.ok) {
               const data = await res.json();
-              if (Array.isArray(data?.coordinates) && data.coordinates.length >= 2) {
+              if (
+                Array.isArray(data?.coordinates) &&
+                data.coordinates.length >= 2
+              ) {
                 lineCoords = data.coordinates;
               }
             } else {
@@ -1298,7 +1342,11 @@ export default function UnifiedTrackingView({
           }
           for (const [k, v] of newRoutes) {
             const o = prev.lines.get(k);
-            if (!o || o.length !== v.length || JSON.stringify(o) !== JSON.stringify(v)) {
+            if (
+              !o ||
+              o.length !== v.length ||
+              JSON.stringify(o) !== JSON.stringify(v)
+            ) {
               return { lines: newRoutes, ends: newEnds };
             }
           }
@@ -1321,7 +1369,8 @@ export default function UnifiedTrackingView({
       })();
     }, 700);
     return () => {
-      if (routeFetchDebounceRef.current) clearTimeout(routeFetchDebounceRef.current);
+      if (routeFetchDebounceRef.current)
+        clearTimeout(routeFetchDebounceRef.current);
     };
   }, [
     activeSessions,
@@ -1434,7 +1483,7 @@ export default function UnifiedTrackingView({
             <button
               type="button"
               onClick={() => setActivePanel("jobs")}
-              className={`flex-1 px-3 py-1.5 sm:py-2.5 text-[10px] font-bold uppercase tracking-[0.06em] transition-colors ${activePanel === "jobs" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
+              className={`flex-1 px-3 py-1.5 sm:py-2.5 text-[10px] font-bold uppercase tracking-[0.06em] transition-colors ${activePanel === "jobs" ? "text-[var(--accent-text)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
             >
               {(() => {
                 const STALE_TAB_MS = 90 * 60 * 1000;
@@ -1455,7 +1504,7 @@ export default function UnifiedTrackingView({
             <button
               type="button"
               onClick={() => setActivePanel("teams")}
-              className={`flex-1 px-3 py-1.5 sm:py-2.5 text-[10px] font-bold uppercase tracking-[0.06em] transition-colors ${activePanel === "teams" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
+              className={`flex-1 px-3 py-1.5 sm:py-2.5 text-[10px] font-bold uppercase tracking-[0.06em] transition-colors ${activePanel === "teams" ? "text-[var(--accent-text)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
             >
               Teams ({crews.length})
             </button>
@@ -1484,7 +1533,7 @@ export default function UnifiedTrackingView({
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--admin-primary-fill)] opacity-60" />
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--admin-primary-fill)]" />
                               </span>
-                              <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--gold)]">
+                              <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--accent-text)]">
                                 Active Now
                               </span>
                             </>
@@ -1669,7 +1718,7 @@ export default function UnifiedTrackingView({
                               </div>
                             </div>
                             {crew && (
-                              <span className="text-[9px] font-medium text-[var(--gold)] shrink-0 max-w-[120px] truncate">
+                              <span className="text-[9px] font-medium text-[var(--accent-text)] shrink-0 max-w-[120px] truncate">
                                 {crewMemberLine(crew.members, crew.name)}
                               </span>
                             )}
@@ -1685,7 +1734,7 @@ export default function UnifiedTrackingView({
                             className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--brd)]/30 last:border-0 hover:bg-[var(--bg)]/40 transition-colors"
                           >
                             <div className="w-6 h-6 rounded-full bg-[var(--gold)]/10 flex items-center justify-center shrink-0">
-                              <span className="text-[8px] font-bold text-[var(--gold)]">
+                              <span className="text-[8px] font-bold text-[var(--accent-text)]">
                                 D
                               </span>
                             </div>
@@ -1698,7 +1747,7 @@ export default function UnifiedTrackingView({
                               </div>
                             </div>
                             {crew && (
-                              <span className="text-[9px] font-medium text-[var(--gold)] shrink-0 max-w-[120px] truncate">
+                              <span className="text-[9px] font-medium text-[var(--accent-text)] shrink-0 max-w-[120px] truncate">
                                 {crewMemberLine(crew.members, crew.name)}
                               </span>
                             )}
@@ -1732,7 +1781,7 @@ export default function UnifiedTrackingView({
                   <div className="text-[10px] text-[var(--tx3)]/60 mt-1">
                     <Link
                       href="/admin/platform?tab=teams"
-                      className="text-[var(--gold)] hover:underline"
+                      className="text-[var(--accent-text)] hover:underline"
                     >
                       Add teams in settings
                     </Link>
@@ -1788,7 +1837,7 @@ export default function UnifiedTrackingView({
                             {crewMemberLine(c.members, c.name)}
                           </span>
                           {hasActiveSession && (
-                            <span className="dt-badge tracking-[0.04em] text-[var(--gold)]">
+                            <span className="dt-badge tracking-[0.04em] text-[var(--accent-text)]">
                               LIVE
                             </span>
                           )}

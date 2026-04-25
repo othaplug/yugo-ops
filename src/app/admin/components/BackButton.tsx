@@ -26,7 +26,7 @@ export default function BackButton({
   const isV2 = variant === "v2";
   const baseClass = isV2
     ? `inline-flex items-center gap-1.5 text-[11px] font-semibold text-fg-subtle transition-colors hover:text-accent ${className}`
-    : `inline-flex items-center gap-1.5 text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors ${className}`;
+    : `inline-flex items-center gap-1.5 text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--accent-text)] transition-colors ${className}`;
   const icon = <ArrowLeft size={14} weight="regular" className="shrink-0 text-current" aria-hidden />;
 
   function handleBack() {

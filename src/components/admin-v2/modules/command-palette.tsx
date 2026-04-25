@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Command } from "cmdk";
+import { useYu3PortalContainer } from "@/design-system/admin/layout/Yu3PortalContext";
 import { Icon, type IconName } from "../primitives/Icon";
 import { Chip } from "../primitives/Chip";
 import { cn } from "../lib/cn";
@@ -138,6 +139,7 @@ type CommandPaletteProps = {
 
 export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
   const router = useRouter();
+  const portalContainer = useYu3PortalContainer();
   const [query, setQuery] = React.useState("");
   const [universe, setUniverse] = React.useState<SearchUniverse | null>(null);
 
@@ -191,18 +193,18 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
+      <Dialog.Portal container={portalContainer ?? undefined}>
         <Dialog.Overlay
           className={cn(
-            "fixed inset-0 z-50 bg-black/60 backdrop-blur-xs",
+            "fixed inset-0 z-50 modal-overlay pointer-events-auto",
             "data-[state=open]:animate-in data-[state=open]:fade-in-0",
             "data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
           )}
         />
         <Dialog.Content
           className={cn(
-            "fixed left-1/2 top-[15%] z-50 w-[min(92vw,640px)] -translate-x-1/2",
-            "overflow-hidden rounded-xl border border-line bg-surface shadow-lg",
+            "fixed left-1/2 top-[15%] z-50 w-[min(92vw,640px)] -translate-x-1/2 pointer-events-auto",
+            "overflow-hidden rounded-xl border border-line bg-[var(--color-surface,#ffffff)] shadow-lg",
             "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
             "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
           )}

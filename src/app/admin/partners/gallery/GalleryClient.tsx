@@ -95,7 +95,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
               onClick={() => setActiveTab(t.key)}
               className={`px-1 py-3 text-[12px] font-semibold transition-colors touch-manipulation border-b-2 -mb-px ${
                 activeTab === t.key
-                  ? "text-[var(--gold)] border-[var(--gold)]"
+                  ? "text-[var(--accent-text)] border-[var(--gold)]"
                   : "text-[var(--tx3)] border-transparent hover:text-[var(--tx)]"
               }`}
             >
@@ -154,7 +154,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                     <button
                       type="button"
                       onClick={() => setCreatingProject(true)}
-                      className="text-[12px] font-semibold text-[var(--gold)] hover:underline"
+                      className="text-[12px] font-semibold text-[var(--accent-text)] hover:underline"
                     >
                       Create your first gallery project →
                     </button>
@@ -215,7 +215,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                           {p.insurance_value && (
                             <div>
                               <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-0.5">Estimate</div>
-                              <div className="text-[11px] font-semibold text-[var(--gold)]">{p.insurance_value}</div>
+                              <div className="text-[11px] font-semibold text-[var(--accent-text)]">{p.insurance_value}</div>
                             </div>
                           )}
                         </div>
@@ -223,7 +223,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                           <button
                             type="button"
                             onClick={() => setProjectDetail(p)}
-                            className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                            className="text-[10px] font-semibold text-[var(--accent-text)] hover:underline"
                           >
                             View details →
                           </button>
@@ -254,7 +254,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                   <p className="text-[13px] text-[var(--tx3)]">No gallery partners yet.</p>
                   <Link
                     href="/admin/partners/new?partnerType=gallery"
-                    className="text-[12px] font-semibold text-[var(--gold)] hover:underline mt-1 inline-block"
+                    className="text-[12px] font-semibold text-[var(--accent-text)] hover:underline mt-1 inline-block"
                   >
                     Add your first partner
                   </Link>
@@ -282,8 +282,8 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
 
       {/* Project detail modal */}
       {projectDetail && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60" aria-modal="true">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setProjectDetail(null)} aria-hidden="true" />
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 modal-overlay" aria-modal="true">
+          <div className="absolute inset-0" onClick={() => setProjectDetail(null)} aria-hidden="true" />
           <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full max-w-md p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between gap-3 mb-4">
               <h3 className="font-heading text-[15px] font-bold text-[var(--tx)]">Project details</h3>
@@ -316,7 +316,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Estimate</div>
-                <div className="text-[var(--gold)] font-semibold">{projectDetail.insurance_value || "-"}</div>
+                <div className="text-[var(--accent-text)] font-semibold">{projectDetail.insurance_value || "-"}</div>
               </div>
               <div>
                 <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-0.5">Status</div>
@@ -342,7 +342,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
             <button
               type="button"
               onClick={() => { setEditingProject(projectDetail); setProjectDetail(null); }}
-              className="mt-4 w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)]"
+              className="admin-btn admin-btn-sm admin-btn-primary mt-4 w-full"
             >
               Edit project
             </button>

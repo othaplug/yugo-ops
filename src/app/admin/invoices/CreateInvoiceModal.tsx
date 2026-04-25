@@ -17,7 +17,11 @@ interface CreateInvoiceModalProps {
   onCreated: () => void;
 }
 
-export default function CreateInvoiceModal({ open, onClose, onCreated }: CreateInvoiceModalProps) {
+export default function CreateInvoiceModal({
+  open,
+  onClose,
+  onCreated,
+}: CreateInvoiceModalProps) {
   const { toast } = useToast();
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [organizationId, setOrganizationId] = useState("");
@@ -60,7 +64,11 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }: CreateI
       formData.append("organization_id", organizationId || "");
       formData.append("client_name", clientName.trim());
       formData.append("amount", String(amt));
-      formData.append("due_date", dueDate || new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]);
+      formData.append(
+        "due_date",
+        dueDate ||
+          new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+      );
       if (file) formData.append("file", file);
 
       const res = await fetch("/api/admin/invoices/create", {
@@ -85,7 +93,12 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }: CreateI
   };
 
   return (
-    <ModalOverlay open={open} onClose={onClose} title="Create Invoice" maxWidth="md">
+    <ModalOverlay
+      open={open}
+      onClose={onClose}
+      title="Create Invoice"
+      maxWidth="md"
+    >
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
         <div>
           <label className="admin-premium-label admin-premium-label--tight">
@@ -155,20 +168,22 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }: CreateI
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="w-full text-[11px] text-[var(--tx2)] file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-[var(--admin-primary-fill)] file:text-white"
           />
-          {file && <p className="mt-1 text-[10px] text-[var(--tx3)]">{file.name}</p>}
+          {file && (
+            <p className="mt-1 text-[10px] text-[var(--tx3)]">{file.name}</p>
+          )}
         </div>
         <div className="flex gap-2 pt-2">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
+            className="admin-btn admin-btn-secondary flex-1"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="flex-1 py-2.5 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50"
+            className="admin-btn admin-btn-primary flex-1"
           >
             {submitting ? "Creating…" : "Create Invoice"}
           </button>

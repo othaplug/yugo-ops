@@ -341,7 +341,7 @@ export default async function ReportsPage({
   }
 
   return (
-    <div className="max-w-[1100px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
+    <div className="w-full min-w-0 py-5 md:py-6 animate-fade-up">
       <div className="mb-6"><BackButton label="Back" /></div>
 
       <div className="flex items-start justify-between mb-8 gap-4">

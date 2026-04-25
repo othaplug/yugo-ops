@@ -16,6 +16,7 @@ import {
 } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
+import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme";
 import { createClient } from "@/lib/supabase/client";
 import { organizationTypeLabel } from "@/lib/partner-type";
 import { PartnerPmAccountTab } from "@/components/partner/pm/PartnerPmPortalViews";
@@ -308,13 +309,11 @@ export default function PartnerSettingsPanel({
 
   const panelContent = (
     <>
-      <div className="fixed inset-0 z-99998 bg-black/45" onClick={onClose} />
-      <div
-        className="fixed top-0 right-0 z-99999 h-full w-full max-w-[400px] border-l shadow-[0_8px_48px_rgba(92,26,51,0.08)] flex flex-col drawer-card"
+      <div className="fixed inset-0 z-99998 modal-overlay" onClick={onClose} />
+      <Yu3PortaledTokenRoot
+        className="drawer-card fixed top-0 right-0 z-99999 flex h-full w-full max-w-[400px] flex-col border-l border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)]"
         style={{
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
-          backgroundColor: CREAM,
-          borderColor: `${FOREST}14`,
         }}
       >
         {/* Header */}
@@ -1069,7 +1068,7 @@ export default function PartnerSettingsPanel({
             </div>
           )}
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </>
   );
 

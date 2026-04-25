@@ -1,18 +1,24 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useVirtualizer } from "@tanstack/react-virtual"
-import { cn } from "../lib/cn"
-import { Checkbox } from "../primitives/Checkbox"
-import { SearchInput } from "../primitives/Input"
-import { Button } from "../primitives/Button"
-import { EmptyState } from "../primitives/EmptyState"
-import { Skeleton } from "../primitives/Skeleton"
-import { ColumnMenu, HiddenColumnsMenu } from "./ColumnMenu"
-import { ViewSwitcher } from "./ViewSwitcher"
-import { BulkBar } from "./BulkBar"
-import { SavedViews } from "./SavedViews"
-import { MobileRowCard } from "./MobileRowCard"
+import * as React from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { cn } from "../lib/cn";
+import { Checkbox } from "../primitives/Checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../primitives/DropdownMenu";
+import { SearchInput } from "../primitives/Input";
+import { Button } from "../primitives/Button";
+import { EmptyState } from "../primitives/EmptyState";
+import { Skeleton } from "../primitives/Skeleton";
+import { ColumnMenu, HiddenColumnsMenu } from "./ColumnMenu";
+import { ViewSwitcher } from "./ViewSwitcher";
+import { BulkBar } from "./BulkBar";
+import { SavedViews } from "./SavedViews";
+import { MobileRowCard } from "./MobileRowCard";
 import {
   ArrowDown,
   ArrowUp,
@@ -20,7 +26,7 @@ import {
   DotsThreeVertical,
   Plus,
   DownloadSimple,
-} from "../icons"
+} from "../icons";
 import type {
   BulkAction,
   ColumnDef,
@@ -30,59 +36,59 @@ import type {
   SortDir,
   StageTone,
   ViewMode,
-} from "./types"
+} from "./types";
 
 export interface DataTableProps<Row> {
-  columns: ColumnDef<Row>[]
-  rows: Row[]
-  rowId: (row: Row) => string
-  loading?: boolean
+  columns: ColumnDef<Row>[];
+  rows: Row[];
+  rowId: (row: Row) => string;
+  loading?: boolean;
   /** Global search value. Parent owns this so it can live in URL. */
-  search?: string
-  onSearchChange?: (value: string) => void
-  sort?: ColumnSort | null
-  onSortChange?: (sort: ColumnSort | null) => void
+  search?: string;
+  onSearchChange?: (value: string) => void;
+  sort?: ColumnSort | null;
+  onSortChange?: (sort: ColumnSort | null) => void;
   /** Controlled column visibility. If omitted, the table owns it. */
-  hiddenColumnIds?: string[]
-  onHiddenColumnIdsChange?: (ids: string[]) => void
+  hiddenColumnIds?: string[];
+  onHiddenColumnIdsChange?: (ids: string[]) => void;
   /** Controlled selection. Keyed by rowId(row). */
-  selectedRowIds?: Set<string>
-  onSelectedRowIdsChange?: (ids: Set<string>) => void
-  bulkActions?: BulkAction<Row>[]
-  rowActions?: RowAction<Row>[]
-  onRowClick?: (row: Row) => void
-  emptyState?: React.ReactNode
+  selectedRowIds?: Set<string>;
+  onSelectedRowIdsChange?: (ids: Set<string>) => void;
+  bulkActions?: BulkAction<Row>[];
+  rowActions?: RowAction<Row>[];
+  onRowClick?: (row: Row) => void;
+  emptyState?: React.ReactNode;
   /** Fixed row height — required for virtualization. */
-  rowHeight?: number
+  rowHeight?: number;
   /** Page header hooks (rendered above the table chrome). */
-  toolbarLeft?: React.ReactNode
-  toolbarRight?: React.ReactNode
+  toolbarLeft?: React.ReactNode;
+  toolbarRight?: React.ReactNode;
   /** Render board cards (grouped by `board.groupBy`). */
   board?: {
-    groupBy: (row: Row) => string
-    renderCard: (row: Row) => React.ReactNode
-    columns?: { id: string; label: string; tone?: StageTone }[]
-  }
+    groupBy: (row: Row) => string;
+    renderCard: (row: Row) => React.ReactNode;
+    columns?: { id: string; label: string; tone?: StageTone }[];
+  };
   /** Pipeline view (grouped columns of rows, used for stages). */
   pipeline?: {
-    stages: { id: string; label: string; tone?: StageTone }[]
-    stageForRow: (row: Row) => string
-    renderCard: (row: Row) => React.ReactNode
-  }
-  viewMode?: ViewMode
-  onViewModeChange?: (mode: ViewMode) => void
-  availableViews?: ViewMode[]
-  savedViews?: SavedView[]
-  activeSavedViewId?: string | null
-  onSelectSavedView?: (id: string) => void
-  onSaveView?: (name: string) => void
-  onDeleteSavedView?: (id: string) => void
-  onExport?: () => void
-  onNewRecord?: () => void
+    stages: { id: string; label: string; tone?: StageTone }[];
+    stageForRow: (row: Row) => string;
+    renderCard: (row: Row) => React.ReactNode;
+  };
+  viewMode?: ViewMode;
+  onViewModeChange?: (mode: ViewMode) => void;
+  availableViews?: ViewMode[];
+  savedViews?: SavedView[];
+  activeSavedViewId?: string | null;
+  onSelectSavedView?: (id: string) => void;
+  onSaveView?: (name: string) => void;
+  onDeleteSavedView?: (id: string) => void;
+  onExport?: () => void;
+  onNewRecord?: () => void;
   /** Text shown in search input */
-  searchPlaceholder?: string
+  searchPlaceholder?: string;
   /** Toggle page-level chrome (header row w/ search, view switcher, saved views, export). */
-  hideChrome?: boolean
+  hideChrome?: boolean;
 }
 
 export function DataTable<Row>({
@@ -123,116 +129,116 @@ export function DataTable<Row>({
   /* ── State (uncontrolled fallbacks) ────────────────────────────────── */
   const [internalHidden, setInternalHidden] = React.useState<string[]>(() =>
     columns.filter((c) => c.hiddenByDefault).map((c) => c.id),
-  )
-  const hidden = new Set(hiddenColumnIds ?? internalHidden)
+  );
+  const hidden = new Set(hiddenColumnIds ?? internalHidden);
 
   const [internalSelection, setInternalSelection] = React.useState<Set<string>>(
     new Set(),
-  )
-  const selection = selectedRowIds ?? internalSelection
+  );
+  const selection = selectedRowIds ?? internalSelection;
 
   const setSelection = React.useCallback(
     (next: Set<string>) => {
-      onSelectedRowIdsChange?.(next)
-      if (!selectedRowIds) setInternalSelection(next)
+      onSelectedRowIdsChange?.(next);
+      if (!selectedRowIds) setInternalSelection(next);
     },
     [onSelectedRowIdsChange, selectedRowIds],
-  )
+  );
   const setHidden = React.useCallback(
     (ids: string[]) => {
-      onHiddenColumnIdsChange?.(ids)
-      if (!hiddenColumnIds) setInternalHidden(ids)
+      onHiddenColumnIdsChange?.(ids);
+      if (!hiddenColumnIds) setInternalHidden(ids);
     },
     [hiddenColumnIds, onHiddenColumnIdsChange],
-  )
+  );
 
-  const visibleColumns = columns.filter((c) => !hidden.has(c.id))
+  const visibleColumns = columns.filter((c) => !hidden.has(c.id));
 
   /* ── Filtered / sorted rows (client) ───────────────────────────────── */
   const filteredRows = React.useMemo(() => {
-    let out = rows
-    const q = search.trim().toLowerCase()
+    let out = rows;
+    const q = search.trim().toLowerCase();
     if (q) {
       out = out.filter((row) =>
         visibleColumns.some((col) => {
           if (col.accessor) {
-            const v = col.accessor(row)
-            if (v == null) return false
-            return String(v).toLowerCase().includes(q)
+            const v = col.accessor(row);
+            if (v == null) return false;
+            return String(v).toLowerCase().includes(q);
           }
-          return false
+          return false;
         }),
-      )
+      );
     }
     if (sort) {
-      const col = columns.find((c) => c.id === sort.columnId)
+      const col = columns.find((c) => c.id === sort.columnId);
       if (col?.accessor) {
-        const dir = sort.direction === "asc" ? 1 : -1
+        const dir = sort.direction === "asc" ? 1 : -1;
         out = [...out].sort((a, b) => {
-          const av = col.accessor!(a)
-          const bv = col.accessor!(b)
-          if (av == null && bv == null) return 0
-          if (av == null) return 1
-          if (bv == null) return -1
+          const av = col.accessor!(a);
+          const bv = col.accessor!(b);
+          if (av == null && bv == null) return 0;
+          if (av == null) return 1;
+          if (bv == null) return -1;
           if (typeof av === "number" && typeof bv === "number")
-            return (av - bv) * dir
-          return String(av).localeCompare(String(bv)) * dir
-        })
+            return (av - bv) * dir;
+          return String(av).localeCompare(String(bv)) * dir;
+        });
       }
     }
-    return out
-  }, [rows, visibleColumns, columns, search, sort])
+    return out;
+  }, [rows, visibleColumns, columns, search, sort]);
 
   /* ── Selection helpers ─────────────────────────────────────────────── */
   const allSelected =
     filteredRows.length > 0 &&
-    filteredRows.every((r) => selection.has(rowId(r)))
+    filteredRows.every((r) => selection.has(rowId(r)));
   const someSelected =
-    !allSelected && filteredRows.some((r) => selection.has(rowId(r)))
+    !allSelected && filteredRows.some((r) => selection.has(rowId(r)));
   const toggleAll = () => {
     if (allSelected) {
-      const next = new Set(selection)
-      filteredRows.forEach((r) => next.delete(rowId(r)))
-      setSelection(next)
+      const next = new Set(selection);
+      filteredRows.forEach((r) => next.delete(rowId(r)));
+      setSelection(next);
     } else {
-      const next = new Set(selection)
-      filteredRows.forEach((r) => next.add(rowId(r)))
-      setSelection(next)
+      const next = new Set(selection);
+      filteredRows.forEach((r) => next.add(rowId(r)));
+      setSelection(next);
     }
-  }
+  };
   const toggleRow = (row: Row) => {
-    const id = rowId(row)
-    const next = new Set(selection)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
-    setSelection(next)
-  }
+    const id = rowId(row);
+    const next = new Set(selection);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelection(next);
+  };
 
   /* ── Virtualizer (desktop list) ────────────────────────────────────── */
-  const parentRef = React.useRef<HTMLDivElement>(null)
+  const parentRef = React.useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
     count: filteredRows.length,
     estimateSize: () => rowHeight,
     getScrollElement: () => parentRef.current,
     overscan: 8,
-  })
-  const virtualItems = virtualizer.getVirtualItems()
-  const totalSize = virtualizer.getTotalSize()
+  });
+  const virtualItems = virtualizer.getVirtualItems();
+  const totalSize = virtualizer.getTotalSize();
 
   /* ── Sort click handler ────────────────────────────────────────────── */
   const handleSortClick = (col: ColumnDef<Row>) => {
-    if (col.sortable === false) return
-    const current = sort?.columnId === col.id ? sort.direction : null
+    if (col.sortable === false) return;
+    const current = sort?.columnId === col.id ? sort.direction : null;
     const next: ColumnSort | null =
       current === "asc"
         ? { columnId: col.id, direction: "desc" }
         : current === "desc"
           ? null
-          : { columnId: col.id, direction: "asc" }
-    onSortChange?.(next)
-  }
+          : { columnId: col.id, direction: "asc" };
+    onSortChange?.(next);
+  };
 
-  const selectedRows = filteredRows.filter((r) => selection.has(rowId(r)))
+  const selectedRows = filteredRows.filter((r) => selection.has(rowId(r)));
 
   /* ── Chrome (top row: search / view switcher / saved views / export / new) ─ */
   const chromeTop = !hideChrome ? (
@@ -292,7 +298,7 @@ export function DataTable<Row>({
         ) : null}
       </div>
     </div>
-  ) : null
+  ) : null;
 
   /* ── Board view ─────────────────────────────────────────────────────── */
   if (viewMode === "board" && board) {
@@ -300,7 +306,7 @@ export function DataTable<Row>({
       board.columns ??
       Array.from(new Set(filteredRows.map((r) => board.groupBy(r)))).map(
         (id) => ({ id, label: id }),
-      )
+      );
     return (
       <div className="flex flex-col">
         {chromeTop}
@@ -308,7 +314,7 @@ export function DataTable<Row>({
           {columnsDef.map((col) => {
             const colRows = filteredRows.filter(
               (r) => board.groupBy(r) === col.id,
-            )
+            );
             return (
               <div
                 key={col.id}
@@ -319,7 +325,8 @@ export function DataTable<Row>({
                     <span
                       className="h-1.5 w-1.5 rounded-full"
                       style={{
-                        background: toneColor(col.tone) || "var(--yu3-ink-faint)",
+                        background:
+                          toneColor(col.tone) || "var(--yu3-ink-faint)",
                       }}
                     />
                     {col.label}
@@ -342,7 +349,7 @@ export function DataTable<Row>({
                   ))}
                 </div>
               </div>
-            )
+            );
           })}
         </div>
         <BulkBar
@@ -353,7 +360,7 @@ export function DataTable<Row>({
           onClear={() => setSelection(new Set())}
         />
       </div>
-    )
+    );
   }
 
   /* ── Pipeline view ─────────────────────────────────────────────────── */
@@ -365,7 +372,7 @@ export function DataTable<Row>({
           {pipeline.stages.map((stage) => {
             const stageRows = filteredRows.filter(
               (r) => pipeline.stageForRow(r) === stage.id,
-            )
+            );
             return (
               <div
                 key={stage.id}
@@ -377,13 +384,15 @@ export function DataTable<Row>({
                       <span
                         className="h-1.5 w-1.5 rounded-full"
                         style={{
-                          background: toneColor(stage.tone) || "var(--yu3-ink-faint)",
+                          background:
+                            toneColor(stage.tone) || "var(--yu3-ink-faint)",
                         }}
                       />
                       {stage.label}
                     </span>
                     <span className="yu3-num text-[11px] text-[var(--yu3-ink-muted)]">
-                      {stageRows.length} record{stageRows.length === 1 ? "" : "s"}
+                      {stageRows.length} record
+                      {stageRows.length === 1 ? "" : "s"}
                     </span>
                   </div>
                 </div>
@@ -401,7 +410,7 @@ export function DataTable<Row>({
                   ))}
                 </div>
               </div>
-            )
+            );
           })}
         </div>
         <BulkBar
@@ -412,7 +421,7 @@ export function DataTable<Row>({
           onClear={() => setSelection(new Set())}
         />
       </div>
-    )
+    );
   }
 
   /* ── List view (desktop table + mobile card list) ─────────────────── */
@@ -429,8 +438,8 @@ export function DataTable<Row>({
             </div>
           ))
         : filteredRows.map((row) => {
-            const id = rowId(row)
-            const selected = selection.has(id)
+            const id = rowId(row);
+            const selected = selection.has(id);
             return (
               <MobileRowCard
                 key={id}
@@ -447,10 +456,10 @@ export function DataTable<Row>({
                 selected={selected}
                 onClick={() => onRowClick?.(row)}
               />
-            )
+            );
           })}
     </div>
-  )
+  );
 
   const desktopTable = (
     <div
@@ -458,8 +467,14 @@ export function DataTable<Row>({
       className="hidden lg:block overflow-auto relative rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)]"
       style={{ maxHeight: "calc(100dvh - 240px)" }}
     >
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-[var(--yu3-bg-surface-sunken)] border-b border-[var(--yu3-line)]">
+      {/*
+        min-w-full w-max: body virtualizer uses width:100% which otherwise resolves
+        to the scrollport only; header grid can be wider. This aligns header + body
+        widths so row borders and column backgrounds are continuous.
+      */}
+      <div className="min-w-full w-max">
+        {/* Header */}
+        <div className="sticky top-0 z-20 w-full border-b border-[var(--yu3-line)] bg-[var(--yu3-bg-surface-sunken)]">
         <div
           className="grid items-center h-11"
           style={{
@@ -480,75 +495,136 @@ export function DataTable<Row>({
             </div>
           ) : null}
           {visibleColumns.map((col) => {
-            const sortDir =
-              sort?.columnId === col.id ? sort.direction : null
-            const sortable = col.sortable !== false
+            const sortDir = sort?.columnId === col.id ? sort.direction : null;
+            const sortable = col.sortable !== false;
+            const align = col.align ?? "left";
+            const headerShell = (
+              <div className="inline-flex min-w-0 items-center gap-0.5 shrink-0">
+                {col.filterable ? (
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center h-5 w-5 rounded-[var(--yu3-r-xs)] text-[var(--yu3-ink-faint)] hover:bg-[var(--yu3-bg-surface-sunken)] hover:text-[var(--yu3-ink)]"
+                    aria-label="Filter"
+                  >
+                    <Funnel size={10} weight="bold" />
+                  </button>
+                ) : null}
+                <ColumnMenu
+                  column={col}
+                  sortDir={sortDir}
+                  onSort={(dir) =>
+                    onSortChange?.({ columnId: col.id, direction: dir })
+                  }
+                  onHide={() => setHidden([...Array.from(hidden), col.id])}
+                  onSearch={
+                    onSearchChange
+                      ? () => {
+                          /* focus global search; could focus a per-column input */
+                        }
+                      : undefined
+                  }
+                  onAnalyze={
+                    col.numeric
+                      ? () => {
+                          /* placeholder; wired up by parent in later phase */
+                        }
+                      : undefined
+                  }
+                />
+              </div>
+            );
             return (
               <div
                 key={col.id}
                 className={cn(
-                  "group/col flex items-center gap-1 px-3 h-11",
+                  "group/col flex h-11 min-w-0 px-3",
+                  "relative z-[11] bg-[var(--yu3-bg-surface-sunken)]",
                   "text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--yu3-ink-muted)]",
-                  col.align === "right" && "justify-end",
-                  col.align === "center" && "justify-center",
+                  align === "right" && "justify-end",
+                  align === "center" && "justify-center",
+                  align === "left" && "justify-start",
                 )}
               >
-                <button
-                  type="button"
-                  disabled={!sortable}
-                  onClick={() => handleSortClick(col)}
-                  className={cn(
-                    "inline-flex items-center gap-1 select-none",
-                    sortable && "hover:text-[var(--yu3-ink-strong)]",
-                  )}
-                >
-                  <span className="truncate">{col.header}</span>
-                  {sortDir === "asc" ? (
-                    <ArrowUp size={10} weight="bold" />
-                  ) : sortDir === "desc" ? (
-                    <ArrowDown size={10} weight="bold" />
-                  ) : null}
-                </button>
-                <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/col:opacity-100 transition-opacity">
-                  {col.filterable ? (
+                {align === "right" ? (
+                  <div className="inline-flex min-w-0 max-w-full items-center gap-1">
                     <button
                       type="button"
-                      className="inline-flex items-center justify-center h-5 w-5 rounded-[var(--yu3-r-xs)] text-[var(--yu3-ink-faint)] hover:bg-[var(--yu3-bg-surface-sunken)] hover:text-[var(--yu3-ink)]"
-                      aria-label="Filter"
+                      disabled={!sortable}
+                      onClick={() => handleSortClick(col)}
+                      className={cn(
+                        "inline-flex min-w-0 max-w-full items-center gap-1 select-none",
+                        sortable && "hover:text-[var(--yu3-ink-strong)]",
+                      )}
                     >
-                      <Funnel size={10} weight="bold" />
+                      <span className="truncate">{col.header}</span>
+                      {sortDir === "asc" ? (
+                        <ArrowUp size={10} weight="bold" className="shrink-0" />
+                      ) : sortDir === "desc" ? (
+                        <ArrowDown
+                          size={10}
+                          weight="bold"
+                          className="shrink-0"
+                        />
+                      ) : null}
                     </button>
-                  ) : null}
-                  <ColumnMenu
-                    column={col}
-                    sortDir={sortDir}
-                    onSort={(dir) =>
-                      onSortChange?.({ columnId: col.id, direction: dir })
-                    }
-                    onHide={() =>
-                      setHidden([...Array.from(hidden), col.id])
-                    }
-                    onSearch={
-                      onSearchChange
-                        ? () => {
-                            /* focus global search; could focus a per-column input */
-                          }
-                        : undefined
-                    }
-                    onAnalyze={
-                      col.numeric
-                        ? () => {
-                            /* placeholder; wired up by parent in later phase */
-                          }
-                        : undefined
-                    }
-                  />
-                </div>
+                    <div className="opacity-0 group-hover/col:opacity-100 transition-opacity">
+                      {headerShell}
+                    </div>
+                  </div>
+                ) : align === "center" ? (
+                  <div className="inline-flex min-w-0 max-w-full items-center justify-center gap-1">
+                    <button
+                      type="button"
+                      disabled={!sortable}
+                      onClick={() => handleSortClick(col)}
+                      className={cn(
+                        "inline-flex min-w-0 items-center justify-center gap-1 select-none",
+                        sortable && "hover:text-[var(--yu3-ink-strong)]",
+                      )}
+                    >
+                      <span className="truncate">{col.header}</span>
+                      {sortDir === "asc" ? (
+                        <ArrowUp size={10} weight="bold" />
+                      ) : sortDir === "desc" ? (
+                        <ArrowDown size={10} weight="bold" />
+                      ) : null}
+                    </button>
+                    <div className="opacity-0 group-hover/col:opacity-100 transition-opacity">
+                      {headerShell}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex w-full min-w-0 items-center justify-between gap-1">
+                    <button
+                      type="button"
+                      disabled={!sortable}
+                      onClick={() => handleSortClick(col)}
+                      className={cn(
+                        "inline-flex min-w-0 flex-1 items-center gap-1 select-none text-left",
+                        sortable && "hover:text-[var(--yu3-ink-strong)]",
+                      )}
+                    >
+                      <span className="truncate">{col.header}</span>
+                      {sortDir === "asc" ? (
+                        <ArrowUp size={10} weight="bold" className="shrink-0" />
+                      ) : sortDir === "desc" ? (
+                        <ArrowDown
+                          size={10}
+                          weight="bold"
+                          className="shrink-0"
+                        />
+                      ) : null}
+                    </button>
+                    <div className="shrink-0 opacity-0 group-hover/col:opacity-100 transition-opacity">
+                      {headerShell}
+                    </div>
+                  </div>
+                )}
               </div>
-            )
+            );
           })}
           {rowActions.length > 0 ? (
-            <div className="w-9" />
+            <div className="relative z-[11] w-9 shrink-0 self-stretch bg-[var(--yu3-bg-surface-sunken)]" />
           ) : null}
         </div>
       </div>
@@ -585,15 +661,15 @@ export function DataTable<Row>({
           }}
         >
           {virtualItems.map((vi) => {
-            const row = filteredRows[vi.index]!
-            const id = rowId(row)
-            const selected = selection.has(id)
+            const row = filteredRows[vi.index]!;
+            const id = rowId(row);
+            const selected = selection.has(id);
             return (
               <div
                 key={id}
                 data-selected={selected ? "true" : undefined}
                 className={cn(
-                  "grid items-center border-b border-[var(--yu3-line)] last:border-b-0",
+                  "z-0 grid items-center border-b border-[var(--yu3-line-subtle)] last:border-b-0",
                   "hover:bg-[var(--yu3-bg-surface-subtle)]",
                   selected && "bg-[var(--yu3-wine-wash)]",
                   "transition-colors",
@@ -611,13 +687,9 @@ export function DataTable<Row>({
                   }),
                 }}
                 onClick={(e) => {
-                  if (
-                    (e.target as HTMLElement).closest(
-                      "[data-yu3-noclick]",
-                    )
-                  )
-                    return
-                  onRowClick?.(row)
+                  if ((e.target as HTMLElement).closest("[data-yu3-noclick]"))
+                    return;
+                  onRowClick?.(row);
                 }}
                 role={onRowClick ? "button" : undefined}
               >
@@ -637,7 +709,7 @@ export function DataTable<Row>({
                   <div
                     key={col.id}
                     className={cn(
-                      "px-3 truncate text-[13px] text-[var(--yu3-ink)]",
+                      "min-w-0 px-3 truncate text-[13px] text-[var(--yu3-ink)]",
                       "flex items-center h-full",
                       col.numeric && "[font-feature-settings:'tnum'_1]",
                       col.align === "right" && "justify-end text-right",
@@ -656,12 +728,13 @@ export function DataTable<Row>({
                   </div>
                 ) : null}
               </div>
-            )
+            );
           })}
         </div>
       )}
+      </div>
     </div>
-  )
+  );
 
   return (
     <div className="flex flex-col min-w-0">
@@ -676,7 +749,7 @@ export function DataTable<Row>({
         onClear={() => setSelection(new Set())}
       />
     </div>
-  )
+  );
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -685,84 +758,76 @@ function buildGridTemplate<Row>(
   cols: ColumnDef<Row>[],
   opts: { hasSelection: boolean; hasRowActions: boolean },
 ) {
-  const parts: string[] = []
-  if (opts.hasSelection) parts.push("40px")
+  const parts: string[] = [];
+  if (opts.hasSelection) parts.push("40px");
   for (const c of cols) {
-    if (c.width) parts.push(`${c.width}px`)
-    else if (c.minWidth) parts.push(`minmax(${c.minWidth}px, 1fr)`)
-    else parts.push("minmax(140px, 1fr)")
+    if (c.width) parts.push(`${c.width}px`);
+    else if (c.minWidth) parts.push(`minmax(${c.minWidth}px, 1fr)`);
+    else parts.push("minmax(140px, 1fr)");
   }
-  if (opts.hasRowActions) parts.push("40px")
-  return parts.join(" ")
+  if (opts.hasRowActions) parts.push("40px");
+  return parts.join(" ");
 }
 
 function cellAt<Row>(cols: ColumnDef<Row>[], row: Row, idx: number) {
-  const col = cols[idx]
-  if (!col) return null
-  return col.cell(row)
+  const col = cols[idx];
+  if (!col) return null;
+  return col.cell(row);
 }
 
 function toneColor(tone?: StageTone) {
-  if (tone === "wine") return "var(--yu3-wine)"
-  if (tone === "forest") return "var(--yu3-forest)"
-  if (tone === "warning") return "var(--yu3-warning)"
-  if (tone === "success") return "var(--yu3-success)"
-  if (tone === "danger") return "var(--yu3-danger)"
-  if (tone === "info") return "var(--yu3-info)"
-  return undefined
+  if (tone === "wine") return "var(--yu3-wine)";
+  if (tone === "forest") return "var(--yu3-forest)";
+  if (tone === "warning") return "var(--yu3-warning)";
+  if (tone === "success") return "var(--yu3-success)";
+  if (tone === "danger") return "var(--yu3-danger)";
+  if (tone === "info") return "var(--yu3-info)";
+  return undefined;
 }
 
 function RowActionMenu<Row>({
   actions,
   row,
 }: {
-  actions: RowAction<Row>[]
-  row: Row
+  actions: RowAction<Row>[];
+  row: Row;
 }) {
-  // Keep lightweight — use a simple popover dropdown.
-  // To avoid a circular dep with DropdownMenu import order, inline minimal menu.
-  const [open, setOpen] = React.useState(false)
-  const btnRef = React.useRef<HTMLButtonElement>(null)
   return (
-    <div className="relative">
-      <button
-        ref={btnRef}
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          setOpen((v) => !v)
-        }}
-        onBlur={() => setTimeout(() => setOpen(false), 120)}
-        className="inline-flex items-center justify-center h-7 w-7 rounded-[var(--yu3-r-sm)] text-[var(--yu3-ink-muted)] hover:bg-[var(--yu3-bg-surface)] hover:text-[var(--yu3-ink)]"
-        aria-label="Row actions"
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+          }}
+          className="inline-flex items-center justify-center h-7 w-7 rounded-[var(--yu3-r-sm)] text-[var(--yu3-ink-muted)] hover:bg-[color-mix(in_srgb,var(--yu3-ink)_9%,transparent)] hover:text-[var(--yu3-ink)]"
+          aria-label="Row actions"
+        >
+          <DotsThreeVertical size={14} weight="bold" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="min-w-[180px] max-w-[min(100vw,320px)] p-1"
+        onPointerDownOutside={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
-        <DotsThreeVertical size={14} weight="bold" />
-      </button>
-      {open ? (
-        <div className="absolute right-0 top-full mt-1 min-w-[180px] bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] rounded-[var(--yu3-r-lg)] shadow-[var(--yu3-shadow-md)] z-[var(--yu3-z-drawer)] p-1">
-          {actions.map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              onMouseDown={(e) => {
-                e.preventDefault()
-                setOpen(false)
-                a.run(row)
-              }}
-              className={cn(
-                "flex items-center gap-2 w-full h-8 px-2 rounded-[var(--yu3-r-sm)] text-[12px] text-left",
-                "hover:bg-[var(--yu3-bg-surface-sunken)]",
-                a.danger
-                  ? "text-[var(--yu3-danger)]"
-                  : "text-[var(--yu3-ink)]",
-              )}
-            >
-              {a.icon ? <span className="h-4 w-4">{a.icon}</span> : null}
-              <span className="truncate">{a.label}</span>
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  )
+        {actions.map((a) => (
+          <DropdownMenuItem
+            key={a.id}
+            danger={a.danger}
+            icon={a.icon}
+            onSelect={() => {
+              void a.run(row);
+            }}
+          >
+            {a.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }

@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { pickLatestTrackingSession, resolveAdminMoveListDisplayStatus } from "@/lib/move-status";
-import AllMovesClient from "./AllMovesClient";
+import AllMovesV3Client from "./AllMovesV3Client";
 import { calcEstimatedCost, calcEstimatedMarginPct } from "@/lib/pricing/engine";
 
 export const metadata = { title: "Moves" };
@@ -21,7 +21,7 @@ export default async function AllMovesPage() {
     "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, status, move_type, service_type, tier_selected, crew_id, created_at, margin_percent, margin_flag, est_margin_percent";
 
   const minimalMovesSelect =
-    // Absolute minimum required for `AllMovesClient` to render meaningful rows
+    // Fallback if extended columns are missing in an older DB schema
     "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, status, move_type, service_type, tier_selected, crew_id, created_at";
 
   const [movesResp, quotesResp] = await Promise.all([
@@ -173,7 +173,7 @@ export default async function AllMovesPage() {
   });
 
   return (
-    <AllMovesClient
+    <AllMovesV3Client
       moves={movesForClient}
       recentQuotes={(quotes || []).map((q) => ({ ...q, client_name: contactMap[q.contact_id] || "" }))}
       crewMap={crewMap}

@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { toast } from "sonner"
-import { PageHeader } from "@/components/admin-v2/composites/PageHeader"
-import { MetricCard } from "@/components/admin-v2/composites/MetricCard"
+import * as React from "react";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/admin-v2/composites/PageHeader";
+import { MetricCard } from "@/components/admin-v2/composites/MetricCard";
 import {
   DataTable,
   type ColumnConfig,
@@ -14,9 +14,9 @@ import {
   IndicatorCell,
   NumericCell,
   SparklineCell,
-} from "@/components/admin-v2/datatable"
-import { variantForStatus } from "@/components/admin-v2/primitives/Chip"
-import { generateLeads, type Lead } from "./seed"
+} from "@/components/admin-v2/datatable";
+import { variantForStatus } from "@/components/admin-v2/primitives/Chip";
+import { generateLeads, type Lead } from "./seed";
 
 const STATUS_LABEL: Record<Lead["status"], string> = {
   new: "NEW",
@@ -24,12 +24,12 @@ const STATUS_LABEL: Record<Lead["status"], string> = {
   closing: "CLOSING",
   closed: "CLOSED",
   lost: "LOST",
-}
+};
 
-const LEADS = generateLeads(500, 7)
+const LEADS = generateLeads(500, 7);
 
 export const TableHarness = () => {
-  const [data, setData] = React.useState<Lead[]>(() => LEADS)
+  const [data, setData] = React.useState<Lead[]>(() => LEADS);
 
   const columns = React.useMemo<ColumnConfig<Lead>[]>(
     () => [
@@ -123,7 +123,7 @@ export const TableHarness = () => {
       },
     ],
     [],
-  )
+  );
 
   const bulkActions = React.useMemo<BulkAction<Lead>[]>(
     () => [
@@ -131,21 +131,21 @@ export const TableHarness = () => {
         id: "engage",
         label: "Engage",
         handler: (rows) => {
-          toast.success(`Engaged ${rows.length} leads`)
+          toast.success(`Engaged ${rows.length} leads`);
         },
       },
       {
         id: "group",
         label: "Create group",
         handler: (rows) => {
-          toast.info(`Group created from ${rows.length} leads`)
+          toast.info(`Group created from ${rows.length} leads`);
         },
       },
       {
         id: "export",
         label: "Download as .CSV",
         handler: (rows) => {
-          toast.info(`Exported ${rows.length} leads to CSV`)
+          toast.info(`Exported ${rows.length} leads to CSV`);
         },
       },
       {
@@ -153,14 +153,14 @@ export const TableHarness = () => {
         label: "Delete leads",
         destructive: true,
         handler: (rows) => {
-          const ids = new Set(rows.map((r) => r.id))
-          setData((prev) => prev.filter((r) => !ids.has(r.id)))
-          toast.error(`Deleted ${rows.length} leads`)
+          const ids = new Set(rows.map((r) => r.id));
+          setData((prev) => prev.filter((r) => !ids.has(r.id)));
+          toast.error(`Deleted ${rows.length} leads`);
         },
       },
     ],
     [],
-  )
+  );
 
   return (
     <div className="space-y-6 p-6">
@@ -202,7 +202,9 @@ export const TableHarness = () => {
           {
             id: "pre-sale",
             label: "Pre-sale",
-            filters: [{ columnId: "status", operator: "is", value: "pre-sale" }],
+            filters: [
+              { columnId: "status", operator: "is", value: "pre-sale" },
+            ],
             sort: [{ columnId: "size", direction: "desc" }],
           },
           {
@@ -216,9 +218,9 @@ export const TableHarness = () => {
         ]}
         viewModes={["list"]}
         onRowClick={(row) => {
-          toast.message(`Opened ${row.name}`, { description: row.email })
+          toast.message(`Opened ${row.name}`, { description: row.email });
         }}
       />
     </div>
-  )
-}
+  );
+};

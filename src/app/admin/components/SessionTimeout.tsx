@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme";
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000;  // 30 minutes → sign out
 const WARN_BEFORE_MS  =  5 * 60 * 1000;  // warn 5 minutes before
@@ -92,8 +93,8 @@ export default function SessionTimeout() {
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-4 pointer-events-none">
-      <div
-        className="pointer-events-auto w-full max-w-sm yugo-glass rounded-2xl shadow-2xl p-5 animate-fade-up"
+      <Yu3PortaledTokenRoot
+        className="pointer-events-auto w-full max-w-sm rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] p-5 text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] animate-fade-up"
         role="alertdialog"
         aria-live="assertive"
       >
@@ -105,8 +106,8 @@ export default function SessionTimeout() {
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-bold text-[var(--tx)] leading-tight">Session expiring soon</p>
-            <p className="text-[11px] text-[var(--tx3)] mt-0.5">
+            <p className="text-[13px] font-bold text-[var(--yu3-ink-strong)] leading-tight">Session expiring soon</p>
+            <p className="text-[11px] text-[var(--yu3-ink-faint)] mt-0.5">
               You&apos;ve been inactive. You&apos;ll be signed out in{" "}
               <span className="font-bold text-amber-400 tabular-nums">{timeStr}</span>.
             </p>
@@ -114,7 +115,7 @@ export default function SessionTimeout() {
         </div>
 
         {/* Progress bar */}
-        <div className="h-1 w-full bg-[var(--brd)] rounded-full overflow-hidden mb-4">
+        <div className="h-1 w-full bg-[var(--yu3-line)] rounded-full overflow-hidden mb-4">
           <div
             className="h-full bg-amber-400 rounded-full transition-all duration-1000"
             style={{ width: `${(secondsLeft / (WARN_BEFORE_MS / 1000)) * 100}%` }}
@@ -125,7 +126,7 @@ export default function SessionTimeout() {
         <div className="flex gap-2">
           <button
             onClick={resetTimer}
-            className="flex-1 py-2 rounded-xl text-[12px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:opacity-90 transition-opacity"
+            className="admin-btn admin-btn-primary flex-1"
           >
             Stay signed in
           </button>
@@ -136,12 +137,12 @@ export default function SessionTimeout() {
               await supabase.auth.signOut();
               router.push("/login");
             }}
-            className="px-4 py-2 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
+            className="px-4 py-2 rounded-xl text-[12px] font-semibold border border-[var(--yu3-line)] text-[var(--yu3-ink-faint)] hover:text-[var(--yu3-ink)] transition-colors"
           >
             Sign out
           </button>
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>
   );
 }

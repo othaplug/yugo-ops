@@ -67,8 +67,8 @@ export default function DeveloperInterstitial() {
 
         <p className="t-body text-[var(--color-text-secondary)]">
           This area controls how Yugo+ syncs with external systems (HubSpot,
-          Square, Twilio). Changes here can break live operations for all
-          users. All changes are logged.
+          Square, Twilio). Changes here can break live operations for all users.
+          All changes are logged.
         </p>
 
         <label className="block w-full">

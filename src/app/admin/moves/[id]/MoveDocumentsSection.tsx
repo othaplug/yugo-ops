@@ -1,13 +1,32 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Trash as Trash2, Plus, Link as LinkIcon, FileText, Upload } from "@phosphor-icons/react";
+import {
+  Trash as Trash2,
+  Plus,
+  Link as LinkIcon,
+  FileText,
+  Upload,
+} from "@phosphor-icons/react";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 import { formatCurrency } from "@/lib/format-currency";
 
-type Doc = { id: string; type: string; title: string; view_url?: string | null; storage_path?: string; external_url?: string | null };
-type Invoice = { id: string; invoice_number: string; client_name: string; amount: number; move_id: string | null };
+type Doc = {
+  id: string;
+  type: string;
+  title: string;
+  view_url?: string | null;
+  storage_path?: string;
+  external_url?: string | null;
+};
+type Invoice = {
+  id: string;
+  invoice_number: string;
+  client_name: string;
+  amount: number;
+  move_id: string | null;
+};
 
 type DocItem = Doc & { source: "move" | "client" };
 
@@ -41,13 +60,17 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
     setLoading(true);
     Promise.all([
       fetch(`/api/admin/moves/${moveId}/documents`).then((r) => r.json()),
-      fetch(`/api/admin/client-documents?move_id=${moveId}`).then((r) => r.json()),
+      fetch(`/api/admin/client-documents?move_id=${moveId}`).then((r) =>
+        r.json(),
+      ),
       fetch(`/api/admin/invoices`).then((r) => r.json()),
     ]).then(([docRes, clientRes, invRes]) => {
       setDocuments(docRes.documents ?? []);
       setClientDocuments(clientRes.documents ?? []);
       setInvoices(invRes.invoices ?? []);
-      setLinkedInvoices((invRes.invoices ?? []).filter((i: Invoice) => i.move_id === moveId));
+      setLinkedInvoices(
+        (invRes.invoices ?? []).filter((i: Invoice) => i.move_id === moveId),
+      );
       setLoading(false);
     });
   };
@@ -67,7 +90,11 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
     fetch(`/api/admin/moves/${moveId}/documents`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: linkTitle.trim(), type: linkType, external_url: linkUrl.trim() }),
+      body: JSON.stringify({
+        title: linkTitle.trim(),
+        type: linkType,
+        external_url: linkUrl.trim(),
+      }),
     })
       .then((r) => r.json())
       .then((data) => {
@@ -93,7 +120,9 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
         setLinkInvoiceId("");
         fetchData();
       })
-      .catch((err) => console.error("[MoveDocuments] linkInvoice failed:", err));
+      .catch((err) =>
+        console.error("[MoveDocuments] linkInvoice failed:", err),
+      );
   };
 
   const handleUnlinkInvoice = (invoiceId: string) => {
@@ -129,7 +158,10 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
     formData.append("file", file);
     formData.append("title", file.name.replace(/\.[^/.]+$/, ""));
     formData.append("type", "other");
-    fetch(`/api/admin/moves/${moveId}/documents`, { method: "POST", body: formData })
+    fetch(`/api/admin/moves/${moveId}/documents`, {
+      method: "POST",
+      body: formData,
+    })
       .then((r) => r.json())
       .then((data) => {
         if (data.error) throw new Error(data.error);
@@ -149,9 +181,10 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
     if (!deleteConfirm) return;
     setDeleting(true);
     try {
-      const url = deleteConfirm.source === "move"
-        ? `/api/admin/moves/${moveId}/documents/${deleteConfirm.id}`
-        : `/api/admin/client-documents/${deleteConfirm.id}`;
+      const url =
+        deleteConfirm.source === "move"
+          ? `/api/admin/moves/${moveId}/documents/${deleteConfirm.id}`
+          : `/api/admin/client-documents/${deleteConfirm.id}`;
       const r = await fetch(url, { method: "DELETE" });
       const data = await r.json();
       if (!r.ok || data.error) {
@@ -179,10 +212,13 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const r = await fetch(`/api/admin/moves/${moveId}/documents/${replacingDoc.id}`, {
-        method: "PATCH",
-        body: formData,
-      });
+      const r = await fetch(
+        `/api/admin/moves/${moveId}/documents/${replacingDoc.id}`,
+        {
+          method: "PATCH",
+          body: formData,
+        },
+      );
       const data = await r.json();
       if (!r.ok || data.error) {
         toast(data.error || "Failed to replace", "x");
@@ -211,9 +247,17 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
             {linkedInvoices.length > 0 ? (
               <ul className="space-y-1">
                 {linkedInvoices.map((inv) => (
-                  <li key={inv.id} className="flex items-center justify-between gap-2 text-[11px]">
+                  <li
+                    key={inv.id}
+                    className="flex items-center justify-between gap-2 text-[11px]"
+                  >
                     <span className="text-[var(--tx)]">
-                      {inv.invoice_number}, {inv.client_name} ({formatCurrency(inv.amount)}{Number(inv.amount) > 0 ? ` +${formatCurrency(Math.round(Number(inv.amount) * 0.13))} HST` : ""})
+                      {inv.invoice_number}, {inv.client_name} (
+                      {formatCurrency(inv.amount)}
+                      {Number(inv.amount) > 0
+                        ? ` +${formatCurrency(Math.round(Number(inv.amount) * 0.13))} HST`
+                        : ""}
+                      )
                     </span>
                     <button
                       type="button"
@@ -244,11 +288,15 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                   type="button"
                   onClick={handleLinkInvoice}
                   disabled={!linkInvoiceId}
-                  className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50 transition-colors"
+                  className="admin-btn admin-btn-sm admin-btn-primary"
                 >
                   Link
                 </button>
-                <button type="button" onClick={() => setAdding(null)} className="text-[10px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setAdding(null)}
+                  className="text-[10px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
+                >
                   Cancel
                 </button>
               </div>
@@ -259,7 +307,8 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                   onClick={() => setAdding("link")}
                   className="text-[10px] font-semibold text-[var(--gold)] hover:underline flex items-center gap-1"
                 >
-                  <LinkIcon className="w-[10px] h-[10px]" /> Link invoice to move
+                  <LinkIcon className="w-[10px] h-[10px]" /> Link invoice to
+                  move
                 </button>
               )
             )}
@@ -276,11 +325,18 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
             {allDocuments.length > 0 ? (
               <ul className="space-y-1 mb-3">
                 {allDocuments.map((d) => (
-                  <li key={d.source === "move" ? d.id : `client-${d.id}`} className="flex items-center justify-between gap-2 py-0.5">
+                  <li
+                    key={d.source === "move" ? d.id : `client-${d.id}`}
+                    className="flex items-center justify-between gap-2 py-0.5"
+                  >
                     <div className="min-w-0 flex-1 flex items-center gap-2">
                       <FileText className="w-[11px] h-[11px] text-[var(--tx3)] shrink-0" />
-                      <span className="text-[11px] text-[var(--tx)] truncate">{d.title}</span>
-                      <span className="ml-1 text-[9px] text-[var(--tx3)] uppercase shrink-0">({d.type})</span>
+                      <span className="text-[11px] text-[var(--tx)] truncate">
+                        {d.title}
+                      </span>
+                      <span className="ml-1 text-[9px] text-[var(--tx3)] uppercase shrink-0">
+                        ({d.type})
+                      </span>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {d.view_url && (
@@ -318,14 +374,22 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                 ))}
               </ul>
             ) : (
-              <p className="text-[11px] text-[var(--tx3)] mb-2">No documents yet</p>
+              <p className="text-[11px] text-[var(--tx3)] mb-2">
+                No documents yet
+              </p>
             )}
 
             <div className="flex flex-wrap items-center gap-2">
-              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] cursor-pointer transition-colors disabled:opacity-50">
+              <label className="admin-btn admin-btn-sm admin-btn-primary cursor-pointer">
                 <Plus className="w-[11px] h-[11px]" />
                 {uploading ? "Uploading…" : "Add document (upload PDF)"}
-                <input type="file" accept=".pdf,image/*" onChange={handleUpload} disabled={uploading} className="hidden" />
+                <input
+                  type="file"
+                  accept=".pdf,image/*"
+                  onChange={handleUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
               </label>
               {adding === "link" ? (
                 <div className="flex flex-wrap gap-2 items-end">
@@ -349,18 +413,24 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                     className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
                   >
                     {DOC_TYPES.map((t) => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
                     ))}
                   </select>
                   <button
                     type="button"
                     onClick={handleAddLink}
                     disabled={!linkTitle.trim() || !linkUrl.trim()}
-                    className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50 transition-colors"
+                    className="admin-btn admin-btn-sm admin-btn-primary"
                   >
                     Add link
                   </button>
-                  <button type="button" onClick={() => setAdding(null)} className="text-[10px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setAdding(null)}
+                    className="text-[10px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
+                  >
                     Cancel
                   </button>
                 </div>
@@ -380,10 +450,16 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
 
       {/* Delete document confirmation */}
       {deleteConfirm && (
-        <ModalOverlay open onClose={() => !deleting && setDeleteConfirm(null)} title="Remove document?" maxWidth="sm">
+        <ModalOverlay
+          open
+          onClose={() => !deleting && setDeleteConfirm(null)}
+          title="Remove document?"
+          maxWidth="sm"
+        >
           <div className="p-5 space-y-4">
             <p className="text-[12px] text-[var(--tx2)]">
-              Are you sure you want to remove &quot;{deleteConfirm.title}&quot;? This cannot be undone.
+              Are you sure you want to remove &quot;{deleteConfirm.title}&quot;?
+              This cannot be undone.
             </p>
             <div className="flex gap-2">
               <button
@@ -409,10 +485,16 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
 
       {/* Unlink invoice confirmation */}
       {unlinkConfirm && (
-        <ModalOverlay open onClose={() => !deleting && setUnlinkConfirm(null)} title="Unlink invoice?" maxWidth="sm">
+        <ModalOverlay
+          open
+          onClose={() => !deleting && setUnlinkConfirm(null)}
+          title="Unlink invoice?"
+          maxWidth="sm"
+        >
           <div className="p-5 space-y-4">
             <p className="text-[12px] text-[var(--tx2)]">
-              Are you sure you want to unlink {unlinkConfirm.invoice_number} from this move?
+              Are you sure you want to unlink {unlinkConfirm.invoice_number}{" "}
+              from this move?
             </p>
             <div className="flex gap-2">
               <button

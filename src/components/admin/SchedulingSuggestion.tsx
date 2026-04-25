@@ -44,7 +44,7 @@ export default function SchedulingSuggestion({ moveId }: Props) {
   return (
     <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--brd)]/30">
-        <Lightning size={14} className="text-[var(--gold)]" weight="duotone" />
+        <Lightning size={14} className="text-[var(--accent-text)]" weight="duotone" />
         <span className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Scheduling Intelligence</span>
       </div>
 
@@ -84,7 +84,7 @@ export default function SchedulingSuggestion({ moveId }: Props) {
                   </span>
                   <span className="text-[10px] text-[var(--tx3)]">{alt.window}</span>
                   {alt.team_name && (
-                    <span className="flex items-center gap-1 text-[10px] text-[var(--gold)] ml-auto">
+                    <span className="flex items-center gap-1 text-[10px] text-[var(--accent-text)] ml-auto">
                       <UsersThree size={10} />
                       {alt.team_name}
                     </span>

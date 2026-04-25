@@ -18,7 +18,7 @@ export default function AdminError({ error, reset }: { error: Error & { digest?:
         <h1 className="text-[18px] font-bold text-[var(--tx)]">Something went wrong</h1>
         <p className="text-[13px] text-[var(--tx3)]">{error.message || "An unexpected error occurred."}</p>
         <div className="flex gap-3 justify-center">
-          <button onClick={reset} className="px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]">Try again</button>
+          <button onClick={reset} className="admin-btn admin-btn-primary">Try again</button>
           <Link href="/admin" className="px-4 py-2 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx)]">Dashboard</Link>
         </div>
       </div>

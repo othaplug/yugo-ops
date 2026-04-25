@@ -196,7 +196,7 @@ export function useHubSpotContactSuggest({
                 type="button"
                 onPointerDown={(ev) => ev.preventDefault()}
                 onClick={dismissNoMatch}
-                className="w-full text-left px-2 py-1.5 rounded-md text-[11px] font-semibold text-[var(--gold)] border border-[var(--gold)]/40 hover:bg-[var(--gold)]/10 transition-colors"
+                className="w-full text-left px-2 py-1.5 rounded-md text-[11px] font-semibold text-[var(--accent-text)] border border-[var(--gold)]/40 hover:bg-[var(--gold)]/10 transition-colors"
               >
                 Ignore search — continue
               </button>

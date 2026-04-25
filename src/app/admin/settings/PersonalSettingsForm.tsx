@@ -145,11 +145,12 @@ export default function PersonalSettingsForm({
       </div>
 
       <button
+        type="button"
         onClick={handleSave}
         disabled={loading}
-        className="w-full px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
+        className="admin-btn admin-btn-primary w-full"
       >
-        {loading ? "Saving…" : saved ? "Saved ✓" : "Save Profile"}
+        {loading ? "Saving…" : saved ? "Saved" : "Save Profile"}
       </button>
     </div>
   );

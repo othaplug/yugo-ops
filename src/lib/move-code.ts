@@ -1,6 +1,9 @@
 import { normalizeDeliveryNumber } from "@/lib/delivery-number";
 
-/** Raw job code from DB (e.g. MV3456). Prefers move.move_code; fallback from id only for legacy. */
+/**
+ * Raw job code from DB. Handles both legacy (MV1234) and new (MV-30201) formats.
+ * Prefers move.move_code; falls back to hash of UUID for legacy rows with no code.
+ */
 export function getMoveCode(
   move:
     | {
@@ -21,7 +24,7 @@ export function getMoveCode(
         (move as { move_code?: string; move_number?: string }).move_number
       : null;
   if (code && String(code).trim())
-    return String(code).trim().replace(/^#/, "").slice(0, 6);
+    return String(code).trim().replace(/^#/, "");
   const id =
     typeof move === "object" && move && "id" in move
       ? move.id
@@ -34,7 +37,10 @@ export function getMoveCode(
   return "MV" + String(Math.abs(h) % 10000).padStart(4, "0");
 }
 
-/** Display format: #MV3456 for moves, #DLV-9146 for deliveries. */
+/**
+ * Display format: #MV-30202 (new) or #MV3456 (legacy) for moves; #DLV-30203 for deliveries.
+ * Handles both old 4-digit and new 5-digit sequential codes transparently.
+ */
 export function formatJobId(
   rawCode: string,
   type: "move" | "delivery" | "partner" = "move",
@@ -44,12 +50,13 @@ export function formatJobId(
     .replace(/^#/, "");
   if (!code) return type === "move" ? "#MV0000" : "#DLV-0000";
   if (type === "move") {
+    // Use the full code as-is — handles both MV1234 (legacy) and MV-30201 (new)
     const normalized = code.toUpperCase().startsWith("MV")
-      ? code.slice(0, 6)
-      : `MV${code.slice(-4).padStart(4, "0")}`;
-    return normalized.startsWith("#") ? normalized : `#${normalized}`;
+      ? code
+      : `MV-${code.slice(-4).padStart(4, "0")}`;
+    return `#${normalized}`;
   }
-  // Delivery/partner: always DLV-xxxx
+  // Delivery/partner: always DLV-{number}
   const normalized = normalizeDeliveryNumber(code);
   return `#${normalized}`;
 }

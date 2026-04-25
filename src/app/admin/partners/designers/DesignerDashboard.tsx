@@ -12,7 +12,7 @@ const STATUS_BADGE: Record<string, string> = {
   pending: "text-[var(--org)]",
   scheduled: "text-blue-600",
   confirmed: "text-[var(--grn)]",
-  "in-transit": "text-[var(--gold)]",
+  "in-transit": "text-[var(--accent-text)]",
   delivered: "text-[var(--grn)]",
   completed: "text-[var(--grn)]",
   cancelled: "text-[var(--red)]",
@@ -72,7 +72,7 @@ export default function DesignerDashboard({
               onClick={() => setActiveTab(t.key)}
               className={`px-1 py-3 text-[12px] font-semibold transition-colors border-b-2 -mb-px ${
                 activeTab === t.key
-                  ? "text-[var(--gold)] border-[var(--gold)]"
+                  ? "text-[var(--accent-text)] border-[var(--gold)]"
                   : "text-[var(--tx3)] border-transparent hover:text-[var(--tx)]"
               }`}
             >
@@ -151,7 +151,7 @@ export default function DesignerDashboard({
               {allProjects.length === 0 ? (
                 <div className="px-4 py-10 text-center">
                   <p className="text-[12px] text-[var(--tx3)] mb-2">No projects yet.</p>
-                  <Link href="/admin/projects/new?partnerType=designer" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">Create your first designer project →</Link>
+                  <Link href="/admin/projects/new?partnerType=designer" className="text-[12px] font-semibold text-[var(--accent-text)] hover:underline">Create your first designer project →</Link>
                 </div>
               ) : allProjects.map((project) => {
                 const org = Array.isArray(project.organizations) ? project.organizations[0] : project.organizations;
@@ -174,7 +174,7 @@ export default function DesignerDashboard({
                         </div>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                        <span className={`dt-badge tracking-[0.04em] ${isActive ? "text-[var(--grn)]" : "text-[var(--gold)]"}`}>{statusLabel}</span>
+                        <span className={`dt-badge tracking-[0.04em] ${isActive ? "text-[var(--grn)]" : "text-[var(--accent-text)]"}`}>{statusLabel}</span>
                         <CaretRight size={14} weight="regular" className="text-[var(--tx3)]" />
                       </div>
                     </Link>
@@ -192,7 +192,7 @@ export default function DesignerDashboard({
             {orgs.length === 0 ? (
               <div className="px-4 py-10 text-center">
                 <p className="text-[13px] text-[var(--tx3)]">No designer partners yet.</p>
-                <Link href="/admin/partners/new?partnerType=designer" className="text-[12px] font-semibold text-[var(--gold)] hover:underline mt-1 inline-block">Add your first partner</Link>
+                <Link href="/admin/partners/new?partnerType=designer" className="text-[12px] font-semibold text-[var(--accent-text)] hover:underline mt-1 inline-block">Add your first partner</Link>
               </div>
             ) : orgs.map((c: any) => {
               const designerDeliveries = deliveries.filter((d: any) => d.client_name === c.name);

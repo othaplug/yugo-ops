@@ -13,7 +13,10 @@ interface PartnerPaymentTermsSectionProps {
   onSaved?: () => void;
 }
 
-function toValue(days: number | null, dayOfMonth: number | null): PaymentTermValue {
+function toValue(
+  days: number | null,
+  dayOfMonth: number | null,
+): PaymentTermValue {
   if (dayOfMonth === 15) return "day_15";
   if (dayOfMonth === 30) return "day_30";
   return days === 15 ? "net_15" : "net_30";
@@ -29,7 +32,9 @@ export default function PartnerPaymentTermsSection({
   const { toast } = useToast();
   const initialValue = toValue(
     initialInvoiceDueDays === 15 ? 15 : 30,
-    initialInvoiceDueDayOfMonth === 15 || initialInvoiceDueDayOfMonth === 30 ? initialInvoiceDueDayOfMonth : null
+    initialInvoiceDueDayOfMonth === 15 || initialInvoiceDueDayOfMonth === 30
+      ? initialInvoiceDueDayOfMonth
+      : null,
   );
   const [value, setValue] = useState<PaymentTermValue>(initialValue);
   const [saving, setSaving] = useState(false);
@@ -41,8 +46,14 @@ export default function PartnerPaymentTermsSection({
   const handleSave = async () => {
     setSaving(true);
     try {
-      const invoiceDueDays = value === "net_15" || value === "net_30" ? (value === "net_15" ? 15 : 30) : 30;
-      const invoiceDueDayOfMonth = value === "day_15" ? 15 : value === "day_30" ? 30 : null;
+      const invoiceDueDays =
+        value === "net_15" || value === "net_30"
+          ? value === "net_15"
+            ? 15
+            : 30
+          : 30;
+      const invoiceDueDayOfMonth =
+        value === "day_15" ? 15 : value === "day_30" ? 30 : null;
       const res = await fetch(`/api/admin/organizations/${orgId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -73,7 +84,9 @@ export default function PartnerPaymentTermsSection({
 
   return (
     <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
-      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Invoice due date</div>
+      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">
+        Invoice due date
+      </div>
       <p className="text-[11px] text-[var(--tx3)] mb-4">
         When auto-generated delivery invoices are due for {orgName}.
       </p>
@@ -96,7 +109,7 @@ export default function PartnerPaymentTermsSection({
           type="button"
           onClick={handleSave}
           disabled={saving || !hasChanges}
-          className="px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="admin-btn admin-btn-primary"
         >
           {saving ? "Saving…" : "Save"}
         </button>

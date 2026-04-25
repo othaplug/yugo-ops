@@ -3,7 +3,14 @@
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-const STATUSES = ["pending", "scheduled", "confirmed", "dispatched", "in-transit", "delivered"];
+const STATUSES = [
+  "pending",
+  "scheduled",
+  "confirmed",
+  "dispatched",
+  "in-transit",
+  "delivered",
+];
 
 export default function StatusUpdater({
   deliveryId,
@@ -38,7 +45,7 @@ export default function StatusUpdater({
   return (
     <button
       onClick={handleUpdate}
-      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all active:scale-[.97]"
+      className="admin-btn admin-btn-sm admin-btn-primary"
     >
       {currentStatus === "delivered" ? "Reset" : "Update Status"}
     </button>

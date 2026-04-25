@@ -16,7 +16,7 @@ export default function KpiCard({
   label: string;
   value: string;
   sub?: string;
-  /** `tightCaps`: DM Sans, bold, uppercase, tight tracking (no sentence-casing). */
+  /** `tightCaps`: Brown, bold, uppercase, tight tracking (no sentence-casing). */
   subVariant?: "default" | "tightCaps";
   delta?: number;
   href?: string;

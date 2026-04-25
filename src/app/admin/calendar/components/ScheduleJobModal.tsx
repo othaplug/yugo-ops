@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { TIME_SLOTS_15MIN, formatTime12 } from "@/lib/calendar/types";
 import { X } from "@phosphor-icons/react";
+import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme";
 
 interface Props {
   open: boolean;
@@ -144,26 +145,25 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
   return (
     <div
       data-modal-root
-      data-yugo-glass-modal
       className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5"
       role="dialog"
       aria-modal="true"
       aria-labelledby="schedule-job-title"
     >
       <div
-        className="fixed inset-0 z-0 bg-black/60 modal-overlay"
+        className="fixed inset-0 z-0 modal-overlay"
         aria-hidden
         onClick={onClose}
       />
-      <div
-        className="relative z-10 w-full sm:max-w-xl yugo-glass-light rounded-2xl shadow-2xl overflow-hidden modal-card flex flex-col pointer-events-auto"
+      <Yu3PortaledTokenRoot
+        className="relative z-10 flex w-full flex-col overflow-hidden rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] sm:max-w-xl modal-card pointer-events-auto"
         style={{ maxHeight: "min(90dvh, 90vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-7 pt-7 pb-6 border-b border-[var(--brd)]/60 shrink-0">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[11px] font-semibold tracking-widest uppercase text-[var(--gold)] mb-1.5">
+              <p className="text-[11px] font-semibold tracking-widest uppercase text-[var(--accent-text)] mb-1.5">
                 Calendar
               </p>
               <h2 id="schedule-job-title" className="font-heading text-[22px] font-bold text-[var(--tx)] leading-tight">
@@ -295,7 +295,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
                           key={i}
                           type="button"
                           onClick={() => { setStartTime(s.start); setEndTime(s.end > "20:00" ? "20:00" : s.end); }}
-                          className="ml-2 underline underline-offset-2 hover:text-[var(--gold)] transition-colors"
+                          className="ml-2 underline underline-offset-2 hover:text-[var(--accent-text)] transition-colors"
                         >
                           {formatTime12(s.start)}–{formatTime12(s.end)}
                         </button>
@@ -310,7 +310,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
                           key={c.id}
                           type="button"
                           onClick={() => setCrewId(c.id)}
-                          className="ml-2 underline underline-offset-2 hover:text-[var(--gold)] transition-colors"
+                          className="ml-2 underline underline-offset-2 hover:text-[var(--accent-text)] transition-colors"
                         >
                           {c.name}
                         </button>
@@ -341,12 +341,12 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="px-6 py-3 rounded-xl text-[13px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all duration-150 disabled:opacity-35 disabled:cursor-not-allowed shadow-sm shadow-[var(--gold)]/20"
+            className="admin-btn admin-btn-lg admin-btn-primary"
           >
             {submitting ? "Scheduling…" : "Schedule"}
           </button>
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>
   );
 }

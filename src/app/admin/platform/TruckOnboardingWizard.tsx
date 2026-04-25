@@ -282,11 +282,11 @@ export default function TruckOnboardingWizard({ open, onClose, onFinished }: Tru
         <div className="px-7 pt-7 pb-6 border-b border-[var(--brd)]/60 shrink-0">
           <div className="flex items-start justify-between mb-6">
             <div className="flex gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[var(--gold)]/12 flex items-center justify-center text-[var(--gold)] shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-[var(--gold)]/12 flex items-center justify-center text-[var(--accent-text)] shrink-0">
                 <Truck size={22} aria-hidden />
               </div>
               <div>
-                <p className="text-[11px] font-semibold tracking-widest uppercase text-[var(--gold)] mb-1">
+                <p className="text-[11px] font-semibold tracking-widest uppercase text-[var(--accent-text)] mb-1">
                   Truck onboarding
                 </p>
                 <h2 className="font-heading text-[22px] font-bold text-[var(--tx)] leading-tight">{currentStep.label}</h2>
@@ -369,7 +369,7 @@ export default function TruckOnboardingWizard({ open, onClose, onFinished }: Tru
                 type="button"
                 disabled={loading}
                 onClick={submitVehicle}
-                className="w-full py-3 rounded-xl font-bold text-[var(--btn-text-on-accent)] bg-[var(--admin-primary-fill)] hover:opacity-95 disabled:opacity-50"
+                className="admin-btn admin-btn-lg admin-btn-primary w-full"
               >
                 {loading ? "Saving…" : "Create vehicle & continue"}
               </button>
@@ -418,7 +418,7 @@ export default function TruckOnboardingWizard({ open, onClose, onFinished }: Tru
                   type="button"
                   disabled={loading}
                   onClick={submitEquipment}
-                  className="flex-1 py-3 rounded-xl font-bold text-[var(--btn-text-on-accent)] bg-[var(--admin-primary-fill)] disabled:opacity-50"
+                  className="admin-btn admin-btn-lg admin-btn-primary flex-1"
                 >
                   {loading ? "Saving…" : "Save equipment & continue"}
                 </button>
@@ -450,7 +450,7 @@ export default function TruckOnboardingWizard({ open, onClose, onFinished }: Tru
                   type="button"
                   disabled={loading || !teamId}
                   onClick={submitTeam}
-                  className="flex-1 py-3 rounded-xl font-bold text-[var(--btn-text-on-accent)] bg-[var(--admin-primary-fill)] disabled:opacity-50"
+                  className="admin-btn admin-btn-lg admin-btn-primary flex-1"
                 >
                   {loading ? "Saving…" : "Link team & continue"}
                 </button>
@@ -486,7 +486,7 @@ export default function TruckOnboardingWizard({ open, onClose, onFinished }: Tru
                   type="button"
                   disabled={loading}
                   onClick={submitCode}
-                  className="flex-1 py-3 rounded-xl font-bold text-[var(--btn-text-on-accent)] bg-[var(--admin-primary-fill)] disabled:opacity-50"
+                  className="admin-btn admin-btn-lg admin-btn-primary flex-1"
                 >
                   {loading ? "Creating…" : "Generate setup code"}
                 </button>
@@ -506,7 +506,7 @@ export default function TruckOnboardingWizard({ open, onClose, onFinished }: Tru
               {createdCode && (
                 <div className="py-4 px-6 rounded-2xl bg-[var(--bg)] border border-[var(--gold)]/35">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--tx3)] mb-2">Setup code</p>
-                  <p className="font-mono text-2xl font-bold tracking-widest text-[var(--gold)]">{createdCode}</p>
+                  <p className="font-mono text-2xl font-bold tracking-widest text-[var(--accent-text)]">{createdCode}</p>
                 </div>
               )}
               <p className="text-[11px] text-[var(--tx3)] text-left leading-relaxed">
@@ -515,7 +515,7 @@ export default function TruckOnboardingWizard({ open, onClose, onFinished }: Tru
               <button
                 type="button"
                 onClick={handleClose}
-                className="w-full py-3 rounded-xl font-bold text-[var(--btn-text-on-accent)] bg-[var(--admin-primary-fill)]"
+                className="admin-btn admin-btn-lg admin-btn-primary w-full"
               >
                 Close
               </button>

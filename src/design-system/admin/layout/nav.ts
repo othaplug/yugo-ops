@@ -11,31 +11,22 @@
 
 import type { Icon } from "@phosphor-icons/react"
 import {
-  House,
-  Broadcast,
+  SquaresFour,
   CalendarBlank,
   MapPin,
-  ChartBar,
-  Handshake,
-  Briefcase,
-  Package,
   FileText,
-  Lightning,
-  Path,
-  Recycle,
-  Buildings,
-  Money,
-  CreditCard,
-  Shield,
-  TrendUp,
-  UserCheck,
   Funnel,
-  ClipboardText,
+  Path,
+  Briefcase,
+  Recycle,
+  Handshake,
+  ShareNetwork,
   Gift,
+  HardHat,
+  Buildings,
+  Shield,
+  CurrencyDollar,
   Gear,
-  UsersThree,
-  Lock,
-  Scroll,
 } from "../icons"
 
 export type NavItem = {
@@ -44,10 +35,16 @@ export type NavItem = {
   Icon: Icon
   minRole?: string
   badgeKey?: "quotes" | "changeRequests"
+  /**
+   * When set, sidebar uses this instead of prefix matching (see Live tracking vs
+   * Crew, both under /admin/crew/*).
+   */
+  activePath?: (pathname: string) => boolean
 }
 
 export type NavSection = {
-  label: string
+  /** When null, the group renders without an eyebrow (e.g. bottom Settings) */
+  label: string | null
   items: NavItem[]
 }
 
@@ -65,60 +62,137 @@ export const ROLE_LEVEL: Record<string, number> = {
 
 export const SIDEBAR_SECTIONS: NavSection[] = [
   {
-    label: "Overview",
+    label: "Dashboard",
     items: [
-      { href: "/admin", label: "Command Center", Icon: House, minRole: "coordinator" },
-      { href: "/admin/dispatch", label: "Dispatch", Icon: Broadcast, minRole: "dispatcher" },
-      { href: "/admin/calendar", label: "Calendar", Icon: CalendarBlank, minRole: "sales" },
-      { href: "/admin/crew", label: "Live Tracking", Icon: MapPin },
-      { href: "/admin/crew/analytics", label: "Crew Analytics", Icon: ChartBar, minRole: "admin" },
+      {
+        href: "/admin",
+        label: "Overview",
+        Icon: SquaresFour,
+        minRole: "coordinator",
+      },
+      {
+        href: "/admin/calendar",
+        label: "Calendar",
+        Icon: CalendarBlank,
+        minRole: "sales",
+      },
+      {
+        href: "/admin/crew",
+        label: "Live tracking",
+        Icon: MapPin,
+        activePath: (p) => p === "/admin/crew" || p === "/admin/crew/",
+      },
     ],
   },
   {
-    label: "Moves",
+    label: "Sales",
     items: [
-      { href: "/admin/quotes", label: "Quotes", Icon: FileText, badgeKey: "quotes", minRole: "sales" },
-      { href: "/admin/widget-leads", label: "Widget Leads", Icon: Lightning, minRole: "sales" },
-      { href: "/admin/moves", label: "All Moves", Icon: Path },
-      { href: "/admin/bin-rentals", label: "Bin Rentals", Icon: Recycle, minRole: "coordinator" },
-      { href: "/admin/buildings", label: "Buildings", Icon: Buildings, minRole: "coordinator" },
+      {
+        href: "/admin/quotes",
+        label: "Quotes",
+        Icon: FileText,
+        badgeKey: "quotes",
+        minRole: "sales",
+      },
+      { href: "/admin/leads", label: "Leads", Icon: Funnel, minRole: "sales" },
     ],
   },
   {
-    label: "B2B",
+    label: "Moves & Jobs",
     items: [
-      { href: "/admin/partners", label: "All Partners", Icon: Handshake, minRole: "coordinator" },
-      { href: "/admin/partners/realtors", label: "Referral Partners", Icon: Handshake, minRole: "coordinator" },
-      { href: "/admin/deliveries", label: "Jobs", Icon: Briefcase, minRole: "coordinator" },
-      { href: "/admin/inbound-shipments", label: "Inbound Shipments", Icon: Package, minRole: "coordinator" },
+      { href: "/admin/moves", label: "All moves", Icon: Path },
+      {
+        href: "/admin/b2b/jobs",
+        label: "B2B jobs",
+        Icon: Briefcase,
+        minRole: "coordinator",
+      },
+      {
+        href: "/admin/bin-rentals",
+        label: "Bin rentals",
+        Icon: Recycle,
+        minRole: "coordinator",
+      },
+    ],
+  },
+  {
+    label: "Partners",
+    items: [
+      {
+        href: "/admin/partners",
+        label: "All partners",
+        Icon: Handshake,
+        minRole: "coordinator",
+      },
+      {
+        href: "/admin/partners/referral",
+        label: "Referral partners",
+        Icon: ShareNetwork,
+        minRole: "coordinator",
+      },
+      {
+        href: "/admin/perks",
+        label: "Perks & referrals",
+        Icon: Gift,
+        minRole: "coordinator",
+        activePath: (p) =>
+          p === "/admin/perks" || p.startsWith("/admin/perks/"),
+      },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      {
+        href: "/admin/crew/analytics",
+        label: "Crew",
+        Icon: HardHat,
+        minRole: "dispatcher",
+        activePath: (p) => p !== "/admin/crew" && p.startsWith("/admin/crew/"),
+      },
+      {
+        href: "/admin/buildings",
+        label: "Buildings",
+        Icon: Buildings,
+        minRole: "coordinator",
+      },
+      {
+        href: "/admin/claims",
+        label: "Claims",
+        Icon: Shield,
+        minRole: "admin",
+      },
     ],
   },
   {
     label: "Finance",
     items: [
-      { href: "/admin/invoices", label: "Invoices", Icon: FileText, minRole: "admin" },
-      { href: "/admin/revenue", label: "Revenue", Icon: Money, minRole: "admin" },
-      { href: "/admin/tips", label: "Tips", Icon: CreditCard, minRole: "admin" },
-      { href: "/admin/claims", label: "Claims", Icon: Shield, minRole: "admin" },
-      { href: "/admin/finance/profitability", label: "Profitability", Icon: TrendUp, minRole: "owner" },
+      {
+        href: "/admin/finance",
+        label: "Revenue",
+        Icon: CurrencyDollar,
+        minRole: "admin",
+        activePath: (p) =>
+          p === "/admin/finance" ||
+          p === "/admin/finance/" ||
+          p.startsWith("/admin/finance/invoices") ||
+          p.startsWith("/admin/finance/revenue") ||
+          p.startsWith("/admin/finance/profitability") ||
+          p.startsWith("/admin/finance/forecast") ||
+          p === "/admin/finance/tips" ||
+          p.startsWith("/admin/finance/tips/"),
+      },
     ],
   },
   {
-    label: "CRM",
+    label: null,
     items: [
-      { href: "/admin/clients", label: "Contacts", Icon: UserCheck, minRole: "admin" },
-      { href: "/admin/leads", label: "Leads", Icon: Funnel, minRole: "sales" },
-      { href: "/admin/change-requests", label: "Change Requests", Icon: ClipboardText, badgeKey: "changeRequests", minRole: "admin" },
-      { href: "/admin/perks", label: "Perks & Referrals", Icon: Gift, minRole: "admin" },
-    ],
-  },
-  {
-    label: "Settings",
-    items: [
-      { href: "/admin/platform", label: "Platform", Icon: Gear, minRole: "owner" },
-      { href: "/admin/users", label: "Users", Icon: UsersThree, minRole: "owner" },
-      { href: "/admin/settings", label: "Settings", Icon: Lock, minRole: "coordinator" },
-      { href: "/admin/audit-log", label: "Audit Log", Icon: Scroll, minRole: "admin" },
+      {
+        href: "/admin/settings",
+        label: "Settings",
+        Icon: Gear,
+        minRole: "coordinator",
+      },
     ],
   },
 ]
@@ -134,10 +208,34 @@ export type QuickAction = {
 }
 
 export const QUICK_ACTIONS: QuickAction[] = [
-  { label: "New quote", href: "/admin/quotes/new", description: "Residential or B2B quote" },
-  { label: "New move", href: "/admin/moves/new", description: "Schedule a move" },
-  { label: "New contact", href: "/admin/clients/new", description: "Add a person or org" },
-  { label: "New partner", href: "/admin/partners/new", description: "Onboard a B2B partner" },
-  { label: "New delivery", href: "/admin/deliveries/new", description: "Create a B2B job" },
-  { label: "New invoice", href: "/admin/invoices/new", description: "Invoice a client" },
+  {
+    label: "New quote",
+    href: "/admin/quotes/new",
+    description: "Residential or B2B quote",
+  },
+  {
+    label: "New move",
+    href: "/admin/moves/new",
+    description: "Schedule a move",
+  },
+  {
+    label: "New contact",
+    href: "/admin/clients/new",
+    description: "Add a person or org",
+  },
+  {
+    label: "New partner",
+    href: "/admin/partners/new",
+    description: "Onboard a B2B partner",
+  },
+  {
+    label: "New delivery",
+    href: "/admin/deliveries/new",
+    description: "Create a B2B job",
+  },
+  {
+    label: "New invoice",
+    href: "/admin/finance/invoices/new",
+    description: "Invoice a client",
+  },
 ]

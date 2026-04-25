@@ -307,7 +307,7 @@ export default function QuoteResidentialDisplaySection({
             <button
               type="button"
               onClick={convertToAdditiveLists}
-              className="shrink-0 px-3 py-1.5 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[11px] font-semibold hover:opacity-90"
+              className="admin-btn admin-btn-sm admin-btn-primary shrink-0"
             >
               Convert to “plus” lists
             </button>
@@ -320,7 +320,7 @@ export default function QuoteResidentialDisplaySection({
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                className="text-[10px] font-semibold text-[var(--accent-text)] hover:underline"
                 onClick={() => setStorage(cloneStorage(DEFAULT_RESIDENTIAL_TIER_FEATURES_STORAGE))}
               >
                 Reset lists to built-in defaults
@@ -402,7 +402,7 @@ export default function QuoteResidentialDisplaySection({
                       </label>
                     </div>
                     <details className="group">
-                      <summary className="text-[10px] font-semibold text-[var(--gold)] cursor-pointer list-none flex items-center gap-1">
+                      <summary className="text-[10px] font-semibold text-[var(--accent-text)] cursor-pointer list-none flex items-center gap-1">
                         <CaretDown className="w-3 h-3 group-open:rotate-180 transition-transform" aria-hidden />
                         Title, description, icon
                       </summary>
@@ -476,7 +476,7 @@ export default function QuoteResidentialDisplaySection({
               </label>
               <button
                 type="button"
-                className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                className="text-[10px] font-semibold text-[var(--accent-text)] hover:underline"
                 onClick={() => setTierMetaForm(tierMetaFormFromMerged(mergeResidentialTierMetaFromConfig("")))}
                 title="Restore tagline, best-for, and inclusions intros to built-in defaults for all tiers"
               >
@@ -609,7 +609,7 @@ export default function QuoteResidentialDisplaySection({
             type="button"
             onClick={persist}
             disabled={saving}
-            className="px-4 py-2.5 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:opacity-90 disabled:opacity-60"
+            className="admin-btn admin-btn-primary"
           >
             {saving ? "Saving…" : "Save quote tier copy"}
           </button>

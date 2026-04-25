@@ -12,19 +12,20 @@
   --yu3-bg-surface: #ffffff;
   --yu3-bg-surface-sunken: #fbf9f4;
   --yu3-bg-surface-raised: #ffffff;
-  --yu3-bg-overlay: rgba(26, 20, 16, 0.28);
+  /* Light scrim: dim without hiding page content (dialogs, drawers) */
+  --yu3-bg-overlay: rgba(26, 20, 16, 0.12);
   --yu3-bg-glass: color-mix(in srgb, #ffffff 80%, transparent);
 
   /* ── Lines ── */
-  --yu3-line-subtle: #ede8dc;
-  --yu3-line: #e1dbcb;
-  --yu3-line-strong: #cfc7b2;
+  --yu3-line-subtle: #e6e0d0;
+  --yu3-line: #d4cdbb;
+  --yu3-line-strong: #bcb29c;
 
   /* ── Ink ── */
-  --yu3-ink-strong: #1a1410;
-  --yu3-ink: #2b2420;
-  --yu3-ink-muted: #6b6259;
-  --yu3-ink-faint: #9a9187;
+  --yu3-ink-strong: #14100d;
+  --yu3-ink: #24201d;
+  --yu3-ink-muted: #605750;
+  --yu3-ink-faint: #857b6f;
   --yu3-ink-inverse: #faf7f2;
 
   /* ── Brand: Wine (primary) ── */
@@ -60,11 +61,19 @@
   --yu3-c5: #7a5e3a; /* taupe */
   --yu3-c6: #7e2f5f; /* plum */
 
-  /* ── Typography ── */
-  --yu3-font-display: "Instrument Serif", ui-serif, Georgia, serif;
-  --yu3-font-ui: "Instrument Sans", "DM Sans", ui-sans-serif, system-ui,
-    -apple-system, "Segoe UI", Roboto, sans-serif;
-  --yu3-font-num: "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* ── Typography (Brown only under v3 admin) ── */
+  --yu3-font-base:
+    "Brown", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
+  --yu3-font-display: var(--yu3-font-base);
+  --yu3-font-ui: var(--yu3-font-base);
+  --yu3-font-num: var(--yu3-font-base);
+
+  /* Bridge globals + Tailwind `font-sans` / `font-numeric` inside this subtree */
+  --font-hero: var(--yu3-font-base);
+  --font-heading: var(--yu3-font-base);
+  --font-sans: var(--yu3-font-base);
+  --font-numeric: var(--yu3-font-base);
 
   --yu3-t-10: 10px;
   --yu3-t-11: 11px;
@@ -124,11 +133,16 @@
   --yu3-dur-2: 180ms;
   --yu3-dur-3: 260ms;
 
+  /* Topbar float: long search field (light) */
+  --yu3-topbar-search-bg: #ebe6dc;
+  --yu3-topbar-search-ink: #6b6259;
+
   /* ── Layout metrics ── */
   --yu3-sidebar-w: 248px;
   --yu3-sidebar-rail-w: 64px;
-  --yu3-topbar-h: 56px;
-  --yu3-mobile-navbar-h: 68px;
+  --yu3-topbar-h: 48px;
+  /* Clearance for floating bottom nav (compact FAB or expanded pill) + safe area */
+  --yu3-mobile-navbar-h: 96px;
   --yu3-content-max-w: 1440px;
 
   /* ── Z-index ladder (scoped) ── */
@@ -139,6 +153,29 @@
   --yu3-z-modal: 80;
   --yu3-z-palette: 90;
   --yu3-z-toast: 100;
+
+  /* ── Legacy ink + surfaces (pre-v3 /admin pages): map to yu3 ─────────────
+     Hundreds of components still use var(--tx), var(--brd), var(--card), etc.
+     from globals [data-theme=light] on html. Scoping them here makes list
+     dashboards, DataTables, and filters follow the cream canvas + wine accent
+     system in both themes without per-file churn. */
+  --tx: var(--yu3-ink);
+  --tx2: var(--yu3-ink-muted);
+  --tx3: var(--yu3-ink-faint);
+  --brd: var(--yu3-line);
+  --card: var(--yu3-bg-surface);
+  --bg: var(--yu3-bg-canvas);
+  --bg2: var(--yu3-bg-surface-sunken);
+  --hover: color-mix(in srgb, var(--yu3-ink) 6%, var(--yu3-bg-surface));
+  --surface: var(--yu3-bg-surface-sunken);
+  --surface-raised: var(--yu3-bg-surface-raised);
+  --surface-card: var(--yu3-bg-surface);
+  --surface-border: var(--yu3-line);
+  --text-primary: var(--yu3-ink-strong);
+  --text-secondary: var(--yu3-ink-muted);
+  --text-tertiary: var(--yu3-ink-faint);
+  /* Interactive / link accent (was undefined; used across admin clients) */
+  --accent-text: var(--yu3-wine);
 
   /* ── Legacy bridge: retire gold inside admin ─────────────────────────────
      Many /admin/* files predate v3 and reference --gold / --color-accent /
@@ -160,6 +197,22 @@
   --color-primary: var(--yu3-wine);
   --color-primary-hover: var(--yu3-wine-hover);
   --color-primary-dim: var(--yu3-wine-tint);
+
+  /* Tailwind @theme color slots (see src/styles/admin-tokens.css) → yu3.
+     So utilities like `text-fg`, `bg-surface`, `border-line`, `text-accent` match
+     Operator chrome instead of the default cold gray / purple v2 admin palette. */
+  --color-canvas: var(--yu3-bg-canvas);
+  --color-surface: var(--yu3-bg-surface);
+  --color-surface-subtle: var(--yu3-bg-surface-raised);
+  --color-surface-sunken: var(--yu3-bg-surface-sunken);
+  --color-line: var(--yu3-line);
+  --color-line-strong: var(--yu3-line-strong);
+  --color-fg: var(--yu3-ink-strong);
+  --color-fg-muted: var(--yu3-ink-muted);
+  --color-fg-subtle: var(--yu3-ink-faint);
+  --shadow-sm: var(--yu3-shadow-sm);
+  --shadow-md: var(--yu3-shadow-md);
+  --shadow-lg: var(--yu3-shadow-lg);
 }
 
 /* ── Dark theme override (opt-in) ─────────────────────────────────────── */
@@ -168,21 +221,30 @@
   --yu3-bg-surface: #1a1612;
   --yu3-bg-surface-sunken: #14100d;
   --yu3-bg-surface-raised: #231d19;
-  --yu3-bg-overlay: rgba(0, 0, 0, 0.6);
+  --yu3-bg-overlay: rgba(0, 0, 0, 0.22);
   --yu3-bg-glass: color-mix(in srgb, #1a1612 80%, transparent);
 
-  --yu3-line-subtle: #2a2420;
-  --yu3-line: #3a322c;
-  --yu3-line-strong: #4b423a;
+  --yu3-line-subtle: #332c26;
+  --yu3-line: #4a413a;
+  --yu3-line-strong: #5e544a;
 
-  --yu3-ink-strong: #f7f2ea;
-  --yu3-ink: #e8e1d3;
-  --yu3-ink-muted: #a89e8e;
-  --yu3-ink-faint: #7a7066;
+  --yu3-ink-strong: #faf5ed;
+  --yu3-ink: #ebe5d8;
+  /* Lifted from earlier dark values: small type, table headers, and placeholders
+     must stay ≥ ~4.5:1 on surface / sunken / search field (WCAG AA UI copy). */
+  --yu3-ink-muted: #cfccc2;
+  --yu3-ink-faint: #b8b0a3;
   --yu3-ink-inverse: #1a1410;
 
-  --yu3-wine-wash: #2a1017;
-  --yu3-wine-tint: #3b1522;
+  /* Primary chrome: warm cream / off-white (no saturated wine in dark) */
+  --yu3-wine: #d9cfbf;
+  --yu3-wine-hover: #e8dfd2;
+  --yu3-wine-press: #c4baab;
+  /* Pills, soft fills, table selection wash — not red */
+  --yu3-wine-tint: color-mix(in srgb, #ebe3d4 12%, #1a1612);
+  --yu3-wine-wash: rgba(245, 240, 232, 0.075);
+  --yu3-on-wine: #12100c;
+
   --yu3-forest-tint: #1d2a1e;
   --yu3-success-tint: #13291a;
   --yu3-warning-tint: #2a1e08;
@@ -194,17 +256,46 @@
   --yu3-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
   --yu3-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.6);
 
-  /* Legacy bridge stays mapped to wine in dark mode too. */
+  /* Topbar search on dark canvas (icon + input + placeholder all use yu3 ink) */
+  --yu3-topbar-search-bg: #2a2a2a;
+  --yu3-topbar-search-ink: #c4beb2;
+
+  /* Focus ring: neutral hairline, not wine */
+  --yu3-ring-focus: 0 0 0 2px var(--yu3-bg-canvas), 0 0 0 4px var(--yu3-line-strong);
+
+  /* Charts: c1 is qualitative slot 1 — taupe, not brand wine */
+  --yu3-c1: #6f6860;
+
+  /* Legacy ink + surfaces (dark): same mapping as light, yu3 values above */
+  --tx: var(--yu3-ink);
+  --tx2: var(--yu3-ink-muted);
+  --tx3: var(--yu3-ink-faint);
+  --brd: var(--yu3-line);
+  --card: var(--yu3-bg-surface);
+  --bg: var(--yu3-bg-canvas);
+  --bg2: var(--yu3-bg-surface-sunken);
+  --hover: color-mix(in srgb, var(--yu3-ink) 8%, transparent);
+  --surface: var(--yu3-bg-surface-sunken);
+  --surface-raised: var(--yu3-bg-surface-raised);
+  --surface-card: var(--yu3-bg-surface);
+  --surface-border: var(--yu3-line);
+  --text-primary: var(--yu3-ink-strong);
+  --text-secondary: var(--yu3-ink-muted);
+  --text-tertiary: var(--yu3-ink-faint);
+  /* Links / “accent” copy: high legibility cream ink, not brand fill */
+  --accent-text: var(--yu3-ink-strong);
+
+  /* Legacy bridge: primary slots use same cream system as yu3-wine* */
   --gold: var(--yu3-wine);
   --gold2: var(--yu3-wine-hover);
-  --gdim: var(--yu3-wine-tint);
-  --color-accent: var(--yu3-wine);
-  --color-accent-hover: var(--yu3-wine-hover);
-  --color-accent-subtle: var(--yu3-wine-tint);
+  --gdim: rgba(245, 240, 232, 0.08);
+  --color-accent: var(--yu3-ink-strong);
+  --color-accent-hover: var(--yu3-ink);
+  --color-accent-subtle: color-mix(in srgb, var(--yu3-ink-strong) 8%, transparent);
   --admin-primary-fill: var(--yu3-wine);
   --admin-primary-fill-hover: var(--yu3-wine-hover);
   --text-accent: var(--yu3-ink-strong);
   --color-primary: var(--yu3-wine);
   --color-primary-hover: var(--yu3-wine-hover);
-  --color-primary-dim: var(--yu3-wine-tint);
+  --color-primary-dim: color-mix(in srgb, var(--yu3-ink) 20%, var(--yu3-bg-surface));
 }

@@ -10,7 +10,9 @@ import {
   addCalendarDaysYmd,
   getLocalHourInAppTimezone,
   getTimeZoneShortLabel,
+  ymdPartsInTimeZone,
 } from "@/lib/business-timezone";
+import { isMoveStatusCompleted } from "@/lib/move-status";
 import { countActiveBinTasks } from "@/lib/bin-orders-active-tasks";
 import { isMoveWeatherBrief, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 
@@ -94,7 +96,9 @@ export async function GET(req: NextRequest) {
   }
 
   const movesToday = movesRes.data || [];
-  const movesCarryover = (carryMovesRes.data || []).filter((m) => !isTerminalMoveStatus(m.status));
+  const movesCarryover = (carryMovesRes.data || []).filter(
+    (m) => !isCrewCarryoverExcludedMoveRow(m as { status?: string | null; completed_at?: string | null }),
+  );
   const deliveriesToday = deliveriesRes.data || [];
   const deliveriesCarryover = (carryDeliveriesRes.data || []).filter((d) => !isTerminalDeliveryStatus(d.status));
 
@@ -196,6 +200,17 @@ export async function GET(req: NextRequest) {
       effectiveStatus.toLowerCase() === "completed"
         ? completedAtFromRow ?? sessionSnap?.completed_at ?? null
         : null;
+
+    const schedYmd = String(m.scheduled_date || "").trim();
+    const completionForStaleCheck = isCrewCarryoverExcludedMoveStatus(effectiveStatus, completedAtFromRow)
+      ? completedAtFromRow ?? sessionSnap?.completed_at ?? null
+      : null;
+    if (schedYmd === today && completionForStaleCheck) {
+      const doneMs = Date.parse(completionForStaleCheck);
+      if (!Number.isNaN(doneMs) && ymdPartsInTimeZone(doneMs, tz) < today) {
+        continue;
+      }
+    }
 
     jobs.push({
       id: m.id,
@@ -302,14 +317,33 @@ function parseTime(s: string): number {
   return h * 60 + min;
 }
 
-function isTerminalMoveStatus(status: string | null | undefined): boolean {
-  const s = (status || "").toLowerCase();
-  return s === "completed" || s === "cancelled";
+type MoveStatusRow = { status?: string | null; completed_at?: string | null };
+
+/**
+ * True when a move row is fully closed: must not appear in the "prior days" carryover bucket.
+ * Uses `isMoveStatusCompleted` (completed / delivered) plus legacy `done` and `cancelled`.
+ * `paid` is only "closed" for carryover when `completed_at` is set, so prepaid moves still in progress stay visible.
+ */
+function isCrewCarryoverExcludedMoveRow(m: MoveStatusRow): boolean {
+  const s = (m.status || "").toLowerCase().trim();
+  if (s === "cancelled") return true;
+  if (isMoveStatusCompleted(m.status)) return true;
+  if (s === "done") return true;
+  if ((s === "paid" || s === "final_payment_received") && m.completed_at) return true;
+  return false;
+}
+
+/** By status name only, for effective-status checks after session merge. */
+function isCrewCarryoverExcludedMoveStatus(
+  status: string | null | undefined,
+  completedAtFromRow: string | null | undefined = null,
+): boolean {
+  return isCrewCarryoverExcludedMoveRow({ status, completed_at: completedAtFromRow });
 }
 
 function isTerminalDeliveryStatus(status: string | null | undefined): boolean {
-  const s = (status || "").toLowerCase();
-  return s === "delivered" || s === "cancelled";
+  const s = (status || "").toLowerCase().trim();
+  return s === "delivered" || s === "cancelled" || s === "completed";
 }
 
 /** Count list items for labels; tolerate JSONB shapes that are not a plain array. */

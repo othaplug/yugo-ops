@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useLayoutEffect, useState, useCallback, useId } from "react";
 import { createPortal } from "react-dom";
+import { useAdminShellTheme } from "@/hooks/useAdminShellTheme";
 
 export interface AddressResult {
   fullAddress: string;
@@ -29,6 +30,8 @@ export interface AddressAutocompleteProps {
   /** ISO 3166-1 alpha-2 country code to bias results (e.g. "CA") */
   country?: string;
   disabled?: boolean;
+  /** Match design-system admin v3 field chrome */
+  variant?: "default" | "yu3";
 }
 
 interface MapboxFeature {
@@ -136,6 +139,7 @@ export default function AddressAutocomplete({
   name,
   country: countryBias = "",
   disabled,
+  variant = "default",
 }: AddressAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [suggestions, setSuggestions] = useState<MapboxFeature[]>([]);
@@ -149,6 +153,7 @@ export default function AddressAutocomplete({
   const onRawChangeRef = useRef(onRawChange);
   onRawChangeRef.current = onRawChange;
   const listboxId = useId();
+  const adminShellTheme = useAdminShellTheme();
 
   const updateDropdownRect = useCallback(() => {
     const el = containerRef.current;
@@ -309,14 +314,33 @@ export default function AddressAutocomplete({
 
   const boxedFallback =
     "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
-  const inputClass = className.trim() ? className.trim() : boxedFallback;
+  const yu3FieldClass =
+    "w-full h-9 rounded-[var(--yu3-r-md)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] px-3 text-[13px] text-[var(--yu3-ink-strong)] placeholder:text-[var(--yu3-ink-faint)] transition-colors duration-[var(--yu3-dur-1)] hover:border-[var(--yu3-line-strong)] focus:outline-none focus:border-[var(--yu3-wine)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--yu3-wine)_22%,transparent)] disabled:cursor-not-allowed disabled:opacity-50";
+  const inputClass = className.trim()
+    ? className.trim()
+    : variant === "yu3"
+      ? yu3FieldClass
+      : boxedFallback;
 
   return (
     <div ref={containerRef} className="w-full relative">
       {label && (
-        <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">
+        <label
+          className={
+            variant === "yu3"
+              ? "mb-1.5 block yu3-t-eyebrow text-[var(--yu3-ink-muted)]"
+              : "mb-1 block text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]"
+          }
+        >
           {label}
-          {required && <span className="text-[var(--red)] ml-0.5">*</span>}
+          {required && (
+            <span
+              className={variant === "yu3" ? "ml-0.5 text-[var(--yu3-danger)]" : "ml-0.5 text-[var(--red)]"}
+              aria-hidden
+            >
+              *
+            </span>
+          )}
         </label>
       )}
       <input
@@ -345,7 +369,14 @@ export default function AddressAutocomplete({
           <ul
             id={listboxId}
             role="listbox"
-            className="fixed py-1 rounded-lg border border-[var(--brd)] bg-[var(--card)] shadow-lg overflow-y-auto"
+            {...(variant === "yu3"
+              ? { "data-yugo-admin-v3": "", "data-theme": adminShellTheme }
+              : {})}
+            className={
+              variant === "yu3"
+                ? "fixed overflow-y-auto rounded-[var(--yu3-r-md,8px)] border border-[var(--yu3-line,#d4cdbb)] bg-[var(--yu3-bg-surface,#ffffff)] py-1 text-[var(--yu3-ink,#24201d)] shadow-lg"
+                : "fixed overflow-y-auto rounded-lg border border-[var(--brd)] bg-[var(--card)] py-1 shadow-lg"
+            }
             style={{
               top: dropdownRect.top,
               left: dropdownRect.left,
@@ -359,7 +390,15 @@ export default function AddressAutocomplete({
             }}
           >
             {loading && suggestions.length === 0 ? (
-              <li className="px-3 py-2 text-[12px] text-[var(--tx3)]">Searching...</li>
+              <li
+                className={
+                  variant === "yu3"
+                    ? "px-3 py-2 text-[12px] text-[var(--yu3-ink-muted)]"
+                    : "px-3 py-2 text-[12px] text-[var(--tx3)]"
+                }
+              >
+                Searching...
+              </li>
             ) : (
               suggestions.map((f, i) => {
                 const ctx = f.context ?? [];
@@ -374,9 +413,19 @@ export default function AddressAutocomplete({
                     key={f.id}
                     role="option"
                     aria-selected={i === highlightIdx}
-                    className={`px-3 py-2.5 text-[13px] cursor-pointer transition-colors ${
-                      i === highlightIdx ? "bg-[var(--gold)]/15 text-[var(--tx)]" : "text-[var(--tx2)] hover:bg-[var(--bg)]"
-                    }`}
+                    className={
+                      variant === "yu3"
+                        ? `cursor-pointer px-3 py-2.5 text-[13px] transition-colors ${
+                            i === highlightIdx
+                              ? "bg-[var(--yu3-wine-wash)] text-[var(--yu3-ink-strong)]"
+                              : "text-[var(--yu3-ink)] hover:bg-[var(--yu3-bg-surface-sunken)]"
+                          }`
+                        : `cursor-pointer px-3 py-2.5 text-[13px] transition-colors ${
+                            i === highlightIdx
+                              ? "bg-[var(--gold)]/15 text-[var(--tx)]"
+                              : "text-[var(--tx2)] hover:bg-[var(--bg)]"
+                          }`
+                    }
                     onMouseDown={(e) => {
                       e.preventDefault();
                       select(f);

@@ -80,10 +80,29 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref,
   ) => {
-    const Comp = asChild ? Slot : "button"
+    if (asChild) {
+      // Slot (asChild) must receive a single element child. Do not add spinners, icons, or wrapper spans.
+      return (
+        <Slot
+          ref={ref}
+          data-yu3-button=""
+          data-loading={loading ? "true" : undefined}
+          className={cn(
+            buttonStyles({ variant, size, uppercase }),
+            (disabled || loading) && "pointer-events-none opacity-50",
+            className
+          )}
+          aria-disabled={disabled || loading}
+          {...rest}
+        >
+          {children}
+        </Slot>
+      )
+    }
     return (
-      <Comp
+      <button
         ref={ref}
+        data-yu3-button=""
         data-loading={loading ? "true" : undefined}
         className={cn(buttonStyles({ variant, size, uppercase }), className)}
         disabled={disabled || loading}
@@ -99,7 +118,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         {children ? <span className="inline-flex items-center">{children}</span> : null}
         {trailingIcon}
-      </Comp>
+      </button>
     )
   },
 )

@@ -25,7 +25,11 @@ export default function PortalAccessSection({
 }) {
   const { toast } = useToast();
   const labels = useMemo(
-    () => getPartnerLabelsForPartner({ vertical: partnerVertical, type: partnerVertical }),
+    () =>
+      getPartnerLabelsForPartner({
+        vertical: partnerVertical,
+        type: partnerVertical,
+      }),
     [partnerVertical],
   );
   const [users, setUsers] = useState<PortalUser[]>([]);
@@ -56,11 +60,14 @@ export default function PortalAccessSection({
   const handleRevoke = async (userId: string) => {
     setRevoking(userId);
     try {
-      const res = await fetch(`/api/admin/organizations/${orgId}/revoke-portal-user`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId }),
-      });
+      const res = await fetch(
+        `/api/admin/organizations/${orgId}/revoke-portal-user`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: userId }),
+        },
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to revoke");
       toast("Portal access revoked", "check");
@@ -84,11 +91,18 @@ export default function PortalAccessSection({
     }
     setInviteLoading(true);
     try {
-      const res = await fetch(`/api/admin/organizations/${orgId}/invite-portal-user`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), name: name.trim(), password }),
-      });
+      const res = await fetch(
+        `/api/admin/organizations/${orgId}/invite-portal-user`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email.trim(),
+            name: name.trim(),
+            password,
+          }),
+        },
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to invite");
       toast("Portal invitation sent", "mail");
@@ -131,11 +145,17 @@ export default function PortalAccessSection({
     }
     setResetLoading(true);
     try {
-      const res = await fetch(`/api/admin/organizations/${orgId}/reset-partner-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: resetUser.user_id, new_password: resetPassword }),
-      });
+      const res = await fetch(
+        `/api/admin/organizations/${orgId}/reset-partner-password`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: resetUser.user_id,
+            new_password: resetPassword,
+          }),
+        },
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to reset password");
       toast("New password set and email sent to partner", "mail");
@@ -161,14 +181,16 @@ export default function PortalAccessSection({
         </div>
         <button
           onClick={() => setInviteOpen(true)}
-          className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all"
+          className="admin-btn admin-btn-sm admin-btn-primary"
         >
           + Invite Portal User
         </button>
       </div>
       <div className="px-5 py-5">
         {loading ? (
-          <div className="py-6 text-center text-[12px] text-[var(--tx3)]">Loading…</div>
+          <div className="py-6 text-center text-[12px] text-[var(--tx3)]">
+            Loading…
+          </div>
         ) : users.length === 0 ? (
           <div className="py-6 text-center text-[12px] text-[var(--tx3)]">
             No portal users yet. Invite someone to give them access.
@@ -184,12 +206,16 @@ export default function PortalAccessSection({
                   <div className="text-[13px] font-semibold text-[var(--tx)] truncate">
                     {u.name || u.email?.split("@")[0] || "-"}
                   </div>
-                  <div className="text-[11px] text-[var(--tx3)] truncate">{u.email}</div>
+                  <div className="text-[11px] text-[var(--tx3)] truncate">
+                    {u.email}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span
                     className={`dt-badge tracking-[0.04em] ${
-                      u.status === "activated" ? "text-[var(--grn)]" : "text-amber-700 dark:text-amber-300"
+                      u.status === "activated"
+                        ? "text-[var(--grn)]"
+                        : "text-amber-700 dark:text-amber-300"
                     }`}
                   >
                     {u.status === "activated" ? "Activated" : "Pending"}
@@ -217,17 +243,24 @@ export default function PortalAccessSection({
 
       <ModalOverlay
         open={!!resetUser}
-        onClose={() => { setResetUser(null); setResetPassword(""); }}
+        onClose={() => {
+          setResetUser(null);
+          setResetPassword("");
+        }}
         title="Reset partner password"
         maxWidth="md"
       >
         {resetUser && (
           <form onSubmit={handleResetPassword} className="p-5 space-y-4">
             <p className="text-[12px] text-[var(--tx3)]">
-              Set a new temporary password for <strong>{resetUser.name || resetUser.email}</strong>. They will receive an email with the new password and login link.
+              Set a new temporary password for{" "}
+              <strong>{resetUser.name || resetUser.email}</strong>. They will
+              receive an email with the new password and login link.
             </p>
             <div>
-              <label className="admin-premium-label">New temporary password *</label>
+              <label className="admin-premium-label">
+                New temporary password *
+              </label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -238,16 +271,31 @@ export default function PortalAccessSection({
                   minLength={8}
                   className="admin-premium-input flex-1"
                 />
-                <button type="button" onClick={generateResetPassword} className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]">
+                <button
+                  type="button"
+                  onClick={generateResetPassword}
+                  className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                >
                   Generate
                 </button>
               </div>
             </div>
             <div className="flex gap-2 pt-2">
-              <button type="button" onClick={() => { setResetUser(null); setResetPassword(""); }} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">
+              <button
+                type="button"
+                onClick={() => {
+                  setResetUser(null);
+                  setResetPassword("");
+                }}
+                className="admin-btn admin-btn-secondary flex-1"
+              >
                 Cancel
               </button>
-              <button type="submit" disabled={resetLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+              <button
+                type="submit"
+                disabled={resetLoading}
+                className="admin-btn admin-btn-primary flex-1"
+              >
                 {resetLoading ? "Sending…" : "Set password & send email"}
               </button>
             </div>
@@ -255,10 +303,16 @@ export default function PortalAccessSection({
         )}
       </ModalOverlay>
 
-      <ModalOverlay open={inviteOpen} onClose={() => setInviteOpen(false)} title="Invite Portal User" maxWidth="md">
+      <ModalOverlay
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        title="Invite Portal User"
+        maxWidth="md"
+      >
         <form onSubmit={handleInvite} className="p-5 space-y-4">
           <p className="text-[12px] text-[var(--tx3)]">
-            Invite someone at {orgName} to log in. They can {labels.portalDescription}.
+            Invite someone at {orgName} to log in. They can{" "}
+            {labels.portalDescription}.
           </p>
           <div>
             <label className="admin-premium-label">Email *</label>
@@ -293,16 +347,28 @@ export default function PortalAccessSection({
                 minLength={8}
                 className="admin-premium-input flex-1"
               />
-              <button type="button" onClick={generatePassword} className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]">
+              <button
+                type="button"
+                onClick={generatePassword}
+                className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
+              >
                 Generate
               </button>
             </div>
           </div>
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={() => setInviteOpen(false)} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">
+            <button
+              type="button"
+              onClick={() => setInviteOpen(false)}
+              className="admin-btn admin-btn-secondary flex-1"
+            >
               Cancel
             </button>
-            <button type="submit" disabled={inviteLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+            <button
+              type="submit"
+              disabled={inviteLoading}
+              className="admin-btn admin-btn-primary flex-1"
+            >
               {inviteLoading ? "Sending…" : "Send Invitation"}
             </button>
           </div>

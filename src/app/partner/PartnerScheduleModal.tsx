@@ -25,6 +25,7 @@ import { calcHST } from "@/lib/format-currency";
 import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
 import { InfoHint } from "@/components/ui/InfoHint";
 import { WINE } from "@/lib/client-theme";
+import { partnerModalPanelClass } from "@/components/partner/PartnerChrome";
 import { getPartnerPortalTerminology } from "@/lib/partner-vertical-copy";
 
 const VEHICLE_TYPES: { value: VehicleType; label: string; capacity: string; payload: string }[] = [
@@ -596,9 +597,9 @@ export default function PartnerScheduleModal({
   const modalContent = (
     <ModalDialogFrame
       zClassName="z-[99999]"
-      backdropClassName="bg-black/45"
+      backdropClassName=""
       onBackdropClick={onClose}
-      panelClassName="yugo-glass-light rounded-t-lg sm:rounded-lg shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[640px] overflow-hidden mx-0 sm:mx-4 flex flex-col sheet-card sm:modal-card border border-[#2C3E2D]/10"
+      panelClassName={`${partnerModalPanelClass} w-full max-w-[640px] overflow-hidden mx-0 sm:mx-4 flex flex-col sheet-card sm:modal-card`}
       panelStyle={{ maxHeight: "min(92dvh, 92vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
         {/* ── Header ── */}

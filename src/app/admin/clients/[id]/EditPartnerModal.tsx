@@ -10,11 +10,23 @@ import { PARTNER_SEGMENT_GROUPS } from "@/lib/partner-type";
 interface EditPartnerModalProps {
   open: boolean;
   onClose: () => void;
-  client: { id: string; name: string; type: string; contact_name?: string; email: string; phone?: string };
+  client: {
+    id: string;
+    name: string;
+    type: string;
+    contact_name?: string;
+    email: string;
+    phone?: string;
+  };
   onSaved?: () => void;
 }
 
-export default function EditPartnerModal({ open, onClose, client, onSaved }: EditPartnerModalProps) {
+export default function EditPartnerModal({
+  open,
+  onClose,
+  client,
+  onSaved,
+}: EditPartnerModalProps) {
   const isClient = client.type === "b2c";
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -22,7 +34,9 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
   const [type, setType] = useState(client.type);
   const [contactName, setContactName] = useState(client.contact_name || "");
   const [email, setEmail] = useState(client.email || "");
-  const [phone, setPhone] = useState(client.phone ? formatPhone(client.phone) : "");
+  const [phone, setPhone] = useState(
+    client.phone ? formatPhone(client.phone) : "",
+  );
   const phoneInput = usePhoneInput(phone, setPhone);
 
   useEffect(() => {
@@ -38,7 +52,12 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) {
-      toast(isClient ? "Name and email are required" : "Company name and email are required", "x");
+      toast(
+        isClient
+          ? "Name and email are required"
+          : "Company name and email are required",
+        "x",
+      );
       return;
     }
     setLoading(true);
@@ -67,10 +86,16 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
   };
 
   return (
-    <ModalOverlay open={open} onClose={onClose} title={isClient ? "Edit Client" : "Edit Partner"}>
+    <ModalOverlay
+      open={open}
+      onClose={onClose}
+      title={isClient ? "Edit Client" : "Edit Partner"}
+    >
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
         <div>
-          <label className="admin-premium-label">{isClient ? "Name *" : "Company Name *"}</label>
+          <label className="admin-premium-label">
+            {isClient ? "Name *" : "Company Name *"}
+          </label>
           <input
             type="text"
             value={name}
@@ -81,36 +106,38 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
           />
         </div>
         {!isClient && (
-        <div>
-          <label className="admin-premium-label">Partner Type *</label>
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="admin-premium-input w-full"
-          >
-            {PARTNER_SEGMENT_GROUPS.flatMap((seg) =>
-              seg.groups.map((group) => (
-                <optgroup key={group.label} label={group.label}>
-                  {group.verticals.map((v) => (
-                    <option key={v.value} value={v.value}>{v.label}</option>
-                  ))}
-                </optgroup>
-              ))
-            )}
-          </select>
-        </div>
+          <div>
+            <label className="admin-premium-label">Partner Type *</label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="admin-premium-input w-full"
+            >
+              {PARTNER_SEGMENT_GROUPS.flatMap((seg) =>
+                seg.groups.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.verticals.map((v) => (
+                      <option key={v.value} value={v.value}>
+                        {v.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                )),
+              )}
+            </select>
+          </div>
         )}
         {!isClient && (
-        <div>
-          <label className="admin-premium-label">Contact Name</label>
-          <input
-            type="text"
-            value={contactName}
-            onChange={(e) => setContactName(e.target.value)}
-            placeholder="e.g. Marie Dubois"
-            className="admin-premium-input w-full"
-          />
-        </div>
+          <div>
+            <label className="admin-premium-label">Contact Name</label>
+            <input
+              type="text"
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              placeholder="e.g. Marie Dubois"
+              className="admin-premium-input w-full"
+            />
+          </div>
         )}
         <div>
           <label className="admin-premium-label">Email *</label>
@@ -138,14 +165,14 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+            className="admin-btn admin-btn-secondary flex-1"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
+            className="admin-btn admin-btn-primary flex-1"
           >
             {loading ? "Saving…" : "Save changes"}
           </button>

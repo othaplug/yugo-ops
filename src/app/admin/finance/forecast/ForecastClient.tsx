@@ -110,7 +110,7 @@ export default function ForecastClient() {
 
   if (loading) {
     return (
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-6">
+      <div className="w-full min-w-0 py-4 md:py-5 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="h-7 w-48 animate-pulse rounded bg-[var(--brd)]/30" />
           <div className="h-8 w-52 animate-pulse rounded-lg bg-[var(--brd)]/30" />
@@ -128,7 +128,7 @@ export default function ForecastClient() {
 
   if (!data) {
     return (
-      <div className="max-w-[1200px] mx-auto px-5 py-10 text-center text-[var(--tx3)] text-[13px]">
+      <div className="w-full min-w-0 py-10 text-center text-[var(--tx3)] text-[13px]">
         Failed to load forecast data. Please try again.
       </div>
     );
@@ -140,7 +140,7 @@ export default function ForecastClient() {
   const hasLowDays = capacity.some((d) => d.pct > 0 && d.pct < 30);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-6 animate-fade-up">
+    <div className="w-full min-w-0 py-4 md:py-5 space-y-6 animate-fade-up">
       <div className="mb-4"><BackButton label="Profitability" href="/admin/finance/profitability" /></div>
       {/* ──── HEADER ──── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">

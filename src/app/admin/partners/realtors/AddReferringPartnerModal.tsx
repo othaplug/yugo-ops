@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useId } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "@phosphor-icons/react";
 import ModalOverlay from "../../components/ModalOverlay";
@@ -15,8 +15,11 @@ import {
   partnerHasSelfServePortal,
 } from "@/lib/partner-type";
 import { InfoHint } from "@/components/ui/InfoHint";
+import { Button, Input, Select } from "@/design-system/admin/primitives";
 
 type ReferralOrgType = (typeof REFERRAL_HUB_ORG_TYPES)[number];
+
+const fieldLabelClass = "mb-1.5 block yu3-t-eyebrow text-[var(--yu3-ink-muted)]";
 
 export default function AddReferringPartnerModal({
   open,
@@ -27,6 +30,12 @@ export default function AddReferringPartnerModal({
 }) {
   const router = useRouter();
   const { toast } = useToast();
+  const baseId = useId();
+  const typeId = `${baseId}-type`;
+  const orgId = `${baseId}-org`;
+  const contactId = `${baseId}-contact`;
+  const emailId = `${baseId}-email`;
+  const phoneId = `${baseId}-phone`;
   const [loading, setLoading] = useState(false);
   const [partnerType, setPartnerType] = useState<ReferralOrgType>("realtor");
   const [partnerCompanyName, setPartnerCompanyName] = useState("");
@@ -100,87 +109,96 @@ export default function AddReferringPartnerModal({
       onClose={handleClose}
       title="Add referring partner"
       maxWidth="2xl"
+      titleClassName="text-[var(--yu3-wine)]"
     >
-      <form onSubmit={handleSubmit} className="p-5 space-y-4">
-        <div className="flex justify-end">
-          <InfoHint variant="admin" align="end" ariaLabel="About referring partners">
-            <p className="text-[11px] leading-relaxed">
-              Creates a referral organization record (commission pipeline). This is separate from move clients and
-              delivery partners.
-            </p>
-          </InfoHint>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+          <div className="min-w-0 flex-1">
+            <label htmlFor={typeId} className={fieldLabelClass}>
+              Referring partner type
+            </label>
+            <Select
+              id={typeId}
+              value={partnerType}
+              onChange={(e) => setPartnerType(e.target.value as ReferralOrgType)}
+              required
+              className="w-full"
+            >
+              {REFERRAL_HUB_ORG_TYPES.map((v) => (
+                <option key={v} value={v}>
+                  {organizationTypeLabel(v)}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="flex shrink-0 justify-end sm:pb-0.5">
+            <InfoHint variant="admin" align="end" ariaLabel="About referring partners">
+              <p className="text-[11px] leading-relaxed text-[var(--yu3-ink-muted)]">
+                Creates a referral organization record (commission pipeline). This is separate from move
+                clients and delivery partners.
+              </p>
+            </InfoHint>
+          </div>
         </div>
+
         <div>
-          <label className="admin-premium-label admin-premium-label--tight">
-            Referring partner type
-          </label>
-          <select
-            value={partnerType}
-            onChange={(e) => setPartnerType(e.target.value as ReferralOrgType)}
-            className="admin-premium-input w-full"
-            required
-          >
-            {REFERRAL_HUB_ORG_TYPES.map((v) => (
-              <option key={v} value={v}>
-                {organizationTypeLabel(v)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="admin-premium-label admin-premium-label--tight">
+          <label htmlFor={orgId} className={fieldLabelClass}>
             Organization name
           </label>
-          <input
+          <Input
+            id={orgId}
             type="text"
             required
             value={partnerCompanyName}
             onChange={(e) => setPartnerCompanyName(e.target.value)}
             placeholder="Company or team name"
-            className="admin-premium-input w-full"
             autoComplete="organization"
+            className="w-full"
           />
         </div>
         <div>
-          <label className="admin-premium-label admin-premium-label--tight">
+          <label htmlFor={contactId} className={fieldLabelClass}>
             Primary contact
           </label>
-          <input
+          <Input
+            id={contactId}
             type="text"
             required
             value={partnerContactName}
             onChange={(e) => setPartnerContactName(e.target.value)}
             placeholder="Contact name"
-            className="admin-premium-input w-full"
             autoComplete="name"
+            className="w-full"
           />
         </div>
         <div>
-          <label className="admin-premium-label admin-premium-label--tight">
+          <label htmlFor={emailId} className={fieldLabelClass}>
             Email
           </label>
-          <input
+          <Input
+            id={emailId}
             type="email"
             required
             value={partnerEmail}
             onChange={(e) => setPartnerEmail(e.target.value)}
             placeholder="email@company.com"
-            className="admin-premium-input w-full"
             autoComplete="email"
+            className="w-full"
           />
         </div>
         <div>
-          <label className="admin-premium-label admin-premium-label--tight">
+          <label htmlFor={phoneId} className={fieldLabelClass}>
             Phone
           </label>
-          <input
+          <Input
             ref={phoneInput.ref}
+            id={phoneId}
             type="tel"
             value={phone}
             onChange={phoneInput.onChange}
             placeholder={PHONE_PLACEHOLDER}
-            className="admin-premium-input w-full"
             autoComplete="tel"
+            className="w-full"
           />
         </div>
         <AddressAutocomplete
@@ -189,40 +207,44 @@ export default function AddReferringPartnerModal({
           onChange={(r) => setAddress(r.fullAddress)}
           placeholder="Office or billing address"
           label="Address"
-          className="admin-premium-input w-full"
+          variant="yu3"
         />
+
         {partnerPortalSupported ? (
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex cursor-pointer items-center gap-2.5">
             <input
               type="checkbox"
               checked={sendPortalAccess}
               onChange={(e) => setSendPortalAccess(e.target.checked)}
-              className="accent-[var(--gold)] w-4 h-4 rounded border border-[var(--brd)]"
+              className="h-4 w-4 rounded border border-[var(--yu3-line)] accent-[var(--yu3-wine)]"
             />
-            <span className="text-[12px] text-[var(--tx2)]">
-              Send portal access (invite email)
-            </span>
+            <span className="text-[12px] text-[var(--yu3-ink)]">Send portal access (invite email)</span>
           </label>
         ) : (
-          <p className="text-[11px] text-[var(--tx3)]">
+          <p className="text-[12px] leading-relaxed text-[var(--yu3-ink-muted)]">
             This partner type does not use a self-serve portal.
           </p>
         )}
-        <div className="flex gap-2 pt-1">
-          <button
+
+        <div className="flex flex-col gap-2 border-t border-[var(--yu3-line-subtle)] pt-4 sm:flex-row sm:pt-4">
+          <Button
             type="button"
+            variant="secondary"
+            size="md"
+            className="min-w-0 flex-1"
             onClick={handleClose}
-            className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]/40 transition-colors"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="primary"
+            size="md"
             disabled={loading}
-            className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50 transition-colors"
+            className="min-w-0 flex-1"
           >
             {loading ? "Creating…" : "Create partner"}
-          </button>
+          </Button>
         </div>
       </form>
     </ModalOverlay>
@@ -235,13 +257,15 @@ export function AddReferringPartnerTriggerButton({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="primary"
+      size="md"
       onClick={onClick}
-      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all whitespace-nowrap"
+      className="whitespace-nowrap"
+      leadingIcon={<Plus className="h-4 w-4" weight="bold" aria-hidden />}
     >
-      <Plus className="w-4 h-4" weight="bold" aria-hidden />
       Add referring partner
-    </button>
+    </Button>
   );
 }

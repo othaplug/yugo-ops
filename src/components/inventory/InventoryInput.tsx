@@ -394,7 +394,7 @@ export default function InventoryInput({
             onClick={() => { setActiveRoom(tab.id); setShowAllItems(false); }}
             className={`px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
               activeRoom === tab.id
-                ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
+                ? "bg-[var(--gold)]/20 text-[var(--accent-text)] border-[var(--gold)]"
                 : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
             }`}
           >
@@ -420,7 +420,7 @@ export default function InventoryInput({
                     onClick={() => addItem(w)}
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
                       existing
-                        ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
+                        ? "bg-[var(--gold)]/20 text-[var(--accent-text)] border-[var(--gold)]"
                         : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
                     }`}
                   >
@@ -501,7 +501,7 @@ export default function InventoryInput({
           <button
             type="button"
             onClick={() => setPasteOpen((o) => !o)}
-            className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:text-[var(--gold)]/85 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold)]/40 rounded-sm"
+            className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--accent-text)] hover:text-[var(--accent-text)]/85 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold)]/40 rounded-sm"
           >
             <span>{pasteOpen ? "Hide paste inventory" : "Paste inventory list"}</span>
             <span className="font-bold leading-none" aria-hidden>
@@ -532,7 +532,7 @@ export default function InventoryInput({
                     });
                     setPasteRows(rows);
                   }}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
+                  className="admin-btn admin-btn-sm admin-btn-primary"
                 >
                   Parse &amp; map items
                 </button>
@@ -598,7 +598,7 @@ export default function InventoryInput({
                       setPasteText("");
                       setPasteRows([]);
                     }}
-                    className="mt-2 w-full py-2 rounded-lg text-[10px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
+                    className="admin-btn admin-btn-sm admin-btn-primary mt-2 w-full"
                   >
                     Add matched items to inventory
                   </button>
@@ -707,7 +707,7 @@ export default function InventoryInput({
                 type="button"
                 onClick={addCustomItem}
                 disabled={!customName.trim()}
-                className="inline-flex w-full shrink-0 items-center justify-center gap-1 rounded-lg bg-[var(--admin-primary-fill)] px-3 py-2 text-[10px] font-semibold text-[var(--btn-text-on-accent)] shadow-sm transition-colors hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50 sm:w-auto"
+                className="admin-btn admin-btn-sm admin-btn-primary w-full shrink-0 sm:w-auto"
               >
                 <Plus className="size-3.5 shrink-0" weight="bold" /> Add custom item
               </button>
@@ -807,7 +807,7 @@ export default function InventoryInput({
                     >
                       {tierChipLabel(item)}
                       {isOverridden && (
-                        <span className="text-[var(--gold)] ml-0.5" title="Weight adjusted">✱</span>
+                        <span className="text-[var(--accent-text)] ml-0.5" title="Weight adjusted">✱</span>
                       )}
                       <ChevronDown className="w-2.5 h-2.5 opacity-60" />
                     </button>
@@ -841,7 +841,7 @@ export default function InventoryInput({
                     onClick={() => setEditingNoteKey(isNoteEditing ? null : key)}
                     className={`shrink-0 transition-colors ${
                       item.weightNote
-                        ? "text-[var(--gold)]"
+                        ? "text-[var(--accent-text)]"
                         : "text-[var(--tx3)] opacity-0 group-hover:opacity-100"
                     }`}
                   >

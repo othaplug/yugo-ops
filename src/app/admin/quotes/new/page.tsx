@@ -82,7 +82,7 @@ export default async function NewQuotePage() {
   };
 
   return (
-    <div className="w-full max-w-none mx-0 px-4 sm:px-5 md:px-8 lg:px-10 py-4 md:py-6">
+    <div className="w-full min-w-0 py-5 md:py-6">
       <QuoteFormClient
         addons={addons ?? []}
         config={config}
@@ -93,6 +93,7 @@ export default async function NewQuotePage() {
         userRole={userRole}
         isSuperAdmin={isSuperAdmin}
         binInventorySnapshot={binInventorySnapshot}
+        uiVariant="v2"
       />
     </div>
   );

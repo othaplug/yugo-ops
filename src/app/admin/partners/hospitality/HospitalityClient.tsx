@@ -34,8 +34,8 @@ const STATUS_BADGE: Record<string, string> = {
   pending: "text-[var(--org)] bg-[rgba(212,138,41,0.1)]",
   scheduled: "text-blue-600 bg-blue-500/10",
   confirmed: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
-  "in-transit": "text-[var(--gold)] bg-[var(--gdim)]",
-  in_transit: "text-[var(--gold)] bg-[var(--gdim)]",
+  "in-transit": "text-[var(--accent-text)] bg-[var(--gdim)]",
+  in_transit: "text-[var(--accent-text)] bg-[var(--gdim)]",
   delivered: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
   completed: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
   cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.1)]",
@@ -91,7 +91,7 @@ export default function HospitalityClient({
               onClick={() => setActiveTab(t.key)}
               className={`px-1 py-3 text-[12px] font-semibold transition-colors border-b-2 -mb-px ${
                 activeTab === t.key
-                  ? "text-[var(--gold)] border-[var(--gold)]"
+                  ? "text-[var(--accent-text)] border-[var(--gold)]"
                   : "text-[var(--tx3)] border-transparent hover:text-[var(--tx)]"
               }`}
             >
@@ -191,7 +191,7 @@ export default function HospitalityClient({
             {clients.length === 0 ? (
               <div className="px-4 py-10 text-center">
                 <p className="text-[13px] text-[var(--tx3)]">No hospitality partners yet.</p>
-                <Link href="/admin/partners/new?partnerType=hospitality" className="text-[12px] font-semibold text-[var(--gold)] hover:underline mt-1 inline-block">
+                <Link href="/admin/partners/new?partnerType=hospitality" className="text-[12px] font-semibold text-[var(--accent-text)] hover:underline mt-1 inline-block">
                   Add your first partner
                 </Link>
               </div>
@@ -205,7 +205,7 @@ export default function HospitalityClient({
                     className="flex items-center justify-between px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[12px] font-bold text-[var(--gold)]">
+                      <div className="w-9 h-9 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[12px] font-bold text-[var(--accent-text)]">
                         {(c.name || "?").charAt(0).toUpperCase()}
                       </div>
                       <div>

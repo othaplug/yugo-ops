@@ -46,7 +46,7 @@ export default function InvoicesV3Client({
               variant="primary"
               leadingIcon={<Plus size={16} />}
               onClick={() => {
-                window.location.href = "/admin/invoices/new"
+                window.location.href = "/admin/finance/invoices/new"
               }}
             >
               New invoice

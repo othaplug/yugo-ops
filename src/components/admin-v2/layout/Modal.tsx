@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import * as RadixDialog from "@radix-ui/react-dialog"
+import { useYu3PortalContainer } from "@/design-system/admin/layout/Yu3PortalContext"
 import { Icon } from "../primitives/Icon"
 import { cn } from "../lib/cn"
 
@@ -24,11 +25,13 @@ export const ModalContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof RadixDialog.Content> & {
     size?: ModalSize
   }
->(({ className, size = "md", children, ...props }, ref) => (
-  <RadixDialog.Portal>
+>(({ className, size = "md", children, ...props }, ref) => {
+  const portalContainer = useYu3PortalContainer()
+  return (
+  <RadixDialog.Portal container={portalContainer ?? undefined}>
     <RadixDialog.Overlay
       className={cn(
-        "fixed inset-0 z-40 bg-black/60 backdrop-blur-xs",
+        "fixed inset-0 z-40 modal-overlay pointer-events-auto",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
       )}
@@ -36,8 +39,8 @@ export const ModalContent = React.forwardRef<
     <RadixDialog.Content
       ref={ref}
       className={cn(
-        "fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2",
-        "rounded-xl border border-line bg-surface shadow-lg outline-none",
+        "fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 pointer-events-auto",
+        "rounded-xl border border-line bg-[var(--color-surface,#ffffff)] shadow-lg outline-none",
         "p-6",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
@@ -60,7 +63,8 @@ export const ModalContent = React.forwardRef<
       </RadixDialog.Close>
     </RadixDialog.Content>
   </RadixDialog.Portal>
-))
+  )
+})
 ModalContent.displayName = "ModalContent"
 
 export const ModalHeader = ({

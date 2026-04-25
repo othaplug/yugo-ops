@@ -162,7 +162,7 @@ export default function DeliveryVerticalsPanel({ isSuperAdmin = false }: { isSup
         <button
           type="button"
           onClick={openNew}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)]"
+          className="admin-btn admin-btn-sm admin-btn-primary"
         >
           <Plus className="w-4 h-4" />
           New vertical
@@ -200,7 +200,7 @@ export default function DeliveryVerticalsPanel({ isSuperAdmin = false }: { isSup
                     <button
                       type="button"
                       onClick={() => setModal(r)}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--gold)] hover:underline"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--accent-text)] hover:underline"
                     >
                       <PencilSimple className="w-3.5 h-3.5" />
                       Edit
@@ -215,7 +215,7 @@ export default function DeliveryVerticalsPanel({ isSuperAdmin = false }: { isSup
 
       {modal && (
         <div
-          className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto overscroll-contain bg-black/60 p-4 sm:p-5"
+          className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto overscroll-contain p-4 sm:p-5 modal-overlay"
           role="dialog"
           aria-modal="true"
           aria-labelledby="delivery-vertical-modal-title"
@@ -626,7 +626,7 @@ function VerticalEditForm({
                   <button
                     type="button"
                     onClick={addZoneRow}
-                    className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                    className="text-[10px] font-semibold text-[var(--accent-text)] hover:underline"
                   >
                     + Add zone
                   </button>
@@ -658,7 +658,7 @@ function VerticalEditForm({
                   </div>
                 ))
               )}
-              <button type="button" onClick={addVolumeTierRow} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
+              <button type="button" onClick={addVolumeTierRow} className="text-[10px] font-semibold text-[var(--accent-text)] hover:underline">
                 + Add volume tier
               </button>
             </div>
@@ -746,7 +746,7 @@ function VerticalEditForm({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+          className="admin-btn admin-btn-sm admin-btn-primary"
         >
           {saving ? "Saving…" : "Save"}
         </button>

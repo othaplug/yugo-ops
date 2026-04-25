@@ -1,7 +1,11 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { ThemeProvider, useTheme } from "@/components/admin-v2/providers/theme-provider"
+import Link from "next/link";
+import * as React from "react";
+import {
+  ThemeProvider,
+  useTheme,
+} from "@/components/admin-v2/providers/theme-provider";
 import {
   Avatar,
   AvatarStack,
@@ -35,17 +39,25 @@ import {
   Tooltip,
   TooltipProvider,
   variantForStatus,
-} from "@/components/admin-v2/primitives"
+} from "@/components/admin-v2/primitives";
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const Section = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
   <section className="border-b border-line pb-10 pt-8">
-    <p className="label-md mb-5 text-fg-muted uppercase tracking-[0.08em]">{title}</p>
+    <p className="label-md mb-5 text-fg-muted uppercase tracking-[0.08em]">
+      {title}
+    </p>
     <div className="flex flex-wrap items-start gap-4">{children}</div>
   </section>
-)
+);
 
 const ThemeSwitcher = () => {
-  const { theme, resolvedTheme, setTheme } = useTheme()
+  const { theme, resolvedTheme, setTheme } = useTheme();
   return (
     <div className="flex items-center gap-2">
       <span className="body-sm text-fg-muted">Theme:</span>
@@ -66,8 +78,8 @@ const ThemeSwitcher = () => {
       </ToggleGroup>
       <span className="body-sm text-fg-muted">({resolvedTheme})</span>
     </div>
-  )
-}
+  );
+};
 
 const stackItems = [
   { name: "Andy Shepard" },
@@ -75,12 +87,14 @@ const stackItems = [
   { name: "Michael Carter" },
   { name: "David Anderson" },
   { name: "Lily Hernandez" },
-]
+];
 
 const Harness = () => {
-  const [checked, setChecked] = React.useState<boolean | "indeterminate">(false)
-  const [switched, setSwitched] = React.useState(false)
-  const [radio, setRadio] = React.useState("a")
+  const [checked, setChecked] = React.useState<boolean | "indeterminate">(
+    false,
+  );
+  const [switched, setSwitched] = React.useState(false);
+  const [radio, setRadio] = React.useState("a");
 
   return (
     <div className="min-h-dvh bg-canvas text-fg">
@@ -88,23 +102,35 @@ const Harness = () => {
         <div>
           <p className="display-sm text-fg">Admin v2 · Primitives</p>
           <p className="body-sm text-fg-muted">
-            Dev harness — review every component, variant, and state.
+            Dev harness — review every component, variant, and state.{" "}
+            <Link
+              className="text-fg underline decoration-fg/30 hover:decoration-fg/60"
+              href="/admin/_dev/yu3-ui-lab"
+            >
+              Yugo+ v3 integrated UI lab
+            </Link>
           </p>
         </div>
         <ThemeSwitcher />
       </header>
 
-      <div className="mx-auto max-w-[1200px] px-6">
+      <div className="w-full min-w-0">
         <Section title="Buttons">
           <Button variant="primary">Primary</Button>
           <Button variant="accent">Accent</Button>
           <Button variant="secondary">Secondary</Button>
           <Button variant="ghost">Ghost</Button>
           <Button variant="destructive">Destructive</Button>
-          <Button variant="primary" leadingIcon={<Icon name="plus" size="sm" />}>
+          <Button
+            variant="primary"
+            leadingIcon={<Icon name="plus" size="sm" />}
+          >
             New lead
           </Button>
-          <Button variant="secondary" trailingIcon={<Icon name="caretDown" size="sm" />}>
+          <Button
+            variant="secondary"
+            trailingIcon={<Icon name="caretDown" size="sm" />}
+          >
             Last 7 days
           </Button>
           <Button size="sm">Small</Button>
@@ -160,9 +186,17 @@ const Harness = () => {
           <Checkbox defaultChecked aria-label="Default checked" />
           <Checkbox checked="indeterminate" aria-label="Indeterminate" />
           <Checkbox disabled aria-label="Disabled" />
-          <Switch checked={switched} onCheckedChange={setSwitched} aria-label="Group" />
+          <Switch
+            checked={switched}
+            onCheckedChange={setSwitched}
+            aria-label="Group"
+          />
           <Switch disabled aria-label="Disabled switch" />
-          <RadioGroup value={radio} onValueChange={setRadio} className="flex gap-4">
+          <RadioGroup
+            value={radio}
+            onValueChange={setRadio}
+            className="flex gap-4"
+          >
             <label className="flex items-center gap-2 body-sm text-fg">
               <Radio value="a" /> Option A
             </label>
@@ -178,7 +212,10 @@ const Harness = () => {
         <Section title="Dropdown · Popover · Tooltip">
           <DropdownRoot>
             <DropdownTrigger asChild>
-              <Button variant="secondary" trailingIcon={<Icon name="caretDown" size="sm" />}>
+              <Button
+                variant="secondary"
+                trailingIcon={<Icon name="caretDown" size="sm" />}
+              >
                 Open menu
               </Button>
             </DropdownTrigger>
@@ -219,7 +256,9 @@ const Harness = () => {
             </PopoverTrigger>
             <PopoverContent>
               <p className="body-md text-fg">Popover content</p>
-              <p className="body-sm text-fg-muted">Use for inline filter forms.</p>
+              <p className="body-sm text-fg-muted">
+                Use for inline filter forms.
+              </p>
             </PopoverContent>
           </PopoverRoot>
 
@@ -237,13 +276,22 @@ const Harness = () => {
               <TabsTrigger value="distributions">Distributions</TabsTrigger>
               <TabsTrigger value="waterfall">Waterfall</TabsTrigger>
             </TabsList>
-            <TabsContent value="overview" className="pt-4 body-sm text-fg-muted">
+            <TabsContent
+              value="overview"
+              className="pt-4 body-sm text-fg-muted"
+            >
               Overview content
             </TabsContent>
-            <TabsContent value="distributions" className="pt-4 body-sm text-fg-muted">
+            <TabsContent
+              value="distributions"
+              className="pt-4 body-sm text-fg-muted"
+            >
               Distributions content
             </TabsContent>
-            <TabsContent value="waterfall" className="pt-4 body-sm text-fg-muted">
+            <TabsContent
+              value="waterfall"
+              className="pt-4 body-sm text-fg-muted"
+            >
               Waterfall content
             </TabsContent>
           </Tabs>
@@ -288,11 +336,13 @@ const Harness = () => {
             <Skeleton width={320} height={80} radius="md" />
           </div>
           <EmptyState
-            icon={<Icon name="leads" size="lg" />}
             title="No leads yet"
             description="Leads will appear here once your sources start sending them in."
             action={
-              <Button variant="primary" leadingIcon={<Icon name="plus" size="sm" />}>
+              <Button
+                variant="primary"
+                leadingIcon={<Icon name="plus" size="sm" />}
+              >
                 New lead
               </Button>
             }
@@ -302,11 +352,11 @@ const Harness = () => {
         <div className="h-24" />
       </div>
     </div>
-  )
-}
+  );
+};
 
 export const PrimitivesHarness = () => (
   <ThemeProvider>
     <Harness />
   </ThemeProvider>
-)
+);

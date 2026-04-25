@@ -1674,7 +1674,7 @@ export default function B2BJobsDeliveryForm({
           <span>Prefer the full-page experience?</span>
           <Link
             href="/admin/deliveries/new?choice=b2b_oneoff"
-            className="inline-flex items-center gap-1 font-semibold text-[var(--gold)] hover:underline"
+            className="inline-flex items-center gap-1 font-semibold text-[var(--accent-text)] hover:underline"
           >
             Open B2B Jobs
             <ArrowSquareOut className="w-3.5 h-3.5" aria-hidden />
@@ -1683,7 +1683,7 @@ export default function B2BJobsDeliveryForm({
       )}
 
       {!embed && (
-        <div className="px-3 py-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/30 text-[11px] text-[var(--gold)]">
+        <div className="px-3 py-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/30 text-[11px] text-[var(--accent-text)]">
           {partnerOrgId.trim() && applyPartnerRates
             ? "Partner organization linked — dimensional preview uses partner vertical rates when configured."
             : "True one-off: no partner org — full payment at booking unless you send a quote with invoice terms."}
@@ -2210,7 +2210,7 @@ export default function B2BJobsDeliveryForm({
             type="button"
             onClick={addLine}
             disabled={!newDesc.trim()}
-            className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50 sm:col-span-2"
+            className="admin-btn admin-btn-sm admin-btn-primary"
           >
             <Plus className="w-4 h-4" />
             Add
@@ -2309,7 +2309,7 @@ export default function B2BJobsDeliveryForm({
                   {p.icon ? (
                     <B2bQuickAddIcon
                       icon={p.icon}
-                      className="shrink-0 text-[var(--gold)]"
+                      className="shrink-0 text-[var(--accent-text)]"
                     />
                   ) : (
                     <Plus className="w-3.5 h-3.5 shrink-0" aria-hidden />
@@ -2728,7 +2728,7 @@ export default function B2BJobsDeliveryForm({
               Approximate subtotal using route distance; does not include full
               partner rate lookup or every access surcharge.
             </p>
-            <div className="font-semibold text-[var(--gold)]">
+            <div className="font-semibold text-[var(--accent-text)]">
               Pre-tax estimate: {formatCurrency(clientEstimate.rounded_pre_tax)}
             </div>
             {clientEstimate.access_surcharge > 0 && (
@@ -2749,7 +2749,7 @@ export default function B2BJobsDeliveryForm({
               <span>HST (est.)</span>
               <span>{formatCurrency(clientEstimate.hst)}</span>
             </div>
-            <div className="flex justify-between font-bold text-[var(--gold)]">
+            <div className="flex justify-between font-bold text-[var(--accent-text)]">
               <span>Total (est.)</span>
               <span>~{formatCurrency(clientEstimate.total_with_tax)}</span>
             </div>
@@ -2764,7 +2764,7 @@ export default function B2BJobsDeliveryForm({
               Mapbox distance, partner rates when applicable, and full
               surcharges. This is what appears on the quote.
             </p>
-            <div className="font-semibold text-[var(--gold)]">
+            <div className="font-semibold text-[var(--accent-text)]">
               Calculated pre-tax:{" "}
               {formatCurrency(serverPricing.rounded_pre_tax)}
             </div>
@@ -2786,7 +2786,7 @@ export default function B2BJobsDeliveryForm({
               <span>HST</span>
               <span>{formatCurrency(serverPricing.hst)}</span>
             </div>
-            <div className="flex justify-between font-bold text-[var(--gold)]">
+            <div className="flex justify-between font-bold text-[var(--accent-text)]">
               <span>Total (incl. HST)</span>
               <span>{formatCurrency(serverPricing.total_with_tax)}</span>
             </div>
@@ -2949,7 +2949,7 @@ export default function B2BJobsDeliveryForm({
           type="button"
           disabled={loading}
           onClick={() => void postCreateDelivery("confirmed")}
-          className="px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:opacity-90 disabled:opacity-50"
+          className="admin-btn admin-btn-primary"
         >
           Create and schedule
         </button>

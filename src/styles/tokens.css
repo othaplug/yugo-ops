@@ -5,10 +5,6 @@
    radius, and shadows. Nothing in the codebase consumes these yet; later
    PRs migrate components onto these tokens.
 
-   Ordering: this file is imported BEFORE `admin-tokens.css` in globals.css
-   so that the existing admin-v2 `@theme` block wins at :root for any
-   shared names (e.g. --color-canvas). Admin-v2 rendering is unchanged.
-
    Do not introduce new hex values or type sizes. If a need arises, discuss
    with the team first and extend this file. See /docs/design-tokens.md.
    ========================================================================== */
@@ -26,7 +22,7 @@
 
   --font-sans:
     "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
-    "DM Sans", "Helvetica Neue", Arial, sans-serif;
+    "Brown", "Helvetica Neue", Arial, sans-serif;
 
   /* Same glyphs as --font-sans but consumers pair it with `tnum` features
      for aligned monetary / numeric columns. */
@@ -84,8 +80,7 @@
   --color-wine-hover: #4F0F2D;
   --color-wine-subtle: #FAF0F4; /* active nav wash — NOT a wine fill */
 
-  /* Surfaces. Shared names with admin-v2 — admin-v2's @theme loads after
-     this file and keeps its own values at :root for those surfaces. */
+  /* Surfaces. */
   --color-canvas: #FAFAFA;
   --color-surface: #FFFFFF;
   --color-surface-subtle: #F7F7F7;

@@ -11,7 +11,7 @@ export default function PortalDisabledPage() {
         </p>
         <Link
           href="/partner/login"
-          className="inline-block px-4 py-2.5 rounded-lg text-[13px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+          className="inline-block px-4 py-2.5 rounded-lg text-[13px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--accent-text)] transition-all"
         >
           Back to sign in
         </Link>

@@ -75,8 +75,18 @@ export function parseTimeWindow(windowStr: string | null | undefined, dateStr: s
 }
 
 /** Arrival checkpoints in order of preference (first found wins) */
+/** Job-start arrival (pickup / first stop) for on-time vs commitment window. */
 export const ARRIVAL_CHECKPOINTS_MOVE = ["arrived_at_pickup", "arrived_on_site", "arrived"] as const;
-export const ARRIVAL_CHECKPOINTS_DELIVERY = ["arrived_at_destination", "arrived_on_site", "arrived"] as const;
+/**
+ * Job-start: pickup first, then drop-off for legacy/short flows that skip pickup checkpoints.
+ * Do not use destination-only for "first" when pickup exists; order matters.
+ */
+export const ARRIVAL_CHECKPOINTS_DELIVERY = [
+  "arrived_at_pickup",
+  "arrived_at_destination",
+  "arrived_on_site",
+  "arrived",
+] as const;
 
 /** Grace: 15 min early / 15 min late */
 const GRACE_MS = 15 * 60 * 1000;

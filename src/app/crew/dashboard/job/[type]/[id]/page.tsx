@@ -12,6 +12,7 @@ import {
   type SetStateAction,
 } from "react";
 import { createPortal } from "react-dom";
+import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme";
 import dynamic from "next/dynamic";
 import {
   CaretLeft,
@@ -110,16 +111,16 @@ function CrewLocationStatusPill({
   locationPermission: GeoPermissionState;
 }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--brd)]/50 bg-[var(--card)]/35 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-[var(--tx3)]/75">
+    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/90 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-[var(--yu3-ink-faint)]">
       <span className="shrink-0">Location</span>
-      <span className="h-2.5 w-px shrink-0 bg-[var(--brd)]/55" aria-hidden />
+      <span className="h-2.5 w-px shrink-0 bg-[var(--yu3-line)]/55" aria-hidden />
       <span
         className={`min-w-0 font-semibold normal-case tracking-normal ${
           locationPermission === "granted"
-            ? "text-[var(--tx)]"
+            ? "text-[var(--yu3-ink)]"
             : locationPermission === "denied"
               ? "text-[#B45309]"
-              : "text-[var(--tx)]"
+              : "text-[var(--yu3-ink)]"
         }`}
       >
         {locationPermission === "granted" && "Enabled"}
@@ -483,7 +484,7 @@ export default function CrewJobPage({
       });
       if (!ok) {
         setActionError(
-          "Allow location when your browser asks—live tracking is required to start this job.",
+          "Allow location when your browser asks. Live tracking is required to start this job.",
         );
         return;
       }
@@ -629,8 +630,8 @@ export default function CrewJobPage({
       <PageContent className="crew-job-premium">
         <div className="flex items-center justify-center min-h-[40vh]">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-[#5C1A33]/25 border-t-[#5C1A33] rounded-full animate-spin" />
-            <p className="text-[13px] text-[var(--tx3)]">Loading job...</p>
+            <div className="w-8 h-8 border-2 border-[var(--yu3-wine)]/25 border-t-[var(--yu3-wine)] rounded-full animate-spin" />
+            <p className="text-[13px] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">Loading job...</p>
           </div>
         </div>
       </PageContent>
@@ -646,7 +647,7 @@ export default function CrewJobPage({
           </p>
           <Link
             href="/crew/dashboard"
-            className="inline-flex items-center gap-2 py-2.5 px-4 rounded-xl text-[13px] font-medium text-[#5C1A33] hover:bg-[var(--gdim)] transition-colors"
+            className="inline-flex items-center gap-2 py-2.5 px-4 rounded-[var(--yu3-r-lg)] text-[13px] font-medium text-[var(--yu3-wine)] hover:bg-[var(--yu3-wine-tint)] transition-colors [font-family:var(--font-body)]"
           >
             <span aria-hidden>←</span> Back to Jobs
           </Link>
@@ -664,7 +665,7 @@ export default function CrewJobPage({
         <div className="flex items-center gap-2 mb-5">
           <Link
             href="/crew/dashboard"
-            className="inline-flex items-center gap-1.5 py-1.5 px-2.5 -ml-2.5 rounded-lg text-[12px] font-medium text-[var(--tx3)] hover:text-[#5C1A33] hover:bg-[var(--gdim)] transition-colors"
+            className="inline-flex items-center gap-1.5 py-1.5 px-2.5 -ml-2.5 rounded-[var(--yu3-r-md)] text-[12px] font-medium text-[var(--yu3-ink-faint)] hover:text-[var(--yu3-wine)] hover:bg-[var(--yu3-wine-tint)] transition-colors [font-family:var(--font-body)]"
           >
             <CaretLeft size={15} weight="regular" />
             Jobs
@@ -749,19 +750,19 @@ export default function CrewJobPage({
       </Suspense>
 
       {/* ── Top bar ── */}
-      <div className="flex items-center justify-between gap-2 mb-6 pb-1 border-b border-[#5C1A33]/[0.08]">
+      <div className="flex items-center justify-between gap-2 mb-6 pb-1 border-b border-[var(--yu3-line-subtle)]">
         <Link
           href="/crew/dashboard"
-          className="inline-flex items-center gap-1.5 py-1.5 px-2.5 -ml-2.5 rounded-[10px] text-[12px] font-medium text-[var(--tx3)] hover:text-[#5C1A33] hover:bg-[#5C1A33]/[0.06] transition-colors [font-family:var(--font-body)]"
+          className="inline-flex items-center gap-1.5 py-1.5 px-2.5 -ml-2.5 rounded-[var(--yu3-r-md)] text-[12px] font-medium text-[var(--yu3-ink-faint)] hover:text-[var(--yu3-wine)] hover:bg-[var(--yu3-wine-tint)] transition-colors [font-family:var(--font-body)]"
         >
           <CaretLeft size={15} weight="regular" />
           Jobs
         </Link>
         <div className="flex items-center gap-1.5 flex-wrap justify-end">
           {(session?.isActive || isCompleted) && (
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-[10px] bg-[#FFFBF7]/90 border border-[#5C1A33]/[0.1] shadow-[0_1px_0_rgba(92,26,51,0.04)]">
-              <Clock size={11} className="text-[#5C1A33]/50" aria-hidden />
-              <span className="text-[11px] font-bold text-[var(--tx)] tabular-nums">
+            <div className="flex items-center gap-1 px-2.5 py-1 rounded-[var(--yu3-r-md)] bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line-subtle)] shadow-[var(--yu3-shadow-sm)]">
+              <Clock size={11} className="text-[var(--yu3-wine)]/60" aria-hidden />
+              <span className="text-[11px] font-bold text-[var(--yu3-ink)] tabular-nums [font-family:var(--font-body)]">
                 {formatElapsed(
                   isCompleted && session?.completedAt && session?.startedAt
                     ? new Date(session.completedAt).getTime() -
@@ -809,7 +810,7 @@ export default function CrewJobPage({
                       setLocationPermission(r.status);
                     })
                   }
-                  className="shrink-0 text-[11px] font-semibold text-[#5C1A33] underline-offset-2 hover:underline"
+                  className="shrink-0 text-[11px] font-semibold text-[var(--yu3-wine)] underline-offset-2 hover:underline [font-family:var(--font-body)]"
                 >
                   Check again
                 </button>
@@ -839,7 +840,7 @@ export default function CrewJobPage({
       {showStartButton &&
         (locationPermission === "prompt" ||
           locationPermission === "unknown") && (
-          <p className="text-[11px] text-[var(--tx3)] mb-3 leading-relaxed">
+          <p className="text-[11px] text-[var(--yu3-ink-muted)] mb-3 leading-relaxed [font-family:var(--font-body)]">
             Live tracking is required for this job for safety and verification.
             Allow when prompted so dispatch
             {useLogisticsCopy ? " and the receiver " : " and the client "}
@@ -847,25 +848,34 @@ export default function CrewJobPage({
           </p>
         )}
       {showStartButton && locationPermission === "denied" && (
-        <p className="text-[11px] text-[var(--tx3)] mb-3 leading-relaxed">
+        <p className="text-[11px] text-[var(--yu3-ink-muted)] mb-3 leading-relaxed [font-family:var(--font-body)]">
           Live tracking needs location access. Turn it on in your browser or
           device settings, then tap Check again.
         </p>
       )}
 
-      {/* ── Job header — premium card ── */}
-      <div className="mb-6 rounded-2xl border border-[#5C1A33]/[0.1] bg-[#FFFBF7] shadow-[0_1px_0_rgba(92,26,51,0.06),0_12px_40px_-24px_rgba(44,62,45,0.12)] p-4 sm:p-5">
+      {/* Job header (Yugo v3 surface card) */}
+      <div className="mb-6 rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 sm:p-5 shadow-[var(--yu3-shadow-sm)]">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="min-w-0">
-            <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#5C1A33]/45 mb-1 [font-family:var(--font-body)] leading-none">
+            <p className="yu3-t-eyebrow text-[10px] text-[var(--yu3-wine)]/80 mb-1 [font-family:var(--font-body)] leading-none">
               {job.jobTypeLabel}
             </p>
-            <h1 className="font-hero text-[28px] font-semibold text-[#2b1810] leading-[1.12] truncate tracking-[-0.02em]">
+            <h1 className="font-hero text-[28px] font-semibold text-[var(--yu3-ink-strong)] leading-[1.12] truncate tracking-[-0.02em]">
               {job.clientName}
             </h1>
-            <p className="text-[10px] text-[#5C1A33]/40 mt-1 font-mono tracking-wide">
+            <p className="text-[10px] text-[var(--yu3-ink-faint)] mt-1 font-mono tracking-wide">
               {job.jobId}
             </p>
+            {job.scheduledDate && (
+              <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1.5 [font-family:var(--font-body)]">
+                {formatPlatformDisplay(`${job.scheduledDate}T12:00:00`, {
+                  weekday: "long",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </p>
+            )}
             {(() => {
               const n =
                 job.estCrewSize != null && Number.isFinite(job.estCrewSize)
@@ -884,12 +894,12 @@ export default function CrewJobPage({
               return (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {b2b ? (
-                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[#5C1A33]/35 bg-[#5C1A33]/10 text-[#5C1A33]">
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[var(--yu3-wine)]/30 bg-[var(--yu3-wine-tint)] text-[var(--yu3-wine)] [font-family:var(--font-body)]">
                       B2B delivery
                     </span>
                   ) : null}
                   {showCrew ? (
-                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[var(--brd)] bg-[var(--card)] text-[var(--tx2)]">
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
                       {n}-person crew planned
                     </span>
                   ) : null}
@@ -906,44 +916,39 @@ export default function CrewJobPage({
             })()}
           </div>
           {isCompleted && (
-            <span className="shrink-0 px-2.5 py-1 rounded-none bg-[#2C3E2D]/[0.08] text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx)] [font-family:var(--font-body)] leading-none">
+            <span className="shrink-0 rounded-md bg-[var(--yu3-forest)]/[0.1] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-forest)] [font-family:var(--font-body)] leading-none">
               Complete
             </span>
           )}
         </div>
-        <div className="border-t border-[#5C1A33]/[0.08] pt-4">
+        <div className="border-t border-[var(--yu3-line-subtle)] pt-4">
           <div className="flex gap-3.5">
-            {/* Dot + connector column */}
             <div className="flex flex-col items-center shrink-0 pt-1">
-              {/* Pickup dot — wine */}
-              <div className="w-4 h-4 rounded-full border-2 border-[#5C1A33]/45 flex items-center justify-center shrink-0">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#5C1A33]" />
+              <div className="w-4 h-4 rounded-full border-2 border-[var(--yu3-wine)]/45 flex items-center justify-center shrink-0">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--yu3-wine)]" />
               </div>
-              {/* Connector line */}
               <div
-                className="w-[2px] flex-1 my-1 rounded-full"
-                style={{ background: "rgba(92, 26, 51, 0.14)", minHeight: 20 }}
+                className="w-[2px] flex-1 my-1 rounded-full bg-[var(--yu3-wine)]/15"
+                style={{ minHeight: 20 }}
               />
-              {/* Drop-off dot — forest */}
-              <div className="w-4 h-4 rounded-full border-2 border-[#2C3E2D]/40 flex items-center justify-center shrink-0">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#2C3E2D]" />
+              <div className="w-4 h-4 rounded-full border-2 border-[var(--yu3-forest)]/40 flex items-center justify-center shrink-0">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--yu3-forest)]" />
               </div>
             </div>
 
-            {/* Address column */}
             <div className="flex flex-col justify-between min-w-0 flex-1 gap-4">
               <div className="min-w-0">
-                <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#5C1A33]/50 mb-1 [font-family:var(--font-body)] leading-none">
+                <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-faint)] mb-1 [font-family:var(--font-body)] leading-none">
                   {originLabel}
                 </p>
-                <p className="text-[15px] text-[#3d2a22] leading-snug font-medium tracking-[-0.01em]">
+                <p className="text-[15px] text-[var(--yu3-ink)] leading-snug font-medium tracking-[-0.01em]">
                   {job.fromAddress}
                 </p>
                 {fromAccessDisplay && (
-                  <p className="text-[11px] text-[#5C1A33]/75 mt-1 flex items-center gap-1.5 leading-snug">
+                  <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1 flex items-center gap-1.5 leading-snug">
                     <Lock
                       size={11}
-                      className="shrink-0 text-[#5C1A33]/45"
+                      className="shrink-0 text-[var(--yu3-wine)]/50"
                       aria-hidden
                     />
                     {fromAccessDisplay}
@@ -951,17 +956,17 @@ export default function CrewJobPage({
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#5C1A33]/50 mb-1 [font-family:var(--font-body)] leading-none">
+                <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-faint)] mb-1 [font-family:var(--font-body)] leading-none">
                   {destinationLabel}
                 </p>
-                <p className="text-[15px] text-[#3d2a22] leading-snug font-medium tracking-[-0.01em]">
+                <p className="text-[15px] text-[var(--yu3-ink)] leading-snug font-medium tracking-[-0.01em]">
                   {job.toAddress}
                 </p>
                 {toAccessDisplay && (
-                  <p className="text-[11px] text-[#5C1A33]/75 mt-1 flex items-center gap-1.5 leading-snug">
+                  <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1 flex items-center gap-1.5 leading-snug">
                     <Lock
                       size={11}
-                      className="shrink-0 text-[#5C1A33]/45"
+                      className="shrink-0 text-[var(--yu3-wine)]/50"
                       aria-hidden
                     />
                     {toAccessDisplay}
@@ -974,7 +979,7 @@ export default function CrewJobPage({
       </div>
 
       {/* ── Tabs ── */}
-      <div className="flex justify-center border-b border-[#5C1A33]/[0.1] mb-6">
+      <div className="flex justify-center border-b border-[var(--yu3-line-subtle)] mb-6">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -982,13 +987,13 @@ export default function CrewJobPage({
             type="button"
             className={`relative flex-1 px-3 py-3 text-[11px] font-bold tracking-[0.12em] uppercase transition-colors duration-150 whitespace-nowrap touch-manipulation [font-family:var(--font-body)] leading-none ${
               activeTab === t.id
-                ? "text-[#5C1A33]"
-                : "text-[var(--tx3)]/40 hover:text-[#5C1A33]/55"
+                ? "text-[var(--yu3-wine)]"
+                : "text-[var(--yu3-ink-faint)] hover:text-[var(--yu3-wine)]/70"
             }`}
           >
             {t.label}
             {activeTab === t.id && (
-              <span className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-[#5C1A33]" />
+              <span className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-[var(--yu3-wine)]" />
             )}
           </button>
         ))}
@@ -1010,26 +1015,26 @@ export default function CrewJobPage({
             typeof job.preMoveChecklistTotal === "number" &&
             job.preMoveChecklistTotal > 0 && (
               <div
-                className={`mx-2 flex items-start gap-3 rounded-2xl border px-4 py-3 ${
+                className={`mx-2 flex items-start gap-3 rounded-[var(--yu3-r-xl)] border px-4 py-3 ${
                   job.preMoveChecklistAllComplete
-                    ? "border-[#2C3E2D]/35 bg-[#2C3E2D]/10"
-                    : "border-[var(--brd)]/50 bg-[var(--card)]/40"
+                    ? "border-[var(--yu3-forest)]/30 bg-[var(--yu3-forest)]/8"
+                    : "border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/80"
                 }`}
               >
                 <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--yu3-r-lg)] ${
                     job.preMoveChecklistAllComplete
-                      ? "bg-[#2C3E2D]/20 text-[#243524]"
-                      : "bg-[var(--gdim)]/50 text-[var(--tx3)]"
+                      ? "bg-[var(--yu3-forest)]/20 text-[var(--yu3-forest)]"
+                      : "bg-[var(--yu3-wine-tint)] text-[var(--yu3-ink-faint)]"
                   }`}
                 >
                   <ListChecks size={22} weight="bold" aria-hidden />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-ink)] [font-family:var(--font-body)]">
                     Client pre-move prep
                   </p>
-                  <p className="text-[12px] text-[var(--tx2)] mt-1 leading-snug">
+                  <p className="text-[12px] text-[var(--yu3-ink-muted)] mt-1 leading-snug">
                     {job.preMoveChecklistAllComplete ? (
                       <>
                         Checklist complete ({job.preMoveChecklistDone}/
@@ -1043,7 +1048,7 @@ export default function CrewJobPage({
                       <>
                         {job.preMoveChecklistDone ?? 0}/
                         {job.preMoveChecklistTotal} items done in their tracking
-                        link — confirm access and parking with dispatch if
+                        link. Confirm access and parking with dispatch if
                         needed.
                       </>
                     )}
@@ -1055,21 +1060,21 @@ export default function CrewJobPage({
           {isCompleted && equipmentCheckPending && (
             <Link
               href={`/crew/dashboard/job/${jobType}/${id}/equipment-check`}
-              className="mx-2 flex items-center gap-3 rounded-2xl border border-[#5C1A33]/35 bg-[#5C1A33]/10 px-4 py-3.5 transition-colors hover:bg-[#5C1A33]/15"
+              className="mx-2 flex items-center gap-3 rounded-[var(--yu3-r-xl)] border border-[var(--yu3-wine)]/25 bg-[var(--yu3-wine-tint)] px-4 py-3.5 transition-colors hover:bg-[var(--yu3-wine-wash)]"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#5C1A33]/20 text-[#5C1A33]">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--yu3-r-lg)] bg-[var(--yu3-wine)]/15 text-[var(--yu3-wine)]">
                 <Toolbox size={22} aria-hidden />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[12px] font-bold text-[var(--tx)]">
+                <p className="text-[12px] font-bold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
                   Truck equipment check
                 </p>
-                <p className="text-[11px] text-[var(--tx3)] mt-0.5 leading-snug">
+                <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-0.5 leading-snug">
                   Count gear before your next stop or end-of-day report. Client
                   sign-off is already done.
                 </p>
               </div>
-              <span className="text-[11px] font-semibold text-[#5C1A33] shrink-0">
+              <span className="text-[11px] font-semibold text-[var(--yu3-wine)] shrink-0 [font-family:var(--font-body)]">
                 Open
               </span>
             </Link>
@@ -1087,7 +1092,7 @@ export default function CrewJobPage({
           {/* Live tracking tips: compact label + InfoHint so the main column stays clear */}
           {(showStartButton || (session?.isActive && !isCompleted)) && (
             <div className="px-2 flex justify-center items-center gap-2 py-0.5 min-h-0">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#5C1A33]/30 [font-family:var(--font-body)] select-none">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)] select-none">
                 Tracking tips
               </span>
               <InfoHint
@@ -1117,14 +1122,14 @@ export default function CrewJobPage({
             isNavigatingLeg &&
             canUseLocationActions &&
             !navDestination && (
-              <p className="px-2 text-[10px] text-[#3d2a22]/65 text-center leading-snug max-w-[380px] mx-auto [font-family:var(--font-body)]">
+              <p className="px-2 text-[10px] text-[var(--yu3-ink-muted)] text-center leading-snug max-w-[380px] mx-auto [font-family:var(--font-body)]">
                 Map routing needs coordinates for this job. Open the Details tab
                 for full addresses, or ask dispatch to verify{" "}
                 {useLogisticsCopy
                   ? "origin and destination"
                   : "pickup and drop-off"}{" "}
                 pins. Use{" "}
-                <span className="text-[#5C1A33] font-semibold">
+                <span className="text-[var(--yu3-wine)] font-semibold">
                   Navigation
                 </span>{" "}
                 in the crew menu when pins are available.
@@ -1137,7 +1142,7 @@ export default function CrewJobPage({
                 type="button"
                 onClick={() => void startJob()}
                 disabled={advancing || blockedByLocation}
-                className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.12em] active:scale-[0.99] [font-family:var(--font-body)] leading-none"
+                className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.12em] text-[var(--yu3-on-wine)] active:scale-[0.99] [font-family:var(--font-body)] leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--yu3-bg-canvas)]"
               >
                 {advancing ? (
                   "Starting…"
@@ -1154,7 +1159,7 @@ export default function CrewJobPage({
                 )}
               </button>
               {blockedByLocation && (
-                <p className="text-[10px] text-[var(--tx3)] text-center leading-snug px-1">
+                <p className="text-[10px] text-[var(--yu3-ink-faint)] text-center leading-snug px-1 [font-family:var(--font-body)]">
                   Location is off or unavailable. Enable it for this site in
                   your settings, then tap Start job again.
                 </p>
@@ -1202,7 +1207,7 @@ export default function CrewJobPage({
             <div className="px-2 space-y-1.5">
               <label
                 htmlFor="crew-checkpoint-note"
-                className="block text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50"
+                className="block text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]"
               >
                 Note for next update (optional)
               </label>
@@ -1217,7 +1222,7 @@ export default function CrewJobPage({
                     ? "e.g. Delayed at dock, site contact at loading bay…"
                     : "e.g. Delayed at gate, client at side entrance…"
                 }
-                className="w-full px-3.5 py-2.5 rounded-[10px] bg-[#FFFBF7] border border-[#5C1A33]/[0.1] text-[#3d2a22] placeholder:text-[#5C1A33]/35 text-[13px] outline-none focus:ring-2 focus:ring-[#5C1A33]/25 focus:ring-offset-0"
+                className="w-full px-3.5 py-2.5 rounded-[var(--yu3-r-md)] bg-[var(--yu3-bg-surface-sunken)] border border-[var(--yu3-line-subtle)] text-[var(--yu3-ink)] placeholder:text-[var(--yu3-ink-faint)] text-[13px] outline-none focus:ring-2 focus:ring-[var(--yu3-wine)]/25 focus:ring-offset-0 [font-family:var(--font-body)]"
                 autoComplete="off"
               />
             </div>
@@ -1225,14 +1230,14 @@ export default function CrewJobPage({
 
           {/* Walkthrough gate, shown when at pickup and walkthrough not done */}
           {currentStatus === "arrived_at_pickup" && blockedByWalkthrough && (
-            <div className="rounded-2xl border border-[#5C1A33]/[0.12] bg-[#5C1A33]/[0.04] p-4 sm:p-5 space-y-3">
+            <div className="rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-wine-wash)] p-4 sm:p-5 space-y-3">
               <div>
-                <p className="text-[12px] font-bold text-[var(--tx)]">
+                <p className="text-[12px] font-bold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
                   {useLogisticsCopy
                     ? "Job List Verification Required"
                     : "Inventory Walkthrough Required"}
                 </p>
-                <p className="text-[11px] text-[var(--tx3)]">
+                <p className="text-[11px] text-[var(--yu3-ink-muted)]">
                   {useLogisticsCopy
                     ? jobType === "delivery"
                       ? "Complete before you leave origin for drop-off"
@@ -1240,7 +1245,7 @@ export default function CrewJobPage({
                     : "Complete before loading starts"}
                 </p>
               </div>
-              <p className="text-[12px] text-[var(--tx2)] leading-relaxed">
+              <p className="text-[12px] text-[var(--yu3-ink-muted)] leading-relaxed">
                 {useLogisticsCopy ? (
                   <>
                     With the site contact or receiver, verify the job list
@@ -1286,7 +1291,7 @@ export default function CrewJobPage({
                       ? "Walkthrough logged"
                       : "Change request submitted"}
                   </p>
-                  <p className="text-[11px] text-[var(--tx2)] mt-0.5">
+                  <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-0.5">
                     {walkthroughResult.itemsExtra > 0 &&
                       `${walkthroughResult.itemsExtra} extra item${walkthroughResult.itemsExtra !== 1 ? "s" : ""}. `}
                     {walkthroughResult.itemsMissing > 0 &&
@@ -1356,7 +1361,7 @@ export default function CrewJobPage({
               </button>
             ) : null)}
           {showAdvanceButton && canUseLocationActions && blockedByPhotos && (
-            <p className="text-center text-[11px] text-[var(--tx3)] py-2">
+            <p className="text-center text-[11px] text-[var(--yu3-ink-faint)] py-2 [font-family:var(--font-body)]">
               Take photos in the Photos tab to advance
             </p>
           )}
@@ -1364,12 +1369,12 @@ export default function CrewJobPage({
           {/* Timeline */}
           <div>
             {/* Header — wine serif title + forest meta (premium crew delivery / move) */}
-            <div className="flex items-center justify-between pb-3 border-b border-[#5C1A33]/[0.08]">
-              <h2 className="font-hero text-[22px] sm:text-[24px] font-semibold text-[#5C1A33] leading-tight tracking-tight">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--yu3-line-subtle)]">
+              <h2 className="font-hero text-[22px] sm:text-[24px] font-semibold text-[var(--yu3-wine)] leading-tight tracking-tight">
                 Timeline
               </h2>
               {session?.startedAt && (
-                <span className="text-[10px] font-medium tabular-nums [font-family:var(--font-body)] text-[var(--tx3)]">
+                <span className="text-[10px] font-medium tabular-nums [font-family:var(--font-body)] text-[var(--yu3-ink-faint)]">
                   Started{" "}
                   {formatTime(session.startedAt, {
                     hour: "numeric",
@@ -1518,23 +1523,23 @@ export default function CrewJobPage({
                           <span
                             className={`text-[12px] font-semibold leading-tight block ${
                               state === "done"
-                                ? "text-[var(--tx)]"
+                                ? "text-[var(--yu3-ink)]"
                                 : state === "act"
-                                  ? "text-[#5C1A33]"
-                                  : "text-[var(--tx3)]/35"
+                                  ? "text-[var(--yu3-wine)]"
+                                  : "text-[var(--yu3-ink-faint)]/90"
                             }`}
                           >
                             {getCrewCheckpointDisplayLabel(s, useLogisticsCopy)}
                           </span>
                           {state === "act" && (
-                            <span className="text-[9px] font-bold text-[#5C1A33]/70 uppercase tracking-widest block mt-0.5">
+                            <span className="text-[9px] font-bold text-[var(--yu3-wine)]/80 uppercase tracking-widest block mt-0.5 [font-family:var(--font-body)]">
                               Now
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {elapsed !== null && elapsed > 0 && (
-                            <span className="text-[10px] tabular-nums font-semibold text-[var(--tx)] [font-family:var(--font-body)]">
+                            <span className="text-[10px] tabular-nums font-semibold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
                               {elapsed}m
                             </span>
                           )}
@@ -1548,8 +1553,8 @@ export default function CrewJobPage({
                               <span
                                 className={`text-[10px] tabular-nums font-medium [font-family:var(--font-body)] ${
                                   state === "done"
-                                    ? "text-[var(--tx2)]"
-                                    : "text-[var(--tx3)]"
+                                    ? "text-[var(--yu3-ink-muted)]"
+                                    : "text-[var(--yu3-ink-faint)]"
                                 }`}
                               >
                                 {formatTime(ts, {
@@ -1562,7 +1567,7 @@ export default function CrewJobPage({
                         </div>
                       </div>
                       {cp?.note && (
-                        <p className="mt-0.5 text-[10px] text-[var(--tx3)] italic leading-snug">
+                        <p className="mt-0.5 text-[10px] text-[var(--yu3-ink-faint)] italic leading-snug">
                           {cp.note}
                         </p>
                       )}
@@ -1575,11 +1580,11 @@ export default function CrewJobPage({
 
           {/* Dispatch notes */}
           {job.internalNotes && (
-            <div className="rounded-2xl border border-[#5C1A33]/[0.12] bg-gradient-to-br from-[#FAF3F5] via-[#F7EEF1] to-[#F2E6EA] p-4 sm:p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
-              <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#5C1A33]/55 mb-2 [font-family:var(--font-body)] leading-none">
+            <div className="rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-gradient-to-br from-[var(--yu3-wine-wash)] via-[var(--yu3-bg-surface-sunken)] to-[var(--yu3-wine-tint)] p-4 sm:p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
+              <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-wine)]/70 mb-2 [font-family:var(--font-body)] leading-none">
                 Dispatch notes
               </p>
-              <p className="text-[13px] text-[#3d2a26] whitespace-pre-wrap leading-relaxed">
+              <p className="text-[13px] text-[var(--yu3-ink)] whitespace-pre-wrap leading-relaxed">
                 {job.internalNotes}
               </p>
             </div>
@@ -1620,7 +1625,7 @@ export default function CrewJobPage({
                   type="button"
                   data-no-min-height
                   onClick={() => setWaiverFlowOpen(true)}
-                  className="crew-job-flat inline-flex items-center justify-center min-h-[24px] px-3 py-0.5 !rounded-none border border-solid border-[rgba(61,18,36,0.95)] !bg-[#5C1A33] !text-[#FFFBF7] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] leading-none [font-family:var(--font-body)] shadow-none transition-[filter,opacity] hover:!brightness-[0.96] active:!brightness-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5C1A33] touch-manipulation"
+                  className="crew-job-flat inline-flex items-center justify-center min-h-[24px] px-3 py-0.5 !rounded-md border border-solid border-[var(--yu3-wine)] !bg-[var(--yu3-wine)] !text-[var(--yu3-on-wine)] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] leading-none [font-family:var(--font-body)] shadow-none transition-[filter,opacity] hover:!brightness-[0.96] active:!brightness-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)] touch-manipulation"
                   aria-label="Open on-site risk waiver"
                 >
                   Risk waiver
@@ -1642,16 +1647,16 @@ export default function CrewJobPage({
         <>
           {/* Project context banner */}
           {job.projectContext && (
-            <div className="mx-0 mb-4 px-4 py-3 rounded-2xl border border-[#5C1A33]/20 bg-[#5C1A33]/5">
-              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#5C1A33]/60 mb-0.5">
+            <div className="mx-0 mb-4 px-4 py-3 rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-wine-tint)]/60">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-wine)]/75 mb-0.5 [font-family:var(--font-body)]">
                 Part of Project
               </p>
-              <p className="text-[13px] font-semibold text-[var(--tx)]">
+              <p className="text-[13px] font-semibold text-[var(--yu3-ink)]">
                 {job.projectContext.projectNumber},{" "}
                 {job.projectContext.projectName}
               </p>
               {job.projectContext.phaseName && (
-                <p className="text-[11px] text-[#5C1A33] mt-0.5">
+                <p className="text-[11px] text-[var(--yu3-wine)] mt-0.5 [font-family:var(--font-body)]">
                   {job.projectContext.phaseName}
                 </p>
               )}
@@ -1659,11 +1664,11 @@ export default function CrewJobPage({
           )}
           {(job.scheduledDate || job.arrivalWindow) && (
             <div className="p-4">
-              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-2">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-2 [font-family:var(--font-body)]">
                 Schedule
               </p>
               {job.scheduledDate && (
-                <p className="text-[var(--text-base)] font-semibold text-[var(--tx)]">
+                <p className="text-[15px] font-semibold text-[var(--yu3-ink)]">
                   {formatPlatformDisplay(job.scheduledDate + "T12:00:00", {
                     weekday: "long",
                     month: "short",
@@ -1672,69 +1677,69 @@ export default function CrewJobPage({
                 </p>
               )}
               {job.arrivalWindow && (
-                <p className="text-[12px] text-[var(--tx3)] mt-1">
+                <p className="text-[12px] text-[var(--yu3-ink-muted)] mt-1">
                   Window: {job.arrivalWindow}
                 </p>
               )}
               {job.scheduledTime && (
-                <p className="text-[12px] text-[var(--tx3)] mt-0.5">
+                <p className="text-[12px] text-[var(--yu3-ink-muted)] mt-0.5">
                   Time: {job.scheduledTime}
                 </p>
               )}
             </div>
           )}
           <div className="p-4">
-            <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-1.5">
+            <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-1.5 [font-family:var(--font-body)]">
               {originLabel}
             </p>
-            <p className="text-[13px] font-semibold text-[var(--tx)]">
+            <p className="text-[13px] font-semibold text-[var(--yu3-ink)]">
               {job.fromAddress}
             </p>
             {fromAccessDisplay && (
-              <p className="text-[11px] text-[var(--tx3)] mt-1">
+              <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1">
                 Access: {fromAccessDisplay}
               </p>
             )}
           </div>
           <div className="p-4">
-            <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-1.5">
+            <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-1.5 [font-family:var(--font-body)]">
               {destinationLabel}
             </p>
-            <p className="text-[13px] font-semibold text-[var(--tx)]">
+            <p className="text-[13px] font-semibold text-[var(--yu3-ink)]">
               {job.toAddress}
             </p>
             {toAccessDisplay && (
-              <p className="text-[11px] text-[var(--tx3)] mt-1">
+              <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1">
                 Access: {toAccessDisplay}
               </p>
             )}
           </div>
           {job.accessNotes && (
             <div className="p-4">
-              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-1.5">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-1.5 [font-family:var(--font-body)]">
                 Access Notes
               </p>
-              <p className="text-[12px] text-[var(--tx2)] whitespace-pre-wrap leading-relaxed">
+              <p className="text-[12px] text-[var(--yu3-ink-muted)] whitespace-pre-wrap leading-relaxed">
                 {job.accessNotes}
               </p>
             </div>
           )}
           {job.crewMembers && job.crewMembers.length > 0 && (
             <div className="p-4">
-              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-3">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-3 [font-family:var(--font-body)]">
                 Crew ({job.crewMembers.length})
               </p>
               <div className="space-y-2.5">
                 {job.crewMembers.map((m, i) => (
                   <div key={i} className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold bg-[#5C1A33]/15 text-[#5C1A33] shrink-0">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold bg-[var(--yu3-wine)]/12 text-[var(--yu3-wine)] shrink-0 [font-family:var(--font-body)]">
                       {m.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <span className="text-[12px] font-semibold text-[var(--tx)]">
+                      <span className="text-[12px] font-semibold text-[var(--yu3-ink)]">
                         {m.name}
                       </span>
-                      <span className="text-[10px] text-[var(--tx3)] ml-2">
+                      <span className="text-[10px] text-[var(--yu3-ink-faint)] ml-2">
                         {m.role}
                       </span>
                     </div>
@@ -1767,8 +1772,8 @@ export default function CrewJobPage({
         </div>
       )}
       {activeTab === "items" && !hasInventory && (
-        <div className="rounded-2xl border border-[var(--brd)] bg-[var(--card)] p-8 text-center">
-          <p className="text-[12px] text-[var(--tx3)]">
+        <div className="rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-8 text-center shadow-[var(--yu3-shadow-sm)]">
+          <p className="text-[12px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
             No inventory for this job
           </p>
         </div>
@@ -1787,8 +1792,8 @@ export default function CrewJobPage({
               readOnly={isCompleted}
             />
           ) : (
-            <div className="rounded-2xl border border-[var(--brd)] bg-[var(--card)] p-8 text-center">
-              <p className="text-[12px] text-[var(--tx3)]">
+            <div className="rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-8 text-center shadow-[var(--yu3-shadow-sm)]">
+              <p className="text-[12px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
                 Start the job to capture photos
               </p>
             </div>
@@ -1844,23 +1849,23 @@ export default function CrewJobPage({
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="fixed inset-0 bg-black/80 flex min-h-0 items-center justify-center z-[99990] animate-fade-in p-4 sm:p-5"
+            className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center p-4 sm:p-5 animate-fade-in modal-overlay"
             data-modal-root
             data-crew-portal
             style={{
               paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
             }}
           >
-            <div
-              className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl w-full max-w-[480px] overflow-y-auto shadow-2xl"
+            <Yu3PortaledTokenRoot
+              className="w-full max-w-[480px] overflow-y-auto rounded-t-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] sm:rounded-[var(--yu3-r-xl)]"
               data-crew-job-premium
               style={{ maxHeight: "min(90dvh, 90vh)" }}
             >
-              <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 z-10">
-                <h3 className="font-hero text-[26px] font-bold text-[var(--tx)]">
+              <div className="sticky top-0 z-10 border-b border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] px-5 py-4">
+                <h3 className="font-hero text-[26px] font-bold text-[var(--yu3-ink-strong)]">
                   Document Condition
                 </h3>
-                <p className="text-[12px] text-[var(--tx3)] mt-1">
+                <p className="text-[12px] text-[var(--yu3-ink-faint)] mt-1">
                   {useLogisticsCopy
                     ? "Take photos of condition at origin before you head to drop-off."
                     : "Take photos of items and rooms before loading begins."}
@@ -1881,12 +1886,12 @@ export default function CrewJobPage({
               </div>
 
               <div
-                className="sticky bottom-0 bg-[var(--card)] border-t border-[var(--brd)] px-5 py-4 space-y-2"
+                className="sticky bottom-0 space-y-2 border-t border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] px-5 py-4"
                 style={{
                   paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
                 }}
               >
-                <div className="flex items-center justify-between text-[12px] text-[var(--tx3)] mb-1">
+                <div className="flex items-center justify-between text-[12px] text-[var(--yu3-ink-faint)] mb-1">
                   <span>
                     {pickupPhotosCount} photo
                     {pickupPhotosCount !== 1 ? "s" : ""} taken
@@ -1920,12 +1925,12 @@ export default function CrewJobPage({
                 <button
                   type="button"
                   onClick={() => setPickupModalOpen(false)}
-                  className="crew-job-action-chip w-full py-2.5 text-[13px] font-medium text-[var(--tx3)] hover:text-[#5C1A33] hover:bg-[#5C1A33]/[0.05] transition-colors"
+                  className="crew-job-action-chip w-full py-2.5 text-[13px] font-medium text-[var(--yu3-ink-muted)] hover:text-[var(--yu3-wine)] hover:bg-[var(--yu3-wine-tint)] transition-colors [font-family:var(--font-body)]"
                 >
                   Minimize
                 </button>
               </div>
-            </div>
+            </Yu3PortaledTokenRoot>
           </div>,
           document.body,
         )}
@@ -1949,7 +1954,7 @@ export default function CrewJobPage({
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="premium-field-host fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[99990]"
+            className="premium-field-host fixed inset-0 z-[99990] flex items-center justify-center p-4 modal-overlay"
             data-modal-root
             data-crew-portal
             style={{
@@ -1957,8 +1962,8 @@ export default function CrewJobPage({
             }}
             role="presentation"
           >
-            <div
-              className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-5 max-w-[360px] w-full shadow-2xl max-h-[min(90dvh,90vh)] overflow-y-auto"
+            <Yu3PortaledTokenRoot
+              className="max-h-[min(90dvh,90vh)] w-full max-w-[360px] overflow-y-auto rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] p-5 text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)]"
               data-crew-job-premium
               role="dialog"
               aria-modal="true"
@@ -1966,7 +1971,7 @@ export default function CrewJobPage({
             >
               <h3
                 id="crew-report-issue-title"
-                className="font-hero text-[24px] font-bold text-[var(--tx)] mb-2"
+                className="font-hero text-[24px] font-bold text-[var(--yu3-ink-strong)] mb-2"
               >
                 Report Issue
               </h3>
@@ -2086,7 +2091,7 @@ export default function CrewJobPage({
                   </div>
                 </>
               )}
-            </div>
+            </Yu3PortaledTokenRoot>
           </div>,
           document.body,
         )}

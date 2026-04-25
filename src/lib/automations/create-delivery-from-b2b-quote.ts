@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generateDeliveryNumber } from "@/lib/delivery-number";
+import { generateDeliveryNumber } from "@/lib/delivery-number"
+
 import { getActiveRateCardLookup } from "@/lib/partners/calculateDeliveryPrice";
 import type { CreateMoveFromQuoteInput } from "@/lib/automations/create-move-from-quote";
 import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
@@ -86,7 +87,7 @@ export async function createDeliveryFromB2BQuote(
   const items = itemsFromFactors();
   const itemsFinal = items.length > 0 ? items : ["B2B delivery"];
 
-  const deliveryNumber = generateDeliveryNumber();
+  const deliveryNumber = await generateDeliveryNumber(supabase);
   const initials = (businessName || "YG").replace(/[^A-Za-z]/g, "").slice(0, 2).toUpperCase() || "YG";
   const trackingCode = `${initials}-${deliveryNumber.split("-")[1]}`;
 

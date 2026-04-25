@@ -140,7 +140,7 @@ export default function NewClaimClient({
   const jobOptions = jobType === "move" ? moves : deliveries;
 
   return (
-    <div className="p-4 sm:p-6 max-w-[800px] mx-auto">
+    <div className="w-full min-w-0 p-4 sm:p-6 max-w-[min(800px,100%)] mx-auto">
       <button
         type="button"
         onClick={() => router.back()}
@@ -282,7 +282,7 @@ export default function NewClaimClient({
           <button
             type="button"
             onClick={() => setItems((prev) => [...prev, emptyItem()])}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)]/10 text-[var(--gold)] hover:bg-[var(--gold)]/20 transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)]/10 text-[var(--accent-text)] hover:bg-[var(--gold)]/20 transition-colors"
           >
             <Plus className="w-3 h-3" /> Add Item
           </button>
@@ -385,7 +385,7 @@ export default function NewClaimClient({
           type="button"
           onClick={handleSubmit}
           disabled={saving}
-          className="w-full py-3 rounded-lg text-[var(--text-base)] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors disabled:opacity-50"
+          className="admin-btn admin-btn-lg admin-btn-primary w-full"
         >
           {saving ? "Creating Claim..." : "Create Claim & Notify Client"}
         </button>

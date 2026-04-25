@@ -1,5 +1,6 @@
 import "./globals.css";
 import { ToastProvider } from "@/app/admin/components/Toast";
+import { AppNavigationChrome } from "@/components/providers/AppNavigationChrome";
 import OfflineBanner from "@/components/ui/OfflineBanner";
 import PhosphorProvider from "@/components/ui/PhosphorProvider";
 import { getConfig } from "@/lib/config";
@@ -63,6 +64,7 @@ export default async function RootLayout({
         />
       </head>
       <body className="antialiased">
+        <AppNavigationChrome />
         <OfflineBanner />
         <ToastProvider>
           <PhosphorProvider>{children}</PhosphorProvider>

@@ -5,6 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { Chip } from "../primitives/Chip"
 import { Icon } from "../primitives/Icon"
 import { Sparkline } from "./Sparkline"
+import { KpiStrip } from "@/design-system/admin/dashboard"
 import { cn } from "../lib/cn"
 
 const metricCardVariants = cva(
@@ -101,26 +102,60 @@ export const MetricCard = ({
   )
 }
 
+const metricValueToString = (value: React.ReactNode): string => {
+  if (value == null) return "—"
+  if (typeof value === "string" || typeof value === "number")
+    return String(value)
+  return "—"
+}
+
 export const MetricStrip = ({
   items,
   className,
 }: {
   items: MetricCardProps[]
   className?: string
-}) => (
-  <div
-    className={cn(
-      "grid gap-4",
-      items.length >= 4
-        ? "grid-cols-2 md:grid-cols-4"
-        : items.length === 3
-          ? "grid-cols-1 sm:grid-cols-3"
-          : "grid-cols-1 sm:grid-cols-2",
-      className,
-    )}
-  >
-    {items.map((item, index) => (
-      <MetricCard key={`${item.label}-${index}`} {...item} />
-    ))}
-  </div>
-)
+}) => {
+  const tiles = items.map((item, index) => {
+    const id = `metric-${index}-${String(item.label).replace(/\W+/g, "-")}`
+    const hasDelta = item.delta != null
+    const hasSpark = item.sparkline != null && item.sparkline.length > 1
+    const hasHover = hasDelta || hasSpark
+    return {
+      id,
+      label: item.label,
+      value: metricValueToString(item.value),
+      hint: hasHover ? (
+        <div className="flex flex-col gap-2">
+          {item.delta ? (
+            <span
+              className={cn(
+                "text-[11px] font-semibold",
+                item.delta.direction === "up" && "text-[var(--yu3-success)]",
+                item.delta.direction === "down" && "text-[var(--yu3-danger)]",
+                item.delta.direction === "flat" && "text-[var(--yu3-ink-muted)]",
+              )}
+            >
+              {item.delta.value}
+            </span>
+          ) : null}
+          {hasSpark ? (
+            <div className="w-full min-w-0">
+              <Sparkline
+                data={item.sparkline!}
+                tone={
+                  item.delta?.direction === "up"
+                    ? "up"
+                    : item.delta?.direction === "down"
+                      ? "down"
+                      : "auto"
+                }
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : undefined,
+    }
+  })
+  return <KpiStrip className={className} tiles={tiles} />
+}

@@ -170,7 +170,7 @@ export default function IntegrationHealthPanel({
           <button
             type="button"
             onClick={() => openSetup(item.key)}
-            className="px-3 py-1.5 text-[10px] font-semibold rounded-lg border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+            className="px-3 py-1.5 text-[10px] font-semibold rounded-lg border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--accent-text)] transition-all"
           >
             Configure
           </button>
@@ -179,7 +179,7 @@ export default function IntegrationHealthPanel({
               type="button"
               onClick={() => handleTest(item.key)}
               disabled={testing === item.key}
-              className="px-3 py-1.5 text-[10px] font-semibold rounded-lg border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-all disabled:opacity-50"
+              className="px-3 py-1.5 text-[10px] font-semibold rounded-lg border border-[var(--gold)] text-[var(--accent-text)] hover:bg-[var(--gold)]/10 transition-all disabled:opacity-50"
             >
               {testing === item.key ? "Testing…" : "Test Connection"}
             </button>
@@ -187,7 +187,7 @@ export default function IntegrationHealthPanel({
             <button
               type="button"
               onClick={() => openSetup(item.key)}
-              className="px-3 py-1.5 text-[10px] font-semibold rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all"
+              className="admin-btn admin-btn-sm admin-btn-primary"
             >
               Connect
             </button>
@@ -215,7 +215,7 @@ export default function IntegrationHealthPanel({
             <button
               type="button"
               onClick={() => setSetupKey(null)}
-              className="w-full px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
+              className="admin-btn admin-btn-primary w-full"
             >
               Done
             </button>

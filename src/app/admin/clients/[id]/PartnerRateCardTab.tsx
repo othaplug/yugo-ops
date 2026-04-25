@@ -151,7 +151,7 @@ function getEffectiveValue(
 function StatusBadge({ source, isLocked }: { source: "override" | "discounted" | "template"; isLocked?: boolean }) {
   if (source === "override") {
     return (
-      <span className={`inline-flex items-center gap-0.5 dt-badge tracking-[0.04em] text-[10px] ${isLocked ? "text-[var(--gold)]" : "text-[var(--blue)]"}`}>
+      <span className={`inline-flex items-center gap-0.5 dt-badge tracking-[0.04em] text-[10px] ${isLocked ? "text-[var(--accent-text)]" : "text-[var(--blue)]"}`}>
         ✦ Custom{isLocked ? " (locked)" : ""}
       </span>
     );
@@ -549,7 +549,7 @@ function RateCell({
       onClick={onClick}
       className={`px-3 py-2.5 text-right text-[11px] ${onClick ? "cursor-pointer hover:bg-[var(--bgsub)] transition-colors" : ""} ${isHeader ? "font-bold text-[var(--tx)]" : "text-[var(--tx)]"}`}
     >
-      <span className={isOverride ? "text-[var(--gold)] font-bold" : ""}>
+      <span className={isOverride ? "text-[var(--accent-text)] font-bold" : ""}>
         {formatCurrency(value)}{isOverride && <span className="ml-0.5 text-[9px]">✦</span>}
       </span>
     </td>
@@ -837,7 +837,7 @@ export default function PartnerRateCardTab({
               ) : (
                 <>
                   <span><span className="text-[var(--tx3)]">Template:</span> <span className="font-semibold text-[var(--tx)]">{template?.template_name || "-"}</span></span>
-                  <span><span className="text-[var(--tx3)]">Tier:</span> <span className="font-semibold text-[var(--gold)]">{tierLabel}</span></span>
+                  <span><span className="text-[var(--tx3)]">Tier:</span> <span className="font-semibold text-[var(--accent-text)]">{tierLabel}</span></span>
                   {discount > 0 && (
                     <span><span className="text-[var(--tx3)]">Global discount:</span> <span className="font-semibold text-[var(--grn)]">−{discount}%</span></span>
                   )}
@@ -850,7 +850,7 @@ export default function PartnerRateCardTab({
               <button
                 type="button"
                 onClick={() => setSettingsOpen(true)}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--accent-text)] transition-all"
               >
                 {isDetached ? "Assign Template" : "Edit Settings"}
               </button>
@@ -1178,7 +1178,7 @@ export default function PartnerRateCardTab({
       {isDetached && overrides.length === 0 && !showPortfolioMatrix && (
         <div className="text-center py-10 text-[12px] text-[var(--tx3)]">
           No rate card configured yet.<br />
-          <button onClick={() => setSettingsOpen(true)} className="mt-2 text-[var(--gold)] hover:underline font-semibold">
+          <button onClick={() => setSettingsOpen(true)} className="mt-2 text-[var(--accent-text)] hover:underline font-semibold">
             Assign a template
           </button>{" "}to get started, or the partner will use the legacy per-org rate card.
         </div>
@@ -1442,7 +1442,7 @@ export default function PartnerRateCardTab({
                       onClick={canEditRates ? () => openCell("services", r.id, "price_min", `${r.service_name} (%)`, r.price_min) : undefined}
                       className={`px-3 py-2.5 text-right text-[11px] ${canEditRates ? "cursor-pointer hover:bg-[var(--bgsub)] transition-colors" : ""}`}
                     >
-                      <span className={pm.source === "override" ? "text-[var(--gold)] font-bold" : "text-[var(--tx)]"}>
+                      <span className={pm.source === "override" ? "text-[var(--accent-text)] font-bold" : "text-[var(--tx)]"}>
                         {pm.value}%{pm.source === "override" && <span className="ml-0.5 text-[9px]">✦</span>}
                       </span>
                     </td>
@@ -1489,7 +1489,7 @@ export default function PartnerRateCardTab({
         <div className="mt-4 text-[10px] text-[var(--tx3)] text-right">
           {overrides.length} custom override{overrides.length !== 1 ? "s" : ""} active
           {overrides.filter((o) => o.is_locked).length > 0 && (
-            <span className="ml-1 text-[var(--gold)]">· {overrides.filter((o) => o.is_locked).length} locked ✦</span>
+            <span className="ml-1 text-[var(--accent-text)]">· {overrides.filter((o) => o.is_locked).length} locked ✦</span>
           )}
         </div>
       )}

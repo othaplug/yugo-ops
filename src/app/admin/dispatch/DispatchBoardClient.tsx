@@ -23,6 +23,7 @@ import ActivityFeed from "@/components/dispatch/ActivityFeed";
 import AlertBar from "@/components/dispatch/AlertBar";
 import RoutingSuggestionBanner from "@/components/dispatch/RoutingSuggestionBanner";
 import { useToast } from "../components/Toast";
+import { KpiStrip } from "@/design-system/admin/dashboard";
 import type { DispatchJob } from "@/components/dispatch/JobCard";
 import type { DispatchEvent } from "@/components/dispatch/ActivityFeed";
 import type { DispatchAlert } from "@/components/dispatch/AlertBar";
@@ -196,7 +197,7 @@ export default function DispatchBoardClient({ today }: Props) {
   // Skeleton loading
   if (loading && !data) {
     return (
-      <div className="animate-fade-up px-5 sm:px-6 md:px-8 lg:px-10 py-6 md:py-8 max-w-[1800px] mx-auto w-full">
+      <div className="animate-fade-up w-full min-w-0 py-6 md:py-8">
         <div className="mb-9 space-y-6">
           <div className="flex items-end gap-5">
             <div className="space-y-2">
@@ -259,7 +260,7 @@ export default function DispatchBoardClient({ today }: Props) {
             setLoading(true);
             load();
           }}
-          className="px-4 py-2.5 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--admin-primary-fill-hover)] transition-colors touch-manipulation"
+          className="admin-btn admin-btn-primary"
         >
           Try again
         </button>
@@ -314,7 +315,7 @@ export default function DispatchBoardClient({ today }: Props) {
   ];
 
   return (
-    <div className="flex flex-col min-h-[calc(100dvh_-_var(--app-chrome-h)_-_56px)] md:min-h-[calc(100dvh_-_var(--app-chrome-h))] h-auto md:h-[calc(100dvh_-_var(--app-chrome-h))] animate-fade-up px-5 sm:px-6 md:px-8 lg:px-10 py-6 md:py-8 max-w-[1800px] mx-auto w-full">
+    <div className="flex flex-col min-h-[calc(100dvh_-_var(--app-chrome-h)_-_56px)] md:min-h-[calc(100dvh_-_var(--app-chrome-h))] h-auto md:h-[calc(100dvh_-_var(--app-chrome-h))] animate-fade-up w-full min-w-0 py-6 md:py-8">
       {/* ── Header ── */}
       <div className="mb-6 space-y-3">
         {/* Row 1: Title + primary CTA */}
@@ -325,7 +326,8 @@ export default function DispatchBoardClient({ today }: Props) {
             </p>
             <h1 className="admin-page-hero text-[var(--tx)]">Dispatch</h1>
             <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
-              Today&apos;s operations at a glance. Active crews, assigned jobs, completed moves.
+              Today&apos;s operations at a glance. Active crews, assigned jobs,
+              completed moves.
             </p>
           </div>
           <Link href="/admin/crew" className="admin-btn admin-btn-primary">
@@ -439,65 +441,27 @@ export default function DispatchBoardClient({ today }: Props) {
         </div>
 
         {/* Row 3: KPI stat cards */}
-        {data?.stats && (
-          <div className="flex items-stretch gap-2 overflow-x-auto scrollbar-hide pb-0.5">
-            {statCards.map((stat) =>
-              stat.key !== null ? (
-                <button
-                  key={stat.key}
-                  type="button"
-                  onClick={() =>
-                    setFilterStatus(
-                      filterStatus === stat.key ? "all" : stat.key!,
-                    )
-                  }
-                  aria-pressed={filterStatus === stat.key}
-                  className={`admin-kpi-card group transition-all duration-200 ${
-                    filterStatus === stat.key
-                      ? "border-[var(--yu3-wine)] bg-[var(--yu3-wine-wash)]"
-                      : "hover:border-[var(--yu3-line-strong)] hover:bg-[var(--yu3-bg-surface-subtle)]"
-                  }`}
-                >
-                  <div
-                    className={`absolute top-0 left-0 right-0 h-[2px] rounded-t-[var(--yu3-r-lg)] transition-all duration-200 ${
-                      filterStatus === stat.key ? "opacity-100" : "opacity-0"
-                    }`}
-                    style={{ background: "var(--yu3-wine)" }}
-                  />
-                  <p
-                    className={`admin-kpi-label transition-colors ${
-                      filterStatus === stat.key
-                        ? "text-[var(--yu3-wine)]"
-                        : "text-[var(--yu3-ink-muted)]"
-                    }`}
-                  >
-                    {stat.label}
-                  </p>
-                  <p
-                    className={`admin-kpi-value transition-colors ${
-                      filterStatus === stat.key
-                        ? "text-[var(--yu3-wine)]"
-                        : stat.color
-                    }`}
-                  >
-                    {stat.value}
-                  </p>
-                </button>
-              ) : (
-                <div
-                  key="assigned-stat"
-                  className="admin-kpi-card"
-                  style={{ cursor: "default" }}
-                >
-                  <p className="admin-kpi-label">{stat.label}</p>
-                  <p className={`admin-kpi-value ${stat.color}`}>
-                    {stat.value}
-                  </p>
-                </div>
-              ),
-            )}
-          </div>
-        )}
+        {data?.stats ? (
+          <KpiStrip
+            className="flex flex-wrap items-stretch gap-2 sm:flex-nowrap sm:overflow-x-auto sm:pb-0.5"
+            tiles={statCards.map((stat) => ({
+              id: stat.key === null ? "assigned" : stat.key,
+              label: stat.label,
+              value: String(stat.value),
+              onClick:
+                stat.key != null
+                  ? () =>
+                      setFilterStatus(
+                        filterStatus === stat.key ? "all" : stat.key!,
+                      )
+                  : undefined,
+              selected: stat.key != null && filterStatus === stat.key,
+              valueClassName: stat.key != null && filterStatus === stat.key
+                ? undefined
+                : stat.color,
+            }))}
+          />
+        ) : null}
 
         {/* Hairline separator */}
         <div className="h-px bg-gradient-to-r from-[var(--brd)]/60 via-[var(--brd)]/30 to-transparent" />
@@ -528,7 +492,11 @@ export default function DispatchBoardClient({ today }: Props) {
                   onClick={() => setFilterStatus("all")}
                   className="inline-flex items-center gap-1 mt-1 text-sm font-semibold text-[var(--yugo-primary-text)] hover:underline touch-manipulation text-left"
                 >
-                  <ChevronLeft className="w-4 h-4 shrink-0" weight="bold" aria-hidden />
+                  <ChevronLeft
+                    className="w-4 h-4 shrink-0"
+                    weight="bold"
+                    aria-hidden
+                  />
                   Show all
                 </button>
               )}
@@ -593,7 +561,7 @@ export default function DispatchBoardClient({ today }: Props) {
       {/* Contact bottom sheet */}
       {contactJob && (
         <div
-          className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center bg-black/60 p-4 sm:p-5"
+          className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5 modal-overlay"
           onClick={() => setContactJob(null)}
         >
           <div
@@ -627,7 +595,7 @@ export default function DispatchBoardClient({ today }: Props) {
                 <>
                   <a
                     href={`tel:${String(contactJob.clientPhone).replace(/[^\d+]/g, "")}`}
-                    className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-colors touch-manipulation"
+                    className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--tx2)] hover:bg-[var(--bg2)] transition-colors touch-manipulation"
                   >
                     <div className="w-9 h-9 rounded-full bg-[var(--grn)]/15 flex items-center justify-center shrink-0">
                       <Phone
@@ -644,12 +612,12 @@ export default function DispatchBoardClient({ today }: Props) {
                   </a>
                   <a
                     href={`sms:${String(contactJob.clientPhone).replace(/[^\d+]/g, "")}`}
-                    className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-colors touch-manipulation"
+                    className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--tx2)] hover:bg-[var(--bg2)] transition-colors touch-manipulation"
                   >
-                    <div className="w-9 h-9 rounded-full bg-[#3B82F6]/15 flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-[var(--blue)]/15 flex items-center justify-center shrink-0">
                       <MessageSquare
                         weight="regular"
-                        className="w-4 h-4 text-[#3B82F6]"
+                        className="w-4 h-4 text-[var(--blue)]"
                       />
                     </div>
                     <div>
@@ -664,12 +632,12 @@ export default function DispatchBoardClient({ today }: Props) {
               {contactJob.clientEmail && (
                 <a
                   href={`mailto:${contactJob.clientEmail}`}
-                  className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-colors touch-manipulation"
+                  className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--tx2)] hover:bg-[var(--bg2)] transition-colors touch-manipulation"
                 >
-                  <div className="w-9 h-9 rounded-full bg-[var(--gold)]/15 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-[var(--tx3)]/15 flex items-center justify-center shrink-0">
                     <Mail
                       weight="regular"
-                      className="w-4 h-4 text-[var(--gold)]"
+                      className="w-4 h-4 text-[var(--tx2)]"
                     />
                   </div>
                   <div className="min-w-0">
@@ -691,7 +659,11 @@ export default function DispatchBoardClient({ today }: Props) {
                     onClick={() => setContactJob(null)}
                   >
                     Edit job to add contact info
-                    <ChevronRight className="w-4 h-4 shrink-0" weight="bold" aria-hidden />
+                    <ChevronRight
+                      className="w-4 h-4 shrink-0"
+                      weight="bold"
+                      aria-hidden
+                    />
                   </Link>
                 </div>
               )}
@@ -703,7 +675,7 @@ export default function DispatchBoardClient({ today }: Props) {
       {/* Reassign bottom sheet */}
       {reassignJob && (
         <div
-          className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center bg-black/60 p-4 sm:p-5"
+          className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5 modal-overlay"
           onClick={() => setReassignJob(null)}
         >
           <div

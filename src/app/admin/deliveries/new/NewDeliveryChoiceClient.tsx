@@ -41,7 +41,7 @@ export default function NewDeliveryChoiceClient({
     <button
       type="button"
       onClick={() => router.push("/admin/deliveries")}
-      className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors"
+      className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--accent-text)] transition-colors"
     >
       <ArrowLeft size={14} weight="regular" className="text-current" />
       Back

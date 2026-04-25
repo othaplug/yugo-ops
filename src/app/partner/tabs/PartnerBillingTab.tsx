@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import { useState, useMemo } from "react";
-import Link from "next/link";
+import { useState, useMemo, useCallback } from "react"
+import Link from "next/link"
 import {
   DownloadSimple,
   Invoice,
@@ -11,7 +11,13 @@ import {
 } from "@phosphor-icons/react";
 import { formatCurrency } from "@/lib/format-currency";
 import YugoLogo from "@/components/YugoLogo";
-import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
+import { csvField } from "@/lib/admin-csv-field"
+import {
+  DataTable,
+  type ColumnDef,
+  type ColumnSort,
+  type ViewMode,
+} from "@/design-system/admin/table"
 import FilterBar from "@/app/admin/components/FilterBar";
 import { WINE } from "@/app/quote/[quoteId]/quote-shared";
 import {
@@ -152,81 +158,6 @@ const PERIOD_OPTIONS = [
   { value: "24", label: "Last 24 months" },
 ];
 
-const monthlyPerformanceColumns: ColumnDef<MonthlyRow>[] = [
-  {
-    id: "fullMonthLabel",
-    label: "Month",
-    accessor: (r) => r.fullMonthLabel,
-    render: (r) => (
-      <span className="font-semibold text-[var(--tx)]">{r.fullMonthLabel}</span>
-    ),
-    sortable: true,
-    searchable: true,
-  },
-  {
-    id: "deliveries",
-    label: "Deliveries",
-    accessor: (r) => r.deliveries,
-    render: (r) => <span className="text-[var(--tx)]">{r.deliveries}</span>,
-    sortable: true,
-    align: "right",
-  },
-  {
-    id: "completed",
-    label: "Completed",
-    accessor: (r) => r.completed,
-    render: (r) => <span className="text-[var(--tx)]">{r.completed}</span>,
-    sortable: true,
-    align: "right",
-  },
-  {
-    id: "onTime",
-    label: "On-Time",
-    accessor: (r) => r.onTimeRate,
-    render: (r) => (
-      <span className="font-semibold text-[var(--tx)]">{r.onTime}</span>
-    ),
-    sortable: true,
-    align: "right",
-    exportAccessor: (r) => r.onTime,
-  },
-  {
-    id: "damage",
-    label: "Damage",
-    accessor: (r) => r.damage,
-    render: (r) => <span className="text-[var(--tx)]">{r.damage}</span>,
-    sortable: true,
-    align: "right",
-  },
-  {
-    id: "revenue",
-    label: "Revenue",
-    accessor: (r) => r.revenue,
-    render: (r) => (
-      <span className="text-[var(--tx)] font-medium">
-        {formatCurrency(r.revenue)}
-      </span>
-    ),
-    sortable: true,
-    align: "right",
-    exportAccessor: (r) => formatCurrency(r.revenue),
-  },
-  {
-    id: "score",
-    label: "Score",
-    accessor: (r) => r.score,
-    render: (r) => (
-      <span
-        className={`text-[12px] font-bold ${r.score.startsWith("A") ? "text-emerald-700" : "text-[var(--tx)]"}`}
-      >
-        {r.score}
-      </span>
-    ),
-    sortable: true,
-    align: "right",
-  },
-];
-
 export default function PartnerBillingTab({
   data,
   orgName,
@@ -238,7 +169,13 @@ export default function PartnerBillingTab({
   statements?: PartnerStatement[];
   onViewInvoices?: () => void;
 }) {
-  const [periodMonths, setPeriodMonths] = useState("6");
+  const [periodMonths, setPeriodMonths] = useState("6")
+  const [monthlySearch, setMonthlySearch] = useState("")
+  const [monthlySort, setMonthlySort] = useState<ColumnSort | null>({
+    columnId: "yearMonth",
+    direction: "desc",
+  })
+  const [monthlyView, setMonthlyView] = useState<ViewMode>("list")
 
   const monthlyData = useMemo(
     () =>
@@ -248,9 +185,120 @@ export default function PartnerBillingTab({
         Number(periodMonths) || 6,
       ),
     [data.allDeliveries, data.invoices, periodMonths],
-  );
+  )
 
-  const totalDeliveries = data.allDeliveries.length;
+  const monthlyPerformanceColumns = useMemo<ColumnDef<MonthlyRow>[]>(
+    () => [
+      {
+        id: "yearMonth",
+        shortLabel: "Month",
+        header: "Month",
+        accessor: (r) => `${r.yearMonth} ${r.fullMonthLabel}`,
+        sortable: true,
+        width: 130,
+        cell: (r) => (
+          <span className="font-semibold text-[var(--yu3-ink)]">{r.fullMonthLabel}</span>
+        ),
+      },
+      {
+        id: "deliveries",
+        header: "Deliveries",
+        accessor: (r) => r.deliveries,
+        sortable: true,
+        align: "right",
+        numeric: true,
+        width: 100,
+        cell: (r) => <span className="text-[var(--yu3-ink)]">{r.deliveries}</span>,
+      },
+      {
+        id: "completed",
+        header: "Completed",
+        accessor: (r) => r.completed,
+        sortable: true,
+        align: "right",
+        numeric: true,
+        width: 100,
+        cell: (r) => <span className="text-[var(--yu3-ink)]">{r.completed}</span>,
+      },
+      {
+        id: "onTime",
+        header: "On-Time",
+        accessor: (r) => r.onTimeRate,
+        sortable: true,
+        align: "right",
+        numeric: true,
+        width: 100,
+        cell: (r) => (
+          <span className="font-semibold text-[var(--yu3-ink)]">{r.onTime}</span>
+        ),
+      },
+      {
+        id: "damage",
+        header: "Damage",
+        accessor: (r) => r.damage,
+        sortable: true,
+        align: "right",
+        numeric: true,
+        width: 80,
+        cell: (r) => <span className="text-[var(--yu3-ink)]">{r.damage}</span>,
+      },
+      {
+        id: "revenue",
+        header: "Revenue",
+        accessor: (r) => r.revenue,
+        sortable: true,
+        align: "right",
+        numeric: true,
+        width: 120,
+        cell: (r) => (
+          <span className="text-[var(--yu3-ink)] font-medium">{formatCurrency(r.revenue)}</span>
+        ),
+      },
+      {
+        id: "score",
+        header: "Score",
+        accessor: (r) => r.score,
+        sortable: true,
+        align: "right",
+        width: 80,
+        cell: (r) => (
+          <span
+            className={`text-[12px] font-bold ${r.score.startsWith("A") ? "text-[var(--yu3-success)]" : "text-[var(--yu3-ink)]"}`}
+          >
+            {r.score}
+          </span>
+        ),
+      },
+    ],
+    [],
+  )
+
+  const onMonthlyExport = useCallback(() => {
+    const headers = [
+      "Month",
+      "Deliveries",
+      "Completed",
+      "On-Time",
+      "Damage",
+      "Revenue",
+      "Score",
+    ]
+    const lines = monthlyData.map((r) =>
+      [r.fullMonthLabel, String(r.deliveries), String(r.completed), r.onTime, String(r.damage), formatCurrency(r.revenue), r.score]
+        .map((c) => csvField(String(c)))
+        .join(","),
+    )
+    const csv = [headers.map(csvField).join(","), ...lines].join("\n")
+    const blob = new Blob([csv], { type: "text/csv" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `monthly-performance-${orgName.replace(/\s+/g, "-").toLowerCase()}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [monthlyData, orgName])
+
+  const totalDeliveries = data.allDeliveries.length
   const totalCompleted = data.allDeliveries.filter((d) =>
     ["delivered", "completed"].includes((d.status || "").toLowerCase()),
   ).length;
@@ -529,22 +577,23 @@ export default function PartnerBillingTab({
             className="!bg-transparent !border-b !border-[#2C3E2D]/10 !px-0 py-3"
           />
           <DataTable<MonthlyRow>
-            data={monthlyData}
             columns={monthlyPerformanceColumns}
-            keyField="yearMonth"
-            tableId="partner-monthly-performance"
-            defaultSortCol="yearMonth"
-            defaultSortDir="desc"
-            searchable
+            rows={monthlyData}
+            rowId={(r) => r.yearMonth}
+            search={monthlySearch}
+            onSearchChange={setMonthlySearch}
+            sort={monthlySort}
+            onSortChange={setMonthlySort}
+            viewMode={monthlyView}
+            onViewModeChange={setMonthlyView}
             searchPlaceholder="Search by month…"
-            pagination
-            defaultPerPage={10}
-            perPageOptions={[6, 10, 12, 25]}
-            exportable
-            exportFilename={`monthly-performance-${orgName.replace(/\s+/g, "-").toLowerCase()}`}
-            columnToggle
-            emptyMessage="No monthly data"
-            emptySubtext="Deliveries will appear here once scheduled."
+            onExport={onMonthlyExport}
+            rowHeight={52}
+            emptyState={
+              <p className="text-sm text-[var(--yu3-ink-2)]">
+                No monthly data. Deliveries will appear here once scheduled.
+              </p>
+            }
           />
         </div>
       </section>

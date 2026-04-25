@@ -4,6 +4,7 @@ import * as React from "react"
 import * as D from "@radix-ui/react-dialog"
 import { cn } from "../lib/cn"
 import { X } from "../icons"
+import { useYu3PortalContainer } from "../layout/Yu3PortalContext"
 
 export const Dialog = D.Root
 export const DialogTrigger = D.Trigger
@@ -17,7 +18,7 @@ export const DialogOverlay = React.forwardRef<
   <D.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-[var(--yu3-z-modal)] bg-[var(--yu3-bg-overlay)] backdrop-blur-[2px]",
+      "fixed inset-0 z-[var(--yu3-z-modal)] bg-[var(--yu3-bg-overlay)] pointer-events-auto backdrop-blur-sm",
       "data-[state=open]:animate-in data-[state=closed]:animate-out",
       "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
       className,
@@ -41,17 +42,18 @@ export const DialogContent = React.forwardRef<
         : size === "xl"
           ? "max-w-[960px]"
           : "max-w-[520px]"
+  const portalContainer = useYu3PortalContainer()
   return (
-    <D.Portal>
+    <D.Portal container={portalContainer ?? undefined}>
       <DialogOverlay />
       <D.Content
         ref={ref}
         className={cn(
-          "fixed z-[var(--yu3-z-modal)] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
+          "fixed z-[var(--yu3-z-modal)] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto",
           "w-[calc(100vw-2rem)]",
           maxW,
           "max-h-[calc(100vh-4rem)] overflow-auto",
-          "bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] border border-[var(--yu3-line)]",
+          "bg-[var(--yu3-bg-surface,#ffffff)] text-[var(--yu3-ink,#24201d)] border border-[var(--yu3-line,#d4cdbb)]",
           "rounded-[var(--yu3-r-xl)] shadow-[var(--yu3-shadow-lg)]",
           "data-[state=open]:animate-in data-[state=closed]:animate-out",
           "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",

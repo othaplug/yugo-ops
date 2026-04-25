@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     if (!isDraft && !deliveryAddress) return NextResponse.json({ error: "Delivery address is required" }, { status: 400 });
     if (!isDraft && !scheduledDate) return NextResponse.json({ error: "Date is required" }, { status: 400 });
 
-    const deliveryNumber = generateDeliveryNumber();
+    const deliveryNumber = await generateDeliveryNumber(admin);
     const trackingCode = `${(org?.name || "YG").replace(/[^A-Z]/gi, "").slice(0, 2).toUpperCase()}-${deliveryNumber.split("-")[1]}`;
     const items = Array.isArray(body.items)
       ? body.items.filter((i: unknown) => typeof i === "string" && i.trim())

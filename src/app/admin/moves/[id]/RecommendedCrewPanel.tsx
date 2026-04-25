@@ -105,7 +105,7 @@ export default function RecommendedCrewPanel({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 mb-3">
-        <Users size={16} className="text-[var(--gold)]" />
+        <Users size={16} className="text-[var(--accent-text)]" />
         <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)]">
           Recommended Crew
         </span>
@@ -127,7 +127,7 @@ export default function RecommendedCrewPanel({
           >
             {isTop && (
               <div className="absolute -top-2 left-4">
-                <span className="dt-badge tracking-[0.04em] text-[var(--admin-primary-fill)]">
+                <span className="dt-badge tracking-[0.04em] text-[var(--accent-text)]">
                   Top Match
                 </span>
               </div>

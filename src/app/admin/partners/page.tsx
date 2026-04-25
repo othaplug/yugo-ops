@@ -1,8 +1,8 @@
 export const metadata = { title: "Partners" };
 export const dynamic = "force-dynamic";
 
-import AllPartnersClient from "./AllPartnersClient";
+import PartnersV3Client from "./PartnersV3Client";
 
 export default function AllPartnersPage() {
-  return <AllPartnersClient />;
+  return <PartnersV3Client />;
 }

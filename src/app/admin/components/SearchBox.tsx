@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Icon } from "@/components/AppIcons";
 import { X } from "@phosphor-icons/react";
-import { runAdminEntitySearch } from "@/lib/admin-search";
+import { runAdminTopbarSearch } from "@/lib/admin-search"
 
 const TYPE_ICONS: Record<string, string> = {
   Move: "mapPin",
@@ -16,7 +16,9 @@ const TYPE_ICONS: Record<string, string> = {
   Invoice: "dollarSign",
   Contact: "users",
   Nav: "mapPin",
-};
+  Page: "mapPin",
+  Action: "fileText",
+}
 
 const TYPE_COLORS: Record<string, string> = {
   Move: "var(--blue)",
@@ -27,112 +29,9 @@ const TYPE_COLORS: Record<string, string> = {
   Invoice: "var(--grn)",
   Contact: "var(--org)",
   Nav: "var(--tx2)",
-};
-
-/** Sidebar nav items + settings for command-centre search */
-const NAV_SEARCH_ITEMS: { name: string; href: string; keywords: string[] }[] = [
-  {
-    name: "Command Center",
-    href: "/admin",
-    keywords: ["dashboard", "home", "command", "centre", "center"],
-  },
-  {
-    name: "Activity",
-    href: "/admin/activity",
-    keywords: ["activity", "feed", "status", "events", "log"],
-  },
-  {
-    name: "Jobs",
-    href: "/admin/deliveries",
-    keywords: ["projects", "deliveries", "jobs", "b2b", "all"],
-  },
-  {
-    name: "Reports",
-    href: "/admin/reports",
-    keywords: ["reports", "analytics"],
-  },
-  {
-    name: "Calendar",
-    href: "/admin/calendar",
-    keywords: ["calendar", "schedule"],
-  },
-  {
-    name: "Tracking",
-    href: "/admin/crew",
-    keywords: ["tracking", "crew", "map", "live"],
-  },
-  {
-    name: "Retail",
-    href: "/admin/partners/retail",
-    keywords: ["retail", "partners"],
-  },
-  {
-    name: "Designers",
-    href: "/admin/partners/designers",
-    keywords: ["designers", "partners"],
-  },
-  {
-    name: "Hospitality",
-    href: "/admin/partners/hospitality",
-    keywords: ["hospitality", "partners"],
-  },
-  {
-    name: "Art Gallery",
-    href: "/admin/partners/gallery",
-    keywords: ["gallery", "art", "partners"],
-  },
-  {
-    name: "Referral Partners",
-    href: "/admin/partners/realtors",
-    keywords: [
-      "realtors",
-      "referrals",
-      "referral partners",
-      "property manager",
-      "developer",
-      "commission",
-    ],
-  },
-  { name: "All Moves", href: "/admin/moves", keywords: ["moves", "all"] },
-  { name: "Quotes", href: "/admin/quotes", keywords: ["quotes"] },
-  {
-    name: "Invoices",
-    href: "/admin/invoices",
-    keywords: ["invoices", "finance"],
-  },
-  { name: "Revenue", href: "/admin/revenue", keywords: ["revenue", "finance"] },
-  { name: "Tips", href: "/admin/tips", keywords: ["tips", "finance"] },
-  {
-    name: "Profitability",
-    href: "/admin/finance/profitability",
-    keywords: ["profitability", "finance"],
-  },
-  {
-    name: "Contacts",
-    href: "/admin/clients",
-    keywords: ["contacts", "clients", "crm"],
-  },
-  {
-    name: "Perks & Referrals",
-    href: "/admin/perks",
-    keywords: ["perks", "referrals", "crm"],
-  },
-  {
-    name: "Settings",
-    href: "/admin/settings",
-    keywords: ["settings", "account", "crm"],
-  },
-  {
-    name: "Platform",
-    href: "/admin/platform",
-    keywords: ["platform", "admin"],
-  },
-  {
-    name: "Notifications",
-    href: "/admin/notifications",
-    keywords: ["notifications"],
-  },
-];
+  Page: "var(--tx2)",
+  Action: "var(--grn)",
+}
 
 export default function SearchBox() {
   const [query, setQuery] = useState("");
@@ -161,27 +60,8 @@ export default function SearchBox() {
         setOpen(false);
         return;
       }
-      const term = q.toLowerCase();
-      const all: { type: string; name: string; sub?: string; href: string }[] =
-        [];
-
-      // Nav / functions / settings — match first so they appear when typing page names
-      for (const item of NAV_SEARCH_ITEMS) {
-        const matchName = item.name.toLowerCase().includes(term);
-        const matchKeyword = item.keywords.some(
-          (k) => k.includes(term) || term.includes(k),
-        );
-        if (matchName || matchKeyword) {
-          all.push({ type: "Nav", name: item.name, href: item.href });
-        }
-      }
-
-      const entityResults = await runAdminEntitySearch(supabase, q, 20);
-      for (const r of entityResults) {
-        all.push({ type: r.type, name: r.name, sub: r.sub, href: r.href });
-      }
-
-      setResults(all.slice(0, 12));
+      const all = await runAdminTopbarSearch(supabase, q, 12);
+      setResults(all);
       setOpen(all.length > 0);
     },
     [supabase],
@@ -212,8 +92,8 @@ export default function SearchBox() {
         <input
           type="text"
           placeholder="Search…"
-          title="Search moves, deliveries, quotes, clients"
-          aria-label="Search moves, deliveries, quotes, clients"
+          title="Search the app, people, and records"
+          aria-label="Search the app, people, and records"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.length >= 2 && setOpen(true)}

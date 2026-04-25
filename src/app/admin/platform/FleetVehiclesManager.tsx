@@ -240,7 +240,7 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
         </div>
         <button
           onClick={() => { resetForm(); setAddOpen(true); }}
-          className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all"
+          className="admin-btn admin-btn-sm admin-btn-primary shrink-0"
         >
           + Add Vehicle
         </button>
@@ -345,7 +345,7 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
                               <span className="text-[var(--tx)] font-medium">{MAINT_LABELS[log.maintenance_type] || log.maintenance_type}</span>
                               {log.notes && <span className="text-[var(--tx3)]">- {log.notes}</span>}
                             </div>
-                            {log.cost > 0 && <span className="text-[var(--gold)] font-semibold">${log.cost.toFixed(2)}</span>}
+                            {log.cost > 0 && <span className="text-[var(--accent-text)] font-semibold">${log.cost.toFixed(2)}</span>}
                           </div>
                         ))}
                       </div>
@@ -423,7 +423,7 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={() => setAddOpen(false)} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
-            <button type="submit" disabled={!formPlate.trim() || saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50">{saving ? "Adding..." : "Add Vehicle"}</button>
+            <button type="submit" disabled={!formPlate.trim() || saving} className="admin-btn admin-btn-sm admin-btn-primary flex-1">{saving ? "Adding..." : "Add Vehicle"}</button>
           </div>
         </form>
       </ModalOverlay>
@@ -477,7 +477,7 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={() => setEditVehicle(null)} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50">{saving ? "Saving..." : "Save Changes"}</button>
+            <button type="submit" disabled={saving} className="admin-btn admin-btn-sm admin-btn-primary flex-1">{saving ? "Saving..." : "Save Changes"}</button>
           </div>
         </form>
       </ModalOverlay>
@@ -507,7 +507,7 @@ export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesMa
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={() => setMaintVehicleId(null)} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50">{saving ? "Saving..." : "Log Entry"}</button>
+            <button type="submit" disabled={saving} className="admin-btn admin-btn-sm admin-btn-primary flex-1">{saving ? "Saving..." : "Log Entry"}</button>
           </div>
         </form>
       </ModalOverlay>

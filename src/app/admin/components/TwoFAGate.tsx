@@ -144,14 +144,14 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
                   type="button"
                   onClick={() => sendCode(false)}
                   disabled={sending}
-                  className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--accent-text)] disabled:opacity-50"
                 >
                   {sending ? "Sending…" : "Resend code"}
                 </button>
                 <button
                   type="submit"
                   disabled={verifying || code.length !== 6}
-                  className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50"
+                  className="admin-btn admin-btn-primary flex-1"
                 >
                   {verifying ? "Verifying…" : "Verify"}
                 </button>

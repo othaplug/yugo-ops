@@ -151,7 +151,7 @@ const MapboxMap = dynamic(
                         background: etaPillBg,
                         color: etaPillColor,
                         border: etaPillBorder,
-                        fontFamily: "var(--font-body), DM Sans, system-ui, sans-serif",
+                        fontFamily: "var(--font-body)",
                         fontSize: 10,
                         fontWeight: 700,
                         lineHeight: 1.25,

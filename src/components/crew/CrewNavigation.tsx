@@ -1544,7 +1544,7 @@ export function CrewNavigation({
         <button
           type="button"
           onClick={onExit}
-          className="px-3 py-1.5 bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] font-semibold text-sm"
+          className="admin-btn admin-btn-sm admin-btn-primary"
         >
           Close
         </button>

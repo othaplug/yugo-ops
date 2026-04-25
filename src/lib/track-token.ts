@@ -59,3 +59,59 @@ export function verifyReviewToken(token: string): string | null {
     return null;
   }
 }
+
+/** Sign quotes.quote_id for photo survey link (public). Returns quoteId.sig */
+export function signPhotoSurveyToken(quoteId: string): string {
+  const sig = createHmac("sha256", getTrackSecret())
+    .update(`photo_survey:${quoteId}`)
+    .digest("base64url");
+  return `${quoteId}.${sig}`;
+}
+
+/** Verify photo survey token; returns quotes.quote_id or null. */
+export function verifyPhotoSurveyToken(token: string): string | null {
+  if (!token || typeof token !== "string") return null;
+  const lastDot = token.lastIndexOf(".");
+  if (lastDot <= 0) return null;
+  const id = token.slice(0, lastDot);
+  const sig = token.slice(lastDot + 1);
+  if (!id || !sig) return null;
+  const expected = createHmac("sha256", getTrackSecret())
+    .update(`photo_survey:${id}`)
+    .digest("base64url");
+  if (expected.length !== sig.length) return null;
+  try {
+    if (!timingSafeEqual(Buffer.from(expected, "utf8"), Buffer.from(sig, "utf8"))) return null;
+    return id;
+  } catch {
+    return null;
+  }
+}
+
+/** Sign move id for remote walkthrough link (public). Returns moveId.sig */
+export function signWalkthroughToken(moveId: string): string {
+  const sig = createHmac("sha256", getTrackSecret())
+    .update(`walkthrough:${moveId}`)
+    .digest("base64url");
+  return `${moveId}.${sig}`;
+}
+
+/** Verify walkthrough token; returns moves.id or null. */
+export function verifyWalkthroughToken(token: string): string | null {
+  if (!token || typeof token !== "string") return null;
+  const lastDot = token.lastIndexOf(".");
+  if (lastDot <= 0) return null;
+  const id = token.slice(0, lastDot);
+  const sig = token.slice(lastDot + 1);
+  if (!id || !sig) return null;
+  const expected = createHmac("sha256", getTrackSecret())
+    .update(`walkthrough:${id}`)
+    .digest("base64url");
+  if (expected.length !== sig.length) return null;
+  try {
+    if (!timingSafeEqual(Buffer.from(expected, "utf8"), Buffer.from(sig, "utf8"))) return null;
+    return id;
+  } catch {
+    return null;
+  }
+}

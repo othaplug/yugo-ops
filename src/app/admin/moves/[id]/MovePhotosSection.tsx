@@ -5,7 +5,12 @@ import { Trash as Trash2, Plus } from "@phosphor-icons/react";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 
-type Photo = { id: string; url: string; caption: string | null; source?: string };
+type Photo = {
+  id: string;
+  url: string;
+  caption: string | null;
+  source?: string;
+};
 
 export default function MovePhotosSection({ moveId }: { moveId: string }) {
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -56,7 +61,10 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
     if (!deleteConfirm) return;
     setDeleting(true);
     try {
-      const r = await fetch(`/api/admin/moves/${moveId}/photos/${deleteConfirm.id}`, { method: "DELETE" });
+      const r = await fetch(
+        `/api/admin/moves/${moveId}/photos/${deleteConfirm.id}`,
+        { method: "DELETE" },
+      );
       const data = await r.json();
       if (!r.ok || data.error) {
         toast(data.error || "Failed to remove", "x");
@@ -79,7 +87,7 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
       ) : (
         <>
           <div className="flex flex-wrap gap-2 mb-2">
-            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] cursor-pointer disabled:opacity-50 transition-colors">
+            <label className="admin-btn admin-btn-sm admin-btn-primary cursor-pointer">
               <Plus className="w-[11px] h-[11px]" />
               {uploading ? "Uploading…" : "Add photo"}
               <input
@@ -92,14 +100,23 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
             </label>
           </div>
           {photos.length === 0 ? (
-            <p className="text-[11px] text-[var(--tx3)]">No photos yet. Add photos for the client portal.</p>
+            <p className="text-[11px] text-[var(--tx3)]">
+              No photos yet. Add photos for the client portal.
+            </p>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {photos.map((p) => {
                 const isClient = p.source === "client";
                 return (
-                  <div key={p.id} className="relative group rounded-lg overflow-hidden border border-[var(--brd)]/50 aspect-square bg-[var(--bg)]">
-                    <img src={p.url} alt={p.caption || ""} className="w-full h-full object-cover" />
+                  <div
+                    key={p.id}
+                    className="relative group rounded-lg overflow-hidden border border-[var(--brd)]/50 aspect-square bg-[var(--bg)]"
+                  >
+                    <img
+                      src={p.url}
+                      alt={p.caption || ""}
+                      className="w-full h-full object-cover"
+                    />
                     <button
                       type="button"
                       onClick={() => handleDelete(p)}
@@ -129,7 +146,12 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
       )}
 
       {deleteConfirm && (
-        <ModalOverlay open onClose={() => !deleting && setDeleteConfirm(null)} title="Remove photo?" maxWidth="sm">
+        <ModalOverlay
+          open
+          onClose={() => !deleting && setDeleteConfirm(null)}
+          title="Remove photo?"
+          maxWidth="sm"
+        >
           <div className="p-5 space-y-4">
             <p className="text-[12px] text-[var(--tx2)]">
               Are you sure you want to remove this photo? This cannot be undone.

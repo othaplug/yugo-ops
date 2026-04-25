@@ -33,7 +33,7 @@ import type { DrivingTrafficBrief } from "@/lib/mapbox/driving-traffic-brief"
 import type { CommandCenterData, CommandCenterJob } from "@/lib/admin/command-center-data"
 import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav"
 import { PageHeader } from "@/components/admin-v2/composites/PageHeader"
-import { MetricCard } from "@/components/admin-v2/composites/MetricCard"
+import { MetricStrip } from "@/components/admin-v2/composites/MetricCard"
 import {
   Card,
   CardHeader,
@@ -431,29 +431,18 @@ export const DashboardClient = ({
           }
         />
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <MetricCard
-            label="Revenue (month)"
-            value={formatCurrencyCompact(currentMonthRevenue)}
-            delta={moMDelta}
-            size="l2"
-          />
-          <MetricCard
-            label="Jobs today"
-            value={String(todayJobCount)}
-            size="l2"
-          />
-          <MetricCard
-            label="Task queue"
-            value={String(actionTasks.length)}
-            size="l2"
-          />
-          <MetricCard
-            label="Open quotes"
-            value={String(activeQuotesCount)}
-            size="l2"
-          />
-        </div>
+        <MetricStrip
+          items={[
+            {
+              label: "Revenue (month)",
+              value: formatCurrencyCompact(currentMonthRevenue),
+              delta: moMDelta,
+            },
+            { label: "Jobs today", value: String(todayJobCount) },
+            { label: "Task queue", value: String(actionTasks.length) },
+            { label: "Open quotes", value: String(activeQuotesCount) },
+          ]}
+        />
 
         <Card>
           <div className="flex items-start justify-between gap-3">

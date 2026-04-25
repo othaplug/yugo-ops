@@ -124,11 +124,11 @@ export default function SegmentedProgressBar({
               key={step.key}
               className={`flex-1 text-center text-[8px] truncate px-0.5 leading-tight transition-colors cursor-default ${
                 isAllComplete
-                  ? "text-[var(--gold)]/70 font-medium"
+                  ? "text-[var(--accent-text)]/70 font-medium"
                   : isComplete
                     ? "text-[var(--tx3)]/50 font-medium"
                     : isCurrent
-                      ? "text-[var(--gold)] font-bold"
+                      ? "text-[var(--accent-text)] font-bold"
                       : "text-[var(--tx3)]/25 font-medium"
               }`}
               onMouseEnter={() => setHoveredIdx(i)}
@@ -143,7 +143,7 @@ export default function SegmentedProgressBar({
       {/* Summary line */}
       <div className="flex items-center gap-2 mt-2.5">
         {isAllComplete ? (
-          <span className="text-[11px] font-semibold text-[var(--gold)]">
+          <span className="text-[11px] font-semibold text-[var(--accent-text)]">
             All stages complete
           </span>
         ) : (

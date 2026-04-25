@@ -14,7 +14,9 @@ import {
 import { useFormDraft } from "@/hooks/useFormDraft";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
-import MultiStopAddressField, { type StopEntry } from "@/components/ui/MultiStopAddressField";
+import MultiStopAddressField, {
+  type StopEntry,
+} from "@/components/ui/MultiStopAddressField";
 import DraftBanner from "@/components/ui/DraftBanner";
 import { Plus, Trash as Trash2, Stack as Layers } from "@phosphor-icons/react";
 
@@ -59,8 +61,23 @@ interface Crew {
   members?: string[];
 }
 
-const DEFAULT_ROOMS = ["Living Room", "Bedroom", "Kitchen", "Office", "Garage", "Other"];
-const COMPLEXITY_PRESETS = ["White Glove", "High Value", "Fragile", "Artwork", "Antiques", "Storage", "Assembly Required"];
+const DEFAULT_ROOMS = [
+  "Living Room",
+  "Bedroom",
+  "Kitchen",
+  "Office",
+  "Garage",
+  "Other",
+];
+const COMPLEXITY_PRESETS = [
+  "White Glove",
+  "High Value",
+  "Fragile",
+  "Artwork",
+  "Antiques",
+  "Storage",
+  "Assembly Required",
+];
 const TIME_OPTIONS = (() => {
   const times: string[] = [];
   for (let h = 6; h <= 20; h++) {
@@ -74,10 +91,15 @@ const TIME_OPTIONS = (() => {
   return times;
 })();
 
-const fieldInput =
-  "field-input-compact w-full";
+const fieldInput = "field-input-compact w-full";
 
-export default function NewDeliveryForm({ organizations, crews = [] }: { organizations: Org[]; crews?: Crew[] }) {
+export default function NewDeliveryForm({
+  organizations,
+  crews = [],
+}: {
+  organizations: Org[];
+  crews?: Crew[];
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dateFromUrl = searchParams.get("date") || "";
@@ -91,7 +113,11 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [projectType, setProjectType] = useState(["retail", "designer", "hospitality", "gallery"].includes(typeFromUrl) ? typeFromUrl : "retail");
+  const [projectType, setProjectType] = useState(
+    ["retail", "designer", "hospitality", "gallery"].includes(typeFromUrl)
+      ? typeFromUrl
+      : "retail",
+  );
   const [organizationId, setOrganizationId] = useState(orgFromUrl);
 
   // Project linking
@@ -100,8 +126,12 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   const [linkedProjectId, setLinkedProjectId] = useState(projectIdFromUrl);
   const [linkedPhaseId, setLinkedPhaseId] = useState(phaseIdFromUrl);
   const [phases, setPhases] = useState<PhaseOption[]>([]);
-  const [projectInventory, setProjectInventory] = useState<ProjectInventoryItem[]>([]);
-  const [selectedProjectItemIds, setSelectedProjectItemIds] = useState<Set<string>>(new Set());
+  const [projectInventory, setProjectInventory] = useState<
+    ProjectInventoryItem[]
+  >([]);
+  const [selectedProjectItemIds, setSelectedProjectItemIds] = useState<
+    Set<string>
+  >(new Set());
   const [contactSearch, setContactSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -111,7 +141,8 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   const [customerPhone, setCustomerPhone] = useState("");
   const customerPhoneInput = usePhoneInput(customerPhone, setCustomerPhone);
 
-  const [deliveryHsActive, setDeliveryHsActive] = useState<HubSpotSuggestField | null>(null);
+  const [deliveryHsActive, setDeliveryHsActive] =
+    useState<HubSpotSuggestField | null>(null);
   const deliveryHsQuery = useMemo(() => {
     if (deliveryHsActive === "contact") return customerName;
     if (deliveryHsActive === "email") return customerEmail;
@@ -147,9 +178,13 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   const [crewId, setCrewId] = useState("");
   const [deliveryAccess, setDeliveryAccess] = useState("elevator");
   const [itemWeightCategory, setItemWeightCategory] = useState("standard");
-  const [complexityIndicators, setComplexityIndicators] = useState<string[]>([]);
+  const [complexityIndicators, setComplexityIndicators] = useState<string[]>(
+    [],
+  );
 
-  const [inventory, setInventory] = useState<{ room: string; item_name: string }[]>([]);
+  const [inventory, setInventory] = useState<
+    { room: string; item_name: string }[]
+  >([]);
   const [newRoom, setNewRoom] = useState("");
   const [newItemName, setNewItemName] = useState("");
   const [newItemQty, setNewItemQty] = useState(1);
@@ -158,14 +193,53 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   const [itemsFallback, setItemsFallback] = useState("");
 
   // Draft auto-save
-  const draftState = useMemo(() => ({
-    projectType, organizationId, customerName, customerEmail, customerPhone,
-    pickupAddress, deliveryAddress, scheduledDate, timeSlot, deliveryWindow,
-    instructions, accessNotes, internalNotes, quotedPrice, crewId,
-    deliveryAccess, itemWeightCategory, itemsFallback,
-  }), [projectType, organizationId, customerName, customerEmail, customerPhone, pickupAddress, deliveryAddress, scheduledDate, timeSlot, deliveryWindow, instructions, accessNotes, internalNotes, quotedPrice, crewId, deliveryAccess, itemWeightCategory, itemsFallback]);
+  const draftState = useMemo(
+    () => ({
+      projectType,
+      organizationId,
+      customerName,
+      customerEmail,
+      customerPhone,
+      pickupAddress,
+      deliveryAddress,
+      scheduledDate,
+      timeSlot,
+      deliveryWindow,
+      instructions,
+      accessNotes,
+      internalNotes,
+      quotedPrice,
+      crewId,
+      deliveryAccess,
+      itemWeightCategory,
+      itemsFallback,
+    }),
+    [
+      projectType,
+      organizationId,
+      customerName,
+      customerEmail,
+      customerPhone,
+      pickupAddress,
+      deliveryAddress,
+      scheduledDate,
+      timeSlot,
+      deliveryWindow,
+      instructions,
+      accessNotes,
+      internalNotes,
+      quotedPrice,
+      crewId,
+      deliveryAccess,
+      itemWeightCategory,
+      itemsFallback,
+    ],
+  );
 
-  const draftTitleFn = useCallback((s: typeof draftState) => s.customerName || "Delivery", []);
+  const draftTitleFn = useCallback(
+    (s: typeof draftState) => s.customerName || "Delivery",
+    [],
+  );
 
   const applyDeliveryDraft = useCallback((d: Record<string, unknown>) => {
     if (d.projectType) setProjectType(d.projectType as string);
@@ -184,13 +258,19 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
     if (d.quotedPrice) setQuotedPrice(d.quotedPrice as string);
     if (d.crewId) setCrewId(d.crewId as string);
     if (d.deliveryAccess) setDeliveryAccess(d.deliveryAccess as string);
-    if (d.itemWeightCategory) setItemWeightCategory(d.itemWeightCategory as string);
+    if (d.itemWeightCategory)
+      setItemWeightCategory(d.itemWeightCategory as string);
     if (d.itemsFallback) setItemsFallback(d.itemsFallback as string);
   }, []);
 
-  const { hasDraft, restoreDraft, dismissDraft, clearDraft } = useFormDraft("delivery", draftState, draftTitleFn, {
-    applySaved: applyDeliveryDraft as (data: typeof draftState) => void,
-  });
+  const { hasDraft, restoreDraft, dismissDraft, clearDraft } = useFormDraft(
+    "delivery",
+    draftState,
+    draftTitleFn,
+    {
+      applySaved: applyDeliveryDraft as (data: typeof draftState) => void,
+    },
+  );
 
   const handleRestoreDraft = useCallback(() => {
     const d = restoreDraft();
@@ -201,12 +281,20 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   const filteredOrgs = organizations.filter((o) => {
     if (!contactSearch) return true;
     const q = contactSearch.toLowerCase();
-    return o.name?.toLowerCase().includes(q) || o.email?.toLowerCase().includes(q) || o.contact_name?.toLowerCase().includes(q);
+    return (
+      o.name?.toLowerCase().includes(q) ||
+      o.email?.toLowerCase().includes(q) ||
+      o.contact_name?.toLowerCase().includes(q)
+    );
   });
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setShowDropdown(false);
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      )
+        setShowDropdown(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -218,7 +306,8 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
       if (org) {
         if (!customerName) setCustomerName(org.contact_name || org.name || "");
         if (!customerEmail) setCustomerEmail(org.email || "");
-        if (!customerPhone && org.phone) setCustomerPhone(formatPhone(org.phone));
+        if (!customerPhone && org.phone)
+          setCustomerPhone(formatPhone(org.phone));
       }
       // Fetch projects for this org
       setLoadingProjects(true);
@@ -227,10 +316,16 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
       setProjects([]);
       setPhases([]);
       fetch(`/api/admin/projects?partner_id=${organizationId}`)
-        .then((r) => r.ok ? r.json() : [])
+        .then((r) => (r.ok ? r.json() : []))
         .then((data) => {
-          const raw = Array.isArray(data.projects) ? data.projects : Array.isArray(data) ? data : [];
-          setProjects(raw.filter((p: ProjectOption) => p.status !== "cancelled"));
+          const raw = Array.isArray(data.projects)
+            ? data.projects
+            : Array.isArray(data)
+              ? data
+              : [];
+          setProjects(
+            raw.filter((p: ProjectOption) => p.status !== "cancelled"),
+          );
         })
         .catch(() => setProjects([]))
         .finally(() => setLoadingProjects(false));
@@ -240,7 +335,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
       setLinkedPhaseId("");
       setPhases([]);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationId]);
 
   // Fetch phases and inventory when project is selected
@@ -253,11 +348,14 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
       return;
     }
     fetch(`/api/admin/projects/${linkedProjectId}`)
-      .then((r) => r.ok ? r.json() : null)
+      .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.phases) {
           setPhases(data.phases);
-          if (phaseIdFromUrl && data.phases.find((p: PhaseOption) => p.id === phaseIdFromUrl)) {
+          if (
+            phaseIdFromUrl &&
+            data.phases.find((p: PhaseOption) => p.id === phaseIdFromUrl)
+          ) {
             setLinkedPhaseId(phaseIdFromUrl);
           }
         } else {
@@ -271,7 +369,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
         setPhases([]);
         setProjectInventory([]);
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linkedProjectId]);
 
   // Auto-fill delivery address from phase address when phase is selected
@@ -281,7 +379,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
     if (phase?.address && !deliveryAddress) {
       setDeliveryAddress(phase.address);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linkedPhaseId, phases]);
 
   const addInventoryItem = () => {
@@ -293,11 +391,15 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
     setNewItemQty(1);
   };
 
-  const removeInventoryItem = (idx: number) => setInventory((prev) => prev.filter((_, i) => i !== idx));
+  const removeInventoryItem = (idx: number) =>
+    setInventory((prev) => prev.filter((_, i) => i !== idx));
 
   const addBulkItems = () => {
     if (!newRoom || !bulkText.trim()) return;
-    const lines = bulkText.split("\n").map((l) => l.trim()).filter(Boolean);
+    const lines = bulkText
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
     const items = lines.map((line) => {
       const m = line.match(/^(.+?)\s+x(\d+)$/i);
       return { room: newRoom, item_name: m ? `${m[1].trim()} x${m[2]}` : line };
@@ -312,16 +414,22 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
   const addFromProjectInventory = () => {
     if (selectedProjectItemIds.size === 0) return;
-    const toAdd = yugoProjectItems.filter((i) => selectedProjectItemIds.has(i.id));
+    const toAdd = yugoProjectItems.filter((i) =>
+      selectedProjectItemIds.has(i.id),
+    );
     const newItems = toAdd.flatMap((i) => {
       const room = i.room_destination || "Other";
-      const name = (i.quantity || 1) > 1 ? `${i.item_name} x${i.quantity}` : i.item_name;
+      const name =
+        (i.quantity || 1) > 1 ? `${i.item_name} x${i.quantity}` : i.item_name;
       return { room, item_name: name };
     });
     setInventory((prev) => [...prev, ...newItems]);
     setSelectedProjectItemIds(new Set());
     const firstWithPickup = toAdd.find((i) => i.vendor_pickup_address?.trim());
-    if (firstWithPickup?.vendor_pickup_address?.trim() && !pickupAddress.trim()) {
+    if (
+      firstWithPickup?.vendor_pickup_address?.trim() &&
+      !pickupAddress.trim()
+    ) {
       setPickupAddress(firstWithPickup.vendor_pickup_address.trim());
     }
   };
@@ -340,31 +448,56 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   };
 
   const toggleComplexity = (p: string) => {
-    setComplexityIndicators((prev) => prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]);
+    setComplexityIndicators((prev) =>
+      prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p],
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName.trim()) { setError("Customer name is required"); return; }
-    if (!deliveryAddress.trim()) { setError("Delivery address is required"); return; }
-    if (!scheduledDate) { setError("Date is required"); return; }
+    if (!customerName.trim()) {
+      setError("Customer name is required");
+      return;
+    }
+    if (!deliveryAddress.trim()) {
+      setError("Delivery address is required");
+      return;
+    }
+    if (!scheduledDate) {
+      setError("Date is required");
+      return;
+    }
 
     setLoading(true);
     setError("");
 
     const org = organizations.find((o) => o.id === organizationId);
-    const itemsList = inventory.length > 0
-      ? inventory.map((i) => `${i.room}: ${i.item_name}`)
-      : itemsFallback.split("\n").map((l) => l.trim()).filter(Boolean);
+    const itemsList =
+      inventory.length > 0
+        ? inventory.map((i) => `${i.room}: ${i.item_name}`)
+        : itemsFallback
+            .split("\n")
+            .map((l) => l.trim())
+            .filter(Boolean);
 
-    const instructionsMerged = [instructions, accessNotes && `Access: ${accessNotes}`, internalNotes && `Internal: ${internalNotes}`, complexityIndicators.length > 0 && `Complexity: ${complexityIndicators.join(", ")}`].filter(Boolean).join("\n");
+    const instructionsMerged = [
+      instructions,
+      accessNotes && `Access: ${accessNotes}`,
+      internalNotes && `Internal: ${internalNotes}`,
+      complexityIndicators.length > 0 &&
+        `Complexity: ${complexityIndicators.join(", ")}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
 
     const payload = {
       organization_id: organizationId || null,
       client_name: org?.name || "",
       customer_name: customerName.trim(),
       customer_email: customerEmail.trim() || null,
-      customer_phone: customerPhone.trim() ? normalizePhone(customerPhone) : null,
+      customer_phone: customerPhone.trim()
+        ? normalizePhone(customerPhone)
+        : null,
       pickup_address: pickupAddress.trim() || null,
       delivery_address: deliveryAddress.trim(),
       items: itemsList,
@@ -396,14 +529,22 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
       // Persist additional stops to job_stops if any were added
       const allExtraStops = [
-        ...extraPickupStops.filter((s) => s.address.trim()).map((s, i) => ({ ...s, stop_type: "pickup", sort_order: i + 1 })),
-        ...extraDeliveryStops.filter((s) => s.address.trim()).map((s, i) => ({ ...s, stop_type: "dropoff", sort_order: i + 1 })),
+        ...extraPickupStops
+          .filter((s) => s.address.trim())
+          .map((s, i) => ({ ...s, stop_type: "pickup", sort_order: i + 1 })),
+        ...extraDeliveryStops
+          .filter((s) => s.address.trim())
+          .map((s, i) => ({ ...s, stop_type: "dropoff", sort_order: i + 1 })),
       ];
       if (allExtraStops.length > 0) {
         fetch("/api/admin/job-stops", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ job_type: "delivery", job_id: created.id, stops: allExtraStops }),
+          body: JSON.stringify({
+            job_type: "delivery",
+            job_id: created.id,
+            stops: allExtraStops,
+          }),
         }).catch(() => {});
       }
 
@@ -421,17 +562,30 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-6">
-        {hasDraft && <DraftBanner onRestore={handleRestoreDraft} onDismiss={dismissDraft} />}
+        {hasDraft && (
+          <DraftBanner
+            onRestore={handleRestoreDraft}
+            onDismiss={dismissDraft}
+          />
+        )}
         {error && (
-          <div className="px-3 py-2.5 rounded-lg bg-[rgba(209,67,67,0.1)] border border-[rgba(209,67,67,0.3)] text-[12px] text-[var(--red)]">{error}</div>
+          <div className="px-3 py-2.5 rounded-lg bg-[rgba(209,67,67,0.1)] border border-[rgba(209,67,67,0.3)] text-[12px] text-[var(--red)]">
+            {error}
+          </div>
         )}
 
         {/* Section: Project type + Client */}
         <section className="space-y-2">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Project & Client</h3>
+          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
+            Project & Client
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Field label="Project Type">
-              <select value={projectType} onChange={(e) => setProjectType(e.target.value)} className={fieldInput}>
+              <select
+                value={projectType}
+                onChange={(e) => setProjectType(e.target.value)}
+                className={fieldInput}
+              >
                 <optgroup label="Furniture & Design">
                   <option value="furniture_retailer">Furniture Retailer</option>
                   <option value="interior_designer">Interior Designer</option>
@@ -455,8 +609,18 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
             <Field label="Client / Partner">
               <div className="relative" ref={dropdownRef}>
                 <input
-                  value={contactSearch || (organizationId ? organizations.find((o) => o.id === organizationId)?.name || "" : "")}
-                  onChange={(e) => { setContactSearch(e.target.value); setShowDropdown(true); if (!e.target.value) setOrganizationId(""); }}
+                  value={
+                    contactSearch ||
+                    (organizationId
+                      ? organizations.find((o) => o.id === organizationId)
+                          ?.name || ""
+                      : "")
+                  }
+                  onChange={(e) => {
+                    setContactSearch(e.target.value);
+                    setShowDropdown(true);
+                    if (!e.target.value) setOrganizationId("");
+                  }}
                   onFocus={() => setShowDropdown(true)}
                   placeholder="Search clients…"
                   className={fieldInput}
@@ -467,11 +631,20 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
                       <button
                         key={o.id}
                         type="button"
-                        onClick={() => { setOrganizationId(o.id); setContactSearch(o.name); setShowDropdown(false); }}
+                        onClick={() => {
+                          setOrganizationId(o.id);
+                          setContactSearch(o.name);
+                          setShowDropdown(false);
+                        }}
                         className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] transition-colors"
                       >
                         <span className="font-semibold">{o.name}</span>
-                        {o.contact_name && <span className="text-[var(--tx3)]"> · {o.contact_name}</span>}
+                        {o.contact_name && (
+                          <span className="text-[var(--tx3)]">
+                            {" "}
+                            · {o.contact_name}
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -487,7 +660,9 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
             <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-[var(--gold)]" />
               Link to Project
-              <span className="text-[9px] font-normal text-[var(--tx3)] normal-case ml-1">optional</span>
+              <span className="text-[9px] font-normal text-[var(--tx3)] normal-case ml-1">
+                optional
+              </span>
             </h3>
             {loadingProjects ? (
               <p className="text-[11px] text-[var(--tx3)]">Loading projects…</p>
@@ -496,12 +671,17 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
                 <Field label="Project">
                   <select
                     value={linkedProjectId}
-                    onChange={(e) => { setLinkedProjectId(e.target.value); setLinkedPhaseId(""); }}
+                    onChange={(e) => {
+                      setLinkedProjectId(e.target.value);
+                      setLinkedPhaseId("");
+                    }}
                     className={fieldInput}
                   >
                     <option value="">None</option>
                     {projects.map((p) => (
-                      <option key={p.id} value={p.id}>{p.project_number} {p.project_name}</option>
+                      <option key={p.id} value={p.id}>
+                        {p.project_number} {p.project_name}
+                      </option>
                     ))}
                   </select>
                 </Field>
@@ -514,7 +694,9 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
                     >
                       <option value="">No phase</option>
                       {phases.map((ph) => (
-                        <option key={ph.id} value={ph.id}>{ph.phase_name}</option>
+                        <option key={ph.id} value={ph.id}>
+                          {ph.phase_name}
+                        </option>
                       ))}
                     </select>
                   </Field>
@@ -523,7 +705,8 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
             )}
             {linkedProjectId && (
               <p className="text-[10px] text-[var(--tx3)]">
-                This delivery will appear in the project&apos;s Deliveries tab and be included in the project invoice.
+                This delivery will appear in the project&apos;s Deliveries tab
+                and be included in the project invoice.
               </p>
             )}
           </section>
@@ -531,7 +714,9 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Customer details */}
         <section ref={deliveryHs.containerRef} className="space-y-2">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Customer / Recipient</h3>
+          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
+            Customer / Recipient
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <Field label="Name *">
               <div className="relative">
@@ -580,7 +765,9 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Addresses */}
         <section className="space-y-3">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Addresses</h3>
+          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
+            Addresses
+          </h3>
           <MultiStopAddressField
             label="Pickup"
             placeholder="Warehouse, store, or pickup location"
@@ -605,21 +792,44 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Schedule */}
         <section className="space-y-2">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Schedule</h3>
+          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
+            Schedule
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <Field label="Date *">
-              <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} className={fieldInput} />
+              <input
+                type="date"
+                value={scheduledDate}
+                onChange={(e) => setScheduledDate(e.target.value)}
+                className={fieldInput}
+              />
             </Field>
             <Field label="Time Slot">
-              <select value={timeSlot} onChange={(e) => setTimeSlot(e.target.value)} className={fieldInput}>
+              <select
+                value={timeSlot}
+                onChange={(e) => setTimeSlot(e.target.value)}
+                className={fieldInput}
+              >
                 <option value="">Select time…</option>
-                {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+                {TIME_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
               </select>
             </Field>
             <Field label="Delivery Window">
-              <select value={deliveryWindow} onChange={(e) => setDeliveryWindow(e.target.value)} className={fieldInput}>
+              <select
+                value={deliveryWindow}
+                onChange={(e) => setDeliveryWindow(e.target.value)}
+                className={fieldInput}
+              >
                 <option value="">Select window…</option>
-                {TIME_WINDOW_OPTIONS.map((w) => <option key={w} value={w}>{w}</option>)}
+                {TIME_WINDOW_OPTIONS.map((w) => (
+                  <option key={w} value={w}>
+                    {w}
+                  </option>
+                ))}
               </select>
             </Field>
           </div>
@@ -627,13 +837,24 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Crew + Pricing */}
         <section className="space-y-2">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Assignment & Pricing</h3>
+          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
+            Assignment & Pricing
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {crews.length > 0 && (
               <Field label="Assign Crew">
-                <select value={crewId} onChange={(e) => setCrewId(e.target.value)} className={fieldInput}>
+                <select
+                  value={crewId}
+                  onChange={(e) => setCrewId(e.target.value)}
+                  className={fieldInput}
+                >
                   <option value="">Unassigned</option>
-                  {crews.map((c) => <option key={c.id} value={c.id}>{c.name}{c.members?.length ? ` (${c.members.length})` : ""}</option>)}
+                  {crews.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                      {c.members?.length ? ` (${c.members.length})` : ""}
+                    </option>
+                  ))}
                 </select>
               </Field>
             )}
@@ -642,16 +863,25 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
                 type="text"
                 value={quotedPrice}
                 onChange={(e) => setQuotedPrice(e.target.value)}
-                onBlur={() => { const n = parseNumberInput(quotedPrice); if (n > 0) setQuotedPrice(formatNumberInput(n)); }}
+                onBlur={() => {
+                  const n = parseNumberInput(quotedPrice);
+                  if (n > 0) setQuotedPrice(formatNumberInput(n));
+                }}
                 placeholder="1,234.00"
                 inputMode="decimal"
                 className={fieldInput}
               />
             </Field>
             <Field label="Delivery Access">
-              <select value={deliveryAccess} onChange={(e) => setDeliveryAccess(e.target.value)} className={fieldInput}>
+              <select
+                value={deliveryAccess}
+                onChange={(e) => setDeliveryAccess(e.target.value)}
+                className={fieldInput}
+              >
                 <option value="elevator">Elevator</option>
-                <option value="ground_floor">Ground Floor / Loading Dock</option>
+                <option value="ground_floor">
+                  Ground Floor / Loading Dock
+                </option>
                 <option value="loading_dock">Loading Dock</option>
                 <option value="walk_up_2nd">Walk-up (2nd floor)</option>
                 <option value="walk_up_3rd">Walk-up (3rd floor)</option>
@@ -662,7 +892,11 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
               </select>
             </Field>
             <Field label="Item Weight">
-              <select value={itemWeightCategory} onChange={(e) => setItemWeightCategory(e.target.value)} className={fieldInput}>
+              <select
+                value={itemWeightCategory}
+                onChange={(e) => setItemWeightCategory(e.target.value)}
+                className={fieldInput}
+              >
                 <option value="standard">Standard (under 100 lbs)</option>
                 <option value="heavy">Heavy (100–250 lbs)</option>
                 <option value="very_heavy">Very Heavy (250–500 lbs)</option>
@@ -674,7 +908,9 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Inventory */}
         <section className="space-y-3">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Inventory</h3>
+          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
+            Inventory
+          </h3>
 
           {/* Add from project inventory (Yugo items only) */}
           {linkedProjectId && yugoProjectItems.length > 0 && (
@@ -684,12 +920,16 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
                 Add from project inventory
               </div>
               <p className="text-[10px] text-[var(--tx3)]">
-                Select items added by the design partner (Yugo pickup) to auto-fill inventory and pickup address.
+                Select items added by the design partner (Yugo pickup) to
+                auto-fill inventory and pickup address.
               </p>
               <div className="flex flex-wrap gap-3 items-start">
                 <div className="flex-1 min-w-[200px] max-h-[160px] overflow-y-auto border border-[var(--brd)] rounded-lg p-2 space-y-1.5">
                   {yugoProjectItems.map((i) => (
-                    <label key={i.id} className="flex items-center gap-2 cursor-pointer hover:bg-[var(--bg)]/50 rounded px-2 py-1 -mx-2">
+                    <label
+                      key={i.id}
+                      className="flex items-center gap-2 cursor-pointer hover:bg-[var(--bg)]/50 rounded px-2 py-1 -mx-2"
+                    >
                       <input
                         type="checkbox"
                         checked={selectedProjectItemIds.has(i.id)}
@@ -699,7 +939,12 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
                       <span className="text-[11px] text-[var(--tx)]">
                         {i.room_destination || "Other"}: {i.item_name}
                         {(i.quantity || 1) > 1 ? ` ×${i.quantity}` : ""}
-                        {i.vendor_name && <span className="text-[var(--tx3)]"> · {i.vendor_name}</span>}
+                        {i.vendor_name && (
+                          <span className="text-[var(--tx3)]">
+                            {" "}
+                            · {i.vendor_name}
+                          </span>
+                        )}
                       </span>
                     </label>
                   ))}
@@ -716,7 +961,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
                     type="button"
                     onClick={addFromProjectInventory}
                     disabled={selectedProjectItemIds.size === 0}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+                    className="admin-btn admin-btn-sm admin-btn-primary"
                   >
                     <Plus className="w-[12px] h-[12px]" /> Add selected
                   </button>
@@ -728,11 +973,20 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
           {inventory.length > 0 && (
             <ul className="space-y-1.5 mb-2">
               {inventory.map((item, idx) => (
-                <li key={idx} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
+                <li
+                  key={idx}
+                  className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)]"
+                >
                   <span className="text-[12px] text-[var(--tx)]">
-                    <span className="text-[var(--tx3)]">{item.room}:</span> {item.item_name}
+                    <span className="text-[var(--tx3)]">{item.room}:</span>{" "}
+                    {item.item_name}
                   </span>
-                  <button type="button" onClick={() => removeInventoryItem(idx)} className="p-1 rounded text-[var(--tx3)] hover:text-[var(--red)]" aria-label="Remove">
+                  <button
+                    type="button"
+                    onClick={() => removeInventoryItem(idx)}
+                    className="p-1 rounded text-[var(--tx3)] hover:text-[var(--red)]"
+                    aria-label="Remove"
+                  >
                     <Trash2 className="w-[14px] h-[14px]" />
                   </button>
                 </li>
@@ -740,44 +994,112 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
             </ul>
           )}
           <div className="flex items-center gap-2 mb-2">
-            <button type="button" onClick={() => setBulkMode(false)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${!bulkMode ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]"}`}>
+            <button
+              type="button"
+              onClick={() => setBulkMode(false)}
+              className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${!bulkMode ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+            >
               Single add
             </button>
-            <button type="button" onClick={() => setBulkMode(true)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${bulkMode ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]"}`}>
+            <button
+              type="button"
+              onClick={() => setBulkMode(true)}
+              className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${bulkMode ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]" : "bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+            >
               Bulk add
             </button>
           </div>
           {bulkMode ? (
             <div className="space-y-2">
-              <select value={newRoom} onChange={(e) => setNewRoom(e.target.value)} className={`${fieldInput} max-w-[180px]`}>
+              <select
+                value={newRoom}
+                onChange={(e) => setNewRoom(e.target.value)}
+                className={`${fieldInput} max-w-[180px]`}
+              >
                 <option value="">Room</option>
-                {DEFAULT_ROOMS.map((r) => <option key={r} value={r}>{r}</option>)}
+                {DEFAULT_ROOMS.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
               </select>
-              <textarea value={bulkText} onChange={(e) => setBulkText(e.target.value)} placeholder="One item per line, e.g. Couch x2" rows={3} className={`${fieldInput} resize-y`} />
-              <button type="button" onClick={addBulkItems} disabled={!bulkText.trim() || !newRoom} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+              <textarea
+                value={bulkText}
+                onChange={(e) => setBulkText(e.target.value)}
+                placeholder="One item per line, e.g. Couch x2"
+                rows={3}
+                className={`${fieldInput} resize-y`}
+              />
+              <button
+                type="button"
+                onClick={addBulkItems}
+                disabled={!bulkText.trim() || !newRoom}
+                className="admin-btn admin-btn-sm admin-btn-primary"
+              >
                 <Plus className="w-[14px] h-[14px]" /> Add all
               </button>
             </div>
           ) : (
             <div className="flex flex-wrap gap-2 items-end">
-              <select value={newRoom} onChange={(e) => setNewRoom(e.target.value)} className={`${fieldInput} w-full sm:w-[140px]`}>
+              <select
+                value={newRoom}
+                onChange={(e) => setNewRoom(e.target.value)}
+                className={`${fieldInput} w-full sm:w-[140px]`}
+              >
                 <option value="">Room</option>
-                {DEFAULT_ROOMS.map((r) => <option key={r} value={r}>{r}</option>)}
+                {DEFAULT_ROOMS.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
               </select>
-              <input type="text" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addInventoryItem())} placeholder="Item name" className={`${fieldInput} flex-1 min-w-[120px]`} />
-              <input type="number" min={1} max={99} value={newItemQty} onChange={(e) => setNewItemQty(Math.max(1, parseInt(e.target.value, 10) || 1))} className={`${fieldInput} w-16`} />
-              <button type="button" onClick={addInventoryItem} disabled={!newItemName.trim() || !newRoom} className="flex-none inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+              <input
+                type="text"
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+                onKeyDown={(e) =>
+                  e.key === "Enter" && (e.preventDefault(), addInventoryItem())
+                }
+                placeholder="Item name"
+                className={`${fieldInput} flex-1 min-w-[120px]`}
+              />
+              <input
+                type="number"
+                min={1}
+                max={99}
+                value={newItemQty}
+                onChange={(e) =>
+                  setNewItemQty(Math.max(1, parseInt(e.target.value, 10) || 1))
+                }
+                className={`${fieldInput} w-16`}
+              />
+              <button
+                type="button"
+                onClick={addInventoryItem}
+                disabled={!newItemName.trim() || !newRoom}
+                className="admin-btn admin-btn-sm admin-btn-primary flex-none"
+              >
                 <Plus className="w-[14px] h-[14px]" /> Add
               </button>
             </div>
           )}
-          <p className="text-[10px] text-[var(--tx3)]">Or paste a simple list below (one per line).</p>
-          <textarea value={itemsFallback} onChange={(e) => setItemsFallback(e.target.value)} rows={2} placeholder="Sofa x2&#10;Coffee Table" className={`${fieldInput} resize-y`} />
+          <p className="text-[10px] text-[var(--tx3)]">
+            Or paste a simple list below (one per line).
+          </p>
+          <textarea
+            value={itemsFallback}
+            onChange={(e) => setItemsFallback(e.target.value)}
+            rows={2}
+            placeholder="Sofa x2&#10;Coffee Table"
+            className={`${fieldInput} resize-y`}
+          />
         </section>
 
         {/* Section: Complexity */}
         <section className="space-y-2">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Complexity Indicators</h3>
+          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
+            Complexity Indicators
+          </h3>
           <div className="flex flex-wrap gap-2">
             {COMPLEXITY_PRESETS.map((p) => (
               <button
@@ -795,22 +1117,49 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
             ))}
           </div>
           <label className="flex items-center gap-2.5 cursor-pointer mt-2">
-            <input type="checkbox" checked={specialHandling} onChange={(e) => setSpecialHandling(e.target.checked)} className="rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--brd)]" />
-            <span className="text-[12px] text-[var(--tx)]">Requires special handling (fragile, high-value)</span>
+            <input
+              type="checkbox"
+              checked={specialHandling}
+              onChange={(e) => setSpecialHandling(e.target.checked)}
+              className="rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--brd)]"
+            />
+            <span className="text-[12px] text-[var(--tx)]">
+              Requires special handling (fragile, high-value)
+            </span>
           </label>
         </section>
 
         {/* Section: Notes */}
         <section className="space-y-3">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Notes & Instructions</h3>
+          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
+            Notes & Instructions
+          </h3>
           <Field label="Delivery Instructions">
-            <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={2} placeholder="Special delivery instructions…" className={`${fieldInput} resize-y`} />
+            <textarea
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              rows={2}
+              placeholder="Special delivery instructions…"
+              className={`${fieldInput} resize-y`}
+            />
           </Field>
           <Field label="Access Notes">
-            <textarea value={accessNotes} onChange={(e) => setAccessNotes(e.target.value)} rows={2} placeholder="Building codes, gate access, parking…" className={`${fieldInput} resize-y`} />
+            <textarea
+              value={accessNotes}
+              onChange={(e) => setAccessNotes(e.target.value)}
+              rows={2}
+              placeholder="Building codes, gate access, parking…"
+              className={`${fieldInput} resize-y`}
+            />
           </Field>
           <Field label="Internal Notes">
-            <textarea value={internalNotes} onChange={(e) => setInternalNotes(e.target.value)} rows={2} placeholder="Internal team notes (not shared with client)…" className={`${fieldInput} resize-y`} />
+            <textarea
+              value={internalNotes}
+              onChange={(e) => setInternalNotes(e.target.value)}
+              rows={2}
+              placeholder="Internal team notes (not shared with client)…"
+              className={`${fieldInput} resize-y`}
+            />
           </Field>
         </section>
 
@@ -818,7 +1167,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-4 py-3 rounded-xl text-[12px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
+          className="admin-btn admin-btn-primary w-full"
         >
           {loading ? "Creating…" : "Create Delivery"}
         </button>
@@ -827,10 +1176,18 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
-      <label className="admin-premium-label admin-premium-label--tight">{label}</label>
+      <label className="admin-premium-label admin-premium-label--tight">
+        {label}
+      </label>
       {children}
     </div>
   );

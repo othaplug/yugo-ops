@@ -1,6 +1,7 @@
 "use client";
 
 import { CaretDown as ChevronDown } from "@phosphor-icons/react";
+import { Select } from "@/design-system/admin/primitives";
 
 export interface FilterOption {
   value: string;
@@ -22,28 +23,33 @@ interface FilterBarProps {
 
 export default function FilterBar({ filters, onClear, hasActiveFilters, className = "" }: FilterBarProps) {
   return (
-    <div className={`flex flex-wrap items-center gap-2 py-3 px-4 bg-[var(--bg)]/50 border-b border-[var(--brd)] ${className}`}>
+    <div
+      className={`flex flex-wrap items-center gap-2 border-b border-[var(--yu3-line)] bg-[var(--yu3-bg-surface-sunken)]/50 px-4 py-2.5 ${className}`}
+    >
       {filters.map((f) => (
         <div key={f.key} className="flex items-center gap-1.5">
-          <label className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] shrink-0">
+          <label className="shrink-0 yu3-t-eyebrow text-[var(--yu3-ink-muted)]">
             {f.label}
           </label>
-          <select
+          <Select
             value={f.value}
             onChange={(e) => f.onChange(e.target.value)}
-            className="admin-premium-input admin-premium-input--compact min-w-[100px] bg-transparent text-[var(--tx)]"
+            className="h-8 min-w-[7.5rem] max-w-full flex-1 pr-7 text-[13px] sm:min-w-[8.5rem]"
+            aria-label={f.label}
           >
             {f.options.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
             ))}
-          </select>
+          </Select>
         </div>
       ))}
       {hasActiveFilters && onClear && (
         <button
           type="button"
           onClick={onClear}
-          className="sidebar-nav-lift text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] px-2 py-1 rounded-lg"
+          className="sidebar-nav-lift rounded-[var(--yu3-r-sm)] px-2 py-1 text-[10px] font-semibold text-[var(--yu3-ink-muted)] hover:text-[var(--yu3-wine)]"
         >
           Clear filters
         </button>
@@ -70,13 +76,15 @@ export function SortableHeader({
   const isActive = currentSort === sortKey;
   return (
     <th
-      className={`text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)] cursor-pointer hover:text-[var(--gold)] transition-colors select-none ${className}`}
+      className={`cursor-pointer select-none border-b border-[var(--yu3-line)] px-3 py-2.5 text-left yu3-t-eyebrow text-[var(--yu3-ink-muted)] transition-colors hover:text-[var(--yu3-wine)] ${className}`}
       onClick={() => onSort(sortKey)}
     >
       <span className="inline-flex items-center gap-1">
         {label}
         {isActive && (
-          <ChevronDown className={`w-3 h-3 ${currentDir === "desc" ? "rotate-180" : ""}`} />
+          <ChevronDown
+            className={`h-3 w-3 ${currentDir === "desc" ? "rotate-180" : ""}`}
+          />
         )}
       </span>
     </th>

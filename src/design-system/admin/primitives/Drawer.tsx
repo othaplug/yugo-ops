@@ -4,6 +4,7 @@ import * as React from "react"
 import * as D from "@radix-ui/react-dialog"
 import { cn } from "../lib/cn"
 import { X } from "../icons"
+import { useYu3PortalContainer } from "../layout/Yu3PortalContext"
 
 export const Drawer = D.Root
 export const DrawerTrigger = D.Trigger
@@ -52,11 +53,12 @@ export const DrawerContent = React.forwardRef<
         : side === "left"
           ? "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left"
           : "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom"
+    const portalContainer = useYu3PortalContainer()
     return (
-      <D.Portal>
+      <D.Portal container={portalContainer ?? undefined}>
         <D.Overlay
           className={cn(
-            "fixed inset-0 z-[var(--yu3-z-drawer)] bg-[var(--yu3-bg-overlay)]",
+            "fixed inset-0 z-[var(--yu3-z-drawer)] bg-[var(--yu3-bg-overlay)] pointer-events-auto backdrop-blur-sm",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
           )}
@@ -64,8 +66,8 @@ export const DrawerContent = React.forwardRef<
         <D.Content
           ref={ref}
           className={cn(
-            "fixed z-[var(--yu3-z-drawer)]",
-            "bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] border-[var(--yu3-line)]",
+            "fixed z-[var(--yu3-z-drawer)] pointer-events-auto",
+            "bg-[var(--yu3-bg-surface,#ffffff)] text-[var(--yu3-ink,#24201d)] border-[var(--yu3-line,#d4cdbb)]",
             "shadow-[var(--yu3-shadow-lg)]",
             "flex flex-col",
             pos,

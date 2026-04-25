@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
+import { useMemo, useState, useCallback } from "react"
+import Link from "next/link"
 import {
   Truck,
   CurrencyDollar,
@@ -16,8 +16,14 @@ import {
   ListBullets,
   ArrowSquareOut,
 } from "@phosphor-icons/react";
-import BackButton from "../components/BackButton";
-import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
+import { PageHeader } from "@/design-system/admin/layout"
+import { csvField } from "@/lib/admin-csv-field"
+import {
+  DataTable,
+  type ColumnDef,
+  type ColumnSort,
+  type ViewMode,
+} from "@/design-system/admin/table"
 import {
   type ActivityEventRow,
   formatActivityTime,
@@ -224,6 +230,12 @@ export default function AuditLogClient({
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [datePreset, setDatePreset] =
     useState<(typeof DATE_PRESETS)[number]["key"]>("all");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<ColumnSort | null>({
+    columnId: "time",
+    direction: "desc",
+  });
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const filtered = useMemo(() => {
     return events.filter((e) => {
@@ -239,18 +251,16 @@ export default function AuditLogClient({
     () => [
       {
         id: "time",
-        label: "Time",
+        shortLabel: "Time",
+        header: "Time",
         accessor: (e) => new Date(e.created_at).getTime(),
         sortable: true,
-        searchable: false,
-        minWidth: "140px",
-        defaultWidth: 140,
-        exportAccessor: (e) => new Date(e.created_at).toISOString(),
-        render: (e) => (
-          <div className="flex items-start gap-2">
+        width: 150,
+        cell: (e) => (
+          <div className="flex items-start gap-2 min-w-0">
             <EventGlyph icon={e.icon} entityType={e.entity_type} />
             <span
-              className="t-num text-[11px] font-medium text-[var(--tx2)] cursor-default"
+              className="t-num text-[11px] font-medium text-[var(--yu3-ink-muted)] cursor-default"
               title={new Date(e.created_at).toLocaleString()}
             >
               {formatActivityTime(e.created_at)}
@@ -260,71 +270,60 @@ export default function AuditLogClient({
       },
       {
         id: "entity",
-        label: "Entity",
+        header: "Entity",
         accessor: (e) => entityBadgeLabel(e.entity_type),
         sortable: true,
-        searchable: true,
-        minWidth: "110px",
-        defaultWidth: 110,
-        render: (e) => (
-          <span className="inline-flex items-center rounded-lg border border-[var(--brd)] bg-[var(--bg)]/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--tx2)]">
+        width: 120,
+        cell: (e) => (
+          <span className="inline-flex items-center rounded-lg border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface-sunken)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--yu3-ink-muted)]">
             {entityBadgeLabel(e.entity_type)}
           </span>
         ),
       },
       {
         id: "event",
-        label: "Event",
+        header: "Event",
         accessor: (e) => humanizeEventType(e.event_type),
         sortable: true,
-        searchable: true,
-        minWidth: "160px",
-        defaultWidth: 160,
-        render: (e) => (
-          <span className="text-[11px] font-semibold text-[var(--tx)] leading-snug">
+        width: 150,
+        cell: (e) => (
+          <span className="text-[11px] font-semibold text-[var(--yu3-ink)] leading-snug">
             {humanizeEventType(e.event_type)}
           </span>
         ),
       },
       {
         id: "description",
-        label: "Description",
-        accessor: (e) =>
-          formatActivityDescription(e.description || e.event_type) ?? "",
+        header: "Description",
+        accessor: (e) => {
+          const base =
+            formatActivityDescription(e.description || e.event_type) ?? "";
+          return `${base} ${e.entity_id ?? ""}`.trim();
+        },
         sortable: false,
-        searchable: true,
-        minWidth: "240px",
-        render: (e) => (
-          <p className="text-[12px] text-[var(--tx2)] leading-snug line-clamp-3">
+        minWidth: 200,
+        cell: (e) => (
+          <p className="text-[12px] text-[var(--yu3-ink-muted)] leading-snug line-clamp-3 min-w-0">
             {formatActivityDescription(e.description || e.event_type)}
           </p>
         ),
       },
       {
-        id: "entity_id",
-        label: "Entity ID",
-        accessor: (e) => e.entity_id ?? "",
-        sortable: false,
-        searchable: true,
-        alwaysHidden: true,
-      },
-      {
         id: "link",
-        label: "Link",
+        shortLabel: "Open",
+        header: "Link",
         accessor: () => "",
         sortable: false,
-        searchable: false,
         align: "right",
-        minWidth: "90px",
-        defaultWidth: 90,
-        render: (e) => {
+        width: 100,
+        cell: (e) => {
           const href = getEntityHref(e);
           if (!href) return null;
           return (
             <Link
               href={href}
               onClick={(ev) => ev.stopPropagation()}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--gold)] hover:underline"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--yu3-wine)] hover:underline"
             >
               Open
               <ArrowSquareOut size={14} weight="bold" aria-hidden />
@@ -336,6 +335,37 @@ export default function AuditLogClient({
     [],
   );
 
+  const onExport = useCallback(() => {
+    const headers = [
+      "Time (ISO)",
+      "Entity",
+      "Event",
+      "Description",
+      "Entity ID",
+    ];
+    const lines = filtered.map((e) => {
+      const desc =
+        formatActivityDescription(e.description || e.event_type) ?? "";
+      return [
+        new Date(e.created_at).toISOString(),
+        entityBadgeLabel(e.entity_type),
+        humanizeEventType(e.event_type),
+        desc,
+        e.entity_id ?? "",
+      ]
+        .map((c) => csvField(String(c)))
+        .join(",");
+    });
+    const csv = [headers.map(csvField).join(","), ...lines].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "yugo-audit-log.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [filtered]);
+
   const emptyMessage =
     events.length === 0
       ? "No events recorded yet"
@@ -346,19 +376,12 @@ export default function AuditLogClient({
       : "Try clearing search or widening the time range.";
 
   return (
-    <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
-      <div className="mb-5">
-        <BackButton label="Back" fallback="/admin/settings" />
-      </div>
-
-      <div className="mb-6">
-        <p className="t-label text-[var(--tx3)]/88 mb-1.5">Operations</p>
-        <h1 className="admin-page-hero text-[var(--tx)]">Audit log</h1>
-        <p className="text-[12px] text-[var(--tx3)] mt-2 font-medium leading-snug max-w-xl">
-          Status and activity events across moves, deliveries, billing, and
-          quotes. Showing the latest 200 entries.
-        </p>
-      </div>
+    <div className="flex flex-col gap-4 min-w-0">
+      <PageHeader
+        eyebrow="Operations"
+        title="Audit log"
+        description="Status and activity events across moves, deliveries, billing, and quotes. Showing the latest 200 entries."
+      />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-1.5">
@@ -403,34 +426,32 @@ export default function AuditLogClient({
       </div>
 
       <DataTable<ActivityEventRow>
-        data={filtered}
         columns={columns}
-        keyField="id"
-        tableId="audit-log"
-        defaultSortCol="time"
-        defaultSortDir="desc"
-        searchable
+        rows={filtered}
+        rowId={(e) => e.id}
+        search={search}
+        onSearchChange={setSearch}
+        sort={sort}
+        onSortChange={setSort}
+        onExport={onExport}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        availableViews={["list"]}
         searchPlaceholder="Search description, type, entity id…"
-        pagination
-        defaultPerPage={50}
-        exportable
-        exportFilename="yugo-audit-log"
-        columnToggle
-        stickyHeader
-        striped
-        emptyMessage={emptyMessage}
-        emptySubtext={emptySubtext}
-        mobileCardLayout={{
-          primaryColumnId: "event",
-          subtitleColumnId: "description",
-          metaColumnIds: ["time", "entity"],
-        }}
+        emptyState={
+          <div className="px-4 py-8 text-center max-w-md mx-auto">
+            <p className="text-[15px] font-semibold text-[var(--yu3-ink)] mb-1">
+              {emptyMessage}
+            </p>
+            <p className="text-[12px] text-[var(--yu3-ink-muted)]">{emptySubtext}</p>
+          </div>
+        }
       />
 
       <div className="mt-3 flex items-center justify-end">
         <Link
           href="/admin/activity"
-          className="text-[11px] font-semibold text-[var(--gold)] hover:underline"
+          className="text-[11px] font-semibold text-[var(--yu3-wine)] hover:underline"
         >
           Live activity feed
         </Link>

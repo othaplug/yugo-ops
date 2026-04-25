@@ -1,29 +1,36 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "../lib/cn"
-import { Avatar } from "../primitives/Avatar"
+import * as React from "react";
+import { cn } from "../lib/cn";
+import { Avatar } from "../primitives/Avatar";
 
 export type ActivityItem = {
-  id: string
-  actor?: { name: string; avatarUrl?: string | null }
-  subject: React.ReactNode
-  action?: string
-  target?: React.ReactNode
-  time: string
-  icon?: React.ReactNode
-  tone?: "neutral" | "wine" | "forest" | "success" | "warning" | "danger" | "info"
-  onClick?: () => void
-}
+  id: string;
+  actor?: { name: string; avatarUrl?: string | null };
+  subject: React.ReactNode;
+  action?: string;
+  target?: React.ReactNode;
+  time: string;
+  icon?: React.ReactNode;
+  tone?:
+    | "neutral"
+    | "wine"
+    | "forest"
+    | "success"
+    | "warning"
+    | "danger"
+    | "info";
+  onClick?: () => void;
+};
 
 export interface ActivityCardProps extends React.HTMLAttributes<HTMLDivElement> {
-  items: ActivityItem[]
-  eyebrow?: string
-  title?: string
-  emptyLabel?: string
-  rightSlot?: React.ReactNode
+  items: ActivityItem[];
+  eyebrow?: string;
+  title?: string;
+  emptyLabel?: string;
+  rightSlot?: React.ReactNode;
   /** Limit items shown; "Show all" reveals the rest. */
-  initialCount?: number
+  initialCount?: number;
 }
 
 export const ActivityCard = React.forwardRef<HTMLDivElement, ActivityCardProps>(
@@ -40,8 +47,8 @@ export const ActivityCard = React.forwardRef<HTMLDivElement, ActivityCardProps>(
     },
     ref,
   ) => {
-    const [expanded, setExpanded] = React.useState(false)
-    const visible = expanded ? items : items.slice(0, initialCount)
+    const [expanded, setExpanded] = React.useState(false);
+    const visible = expanded ? items : items.slice(0, initialCount);
 
     return (
       <div
@@ -82,11 +89,16 @@ export const ActivityCard = React.forwardRef<HTMLDivElement, ActivityCardProps>(
                 onClick={it.onClick}
                 className={cn(
                   "flex items-start gap-3 px-5 py-3",
-                  it.onClick && "cursor-pointer hover:bg-[var(--yu3-bg-surface-sunken)]",
+                  it.onClick &&
+                    "cursor-pointer hover:bg-[var(--yu3-bg-surface-sunken)]",
                 )}
               >
                 {it.actor ? (
-                  <Avatar name={it.actor.name} src={it.actor.avatarUrl} size={28} />
+                  <Avatar
+                    name={it.actor.name}
+                    src={it.actor.avatarUrl}
+                    size={28}
+                  />
                 ) : it.icon ? (
                   <span
                     className="h-7 w-7 rounded-full inline-flex items-center justify-center flex-none border border-[var(--yu3-line-subtle)]"
@@ -109,7 +121,9 @@ export const ActivityCard = React.forwardRef<HTMLDivElement, ActivityCardProps>(
                     ) : null}
                     {it.actor?.name && it.action ? " " : null}
                     {it.action ? (
-                      <span className="text-[var(--yu3-ink-muted)]">{it.action}</span>
+                      <span className="text-[var(--yu3-ink-muted)]">
+                        {it.action}
+                      </span>
                     ) : null}
                     {it.target ? <> {it.target}</> : null}
                   </div>
@@ -143,45 +157,45 @@ export const ActivityCard = React.forwardRef<HTMLDivElement, ActivityCardProps>(
           </div>
         ) : null}
       </div>
-    )
+    );
   },
-)
-ActivityCard.displayName = "ActivityCard"
+);
+ActivityCard.displayName = "ActivityCard";
 
 function toneTint(tone?: ActivityItem["tone"]) {
   switch (tone) {
     case "wine":
-      return "var(--yu3-wine-tint)"
+      return "var(--yu3-wine-tint)";
     case "forest":
-      return "var(--yu3-forest-tint)"
+      return "var(--yu3-forest-tint)";
     case "success":
-      return "var(--yu3-success-tint)"
+      return "var(--yu3-success-tint)";
     case "warning":
-      return "var(--yu3-warning-tint)"
+      return "var(--yu3-warning-tint)";
     case "danger":
-      return "var(--yu3-danger-tint)"
+      return "var(--yu3-danger-tint)";
     case "info":
-      return "var(--yu3-info-tint)"
+      return "var(--yu3-info-tint)";
     default:
-      return "var(--yu3-bg-surface-sunken)"
+      return "var(--yu3-bg-surface-sunken)";
   }
 }
 
 function toneColor(tone?: ActivityItem["tone"]) {
   switch (tone) {
     case "wine":
-      return "var(--yu3-wine)"
+      return "var(--yu3-wine)";
     case "forest":
-      return "var(--yu3-forest)"
+      return "var(--yu3-forest)";
     case "success":
-      return "var(--yu3-success)"
+      return "var(--yu3-success)";
     case "warning":
-      return "var(--yu3-warning)"
+      return "var(--yu3-warning)";
     case "danger":
-      return "var(--yu3-danger)"
+      return "var(--yu3-danger)";
     case "info":
-      return "var(--yu3-info)"
+      return "var(--yu3-info)";
     default:
-      return "var(--yu3-ink-muted)"
+      return "var(--yu3-ink-muted)";
   }
 }

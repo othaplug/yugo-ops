@@ -8,7 +8,6 @@ import {
   SquaresFour,
   FunnelSimple,
   Kanban,
-  Warning,
   ArrowClockwise,
 } from "@phosphor-icons/react"
 import { Input } from "../primitives/Input"
@@ -524,7 +523,6 @@ export const DataTable = <T,>({
   if (error) {
     body = (
       <EmptyState
-        icon={<Warning className="size-5" weight="bold" />}
         title="Something went wrong"
         description={error.message || "Unable to load data."}
         action={

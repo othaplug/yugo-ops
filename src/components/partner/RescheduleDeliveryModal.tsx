@@ -79,7 +79,7 @@ export default function RescheduleDeliveryModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 modal-overlay">
       <div className="w-full max-w-md bg-[#FFFBF7] border border-[#2C3E2D]/10 rounded-lg overflow-hidden shadow-[0_24px_80px_rgba(44,62,45,0.14)]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#2C3E2D]/10">

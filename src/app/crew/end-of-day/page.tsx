@@ -104,7 +104,7 @@ export default function CrewEndOfDayPage() {
     : [];
 
   return (
-    <PageContent className="pb-28 md:pb-6">
+    <PageContent className="pb-6">
       <section className="max-w-[520px] mx-auto">
         <Link
           href="/crew/dashboard"

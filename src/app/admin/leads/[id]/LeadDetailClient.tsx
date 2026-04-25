@@ -157,7 +157,7 @@ export default function LeadDetailClient({
     Number(lead.parsed_weight_lbs_max) > 300;
 
   return (
-    <div className="max-w-[720px] mx-auto px-4 md:px-6 py-5 md:py-6">
+    <div className="w-full min-w-0 py-5 md:py-6">
       <div className="mb-4">
         <BackButton label="Back to Leads" fallback="/admin/leads" />
       </div>
@@ -370,10 +370,9 @@ export default function LeadDetailClient({
       {dismissOpen && (
         <ModalDialogFrame
           zClassName="z-50"
-          yugoGlassChrome
-          backdropClassName="bg-black/50"
+          backdropClassName=""
           onBackdropClick={() => setDismissOpen(false)}
-          panelClassName="yugo-glass-light rounded-xl p-5 max-w-md w-full shadow-xl modal-card"
+          panelClassName="bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] border border-[var(--yu3-line)] shadow-[var(--yu3-shadow-lg)] rounded-[var(--yu3-r-xl)] p-5 max-w-md w-full modal-card"
           ariaLabelledBy="dismiss-lead-title"
         >
           <h2

@@ -3,10 +3,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import BackButton from "../components/BackButton";
-import KpiCard from "@/components/ui/KpiCard";
-import SectionDivider from "@/components/ui/SectionDivider";
-import ChangeRequestsClient from "./ChangeRequestsClient";
+import ChangeRequestsV3Client from "./ChangeRequestsV3Client";
 
 export default async function ChangeRequestsPage() {
   const admin = createAdminClient();
@@ -38,28 +35,10 @@ export default async function ChangeRequestsPage() {
   const reviewed = all.filter((r: any) => r.status !== "pending");
 
   return (
-    <div className="mx-auto max-w-[1000px] px-5 py-5 md:px-6 md:py-6 animate-fade-up">
-      <div className="mb-6"><BackButton label="Back" /></div>
-
-      <div className="flex items-start justify-between mb-8 gap-4">
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Operations</p>
-          <h1 className="admin-page-hero text-[var(--tx)]">Change Requests</h1>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
-        <KpiCard label="Pending" value={String(pending.length)} sub="awaiting review" warn={pending.length > 0} />
-        <KpiCard label="Reviewed" value={String(reviewed.length)} sub="actioned" accent={reviewed.length > 0} />
-        <KpiCard label="Total" value={String(all.length)} sub="all time" />
-      </div>
-
-      <SectionDivider label="Requests" />
-      <ChangeRequestsClient
-        all={all}
-        pending={pending}
-        reviewed={reviewed}
-      />
-    </div>
+    <ChangeRequestsV3Client
+      all={all}
+      pending={pending}
+      reviewed={reviewed}
+    />
   );
 }

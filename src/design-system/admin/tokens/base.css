@@ -127,12 +127,29 @@
   line-height: var(--yu3-lh-snug);
 }
 
-/* Glass panel (top bar, floating bulk bar) */
+/* Glass panel (legacy; prefer .yu3-topbar-float for chromeless header) */
 [data-yugo-admin-v3] .yu3-glass {
-  background: var(--yu3-bg-glass);
-  backdrop-filter: blur(14px) saturate(110%);
-  -webkit-backdrop-filter: blur(14px) saturate(110%);
+  background: var(--yu3-bg-surface);
   border-bottom: 1px solid var(--yu3-line-subtle);
+}
+
+/* Wrapperless top row: sits on canvas, no box or bottom border */
+[data-yugo-admin-v3] .yu3-topbar-float {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* Top bar inline search: one quiet ring from the shell only; no extra focus border */
+[data-yugo-admin-v3] .yu3-topbar-search input,
+[data-yugo-admin-v3] .yu3-topbar-search input:focus,
+[data-yugo-admin-v3] .yu3-topbar-search input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+[data-yugo-admin-v3] .yu3-topbar-search input::-webkit-search-cancel-button {
+  appearance: none;
+  display: none;
 }
 
 /* Card wrapper */
@@ -148,12 +165,13 @@
   border-radius: var(--yu3-r-md);
 }
 
-/* Links */
-[data-yugo-admin-v3] a {
+/* Links (body / nav). Exclude .admin-btn* and [data-yu3-button] (primitives Button
+   asChild=<a>) so CTA text utilities are not replaced by `color: inherit`. */
+[data-yugo-admin-v3] a:not([class*="admin-btn"]):not([data-yu3-button]) {
   color: inherit;
   text-decoration: none;
 }
-[data-yugo-admin-v3] a:hover {
+[data-yugo-admin-v3] a:not([class*="admin-btn"]):not([data-yu3-button]):hover {
   color: var(--yu3-ink-strong);
 }
 
@@ -197,6 +215,28 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
+/* Mobile bottom nav: compact ⟷ expanded */
+@keyframes yu3-mnav-expand {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes yu3-mnav-fab {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   [data-yugo-admin-v3] *,
@@ -214,6 +254,10 @@
   grid-template-columns: var(--yu3-sidebar-w) 1fr;
   min-height: 100dvh;
   width: 100%;
+  box-sizing: border-box;
+  padding: var(--yu3-sp-4);
+  align-items: start;
+  column-gap: var(--yu3-sp-2);
 }
 [data-yugo-admin-v3] .yu3-shell[data-collapsed="true"] {
   grid-template-columns: var(--yu3-sidebar-rail-w) 1fr;
@@ -222,6 +266,8 @@
   [data-yugo-admin-v3] .yu3-shell,
   [data-yugo-admin-v3] .yu3-shell[data-collapsed="true"] {
     grid-template-columns: 1fr;
+    padding: 0;
+    column-gap: 0;
   }
 }
 

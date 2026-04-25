@@ -1,13 +1,17 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { createPortal } from "react-dom";
-import { Plus, X, Gift, Users, Tag, PencilSimple as Pencil, Check, Copy, Trash as Trash2 } from "@phosphor-icons/react";
-import { useToast } from "../components/Toast";
-import CreateButton from "../components/CreateButton";
-import YugoLogo from "@/components/YugoLogo";
-import { formatPlatformDisplay } from "@/lib/date-format";
-import { formatCurrency } from "@/lib/format-currency";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
+import { createPortal } from "react-dom"
+import { Plus, X, Gift, Users, Tag, PencilSimple as Pencil, Check, Copy, Trash as Trash2 } from "@phosphor-icons/react"
+import { useToast } from "../components/Toast"
+import YugoLogo from "@/components/YugoLogo"
+import { formatPlatformDisplay } from "@/lib/date-format"
+import { formatCurrency } from "@/lib/format-currency"
+import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme"
+import { PageHeader } from "@/design-system/admin/layout"
+import { Button } from "@/design-system/admin/primitives"
+import { KpiStrip, type KpiTile } from "@/design-system/admin/dashboard"
+import { cn } from "@/design-system/admin/lib/cn"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -79,11 +83,11 @@ const OFFER_TYPE_BADGE: Record<string, string> = {
 };
 
 const REF_STATUS_BADGE: Record<string, string> = {
-  active: "text-amber-700 dark:text-amber-300",
-  used: "text-emerald-700 dark:text-emerald-400",
-  expired: "text-red-600 dark:text-red-400",
-  credited: "text-blue-700 dark:text-sky-400",
-};
+  active: "text-[var(--yu3-warning)]",
+  used: "text-[var(--yu3-success)]",
+  expired: "text-[var(--yu3-danger)]",
+  credited: "text-[var(--yu3-info)]",
+}
 
 // ─── Create Perk Modal ────────────────────────────────────────────────────────
 
@@ -144,11 +148,12 @@ function CreatePerkModal({
   };
 
   const modal = (
-    <div className="fixed inset-0 z-[99999] grid place-items-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
-      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto shadow-2xl shrink-0">
-        <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] flex items-center justify-between px-5 py-4 rounded-t-2xl">
-          <h3 className="text-[15px] font-bold text-[var(--tx)]">Create Perk</h3>
-          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--bg)] transition-colors"><X className="w-4 h-4" /></button>
+    <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4" data-modal-root>
+      <div className="absolute inset-0 modal-overlay" aria-hidden onClick={onClose} />
+      <Yu3PortaledTokenRoot className="relative z-10 w-full max-w-[520px] max-h-[90vh] overflow-y-auto rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)]">
+        <div className="sticky top-0 flex items-center justify-between border-b border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] px-5 py-4 rounded-t-[var(--yu3-r-xl)]">
+          <h3 className="text-[15px] font-bold text-[var(--yu3-ink-strong)]">Create Perk</h3>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--yu3-bg-surface-sunken)] transition-colors text-[var(--yu3-ink)]"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div>
@@ -225,13 +230,13 @@ function CreatePerkModal({
             </div>
           </div>
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-xl text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
-            <button type="button" onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-xl text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-60">
+            <button type="button" onClick={onClose} className="admin-btn admin-btn-secondary flex-1">Cancel</button>
+            <button type="button" onClick={handleSave} disabled={saving} className="admin-btn admin-btn-primary flex-1">
               {saving ? "Saving…" : "Save Perk"}
             </button>
           </div>
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>
   );
 
@@ -290,11 +295,12 @@ function CreatePromoReferralModal({
   };
 
   const modal = (
-    <div className="fixed inset-0 z-[99999] grid place-items-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
-      <div className="bg-[var(--card)] rounded-2xl w-full max-w-[420px] shadow-2xl shrink-0">
-        <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] flex items-center justify-between px-5 py-4 rounded-t-2xl">
-          <h3 className="text-[15px] font-bold text-[var(--tx)]">Create Promotional Code</h3>
-          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--bg)] transition-colors"><X className="w-4 h-4" /></button>
+    <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4" data-modal-root>
+      <div className="absolute inset-0 modal-overlay" aria-hidden onClick={onClose} />
+      <Yu3PortaledTokenRoot className="relative z-10 w-full max-w-[420px] rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)]">
+        <div className="sticky top-0 flex items-center justify-between border-b border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] px-5 py-4 rounded-t-[var(--yu3-r-xl)]">
+          <h3 className="text-[15px] font-bold text-[var(--yu3-ink-strong)]">Create Promotional Code</h3>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--yu3-bg-surface-sunken)] transition-colors text-[var(--yu3-ink)]"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div>
@@ -349,13 +355,13 @@ function CreatePromoReferralModal({
             <p className="text-[10px] text-[var(--tx3)] mt-1">Leave blank for 1 year from today.</p>
           </div>
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-xl text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">Cancel</button>
-            <button type="button" onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-xl text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-60">
+            <button type="button" onClick={onClose} className="admin-btn admin-btn-secondary flex-1">Cancel</button>
+            <button type="button" onClick={handleSave} disabled={saving} className="admin-btn admin-btn-primary flex-1">
               {saving ? "Creating…" : "Create Code"}
             </button>
           </div>
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>
   );
 
@@ -581,65 +587,127 @@ export default function PerksPage() {
     { key: "perks" as const, label: "Partner Perks", Icon: Tag },
     { key: "referrals" as const, label: "Referrals", Icon: Gift },
     { key: "vip" as const, label: "VIP Clients", Icon: Users },
-  ];
+  ]
 
-  const activePerks = perks.filter((p) => p.is_active).length;
-  const activeReferrals = referrals.filter((r) => r.status === "active").length;
+  const activePerks = perks.filter((p) => p.is_active).length
+  const activeReferrals = referrals.filter((r) => r.status === "active").length
+
+  const kpiTiles = useMemo((): KpiTile[] => {
+    return [
+      {
+        id: "active-perks",
+        label: "Active perks",
+        value: String(activePerks),
+        hint: `${perks.length} total offers`,
+        valueClassName: "text-[var(--yu3-ink-strong)]",
+      },
+      {
+        id: "referrals",
+        label: "Referrals",
+        value: String(referrals.length),
+        hint: `${activeReferrals} active codes`,
+        valueClassName: "text-[var(--yu3-ink-strong)]",
+      },
+      {
+        id: "used-30d",
+        label: "Used (30d)",
+        value: String(usedThisMonth),
+        hint: "Redemptions",
+        valueClassName: "text-[var(--yu3-ink-strong)]",
+      },
+      {
+        id: "conversion",
+        label: "Conversion",
+        value: `${convRate}%`,
+        hint: "Referral rate",
+        valueClassName: "text-[var(--yu3-ink-strong)]",
+      },
+    ]
+  }, [
+    activePerks,
+    activeReferrals,
+    perks.length,
+    referrals.length,
+    usedThisMonth,
+    convRate,
+  ])
 
   return (
-    <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-6 animate-fade-up">
-      <div className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-1.5">Growth</p>
-          <h1 className="admin-page-hero text-[var(--tx)]">Perks & Referrals</h1>
-          <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
-            Partner perks, referral codes, and VIP client offers.
-          </p>
-        </div>
-        {tab === "perks" && (
-          <CreateButton onClick={() => setShowCreate(true)} title="Create perk" label="Add offer" />
-        )}
-        {tab === "referrals" && (
-          <CreateButton onClick={() => setShowCreatePromo(true)} title="Create promo code" label="Add promo" />
-        )}
+    <div className="w-full min-w-0 py-5 md:py-6 animate-fade-up">
+      <PageHeader
+        eyebrow="Growth"
+        title="Perks & Referrals"
+        description="Partner perks, referral codes, and VIP client offers."
+        actions={
+          tab === "perks" ? (
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              leadingIcon={<Plus className="h-4 w-4" weight="bold" />}
+              onClick={() => setShowCreate(true)}
+              title="Create perk"
+            >
+              Add offer
+            </Button>
+          ) : tab === "referrals" ? (
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              leadingIcon={<Plus className="h-4 w-4" weight="bold" />}
+              onClick={() => setShowCreatePromo(true)}
+              title="Create promo code"
+            >
+              Add promo
+            </Button>
+          ) : undefined
+        }
+      />
+
+      <div className="mb-6 border-b border-[var(--yu3-line-subtle)] pb-6">
+        <KpiStrip
+          variant="grid"
+          columns={4}
+          tiles={kpiTiles}
+          className="sm:grid-cols-4 md:grid-cols-4"
+        />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)] mb-6">
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-2">Active perks</p>
-          <p className="text-[28px] font-semibold leading-none text-[var(--tx)] tabular-nums">{activePerks}</p>
-          <p className="text-[11px] text-[var(--tx3)] mt-1.5">{perks.length} total offers</p>
-        </div>
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-2">Referrals</p>
-          <p className="text-[28px] font-semibold leading-none text-[var(--tx)] tabular-nums">{referrals.length}</p>
-          <p className="text-[11px] text-[var(--tx3)] mt-1.5">{activeReferrals} active codes</p>
-        </div>
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-2">Used (30d)</p>
-          <p className="text-[28px] font-semibold leading-none text-[var(--tx)] tabular-nums">{usedThisMonth}</p>
-          <p className="text-[11px] text-[var(--tx3)] mt-1.5">redemptions</p>
-        </div>
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)] mb-2">Conversion</p>
-          <p className="text-[28px] font-semibold leading-none text-[var(--tx)] tabular-nums">{convRate}%</p>
-          <p className="text-[11px] text-[var(--tx3)] mt-1.5">referral rate</p>
-        </div>
-      </div>
-
-
-      {/* Tab bar */}
-      <div className="flex gap-0 border-b border-[var(--brd)] mb-6">
+      <div
+        className="flex flex-wrap gap-0 border-b border-[var(--yu3-line)] mb-6"
+        role="tablist"
+        aria-label="Perks sections"
+      >
         {TABS.map(({ key, label, Icon }) => (
-          <button key={key} onClick={() => setTab(key)} className={`flex items-center gap-1.5 px-4 py-2.5 text-[11px] font-bold tracking-[0.08em] uppercase border-b-2 -mb-px transition-all ${tab === key ? "border-[var(--gold)] text-[var(--gold)]" : "border-transparent text-[var(--tx3)] hover:text-[var(--tx2)]"}`}>
-            <Icon className="w-[13px] h-[13px]" />
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            onClick={() => setTab(key)}
+            className={cn(
+              "flex min-h-[44px] items-center gap-1.5 px-4 py-2.5 text-[11px] font-bold tracking-[0.1em] uppercase border-b-2 -mb-px transition-colors",
+              tab === key
+                ? "border-[var(--yu3-wine)] text-[var(--yu3-wine)]"
+                : "border-transparent text-[var(--yu3-ink-muted)] hover:text-[var(--yu3-ink)]",
+            )}
+          >
+            <Icon className="h-[13px] w-[13px] shrink-0" />
             {label}
           </button>
         ))}
       </div>
 
       {loading ? (
-        <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-14 animate-pulse bg-[var(--brd)]/20 rounded-xl" />)}</div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-14 animate-pulse rounded-[var(--yu3-r-lg)] bg-[var(--yu3-bg-surface-sunken)]"
+            />
+          ))}
+        </div>
       ) : (
         <>
           {/* ─── Partner Perks Tab ───────────────────────────────── */}
@@ -648,13 +716,15 @@ export default function PerksPage() {
               {/* ── Live Preview carousel ── */}
               {perks.some((p) => p.is_active) && (
                 <div className="mb-8">
-                  <div className="flex items-center gap-2 mb-3">
-                    <h2 className="admin-section-h2">Live Preview</h2>
+                  <div className="mb-3 flex items-center gap-2">
+                    <h2 className="yu3-t-title text-[var(--yu3-ink-strong)]">Live Preview</h2>
                     <span className="relative flex h-1.5 w-1.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--yu3-success)] opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--yu3-success)]" />
                     </span>
-                    <span className="text-[9px] text-[var(--tx3)]">Client-facing view of active offers</span>
+                    <span className="text-[9px] text-[var(--yu3-ink-faint)]">
+                      Client-facing view of active offers
+                    </span>
                   </div>
                   <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-3 -mx-1 px-1 scroll-smooth snap-x snap-mandatory">
                     {perks.filter((p) => p.is_active).map((perk, idx) => {
@@ -715,38 +785,47 @@ export default function PerksPage() {
                 </div>
               )}
               {perks.length === 0 ? (
-                <div className="text-center py-16">
-                  <Tag className="w-10 h-10 text-[var(--tx3)] mx-auto mb-3" />
-                  <p className="text-[13px] text-[var(--tx3)]">No perks yet. Create your first offer.</p>
+                <div className="rounded-[var(--yu3-r-lg)] border border-dashed border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] py-16 text-center">
+                  <Tag className="mx-auto mb-3 h-10 w-10 text-[var(--yu3-ink-faint)]" />
+                  <p className="text-[13px] text-[var(--yu3-ink-muted)]">
+                    No perks yet. Create your first offer.
+                  </p>
                 </div>
               ) : (
-                <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+                <div className="overflow-hidden rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] shadow-sm">
                   <div className="overflow-x-auto">
-                  <table className="w-full text-[12px] min-w-[700px]">
+                  <table className="w-full min-w-[700px] text-[12px]">
                     <thead>
-                      <tr className="border-b border-[var(--brd)] bg-[var(--bg)]/50">
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Partner</th>
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Offer Title</th>
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Type</th>
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Code</th>
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Valid Until</th>
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Used</th>
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Status</th>
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Actions</th>
+                      <tr className="border-b border-[var(--yu3-line)] bg-[var(--yu3-bg-surface-sunken)]">
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Partner</th>
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Offer Title</th>
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Type</th>
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Code</th>
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Valid Until</th>
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Used</th>
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Status</th>
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--brd)]/30">
+                    <tbody>
                       {perks.map((perk) => {
                         const expired = perk.valid_until && new Date(perk.valid_until) < new Date();
                         const status = !perk.is_active ? "Paused" : expired ? "Expired" : "Active";
-                        const statusCls = !perk.is_active ? "text-[var(--tx3)]" : expired ? "text-red-600 dark:text-red-400" : "text-[#2D9F5A]";
+                        const statusCls = !perk.is_active
+                          ? "text-[var(--yu3-ink-muted)]"
+                          : expired
+                            ? "text-[var(--yu3-danger)]"
+                            : "text-[var(--yu3-success)]";
                         return (
-                          <tr key={perk.id} className="hover:bg-[var(--bg)]/40">
-                            <td className="px-4 py-3 text-[var(--tx3)]">{perk.organizations?.name || "Yugo"}</td>
-                            <td className="px-4 py-3 font-semibold text-[var(--tx)]">
+                          <tr
+                            key={perk.id}
+                            className="border-b border-[var(--yu3-line-subtle)] last:border-0 hover:bg-[color-mix(in_srgb,var(--yu3-ink)_4%,var(--yu3-bg-surface))]"
+                          >
+                            <td className="px-4 py-3.5 text-[var(--yu3-ink-muted)]">{perk.organizations?.name || "Yugo"}</td>
+                            <td className="px-4 py-3.5 font-semibold text-[var(--yu3-ink-strong)]">
                               <EditablePerkCell value={perk.title} field="title" perkId={perk.id} onSaved={onPerkSaved} />
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3.5">
                               <EditablePerkCell
                                 value={perk.offer_type}
                                 field="offer_type"
@@ -755,10 +834,10 @@ export default function PerksPage() {
                                 options={Object.entries(OFFER_TYPE_LABELS).map(([v, l]) => ({ value: v, label: l }))}
                               />
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3.5">
                               <EditablePerkCell value={perk.redemption_code} field="redemption_code" perkId={perk.id} onSaved={onPerkSaved} />
                             </td>
-                            <td className="px-4 py-3 text-[var(--tx3)]">
+                            <td className="px-4 py-3.5 text-[var(--yu3-ink-muted)]">
                               <EditablePerkCell
                                 value={perk.valid_until}
                                 field="valid_until"
@@ -768,16 +847,30 @@ export default function PerksPage() {
                                 formatDisplay={(v) => (v && String(v).length >= 10) ? formatPlatformDisplay(String(v) + "T00:00:00", { month: "short", day: "numeric" }) : "No expiry"}
                               />
                             </td>
-                            <td className="px-4 py-3 text-[var(--tx3)]">
+                            <td className="px-4 py-3.5 text-[var(--yu3-ink-muted)]">
                               {perk.current_redemptions}{perk.max_redemptions != null ? ` / ${perk.max_redemptions}` : " / ∞"}
                             </td>
-                            <td className="px-4 py-3"><span className={`dt-badge tracking-[0.04em] ${statusCls}`}>{status}</span></td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3.5">
+                              <span className={`text-[10px] font-bold uppercase tracking-[0.06em] ${statusCls}`}>
+                                {status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5">
                               <div className="flex items-center gap-2">
-                                <button onClick={() => togglePerk(perk)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
+                                <button
+                                  type="button"
+                                  onClick={() => togglePerk(perk)}
+                                  className="text-[10px] font-semibold text-[var(--yu3-wine)] hover:underline"
+                                >
                                   {perk.is_active ? "Pause" : "Activate"}
                                 </button>
-                                <button onClick={() => deletePerk(perk.id)} className="text-[10px] font-semibold text-[var(--red)] hover:underline">Delete</button>
+                                <button
+                                  type="button"
+                                  onClick={() => deletePerk(perk.id)}
+                                  className="text-[10px] font-semibold text-[var(--yu3-danger)] hover:underline"
+                                >
+                                  Delete
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -794,35 +887,36 @@ export default function PerksPage() {
           {/* ─── Referrals Tab ───────────────────────────────────── */}
           {tab === "referrals" && (
             <div>
-              {/* Stats row, inline, no cards */}
-              <div className="text-[12px] text-[var(--tx2)] mb-6">
-                <span className="font-semibold text-[var(--tx)]">Active Codes {activeRefs}</span>
-                <span className="mx-2 text-[var(--tx3)]">·</span>
-                <span className="font-semibold text-[var(--tx)]">Used This Month {usedThisMonth}</span>
-                <span className="mx-2 text-[var(--tx3)]">·</span>
-                <span className="font-semibold text-[var(--tx)]">Conversion Rate {convRate}%</span>
-                <span className="mx-2 text-[var(--tx3)]">·</span>
-                <span className="font-semibold text-[var(--tx)]">Total Referrals {referrals.length}</span>
+              <div className="mb-6 rounded-[var(--yu3-r-md)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] px-4 py-2.5 text-[12px] text-[var(--yu3-ink-muted)]">
+                <span className="font-semibold text-[var(--yu3-ink-strong)]">Active codes {activeRefs}</span>
+                <span className="mx-2 text-[var(--yu3-ink-faint)]">·</span>
+                <span className="font-semibold text-[var(--yu3-ink-strong)]">Used this month {usedThisMonth}</span>
+                <span className="mx-2 text-[var(--yu3-ink-faint)]">·</span>
+                <span className="font-semibold text-[var(--yu3-ink-strong)]">Conversion rate {convRate}%</span>
+                <span className="mx-2 text-[var(--yu3-ink-faint)]">·</span>
+                <span className="font-semibold text-[var(--yu3-ink-strong)]">Total referrals {referrals.length}</span>
               </div>
 
               {referrals.length === 0 ? (
-                <div className="text-center py-12 text-[var(--tx3)] text-[13px]">No referrals yet. They generate automatically when moves complete.</div>
+                <div className="rounded-[var(--yu3-r-lg)] border border-dashed border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] py-12 text-center text-[13px] text-[var(--yu3-ink-muted)]">
+                  No referrals yet. They generate automatically when moves complete.
+                </div>
               ) : (
-                <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+                <div className="overflow-hidden rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] shadow-sm">
                   <div className="overflow-x-auto">
-                  <table className="w-full text-[12px] min-w-[640px]">
+                  <table className="w-full min-w-[640px] text-[12px]">
                     <thead>
-                      <tr className="border-b border-[var(--brd)] bg-[var(--bg)]/50">
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Code</th>
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Referrer</th>
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Referred</th>
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Status</th>
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Credit</th>
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Created</th>
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Actions</th>
+                      <tr className="border-b border-[var(--yu3-line)] bg-[var(--yu3-bg-surface-sunken)]">
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Code</th>
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Referrer</th>
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Referred</th>
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Status</th>
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Credit</th>
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Created</th>
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--brd)]/30">
+                    <tbody>
                       {referrals.map((ref) => {
                         const creditStr = `${formatCurrency(ref.referrer_credit ?? 0)} / ${formatCurrency(ref.referred_discount ?? 0)}`;
                         const referredDisplay = ref.referred_name || ref.referred_email
@@ -831,47 +925,69 @@ export default function PerksPage() {
                             ? "Not used yet"
                             : "-";
                         return (
-                          <tr key={ref.id} className="hover:bg-[var(--bg)]/40">
-                            <td className="px-4 py-3">
+                          <tr
+                            key={ref.id}
+                            className="border-b border-[var(--yu3-line-subtle)] last:border-0 hover:bg-[color-mix(in_srgb,var(--yu3-ink)_4%,var(--yu3-bg-surface))]"
+                          >
+                            <td className="px-4 py-3.5">
                               <span className="inline-flex items-center gap-1.5">
-                                <code className="text-[var(--gold)] border border-[var(--brd)] px-2 py-0.5 rounded-md text-[11px] font-mono">{ref.referral_code}</code>
+                                <code className="rounded-md border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface-sunken)] px-2 py-0.5 font-mono text-[11px] text-[var(--yu3-wine)]">
+                                  {ref.referral_code}
+                                </code>
                                 <button
+                                  type="button"
                                   onClick={() => {
-                                    navigator.clipboard.writeText(ref.referral_code).then(() => toast("Code copied", "check"));
+                                    void navigator.clipboard.writeText(ref.referral_code).then(() => toast("Code copied", "check"));
                                   }}
-                                  className="p-1 rounded hover:bg-[var(--bg)] transition-colors text-[var(--tx3)] hover:text-[var(--gold)]"
+                                  className="rounded p-1 text-[var(--yu3-ink-muted)] transition-colors hover:bg-[var(--yu3-bg-surface-sunken)] hover:text-[var(--yu3-wine)]"
                                   title="Copy code"
                                 >
-                                  <Copy className="w-3.5 h-3.5" />
+                                  <Copy className="h-3.5 w-3.5" />
                                 </button>
                               </span>
                             </td>
-                            <td className="px-4 py-3">
-                              <div className="font-semibold text-[var(--tx)]">{ref.referrer_name}</div>
-                              <div className="text-[10px] text-[var(--tx3)]">{ref.referrer_email}</div>
+                            <td className="px-4 py-3.5">
+                              <div className="font-semibold text-[var(--yu3-ink-strong)]">{ref.referrer_name}</div>
+                              <div className="text-[10px] text-[var(--yu3-ink-muted)]">{ref.referrer_email}</div>
                             </td>
-                            <td className="px-4 py-3 text-[var(--tx3)]">{referredDisplay}</td>
-                            <td className="px-4 py-3">
-                              <span className={`dt-badge tracking-[0.04em] ${REF_STATUS_BADGE[ref.status] || "text-[var(--tx3)]"}`}>{ref.status}</span>
+                            <td className="px-4 py-3.5 text-[var(--yu3-ink-muted)]">{referredDisplay}</td>
+                            <td className="px-4 py-3.5">
+                              <span
+                                className={cn(
+                                  "text-[10px] font-bold uppercase tracking-[0.06em]",
+                                  REF_STATUS_BADGE[ref.status] || "text-[var(--yu3-ink-muted)]",
+                                )}
+                              >
+                                {ref.status}
+                              </span>
                             </td>
-                            <td className="px-4 py-3 text-[var(--tx3)]">
+                            <td className="px-4 py-3.5 text-[var(--yu3-ink-muted)]">
                               {ref.status === "credited"
-                                ? <span className="text-blue-600">Credited {creditStr}{ref.credited_at ? ` · ${formatPlatformDisplay(ref.credited_at, { month: "short", day: "numeric" })}` : ""}</span>
+                                ? <span className="text-[var(--yu3-info)]">Credited {creditStr}{ref.credited_at ? ` · ${formatPlatformDisplay(ref.credited_at, { month: "short", day: "numeric" })}` : ""}</span>
                                 : ref.status === "used"
                                   ? <span>Pending {creditStr}</span>
                                   : <span>{creditStr}</span>}
                             </td>
-                            <td className="px-4 py-3 text-[var(--tx3)]">{formatPlatformDisplay(ref.created_at, { month: "short", day: "numeric" })}</td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2 flex-wrap">
+                            <td className="px-4 py-3.5 text-[var(--yu3-ink-muted)]">
+                              {formatPlatformDisplay(ref.created_at, { month: "short", day: "numeric" })}
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <div className="flex flex-wrap items-center gap-2">
                                 {ref.status === "used" && (
-                                  <button onClick={() => markCredited(ref)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">Mark Credited</button>
+                                  <button
+                                    type="button"
+                                    onClick={() => void markCredited(ref)}
+                                    className="text-[10px] font-semibold text-[var(--yu3-wine)] hover:underline"
+                                  >
+                                    Mark credited
+                                  </button>
                                 )}
                                 <button
-                                  onClick={() => deleteReferral(ref)}
-                                  className="text-[10px] font-semibold text-[var(--red)] hover:underline inline-flex items-center gap-1"
+                                  type="button"
+                                  onClick={() => void deleteReferral(ref)}
+                                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--yu3-danger)] hover:underline"
                                 >
-                                  <Trash2 className="w-3 h-3" /> Delete
+                                  <Trash2 className="h-3 w-3" /> Delete
                                 </button>
                               </div>
                             </td>
@@ -889,33 +1005,43 @@ export default function PerksPage() {
           {/* ─── VIP Clients Tab ─────────────────────────────────── */}
           {tab === "vip" && (
             <div>
-              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[11px] text-amber-800 mb-5">
-                <strong>Auto-VIP rules:</strong> Estate tier clients, OR lifetime value &gt; $5,000, OR 2+ referrals sent
+              <div className="mb-5 rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-wine-wash)] px-4 py-3 text-[12px] text-[var(--yu3-ink)]">
+                <span className="font-semibold text-[var(--yu3-wine)]">Auto-VIP rules: </span>
+                Estate tier clients, or lifetime value over $5,000, or two or more referrals sent.
               </div>
               {vipContacts.length === 0 ? (
-                <div className="text-center py-12 text-[var(--tx3)] text-[13px]">No VIP clients yet. They are auto-flagged when they meet the criteria after a completed move.</div>
+                <div className="rounded-[var(--yu3-r-lg)] border border-dashed border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] py-12 text-center text-[13px] text-[var(--yu3-ink-muted)]">
+                  No VIP clients yet. They are auto-flagged when they meet the criteria after a completed move.
+                </div>
               ) : (
-                <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+                <div className="overflow-hidden rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] shadow-sm">
                   <div className="overflow-x-auto">
-                  <table className="w-full text-[12px] min-w-[400px]">
+                  <table className="w-full min-w-[400px] text-[12px]">
                     <thead>
-                      <tr className="border-b border-[var(--brd)] bg-[var(--bg)]/50">
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Client</th>
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Lifetime Value</th>
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Referrals</th>
-                        <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">VIP Since</th>
+                      <tr className="border-b border-[var(--yu3-line)] bg-[var(--yu3-bg-surface-sunken)]">
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Client</th>
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Lifetime value</th>
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">Referrals</th>
+                        <th className="yu3-t-eyebrow px-4 py-3.5 text-left">VIP since</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--brd)]/30">
+                    <tbody>
                       {vipContacts.map((c) => (
-                        <tr key={c.id} className="hover:bg-[var(--bg)]/40">
-                          <td className="px-4 py-3">
-                            <div className="font-semibold text-[var(--tx)]">{c.name || "-"}</div>
-                            <div className="text-[10px] text-[var(--tx3)]">{c.email}</div>
+                        <tr
+                          key={c.id}
+                          className="border-b border-[var(--yu3-line-subtle)] last:border-0 hover:bg-[color-mix(in_srgb,var(--yu3-ink)_4%,var(--yu3-bg-surface))]"
+                        >
+                          <td className="px-4 py-3.5">
+                            <div className="font-semibold text-[var(--yu3-ink-strong)]">{c.name || "-"}</div>
+                            <div className="text-[10px] text-[var(--yu3-ink-muted)]">{c.email}</div>
                           </td>
-                          <td className="px-4 py-3 text-[var(--gold)] font-semibold">{formatCurrency(c.lifetime_value)}</td>
-                          <td className="px-4 py-3 text-[var(--tx3)]">{c.referral_count}</td>
-                          <td className="px-4 py-3 text-[var(--tx3)]">{formatPlatformDisplay(c.created_at, { month: "short" })}</td>
+                          <td className="yu3-num px-4 py-3.5 font-semibold text-[var(--yu3-forest)]">
+                            {formatCurrency(c.lifetime_value)}
+                          </td>
+                          <td className="px-4 py-3.5 text-[var(--yu3-ink-muted)]">{c.referral_count}</td>
+                          <td className="px-4 py-3.5 text-[var(--yu3-ink-muted)]">
+                            {formatPlatformDisplay(c.created_at, { month: "short" })}
+                          </td>
                         </tr>
                       ))}
                     </tbody>

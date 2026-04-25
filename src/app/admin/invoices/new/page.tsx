@@ -55,7 +55,8 @@ export default function NewInvoicePage() {
       formData.append("amount", String(amt));
       formData.append(
         "due_date",
-        dueDate || new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
+        dueDate ||
+          new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
       );
       if (file) formData.append("file", file);
 
@@ -66,7 +67,7 @@ export default function NewInvoicePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create");
       toast("Invoice created", "check");
-      router.push("/admin/invoices");
+      router.push("/admin/finance/invoices");
     } catch (e) {
       toast(e instanceof Error ? e.message : "Failed to create", "x");
       setSubmitting(false);
@@ -74,8 +75,8 @@ export default function NewInvoicePage() {
   };
 
   return (
-    <div className="max-w-[540px] mx-auto px-5 md:px-6 py-5">
-      <BackButton label="Back" fallback="/admin/invoices" className="mb-3" />
+    <div className="w-full min-w-0 max-w-[min(540px,100%)] mx-auto py-5">
+      <BackButton label="Back" fallback="/admin/finance/invoices" className="mb-3" />
       <h1 className="admin-page-hero text-[var(--tx)] mb-6">Create Invoice</h1>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -150,21 +151,23 @@ export default function NewInvoicePage() {
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="w-full text-[11px] text-[var(--tx2)] file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-[var(--admin-primary-fill)] file:text-white"
           />
-          {file && <p className="mt-1 text-[10px] text-[var(--tx3)]">{file.name}</p>}
+          {file && (
+            <p className="mt-1 text-[10px] text-[var(--tx3)]">{file.name}</p>
+          )}
         </div>
 
         <div className="flex gap-2 pt-2">
           <button
             type="button"
-            onClick={() => router.push("/admin/invoices")}
-            className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
+            onClick={() => router.push("/admin/finance/invoices")}
+            className="admin-btn admin-btn-secondary flex-1"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="flex-1 py-2.5 rounded-lg text-[11px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50"
+            className="admin-btn admin-btn-primary flex-1"
           >
             {submitting ? "Creating…" : "Create Invoice"}
           </button>

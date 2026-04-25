@@ -55,12 +55,12 @@ export default function AgentDetailModal({
         {(brokerage || agentEmail) && (
           <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-[var(--tx3)]">
             {brokerage && <span>{brokerage}</span>}
-            {agentEmail && <a href={`mailto:${agentEmail}`} className="text-[var(--gold)] hover:underline">{agentEmail}</a>}
+            {agentEmail && <a href={`mailto:${agentEmail}`} className="text-[var(--accent-text)] hover:underline">{agentEmail}</a>}
           </div>
         )}
         <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Total commission</span>
-            <span className="text-[16px] font-bold text-[var(--gold)]">{formatCurrency(totalCommission)}</span>
+            <span className="text-[16px] font-bold text-[var(--accent-text)]">{formatCurrency(totalCommission)}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Referrals brought in</span>
@@ -91,10 +91,10 @@ export default function AgentDetailModal({
                       className="w-full text-left group"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[12px] font-semibold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">
+                        <span className="text-[12px] font-semibold text-[var(--tx)] group-hover:text-[var(--accent-text)] transition-colors">
                           {r.client_name || "-"}
                         </span>
-                        <span className="text-[10px] font-semibold text-[var(--gold)]">
+                        <span className="text-[10px] font-semibold text-[var(--accent-text)]">
                           {r.commission ? formatCurrency(r.commission) : "-"}
                         </span>
                       </div>
@@ -111,7 +111,7 @@ export default function AgentDetailModal({
                         {(r.move_id || clientNameToMoveId[r.client_name || ""]) ? (
                           <Link
                             href={`/admin/moves/${r.move_id || clientNameToMoveId[r.client_name || ""]}`}
-                            className="inline-block mt-2 text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                            className="inline-block mt-2 text-[10px] font-semibold text-[var(--accent-text)] hover:underline"
                           >
                             View move →
                           </Link>

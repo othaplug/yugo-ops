@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getDeliveryDetailPath, getMoveDetailPath, isUuid } from "@/lib/move-code";
+import { searchAdminAppRoutes } from "@/lib/admin-app-route-search";
 
 export interface AdminSearchResult {
   type: string;
@@ -184,4 +185,42 @@ export async function runAdminEntitySearch(supabase: SupabaseClient, q: string, 
   }
 
   return all.slice(0, maxResults);
+}
+
+/**
+ * Top bar: static app pages and create actions (settings, platform, menu
+ * targets, and so on) merged with live entity search (moves, clients, and so on).
+ */
+export async function runAdminTopbarSearch(
+  supabase: SupabaseClient,
+  q: string,
+  maxResults = 12,
+): Promise<AdminSearchResult[]> {
+  const trimmed = q.trim();
+  if (trimmed.length < 2) return [];
+
+  const routeCap = Math.min(8, maxResults);
+  const routes = searchAdminAppRoutes(trimmed, routeCap);
+  const entityCap = Math.max(0, maxResults - routes.length);
+  const entities =
+    entityCap > 0
+      ? await runAdminEntitySearch(supabase, q, entityCap)
+      : [];
+
+  const seen = new Set<string>();
+  const out: AdminSearchResult[] = [];
+
+  for (const r of routes) {
+    if (seen.has(r.href)) continue;
+    seen.add(r.href);
+    out.push(r);
+  }
+  for (const e of entities) {
+    if (seen.has(e.href)) continue;
+    seen.add(e.href);
+    out.push(e);
+    if (out.length >= maxResults) break;
+  }
+
+  return out;
 }

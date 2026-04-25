@@ -246,7 +246,7 @@ export default function DispatchMap({ crews, jobs }: DispatchMapProps) {
                   ? `/admin/moves/${selectedCrewData.currentJobId}`
                   : `/admin/deliveries/${selectedCrewData.currentJobId}`
               }
-              className="block mt-2 text-[11px] font-semibold text-[var(--gold)] hover:underline"
+              className="block mt-2 text-[11px] font-semibold text-[var(--accent-text)] hover:underline"
             >
               View Job
             </Link>
@@ -277,7 +277,7 @@ export default function DispatchMap({ crews, jobs }: DispatchMapProps) {
           )}
           <Link
             href={selectedJobData.href}
-            className="block mt-2 text-[11px] font-semibold text-[var(--gold)] hover:underline"
+            className="block mt-2 text-[11px] font-semibold text-[var(--accent-text)] hover:underline"
           >
             View Details
           </Link>

@@ -1,23 +1,18 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import CreateButton from "../components/CreateButton";
-import { useRouter } from "next/navigation";
 import MoveDateFilter, { getDateRangeFromPreset } from "../components/MoveDateFilter";
-import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
-import { useToast } from "../components/Toast";
-import { formatMoveDate, formatAdminCreatedAt } from "@/lib/date-format";
-import { getDeliveryDetailPath, formatJobId } from "@/lib/move-code";
-import { toTitleCase } from "@/lib/format-text";
 import { formatCurrency } from "@/lib/format-currency";
-import { formatDeliveryPriceForAdminList } from "@/lib/delivery-pricing";
 import RecurringSchedulesView from "./RecurringSchedulesView";
 import ProjectsListClient from "../projects/ProjectsListClient";
-import SectionDivider from "@/components/ui/SectionDivider";
-import { Bell, Trash } from "@phosphor-icons/react";
+import { Bell } from "@phosphor-icons/react";
 import { PageHeader as PageHeaderV3 } from "@/design-system/admin/layout";
 import { KpiStrip as KpiStripV3 } from "@/design-system/admin/dashboard";
+import { Button } from "@/design-system/admin/primitives/Button";
+import { cn } from "@/design-system/admin/lib/cn";
+import { AllDeliveriesV3DataTable } from "./AllDeliveriesV3DataTable";
 
 const PARTNER_TYPE_FILTERS: { key: string; label: string; categories: string[] }[] = [
   { key: "all", label: "All", categories: [] },
@@ -66,124 +61,6 @@ interface Delivery {
   created_at?: string | null;
 }
 
-const DELIVERY_STATUS_STYLE: Record<string, string> = {
-  pending: "text-[var(--gold)]",
-  pending_approval: "text-amber-400",
-  scheduled: "text-[#3B82F6]",
-  confirmed: "text-[#3B82F6]",
-  dispatched: "text-[var(--org)]",
-  in_transit: "text-[var(--org)]",
-  "in-transit": "text-[var(--org)]",
-  delivered: "text-[var(--grn)]",
-  completed: "text-[var(--grn)]",
-  cancelled: "text-[var(--red)]",
-};
-
-function deliveryDetailsLabel(d: Delivery): string {
-  if (d.booking_type === "day_rate") {
-    const parts = [d.vehicle_type || "", d.num_stops != null ? `${d.num_stops} stops` : ""].filter(Boolean);
-    return parts.length ? parts.join(" · ") : "-";
-  }
-  const parts = [d.delivery_type ? toTitleCase(String(d.delivery_type).replace(/_/g, " ")) : "", d.zone != null ? `Z${d.zone}` : ""].filter(Boolean);
-  return parts.length ? parts.join(" · ") : "-";
-}
-
-const deliveryColumns: ColumnDef<Delivery>[] = [
-  {
-    id: "date",
-    label: "Service date",
-    accessor: (d) => d.scheduled_date,
-    render: (d) => (
-      <div className="tabular-nums">
-        <div className="text-[12px] font-semibold text-[var(--tx2)]">{formatMoveDate(d.scheduled_date)}</div>
-        <div className="text-[10px] text-[var(--tx3)]">{d.time_slot || ""}</div>
-      </div>
-    ),
-    sortable: true,
-    searchable: true,
-    exportAccessor: (d) => `${formatMoveDate(d.scheduled_date)} ${d.time_slot || ""}`,
-  },
-  {
-    id: "created_at",
-    label: "Create date",
-    accessor: (d) => d.created_at || "",
-    render: (d) => (
-      <span className="text-[12px] font-normal text-[var(--tx2)] tabular-nums whitespace-nowrap">
-        {d.created_at ? formatAdminCreatedAt(d.created_at) : ""}
-      </span>
-    ),
-    sortable: true,
-    searchable: true,
-    exportAccessor: (d) => (d.created_at ? formatAdminCreatedAt(d.created_at) : ""),
-  },
-  {
-    id: "partner",
-    label: "Partner",
-    accessor: (d) => d.client_name,
-    sortable: true,
-    searchable: true,
-    render: (d) => <span className="font-medium text-[var(--tx)]">{d.client_name || "-"}</span>,
-  },
-  {
-    id: "category",
-    label: "Category",
-    accessor: (d) => d.category || "Delivery",
-    render: (d) => (
-      <span className="dt-badge tracking-[0.04em] text-[var(--tx2)]">
-        {toTitleCase((d.category || "delivery").replace(/_/g, " "))}
-      </span>
-    ),
-    sortable: true,
-    searchable: true,
-  },
-  {
-    id: "delivery_id",
-    label: "Delivery ID",
-    accessor: (d) => d.delivery_number || "",
-    render: (d) => (
-      <span className="font-mono text-[var(--tx2)]">
-        {d.delivery_number ? formatJobId(d.delivery_number, "delivery") : ""}
-      </span>
-    ),
-    sortable: true,
-    searchable: true,
-  },
-  {
-    id: "price",
-    label: "Price",
-    accessor: (d) => d.total_price ?? 0,
-    render: (d) => (
-      <span className="text-[11px] leading-snug tabular-nums">
-        {formatDeliveryPriceForAdminList(d)}
-      </span>
-    ),
-    sortable: true,
-  },
-  {
-    id: "status",
-    label: "Status",
-    accessor: (d) => d.status,
-    render: (d) => {
-      const s = (d.status || "").toLowerCase();
-      const style = DELIVERY_STATUS_STYLE[s] || "text-[var(--tx3)] bg-[var(--gdim)]";
-      const prepaid =
-        d.booking_type === "one_off" && !d.organization_id && !!d.payment_received_at;
-      return (
-        <span className="inline-flex flex-wrap items-center gap-2">
-          <span className={`dt-badge tracking-[0.04em] ${style}`}>
-            {toTitleCase((d.status || "").replace(/_/g, " ").replace(/-/g, " "))}
-          </span>
-          {prepaid ? (
-            <span className="dt-badge tracking-[0.04em] text-emerald-600">Paid</span>
-          ) : null}
-        </span>
-      );
-    },
-    sortable: true,
-    searchable: true,
-  },
-];
-
 export default function AllDeliveriesView({
   deliveries,
   projects,
@@ -199,8 +76,6 @@ export default function AllDeliveriesView({
   initialView?: "deliveries" | "projects" | "recurring";
   initialScheduleId?: string;
 }) {
-  const router = useRouter();
-  const { toast } = useToast();
   const [activeView, setActiveView] = useState<"deliveries" | "projects" | "recurring">(initialView || "deliveries");
   const [createDropOpen, setCreateDropOpen] = useState(false);
   const createDropRef = useRef<HTMLDivElement>(null);
@@ -216,7 +91,6 @@ export default function AllDeliveriesView({
   const [statusFilter, setStatusFilter] = useState("");
   const [moveDatePreset, setMoveDatePreset] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [bulkSelectionTick, setBulkSelectionTick] = useState(0);
 
   const dateRange = getDateRangeFromPreset(moveDatePreset);
   const dateFrom = dateRange?.from ?? "";
@@ -235,74 +109,6 @@ export default function AllDeliveriesView({
     if (dateTo) list = list.filter((d) => (d.scheduled_date || "") <= dateTo);
     return list;
   }, [deliveries, partnerType, statusFilter, dateFrom, dateTo]);
-
-  const runBulk = useCallback(
-    async (action: "deliver" | "cancel", ids: string[]) => {
-      const res = await fetch("/api/admin/deliveries/bulk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, ids }),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        const labels: Record<string, string> = { deliver: "Marked delivered", cancel: "Cancelled" };
-        toast(`${labels[action]} ${data.updated} delivery${data.updated !== 1 ? "ies" : ""}`, "check");
-        router.refresh();
-      } else {
-        toast("Error: " + (data.error || "Failed"), "x");
-      }
-    },
-    [toast, router],
-  );
-
-  const runBulkDelete = useCallback(
-    async (ids: string[]) => {
-      const n = ids.length;
-      if (
-        typeof window !== "undefined" &&
-        !window.confirm(
-          `Delete ${n} delivery${n !== 1 ? "ies" : "y"}? This cannot be undone.`,
-        )
-      ) {
-        return;
-      }
-      const res = await fetch("/api/admin/deliveries/bulk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "delete", ids }),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        const deleted = Number(data.deleted) || 0;
-        const skipped = Number(data.skipped) || 0;
-        let msg = `Deleted ${deleted} delivery${deleted !== 1 ? "ies" : "y"}`;
-        if (skipped > 0) {
-          msg += ` (${skipped} skipped: completed or not found)`;
-        }
-        toast(msg, "check");
-        setBulkSelectionTick((t) => t + 1);
-        router.refresh();
-      } else {
-        toast("Error: " + (data.error || "Failed"), "x");
-      }
-    },
-    [toast, router],
-  );
-
-  const deliveryBulkActions: BulkAction[] = useMemo(
-    () => [
-      { label: "Mark Delivered", onClick: (ids) => runBulk("deliver", ids) },
-      { label: "Cancel", onClick: (ids) => runBulk("cancel", ids), variant: "danger" as const },
-      {
-        label: "Delete selected deliveries",
-        icon: <Trash className="w-4 h-4 shrink-0" weight="bold" aria-hidden />,
-        iconOnly: true,
-        onClick: runBulkDelete,
-        variant: "danger" as const,
-      },
-    ],
-    [runBulk, runBulkDelete],
-  );
 
   const hasActiveFilters = !!(statusFilter || moveDatePreset);
   const activeFilterCount = [statusFilter, moveDatePreset].filter(Boolean).length;
@@ -326,25 +132,37 @@ export default function AllDeliveriesView({
 
   return (
     <>
-      {/* View tabs */}
-      <div className="flex gap-0 border-b border-[var(--brd)]/30 mb-5 -mx-1">
-        {([
-          { key: "deliveries" as const, label: "All Deliveries" },
-          { key: "projects" as const, label: "All Projects" },
-          { key: "recurring" as const, label: "Recurring Schedules" },
-        ]).map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setActiveView(t.key)}
-            className={`px-4 py-3 text-[12px] font-semibold whitespace-nowrap border-b-2 transition-colors -mb-px ${
-              activeView === t.key
-                ? "border-[var(--gold)] text-[var(--gold)]"
-                : "border-transparent text-[var(--tx3)] hover:text-[var(--tx)]"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+      {/* View tabs — v3 pill segment inside a raised bar */}
+      <div className="mb-5">
+        <div
+          className="inline-flex w-full max-w-full sm:w-auto rounded-full border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] p-1 shadow-[var(--yu3-shadow-sm)]"
+          role="tablist"
+          aria-label="Deliveries view"
+        >
+          {(
+            [
+              { key: "deliveries" as const, label: "All Deliveries" },
+              { key: "projects" as const, label: "All Projects" },
+              { key: "recurring" as const, label: "Recurring Schedules" },
+            ] as const
+          ).map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={activeView === t.key}
+              onClick={() => setActiveView(t.key)}
+              className={cn(
+                "min-w-0 flex-1 sm:flex-initial sm:shrink-0 rounded-full px-3.5 py-2.5 sm:px-4 text-[12px] font-semibold whitespace-nowrap transition-colors",
+                activeView === t.key
+                  ? "bg-[var(--yu3-wine-wash)] text-[var(--yu3-wine)]"
+                  : "text-[var(--yu3-ink-muted)] hover:bg-[var(--yu3-bg-surface-sunken)] hover:text-[var(--yu3-ink)]",
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {activeView === "recurring" && (
@@ -364,7 +182,7 @@ export default function AllDeliveriesView({
           <div className="relative" ref={createDropRef}>
             <CreateButton onClick={() => setCreateDropOpen((v) => !v)} title="New delivery" label="Add delivery" />
             {createDropOpen && (
-              <div className="absolute right-0 top-full mt-2 z-50 w-52 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl py-1.5 overflow-hidden">
+              <div className="absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] py-1.5 shadow-[var(--yu3-shadow-lg)]">
                 {[
                   { href: "/admin/deliveries/new?choice=single", label: "Single Delivery", sub: "Per-delivery from rate card" },
                   { href: "/admin/deliveries/new?choice=day_rate", label: "Day Rate", sub: "Multi-stop day rate" },
@@ -374,10 +192,12 @@ export default function AllDeliveriesView({
                     key={opt.href}
                     href={opt.href}
                     onClick={() => setCreateDropOpen(false)}
-                    className="flex flex-col px-4 py-2.5 hover:bg-[var(--bg)] transition-colors group"
+                    className="group flex flex-col px-4 py-2.5 transition-colors hover:bg-[var(--yu3-bg-surface-sunken)]"
                   >
-                    <span className="text-[12px] font-semibold text-[var(--tx)] group-hover:text-[var(--gold)]">{opt.label}</span>
-                    <span className="text-[10px] text-[var(--tx3)]">{opt.sub}</span>
+                    <span className="text-[12px] font-semibold text-[var(--yu3-ink)] group-hover:text-[var(--yu3-wine)]">
+                      {opt.label}
+                    </span>
+                    <span className="text-[10px] text-[var(--yu3-ink-faint)]">{opt.sub}</span>
                   </Link>
                 ))}
               </div>
@@ -395,49 +215,50 @@ export default function AllDeliveriesView({
         columns={4}
       />
 
-      {/* Pending approval banner */}
+      {/* Pending approval — Yugo+ wine wash (replaces legacy blue alert strip) */}
       {pendingApproval.length > 0 && (
-        <div className="mb-5 rounded-xl overflow-hidden" style={{ background: "linear-gradient(135deg, #1A2744 0%, #142038 100%)", border: "1px solid rgba(99,140,255,0.22)" }}>
-          <div className="flex items-center justify-between gap-3 px-4 py-3">
-            <div className="flex items-center gap-3">
-              <div className="relative shrink-0">
-                <span className="absolute inset-0 rounded-full bg-[#6B8CFF]/30 animate-ping" />
-                <span className="relative w-2 h-2 rounded-full bg-[#6B8CFF] block" />
-              </div>
-              <Bell size={14} color="#6B8CFF" className="shrink-0 opacity-80" />
-              <span className="text-[12px] font-semibold" style={{ color: "#A8BFFF" }}>
-                <span className="font-bold" style={{ color: "#F9EDE4" }}>{pendingApproval.length}</span>
-                {" "}partner request{pendingApproval.length > 1 ? "s" : ""}
-                {pendingPartnerNames.length > 0 && (
-                  <> from <span style={{ color: "#F9EDE4" }}>{pendingPartnerNames.join(", ")}</span></>
-                )}
-                {" "}awaiting approval
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setStatusFilter("pending_approval")}
-              className="shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-md transition-all hover:opacity-90 active:scale-95"
-              style={{ backgroundColor: "#6B8CFF", color: "#0D1B3E" }}
-            >
-              Review
-            </button>
+        <div className="mb-5 flex flex-col gap-3 rounded-[var(--yu3-r-lg)] border border-[var(--yu3-wine)]/25 bg-[var(--yu3-wine-wash)] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-2.5 sm:items-center">
+            <span className="mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full bg-[var(--yu3-wine)] sm:mt-0" aria-hidden />
+            <Bell size={18} weight="duotone" className="shrink-0 text-[var(--yu3-wine)]" aria-hidden />
+            <p className="min-w-0 text-[12px] font-medium leading-relaxed text-[var(--yu3-ink)]">
+              <span className="font-bold text-[var(--yu3-wine)]">{pendingApproval.length}</span>
+              {" "}
+              partner request{pendingApproval.length > 1 ? "s" : ""}
+              {pendingPartnerNames.length > 0 && (
+                <>
+                  {" "}
+                  from <span className="font-semibold text-[var(--yu3-ink-strong)]">{pendingPartnerNames.join(", ")}</span>
+                </>
+              )}{" "}
+              awaiting approval
+            </p>
           </div>
-          <div className="h-px" style={{ background: "linear-gradient(to right, transparent, #6B8CFF40, transparent)" }} />
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            className="shrink-0"
+            onClick={() => setStatusFilter("pending_approval")}
+          >
+            Review
+          </Button>
         </div>
       )}
 
       {/* Partner type pills */}
-      <div className="flex flex-wrap gap-1.5 mb-4 pt-5 border-t border-[var(--brd)]/30">
+      <div className="mb-4 flex flex-wrap gap-1.5 border-t border-[var(--yu3-line)]/30 pt-5">
         {PARTNER_TYPE_FILTERS.map((t) => (
           <button
             key={t.key}
+            type="button"
             onClick={() => setPartnerType(t.key)}
-            className={`px-3 py-1.5 rounded-md text-[10px] font-semibold transition-colors border ${
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-[10px] font-semibold transition-colors",
               partnerType === t.key
-                ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
-                : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--card)]/50 border-[var(--brd)]/50"
-            }`}
+                ? "border-[var(--yu3-wine)] bg-[var(--yu3-wine)] text-[var(--yu3-on-wine)]"
+                : "border-[var(--yu3-line)] text-[var(--yu3-ink-muted)] hover:bg-[var(--yu3-bg-surface-sunken)] hover:text-[var(--yu3-ink)]",
+            )}
           >
             {t.label}
           </button>
@@ -459,13 +280,19 @@ export default function AllDeliveriesView({
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="text-[11px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2 text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+              className="text-[11px] rounded-lg border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] px-3 py-2 text-[var(--yu3-ink)] outline-none focus:border-[var(--yu3-wine)]/35"
             >
               {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
             <MoveDateFilter value={moveDatePreset} onChange={setMoveDatePreset} label="Date" />
             {hasActiveFilters && (
-              <button type="button" onClick={clearFilters} className="text-[10px] font-medium text-[var(--tx3)] hover:text-[var(--gold)]">Clear</button>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-[10px] font-medium text-[var(--yu3-ink-faint)] hover:text-[var(--yu3-wine)]"
+              >
+                Clear
+              </button>
             )}
           </div>
         </div>
@@ -476,40 +303,39 @@ export default function AllDeliveriesView({
         <div className="md:hidden border-t border-[var(--brd)]/30 pt-4 pb-4 space-y-3 mb-5">
           <div className="flex justify-between items-center">
             <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Filters</span>
-            <button type="button" onClick={() => setFilterOpen(false)} className="text-[var(--gold)] text-[11px] font-medium">Done</button>
+            <button
+              type="button"
+              onClick={() => setFilterOpen(false)}
+              className="text-[11px] font-medium text-[var(--yu3-wine)]"
+            >
+              Done
+            </button>
           </div>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="admin-premium-input w-full">
             {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <MoveDateFilter value={moveDatePreset} onChange={setMoveDatePreset} label="Date" />
-          {hasActiveFilters && <button type="button" onClick={clearFilters} className="text-[11px] font-medium text-[var(--tx3)] hover:text-[var(--gold)]">Clear all</button>}
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-[11px] font-medium text-[var(--yu3-ink-faint)] hover:text-[var(--yu3-wine)]"
+            >
+              Clear all
+            </button>
+          )}
         </div>
       )}
 
-      {/* Deliveries table */}
-      <div className="border-t border-[var(--brd)]/30 pt-5">
-        <DataTable<Delivery>
-          data={filteredDeliveries}
-          columns={deliveryColumns}
-          keyField="id"
-          tableId="all-deliveries"
-          defaultSortCol="created_at"
-          defaultSortDir="desc"
-          searchable
-          pagination
-          exportable
-          columnToggle
-          selectable
-          clearSelectionSignal={bulkSelectionTick}
-          bulkActions={deliveryBulkActions}
-          mobileCardLayout={{
-            primaryColumnId: "partner",
-            subtitleColumnId: "delivery_id",
-            amountColumnId: "price",
-            metaColumnIds: ["date", "created_at", "category", "status"],
-          }}
-          onRowClick={(d) => router.push(getDeliveryDetailPath(d))}
-          emptyMessage={statusFilter ? `No deliveries with status "${statusFilter}"` : "No deliveries found"}
+      {/* Deliveries list — design-system DataTable (same chrome as Moves) */}
+      <div className="border-t border-[var(--yu3-line)]/30 pt-5">
+        <AllDeliveriesV3DataTable
+          rows={filteredDeliveries}
+          emptyMessage={
+            statusFilter
+              ? `No deliveries with status "${statusFilter}"`
+              : "No deliveries found"
+          }
         />
       </div>
       </>)}

@@ -23,12 +23,19 @@ interface Phase {
   items_expected: string;
 }
 
-const fieldInput =
-  "field-input-compact w-full";
+const fieldInput = "field-input-compact w-full";
 
 const STEPS = ["Partner & Client", "Phases", "Estimate", "Review"];
 
-export default function NewProjectForm({ partners, currentUserId, partnerFilter }: { partners: Partner[]; currentUserId: string | null; partnerFilter?: string }) {
+export default function NewProjectForm({
+  partners,
+  currentUserId,
+  partnerFilter,
+}: {
+  partners: Partner[];
+  currentUserId: string | null;
+  partnerFilter?: string;
+}) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -54,12 +61,23 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
   const [projectMgmtFee, setProjectMgmtFee] = useState("");
 
   const selectedPartner = partners.find((p) => p.id === partnerId);
-  const subtotal = (parseFloat(estimatedBudget) || 0) + (parseFloat(projectMgmtFee) || 0);
+  const subtotal =
+    (parseFloat(estimatedBudget) || 0) + (parseFloat(projectMgmtFee) || 0);
   const hst = Math.round(subtotal * 0.13 * 100) / 100;
   const totalEstimated = subtotal + hst;
 
-  const addPhase = () => setPhases([...phases, { phase_name: "", description: "", scheduled_date: "", items_expected: "" }]);
-  const removePhase = (i: number) => setPhases(phases.filter((_, idx) => idx !== i));
+  const addPhase = () =>
+    setPhases([
+      ...phases,
+      {
+        phase_name: "",
+        description: "",
+        scheduled_date: "",
+        items_expected: "",
+      },
+    ]);
+  const removePhase = (i: number) =>
+    setPhases(phases.filter((_, idx) => idx !== i));
   const updatePhase = (i: number, field: keyof Phase, val: string) => {
     const updated = [...phases];
     updated[i] = { ...updated[i], [field]: val };
@@ -90,13 +108,17 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
           status,
           start_date: startDate || null,
           target_end_date: targetEndDate || null,
-          estimated_budget: estimatedBudget ? parseFloat(estimatedBudget) : null,
+          estimated_budget: estimatedBudget
+            ? parseFloat(estimatedBudget)
+            : null,
           project_mgmt_fee: projectMgmtFee ? parseFloat(projectMgmtFee) : 0,
           project_lead: currentUserId,
           created_by: currentUserId,
           phases: validPhases.map((p) => ({
             phase_name: p.phase_name,
-            description: p.items_expected ? `Items: ${p.items_expected}` : p.description || null,
+            description: p.items_expected
+              ? `Items: ${p.items_expected}`
+              : p.description || null,
             scheduled_date: p.scheduled_date || null,
           })),
         }),
@@ -106,7 +128,11 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
         throw new Error(d.error || "Failed to create project");
       }
       const project = await res.json();
-      router.push(partnerFilter === "designer" ? `/admin/projects/${project.id}?from=designers` : `/admin/projects/${project.id}`);
+      router.push(
+        partnerFilter === "designer"
+          ? `/admin/projects/${project.id}?from=designers`
+          : `/admin/projects/${project.id}`,
+      );
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to create project");
     } finally {
@@ -115,10 +141,12 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
   };
 
   return (
-    <div className="px-4 sm:px-6 py-5 max-w-[720px] mx-auto">
+    <div className="w-full min-w-0 max-w-[min(720px,100%)] mx-auto py-5">
       <BackButton label="Back" />
 
-      <h1 className="admin-page-hero text-[var(--tx)] mt-4 mb-6">New Project</h1>
+      <h1 className="admin-page-hero text-[var(--tx)] mt-4 mb-6">
+        New Project
+      </h1>
 
       {/* Step Indicator */}
       <div className="flex items-center gap-2 mb-8">
@@ -135,27 +163,42 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
               }`}
             >
               {i < step ? (
-                <Check weight="bold" size={12} className="text-current" aria-hidden />
+                <Check
+                  weight="bold"
+                  size={12}
+                  className="text-current"
+                  aria-hidden
+                />
               ) : (
                 <span>{i + 1}</span>
               )}
               <span className="hidden sm:inline">{s}</span>
             </button>
-            {i < STEPS.length - 1 && <div className="w-6 h-px bg-[var(--brd)]" />}
+            {i < STEPS.length - 1 && (
+              <div className="w-6 h-px bg-[var(--brd)]" />
+            )}
           </div>
         ))}
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-[12px]">{error}</div>
+        <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-[12px]">
+          {error}
+        </div>
       )}
 
       {/* Step 1: Partner & Client */}
       {step === 0 && (
         <div className="space-y-5">
           <div>
-            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Partner *</label>
-            <select value={partnerId} onChange={(e) => setPartnerId(e.target.value)} className={fieldInput}>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">
+              Partner *
+            </label>
+            <select
+              value={partnerId}
+              onChange={(e) => setPartnerId(e.target.value)}
+              className={fieldInput}
+            >
               <option value="">Select partner...</option>
               {partners.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -166,39 +209,89 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
           </div>
 
           <div>
-            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Project Name *</label>
-            <input value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="e.g., Chen Residence, Full Furnishing" className={fieldInput} />
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">
+              Project Name *
+            </label>
+            <input
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              placeholder="e.g., Chen Residence, Full Furnishing"
+              className={fieldInput}
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
-              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">End Client Name</label>
-              <input value={endClientName} onChange={(e) => setEndClientName(e.target.value)} placeholder="Mr. & Mrs. Chen" className={fieldInput} />
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">
+                End Client Name
+              </label>
+              <input
+                value={endClientName}
+                onChange={(e) => setEndClientName(e.target.value)}
+                placeholder="Mr. & Mrs. Chen"
+                className={fieldInput}
+              />
             </div>
             <div>
-              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Client Contact</label>
-              <input value={endClientContact} onChange={(e) => setEndClientContact(e.target.value)} placeholder="Phone or email" className={fieldInput} />
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">
+                Client Contact
+              </label>
+              <input
+                value={endClientContact}
+                onChange={(e) => setEndClientContact(e.target.value)}
+                placeholder="Phone or email"
+                className={fieldInput}
+              />
             </div>
           </div>
 
           <div>
-            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Site Address</label>
-            <AddressAutocomplete value={siteAddress} onChange={(addr) => setSiteAddress(addr.fullAddress)} placeholder="Primary delivery location" className={fieldInput} />
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">
+              Site Address
+            </label>
+            <AddressAutocomplete
+              value={siteAddress}
+              onChange={(addr) => setSiteAddress(addr.fullAddress)}
+              placeholder="Primary delivery location"
+              className={fieldInput}
+            />
           </div>
 
           <div>
-            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Description</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Complete home furnishing. 6 vendor shipments expected..." rows={3} className={fieldInput} />
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">
+              Description
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Complete home furnishing. 6 vendor shipments expected..."
+              rows={3}
+              className={fieldInput}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Start Date</label>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={fieldInput} />
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className={fieldInput}
+              />
             </div>
             <div>
-              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Target End Date</label>
-              <input type="date" value={targetEndDate} onChange={(e) => setTargetEndDate(e.target.value)} className={fieldInput} />
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">
+                Target End Date
+              </label>
+              <input
+                type="date"
+                value={targetEndDate}
+                onChange={(e) => setTargetEndDate(e.target.value)}
+                className={fieldInput}
+              />
             </div>
           </div>
         </div>
@@ -207,14 +300,25 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
       {/* Step 2: Phases */}
       {step === 1 && (
         <div className="space-y-4">
-          <p className="text-[12px] text-[var(--tx3)] mb-2">Define the major milestones for this project. Each phase groups related deliveries and items.</p>
+          <p className="text-[12px] text-[var(--tx3)] mb-2">
+            Define the major milestones for this project. Each phase groups
+            related deliveries and items.
+          </p>
 
           {phases.map((phase, i) => (
-            <div key={i} className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-3">
+            <div
+              key={i}
+              className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-3"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Phase {i + 1}</span>
+                <span className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
+                  Phase {i + 1}
+                </span>
                 {phases.length > 1 && (
-                  <button onClick={() => removePhase(i)} className="p-1 rounded hover:bg-red-500/10 text-[var(--tx3)] hover:text-red-500 transition-colors">
+                  <button
+                    onClick={() => removePhase(i)}
+                    className="p-1 rounded hover:bg-red-500/10 text-[var(--tx3)] hover:text-red-500 transition-colors"
+                  >
                     <Trash2 size={14} />
                   </button>
                 )}
@@ -229,12 +333,30 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">Target Date</label>
-                  <input type="date" value={phase.scheduled_date} onChange={(e) => updatePhase(i, "scheduled_date", e.target.value)} className={fieldInput} />
+                  <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">
+                    Target Date
+                  </label>
+                  <input
+                    type="date"
+                    value={phase.scheduled_date}
+                    onChange={(e) =>
+                      updatePhase(i, "scheduled_date", e.target.value)
+                    }
+                    className={fieldInput}
+                  />
                 </div>
                 <div>
-                  <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">Items Expected</label>
-                  <input value={phase.items_expected} onChange={(e) => updatePhase(i, "items_expected", e.target.value)} placeholder="Sofa, chairs, bed..." className={fieldInput} />
+                  <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">
+                    Items Expected
+                  </label>
+                  <input
+                    value={phase.items_expected}
+                    onChange={(e) =>
+                      updatePhase(i, "items_expected", e.target.value)
+                    }
+                    placeholder="Sofa, chairs, bed..."
+                    className={fieldInput}
+                  />
                 </div>
               </div>
             </div>
@@ -242,7 +364,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
 
           <button
             onClick={addPhase}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold border border-dashed border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors w-full justify-center"
+            className="admin-btn admin-btn-secondary w-full border-dashed"
           >
             <Plus size={14} weight="regular" />
             Add Phase
@@ -255,22 +377,35 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
         <div className="space-y-5">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 space-y-4">
             <div>
-              <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Initial Estimate</div>
-              <p className="text-[11px] text-[var(--tx3)] mt-1">This is a rough starting estimate. The actual project cost will update automatically as deliveries are created and priced.</p>
+              <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
+                Initial Estimate
+              </div>
+              <p className="text-[11px] text-[var(--tx3)] mt-1">
+                This is a rough starting estimate. The actual project cost will
+                update automatically as deliveries are created and priced.
+              </p>
             </div>
 
             {selectedPartner && (
               <div className="flex items-center gap-2 text-[12px] text-[var(--tx2)]">
                 <span>Partner:</span>
-                <span className="font-semibold text-[var(--tx)]">{selectedPartner.name}</span>
-                <span className="text-[var(--tx3)]">({organizationTypeLabel(selectedPartner.type)})</span>
+                <span className="font-semibold text-[var(--tx)]">
+                  {selectedPartner.name}
+                </span>
+                <span className="text-[var(--tx3)]">
+                  ({organizationTypeLabel(selectedPartner.type)})
+                </span>
               </div>
             )}
 
             <div>
-              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">Estimated Delivery & Logistics Cost</label>
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">
+                Estimated Delivery & Logistics Cost
+              </label>
               <div className="relative">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-[var(--tx3)]">$</span>
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-[var(--tx3)]">
+                  $
+                </span>
                 <input
                   type="number"
                   step="0.01"
@@ -283,9 +418,13 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
             </div>
 
             <div>
-              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">Project Management Fee</label>
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">
+                Project Management Fee
+              </label>
               <div className="relative">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-[var(--tx3)]">$</span>
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-[var(--tx3)]">
+                  $
+                </span>
                 <input
                   type="number"
                   step="0.01"
@@ -300,21 +439,29 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
             <div className="pt-3 border-t border-[var(--brd)] space-y-1.5">
               <div className="flex justify-between text-[12px]">
                 <span className="text-[var(--tx3)]">Subtotal</span>
-                <span className="text-[var(--tx)]">{formatCurrency(subtotal)}</span>
+                <span className="text-[var(--tx)]">
+                  {formatCurrency(subtotal)}
+                </span>
               </div>
               <div className="flex justify-between text-[12px]">
                 <span className="text-[var(--tx3)]">HST (13%)</span>
                 <span className="text-[var(--tx)]">{formatCurrency(hst)}</span>
               </div>
               <div className="flex justify-between text-[13px] pt-1.5 border-t border-[var(--brd)]">
-                <span className="text-[var(--tx2)] font-medium">Total Estimated</span>
-                <span className="font-bold text-[var(--tx)]">{formatCurrency(totalEstimated)}</span>
+                <span className="text-[var(--tx2)] font-medium">
+                  Total Estimated
+                </span>
+                <span className="font-bold text-[var(--tx)]">
+                  {formatCurrency(totalEstimated)}
+                </span>
               </div>
             </div>
           </div>
 
           <div className="text-[11px] text-[var(--tx3)]">
-            {phases.filter((p) => p.phase_name.trim()).length} phase{phases.filter((p) => p.phase_name.trim()).length !== 1 ? "s" : ""} planned
+            {phases.filter((p) => p.phase_name.trim()).length} phase
+            {phases.filter((p) => p.phase_name.trim()).length !== 1 ? "s" : ""}{" "}
+            planned
           </div>
         </div>
       )}
@@ -323,33 +470,74 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
       {step === 3 && (
         <div className="space-y-4">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 space-y-3">
-            <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Summary</div>
+            <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">
+              Summary
+            </div>
 
             <Row label="Partner" value={selectedPartner?.name || "-"} />
             <Row label="Project Name" value={projectName} />
             {endClientName && <Row label="End Client" value={endClientName} />}
             {siteAddress && <Row label="Site Address" value={siteAddress} />}
             {description && <Row label="Description" value={description} />}
-            <Row label="Dates" value={`${startDate || "TBD"} → ${targetEndDate || "TBD"}`} />
+            <Row
+              label="Dates"
+              value={`${startDate || "TBD"} → ${targetEndDate || "TBD"}`}
+            />
 
             <div className="border-t border-[var(--brd)] pt-3 mt-3">
-              <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Phases</div>
-              {phases.filter((p) => p.phase_name.trim()).map((p, i) => (
-                <div key={i} className="flex items-center justify-between py-1.5 text-[12px]">
-                  <span className="text-[var(--tx)] font-medium">{p.phase_name}</span>
-                  <span className="text-[var(--tx3)]">{p.scheduled_date ? new Date(p.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "TBD"}</span>
-                </div>
-              ))}
+              <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">
+                Phases
+              </div>
+              {phases
+                .filter((p) => p.phase_name.trim())
+                .map((p, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between py-1.5 text-[12px]"
+                  >
+                    <span className="text-[var(--tx)] font-medium">
+                      {p.phase_name}
+                    </span>
+                    <span className="text-[var(--tx3)]">
+                      {p.scheduled_date
+                        ? new Date(
+                            p.scheduled_date + "T00:00:00",
+                          ).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : "TBD"}
+                    </span>
+                  </div>
+                ))}
             </div>
 
             <div className="border-t border-[var(--brd)] pt-3 mt-3">
-              <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Initial Estimate</div>
-              <Row label="Logistics Cost" value={estimatedBudget ? formatCurrency(parseFloat(estimatedBudget)) : "-"} />
-              <Row label="Mgmt Fee" value={projectMgmtFee ? formatCurrency(parseFloat(projectMgmtFee)) : "$0"} />
+              <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">
+                Initial Estimate
+              </div>
+              <Row
+                label="Logistics Cost"
+                value={
+                  estimatedBudget
+                    ? formatCurrency(parseFloat(estimatedBudget))
+                    : "-"
+                }
+              />
+              <Row
+                label="Mgmt Fee"
+                value={
+                  projectMgmtFee
+                    ? formatCurrency(parseFloat(projectMgmtFee))
+                    : "$0"
+                }
+              />
               <Row label="HST (13%)" value={formatCurrency(hst)} />
               <div className="flex justify-between text-[13px] font-bold pt-2 border-t border-[var(--brd)] mt-2">
                 <span className="text-[var(--tx)]">Total (incl. HST)</span>
-                <span className="text-[var(--gold)]">{formatCurrency(totalEstimated)}</span>
+                <span className="text-[var(--gold)]">
+                  {formatCurrency(totalEstimated)}
+                </span>
               </div>
             </div>
           </div>
@@ -359,8 +547,8 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
       {/* Navigation */}
       <div className="flex items-center justify-between mt-8 pt-5 border-t border-[var(--brd)]">
         <button
-          onClick={() => step > 0 ? setStep(step - 1) : router.back()}
-          className="px-4 py-2 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] transition-colors"
+          onClick={() => (step > 0 ? setStep(step - 1) : router.back())}
+          className="admin-btn admin-btn-secondary"
         >
           {step === 0 ? "Cancel" : "Back"}
         </button>
@@ -370,7 +558,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
             <button
               onClick={() => setStep(step + 1)}
               disabled={!canNext()}
-              className="px-5 py-2 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors disabled:opacity-40"
+              className="admin-btn admin-btn-primary"
             >
               Next
             </button>
@@ -379,14 +567,14 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
               <button
                 onClick={() => handleSubmit("draft")}
                 disabled={loading}
-                className="px-4 py-2 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] transition-colors disabled:opacity-40"
+                className="admin-btn admin-btn-secondary"
               >
                 {loading ? "Creating..." : "Create as Draft"}
               </button>
               <button
                 onClick={() => handleSubmit("proposed")}
                 disabled={loading}
-                className="px-5 py-2 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors disabled:opacity-40"
+                className="admin-btn admin-btn-primary"
               >
                 {loading ? "Creating..." : "Create & Send Proposal"}
               </button>
@@ -402,7 +590,9 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between text-[12px] py-0.5">
       <span className="text-[var(--tx3)]">{label}</span>
-      <span className="text-[var(--tx)] font-medium text-right max-w-[60%]">{value}</span>
+      <span className="text-[var(--tx)] font-medium text-right max-w-[60%]">
+        {value}
+      </span>
     </div>
   );
 }

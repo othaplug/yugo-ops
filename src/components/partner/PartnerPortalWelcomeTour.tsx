@@ -102,8 +102,8 @@ export function PartnerPortalWelcomeTour({
     <ModalDialogFrame
       zClassName="z-[99999]"
       className="items-center justify-center"
-      backdropClassName="bg-black/60"
-      panelClassName="yugo-glass-light rounded-2xl shadow-2xl w-full max-w-[520px] mx-4 overflow-hidden modal-card border border-[var(--brd)]"
+      backdropClassName=""
+      panelClassName="bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] border border-[var(--yu3-line)] shadow-[var(--yu3-shadow-lg)] rounded-[var(--yu3-r-xl)] w-full max-w-[520px] mx-4 overflow-hidden modal-card"
       ariaModal
     >
       <div className="flex justify-center gap-2 pt-6">

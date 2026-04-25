@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import * as RadixDialog from "@radix-ui/react-dialog"
+import { useYu3PortalContainer } from "@/design-system/admin/layout/Yu3PortalContext"
 import { Icon } from "../primitives/Icon"
 import { cn } from "../lib/cn"
 
@@ -20,11 +21,13 @@ export const DrawerContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof RadixDialog.Content> & {
     widthClass?: string
   }
->(({ className, widthClass, children, ...props }, ref) => (
-  <RadixDialog.Portal>
+>(({ className, widthClass, children, ...props }, ref) => {
+  const portalContainer = useYu3PortalContainer()
+  return (
+  <RadixDialog.Portal container={portalContainer ?? undefined}>
     <RadixDialog.Overlay
       className={cn(
-        "fixed inset-0 z-40 bg-black/60 backdrop-blur-xs",
+        "fixed inset-0 z-40 modal-overlay pointer-events-auto",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
       )}
@@ -32,7 +35,8 @@ export const DrawerContent = React.forwardRef<
     <RadixDialog.Content
       ref={ref}
       className={cn(
-        "fixed inset-y-0 right-0 z-50 flex h-dvh flex-col bg-surface shadow-lg outline-none",
+        "fixed inset-y-0 right-0 z-50 flex h-dvh flex-col pointer-events-auto",
+        "bg-[var(--color-surface,#ffffff)] shadow-lg outline-none",
         "w-full",
         "sm:w-[560px] lg:w-[480px]",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
@@ -46,7 +50,8 @@ export const DrawerContent = React.forwardRef<
       {children}
     </RadixDialog.Content>
   </RadixDialog.Portal>
-))
+  )
+})
 DrawerContent.displayName = "DrawerContent"
 
 export const DrawerHeader = ({

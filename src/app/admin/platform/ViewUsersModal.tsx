@@ -79,7 +79,7 @@ export default function ViewUsersModal({ open, onClose, currentUserId }: ViewUse
                     <span className={`dt-badge tracking-[0.04em] ${u.status === "activated" ? "text-[var(--grn)]" : "text-[var(--tx3)]"}`}>
                       {u.status === "activated" ? "Activated" : "Inactive"}
                     </span>
-                    <span className="dt-badge tracking-[0.04em] text-[var(--gold)]">
+                    <span className="dt-badge tracking-[0.04em] text-[var(--accent-text)]">
                       {u.role === "admin" ? "Admin" : "Dispatcher"}
                     </span>
                     <span className="text-[9px] text-[var(--tx3)]">Email sent</span>

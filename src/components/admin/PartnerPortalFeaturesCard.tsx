@@ -200,7 +200,7 @@ export default function PartnerPortalFeaturesCard({ orgId, vertical, initialFeat
           <button
             type="button"
             onClick={resetToDefaults}
-            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--accent-text)] transition-all"
           >
             Reset to vertical defaults
           </button>
@@ -237,7 +237,7 @@ export default function PartnerPortalFeaturesCard({ orgId, vertical, initialFeat
                     </span>
                   )}
                   {defaultVal !== undefined && enabled !== defaultVal && (
-                    <span className="text-[9px] font-semibold text-[var(--gold)] border border-[var(--gold)]/30 bg-[var(--gdim)] rounded px-1.5 py-0.5">
+                    <span className="text-[9px] font-semibold text-[var(--accent-text)] border border-[var(--gold)]/30 bg-[var(--gdim)] rounded px-1.5 py-0.5">
                       overridden
                     </span>
                   )}
@@ -255,7 +255,7 @@ export default function PartnerPortalFeaturesCard({ orgId, vertical, initialFeat
             type="button"
             onClick={save}
             disabled={saving}
-            className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-60 transition-colors"
+            className="admin-btn admin-btn-sm admin-btn-primary"
           >
             {saving ? "Saving…" : "Save changes"}
           </button>

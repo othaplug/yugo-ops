@@ -272,7 +272,7 @@ export default function NewInboundShipmentClient({
   }
 
   return (
-    <div className="max-w-[900px] mx-auto px-4 sm:px-5 md:px-6 py-5 md:py-6 animate-fade-up">
+    <div className="w-full min-w-0 max-w-[min(900px,100%)] mx-auto py-5 md:py-6 animate-fade-up">
       <div className="mb-6">
         <BackButton
           label="Inbound Shipments"
@@ -433,7 +433,7 @@ export default function NewInboundShipmentClient({
                   },
                 ])
               }
-              className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-[var(--gold)] hover:opacity-80 transition-opacity"
+              className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-[var(--accent-text)] hover:opacity-80 transition-opacity"
             >
               <Plus size={14} weight="bold" aria-hidden />
               Add item
@@ -738,7 +738,7 @@ export default function NewInboundShipmentClient({
               type="button"
               onClick={() => void runSuggest()}
               disabled={suggestLoading}
-              className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-[var(--gold)] text-[var(--gold)] text-[11px] font-bold tracking-wide disabled:opacity-50 hover:opacity-90 transition-opacity"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-[var(--gold)] text-[var(--accent-text)] text-[11px] font-bold tracking-wide disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
               <Sparkle size={16} aria-hidden />
               {suggestLoading ? "Calculating…" : "Suggest from address"}

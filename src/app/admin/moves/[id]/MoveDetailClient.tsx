@@ -1,8 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
 import {
@@ -28,6 +33,16 @@ import SegmentedProgressBar from "../../components/SegmentedProgressBar";
 import { useToast } from "../../components/Toast";
 import { useRelativeTime } from "./useRelativeTime";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { PageHeader, PageMetaDivider } from "@/design-system/admin/layout";
+import {
+  Button,
+  StatusPill,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/design-system/admin/primitives";
+import { KpiStrip } from "@/design-system/admin/dashboard";
 import {
   isPreMoveChecklistComplete,
   preMoveChecklistCounts,
@@ -350,12 +365,12 @@ function BinOrderPickupBlock({
   };
 
   return (
-    <div className="mt-2 pt-2 border-t border-[var(--brd)]/40 space-y-2">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)]">
+    <div className="mt-2 pt-2 border-t border-[var(--yu3-line-subtle)] space-y-2">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--yu3-ink-muted)]">
         Pickup checklist
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
-        <label className="text-[10px] text-[var(--tx3)]">
+        <label className="text-[10px] text-[var(--yu3-ink-muted)]">
           Bins returned
           <input
             type="number"
@@ -373,7 +388,7 @@ function BinOrderPickupBlock({
             className="mt-0.5 admin-premium-input w-full"
           />
         </label>
-        <label className="text-[10px] text-[var(--tx3)]">
+        <label className="text-[10px] text-[var(--yu3-ink-muted)]">
           Missing bins
           <input
             type="number"
@@ -392,7 +407,7 @@ function BinOrderPickupBlock({
           />
         </label>
         {wProv != null && wProv > 0 ? (
-          <label className="text-[10px] text-[var(--tx3)]">
+          <label className="text-[10px] text-[var(--yu3-ink-muted)]">
             Wardrobe returned
             <input
               type="number"
@@ -411,11 +426,11 @@ function BinOrderPickupBlock({
             />
           </label>
         ) : (
-          <span className="text-[10px] text-[var(--tx3)] col-span-1">
+          <span className="text-[10px] text-[var(--yu3-ink-muted)] col-span-1">
             Wardrobe: n/a
           </span>
         )}
-        <label className="text-[10px] text-[var(--tx3)] col-span-2 sm:col-span-1">
+        <label className="text-[10px] text-[var(--yu3-ink-muted)] col-span-2 sm:col-span-1">
           Condition
           <select
             value={condition}
@@ -433,7 +448,7 @@ function BinOrderPickupBlock({
           type="button"
           disabled={saving}
           onClick={() => save(false)}
-          className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"
+          className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--yu3-line)] text-[var(--yu3-ink-muted)] hover:border-[var(--yu3-wine)]"
         >
           Save counts
         </button>
@@ -441,7 +456,7 @@ function BinOrderPickupBlock({
           type="button"
           disabled={saving}
           onClick={() => save(true)}
-          className="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+          className="admin-btn admin-btn-sm admin-btn-primary"
         >
           Complete pickup
         </button>
@@ -449,6 +464,9 @@ function BinOrderPickupBlock({
     </div>
   );
 }
+
+const MOVE_TAB_IDS = ["overview", "plan", "money", "work"] as const;
+type MoveTabId = (typeof MOVE_TAB_IDS)[number];
 
 export default function MoveDetailClient({
   move: initialMove,
@@ -470,7 +488,34 @@ export default function MoveDetailClient({
   moveWaivers = [],
 }: MoveDetailClientProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+
+  const tabFromQuery = searchParams.get("tab");
+  const [activeMoveTab, setActiveMoveTab] = useState<MoveTabId>(() =>
+    MOVE_TAB_IDS.includes((tabFromQuery || "") as MoveTabId)
+      ? ((tabFromQuery || "") as MoveTabId)
+      : "overview",
+  );
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t && MOVE_TAB_IDS.includes(t as MoveTabId)) {
+      setActiveMoveTab(t as MoveTabId);
+    }
+  }, [searchParams]);
+
+  const handleMoveTab = useCallback(
+    (v: string) => {
+      if (!MOVE_TAB_IDS.includes(v as MoveTabId)) return;
+      setActiveMoveTab(v as MoveTabId);
+      const next = new URLSearchParams(searchParams.toString());
+      next.set("tab", v);
+      const q = next.toString();
+      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
   const supabase = createClient();
   const [move, setMove] = useState(initialMove);
   useEffect(() => setMove(initialMove), [initialMove]);
@@ -720,9 +765,10 @@ export default function MoveDetailClient({
     : null;
 
   /** Allocated on-site work time: DB column, else quote `est_hours` only (never derived from arrival window). */
-  const jobTimeTracker = useMemo(():
-    | { minutes: number; margin: number }
-    | null => {
+  const jobTimeTracker = useMemo((): {
+    minutes: number;
+    margin: number;
+  } | null => {
     const raw = move.estimated_duration_minutes;
     const rawN = typeof raw === "string" ? Number.parseFloat(raw) : Number(raw);
     if (Number.isFinite(rawN) && rawN > 0) {
@@ -789,22 +835,107 @@ export default function MoveDetailClient({
     move as { operationalAlerts?: OperationalJobAlerts | null }
   ).operationalAlerts;
 
+  const serviceEyebrow =
+    String(move.service_type || "").toLowerCase() === "bin_rental"
+      ? "Operations · Bin rental"
+      : isOffice
+        ? "Operations · Office move"
+        : "Operations · Residential move";
+
+  const kpiTiles = useMemo(
+    () => [
+      { id: "id", label: "Move", value: String(move.move_code || "—") },
+      {
+        id: "date",
+        label: "Scheduled",
+        value: move.scheduled_date
+          ? formatMoveDate(String(move.scheduled_date))
+          : "Not set",
+      },
+      {
+        id: "status",
+        label: "Status",
+        value: toTitleCase(getStatusLabel(String(move.status || "")) || "—"),
+      },
+      {
+        id: "value",
+        label: "Contract",
+        value: formatCurrency(Number(move.estimate ?? move.amount ?? 0) || 0),
+      },
+    ],
+    [
+      move.move_code,
+      move.scheduled_date,
+      move.status,
+      move.estimate,
+      move.amount,
+    ],
+  );
+
   return (
-    <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-3 animate-fade-up">
-      <div className="flex items-center gap-2 mb-1">
-        <BackButton label="Back" />
-        <p className="t-label text-[var(--tx3)]/88">
-          Operations ·{" "}
-          {String(move.service_type || "").toLowerCase() === "bin_rental"
-            ? "Bin Rental"
-            : isOffice
-              ? "Office Move"
-              : "Residential Move"}
-        </p>
+    <div className="w-full min-w-0 flex flex-col gap-6 py-1 animate-fade-up">
+      <div>
+        <BackButton
+          label="Back"
+          variant="v2"
+          className="text-[var(--yu3-ink-muted)] hover:text-[var(--yu3-ink)]"
+        />
       </div>
 
+      <PageHeader
+        eyebrow={serviceEyebrow}
+        title={
+          <span className="inline-flex min-w-0 max-w-full items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setContactModalOpen(true)}
+              className="text-left min-w-0 max-w-full break-words bg-transparent border-0 p-0 cursor-pointer font-inherit text-inherit hover:text-[var(--yu3-wine)] transition-colors group inline-flex items-center gap-1.5"
+            >
+              {move.client_name}
+              <Pencil
+                size={16}
+                aria-hidden
+                className="opacity-0 group-hover:opacity-60 transition-opacity shrink-0 text-[var(--yu3-ink-muted)]"
+              />
+            </button>
+          </span>
+        }
+        meta={
+          <div className="flex flex-wrap items-center gap-2">
+            {move.move_code ? (
+              <span className="yu3-num text-[12px] font-semibold text-[var(--yu3-ink)]">
+                {move.move_code}
+              </span>
+            ) : null}
+            <StatusPill tone="wine">
+              {String(move.service_type || "").toLowerCase() === "bin_rental"
+                ? "Bin rental"
+                : `${isOffice ? "Office" : "Residential"} move`}
+            </StatusPill>
+          </div>
+        }
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <MoveNotifyButton move={move} />
+            <ResendTrackingLinkButton move={move} />
+            <PageMetaDivider />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setDeleteConfirmOpen(true)}
+              className="text-[var(--yu3-danger)] hover:text-[var(--yu3-danger)] hover:bg-[var(--yu3-danger-tint)]"
+            >
+              Delete
+            </Button>
+          </div>
+        }
+      />
+
+      <KpiStrip tiles={kpiTiles} columns={4} variant="pills" />
+
       {isCompleted && (
-        <div className="rounded-lg border border-[var(--brd)]/50 bg-[var(--gdim)]/30 px-4 py-2.5 text-[11px] text-[var(--tx2)]">
+        <div className="rounded-[var(--yu3-r-md)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-subtle)] px-4 py-2.5 text-[12px] text-[var(--yu3-ink-muted)]">
           This move is complete. Some fields are locked for transparency.
         </div>
       )}
@@ -814,14 +945,14 @@ export default function MoveDetailClient({
         (operationalAlerts.marginBelowHalf ||
           operationalAlerts.projectedFinishAfterAllocated) && (
           <div
-            className={`rounded-xl border px-4 py-3 text-[12px] leading-snug ${
+            className={`rounded-[var(--yu3-r-md)] border px-4 py-3 text-[12px] leading-snug ${
               operationalAlerts.marginBelowHalf
-                ? "border-red-500/35 bg-red-500/[0.08] text-[var(--tx)]"
-                : "border-amber-500/40 bg-amber-500/[0.08] text-[var(--tx)]"
+                ? "border-red-500/35 bg-red-500/[0.08] text-[var(--yu3-ink)]"
+                : "border-amber-500/40 bg-amber-500/[0.08] text-[var(--yu3-ink)]"
             }`}
             role="status"
           >
-            <p className="t-label text-[var(--tx3)] mb-1">
+            <p className="yu3-t-eyebrow text-[var(--yu3-ink-muted)] mb-1">
               Operational alert
             </p>
             {operationalAlerts.marginBelowHalf && (
@@ -842,59 +973,19 @@ export default function MoveDetailClient({
           </div>
         )}
 
-      {/* Hero - compact header */}
-      <div className="rounded-2xl border border-[var(--brd)]/60 bg-[var(--card)] overflow-hidden p-4 sm:p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setContactModalOpen(true)}
-                className="font-heading text-[17px] md:text-[19px] font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors text-left break-words line-clamp-2 flex items-center gap-1.5 group"
-              >
-                {move.client_name}
-                <Pencil
-                  size={12}
-                  aria-hidden
-                  className="opacity-0 group-hover:opacity-50 transition-opacity shrink-0"
-                />
-              </button>
-              {move.move_code && (
-                <span className="inline-flex items-center text-[11px] font-mono font-bold tracking-wide text-[var(--gold)]">
-                  {move.move_code}
-                </span>
-              )}
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="dt-badge text-[var(--gold)]">
-                {String(move.service_type || "").toLowerCase() === "bin_rental"
-                  ? "Bin Rental"
-                  : `${isOffice ? "Office" : "Residential"} Move`}
-              </span>
-              <MoveNotifyButton move={move} />
-              <ResendTrackingLinkButton move={move} />
-              <span className="w-px h-3.5 bg-[var(--brd)]/60 mx-0.5 shrink-0" />
-              <button
-                type="button"
-                onClick={() => setDeleteConfirmOpen(true)}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-medium text-[var(--tx3)] hover:text-[var(--red)] hover:bg-[var(--rdim)] transition-all"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="mt-4 pt-4 border-t border-[var(--brd)]/40">
+      {/* Status, live stage, checklist, progress */}
+      <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] overflow-hidden p-4 sm:p-5 shadow-[0_1px_0_0_rgba(0,0,0,0.03)]">
+        <div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <div className="group/card relative flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 min-w-0">
-              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">
+              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--yu3-ink-muted)]/80 shrink-0">
                 Status
               </span>
               {isCompleted ? (
                 <>
                   <span className="inline-flex items-center gap-1.5">
                     <span
-                      className={`dt-badge tracking-[0.04em] text-[11px] ${MOVE_STATUS_COLORS_ADMIN[move.status] || "text-[var(--gold)]"}`}
+                      className={`dt-badge tracking-[0.04em] text-[11px] ${MOVE_STATUS_COLORS_ADMIN[move.status] || "text-[var(--yu3-wine)]"}`}
                     >
                       {getStatusLabel(move.status)}
                     </span>
@@ -922,7 +1013,7 @@ export default function MoveDetailClient({
                 </>
               ) : editingCard === "status" ? (
                 <select
-                  className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none min-w-[120px]"
+                  className="text-[12px] bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] rounded-md px-2 py-1.5 text-[var(--yu3-ink)] focus:border-[var(--yu3-line)] outline-none min-w-[120px]"
                   value={(() => {
                     const s =
                       normalizeStatus(move.status) ||
@@ -1062,24 +1153,24 @@ export default function MoveDetailClient({
                 <button
                   type="button"
                   onClick={() => setEditingCard("status")}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-dashed border-transparent hover:border-[var(--gold)]/40 hover:opacity-90 transition-all cursor-pointer group/btn w-fit"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-dashed border-transparent hover:border-[var(--yu3-wine)]/40 hover:opacity-90 transition-all cursor-pointer group/btn w-fit"
                   aria-label="Edit status"
                 >
                   <span
-                    className={`dt-badge tracking-[0.04em] text-[11px] ${MOVE_STATUS_COLORS_ADMIN[move.status] || "text-[var(--gold)]"}`}
+                    className={`dt-badge tracking-[0.04em] text-[11px] ${MOVE_STATUS_COLORS_ADMIN[move.status] || "text-[var(--yu3-wine)]"}`}
                   >
                     {getStatusLabel(move.status)}
                   </span>
                   <ChevronDown
                     weight="regular"
-                    className="w-[10px] h-[10px] text-[var(--tx3)] opacity-60 group-hover/btn:opacity-100"
+                    className="w-[10px] h-[10px] text-[var(--yu3-ink-muted)] opacity-60 group-hover/btn:opacity-100"
                   />
                 </button>
               )}
             </div>
 
             <div className="group/card relative flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 min-w-0">
-              <span className="inline-flex items-center gap-1.5 text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">
+              <span className="inline-flex items-center gap-1.5 text-[9px] font-semibold tracking-widest uppercase text-[var(--yu3-ink-muted)]/80 shrink-0">
                 <span
                   className="relative flex h-1.5 w-1.5 shrink-0"
                   aria-hidden
@@ -1090,7 +1181,7 @@ export default function MoveDetailClient({
                 Live stage
               </span>
               <span
-                className="text-[12px] font-medium text-[var(--tx)] truncate"
+                className="text-[12px] font-medium text-[var(--yu3-ink)] truncate"
                 title="Updated by crew from portal"
               >
                 {LIVE_TRACKING_STAGES.find((o) => o.key === move.stage)
@@ -1098,21 +1189,21 @@ export default function MoveDetailClient({
               </span>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 pt-2 sm:pt-0 sm:pl-6 sm:border-l sm:border-[var(--brd)]/50">
-              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 pt-2 sm:pt-0 sm:pl-6 sm:border-l sm:border-[var(--yu3-line-subtle)]">
+              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--yu3-ink-muted)]/80">
                 Last updated
               </span>
-              <span className="text-[12px] tabular-nums text-[var(--tx2)]">
+              <span className="text-[12px] tabular-nums text-[var(--yu3-ink-muted)]">
                 {lastUpdatedRelative}
               </span>
             </div>
           </div>
 
-          <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 rounded-xl border border-[var(--brd)]/40 bg-[var(--gdim)]/20 px-3 py-2.5 sm:px-4">
-            <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">
+          <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 rounded-xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-subtle)] px-3 py-2.5 sm:px-4">
+            <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--yu3-ink-muted)]/80 shrink-0">
               Client prep checklist
             </span>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--tx)]">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--yu3-ink)]">
               <span
                 className={
                   prepAllDone
@@ -1123,12 +1214,12 @@ export default function MoveDetailClient({
                 {prepCounts.done}/{prepCounts.total} complete
               </span>
               {prepAllDone && prepNotifiedLabel ? (
-                <span className="text-[11px] text-[var(--tx3)]">
+                <span className="text-[11px] text-[var(--yu3-ink-muted)]">
                   · Ops / coordinator notified {prepNotifiedLabel}
                 </span>
               ) : null}
               {prepAllDone && !prepNotifiedLabel ? (
-                <span className="text-[11px] text-[var(--tx3)]">
+                <span className="text-[11px] text-[var(--yu3-ink-muted)]">
                   · Tracked complete (no notification logged)
                 </span>
               ) : null}
@@ -1162,6 +1253,29 @@ export default function MoveDetailClient({
         </div>
       </div>
 
+      <Tabs
+        value={activeMoveTab}
+        onValueChange={handleMoveTab}
+        className="w-full min-w-0"
+      >
+        <TabsList
+          variant="underline"
+          className="mb-0 w-full min-h-[2.5rem] flex-wrap gap-y-1"
+        >
+          <TabsTrigger value="overview" variant="underline">
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="plan" variant="underline">
+            Schedule and details
+          </TabsTrigger>
+          <TabsTrigger value="money" variant="underline">
+            Money
+          </TabsTrigger>
+          <TabsTrigger value="work" variant="underline">
+            Inventory and files
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="space-y-3 pt-3">
       {/* Live Crew Tracking Map - collapsible, collapsed by default */}
       {etaSmsLog.length > 0 && (
         <CollapsibleSection
@@ -1169,20 +1283,20 @@ export default function MoveDetailClient({
           defaultCollapsed
           subtitle={`${etaSmsLog.length} sent`}
         >
-          <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] overflow-hidden">
+          <div className="rounded-lg border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] overflow-hidden">
             <table className="w-full text-[11px]">
               <thead>
-                <tr className="border-b border-[var(--brd)] bg-[var(--gdim)]/30">
-                  <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">
+                <tr className="border-b border-[var(--yu3-line)] bg-[var(--yu3-bg-surface-subtle)]">
+                  <th className="text-left py-2 px-3 font-semibold text-[var(--yu3-ink-muted)]">
                     Type
                   </th>
-                  <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">
+                  <th className="text-left py-2 px-3 font-semibold text-[var(--yu3-ink-muted)]">
                     Sent
                   </th>
-                  <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">
+                  <th className="text-left py-2 px-3 font-semibold text-[var(--yu3-ink-muted)]">
                     ETA
                   </th>
-                  <th className="text-left py-2 px-3 font-semibold text-[var(--tx2)]">
+                  <th className="text-left py-2 px-3 font-semibold text-[var(--yu3-ink-muted)]">
                     Twilio
                   </th>
                 </tr>
@@ -1191,20 +1305,20 @@ export default function MoveDetailClient({
                 {etaSmsLog.map((row, i) => (
                   <tr
                     key={i}
-                    className="border-b border-[var(--brd)]/50 last:border-0"
+                    className="border-b border-[var(--yu3-line-subtle)] last:border-0"
                   >
-                    <td className="py-2 px-3 text-[var(--tx)]">
+                    <td className="py-2 px-3 text-[var(--yu3-ink)]">
                       {toTitleCase(row.message_type)}
                     </td>
-                    <td className="py-2 px-3 text-[var(--tx2)]">
+                    <td className="py-2 px-3 text-[var(--yu3-ink-muted)]">
                       {row.sent_at
                         ? new Date(row.sent_at).toLocaleString()
                         : "-"}
                     </td>
-                    <td className="py-2 px-3 text-[var(--tx2)]">
+                    <td className="py-2 px-3 text-[var(--yu3-ink-muted)]">
                       {row.eta_minutes != null ? `${row.eta_minutes} min` : "-"}
                     </td>
-                    <td className="py-2 px-3 font-mono text-[10px] text-[var(--tx3)]">
+                    <td className="py-2 px-3 font-mono text-[10px] text-[var(--yu3-ink-muted)]">
                       {row.twilio_sid || "Failed"}
                     </td>
                   </tr>
@@ -1225,11 +1339,11 @@ export default function MoveDetailClient({
               : toTitleCase(reviewRequest.status)
           }
         >
-          <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] p-4 space-y-4">
+          <div className="rounded-lg border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] p-4 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-[12px]">
-                <span className="text-[var(--tx3)]">Status:</span>
-                <span className="font-medium text-[var(--tx)]">
+                <span className="text-[var(--yu3-ink-muted)]">Status:</span>
+                <span className="font-medium text-[var(--yu3-ink)]">
                   {reviewRequest.review_clicked
                     ? `Clicked ✓${reviewRequest.review_clicked_at ? ` (${new Date(reviewRequest.review_clicked_at).toLocaleString()})` : ""}`
                     : reviewRequest.status === "sent" ||
@@ -1277,7 +1391,7 @@ export default function MoveDetailClient({
                         setReviewReminderLoading(false);
                       }
                     }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border border-[var(--gold)]/40 text-[var(--gold)] bg-[var(--gold)]/10 hover:bg-[var(--gold)]/20 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border border-[var(--yu3-wine)]/40 text-[var(--yu3-wine)] bg-[var(--yu3-wine)]/10 hover:bg-[var(--yu3-wine)]/20 transition-colors disabled:opacity-50"
                   >
                     {reviewReminderLoading
                       ? "Sending…"
@@ -1291,21 +1405,21 @@ export default function MoveDetailClient({
               reviewRequest.client_rating <= 3) ||
             (reviewRequest.client_feedback &&
               reviewRequest.client_feedback.trim()) ? (
-              <div className="pt-3 border-t border-[var(--brd)]">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-1.5">
+              <div className="pt-3 border-t border-[var(--yu3-line)]">
+                <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--yu3-ink-muted)] mb-1.5">
                   Client feedback (from review link)
                 </p>
-                <div className="text-[12px] text-[var(--tx2)]">
+                <div className="text-[12px] text-[var(--yu3-ink-muted)]">
                   {reviewRequest.client_rating != null &&
                     reviewRequest.client_rating <= 5 && (
                       <p className="mb-1">
-                        <span className="text-[var(--tx3)]">Rating:</span>{" "}
+                        <span className="text-[var(--yu3-ink-muted)]">Rating:</span>{" "}
                         {reviewRequest.client_rating}★
                       </p>
                     )}
                   {reviewRequest.client_feedback?.trim() && (
                     <p>
-                      <span className="text-[var(--tx3)]">Feedback:</span>{" "}
+                      <span className="text-[var(--yu3-ink-muted)]">Feedback:</span>{" "}
                       {reviewRequest.client_feedback}
                     </p>
                   )}
@@ -1333,7 +1447,7 @@ export default function MoveDetailClient({
           subtitle={displayCrewName || "Crew"}
         >
           {!isInProgress && (
-            <p className="text-[11px] text-[var(--tx3)] mb-2">
+            <p className="text-[11px] text-[var(--yu3-ink-muted)] mb-2">
               Move completed. Live tracking remains visible for vehicle and
               asset security.
             </p>
@@ -1362,469 +1476,18 @@ export default function MoveDetailClient({
         </CollapsibleSection>
       )}
 
-      <MoveContactModal
-        open={contactModalOpen}
-        onClose={() => setContactModalOpen(false)}
-        moveId={move.id}
-        initial={{
-          client_name: move.client_name || "",
-          client_email: move.client_email || move.customer_email || "",
-          client_phone: move.client_phone ?? "",
-          preferred_contact: move.preferred_contact ?? undefined,
-        }}
-        onSaved={(updates) => setMove((prev: any) => ({ ...prev, ...updates }))}
-      />
+        </TabsContent>
 
-      <ModalOverlay
-        open={crewModalOpen}
-        onClose={() => setCrewModalOpen(false)}
-        title="Assign Crew"
-        maxWidth="sm"
-      >
-        <div className="p-5 space-y-4">
-          {!moveInProgress && (
-            <RecommendedCrewPanel
-              moveId={move.id}
-              moveDate={move.move_date ?? null}
-              serviceType={move.service_type ?? null}
-              tierSelected={move.tier_selected ?? null}
-              hasPiano={move.has_piano ?? false}
-              estimate={move.estimate ?? null}
-              currentCrewId={move.crew_id ?? null}
-              onAssign={(_userId, name) => {
-                toast(`${name} assigned to this move`, "check");
-                router.refresh();
-                setCrewModalOpen(false);
-              }}
-            />
-          )}
-          {moveInProgress && (
-            <p className="text-[11px] text-amber-600 bg-amber-500/10 rounded-lg p-3">
-              Cannot reassign: this move is in progress. Reassignment is only
-              allowed before the crew has started.
-            </p>
-          )}
-          <div>
-            <label className="admin-premium-label">Select Crew</label>
-            <select
-              value={move.crew_id || ""}
-              disabled={moveInProgress}
-              onChange={async (e) => {
-                if (moveInProgress) return;
-                const v = e.target.value || null;
-                try {
-                  const res = await fetch("/api/dispatch/assign", {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      jobId: move.id,
-                      jobType: "move",
-                      crewId: v,
-                    }),
-                  });
-                  const json = await res.json();
-                  if (!res.ok)
-                    throw new Error(json.error || "Failed to assign");
-                  if (json.move) {
-                    setMove(json.move);
-                    setAssignedMembers(
-                      new Set(
-                        Array.isArray(json.move.assigned_members)
-                          ? json.move.assigned_members
-                          : crews.find((c) => c.id === v)?.members || [],
-                      ),
-                    );
-                  }
-                  router.refresh();
-                  toast("Crew assigned", "check");
-                } catch (err) {
-                  toast(
-                    err instanceof Error ? err.message : "Failed to assign",
-                    "alertTriangle",
-                  );
-                }
-              }}
-              className="admin-premium-input w-full transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <option value="">No crew assigned</option>
-              {crews.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          {selectedCrew && crewMembers.length > 0 && (
-            <>
-              <p className="text-[11px] text-[var(--tx3)]">
-                Check or uncheck members to assign to this move.
-              </p>
-              <div className="space-y-2">
-                {crewMembers.map((m) => (
-                  <label
-                    key={m}
-                    className="flex items-center gap-3 p-2.5 rounded-md border border-[var(--brd)] hover:bg-[var(--bg)] cursor-pointer transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={assignedMembers.has(m)}
-                      onChange={() => toggleMember(m)}
-                      className="w-4 h-4 rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--brd)]"
-                    />
-                    <span className="text-[13px] font-medium text-[var(--tx)]">
-                      {m}
-                    </span>
-                  </label>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={async () => {
-                  const members = Array.from(assignedMembers);
-                  const { data } = await supabase
-                    .from("moves")
-                    .update({
-                      assigned_members: members,
-                      updated_at: new Date().toISOString(),
-                    })
-                    .eq("id", move.id)
-                    .select()
-                    .single();
-                  if (data) setMove(data);
-                  router.refresh();
-                  setCrewModalOpen(false);
-                }}
-                className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
-              >
-                Save Assignments
-              </button>
-            </>
-          )}
-          {selectedCrew && crewMembers.length === 0 && (
-            <p className="text-[11px] text-[var(--tx3)]">
-              No members in this crew. Add members in Platform Settings → Teams.
-            </p>
-          )}
-          {!selectedCrew && snapshotRoster.length > 0 && (
-            <p className="text-[11px] text-[var(--tx3)]">
-              Recorded crew (job snapshot): {snapshotRoster.join(", ")}
-            </p>
-          )}
-          {!selectedCrew && snapshotRoster.length === 0 && (
-            <p className="text-[11px] text-[var(--tx3)]">
-              Select a crew above to assign members to this move.
-            </p>
-          )}
-        </div>
-      </ModalOverlay>
-
-      <ModalOverlay
-        open={vehicleModalOpen}
-        onClose={() => setVehicleModalOpen(false)}
-        title="Assign Vehicle"
-        maxWidth="sm"
-      >
-        <div className="p-5 space-y-4">
-          <div>
-            <label className="admin-premium-label">Primary Vehicle</label>
-            <select
-              value={move.truck_primary || ""}
-              onChange={async (e) => {
-                const v = e.target.value || null;
-                const isOverride = v !== move.truck_primary;
-                const { data } = await supabase
-                  .from("moves")
-                  .update({
-                    truck_primary: v,
-                    truck_override: isOverride,
-                    updated_at: new Date().toISOString(),
-                  })
-                  .eq("id", move.id)
-                  .select()
-                  .single();
-                if (data) setMove(data);
-                router.refresh();
-              }}
-              className="admin-premium-input w-full"
-            >
-              <option value="">No vehicle assigned</option>
-              {VEHICLE_OPTIONS.map(([val, label]) => (
-                <option key={val} value={val}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="admin-premium-label">
-              Secondary Vehicle (Optional)
-            </label>
-            <select
-              value={move.truck_secondary || ""}
-              onChange={async (e) => {
-                const v = e.target.value || null;
-                const { data } = await supabase
-                  .from("moves")
-                  .update({
-                    truck_secondary: v,
-                    updated_at: new Date().toISOString(),
-                  })
-                  .eq("id", move.id)
-                  .select()
-                  .single();
-                if (data) setMove(data);
-                router.refresh();
-              }}
-              className="admin-premium-input w-full"
-            >
-              <option value="">None</option>
-              {VEHICLE_OPTIONS.map(([val, label]) => (
-                <option key={val} value={val}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="admin-premium-label">Vehicle Notes</label>
-            <textarea
-              defaultValue={move.truck_notes || ""}
-              onBlur={async (e) => {
-                const v = e.target.value.trim() || null;
-                if (v !== (move.truck_notes || null)) {
-                  const { data } = await supabase
-                    .from("moves")
-                    .update({
-                      truck_notes: v,
-                      updated_at: new Date().toISOString(),
-                    })
-                    .eq("id", move.id)
-                    .select()
-                    .single();
-                  if (data) setMove(data);
-                }
-              }}
-              placeholder="e.g. Use truck #3 (newer lift gate)"
-              rows={2}
-              className="admin-premium-textarea w-full resize-none"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => setVehicleModalOpen(false)}
-            className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
-          >
-            Done
-          </button>
-        </div>
-      </ModalOverlay>
-
-      {restartOverrideModal && (
-        <ModalOverlay
-          open
-          onClose={() => {
-            setRestartOverrideModal(null);
-            setRestartOverrideTyped("");
-            setEditingCard(null);
-          }}
-          title="Admin override required"
-          maxWidth="sm"
-        >
-          <div className="p-5 space-y-4">
-            <p className="text-[12px] text-[var(--tx2)]">
-              This move is completed. Changing status back to{" "}
-              <strong>{getStatusLabel(restartOverrideModal.newStatus)}</strong>{" "}
-              will RESTART the move globally:
-            </p>
-            <ul className="text-[11px] text-[var(--tx2)] list-disc list-inside space-y-1">
-              <li>Live stage will be cleared</li>
-              <li>Any tracking session will be ended</li>
-              <li>Crew will be able to start the job again from scratch</li>
-            </ul>
-            <p className="text-[11px] text-[var(--tx3)]">
-              Type <strong className="text-[var(--tx2)]">OVERRIDE</strong> to
-              confirm you are an admin and understand this action.
-            </p>
-            <input
-              type="text"
-              value={restartOverrideTyped}
-              onChange={(e) => setRestartOverrideTyped(e.target.value)}
-              placeholder="Type OVERRIDE"
-              className="admin-premium-input w-full"
-              autoComplete="off"
-            />
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setRestartOverrideModal(null);
-                  setRestartOverrideTyped("");
-                  setEditingCard(null);
-                }}
-                className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)]"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={
-                  restartOverrideTyped.trim().toUpperCase() !== "OVERRIDE"
-                }
-                onClick={async () => {
-                  if (restartOverrideTyped.trim().toUpperCase() !== "OVERRIDE")
-                    return;
-                  try {
-                    const res = await fetch(
-                      `/api/admin/moves/${move.id}/restart`,
-                      {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          newStatus: restartOverrideModal.newStatus,
-                        }),
-                      },
-                    );
-                    const data = await res.json();
-                    if (!res.ok)
-                      throw new Error(data.error || "Failed to restart");
-                    if (data.move) setMove(data.move);
-                    setRestartOverrideModal(null);
-                    setRestartOverrideTyped("");
-                    setEditingCard(null);
-                    router.refresh();
-                    toast("Move restarted", "check");
-                  } catch (err) {
-                    toast(
-                      err instanceof Error ? err.message : "Failed to restart",
-                      "alertTriangle",
-                    );
-                  }
-                }}
-                className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--org)] text-white hover:bg-[var(--org)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Override & restart
-              </button>
-            </div>
-          </div>
-        </ModalOverlay>
-      )}
-
-      {overrideStatusModalOpen && (
-        <ModalOverlay
-          open
-          onClose={() => {
-            setOverrideStatusModalOpen(false);
-            setOverrideStatusTyped("");
-          }}
-          title="Override status (admin)"
-          maxWidth="sm"
-        >
-          <div className="p-5 space-y-4">
-            <p className="text-[12px] text-[var(--tx2)]">
-              This move is completed. Changing status will{" "}
-              <strong>restart</strong> the move globally:
-            </p>
-            <ul className="text-[11px] text-[var(--tx2)] list-disc list-inside space-y-1">
-              <li>Live stage will be cleared</li>
-              <li>Any tracking session will be ended</li>
-              <li>Crew will be able to start the job again from scratch</li>
-            </ul>
-            <div>
-              <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1.5">
-                New status
-              </label>
-              <select
-                value={overrideStatusNewStatus}
-                onChange={(e) => setOverrideStatusNewStatus(e.target.value)}
-                className="admin-premium-input w-full"
-              >
-                {MOVE_STATUS_OPTIONS.filter(
-                  (s) => !["completed", "cancelled"].includes(s.value),
-                ).map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <p className="text-[11px] text-[var(--tx3)]">
-              Type <strong className="text-[var(--tx2)]">OVERRIDE</strong> to
-              confirm you understand this action.
-            </p>
-            <input
-              type="text"
-              value={overrideStatusTyped}
-              onChange={(e) => setOverrideStatusTyped(e.target.value)}
-              placeholder="Type OVERRIDE"
-              className="admin-premium-input w-full"
-              autoComplete="off"
-            />
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setOverrideStatusModalOpen(false);
-                  setOverrideStatusTyped("");
-                }}
-                className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)]"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={
-                  overrideStatusTyped.trim().toUpperCase() !== "OVERRIDE"
-                }
-                onClick={async () => {
-                  if (overrideStatusTyped.trim().toUpperCase() !== "OVERRIDE")
-                    return;
-                  try {
-                    const res = await fetch(
-                      `/api/admin/moves/${move.id}/restart`,
-                      {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          newStatus: overrideStatusNewStatus,
-                        }),
-                      },
-                    );
-                    const data = await res.json();
-                    if (!res.ok)
-                      throw new Error(
-                        data.error || "Failed to override status",
-                      );
-                    if (data.move) setMove(data.move);
-                    setOverrideStatusModalOpen(false);
-                    setOverrideStatusTyped("");
-                    router.refresh();
-                    toast("Status overridden", "check");
-                  } catch (err) {
-                    toast(
-                      err instanceof Error
-                        ? err.message
-                        : "Failed to override status",
-                      "alertTriangle",
-                    );
-                  }
-                }}
-                className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--org)] text-white hover:bg-[var(--org)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Override & restart
-              </button>
-            </div>
-          </div>
-        </ModalOverlay>
-      )}
+        <TabsContent value="plan" className="space-y-3 pt-2">
 
       {/* ─── Seamless info sections ─── */}
-      <div className="rounded-2xl border border-[var(--brd)]/60 bg-[var(--card)] overflow-hidden px-5 mt-1">
+      <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] overflow-hidden px-5 mt-1">
         {/* Time Intelligence */}
         <div className="group/s relative py-4">
           {!isCompleted ? (
             <button
               type="button"
-              className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100"
+              className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--yu3-bg-surface-subtle)] text-[var(--yu3-ink-muted)] transition-opacity opacity-50 hover:opacity-100"
               onClick={() => setDetailsModalOpen(true)}
               aria-label="Edit date, time window, and allocated job time"
             >
@@ -1839,7 +1502,7 @@ export default function MoveDetailClient({
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
-          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-2">
             Time & Intelligence
           </div>
           {!isCompleted && jobTimeTracker && (
@@ -1854,9 +1517,9 @@ export default function MoveDetailClient({
             </div>
           )}
           {!isCompleted && !jobTimeTracker && (
-            <p className="mb-4 max-w-[440px] text-[12px] text-[var(--tx2)] leading-relaxed">
+            <p className="mb-4 max-w-[440px] text-[12px] text-[var(--yu3-ink-muted)] leading-relaxed">
               Set{" "}
-              <span className="font-semibold text-[var(--tx)]">
+              <span className="font-semibold text-[var(--yu3-ink)]">
                 allocated job time
               </span>{" "}
               in the schedule editor (pencil) so the timer and margin alert use
@@ -1865,54 +1528,54 @@ export default function MoveDetailClient({
           )}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-1">
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                 Date
               </span>
-              <div className="text-[13px] font-medium text-[var(--tx)]">
+              <div className="text-[13px] font-medium text-[var(--yu3-ink)]">
                 {formatMoveDate(move.scheduled_date)}
               </div>
             </div>
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                 Time Window
               </span>
-              <div className="text-[13px] font-medium text-[var(--tx)]">
+              <div className="text-[13px] font-medium text-[var(--yu3-ink)]">
                 {move.arrival_window || "-"}
               </div>
             </div>
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                 Job duration
               </span>
-              <div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">
+              <div className="text-[13px] font-medium text-[var(--yu3-ink)] tabular-nums">
                 {jobDurationStr ?? "-"}
               </div>
             </div>
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                 Estimated duration
               </span>
-              <div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">
+              <div className="text-[13px] font-medium text-[var(--yu3-ink)] tabular-nums">
                 {jobTimeTracker
                   ? formatMinutesAsHhMm(Math.round(jobTimeTracker.minutes))
                   : "Not set"}
               </div>
             </div>
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                 Margin alert at
               </span>
-              <div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">
+              <div className="text-[13px] font-medium text-[var(--yu3-ink)] tabular-nums">
                 {jobTimeTracker
                   ? formatMinutesAsHhMm(Math.round(jobTimeTracker.margin))
                   : "-"}
               </div>
             </div>
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                 Completed at
               </span>
-              <div className="text-[13px] font-medium text-[var(--tx)]">
+              <div className="text-[13px] font-medium text-[var(--yu3-ink)]">
                 {move.completed_at
                   ? formatPlatformDisplay(
                       move.completed_at,
@@ -1928,18 +1591,18 @@ export default function MoveDetailClient({
               </div>
             </div>
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                 Days Left
               </span>
               <div
                 className={`text-[13px] font-bold tabular-nums ${
                   daysUntil === null || daysUntil === undefined
-                    ? "text-[var(--tx3)]"
+                    ? "text-[var(--yu3-ink-muted)]"
                     : daysUntil < 0
                       ? "text-[var(--red)]"
                       : daysUntil <= 1
                         ? "text-amber-400"
-                        : "text-[var(--gold)]"
+                        : "text-[var(--yu3-wine)]"
                 }`}
               >
                 {daysUntil === null || daysUntil === undefined
@@ -1955,11 +1618,11 @@ export default function MoveDetailClient({
         </div>
 
         {/* Addresses */}
-        <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
+        <div className="group/s relative border-t border-[var(--yu3-line-subtle)] py-4">
           {!isCompleted ? (
             <button
               type="button"
-              className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100"
+              className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--yu3-bg-surface-subtle)] text-[var(--yu3-ink-muted)] transition-opacity opacity-50 hover:opacity-100"
               onClick={() => {
                 setDetailsModalSection("addresses");
                 setDetailsModalOpen(true);
@@ -1977,32 +1640,32 @@ export default function MoveDetailClient({
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
-          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-2">
             Addresses
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                 From
               </span>
-              <div className="text-[13px] font-medium text-[var(--tx)]">
+              <div className="text-[13px] font-medium text-[var(--yu3-ink)]">
                 {move.from_address || "-"}
               </div>
               {formatAccessForDisplay(move.from_access) && (
-                <div className="text-[9px] text-[var(--tx3)] mt-0.5">
+                <div className="text-[9px] text-[var(--yu3-ink-muted)] mt-0.5">
                   {formatAccessForDisplay(move.from_access)}
                 </div>
               )}
             </div>
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                 To
               </span>
-              <div className="text-[13px] font-medium text-[var(--tx)]">
+              <div className="text-[13px] font-medium text-[var(--yu3-ink)]">
                 {move.to_address || move.delivery_address || "-"}
               </div>
               {formatAccessForDisplay(move.to_access) && (
-                <div className="text-[9px] text-[var(--tx3)] mt-0.5">
+                <div className="text-[9px] text-[var(--yu3-ink-muted)] mt-0.5">
                   {formatAccessForDisplay(move.to_access)}
                 </div>
               )}
@@ -2011,11 +1674,11 @@ export default function MoveDetailClient({
         </div>
 
         {/* Crew */}
-        <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
+        <div className="group/s relative border-t border-[var(--yu3-line-subtle)] py-4">
           {!isCompleted ? (
             <button
               type="button"
-              className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--yu3-bg-surface-subtle)] text-[var(--yu3-ink-muted)] transition-opacity opacity-50 hover:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               onClick={() => !moveInProgress && setCrewModalOpen(true)}
               disabled={moveInProgress}
               aria-label="Edit crew"
@@ -2036,32 +1699,32 @@ export default function MoveDetailClient({
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
-          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-2">
             Crew
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                 Crew
               </span>
-              <div className="text-[13px] font-medium text-[var(--tx)]">
+              <div className="text-[13px] font-medium text-[var(--yu3-ink)]">
                 {displayCrewName || "-"}
               </div>
             </div>
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                 Coordinator
               </span>
-              <div className="text-[13px] font-medium text-[var(--tx)]">
+              <div className="text-[13px] font-medium text-[var(--yu3-ink)]">
                 {move.coordinator_name || "-"}
               </div>
             </div>
             {isCompleted ? (
               <div>
-                <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                   Assigned
                 </span>
-                <div className="text-[13px] font-medium text-[var(--gold)]">
+                <div className="text-[13px] font-medium text-[var(--yu3-wine)]">
                   {assignedMembers.size} members
                 </div>
               </div>
@@ -2075,10 +1738,10 @@ export default function MoveDetailClient({
                   moveInProgress ? "Cannot reassign job in progress" : undefined
                 }
               >
-                <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                   Assigned
                 </span>
-                <div className="text-[13px] font-medium text-[var(--gold)]">
+                <div className="text-[13px] font-medium text-[var(--yu3-wine)]">
                   {assignedMembers.size} members
                 </div>
               </button>
@@ -2087,11 +1750,11 @@ export default function MoveDetailClient({
         </div>
 
         {/* Vehicle */}
-        <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
+        <div className="group/s relative border-t border-[var(--yu3-line-subtle)] py-4">
           {!isCompleted ? (
             <button
               type="button"
-              className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100"
+              className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--yu3-bg-surface-subtle)] text-[var(--yu3-ink-muted)] transition-opacity opacity-50 hover:opacity-100"
               onClick={() => setVehicleModalOpen(true)}
               aria-label="Edit vehicle"
             >
@@ -2106,25 +1769,25 @@ export default function MoveDetailClient({
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
-          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-2">
             Vehicle
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                 Primary
               </span>
-              <div className="text-[13px] font-medium text-[var(--tx)]">
+              <div className="text-[13px] font-medium text-[var(--yu3-ink)]">
                 {move.truck_primary
                   ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary
                   : "-"}
               </div>
             </div>
             <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                 Secondary
               </span>
-              <div className="text-[13px] font-medium text-[var(--tx)]">
+              <div className="text-[13px] font-medium text-[var(--yu3-ink)]">
                 {move.truck_secondary
                   ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary
                   : "-"}
@@ -2132,10 +1795,10 @@ export default function MoveDetailClient({
             </div>
             {move.truck_notes && (
               <div className="col-span-2 sm:col-span-1">
-                <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                   Notes
                 </span>
-                <div className="text-[10px] text-[var(--tx3)]">
+                <div className="text-[10px] text-[var(--yu3-ink-muted)]">
                   {move.truck_notes}
                 </div>
               </div>
@@ -2148,16 +1811,16 @@ export default function MoveDetailClient({
           (move.valuation_tier ||
             move.valuation_upgrade_cost ||
             move.declaration_total) && (
-            <div className="border-t border-[var(--brd)]/30 py-4">
-              <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
+            <div className="border-t border-[var(--yu3-line-subtle)] py-4">
+              <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-2">
                 Valuation Protection
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
                 <div>
-                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                     Tier
                   </span>
-                  <div className="text-[13px] font-medium text-[var(--tx)]">
+                  <div className="text-[13px] font-medium text-[var(--yu3-ink)]">
                     {move.valuation_tier === "full_replacement"
                       ? "Full Replacement"
                       : move.valuation_tier === "enhanced"
@@ -2167,20 +1830,20 @@ export default function MoveDetailClient({
                 </div>
                 {(move.valuation_upgrade_cost ?? 0) > 0 && (
                   <div>
-                    <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                    <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                       Upgrade Cost
                     </span>
-                    <div className="text-[13px] font-medium text-[var(--gold)]">
+                    <div className="text-[13px] font-medium text-[var(--yu3-wine)]">
                       {formatCurrency(move.valuation_upgrade_cost)}
                     </div>
                   </div>
                 )}
                 {(move.declaration_total ?? 0) > 0 && (
                   <div>
-                    <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/88">
+                    <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                       Declarations
                     </span>
-                    <div className="text-[13px] font-medium text-[var(--gold)]">
+                    <div className="text-[13px] font-medium text-[var(--yu3-wine)]">
                       {formatCurrency(move.declaration_total)}
                     </div>
                   </div>
@@ -2189,7 +1852,9 @@ export default function MoveDetailClient({
             </div>
           )}
       </div>
+        </TabsContent>
 
+        <TabsContent value="money" className="space-y-3 pt-2">
       {/* Financial Snapshot */}
       {(() => {
         const PAY_TOTAL_EPS = 0.05;
@@ -2219,10 +1884,14 @@ export default function MoveDetailClient({
             : ledgerSumAfterTax > 0
               ? ledgerSumAfterTax
               : depositPaid;
-        const contractBarTarget = contractInclForLabels > 0 ? contractInclForLabels : quoteTotal;
+        const contractBarTarget =
+          contractInclForLabels > 0 ? contractInclForLabels : quoteTotal;
         const progressPct =
           contractBarTarget > 0
-            ? Math.min(100, Math.round((collectedAmount / contractBarTarget) * 100))
+            ? Math.min(
+                100,
+                Math.round((collectedAmount / contractBarTarget) * 100),
+              )
             : 0;
         const footerRecordedAfterTax = fullyPaid
           ? quoteTotal
@@ -2278,10 +1947,10 @@ export default function MoveDetailClient({
         );
 
         return (
-          <div className="rounded-2xl border border-[var(--brd)]/60 bg-[var(--card)] overflow-hidden">
+          <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] overflow-hidden">
             {/* Header strip */}
             <div className="flex items-center justify-between px-5 pt-4 pb-0 gap-2">
-              <span className="text-[11px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)] shrink-0">
+              <span className="text-[11px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-muted)] shrink-0">
                 Payments
               </span>
               <div className="flex items-center gap-1.5 flex-wrap justify-end min-w-0">
@@ -2296,7 +1965,7 @@ export default function MoveDetailClient({
                     trigger={
                       <button
                         type="button"
-                        className="shrink-0 p-1 rounded-md text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tx)]/25 transition-colors"
+                        className="shrink-0 p-1 rounded-md text-[var(--yu3-ink-muted)] hover:text-[var(--yu3-ink)] hover:bg-[var(--yu3-bg-surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)]/25 transition-colors"
                         aria-label="Adjust final price"
                         title="Adjust final price"
                       >
@@ -2318,7 +1987,7 @@ export default function MoveDetailClient({
                   ) : null;
                 })()}
                 {move.service_type && (
-                  <span className="text-[9px] text-[var(--tx3)]">
+                  <span className="text-[9px] text-[var(--yu3-ink-muted)]">
                     {serviceTypeDisplayLabel(move.service_type)}
                   </span>
                 )}
@@ -2350,7 +2019,7 @@ export default function MoveDetailClient({
                       ? "text-[var(--grn)]"
                       : balanceUnpaid
                         ? "text-[var(--red)]"
-                        : "text-[var(--tx)]"
+                        : "text-[var(--yu3-ink)]"
                   }`}
                 >
                   {fullyPaid
@@ -2360,14 +2029,14 @@ export default function MoveDetailClient({
                     : formatCurrency(balanceDue)}
                 </div>
                 {fullyPaid && ctl.hst > 0 && (
-                  <p className="mt-1.5 text-[11px] font-medium text-[var(--tx2)] leading-snug">
+                  <p className="mt-1.5 text-[11px] font-medium text-[var(--yu3-ink-muted)] leading-snug">
                     Subtotal {formatCurrency(ctl.preTax)} + HST{" "}
-                    {formatCurrency(ctl.hst)} = {formatCurrency(ctl.inclusive)} total
-                    (incl. HST, Ontario 13%)
+                    {formatCurrency(ctl.hst)} = {formatCurrency(ctl.inclusive)}{" "}
+                    total (incl. HST, Ontario 13%)
                   </p>
                 )}
                 <div className="mt-1.5 flex items-center gap-2">
-                  <span className="text-[10px] text-[var(--tx3)]/82">
+                  <span className="text-[10px] text-[var(--yu3-ink-muted)]/82">
                     {fullyPaid
                       ? `Total collected (incl. HST)${move.balance_method ? ` · Card${move.balance_auto_charged ? " (auto)" : ""}` : ""}`
                       : `Balance due · +${formatCurrency(calcHST(balanceDue))} HST`}
@@ -2378,14 +2047,14 @@ export default function MoveDetailClient({
               {/* Progress bar */}
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[9px] text-[var(--tx3)]">
+                  <span className="text-[9px] text-[var(--yu3-ink-muted)]">
                     {formatCurrency(collectedAmount)} collected
                   </span>
-                  <span className="text-[9px] text-[var(--tx3)]">
+                  <span className="text-[9px] text-[var(--yu3-ink-muted)]">
                     {formatCurrency(contractInclForLabels)} contract (incl. HST)
                   </span>
                 </div>
-                <div className="h-1.5 rounded-full bg-[var(--brd)]/40 overflow-hidden">
+                <div className="h-1.5 rounded-full bg-[var(--yu3-line-subtle)] overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${fullyPaid ? "bg-[var(--grn)]" : balanceUnpaid ? "bg-[var(--red)]" : "bg-[var(--admin-primary-fill)]"}`}
                     style={{ width: `${progressPct}%` }}
@@ -2395,8 +2064,8 @@ export default function MoveDetailClient({
             </div>
 
             {paymentLedger.length > 0 && (
-              <div className="px-5 py-3 border-t border-[var(--brd)]/40">
-                <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/82 mb-2">
+              <div className="px-5 py-3 border-t border-[var(--yu3-line-subtle)]">
+                <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)]/82 mb-2">
                   Payment transactions
                 </div>
                 <ul className="space-y-2">
@@ -2408,13 +2077,13 @@ export default function MoveDetailClient({
                     return (
                       <li
                         key={row.id}
-                        className="flex flex-wrap items-baseline justify-between gap-2 text-[11px] text-[var(--tx)]"
+                        className="flex flex-wrap items-baseline justify-between gap-2 text-[11px] text-[var(--yu3-ink)]"
                       >
                         <div className="min-w-0">
                           <span className="font-semibold">
                             {ledgerDisplayTitle(row)}
                           </span>
-                          <span className="text-[var(--tx3)]/88 ml-1.5">
+                          <span className="text-[var(--yu3-ink-muted)]/88 ml-1.5">
                             ·{" "}
                             {formatPlatformDisplay(paid, {
                               month: "short",
@@ -2422,23 +2091,23 @@ export default function MoveDetailClient({
                             })}
                           </span>
                           {row.settlement_method === "admin" && (
-                            <span className="text-[9px] text-[var(--tx3)] ml-1">
+                            <span className="text-[9px] text-[var(--yu3-ink-muted)] ml-1">
                               (override)
                             </span>
                           )}
                           {contextLine && (
-                            <div className="text-[9px] text-[var(--tx3)]/90 mt-1 leading-snug max-w-[min(100%,280px)]">
+                            <div className="text-[9px] text-[var(--yu3-ink-muted)]/90 mt-1 leading-snug max-w-[min(100%,280px)]">
                               {contextLine}
                             </div>
                           )}
                         </div>
                         <div className="font-medium tabular-nums text-right">
-                          <div className="text-[var(--tx)]">
+                          <div className="text-[var(--yu3-ink)]">
                             {formatCurrency(lineTotal)}
                           </div>
                           {(Number(row.hst_amount) > 0 ||
                             Number(row.pre_tax_amount) > 0) && (
-                            <div className="text-[9px] text-[var(--tx3)] font-normal mt-0.5 ml-auto leading-snug">
+                            <div className="text-[9px] text-[var(--yu3-ink-muted)] font-normal mt-0.5 ml-auto leading-snug">
                               Subtotal {formatCurrency(row.pre_tax_amount)} +
                               tax {formatCurrency(row.hst_amount)}
                             </div>
@@ -2449,9 +2118,9 @@ export default function MoveDetailClient({
                   })}
                 </ul>
                 {footerRecordedAfterTax != null && (
-                  <p className="text-[10px] text-[var(--tx3)]/80 mt-3 pt-2 border-t border-[var(--brd)]/30">
+                  <p className="text-[10px] text-[var(--yu3-ink-muted)]/80 mt-3 pt-2 border-t border-[var(--yu3-line-subtle)]">
                     Recorded payments (after tax):{" "}
-                    <span className="font-semibold text-[var(--tx)]">
+                    <span className="font-semibold text-[var(--yu3-ink)]">
                       {formatCurrency(footerRecordedAfterTax)}
                     </span>
                   </p>
@@ -2461,7 +2130,7 @@ export default function MoveDetailClient({
 
             {/* Action row, only when action is needed */}
             {!fullyPaid && !balanceJustSettled && !isBalancePaid && (
-              <div className="px-4 py-3 border-t border-[var(--brd)]/40 flex flex-wrap items-center gap-2">
+              <div className="px-4 py-3 border-t border-[var(--yu3-line-subtle)] flex flex-wrap items-center gap-2">
                 {!move.deposit_paid_at && depositPaid > 0 && (
                   <button
                     type="button"
@@ -2588,7 +2257,7 @@ export default function MoveDetailClient({
                             setPaymentBtnLoading(null);
                           }
                         }}
-                        className="text-[10px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/25 hover:bg-[var(--gold)]/18 transition-colors disabled:opacity-40"
+                        className="text-[10px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--yu3-wine)]/10 text-[var(--yu3-wine)] border border-[var(--yu3-wine)]/25 hover:bg-[var(--yu3-wine)]/18 transition-colors disabled:opacity-40"
                       >
                         {paymentBtnLoading === "card"
                           ? "Charging…"
@@ -2606,6 +2275,9 @@ export default function MoveDetailClient({
       {/* Profitability, Owner Only */}
       {userRole === "owner" && <MoveProfitCard move={move} />}
 
+        </TabsContent>
+
+        <TabsContent value="work" className="space-y-3 pt-2">
       {/* Distance & Logistics */}
       <DistanceLogistics
         fromAddress={move.from_address}
@@ -2628,34 +2300,34 @@ export default function MoveDetailClient({
               return (
                 <div
                   key={id}
-                  className="rounded-lg border border-[var(--brd)]/60 p-3 text-[11px] space-y-2 bg-[var(--bg)]/40"
+                  className="rounded-lg border border-[var(--yu3-line-subtle)] p-3 text-[11px] space-y-2 bg-[var(--yu3-bg-surface)]/40"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-bold text-[var(--tx)]">
+                    <span className="font-bold text-[var(--yu3-ink)]">
                       {String(b.order_number ?? "Bin order")}
                     </span>
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--tx3)]">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--yu3-ink-muted)]">
                       {stLabel}
                     </span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-[var(--tx2)]">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-[var(--yu3-ink-muted)]">
                     <p>
-                      <span className="text-[var(--tx3)]">Bundle · bins: </span>
+                      <span className="text-[var(--yu3-ink-muted)]">Bundle · bins: </span>
                       {String(b.bundle_type ?? "—")} ·{" "}
                       {String(b.bin_count ?? "—")}
                     </p>
                     <p>
-                      <span className="text-[var(--tx3)]">Drop-off: </span>
+                      <span className="text-[var(--yu3-ink-muted)]">Drop-off: </span>
                       {b.drop_off_date
                         ? formatMoveDate(String(b.drop_off_date))
                         : "—"}
                     </p>
                     <p>
-                      <span className="text-[var(--tx3)]">Move day: </span>
+                      <span className="text-[var(--yu3-ink-muted)]">Move day: </span>
                       {b.move_date ? formatMoveDate(String(b.move_date)) : "—"}
                     </p>
                     <p>
-                      <span className="text-[var(--tx3)]">Pickup: </span>
+                      <span className="text-[var(--yu3-ink-muted)]">Pickup: </span>
                       {b.pickup_date
                         ? formatMoveDate(String(b.pickup_date))
                         : "—"}
@@ -2663,7 +2335,7 @@ export default function MoveDetailClient({
                   </div>
                   {(Boolean(b.delivery_address) ||
                     Boolean(b.pickup_address)) && (
-                    <p className="text-[10px] text-[var(--tx3)] leading-snug">
+                    <p className="text-[10px] text-[var(--yu3-ink-muted)] leading-snug">
                       {b.delivery_address ? (
                         <span>Deliver: {String(b.delivery_address)}</span>
                       ) : null}
@@ -2678,7 +2350,7 @@ export default function MoveDetailClient({
                   )}
                   <Link
                     href={`/admin/bin-rentals/${id}`}
-                    className="inline-flex text-[10px] font-bold text-[var(--gold)] hover:underline"
+                    className="inline-flex text-[10px] font-bold text-[var(--yu3-wine)] hover:underline"
                   >
                     Open bin order
                   </Link>
@@ -2692,18 +2364,18 @@ export default function MoveDetailClient({
 
       {/* Walkthrough status (move-day crew walkthrough) */}
       {(move.walkthrough_completed || move.walkthrough_skipped) && (
-        <div className="rounded-xl border border-[var(--brd)]/50 bg-[var(--bg)]/60 px-4 py-3 flex items-start gap-3">
+        <div className="rounded-xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)]/60 px-4 py-3 flex items-start gap-3">
           <div
             className={`w-2 h-2 rounded-full mt-1 shrink-0 ${move.walkthrough_skipped ? "bg-amber-400" : "bg-[#22C55E]"}`}
           />
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-bold text-[var(--tx)] uppercase tracking-wider">
+            <p className="text-[11px] font-bold text-[var(--yu3-ink)] uppercase tracking-wider">
               Inventory Walkthrough{" "}
               {move.walkthrough_skipped ? "Skipped" : "Completed"}
             </p>
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
               {move.walkthrough_completed_at && (
-                <span className="text-[10px] text-[var(--tx3)]">
+                <span className="text-[10px] text-[var(--yu3-ink-muted)]">
                   {formatPlatformDisplay(move.walkthrough_completed_at, {
                     month: "short",
                     day: "numeric",
@@ -2713,7 +2385,7 @@ export default function MoveDetailClient({
                 </span>
               )}
               {move.walkthrough_crew_member && (
-                <span className="text-[10px] text-[var(--tx3)]">by crew</span>
+                <span className="text-[10px] text-[var(--yu3-ink-muted)]">by crew</span>
               )}
               {move.walkthrough_skipped && move.walkthrough_skip_reason && (
                 <span className="text-[10px] text-amber-500">
@@ -2733,18 +2405,18 @@ export default function MoveDetailClient({
 
       {pendingModifications.length > 0 && (
         <div className="rounded-xl border border-amber-500/35 bg-amber-500/[0.06] p-4 mb-6">
-          <h3 className="text-[12px] font-bold text-[var(--tx)] mb-2 uppercase tracking-wide">
+          <h3 className="text-[12px] font-bold text-[var(--yu3-ink)] mb-2 uppercase tracking-wide">
             Pending booking changes
           </h3>
-          <ul className="text-[11px] text-[var(--tx2)] space-y-1.5">
+          <ul className="text-[11px] text-[var(--yu3-ink-muted)] space-y-1.5">
             {pendingModifications.map((m) => (
               <li key={m.id}>
-                <span className="font-semibold text-[var(--tx)]">
+                <span className="font-semibold text-[var(--yu3-ink)]">
                   {toTitleCase(String(m.type || "").replace(/_/g, " "))}
                 </span>
                 {m.price_difference != null &&
                 Number(m.price_difference) !== 0 ? (
-                  <span className="text-[var(--tx3)]">
+                  <span className="text-[var(--yu3-ink-muted)]">
                     {" "}
                     · Price impact {formatCurrency(Number(m.price_difference))}
                   </span>
@@ -2763,8 +2435,8 @@ export default function MoveDetailClient({
       )}
 
       {surveyPhotos.length > 0 && (
-        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 mb-6">
-          <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)] mb-3">
+        <div className="rounded-xl border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] p-4 mb-6">
+          <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] mb-3">
             Pre-move photos (client survey)
           </h3>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -2781,19 +2453,19 @@ export default function MoveDetailClient({
             ).map(([room, photos]) => (
               <div
                 key={room}
-                className="border border-[var(--brd)]/60 rounded-lg p-3"
+                className="border border-[var(--yu3-line-subtle)] rounded-lg p-3"
               >
-                <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx)] mb-2">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--yu3-ink)] mb-2">
                   {toTitleCase(room.replace(/_/g, " "))}
                 </p>
-                <p className="text-[10px] text-[var(--tx3)] mb-2">
+                <p className="text-[10px] text-[var(--yu3-ink-muted)] mb-2">
                   {photos.length} photo(s)
                 </p>
                 <a
                   href={photos[0]?.photo_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[10px] font-semibold text-[var(--tx)] underline"
+                  className="text-[10px] font-semibold text-[var(--yu3-ink)] underline"
                 >
                   View
                 </a>
@@ -2819,11 +2491,11 @@ export default function MoveDetailClient({
       <MoveWaiversSection waivers={moveWaivers} />
 
       {/* Internal Notes, seamless */}
-      <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
+      <div className="group/s relative border-t border-[var(--yu3-line-subtle)] py-4">
         {!isCompleted ? (
           <button
             type="button"
-            className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100"
+            className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--yu3-bg-surface-subtle)] text-[var(--yu3-ink-muted)] transition-opacity opacity-50 hover:opacity-100"
             onClick={() => {
               setDetailsModalSection("notes");
               setDetailsModalOpen(true);
@@ -2841,19 +2513,19 @@ export default function MoveDetailClient({
             <Lock className="w-[11px] h-[11px]" />
           </span>
         )}
-        <div className="t-label text-[var(--tx3)] mb-2">Internal Notes</div>
+        <div className="t-label text-[var(--yu3-ink-muted)] mb-2">Internal Notes</div>
         {(() => {
           const notes = stripClientMessagesFromNotes(move.internal_notes);
           if (notes) {
             return (
-              <p className="text-[11px] text-[var(--tx2)] leading-snug whitespace-pre-wrap">
+              <p className="text-[11px] text-[var(--yu3-ink-muted)] leading-snug whitespace-pre-wrap">
                 {notes}
               </p>
             );
           }
           if (isCompleted) {
             return (
-              <p className="text-[11px] text-[var(--tx3)] leading-snug italic">
+              <p className="text-[11px] text-[var(--yu3-ink-muted)] leading-snug italic">
                 No internal notes were added.
               </p>
             );
@@ -2865,7 +2537,7 @@ export default function MoveDetailClient({
                 setDetailsModalSection("notes");
                 setDetailsModalOpen(true);
               }}
-              className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-[var(--brd)]/60 bg-[var(--card)] px-3 py-1.5 text-[11px] font-semibold text-[var(--tx2)] transition-colors hover:bg-[var(--hover)] hover:text-[var(--tx)]"
+              className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] px-3 py-1.5 text-[11px] font-semibold text-[var(--yu3-ink-muted)] transition-colors hover:bg-[var(--yu3-bg-surface-subtle)] hover:text-[var(--yu3-ink)]"
             >
               <Pencil weight="regular" className="w-[11px] h-[11px]" />
               Add the first note
@@ -2873,6 +2545,464 @@ export default function MoveDetailClient({
           );
         })()}
       </div>
+
+        </TabsContent>
+      </Tabs>
+
+      <MoveContactModal
+        open={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
+        moveId={move.id}
+        initial={{
+          client_name: move.client_name || "",
+          client_email: move.client_email || move.customer_email || "",
+          client_phone: move.client_phone ?? "",
+          preferred_contact: move.preferred_contact ?? undefined,
+        }}
+        onSaved={(updates) => setMove((prev: any) => ({ ...prev, ...updates }))}
+      />
+
+      <ModalOverlay
+        open={crewModalOpen}
+        onClose={() => setCrewModalOpen(false)}
+        title="Assign Crew"
+        maxWidth="sm"
+      >
+        <div className="p-5 space-y-4">
+          {!moveInProgress && (
+            <RecommendedCrewPanel
+              moveId={move.id}
+              moveDate={move.move_date ?? null}
+              serviceType={move.service_type ?? null}
+              tierSelected={move.tier_selected ?? null}
+              hasPiano={move.has_piano ?? false}
+              estimate={move.estimate ?? null}
+              currentCrewId={move.crew_id ?? null}
+              onAssign={(_userId, name) => {
+                toast(`${name} assigned to this move`, "check");
+                router.refresh();
+                setCrewModalOpen(false);
+              }}
+            />
+          )}
+          {moveInProgress && (
+            <p className="text-[11px] text-amber-600 bg-amber-500/10 rounded-lg p-3">
+              Cannot reassign: this move is in progress. Reassignment is only
+              allowed before the crew has started.
+            </p>
+          )}
+          <div>
+            <label className="admin-premium-label">Select Crew</label>
+            <select
+              value={move.crew_id || ""}
+              disabled={moveInProgress}
+              onChange={async (e) => {
+                if (moveInProgress) return;
+                const v = e.target.value || null;
+                try {
+                  const res = await fetch("/api/dispatch/assign", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      jobId: move.id,
+                      jobType: "move",
+                      crewId: v,
+                    }),
+                  });
+                  const json = await res.json();
+                  if (!res.ok)
+                    throw new Error(json.error || "Failed to assign");
+                  if (json.move) {
+                    setMove(json.move);
+                    setAssignedMembers(
+                      new Set(
+                        Array.isArray(json.move.assigned_members)
+                          ? json.move.assigned_members
+                          : crews.find((c) => c.id === v)?.members || [],
+                      ),
+                    );
+                  }
+                  router.refresh();
+                  toast("Crew assigned", "check");
+                } catch (err) {
+                  toast(
+                    err instanceof Error ? err.message : "Failed to assign",
+                    "alertTriangle",
+                  );
+                }
+              }}
+              className="admin-premium-input w-full transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <option value="">No crew assigned</option>
+              {crews.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          {selectedCrew && crewMembers.length > 0 && (
+            <>
+              <p className="text-[11px] text-[var(--yu3-ink-muted)]">
+                Check or uncheck members to assign to this move.
+              </p>
+              <div className="space-y-2">
+                {crewMembers.map((m) => (
+                  <label
+                    key={m}
+                    className="flex items-center gap-3 p-2.5 rounded-md border border-[var(--yu3-line)] hover:bg-[var(--yu3-bg-surface)] cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={assignedMembers.has(m)}
+                      onChange={() => toggleMember(m)}
+                      className="w-4 h-4 rounded border-[var(--yu3-line)] text-[var(--yu3-wine)] focus:ring-[var(--yu3-line)]"
+                    />
+                    <span className="text-[13px] font-medium text-[var(--yu3-ink)]">
+                      {m}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  const members = Array.from(assignedMembers);
+                  const { data } = await supabase
+                    .from("moves")
+                    .update({
+                      assigned_members: members,
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq("id", move.id)
+                    .select()
+                    .single();
+                  if (data) setMove(data);
+                  router.refresh();
+                  setCrewModalOpen(false);
+                }}
+                className="admin-btn admin-btn-primary w-full"
+              >
+                Save Assignments
+              </button>
+            </>
+          )}
+          {selectedCrew && crewMembers.length === 0 && (
+            <p className="text-[11px] text-[var(--yu3-ink-muted)]">
+              No members in this crew. Add members in Platform Settings → Teams.
+            </p>
+          )}
+          {!selectedCrew && snapshotRoster.length > 0 && (
+            <p className="text-[11px] text-[var(--yu3-ink-muted)]">
+              Recorded crew (job snapshot): {snapshotRoster.join(", ")}
+            </p>
+          )}
+          {!selectedCrew && snapshotRoster.length === 0 && (
+            <p className="text-[11px] text-[var(--yu3-ink-muted)]">
+              Select a crew above to assign members to this move.
+            </p>
+          )}
+        </div>
+      </ModalOverlay>
+
+      <ModalOverlay
+        open={vehicleModalOpen}
+        onClose={() => setVehicleModalOpen(false)}
+        title="Assign Vehicle"
+        maxWidth="sm"
+      >
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="admin-premium-label">Primary Vehicle</label>
+            <select
+              value={move.truck_primary || ""}
+              onChange={async (e) => {
+                const v = e.target.value || null;
+                const isOverride = v !== move.truck_primary;
+                const { data } = await supabase
+                  .from("moves")
+                  .update({
+                    truck_primary: v,
+                    truck_override: isOverride,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("id", move.id)
+                  .select()
+                  .single();
+                if (data) setMove(data);
+                router.refresh();
+              }}
+              className="admin-premium-input w-full"
+            >
+              <option value="">No vehicle assigned</option>
+              {VEHICLE_OPTIONS.map(([val, label]) => (
+                <option key={val} value={val}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="admin-premium-label">
+              Secondary Vehicle (Optional)
+            </label>
+            <select
+              value={move.truck_secondary || ""}
+              onChange={async (e) => {
+                const v = e.target.value || null;
+                const { data } = await supabase
+                  .from("moves")
+                  .update({
+                    truck_secondary: v,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("id", move.id)
+                  .select()
+                  .single();
+                if (data) setMove(data);
+                router.refresh();
+              }}
+              className="admin-premium-input w-full"
+            >
+              <option value="">None</option>
+              {VEHICLE_OPTIONS.map(([val, label]) => (
+                <option key={val} value={val}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="admin-premium-label">Vehicle Notes</label>
+            <textarea
+              defaultValue={move.truck_notes || ""}
+              onBlur={async (e) => {
+                const v = e.target.value.trim() || null;
+                if (v !== (move.truck_notes || null)) {
+                  const { data } = await supabase
+                    .from("moves")
+                    .update({
+                      truck_notes: v,
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq("id", move.id)
+                    .select()
+                    .single();
+                  if (data) setMove(data);
+                }
+              }}
+              placeholder="e.g. Use truck #3 (newer lift gate)"
+              rows={2}
+              className="admin-premium-textarea w-full resize-none"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setVehicleModalOpen(false)}
+            className="admin-btn admin-btn-primary w-full"
+          >
+            Done
+          </button>
+        </div>
+      </ModalOverlay>
+
+      {restartOverrideModal && (
+        <ModalOverlay
+          open
+          onClose={() => {
+            setRestartOverrideModal(null);
+            setRestartOverrideTyped("");
+            setEditingCard(null);
+          }}
+          title="Admin override required"
+          maxWidth="sm"
+        >
+          <div className="p-5 space-y-4">
+            <p className="text-[12px] text-[var(--yu3-ink-muted)]">
+              This move is completed. Changing status back to{" "}
+              <strong>{getStatusLabel(restartOverrideModal.newStatus)}</strong>{" "}
+              will RESTART the move globally:
+            </p>
+            <ul className="text-[11px] text-[var(--yu3-ink-muted)] list-disc list-inside space-y-1">
+              <li>Live stage will be cleared</li>
+              <li>Any tracking session will be ended</li>
+              <li>Crew will be able to start the job again from scratch</li>
+            </ul>
+            <p className="text-[11px] text-[var(--yu3-ink-muted)]">
+              Type <strong className="text-[var(--yu3-ink-muted)]">OVERRIDE</strong> to
+              confirm you are an admin and understand this action.
+            </p>
+            <input
+              type="text"
+              value={restartOverrideTyped}
+              onChange={(e) => setRestartOverrideTyped(e.target.value)}
+              placeholder="Type OVERRIDE"
+              className="admin-premium-input w-full"
+              autoComplete="off"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setRestartOverrideModal(null);
+                  setRestartOverrideTyped("");
+                  setEditingCard(null);
+                }}
+                className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--yu3-line)] text-[var(--yu3-ink-muted)] hover:bg-[var(--yu3-bg-surface)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={
+                  restartOverrideTyped.trim().toUpperCase() !== "OVERRIDE"
+                }
+                onClick={async () => {
+                  if (restartOverrideTyped.trim().toUpperCase() !== "OVERRIDE")
+                    return;
+                  try {
+                    const res = await fetch(
+                      `/api/admin/moves/${move.id}/restart`,
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          newStatus: restartOverrideModal.newStatus,
+                        }),
+                      },
+                    );
+                    const data = await res.json();
+                    if (!res.ok)
+                      throw new Error(data.error || "Failed to restart");
+                    if (data.move) setMove(data.move);
+                    setRestartOverrideModal(null);
+                    setRestartOverrideTyped("");
+                    setEditingCard(null);
+                    router.refresh();
+                    toast("Move restarted", "check");
+                  } catch (err) {
+                    toast(
+                      err instanceof Error ? err.message : "Failed to restart",
+                      "alertTriangle",
+                    );
+                  }
+                }}
+                className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--org)] text-white hover:bg-[var(--org)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Override & restart
+              </button>
+            </div>
+          </div>
+        </ModalOverlay>
+      )}
+
+      {overrideStatusModalOpen && (
+        <ModalOverlay
+          open
+          onClose={() => {
+            setOverrideStatusModalOpen(false);
+            setOverrideStatusTyped("");
+          }}
+          title="Override status (admin)"
+          maxWidth="sm"
+        >
+          <div className="p-5 space-y-4">
+            <p className="text-[12px] text-[var(--yu3-ink-muted)]">
+              This move is completed. Changing status will{" "}
+              <strong>restart</strong> the move globally:
+            </p>
+            <ul className="text-[11px] text-[var(--yu3-ink-muted)] list-disc list-inside space-y-1">
+              <li>Live stage will be cleared</li>
+              <li>Any tracking session will be ended</li>
+              <li>Crew will be able to start the job again from scratch</li>
+            </ul>
+            <div>
+              <label className="block text-[11px] font-semibold text-[var(--yu3-ink-muted)] mb-1.5">
+                New status
+              </label>
+              <select
+                value={overrideStatusNewStatus}
+                onChange={(e) => setOverrideStatusNewStatus(e.target.value)}
+                className="admin-premium-input w-full"
+              >
+                {MOVE_STATUS_OPTIONS.filter(
+                  (s) => !["completed", "cancelled"].includes(s.value),
+                ).map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="text-[11px] text-[var(--yu3-ink-muted)]">
+              Type <strong className="text-[var(--yu3-ink-muted)]">OVERRIDE</strong> to
+              confirm you understand this action.
+            </p>
+            <input
+              type="text"
+              value={overrideStatusTyped}
+              onChange={(e) => setOverrideStatusTyped(e.target.value)}
+              placeholder="Type OVERRIDE"
+              className="admin-premium-input w-full"
+              autoComplete="off"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setOverrideStatusModalOpen(false);
+                  setOverrideStatusTyped("");
+                }}
+                className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--yu3-line)] text-[var(--yu3-ink-muted)] hover:bg-[var(--yu3-bg-surface)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={
+                  overrideStatusTyped.trim().toUpperCase() !== "OVERRIDE"
+                }
+                onClick={async () => {
+                  if (overrideStatusTyped.trim().toUpperCase() !== "OVERRIDE")
+                    return;
+                  try {
+                    const res = await fetch(
+                      `/api/admin/moves/${move.id}/restart`,
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          newStatus: overrideStatusNewStatus,
+                        }),
+                      },
+                    );
+                    const data = await res.json();
+                    if (!res.ok)
+                      throw new Error(
+                        data.error || "Failed to override status",
+                      );
+                    if (data.move) setMove(data.move);
+                    setOverrideStatusModalOpen(false);
+                    setOverrideStatusTyped("");
+                    router.refresh();
+                    toast("Status overridden", "check");
+                  } catch (err) {
+                    toast(
+                      err instanceof Error
+                        ? err.message
+                        : "Failed to override status",
+                      "alertTriangle",
+                    );
+                  }
+                }}
+                className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--org)] text-white hover:bg-[var(--org)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Override & restart
+              </button>
+            </div>
+          </div>
+        </ModalOverlay>
+      )}
 
       <EditMoveDetailsModal
         open={detailsModalOpen}
@@ -2996,7 +3126,7 @@ export default function MoveDetailClient({
           maxWidth="sm"
         >
           <div className="p-5 space-y-4">
-            <p className="text-[12px] text-[var(--tx2)]">
+            <p className="text-[12px] text-[var(--yu3-ink-muted)]">
               This will permanently remove this move and its inventory,
               documents, and photos. This cannot be undone.
             </p>
@@ -3004,7 +3134,7 @@ export default function MoveDetailClient({
               <button
                 type="button"
                 onClick={() => setDeleteConfirmOpen(false)}
-                className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]"
+                className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--yu3-line)] text-[var(--yu3-ink-muted)]"
               >
                 Cancel
               </button>
@@ -3106,72 +3236,72 @@ function MoveProfitCard({ move }: { move: any }) {
     costs.grossMargin >= target
       ? "text-emerald-400"
       : costs.grossMargin >= target - 5
-        ? "text-[var(--gold)]"
+        ? "text-[var(--yu3-wine)]"
         : "text-red-400";
 
   return (
-    <div className="border-t border-[var(--brd)]/30 py-4">
+    <div className="border-t border-[var(--yu3-line-subtle)] py-4">
       <div className="flex items-center gap-2 mb-3 flex-wrap">
-        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)]">
           Profitability
         </div>
         <ProfitabilityBreakdownHint
           iconSize={14}
           ariaLabel="What profitability includes"
         />
-        <span className="dt-badge tracking-[0.04em] text-[var(--gold)]">
+        <span className="dt-badge tracking-[0.04em] text-[var(--yu3-wine)]">
           Owner Only
         </span>
       </div>
       <div className="space-y-1.5 text-[11px]">
         <div className="flex justify-between">
-          <span className="text-[var(--tx3)]">Revenue</span>
-          <span className="text-[var(--tx)] font-medium">
+          <span className="text-[var(--yu3-ink-muted)]">Revenue</span>
+          <span className="text-[var(--yu3-ink)] font-medium">
             {formatCurrency(revenue)}
           </span>
         </div>
-        <div className="border-t border-[var(--brd)]/30 my-1" />
+        <div className="border-t border-[var(--yu3-line-subtle)] my-1" />
         <div className="flex justify-between">
-          <span className="text-[var(--tx3)]">Labour</span>
+          <span className="text-[var(--yu3-ink-muted)]">Labour</span>
           <span className="text-red-400/80">
             -{formatCurrency(costs.labour)}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-[var(--tx3)]">Fuel</span>
+          <span className="text-[var(--yu3-ink-muted)]">Fuel</span>
           <span className="text-red-400/80">-{formatCurrency(costs.fuel)}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-[var(--tx3)]">Truck</span>
+          <span className="text-[var(--yu3-ink-muted)]">Truck</span>
           <span className="text-red-400/80">
             -{formatCurrency(costs.truck)}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-[var(--tx3)]">Supplies</span>
+          <span className="text-[var(--yu3-ink-muted)]">Supplies</span>
           <span className="text-red-400/80">
             -{formatCurrency(costs.supplies)}
           </span>
         </div>
         {costs.paidWithCard && costs.processing > 0 ? (
           <div className="flex justify-between gap-3">
-            <span className="text-[var(--tx3)]">
+            <span className="text-[var(--yu3-ink-muted)]">
               Card processing (client-paid, est.)
             </span>
-            <span className="text-[var(--tx2)] tabular-nums">
+            <span className="text-[var(--yu3-ink-muted)] tabular-nums">
               {formatCurrency(costs.processing)}
             </span>
           </div>
         ) : null}
-        <div className="border-t border-[var(--brd)]/30 my-1" />
+        <div className="border-t border-[var(--yu3-line-subtle)] my-1" />
         <div className="flex justify-between font-medium">
-          <span className="text-[var(--tx3)]">Direct Cost</span>
+          <span className="text-[var(--yu3-ink-muted)]">Direct Cost</span>
           <span className="text-red-400">
             -{formatCurrency(costs.totalDirect)}
           </span>
         </div>
         <div className="flex justify-between font-semibold">
-          <span className="text-[var(--tx)]">Gross Profit</span>
+          <span className="text-[var(--yu3-ink)]">Gross Profit</span>
           <span className={marginColor}>
             {formatCurrency(costs.grossProfit)} ({costs.grossMargin}%)
           </span>

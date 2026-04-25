@@ -272,14 +272,14 @@ export default function PartnerBuildingsTab({
                     <button
                       type="button"
                       onClick={() => openEdit(p)}
-                      className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                      className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--accent-text)]"
                     >
                       Edit
                     </button>
                     <button
                       type="button"
                       onClick={() => viewMoves(p.id)}
-                      className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                      className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--accent-text)]"
                     >
                       View Moves
                     </button>

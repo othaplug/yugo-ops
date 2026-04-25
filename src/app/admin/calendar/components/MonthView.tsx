@@ -85,7 +85,7 @@ export default function MonthView({ year, month, todayKey, eventsByDate, onEvent
                   <button
                     type="button"
                     onClick={() => onDateClick(dk)}
-                    className="text-[8px] text-[var(--gold)] hover:text-[var(--gold2)] font-semibold pl-1 transition-colors"
+                    className="text-[8px] text-[var(--accent-text)] hover:text-[var(--accent-text)] font-semibold pl-1 transition-colors"
                   >
                     +{dayEvents.length - MAX_VISIBLE} more
                   </button>

@@ -37,7 +37,7 @@ export default function ProfileDropdown({ user }: { user: any }) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="size-8 rounded-[2px] bg-[var(--admin-primary-fill)] flex items-center justify-center text-[var(--btn-text-on-accent)] text-[9px] font-bold hover:bg-[var(--admin-primary-fill-hover)] active:opacity-90 transition-colors touch-manipulation shrink-0"
+        className="admin-btn admin-btn-primary shrink-0"
       >
         {initials}
       </button>

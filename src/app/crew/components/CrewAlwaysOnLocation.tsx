@@ -101,13 +101,13 @@ export default function CrewAlwaysOnLocation() {
   if (isOnJobPage || isPublicPage) return null;
 
   const topOffset =
-    "top-[max(0.75rem,env(safe-area-inset-top,0px))] md:top-[max(1rem,env(safe-area-inset-top,0px))]";
+    "top-[max(0.75rem,env(safe-area-inset-top,0px))] lg:top-[max(1rem,env(safe-area-inset-top,0px))]";
   const rowClass =
     "flex max-w-[min(100%,calc(100vw-5.5rem))] items-center gap-2.5 text-left [font-family:var(--font-body)]";
 
   return (
     <div
-      className={`fixed z-40 right-3 md:right-6 ${topOffset} max-w-[calc(100vw-2rem)]`}
+      className={`fixed z-40 right-3 lg:right-6 ${topOffset} max-w-[calc(100vw-2rem)]`}
       role="region"
       aria-label="Location sharing status"
     >

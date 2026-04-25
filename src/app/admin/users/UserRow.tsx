@@ -102,9 +102,9 @@ export default function UserRow({ user, roleLabel, onSelect, onDeleted, onResend
             </button>
             {menuOpen && (
               <div className="absolute right-0 bottom-full mb-1 py-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-xl z-[100] min-w-[140px]">
-                <button type="button" onClick={() => { setMenuOpen(false); onSelect(); }} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]">View</button>
-                {canEdit && <button type="button" onClick={() => { setMenuOpen(false); onSelect(); }} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]">Edit</button>}
-                {canResend && <button type="button" onClick={() => handleResendInvite()} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]">{canResendPortal ? "Resend tracking link" : "Resend invite"}</button>}
+                <button type="button" onClick={() => { setMenuOpen(false); onSelect(); }} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--accent-text)]">View</button>
+                {canEdit && <button type="button" onClick={() => { setMenuOpen(false); onSelect(); }} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--accent-text)]">Edit</button>}
+                {canResend && <button type="button" onClick={() => handleResendInvite()} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--accent-text)]">{canResendPortal ? "Resend tracking link" : "Resend invite"}</button>}
                 {canEdit && !isClient && <button type="button" onClick={() => { setMenuOpen(false); setDeleteConfirm(true); }} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--red)] hover:bg-[var(--red)]/10">Delete</button>}
               </div>
             )}

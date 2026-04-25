@@ -4341,7 +4341,7 @@ export default function TrackMoveClient({
 
         {/* Change Request Modal (not offered on Estate track — coordinator-led) */}
         {changeModalOpen && !isEstateTier && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 modal-overlay">
             <div
               className="w-full max-w-md rounded-2xl border bg-[#FFFDF8] p-4 sm:p-5 shadow-[0_8px_32px_rgba(44,62,45,0.12),0_2px_8px_rgba(0,0,0,0.06)]"
               style={{
@@ -4526,7 +4526,7 @@ export default function TrackMoveClient({
             />
             <div className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5">
               <div
-                className="absolute inset-0 bg-black/60"
+                className="absolute inset-0 modal-overlay"
                 onClick={() => setPaymentModalOpen(false)}
               />
               <div

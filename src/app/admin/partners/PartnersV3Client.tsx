@@ -21,7 +21,11 @@ import {
   type RowAction,
 } from "@/design-system/admin/table"
 import { KpiStrip } from "@/design-system/admin/dashboard"
+import { Sparkline } from "@/design-system/admin/primitives"
 import { Plus, Pulse } from "@phosphor-icons/react"
+
+const ACTIVITY_WEEKS = 12
+const emptyActivitySeries = () => new Array(ACTIVITY_WEEKS).fill(0)
 
 interface Partner {
   id: string
@@ -32,6 +36,8 @@ interface Partner {
   phone: string | null
   status: string
   created_at: string
+  /** Last 12 weeks, oldest first: combined moves + deliveries per week. */
+  activity_weekly?: number[]
 }
 
 interface RealtorRow {
@@ -233,6 +239,44 @@ export default function PartnersV3Client() {
             ) : null}
           </div>
         ),
+      },
+      {
+        id: "activity",
+        header: "Activity",
+        shortLabel: "Activity",
+        align: "center",
+        width: 120,
+        minWidth: 96,
+        sortable: true,
+        numeric: true,
+        accessor: (p) => {
+          const s = p.activity_weekly
+          if (!s?.length) return 0
+          return s.reduce((a, b) => a + b, 0)
+        },
+        cell: (p) => {
+          const series =
+            p.activity_weekly && p.activity_weekly.length === ACTIVITY_WEEKS
+              ? p.activity_weekly
+              : emptyActivitySeries()
+          const total = series.reduce((a, b) => a + b, 0)
+          return (
+            <div className="flex items-center justify-center py-0.5 min-w-0">
+              <Sparkline
+                values={series}
+                width={88}
+                height={28}
+                strokeWidth={1.5}
+                downStroke="var(--yu3-wine)"
+                ariaLabel={
+                  total === 0
+                    ? "No recorded moves or deliveries in the last 12 weeks"
+                    : `Work with Yugo in the last 12 weeks: ${total} moves and deliveries combined, by week (oldest to newest)`
+                }
+              />
+            </div>
+          )
+        },
       },
       {
         id: "status",

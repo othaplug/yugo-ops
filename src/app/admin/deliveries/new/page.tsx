@@ -37,7 +37,7 @@ export default async function NewDeliveryPage({
   });
 
   return (
-    <div className="max-w-[900px] mx-auto px-5 md:px-6 py-5 animate-fade-up w-full">
+    <div className="w-full min-w-0 max-w-[min(900px,100%)] mx-auto py-5 animate-fade-up">
       <h1 className="admin-page-hero text-[var(--tx)] mb-4">
         {choice === "day_rate" ? "Day Rate" : choice === "b2b_oneoff" ? "B2B Jobs" : "Create Delivery"}
       </h1>

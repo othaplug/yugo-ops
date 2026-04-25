@@ -18,9 +18,6 @@ import {
   Badge,
   StatusPill,
   TrendPill,
-  Tabs,
-  TabsList,
-  TabsTrigger,
   Sparkline,
   Card,
   CardBody,
@@ -48,14 +45,13 @@ import {
   XCircle,
   Clock,
   Funnel,
-  Lightning,
   ArrowRight,
   Sparkle,
   FileText,
   User,
-  ChartBar,
 } from "@/design-system/admin/icons"
 import { useToast } from "../components/Toast"
+import { LeadsNavTabs } from "./LeadsNavTabs"
 
 export type LeadRow = {
   id: string
@@ -595,28 +591,7 @@ export default function LeadsHubV3Client({
   )
 
   /* ── Page tabs ────────────────────────────────────────────────────── */
-  const tabs = (
-    <Tabs value={mode}>
-      <TabsList variant="pill">
-        <TabsTrigger
-          value="dashboard"
-          variant="pill"
-          asChild
-        >
-          <Link href="/admin/leads">
-            <ChartBar size={12} />
-            Dashboard
-          </Link>
-        </TabsTrigger>
-        <TabsTrigger value="all" variant="pill" asChild>
-          <Link href="/admin/leads/all">All leads</Link>
-        </TabsTrigger>
-        <TabsTrigger value="mine" variant="pill" asChild>
-          <Link href="/admin/leads/mine">My leads</Link>
-        </TabsTrigger>
-      </TabsList>
-    </Tabs>
-  )
+  const tabs = <LeadsNavTabs active={mode} />
 
   /* ══════════════════════════════════════════════════════════════════ */
   /* Dashboard mode                                                      */
@@ -819,7 +794,6 @@ export default function LeadsHubV3Client({
         >
           {attention.length === 0 ? (
             <EmptyState
-              icon={<Lightning size={20} weight="regular" />}
               title="You're caught up"
               description="No leads currently need attention. Nice work."
             />

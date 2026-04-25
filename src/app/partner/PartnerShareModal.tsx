@@ -89,7 +89,7 @@ export default function PartnerShareModal({ delivery, move, onClose, onSent }: P
   const modalContent = (
     <ModalDialogFrame
       zClassName="z-[99999]"
-      backdropClassName="bg-black/45"
+      backdropClassName=""
       onBackdropClick={onClose}
       panelClassName={`${partnerModalPanelClass} w-full sm:max-w-[420px] sheet-card sm:modal-card`}
       panelStyle={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}

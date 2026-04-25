@@ -1,20 +1,20 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "../lib/cn"
-import { TrendPill } from "../primitives/Badge"
-import { Sparkline } from "../primitives/Sparkline"
+import * as React from "react";
+import { cn } from "../lib/cn";
+import { TrendPill } from "../primitives/Badge";
+import { Sparkline } from "../primitives/Sparkline";
 
 export interface MetricCardProps extends React.HTMLAttributes<HTMLDivElement> {
-  eyebrow?: string
-  title?: string
-  value: string | number
-  valueHint?: React.ReactNode
-  trendPct?: number | null
-  series?: number[]
-  rightSlot?: React.ReactNode
-  footer?: React.ReactNode
-  size?: "sm" | "md" | "lg"
+  eyebrow?: string;
+  title?: string;
+  value: string | number;
+  valueHint?: React.ReactNode;
+  trendPct?: number | null;
+  series?: number[];
+  rightSlot?: React.ReactNode;
+  footer?: React.ReactNode;
+  size?: "sm" | "md" | "lg";
 }
 
 export const MetricCard = React.forwardRef<HTMLDivElement, MetricCardProps>(
@@ -40,7 +40,7 @@ export const MetricCard = React.forwardRef<HTMLDivElement, MetricCardProps>(
         ? "text-[36px]"
         : size === "sm"
           ? "text-[22px]"
-          : "text-[28px]"
+          : "text-[28px]";
     return (
       <div
         ref={ref}
@@ -67,17 +67,26 @@ export const MetricCard = React.forwardRef<HTMLDivElement, MetricCardProps>(
         </header>
         <div className="flex items-end justify-between gap-3">
           <div className="flex items-baseline gap-2">
-            <span className={cn("yu3-num font-semibold text-[var(--yu3-ink-strong)] leading-none [font-feature-settings:'tnum'_1]", valueSize)}>
+            <span
+              className={cn(
+                "yu3-num font-semibold text-[var(--yu3-ink-strong)] leading-none [font-feature-settings:'tnum'_1]",
+                valueSize,
+              )}
+            >
               {value}
             </span>
-            {typeof trendPct === "number" ? <TrendPill delta={trendPct} /> : null}
+            {typeof trendPct === "number" ? (
+              <TrendPill delta={trendPct} />
+            ) : null}
           </div>
           {series && series.length > 1 ? (
             <Sparkline values={series} width={120} height={36} />
           ) : null}
         </div>
         {valueHint ? (
-          <div className="text-[12px] text-[var(--yu3-ink-muted)]">{valueHint}</div>
+          <div className="text-[12px] text-[var(--yu3-ink-muted)]">
+            {valueHint}
+          </div>
         ) : null}
         {children}
         {footer ? (
@@ -86,7 +95,7 @@ export const MetricCard = React.forwardRef<HTMLDivElement, MetricCardProps>(
           </div>
         ) : null}
       </div>
-    )
+    );
   },
-)
-MetricCard.displayName = "MetricCard"
+);
+MetricCard.displayName = "MetricCard";

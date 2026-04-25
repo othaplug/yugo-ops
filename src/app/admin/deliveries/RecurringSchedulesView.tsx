@@ -4,12 +4,20 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { toTitleCase } from "@/lib/format-text";
 import CreateButton from "../components/CreateButton";
-import { X, MagnifyingGlass, PencilSimple, Play, Pause, Trash } from "@phosphor-icons/react";
+import {
+  X,
+  MagnifyingGlass,
+  PencilSimple,
+  Play,
+  Pause,
+  Trash,
+} from "@phosphor-icons/react";
 import { organizationTypeLabel } from "@/lib/partner-type";
 import {
   B2B_PARTNER_TIME_WINDOW_OPTIONS,
   LEGACY_PARTNER_RECURRING_TIME_WINDOW_OPTIONS,
 } from "@/lib/time-windows";
+import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme";
 
 /* ─── Types ─────────────────────────────────────── */
 interface RecurringSchedule {
@@ -33,13 +41,26 @@ interface RecurringSchedule {
 
 /* ─── Constants ─────────────────────────────────── */
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const FREQ_LABELS: Record<string, string> = { weekly: "Weekly", biweekly: "Bi-weekly", monthly: "Monthly" };
-const VEHICLE_LABELS: Record<string, string> = { sprinter: "Sprinter", "16ft": "16ft", "20ft": "20ft", "26ft": "26ft" };
+const FREQ_LABELS: Record<string, string> = {
+  weekly: "Weekly",
+  biweekly: "Bi-weekly",
+  monthly: "Monthly",
+};
+const VEHICLE_LABELS: Record<string, string> = {
+  sprinter: "Sprinter",
+  "16ft": "16ft",
+  "20ft": "20ft",
+  "26ft": "26ft",
+};
 
 function formatNextDate(dateStr: string | null) {
   if (!dateStr) return "-";
   const d = new Date(dateStr + "T12:00:00");
-  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 /* ─── Create / Edit Modal ───────────────────────── */
@@ -54,18 +75,30 @@ function AdminScheduleModal({
 }) {
   const isEdit = !!existing;
 
-  const [orgs, setOrgs] = useState<{ id: string; name: string; type: string }[]>([]);
-  const [orgSearch, setOrgSearch] = useState(existing?.organizations?.name ?? "");
+  const [orgs, setOrgs] = useState<
+    { id: string; name: string; type: string }[]
+  >([]);
+  const [orgSearch, setOrgSearch] = useState(
+    existing?.organizations?.name ?? "",
+  );
   const [orgId, setOrgId] = useState(existing?.organization_id ?? "");
   const [orgDropOpen, setOrgDropOpen] = useState(false);
 
   const [name, setName] = useState(existing?.schedule_name ?? "");
   const [frequency, setFrequency] = useState(existing?.frequency ?? "weekly");
-  const [daysOfWeek, setDaysOfWeek] = useState<number[]>(existing?.days_of_week ?? []);
-  const [bookingType, setBookingType] = useState(existing?.booking_type ?? "day_rate");
-  const [vehicleType, setVehicleType] = useState(existing?.vehicle_type ?? "sprinter");
+  const [daysOfWeek, setDaysOfWeek] = useState<number[]>(
+    existing?.days_of_week ?? [],
+  );
+  const [bookingType, setBookingType] = useState(
+    existing?.booking_type ?? "day_rate",
+  );
+  const [vehicleType, setVehicleType] = useState(
+    existing?.vehicle_type ?? "sprinter",
+  );
   const [dayType, setDayType] = useState(existing?.day_type ?? "full_day");
-  const [numStops, setNumStops] = useState(String(existing?.default_num_stops ?? ""));
+  const [numStops, setNumStops] = useState(
+    String(existing?.default_num_stops ?? ""),
+  );
   const [timeWindow, setTimeWindow] = useState(
     existing?.time_window ?? B2B_PARTNER_TIME_WINDOW_OPTIONS[0] ?? "",
   );
@@ -76,21 +109,45 @@ function AdminScheduleModal({
     if (isEdit) return;
     fetch("/api/admin/organizations/list")
       .then((r) => r.json())
-      .then((d) => setOrgs((d.organizations || []).filter((o: { type: string }) => o.type !== "b2c")))
-      .catch((e) => { console.error("Failed to load organizations list:", e); });
+      .then((d) =>
+        setOrgs(
+          (d.organizations || []).filter(
+            (o: { type: string }) => o.type !== "b2c",
+          ),
+        ),
+      )
+      .catch((e) => {
+        console.error("Failed to load organizations list:", e);
+      });
   }, [isEdit]);
 
-  const filteredOrgs = orgs.filter((o) => !orgSearch.trim() || o.name.toLowerCase().includes(orgSearch.toLowerCase()));
+  const filteredOrgs = orgs.filter(
+    (o) =>
+      !orgSearch.trim() ||
+      o.name.toLowerCase().includes(orgSearch.toLowerCase()),
+  );
   const selectedOrg = orgs.find((o) => o.id === orgId);
 
   const toggleDay = (d: number) =>
-    setDaysOfWeek((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]);
+    setDaysOfWeek((prev) =>
+      prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d],
+    );
 
   const handleSave = async () => {
-    if (!orgId && !isEdit) { setErr("Select a partner"); return; }
-    if (!name.trim()) { setErr("Schedule name required"); return; }
-    if (!daysOfWeek.length) { setErr("Select at least one day"); return; }
-    setSaving(true); setErr("");
+    if (!orgId && !isEdit) {
+      setErr("Select a partner");
+      return;
+    }
+    if (!name.trim()) {
+      setErr("Schedule name required");
+      return;
+    }
+    if (!daysOfWeek.length) {
+      setErr("Select at least one day");
+      return;
+    }
+    setSaving(true);
+    setErr("");
     try {
       const payload: Record<string, unknown> = {
         schedule_name: name.trim(),
@@ -114,53 +171,74 @@ function AdminScheduleModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Failed"); }
-      onSaved(); onClose();
-    } catch (e: unknown) { setErr(e instanceof Error ? e.message : "Failed"); }
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed");
+      }
+      onSaved();
+      onClose();
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Failed");
+    }
     setSaving(false);
   };
 
   return (
     <div
       data-modal-root
-      data-yugo-glass-modal
       className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5"
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="fixed inset-0 z-0 bg-black/60 modal-overlay"
+        className="fixed inset-0 z-0 modal-overlay"
         aria-hidden
         onClick={onClose}
       />
-      <div
-        className="relative z-10 w-full max-w-[500px] yugo-glass-light rounded-2xl shadow-2xl flex flex-col max-h-[90vh] modal-card pointer-events-auto"
+      <Yu3PortaledTokenRoot
+        className="relative z-10 flex w-full max-w-[500px] flex-col overflow-hidden rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] max-h-[90vh] modal-card pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
-          <h2 className="admin-section-h2">{isEdit ? "Edit Schedule" : "New Recurring Schedule"}</h2>
-          <button onClick={onClose} className="text-[var(--tx3)] hover:text-[var(--tx)] p-1">
+          <h2 className="admin-section-h2">
+            {isEdit ? "Edit Schedule" : "New Recurring Schedule"}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-[var(--tx3)] hover:text-[var(--tx)] p-1"
+          >
             <X size={16} weight="regular" className="text-current" />
           </button>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
-          {err && <div className="text-[12px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{err}</div>}
+          {err && (
+            <div className="text-[12px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+              {err}
+            </div>
+          )}
 
           {/* Partner, read-only on edit, searchable on create */}
           {isEdit ? (
             <div>
-              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Partner</label>
+              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">
+                Partner
+              </label>
               <div className="admin-premium-input w-full text-[var(--tx2)]">
                 {existing.organizations?.name ?? "-"}
               </div>
             </div>
           ) : (
             <div className="relative">
-              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Partner</label>
+              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">
+                Partner
+              </label>
               <input
                 value={orgSearch || (selectedOrg?.name ?? "")}
-                onChange={(e) => { setOrgSearch(e.target.value); setOrgDropOpen(true); }}
+                onChange={(e) => {
+                  setOrgSearch(e.target.value);
+                  setOrgDropOpen(true);
+                }}
                 onFocus={() => setOrgDropOpen(true)}
                 placeholder="Search partners…"
                 className="admin-premium-input w-full"
@@ -168,10 +246,20 @@ function AdminScheduleModal({
               {orgDropOpen && filteredOrgs.length > 0 && (
                 <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-xl max-h-[180px] overflow-y-auto">
                   {filteredOrgs.slice(0, 20).map((o) => (
-                    <button key={o.id} type="button" onClick={() => { setOrgId(o.id); setOrgSearch(o.name); setOrgDropOpen(false); }}
-                      className="w-full text-left px-3 py-2.5 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0">
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() => {
+                        setOrgId(o.id);
+                        setOrgSearch(o.name);
+                        setOrgDropOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2.5 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0"
+                    >
                       <span className="font-semibold">{o.name}</span>
-                      <span className="text-[var(--tx3)] ml-1">· {organizationTypeLabel(o.type)}</span>
+                      <span className="text-[var(--tx3)] ml-1">
+                        · {organizationTypeLabel(o.type)}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -180,17 +268,29 @@ function AdminScheduleModal({
           )}
 
           <div>
-            <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Schedule Name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Weekly GTA Deliveries"
-              className="admin-premium-input w-full" />
+            <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">
+              Schedule Name
+            </label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Weekly GTA Deliveries"
+              className="admin-premium-input w-full"
+            />
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Frequency</label>
+            <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">
+              Frequency
+            </label>
             <div className="flex gap-2">
               {["weekly", "biweekly", "monthly"].map((f) => (
-                <button key={f} type="button" onClick={() => setFrequency(f)}
-                  className={`flex-1 py-2 rounded-lg text-[11px] font-semibold border transition-colors ${frequency === f ? "bg-[var(--admin-primary-fill)] border-[var(--gold)] text-[var(--btn-text-on-accent)]" : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"}`}>
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setFrequency(f)}
+                  className={`flex-1 py-2 rounded-lg text-[11px] font-semibold border transition-colors ${frequency === f ? "bg-[var(--admin-primary-fill)] border-[var(--gold)] text-[var(--btn-text-on-accent)]" : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"}`}
+                >
                   {FREQ_LABELS[f]}
                 </button>
               ))}
@@ -198,14 +298,20 @@ function AdminScheduleModal({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Days</label>
+            <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">
+              Days
+            </label>
             <div className="flex gap-1.5">
               {DAY_NAMES.map((day, i) => {
                 const dow = i + 1;
                 const active = daysOfWeek.includes(dow);
                 return (
-                  <button key={dow} type="button" onClick={() => toggleDay(dow)}
-                    className={`w-9 h-9 rounded-lg text-[10px] font-bold border transition-colors ${active ? "bg-[var(--admin-primary-fill)] border-[var(--gold)] text-[var(--btn-text-on-accent)]" : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"}`}>
+                  <button
+                    key={dow}
+                    type="button"
+                    onClick={() => toggleDay(dow)}
+                    className={`w-9 h-9 rounded-lg text-[10px] font-bold border transition-colors ${active ? "bg-[var(--admin-primary-fill)] border-[var(--gold)] text-[var(--btn-text-on-accent)]" : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"}`}
+                  >
                     {day}
                   </button>
                 );
@@ -215,19 +321,33 @@ function AdminScheduleModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Booking Type</label>
-              <select value={bookingType} onChange={(e) => setBookingType(e.target.value)}
-                className="admin-premium-input w-full">
+              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">
+                Booking Type
+              </label>
+              <select
+                value={bookingType}
+                onChange={(e) => setBookingType(e.target.value)}
+                className="admin-premium-input w-full"
+              >
                 <option value="day_rate">Day Rate</option>
                 <option value="per_delivery">Per Delivery</option>
               </select>
             </div>
             {bookingType === "day_rate" && (
               <div>
-                <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Vehicle</label>
-                <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)}
-                  className="admin-premium-input w-full">
-                  {Object.entries(VEHICLE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">
+                  Vehicle
+                </label>
+                <select
+                  value={vehicleType}
+                  onChange={(e) => setVehicleType(e.target.value)}
+                  className="admin-premium-input w-full"
+                >
+                  {Object.entries(VEHICLE_LABELS).map(([v, l]) => (
+                    <option key={v} value={v}>
+                      {l}
+                    </option>
+                  ))}
                 </select>
               </div>
             )}
@@ -235,47 +355,82 @@ function AdminScheduleModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Day Type</label>
-              <select value={dayType} onChange={(e) => setDayType(e.target.value)}
-                className="admin-premium-input w-full">
+              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">
+                Day Type
+              </label>
+              <select
+                value={dayType}
+                onChange={(e) => setDayType(e.target.value)}
+                className="admin-premium-input w-full"
+              >
                 <option value="full_day">Full Day</option>
                 <option value="half_day">Half Day</option>
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Default Stops</label>
-              <input type="number" value={numStops} onChange={(e) => setNumStops(e.target.value)} placeholder="e.g. 6" min={1}
-                className="admin-premium-input w-full" />
+              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">
+                Default Stops
+              </label>
+              <input
+                type="number"
+                value={numStops}
+                onChange={(e) => setNumStops(e.target.value)}
+                placeholder="e.g. 6"
+                min={1}
+                className="admin-premium-input w-full"
+              />
             </div>
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Time Window</label>
-            <select value={timeWindow} onChange={(e) => setTimeWindow(e.target.value)}
-              className="admin-premium-input w-full">
+            <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">
+              Time Window
+            </label>
+            <select
+              value={timeWindow}
+              onChange={(e) => setTimeWindow(e.target.value)}
+              className="admin-premium-input w-full"
+            >
               {B2B_PARTNER_TIME_WINDOW_OPTIONS.map((w) => (
-                <option key={w} value={w}>{w}</option>
+                <option key={w} value={w}>
+                  {w}
+                </option>
               ))}
-              {LEGACY_PARTNER_RECURRING_TIME_WINDOW_OPTIONS.map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
+              {LEGACY_PARTNER_RECURRING_TIME_WINDOW_OPTIONS.map(
+                ({ value, label }) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ),
+              )}
             </select>
           </div>
         </div>
 
         <div className="flex-shrink-0 px-5 py-4 border-t border-[var(--brd)] flex gap-2 bg-transparent">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)]">Cancel</button>
-          <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50">
+          <button
+            onClick={onClose}
+            className="admin-btn admin-btn-secondary flex-1"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="admin-btn admin-btn-primary flex-1"
+          >
             {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Schedule"}
           </button>
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>
   );
 }
 
 /* ─── Main View ─────────────────────────────────── */
-export default function RecurringSchedulesView({ initialScheduleId }: { initialScheduleId?: string } = {}) {
+export default function RecurringSchedulesView({
+  initialScheduleId,
+}: { initialScheduleId?: string } = {}) {
   const [schedules, setSchedules] = useState<RecurringSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -292,11 +447,15 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
         const d = await res.json();
         setSchedules(d.schedules || []);
       }
-    } catch (err) { console.error("Failed to load recurring schedules:", err); }
+    } catch (err) {
+      console.error("Failed to load recurring schedules:", err);
+    }
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const handleTogglePause = async (s: RecurringSchedule) => {
     setToggling(s.id);
@@ -304,7 +463,9 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ is_paused: !s.is_paused }),
-    }).catch((err) => { console.error("Failed to toggle pause on recurring schedule:", err); });
+    }).catch((err) => {
+      console.error("Failed to toggle pause on recurring schedule:", err);
+    });
     await load();
     setToggling(null);
   };
@@ -312,7 +473,11 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this recurring schedule?")) return;
     setDeleting(id);
-    await fetch(`/api/admin/recurring-schedules/${id}`, { method: "DELETE" }).catch((err) => { console.error("Failed to delete recurring schedule:", err); });
+    await fetch(`/api/admin/recurring-schedules/${id}`, {
+      method: "DELETE",
+    }).catch((err) => {
+      console.error("Failed to delete recurring schedule:", err);
+    });
     await load();
     setDeleting(null);
   };
@@ -331,16 +496,32 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-1">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">B2B Operations</p>
-          <h1 className="admin-page-hero text-[var(--tx)]">Recurring Schedules</h1>
-          <p className="text-[12px] text-[var(--tx3)] mt-2">{schedules.length} schedule{schedules.length !== 1 ? "s" : ""} across all partners</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">
+            B2B Operations
+          </p>
+          <h1 className="admin-page-hero text-[var(--tx)]">
+            Recurring Schedules
+          </h1>
+          <p className="text-[12px] text-[var(--tx3)] mt-2">
+            {schedules.length} schedule{schedules.length !== 1 ? "s" : ""}{" "}
+            across all partners
+          </p>
         </div>
-        <CreateButton onClick={() => setCreateOpen(true)} title="New schedule" label="Add schedule" />
+        <CreateButton
+          onClick={() => setCreateOpen(true)}
+          title="New schedule"
+          label="Add schedule"
+        />
       </div>
 
       {/* Search */}
       <div className="relative max-w-[360px]">
-        <MagnifyingGlass size={14} weight="regular" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx2)]" aria-hidden />
+        <MagnifyingGlass
+          size={14}
+          weight="regular"
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx2)]"
+          aria-hidden
+        />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -355,8 +536,23 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
           <table className="w-full text-[12px]">
             <thead>
               <tr className="border-b border-[var(--brd)] bg-[var(--bg)]">
-                {["Partner", "Schedule", "Frequency", "Days", "Booking", "Next Run", "Status", "Source", ""].map((h) => (
-                  <th key={h} className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2.5 px-3 whitespace-nowrap first:pl-4 last:pr-4">{h}</th>
+                {[
+                  "Partner",
+                  "Schedule",
+                  "Frequency",
+                  "Days",
+                  "Booking",
+                  "Next Run",
+                  "Status",
+                  "Source",
+                  "",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2.5 px-3 whitespace-nowrap first:pl-4 last:pr-4"
+                  >
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -373,23 +569,39 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                 ))
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-12 text-[var(--tx3)] text-[12px]">
-                    {search ? "No matching schedules" : "No recurring schedules yet"}
+                  <td
+                    colSpan={9}
+                    className="text-center py-12 text-[var(--tx3)] text-[12px]"
+                  >
+                    {search
+                      ? "No matching schedules"
+                      : "No recurring schedules yet"}
                   </td>
                 </tr>
               ) : (
                 filtered.map((s) => (
-                  <tr key={s.id} className="border-b border-[var(--brd)]/50 hover:bg-[var(--bg)]/50 transition-colors">
+                  <tr
+                    key={s.id}
+                    className="border-b border-[var(--brd)]/50 hover:bg-[var(--bg)]/50 transition-colors"
+                  >
                     <td className="py-3 px-3 pl-4">
-                      <div className="font-semibold text-[var(--tx)]">{s.organizations?.name || "-"}</div>
+                      <div className="font-semibold text-[var(--tx)]">
+                        {s.organizations?.name || "-"}
+                      </div>
                       <div className="text-[10px] text-[var(--tx3)]">
-                        {s.organizations?.type ? organizationTypeLabel(s.organizations.type) : ""}
+                        {s.organizations?.type
+                          ? organizationTypeLabel(s.organizations.type)
+                          : ""}
                       </div>
                     </td>
                     <td className="py-3 px-3">
-                      <div className="font-medium text-[var(--tx)]">{s.schedule_name}</div>
+                      <div className="font-medium text-[var(--tx)]">
+                        {s.schedule_name}
+                      </div>
                     </td>
-                    <td className="py-3 px-3 text-[var(--tx2)]">{FREQ_LABELS[s.frequency] || s.frequency}</td>
+                    <td className="py-3 px-3 text-[var(--tx2)]">
+                      {FREQ_LABELS[s.frequency] || s.frequency}
+                    </td>
                     <td className="py-3 px-3 text-[var(--tx2)]">
                       {s.days_of_week.map((d) => DAY_NAMES[d - 1]).join(", ")}
                     </td>
@@ -397,28 +609,44 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                       {s.booking_type === "day_rate" ? (
                         <span>
                           <span className="text-[var(--tx2)]">Day Rate</span>
-                          {s.vehicle_type && <span className="text-[var(--tx3)]"> · {VEHICLE_LABELS[s.vehicle_type] || s.vehicle_type}</span>}
+                          {s.vehicle_type && (
+                            <span className="text-[var(--tx3)]">
+                              {" "}
+                              ·{" "}
+                              {VEHICLE_LABELS[s.vehicle_type] || s.vehicle_type}
+                            </span>
+                          )}
                         </span>
                       ) : (
-                        <span className="text-[var(--tx2)]">{toTitleCase(s.booking_type.replace(/_/g, " "))}</span>
+                        <span className="text-[var(--tx2)]">
+                          {toTitleCase(s.booking_type.replace(/_/g, " "))}
+                        </span>
                       )}
                     </td>
                     <td className="py-3 px-3">
                       {s.is_paused ? (
                         <span className="text-[var(--tx3)]">-</span>
                       ) : (
-                        <span className="font-medium text-[var(--gold)]">{formatNextDate(s.next_generation_date)}</span>
+                        <span className="font-medium text-[var(--gold)]">
+                          {formatNextDate(s.next_generation_date)}
+                        </span>
                       )}
                     </td>
                     <td className="py-3 px-3">
                       {s.is_paused ? (
-                        <span className="dt-badge tracking-[0.04em] text-amber-600 dark:text-amber-400">PAUSED</span>
+                        <span className="dt-badge tracking-[0.04em] text-amber-600 dark:text-amber-400">
+                          PAUSED
+                        </span>
                       ) : (
-                        <span className="dt-badge tracking-[0.04em] text-emerald-600 dark:text-emerald-400">ACTIVE</span>
+                        <span className="dt-badge tracking-[0.04em] text-emerald-600 dark:text-emerald-400">
+                          ACTIVE
+                        </span>
                       )}
                     </td>
                     <td className="py-3 px-3 text-[var(--tx3)]">
-                      <span className="uppercase">{s.created_by_source?.replace("_", " ") || "-"}</span>
+                      <span className="uppercase">
+                        {s.created_by_source?.replace("_", " ") || "-"}
+                      </span>
                     </td>
                     <td className="py-3 px-3 pr-4">
                       <div className="flex items-center gap-0.5">
@@ -427,7 +655,11 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                           onClick={() => setEditTarget(s)}
                           className="p-1.5 rounded text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-colors"
                         >
-                          <PencilSimple size={13} weight="regular" className="text-current" />
+                          <PencilSimple
+                            size={13}
+                            weight="regular"
+                            className="text-current"
+                          />
                         </button>
                         <button
                           title={s.is_paused ? "Resume" : "Pause"}
@@ -436,9 +668,17 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                           className="p-1.5 rounded text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-colors disabled:opacity-40"
                         >
                           {s.is_paused ? (
-                            <Play size={13} weight="regular" className="text-current" />
+                            <Play
+                              size={13}
+                              weight="regular"
+                              className="text-current"
+                            />
                           ) : (
-                            <Pause size={13} weight="regular" className="text-current" />
+                            <Pause
+                              size={13}
+                              weight="regular"
+                              className="text-current"
+                            />
                           )}
                         </button>
                         <button
@@ -447,7 +687,11 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                           disabled={deleting === s.id}
                           className="p-1.5 rounded text-[var(--tx3)] hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40"
                         >
-                          <Trash size={13} weight="regular" className="text-current" />
+                          <Trash
+                            size={13}
+                            weight="regular"
+                            className="text-current"
+                          />
                         </button>
                       </div>
                     </td>
@@ -460,14 +704,19 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
       </div>
 
       {/* Modals, portalled to body so fixed overlay covers the full viewport */}
-      {(createOpen || editTarget) && typeof document !== "undefined" && createPortal(
-        <AdminScheduleModal
-          existing={editTarget}
-          onClose={() => { setCreateOpen(false); setEditTarget(null); }}
-          onSaved={load}
-        />,
-        document.body,
-      )}
+      {(createOpen || editTarget) &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <AdminScheduleModal
+            existing={editTarget}
+            onClose={() => {
+              setCreateOpen(false);
+              setEditTarget(null);
+            }}
+            onSaved={load}
+          />,
+          document.body,
+        )}
     </div>
   );
 }

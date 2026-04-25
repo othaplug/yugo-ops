@@ -1,31 +1,36 @@
-"use client";
+"use client"
 
-import Image from "next/image";
-import { useContext } from "react";
-import { ThemeContext } from "@/app/admin/components/ThemeContext";
+import Image from "next/image"
+import { useContext } from "react"
+import { ThemeContext } from "@/app/admin/components/ThemeContext"
 
-export type LogoVariant = "gold" | "cream" | "black" | "wine" | "auto";
+export type LogoVariant = "gold" | "cream" | "black" | "wine" | "auto"
 
 interface YugoLogoProps {
-  size?: number;
-  className?: string;
-  variant?: LogoVariant;
-  useImage?: boolean;
-  onLightBackground?: boolean;
-  hidePlus?: boolean;
+  size?: number
+  className?: string
+  variant?: LogoVariant
+  useImage?: boolean
+  onLightBackground?: boolean
+  hidePlus?: boolean
+  /** Wine-tile Y only, no ugo (collapsed nav, icon rail). */
+  symbolOnly?: boolean
 }
 
-const LOGO_VERSION = "v2";
+const LOGO_VERSION = "v2"
 
 const LOGO_SRC: Record<Exclude<LogoVariant, "auto">, string> = {
   gold: `/images/yugo-logo-gold.png?${LOGO_VERSION}`,
   cream: `/images/yugo-logo-cream.png?${LOGO_VERSION}`,
   black: `/images/yugo-logo-black.png?${LOGO_VERSION}`,
   wine: `/images/yugo-logo-wine.png?${LOGO_VERSION}`,
-};
+}
+
+/** App symbol; same mark as the favicon family. */
+const YUGO_SYMBOL_SRC = `/yugo-symbol.png?${LOGO_VERSION}`
 
 function PlusMark({ size, color }: { size: number; color: string }) {
-  const plusSize = Math.max(8, Math.round(size * 0.52));
+  const plusSize = Math.max(8, Math.round(size * 0.52))
   return (
     <span
       style={{
@@ -42,10 +47,14 @@ function PlusMark({ size, color }: { size: number; color: string }) {
     >
       +
     </span>
-  );
+  )
 }
 
-/** Yugo wordmark. Optional `+` via `hidePlus={false}`. `variant="auto"`: cream on dark admin, wine on light. */
+/**
+ * Yugo+ wordmark: full logotype from `yugo-logo-*.png`, optional +.
+ * `symbolOnly`: favicon mark only; cream tint via CSS filter in dark / cream chrome.
+ * `variant="auto"`: cream on dark admin, wine on light.
+ */
 export default function YugoLogo({
   size = 18,
   className = "",
@@ -53,17 +62,15 @@ export default function YugoLogo({
   useImage = true,
   onLightBackground: _onLightBackground = false,
   hidePlus = true,
+  symbolOnly = false,
 }: YugoLogoProps) {
-  const themeCtx = useContext(ThemeContext);
-  /* Dark admin: cream wordmark on wine canvas; light admin / no provider: wine wordmark on light */
+  const themeCtx = useContext(ThemeContext)
   const resolvedVariant: Exclude<LogoVariant, "auto"> =
     variant === "auto"
       ? themeCtx?.theme === "dark"
         ? "cream"
         : "wine"
-      : variant;
-
-  const src = LOGO_SRC[resolvedVariant];
+      : variant
 
   const plusColor =
     resolvedVariant === "cream"
@@ -72,27 +79,62 @@ export default function YugoLogo({
         ? "#1A1A1A"
         : resolvedVariant === "wine"
           ? "#5C1A33"
-          : "#C9A962";
+          : "#C9A962"
+
+  if (symbolOnly) {
+    /** Black PNG; invert/tint in cream chrome so the mark matches wordmark and labels */
+    const creamSymbolOnDark =
+      resolvedVariant === "cream"
+        ? "invert(1) sepia(0.18) saturate(0.35) brightness(0.88)"
+        : undefined
+    return (
+      <span
+        role="img"
+        aria-label="Yugo"
+        className={className.trim()}
+        style={{ display: "inline-flex", alignItems: "center" }}
+      >
+        <Image
+          src={YUGO_SYMBOL_SRC}
+          alt=""
+          width={size}
+          height={size}
+          className="shrink-0 object-contain select-none"
+          style={{
+            height: size,
+            width: "auto",
+            filter: creamSymbolOnDark,
+          }}
+          unoptimized
+          priority
+        />
+      </span>
+    )
+  }
+
+  const src = LOGO_SRC[resolvedVariant]
 
   if (useImage && src) {
     return (
       <span
+        role="img"
+        aria-label="Yugo"
         className={className.trim()}
         style={{ display: "inline-flex", alignItems: "center" }}
       >
         <Image
           src={src}
-          alt="Yugo"
+          alt=""
           height={size}
           width={size * 4}
-          className="select-none object-contain"
+          className="shrink-0 select-none object-contain"
           style={{ height: size, width: "auto" }}
           unoptimized
           priority
         />
         {!hidePlus && <PlusMark size={size} color={plusColor} />}
       </span>
-    );
+    )
   }
 
   const textColor =
@@ -102,10 +144,12 @@ export default function YugoLogo({
         ? "#1A1A1A"
         : resolvedVariant === "wine"
           ? "#5C1A33"
-          : "var(--gold)";
+          : "var(--gold)"
 
   return (
     <span
+      role="img"
+      aria-label="Yugo"
       className={`font-hero font-bold select-none leading-none ${className}`}
       style={{
         fontSize: size,
@@ -117,21 +161,21 @@ export default function YugoLogo({
     >
       Yugo{!hidePlus && <PlusMark size={size} color={textColor} />}
     </span>
-  );
+  )
 }
 
 export function BetaBadge({ className = "" }: { className?: string }) {
-  const themeCtx = useContext(ThemeContext);
-  const wineChrome = themeCtx?.theme === "dark";
+  const themeCtx = useContext(ThemeContext)
+  const wineChrome = themeCtx?.theme === "dark"
   return (
     <span
       className={`text-[7px] font-semibold tracking-[1px] uppercase ${
         wineChrome
           ? "text-[var(--btn-text-on-accent)]/58"
-          : "text-[var(--gold)]/50"
+          : "text-[var(--accent-text)]/50"
       } ${className}`}
     >
       BETA
     </span>
-  );
+  )
 }

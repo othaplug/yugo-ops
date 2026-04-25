@@ -149,8 +149,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Return move date is required for this move type" }, { status: 400 });
   }
 
-  const moveCode = `PM${Date.now().toString(36).toUpperCase().slice(-8)}`;
-
   const { data: org } = await admin.from("organizations").select("name").eq("id", orgId).single();
 
   const notesParts = [
@@ -190,7 +188,6 @@ export async function POST(req: NextRequest) {
     status: "pending_approval",
     service_type: "b2b_oneoff",
     move_type: "residential",
-    move_code: moveCode,
     pm_move_kind: reasonCode,
     pm_reason_code: reasonCode,
     pm_zone: zone,
@@ -207,6 +204,7 @@ export async function POST(req: NextRequest) {
   }
 
   const moveId = move.id as string;
+  const moveCode = (move.move_code as string) || moveId;
   const partnerName = (org as { name?: string } | null)?.name || "Partner";
 
   let returnMoveId: string | null = null;
@@ -231,12 +229,10 @@ export async function POST(req: NextRequest) {
         holiday,
         urgency,
       });
-      const retCode = `PM${Date.now().toString(36).toUpperCase()}R${Math.floor(Math.random() * 1e4)}`;
       const { data: retMove, error: retErr } = await admin
         .from("moves")
         .insert({
           ...insertPayload,
-          move_code: retCode,
           from_address: toAddress,
           to_address: fromAddress,
           scheduled_date: returnScheduledDate,
@@ -246,7 +242,7 @@ export async function POST(req: NextRequest) {
           amount: subR,
           estimate: subR,
           internal_notes: [
-            `Linked return leg for move ${moveCode}`,
+            `Linked return leg for move ${move.move_code || moveId}`,
             `Move reason: ${returnReason}`,
             `Zone: ${zone}`,
             instructions ? `Instructions: ${instructions}` : "",

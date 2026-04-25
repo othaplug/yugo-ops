@@ -670,7 +670,7 @@ export default function JobInventory({
         </>
       )}
       {addExtraOpen && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[99999] animate-fade-in">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 animate-fade-in modal-overlay">
           <div
             className="p-5 max-w-[340px] w-full shadow-xl animate-fade-in border border-[#5C1A33]/15"
             style={{ backgroundColor: CREAM_CARD }}

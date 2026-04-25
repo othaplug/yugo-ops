@@ -294,11 +294,14 @@ export default function RevenueClient({
   };
 
   const all = invoices || [];
-  const invoicesForBreakdown = all.filter((i) => !invoiceExcludedFromRevenue(i));
+  const invoicesForBreakdown = all.filter(
+    (i) => !invoiceExcludedFromRevenue(i),
+  );
   const paidMovesList = paidMoves || [];
   const paidInvoicesAll = all.filter((i) => i.status === "paid");
-  const deliveryRows =
-    deliveries as Parameters<typeof partnerRevenueTotalForMonth>[2];
+  const deliveryRows = deliveries as Parameters<
+    typeof partnerRevenueTotalForMonth
+  >[2];
 
   const invoiceRevenue = partnerRevenueLifetime(
     all,
@@ -462,19 +465,14 @@ export default function RevenueClient({
         if (covered.has(String(d.id))) continue;
         const ts = String(d.scheduled_date || d.created_at || "");
         const dt = ts ? new Date(ts) : null;
-        if (
-          !dt ||
-          dt.getFullYear() !== year ||
-          dt.getMonth() !== month
-        )
+        if (!dt || dt.getFullYear() !== year || dt.getMonth() !== month)
           continue;
         const day = dt.getDate();
         byDayDlv[day] = (byDayDlv[day] || 0) + deliveryPreTaxForAdminList(d);
       }
       return Array.from({ length: daysInMonth }, (_, i) => {
         const day = i + 1;
-        const partner =
-          (byDayPartnerInv[day] || 0) + (byDayDlv[day] || 0);
+        const partner = (byDayPartnerInv[day] || 0) + (byDayDlv[day] || 0);
         const moves = byDayMoves[day] || 0;
         return row(
           String(day),
@@ -533,8 +531,7 @@ export default function RevenueClient({
     const cat = normalizePartnerCategoryForBreakdown(
       getInvoicePartnerType(inv, orgIdToType, clientTypeMap),
     );
-    byTypeRaw[cat] =
-      (byTypeRaw[cat] || 0) + invoicePreTaxForDisplay(inv);
+    byTypeRaw[cat] = (byTypeRaw[cat] || 0) + invoicePreTaxForDisplay(inv);
   }
   const coveredForBreakdown = deliveryIdsCoveredByAnyInvoice(all);
   const PAID_DLV = new Set(["delivered", "completed"]);
@@ -547,11 +544,9 @@ export default function RevenueClient({
     if (!PAID_DLV.has(String(d.status || "").toLowerCase())) continue;
     if (coveredForBreakdown.has(String(d.id))) continue;
     const oid = d.organization_id;
-    const orgType =
-      (oid && orgIdToType[oid]) || "retail";
+    const orgType = (oid && orgIdToType[oid]) || "retail";
     const cat = normalizePartnerCategoryForBreakdown(orgType);
-    byTypeRaw[cat] =
-      (byTypeRaw[cat] || 0) + deliveryPreTaxForAdminList(d);
+    byTypeRaw[cat] = (byTypeRaw[cat] || 0) + deliveryPreTaxForAdminList(d);
   }
   byTypeRaw.b2c = (byTypeRaw.b2c || 0) + moveRevenue;
   const byType = [
@@ -599,8 +594,7 @@ export default function RevenueClient({
     if (!selectedType) return [];
     return paidInvoicesAll.filter((i) => {
       if (invoiceExcludedFromRevenue(i)) return false;
-      if (!isPartnerChannelInvoice(i, orgIdToType, clientTypeMap))
-        return false;
+      if (!isPartnerChannelInvoice(i, orgIdToType, clientTypeMap)) return false;
       const cat = normalizePartnerCategoryForBreakdown(
         getInvoicePartnerType(i, orgIdToType, clientTypeMap),
       );
@@ -711,7 +705,7 @@ export default function RevenueClient({
   const currentMonthLabel = now.toLocaleString("en-US", { month: "long" });
 
   return (
-    <div className="max-w-[1100px] mx-auto px-4 sm:px-5 md:px-8 py-6 md:py-8 animate-fade-up">
+    <div className="w-full min-w-0 py-6 md:py-8 animate-fade-up">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="mb-6">
         <BackButton label="Back" />
@@ -723,11 +717,12 @@ export default function RevenueClient({
           </p>
           <h1 className="admin-page-hero text-[var(--tx)]">Revenue</h1>
           <p className="text-[12px] text-[var(--tx3)] mt-1.5 max-w-[640px]">
-            Booked revenue, paid invoices, and outstanding balances across every source.
+            Booked revenue, paid invoices, and outstanding balances across every
+            source.
           </p>
         </div>
         <Link
-          href="/admin/invoices"
+          href="/admin/finance/invoices"
           className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-[var(--tx2)] hover:text-[var(--tx)] transition-colors"
         >
           All invoices <ArrowUpRight className="w-3.5 h-3.5" />
@@ -743,20 +738,20 @@ export default function RevenueClient({
           value={formatCompactCurrency(currentMonthRevenue)}
           sub="Before HST"
           delta={pctChange}
-          href="/admin/invoices"
+          href="/admin/finance/invoices"
           accent
         />
         <KpiCard
           label={`${now.getFullYear()} YTD`}
           value={formatCompactCurrency(ytdRevenue)}
           sub={`${paidPartnerInvoices.length} paid partner invoices · ${paidMovesList.length} paid moves`}
-          href="/admin/invoices"
+          href="/admin/finance/invoices"
         />
         <KpiCard
           label="Outstanding"
           value={formatCompactCurrency(outstanding)}
           sub="Open invoices before HST (excludes paid, draft)"
-          href="/admin/invoices"
+          href="/admin/finance/invoices"
         />
         <KpiCard
           label="Avg Job Value"
@@ -928,9 +923,9 @@ export default function RevenueClient({
           <div className="mb-5">
             <h2 className="admin-section-h2">By Service Type</h2>
             <p className="text-[10px] text-[var(--tx3)] mt-0.5">
-              Paid partner and delivery fallback by org category, plus residential
-              move payments under Moves (before HST; invoice rows exclude cancelled
-              and archived)
+              Paid partner and delivery fallback by org category, plus
+              residential move payments under Moves (before HST; invoice rows
+              exclude cancelled and archived)
             </p>
           </div>
           <div className="space-y-1 divide-y divide-[var(--brd)]">
@@ -1051,10 +1046,11 @@ export default function RevenueClient({
       {selectedType != null && (
         <div
           className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4"
+          data-modal-root
           aria-modal="true"
         >
           <div
-            className="absolute inset-0 bg-black/70"
+            className="absolute inset-0 modal-overlay"
             onClick={() => setSelectedType(null)}
             aria-hidden="true"
           />
@@ -1134,8 +1130,9 @@ export default function RevenueClient({
               ) : (byType.find((t) => t.key === selectedType)?.amount ?? 0) >
                 0 ? (
                 <p className="text-[11px] text-[var(--tx3)] py-8 text-center leading-relaxed">
-                  This total includes delivered partner jobs attributed here when
-                  there is no invoice row, or amounts not shown in the list above.
+                  This total includes delivered partner jobs attributed here
+                  when there is no invoice row, or amounts not shown in the list
+                  above.
                 </p>
               ) : (
                 <p className="text-[11px] text-[var(--tx3)] py-8 text-center">

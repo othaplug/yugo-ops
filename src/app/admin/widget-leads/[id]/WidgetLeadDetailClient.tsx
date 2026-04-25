@@ -53,10 +53,10 @@ export default function WidgetLeadDetailClient({
   };
 
   return (
-    <div className="mx-auto w-full max-w-[900px] px-4 py-8 sm:px-6">
+    <div className="w-full min-w-0 max-w-[min(900px,100%)] mx-auto py-8">
       <div className="mb-8">
         <Link
-          href="/admin/widget-leads"
+          href="/admin/leads/widget"
           className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--tx2)] hover:text-[var(--tx)] mb-4"
         >
           <ArrowLeft size={16} weight="bold" aria-hidden />
@@ -165,7 +165,7 @@ export default function WidgetLeadDetailClient({
         <button
           type="button"
           onClick={handleConvert}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.1em] [font-family:var(--font-body)] hover:opacity-95"
+          className="admin-btn admin-btn-sm admin-btn-primary"
         >
           Convert to quote
           <CaretRight size={14} weight="bold" aria-hidden />

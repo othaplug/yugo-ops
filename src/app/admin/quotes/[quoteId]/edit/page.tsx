@@ -42,7 +42,7 @@ export default async function EditQuotePage({ params }: Props) {
   for (const r of configRows ?? []) config[r.key] = r.value;
 
   return (
-    <div className="max-w-[1400px] mx-auto px-5 md:px-6 py-5 md:py-6">
+    <div className="w-full min-w-0 py-5 md:py-6">
       <EditQuoteClient
         originalQuote={quote}
         addons={addons ?? []}

@@ -362,7 +362,7 @@ export default function NewClientForm({
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-3 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
+            className="admin-btn admin-btn-primary w-full"
           >
             {partnerButtonLabel}
           </button>
@@ -423,7 +423,7 @@ export default function NewClientForm({
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-3 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
+            className="admin-btn admin-btn-primary w-full"
           >
             {clientButtonLabel}
           </button>

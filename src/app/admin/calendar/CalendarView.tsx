@@ -119,13 +119,22 @@ export default function CalendarView() {
         )}
 
       {!cal.loading && !cal.fetchError && cal.counts && cal.view !== "year" && (
-        <div className="mx-3 sm:mx-5 mt-3 mb-2 px-3 py-2 rounded-md bg-[var(--card)] border border-[var(--brd)] text-[11px] text-[var(--tx3)] flex items-center gap-2">
-          <span className="text-[var(--tx3)]">Range:</span>
-          <span>{cal.counts.moves} moves</span>
-          <span className="text-[var(--tx3)]/30">·</span>
-          <span>{cal.counts.deliveries} deliveries</span>
-          <span className="text-[var(--tx3)]/30">·</span>
-          <span>{cal.counts.phases ?? 0} phases</span>
+        <div
+          className="mx-0 mt-3 mb-2 px-3 py-2 rounded-[var(--yu3-r-md)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] text-[11px] text-[var(--yu3-ink-muted)] flex flex-wrap items-center gap-x-2 gap-y-1 shadow-sm"
+          aria-label="Range summary"
+        >
+          <span className="text-[var(--yu3-ink-muted)]">Range:</span>
+          <span className="text-[var(--yu3-ink)] tabular-nums">
+            {cal.counts.moves} moves
+          </span>
+          <span className="text-[var(--yu3-ink-faint)]">·</span>
+          <span className="text-[var(--yu3-ink)] tabular-nums">
+            {cal.counts.deliveries} deliveries
+          </span>
+          <span className="text-[var(--yu3-ink-faint)]">·</span>
+          <span className="text-[var(--yu3-ink)] tabular-nums">
+            {cal.counts.phases ?? 0} phases
+          </span>
         </div>
       )}
 

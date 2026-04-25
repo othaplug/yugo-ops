@@ -34,7 +34,7 @@ export default function ContactDetailsModal({ open, onClose, contact }: ContactD
         {contact.email && (
           <div className="flex items-center gap-2">
             <Icon name="mail" className="w-[14px] h-[14px] text-[var(--tx3)] shrink-0" />
-            <a href={`mailto:${contact.email}`} className="text-[13px] text-[var(--gold)] hover:underline">
+            <a href={`mailto:${contact.email}`} className="text-[13px] text-[var(--accent-text)] hover:underline">
               {contact.email}
             </a>
           </div>
@@ -42,7 +42,7 @@ export default function ContactDetailsModal({ open, onClose, contact }: ContactD
         {contact.phone && (
           <div className="flex items-center gap-2">
             <Icon name="phone" className="w-[14px] h-[14px] text-[var(--tx3)] shrink-0" />
-            <a href={`tel:${normalizePhone(contact.phone)}`} className="text-[13px] text-[var(--tx2)] hover:text-[var(--gold)]">
+            <a href={`tel:${normalizePhone(contact.phone)}`} className="text-[13px] text-[var(--tx2)] hover:text-[var(--accent-text)]">
               {formatPhone(contact.phone)}
             </a>
           </div>

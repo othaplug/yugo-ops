@@ -52,6 +52,55 @@ export async function GET() {
     if (visibleOrgs.length === 0) return NextResponse.json({ partners: [] });
 
     const orgIds = visibleOrgs.map((o) => o.id);
+    const WEEKS = 12;
+    const periodStart = new Date();
+    periodStart.setDate(periodStart.getDate() - WEEKS * 7);
+    const periodStartIso = periodStart.toISOString();
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+
+    function bucketForDate(created: string | null | undefined): number {
+      if (!created) return -1;
+      const t = new Date(created).getTime();
+      if (Number.isNaN(t)) return -1;
+      const i = Math.floor((t - periodStart.getTime()) / weekMs);
+      if (i < 0 || i >= WEEKS) return -1;
+      return i;
+    }
+
+    const activityByOrg: Record<string, number[]> = {};
+    for (const id of orgIds) {
+      activityByOrg[id] = new Array(WEEKS).fill(0);
+    }
+
+    if (orgIds.length > 0) {
+      const [movesRes, delRes] = await Promise.all([
+        admin
+          .from("moves")
+          .select("organization_id, created_at")
+          .in("organization_id", orgIds)
+          .gte("created_at", periodStartIso),
+        admin
+          .from("deliveries")
+          .select("organization_id, created_at")
+          .in("organization_id", orgIds)
+          .gte("created_at", periodStartIso),
+      ]);
+      for (const row of (movesRes.data ?? []) as { organization_id?: string; created_at?: string }[]) {
+        const oid = row.organization_id;
+        if (!oid || !activityByOrg[oid]) continue;
+        const b = bucketForDate(row.created_at);
+        if (b < 0) continue;
+        activityByOrg[oid]![b] = (activityByOrg[oid]![b] ?? 0) + 1;
+      }
+      for (const row of (delRes.data ?? []) as { organization_id?: string; created_at?: string }[]) {
+        const oid = row.organization_id;
+        if (!oid || !activityByOrg[oid]) continue;
+        const b = bucketForDate(row.created_at);
+        if (b < 0) continue;
+        activityByOrg[oid]![b] = (activityByOrg[oid]![b] ?? 0) + 1;
+      }
+    }
+
     const { data: allPartnerUsers } = await admin
       .from("partner_users")
       .select("user_id, org_id")
@@ -91,6 +140,8 @@ export async function GET() {
       created_at: org.created_at,
       portal_users: puByOrg[org.id] || [],
       has_portal_access: (puByOrg[org.id] || []).length > 0,
+      /** Last 12 weeks, oldest week first: combined move + delivery counts per week. */
+      activity_weekly: activityByOrg[org.id] ?? new Array(WEEKS).fill(0),
     }));
 
     return NextResponse.json({

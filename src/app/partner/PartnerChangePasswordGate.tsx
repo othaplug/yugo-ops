@@ -61,7 +61,7 @@ export default function PartnerChangePasswordGate({ children }: { children: Reac
     <>
       {children}
       {showModal && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 modal-overlay">
           <div className="w-full max-w-[420px] bg-[#FFFBF7] rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] overflow-hidden" style={{ animation: "ptrFadeUp 0.4s ease" }}>
             <style>{`@keyframes ptrFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }`}</style>
 

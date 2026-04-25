@@ -11,6 +11,7 @@ import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
+import { partnerModalPanelClass } from "@/components/partner/PartnerChrome";
 
 const DeliveryTrackMap = dynamic(
   () => import("@/app/track/delivery/[id]/DeliveryTrackMap").then((m) => m.default),
@@ -254,9 +255,9 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
   const modalContent = (
     <ModalDialogFrame
       zClassName="z-[99999]"
-      backdropClassName="bg-black/40"
+      backdropClassName=""
       onBackdropClick={onClose}
-      panelClassName="yugo-glass-light rounded-t-lg sm:rounded-lg shadow-[0_24px_80px_rgba(44,62,45,0.14)] border border-[#2C3E2D]/10 w-full max-w-lg overflow-hidden flex flex-col sheet-card sm:modal-card"
+      panelClassName={`${partnerModalPanelClass} w-full max-w-lg overflow-hidden flex flex-col sheet-card sm:modal-card`}
       panelStyle={{ maxHeight: "min(92dvh, 92vh)" }}
       role="dialog"
       ariaModal

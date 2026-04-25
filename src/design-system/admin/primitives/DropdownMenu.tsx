@@ -1,29 +1,32 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as DM from "@radix-ui/react-dropdown-menu"
-import { cn } from "../lib/cn"
-import { Check } from "../icons"
+import * as React from "react";
+import * as DM from "@radix-ui/react-dropdown-menu";
+import { cn } from "../lib/cn";
+import { Check } from "../icons";
+import { useYu3PortalContainer } from "../layout/Yu3PortalContext";
 
-export const DropdownMenu = DM.Root
-export const DropdownMenuTrigger = DM.Trigger
-export const DropdownMenuGroup = DM.Group
-export const DropdownMenuPortal = DM.Portal
-export const DropdownMenuSub = DM.Sub
-export const DropdownMenuRadioGroup = DM.RadioGroup
+export const DropdownMenu = DM.Root;
+export const DropdownMenuTrigger = DM.Trigger;
+export const DropdownMenuGroup = DM.Group;
+export const DropdownMenuPortal = DM.Portal;
+export const DropdownMenuSub = DM.Sub;
+export const DropdownMenuRadioGroup = DM.RadioGroup;
 
 export const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DM.Content>,
   React.ComponentPropsWithoutRef<typeof DM.Content>
->(({ className, sideOffset = 6, align = "start", ...rest }, ref) => (
-  <DM.Portal>
+>(({ className, sideOffset = 6, align = "start", ...rest }, ref) => {
+  const portalContainer = useYu3PortalContainer();
+  return (
+  <DM.Portal container={portalContainer ?? undefined}>
     <DM.Content
       ref={ref}
       sideOffset={sideOffset}
       align={align}
       className={cn(
-        "z-[var(--yu3-z-drawer)]",
-        "bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] rounded-[var(--yu3-r-lg)]",
+        "z-[var(--yu3-z-drawer)] pointer-events-auto",
+        "bg-[var(--yu3-bg-surface,#ffffff)] border border-[var(--yu3-line,#d4cdbb)] rounded-[var(--yu3-r-lg)]",
         "shadow-[var(--yu3-shadow-md)]",
         "min-w-[200px] max-w-[320px] p-1 text-[13px]",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
@@ -34,15 +37,16 @@ export const DropdownMenuContent = React.forwardRef<
       {...rest}
     />
   </DM.Portal>
-))
-DropdownMenuContent.displayName = "DropdownMenuContent"
+  );
+});
+DropdownMenuContent.displayName = "DropdownMenuContent";
 
 export const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DM.Item>,
   React.ComponentPropsWithoutRef<typeof DM.Item> & {
-    icon?: React.ReactNode
-    shortcut?: string
-    danger?: boolean
+    icon?: React.ReactNode;
+    shortcut?: string;
+    danger?: boolean;
   }
 >(({ className, icon, shortcut, danger, children, ...rest }, ref) => (
   <DM.Item
@@ -69,8 +73,8 @@ export const DropdownMenuItem = React.forwardRef<
       </span>
     ) : null}
   </DM.Item>
-))
-DropdownMenuItem.displayName = "DropdownMenuItem"
+));
+DropdownMenuItem.displayName = "DropdownMenuItem";
 
 export const DropdownMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof DM.CheckboxItem>,
@@ -95,8 +99,8 @@ export const DropdownMenuCheckboxItem = React.forwardRef<
     </span>
     <span className="flex-1 truncate">{children}</span>
   </DM.CheckboxItem>
-))
-DropdownMenuCheckboxItem.displayName = "DropdownMenuCheckboxItem"
+));
+DropdownMenuCheckboxItem.displayName = "DropdownMenuCheckboxItem";
 
 export const DropdownMenuLabel = React.forwardRef<
   React.ElementRef<typeof DM.Label>,
@@ -110,8 +114,8 @@ export const DropdownMenuLabel = React.forwardRef<
     )}
     {...rest}
   />
-))
-DropdownMenuLabel.displayName = "DropdownMenuLabel"
+));
+DropdownMenuLabel.displayName = "DropdownMenuLabel";
 
 export const DropdownMenuSeparator = React.forwardRef<
   React.ElementRef<typeof DM.Separator>,
@@ -122,5 +126,5 @@ export const DropdownMenuSeparator = React.forwardRef<
     className={cn("my-1 h-px bg-[var(--yu3-line-subtle)] -mx-1", className)}
     {...rest}
   />
-))
-DropdownMenuSeparator.displayName = "DropdownMenuSeparator"
+));
+DropdownMenuSeparator.displayName = "DropdownMenuSeparator";

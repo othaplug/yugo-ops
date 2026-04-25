@@ -77,7 +77,7 @@ export default function UsersClient({ currentUserId }: UsersClientProps) {
   const adminUsers = users.filter((u) => ["admin","owner","superadmin","manager","coordinator"].includes(u.role)).length;
 
   return (
-    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
+    <div className="w-full min-w-0 py-5 md:py-6 animate-fade-up">
       <div className="mb-6"><BackButton label="Back" /></div>
 
       <div className="flex items-start justify-between mb-8 gap-4">

@@ -23,6 +23,27 @@ import {
 /* ────────── helpers ────────── */
 type Row = Record<string, unknown>;
 
+// Keys that must never appear in the admin pricing UI — these are
+// internal system flags, feature toggles, and migration markers that
+// should live in environment variables or code, not admin-editable config.
+const HIDDEN_KEYS = new Set([
+  "PRICING_DEBUG",
+  "debug_pricing",
+  "feature_flag",
+  "internal_",
+  "migration_",
+  "seed_",
+]);
+
+function isHiddenKey(key: unknown): boolean {
+  if (typeof key !== "string") return false;
+  const lower = key.toLowerCase();
+  for (const prefix of HIDDEN_KEYS) {
+    if (lower === prefix.toLowerCase() || lower.startsWith(prefix.toLowerCase())) return true;
+  }
+  return false;
+}
+
 const PricingAdminContext = React.createContext<{ isSuperAdmin: boolean }>({ isSuperAdmin: false });
 
 function usePricingAdmin() {
@@ -137,7 +158,8 @@ function EditCell({ value, onChange, type = "text", className = "" }: {
 }
 
 /* ────────── Accordion ────────── */
-function Accordion({ title, subtitle, children, defaultOpen = false }: {
+function Accordion({ id, title, subtitle, children, defaultOpen = false }: {
+  id?: string;
   title: string;
   subtitle?: string;
   children: React.ReactNode;
@@ -146,7 +168,8 @@ function Accordion({ title, subtitle, children, defaultOpen = false }: {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div
-      className={`rounded-2xl border transition-all duration-200 ${
+      id={id}
+      className={`rounded-2xl border transition-all duration-200 scroll-mt-20 ${
         open
           ? "border-[var(--gold)]/40 bg-[var(--card)] shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_4px_24px_rgba(0,0,0,0.18)]"
           : "border-[var(--brd)] bg-[var(--card)] hover:border-[var(--gold)]/20 hover:shadow-md"
@@ -204,8 +227,10 @@ function useSection(section: string) {
     setLoading(true);
     try {
       const data = await fetchSection(section);
-      setRows(data);
-      setPrev(data);
+      // Strip internal/debug keys from admin display
+      const visible = data.filter((r) => !isHiddenKey(r.key));
+      setRows(visible);
+      setPrev(visible);
     } catch (e) {
       toast(e instanceof Error ? e.message : "Failed to load " + section, "x");
     }
@@ -308,14 +333,56 @@ function Skeleton() {
 }
 
 /* ────────── ANALYTICS ────────── */
+const DEFAULT_PRICING_ANALYTICS: Record<string, string | number | Record<string, unknown>> = {
+  quotesSent: 0,
+  movesLast30: 0,
+  conversionRate: 0,
+  avgQuoteAmount: 0,
+  mostQuotedTier: "",
+  highestConvertingHood: "",
+  topLostReason: "",
+}
+
+function normalizePricingAnalyticsJson(raw: unknown): Record<string, string | number | Record<string, unknown>> {
+  if (!raw || typeof raw !== "object" || (raw as { error?: string }).error) {
+    return { ...DEFAULT_PRICING_ANALYTICS }
+  }
+  const o = raw as Record<string, unknown>
+  return {
+    ...DEFAULT_PRICING_ANALYTICS,
+    quotesSent: Number(o.quotesSent) || 0,
+    movesLast30: Number(o.movesLast30) || 0,
+    conversionRate: Number(o.conversionRate) || 0,
+    avgQuoteAmount: Number(o.avgQuoteAmount) || 0,
+    mostQuotedTier: o.mostQuotedTier != null ? String(o.mostQuotedTier) : "",
+    highestConvertingHood: o.highestConvertingHood != null ? String(o.highestConvertingHood) : "",
+    topLostReason: o.topLostReason != null ? String(o.topLostReason) : "",
+    ...(o.labourAnalytics && typeof o.labourAnalytics === "object"
+      ? { labourAnalytics: o.labourAnalytics as Record<string, unknown> }
+      : {}),
+  }
+}
+
 function AnalyticsDashboard() {
-  const [data, setData] = useState<Record<string, string | number> | null>(null);
+  const [data, setData] = useState<Record<string, string | number | Record<string, unknown>>>(() => ({
+    ...DEFAULT_PRICING_ANALYTICS,
+  }));
 
   useEffect(() => {
-    fetch("/api/admin/pricing/analytics").then((r) => r.ok ? r.json() : null).then(setData).catch(() => {});
+    let cancelled = false
+    void fetch("/api/admin/pricing/analytics", { credentials: "same-origin", cache: "no-store" })
+      .then(async (r) => {
+        const raw = (await r.json().catch(() => ({}))) as unknown
+        if (cancelled) return
+        setData(normalizePricingAnalyticsJson(r.ok ? raw : { error: "unavailable" }))
+      })
+      .catch(() => {
+        if (!cancelled) setData({ ...DEFAULT_PRICING_ANALYTICS })
+      })
+    return () => {
+      cancelled = true
+    }
   }, []);
-
-  if (!data) return null;
 
   const la = data.labourAnalytics as
     | {
@@ -329,13 +396,28 @@ function AnalyticsDashboard() {
       }
     | undefined
 
-  const metrics = [
-    { label: "Quotes (30d)", value: data.quotesSent || 0 },
+  const movesN = Number(data.movesLast30) || 0
+  const qN = Number(data.quotesSent) || 0
+  const metrics: { label: string; value: string | number }[] = [
+    { label: "Quotes (30d)", value: qN },
+    { label: "Moves (30d)", value: movesN },
     { label: "Conversion", value: `${data.conversionRate || 0}%` },
-    { label: "Avg Quote", value: currency(Number(data.avgQuoteAmount) || 0) },
-    { label: "Top Tier", value: TIER_LABEL[String(data.mostQuotedTier || "")] || String(data.mostQuotedTier || "-") },
-    { label: "Best Hood", value: data.highestConvertingHood || "-" },
-    { label: "Lost Reason", value: data.topLostReason || "-" },
+    {
+      label: "Avg quote",
+      value: qN > 0 ? currency(Number(data.avgQuoteAmount) || 0) : "$0",
+    },
+    {
+      label: "Top tier",
+      value:
+        qN > 0
+          ? TIER_LABEL[String(data.mostQuotedTier || "")] || String(data.mostQuotedTier || "")
+          : "",
+    },
+    {
+      label: "Best hood",
+      value: String(data.highestConvertingHood ?? ""),
+    },
+    { label: "Lost reason", value: String(data.topLostReason ?? "") },
   ];
 
   const labourMetrics =
@@ -357,13 +439,19 @@ function AnalyticsDashboard() {
             label: "Top above-ceiling type",
             value: la.topAboveCeilingService
               ? `${la.topAboveCeilingService.service_type} (${la.topAboveCeilingService.count})`
-              : "—",
+              : "",
           },
         ]
       : [];
 
   return (
     <div className="space-y-4 mb-6">
+      <p className="text-[11px] text-[var(--tx3)] leading-relaxed max-w-3xl">
+        Quote and pricing analytics use{" "}
+        <span className="text-[var(--tx2)] font-medium">quotes created</span> in the last 30 days.{" "}
+        <span className="text-[var(--tx2)] font-medium">Moves (30d)</span> counts new move records in the same window, so
+        you still see recent operations when no new quotes were created.
+      </p>
       <div className="flex flex-wrap gap-px rounded-xl overflow-hidden border border-[var(--brd)] bg-[var(--brd)]">
         {metrics.map((m) => (
           <div
@@ -1798,9 +1886,8 @@ function CustomItemsUsedSection({ onAddToMaster }: { onAddToMaster?: () => void 
       {addModal && (
         <ModalDialogFrame
           zClassName="z-[99999]"
-          yugoGlassChrome
           onBackdropClick={() => setAddModal(null)}
-          panelClassName="yugo-glass-light rounded-xl p-5 w-full max-w-md shadow-xl modal-card"
+          panelClassName="bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] border border-[var(--yu3-line)] shadow-[var(--yu3-shadow-lg)] rounded-[var(--yu3-r-xl)] p-5 w-full max-w-md modal-card"
           role="dialog"
           ariaModal
         >
@@ -3392,117 +3479,247 @@ function BinRentalPricingSection() {
 /* ════════════════════════════════════════
    MAIN EXPORT
    ════════════════════════════════════════ */
+const PRICING_SECTIONS = [
+  { id: "s-base-rates",    label: "Base Rates" },
+  { id: "s-labour",        label: "Labour" },
+  { id: "s-tiers",         label: "Tiers" },
+  { id: "s-neighbourhoods", label: "Neighbourhoods" },
+  { id: "s-access",        label: "Access" },
+  { id: "s-dates",         label: "Dates" },
+  { id: "s-specialty-items", label: "Specialty Items" },
+  { id: "s-single-item",   label: "Single Item" },
+  { id: "s-white-glove",   label: "White Glove" },
+  { id: "s-specialty",     label: "Specialty" },
+  { id: "s-event",         label: "Event" },
+  { id: "s-b2b-oneoff",    label: "B2B One-Off" },
+  { id: "s-deposits",      label: "Deposits" },
+  { id: "s-office",        label: "Office" },
+  { id: "s-addons",        label: "Add-Ons" },
+  { id: "s-inventory-mod", label: "Inventory Mod" },
+  { id: "s-distance",      label: "Distance" },
+  { id: "s-inventory-vol", label: "Inventory Vol" },
+  { id: "s-tier-features", label: "Tier Features" },
+  { id: "s-trucks",        label: "Trucks" },
+  { id: "s-labour-only",   label: "Labour-Only" },
+  { id: "s-bin-rental",    label: "Bin Rental" },
+  { id: "s-b2b-surcharges", label: "B2B Surcharges" },
+  { id: "s-supplies",      label: "Supplies" },
+  { id: "s-engine",        label: "Engine" },
+  { id: "s-calibration",   label: "Calibration" },
+  { id: "s-processing",    label: "Processing" },
+] as const
+
+/** Grouped jump links (every `PRICING_SECTIONS` id must appear exactly once) */
+const PRICING_QUICK_NAV_GROUPS: { title: string; ids: (typeof PRICING_SECTIONS)[number]["id"][] }[] = [
+  {
+    title: "Core residential",
+    ids: [
+      "s-base-rates",
+      "s-labour",
+      "s-tiers",
+      "s-neighbourhoods",
+      "s-access",
+      "s-dates",
+      "s-inventory-mod",
+      "s-inventory-vol",
+      "s-tier-features",
+      "s-deposits",
+    ],
+  },
+  {
+    title: "Services and modalities",
+    ids: [
+      "s-specialty-items",
+      "s-single-item",
+      "s-white-glove",
+      "s-specialty",
+      "s-event",
+      "s-addons",
+      "s-office",
+      "s-labour-only",
+      "s-bin-rental",
+    ],
+  },
+  {
+    title: "B2B and logistics",
+    ids: ["s-b2b-oneoff", "s-b2b-surcharges", "s-distance", "s-trucks"],
+  },
+  {
+    title: "Engine and platform",
+    ids: ["s-supplies", "s-engine", "s-calibration", "s-processing"],
+  },
+]
+
 export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
+  const [jumpNavOpen, setJumpNavOpen] = useState(true)
+
   return (
     <PricingAdminContext.Provider value={{ isSuperAdmin }}>
     <div className="space-y-2.5">
+      {/* Section quick-navigation: grouped, collapsible */}
+      <nav
+        className="mb-1 rounded-2xl border border-[var(--brd)]/60 bg-[var(--card)]/95 backdrop-blur-sm shadow-[0_1px_0_rgba(0,0,0,0.04)] overflow-hidden"
+        aria-label="Jump to pricing section"
+      >
+        <button
+          type="button"
+          id="pricing-jump-nav-toggle"
+          onClick={() => setJumpNavOpen((o) => !o)}
+          aria-expanded={jumpNavOpen}
+          aria-controls="pricing-jump-nav-content"
+          className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-[var(--yu3-wine-wash)]/25 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--yu3-wine)]/35"
+        >
+          <span className="sr-only">{jumpNavOpen ? "Collapse " : "Expand "}</span>
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)]">
+            Jump to section
+          </p>
+          <CaretDown
+            size={16}
+            weight="bold"
+            className={`shrink-0 text-[var(--tx3)] transition-transform duration-200 ${jumpNavOpen ? "rotate-180" : ""}`}
+            aria-hidden
+          />
+        </button>
+        <div
+          id="pricing-jump-nav-content"
+          hidden={!jumpNavOpen}
+          className="px-4 pb-4 border-t border-[var(--brd)]/40"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 pt-3">
+            {PRICING_QUICK_NAV_GROUPS.map((group) => (
+              <div key={group.title} className="min-w-0">
+                <h2 className="text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)] mb-2 pb-1.5 border-b border-[var(--brd)]/45">
+                  {group.title}
+                </h2>
+                <ul className="space-y-0.5">
+                  {group.ids.map((id) => {
+                    const s = PRICING_SECTIONS.find((x) => x.id === id)
+                    if (!s) return null
+                    return (
+                      <li key={id}>
+                        <a
+                          href={`#${id}`}
+                          className="block rounded-md px-1.5 py-1 text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.05em] text-[var(--tx2)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] hover:bg-[var(--yu3-wine-wash)] hover:text-[var(--yu3-wine)]"
+                        >
+                          {s.label}
+                        </a>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      </nav>
+
       <AnalyticsDashboard />
 
-      <Accordion title="Base Rates (Residential)" subtitle={`Move size → base price, crew, hours`} defaultOpen>
+      <Accordion id="s-base-rates" title="Base Rates (Residential)" subtitle="Move size to base price, crew, hours" defaultOpen>
         <BaseRatesSection />
       </Accordion>
 
-      <Accordion title="Labour Pricing" subtitle="Rate per extra mover-hour above baseline (Prompt 89)">
+      <Accordion id="s-labour" title="Labour Pricing" subtitle="Rate per extra mover-hour above baseline">
         <LabourPricingSection />
       </Accordion>
 
-      <Accordion title="Tier Multipliers" subtitle="Essential, Signature, Estate pricing tiers">
+      <Accordion id="s-tiers" title="Tier Multipliers" subtitle="Essential, Signature, Estate pricing tiers">
         <TierMultipliersSection />
       </Accordion>
 
-      <Accordion title="Neighbourhood Tiers" subtitle="Postal code pricing adjustments (GTA)">
+      <Accordion id="s-neighbourhoods" title="Neighbourhood Tiers" subtitle="Postal code pricing adjustments (GTA)">
         <NeighbourhoodsSection />
       </Accordion>
 
-      <Accordion title="Access Surcharges" subtitle="Walk-ups, long carries, parking">
+      <Accordion id="s-access" title="Access Surcharges" subtitle="Walk-ups, long carries, parking">
         <AccessScoresSection />
       </Accordion>
 
-      <Accordion title="Date & Season Factors" subtitle="Day of week, seasonal, urgency multipliers">
+      <Accordion id="s-dates" title="Date & Season Factors" subtitle="Day of week, seasonal, urgency multipliers">
         <DateFactorsSection />
       </Accordion>
 
-      <Accordion title="Specialty Item Surcharges" subtitle="Pianos, pool tables, safes, artwork">
+      <Accordion id="s-specialty-items" title="Specialty Item Surcharges" subtitle="Pianos, pool tables, safes, artwork">
         <SpecialtySurchargesSection />
       </Accordion>
 
-      <Accordion title="Single Item Delivery Rates" subtitle="Category pricing, distance, assembly">
+      <Accordion id="s-single-item" title="Single Item Delivery Rates" subtitle="Category pricing, distance, assembly">
         <SingleItemSection />
       </Accordion>
 
-      <Accordion title="White Glove" subtitle="Declared value premium and floor (uses residential base × tiers)">
+      <Accordion id="s-white-glove" title="White Glove" subtitle="Declared value premium and floor (uses residential base x tiers)">
         <WhiteGlovePricingSection />
       </Accordion>
 
-      <Accordion title="Specialty" subtitle="Project bases, equipment surcharges, crating & climate, used by specialty quotes">
+      <Accordion id="s-specialty" title="Specialty" subtitle="Project bases, equipment surcharges, crating and climate, used by specialty quotes">
         <SpecialtyPricingSection />
       </Accordion>
 
-      <Accordion title="Event" subtitle="Hourly rates, setup fees, return discount, minimum deposit">
+      <Accordion id="s-event" title="Event" subtitle="Hourly rates, setup fees, return discount, minimum deposit">
         <EventPricingSection />
       </Accordion>
 
-      <Accordion title="B2B One-Off" subtitle="Base fee × distance band; pair with B2B surcharges + distance modifiers">
+      <Accordion id="s-b2b-oneoff" title="B2B One-Off" subtitle="Base fee x distance band; pair with B2B surcharges and distance modifiers">
         <B2BOneOffPricingSection />
       </Accordion>
 
-      <Accordion title="Deposit Rules" subtitle="Residential = tier-based (Essential/Signature/Estate). Other types = matrix below">
+      <Accordion id="s-deposits" title="Deposit Rules" subtitle="Residential = tier-based (Essential/Signature/Estate). Other types = matrix below">
         <DepositRulesSection />
       </Accordion>
 
-      <Accordion title="Office / Commercial Rates" subtitle="Per sq ft, workstation, IT equipment">
+      <Accordion id="s-office" title="Office / Commercial Rates" subtitle="Per sq ft, workstation, IT equipment">
         <OfficeRatesSection />
       </Accordion>
 
-      <Accordion title="Add-Ons" subtitle="Optional services, tiered & per-unit pricing">
+      <Accordion id="s-addons" title="Add-Ons" subtitle="Optional services, tiered and per-unit pricing">
         <AddOnsSection />
       </Accordion>
 
-      <Accordion title="Inventory Modifier Floor & Cap" subtitle="Light move discount floor (0.65) and heavy move premium cap (1.50)">
+      <Accordion id="s-inventory-mod" title="Inventory Modifier Floor & Cap" subtitle="Light move discount floor (0.65) and heavy move premium cap (1.50)">
         <InventoryModifierSection />
       </Accordion>
 
-      <Accordion title="Distance Intelligence & Deadhead" subtitle="Short-move discounts, long-distance surcharges, crew deadhead cost">
+      <Accordion id="s-distance" title="Distance Intelligence & Deadhead" subtitle="Short-move discounts, long-distance surcharges, crew deadhead cost">
         <DistanceDeadheadSection />
       </Accordion>
 
-      <Accordion title="Inventory & Volume" subtitle="Item weight scores and volume benchmarks per move size">
+      <Accordion id="s-inventory-vol" title="Inventory & Volume" subtitle="Item weight scores and volume benchmarks per move size">
         <InventoryVolumeSection />
       </Accordion>
 
-      <Accordion title="Tier features & wrapping" subtitle="What's included in each service tier on customer quotes">
+      <Accordion id="s-tier-features" title="Tier features & wrapping" subtitle="What's included in each service tier on customer quotes">
         <TierFeaturesSection />
       </Accordion>
 
-      <Accordion title="Truck fees" subtitle="Per-job truck allocation (all service types that bill by vehicle size)">
+      <Accordion id="s-trucks" title="Truck fees" subtitle="Per-job truck allocation (all service types that bill by vehicle size)">
         <TruckFeesPricingSection />
       </Accordion>
 
-      <Accordion title="Labour-only" subtitle="Per mover-hour, truck, second-visit discount, storage between visits">
+      <Accordion id="s-labour-only" title="Labour-only" subtitle="Per mover-hour, truck, second-visit discount, storage between visits">
         <LabourOnlyPricingSection />
       </Accordion>
 
-      <Accordion title="Bin rental" subtitle="Bundle prices, fleet inventory, delivery, late & missing-bin fees">
+      <Accordion id="s-bin-rental" title="Bin rental" subtitle="Bundle prices, fleet inventory, delivery, late and missing-bin fees">
         <BinRentalPricingSection />
       </Accordion>
 
-      <Accordion title="B2B Surcharges" subtitle="Access and weight surcharges for per-delivery B2B bookings. Day rates do not apply these.">
+      <Accordion id="s-b2b-surcharges" title="B2B Surcharges" subtitle="Access and weight surcharges for per-delivery B2B bookings. Day rates do not apply these.">
         <B2BSurchargesSection />
       </Accordion>
 
-      <Accordion title="Supplies & Crating" subtitle="Estate packing supplies allowance by move size + custom crating rates per piece">
+      <Accordion id="s-supplies" title="Supplies & Crating" subtitle="Estate packing supplies allowance by move size and custom crating rates per piece">
         <SuppliesAndCratingSection />
       </Accordion>
 
-      <Accordion title="Engine Configuration (v2)" subtitle="Market stack cap, tiered labour rates, deadhead, mobilization, cost tracking, minimum hours">
+      <Accordion id="s-engine" title="Engine Configuration (v2)" subtitle="Market stack cap, tiered labour rates, deadhead, mobilization, cost tracking, minimum hours">
         <EngineConfigSection />
       </Accordion>
 
-      <Accordion title="System Learning, Calibration Suggestions" subtitle="AI-generated config proposals based on last 30 completed jobs per category">
+      <Accordion id="s-calibration" title="System Learning, Calibration Suggestions" subtitle="AI-generated config proposals based on last 30 completed jobs per category">
         <CalibrationSection />
       </Accordion>
 
-      <Accordion title="Payment & Processing Recovery" subtitle="Credit card fee recovery baked into tier prices, invisible to clients">
+      <Accordion id="s-processing" title="Payment & Processing Recovery" subtitle="Credit card fee recovery baked into tier prices, invisible to clients">
         <ProcessingRecoverySection />
       </Accordion>
     </div>
@@ -3893,7 +4110,7 @@ function CalibrationSection() {
 
       {/* Dismiss reason modal */}
       {dismissModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-6 max-w-md w-full shadow-2xl">
             <h3 className="text-[15px] font-bold text-[var(--tx)] mb-2">Dismiss suggestion</h3>
             <p className="text-[12px] text-[var(--tx3)] mb-4">Optional: add a reason so the system learns what to ignore.</p>

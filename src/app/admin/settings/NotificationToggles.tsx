@@ -189,7 +189,7 @@ export default function NotificationToggles() {
                         onClick={() => toggleChannel(event.event_slug, "email")}
                         className={`w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-base)] transition-all ${
                           pref.email_enabled
-                            ? "bg-[var(--gold)]/20 text-[var(--gold)]"
+                            ? "bg-[var(--gold)]/20 text-[var(--accent-text)]"
                             : "bg-[var(--bg)] text-[var(--tx3)] opacity-40 hover:opacity-70"
                         }`}
                         title={`Email: ${pref.email_enabled ? "ON" : "OFF"}`}
@@ -203,7 +203,7 @@ export default function NotificationToggles() {
                         onClick={() => toggleChannel(event.event_slug, "sms")}
                         className={`w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-base)] transition-all ${
                           pref.sms_enabled
-                            ? "bg-[var(--gold)]/20 text-[var(--gold)]"
+                            ? "bg-[var(--gold)]/20 text-[var(--accent-text)]"
                             : "bg-[var(--bg)] text-[var(--tx3)] opacity-40 hover:opacity-70"
                         }`}
                         title={`SMS: ${pref.sms_enabled ? "ON" : "OFF"}`}
@@ -217,7 +217,7 @@ export default function NotificationToggles() {
                         onClick={() => toggleChannel(event.event_slug, "push")}
                         className={`w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-base)] transition-all ${
                           pref.push_enabled
-                            ? "bg-[var(--gold)]/20 text-[var(--gold)]"
+                            ? "bg-[var(--gold)]/20 text-[var(--accent-text)]"
                             : "bg-[var(--bg)] text-[var(--tx3)] opacity-40 hover:opacity-70"
                         }`}
                         title={`Push: ${pref.push_enabled ? "ON" : "OFF"}`}

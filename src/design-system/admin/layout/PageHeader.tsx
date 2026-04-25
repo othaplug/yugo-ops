@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "../lib/cn"
+import * as React from "react";
+import { cn } from "../lib/cn";
 
 export interface PageHeaderProps {
-  eyebrow?: React.ReactNode
-  title: React.ReactNode
-  description?: React.ReactNode
-  meta?: React.ReactNode
-  actions?: React.ReactNode
-  tabs?: React.ReactNode
-  variant?: "default" | "hero"
-  className?: string
+  eyebrow?: React.ReactNode;
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  meta?: React.ReactNode;
+  actions?: React.ReactNode;
+  tabs?: React.ReactNode;
+  variant?: "default" | "hero";
+  className?: string;
 }
 
 export function PageHeader({
@@ -34,9 +34,7 @@ export function PageHeader({
     >
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
         <div className="min-w-0 flex-1">
-          {eyebrow ? (
-            <div className="yu3-t-eyebrow mb-2">{eyebrow}</div>
-          ) : null}
+          {eyebrow ? <div className="yu3-t-eyebrow mb-2">{eyebrow}</div> : null}
           <h1
             className={cn(
               variant === "hero" ? "yu3-t-display" : "yu3-t-page",
@@ -62,14 +60,11 @@ export function PageHeader({
       </div>
       {tabs ? <div className="mt-1">{tabs}</div> : null}
     </div>
-  )
+  );
 }
 
 export function PageMetaDivider() {
   return (
-    <span
-      className="inline-block h-3 w-px bg-[var(--yu3-line)]"
-      aria-hidden
-    />
-  )
+    <span className="inline-block h-3 w-px bg-[var(--yu3-line)]" aria-hidden />
+  );
 }

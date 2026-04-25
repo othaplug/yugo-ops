@@ -23,7 +23,11 @@ export default function CrewLayout({ children }: { children: ReactNode }) {
   return (
     <CrewThemeProvider>
       <CrewCssVarsBridge />
-      <div className="crew-app min-h-dvh w-full max-w-full min-w-0 overflow-x-clip">
+      <div
+        className="crew-app min-h-dvh w-full max-w-full min-w-0 overflow-x-clip"
+        data-yugo-admin-v3=""
+        data-theme="light"
+      >
         <CrewRouteLightLock />
         <CrewLocalPreferencesHydration />
         <CrewAlwaysOnLocation />

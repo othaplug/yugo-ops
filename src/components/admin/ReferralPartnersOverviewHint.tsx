@@ -27,7 +27,7 @@ export function ReferralPartnersOverviewHint({
         (tenant moves, renovations), manage partners under{" "}
         <Link
           href="/admin/partners"
-          className="font-semibold text-[#6e2442] underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6e2442]/35 rounded-sm"
+          className="rounded-sm font-semibold text-[var(--yu3-wine)] underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)]/30"
         >
           Partners
         </Link>

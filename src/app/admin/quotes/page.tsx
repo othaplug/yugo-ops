@@ -5,7 +5,7 @@ export const revalidate = 0;
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSuperAdminEmail } from "@/lib/super-admin";
-import QuotesListClient from "./QuotesListClient";
+import QuotesListV3Client from "./QuotesListV3Client";
 
 export default async function QuotesPage() {
   const supabase = await createClient();
@@ -30,7 +30,7 @@ export default async function QuotesPage() {
   }
 
   return (
-    <QuotesListClient
+    <QuotesListV3Client
       isSuperAdmin={isSuperAdmin}
       quotes={(quotes || []).map((q) => ({ ...q, client_name: contactMap[q.contact_id] || "" }))}
     />

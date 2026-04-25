@@ -6,6 +6,7 @@ import { X, Lock } from "@phosphor-icons/react";
 import { getDisplayLabel } from "@/lib/displayLabels";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
+import { partnerModalPanelClass } from "@/components/partner/PartnerChrome";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
 interface Delivery {
@@ -109,9 +110,9 @@ export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved
   const modalContent = (
     <ModalDialogFrame
       zClassName="z-[99999]"
-      backdropClassName="bg-black/50"
+      backdropClassName=""
       onBackdropClick={onClose}
-      panelClassName="yugo-glass-light rounded-t-lg sm:rounded-lg shadow-[0_24px_80px_rgba(44,62,45,0.14)] border border-[#2C3E2D]/10 w-full max-w-[540px] overflow-y-auto mx-0 sm:mx-4 sheet-card sm:modal-card"
+      panelClassName={`${partnerModalPanelClass} w-full max-w-[540px] overflow-y-auto mx-0 sm:mx-4 sheet-card sm:modal-card`}
       panelStyle={{ maxHeight: "min(90dvh, 90vh)" }}
     >
         <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 flex items-center justify-between">

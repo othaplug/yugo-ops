@@ -10,7 +10,7 @@
  * Marking this module client-side ensures any transitive import in a
  * Server Component is treated as a client reference rather than evaluated.
  */
-"use client"
+"use client";
 
 export {
   // Navigation / chrome
@@ -18,7 +18,9 @@ export {
   MagnifyingGlass,
   Bell,
   Gear,
+  GearSix,
   Plus,
+  Question,
   CaretLeft,
   CaretRight,
   CaretDown,
@@ -76,6 +78,9 @@ export {
   ChartBar,
   ChartLine,
   ChartPie,
+  MapTrifold,
+  SquaresFour,
+  HardHat,
   Pulse,
   CreditCard,
   Envelope,
@@ -104,7 +109,8 @@ export {
   ArrowSquareOut,
   Sun,
   Moon,
-} from "@phosphor-icons/react"
+  SignOut,
+} from "@phosphor-icons/react";
 
 /** Default icon sizes used across v3. */
 export const ICON_SIZE = {
@@ -114,12 +120,12 @@ export const ICON_SIZE = {
   lg: 18,
   xl: 20,
   "2xl": 24,
-} as const
+} as const;
 
-export type IconSize = keyof typeof ICON_SIZE
+export type IconSize = keyof typeof ICON_SIZE;
 
 /** Tiny trailing chevron for forward-action buttons. */
-export { CaretDown as ChevronDown } from "@phosphor-icons/react"
+export { CaretDown as ChevronDown } from "@phosphor-icons/react";
 
 /** Default weight used everywhere — no bold icons by policy. */
-export const ICON_WEIGHT = "regular" as const
+export const ICON_WEIGHT = "regular" as const;

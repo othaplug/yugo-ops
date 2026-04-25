@@ -18,7 +18,7 @@ const OVERRIDE_REASONS = [
 function getBalanceStatus(move: any): { label: string; color: string } { // eslint-disable-line @typescript-eslint/no-explicit-any
   const balanceAmount = Number(move.balance_amount || 0);
   if (balanceAmount > 0 && move.balance_paid_at) {
-    return { label: "Additional balance due", color: "text-[var(--gold)]" };
+    return { label: "Additional balance due", color: "text-[var(--accent-text)]" };
   }
   if (move.balance_paid_at) {
     if (move.balance_method === "card") return { label: "Card charged", color: "text-[var(--grn)]" };
@@ -32,7 +32,7 @@ function getBalanceStatus(move: any): { label: string; color: string } { // esli
     if (hoursUntil < 24) return { label: "Overdue", color: "text-[var(--red)]" };
   }
 
-  return { label: "Pending", color: "text-[var(--gold)]" };
+  return { label: "Pending", color: "text-[var(--accent-text)]" };
 }
 
 export default function BalancePaymentSection({ move, onUpdate }: BalancePaymentSectionProps) {
@@ -130,7 +130,7 @@ export default function BalancePaymentSection({ move, onUpdate }: BalancePayment
               type="button"
               onClick={handleChargeCard}
               disabled={loading !== null}
-              className="text-[10px] font-semibold px-3 py-1.5 rounded-md bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/40 hover:bg-[var(--gold)]/25 transition-colors disabled:opacity-50"
+              className="text-[10px] font-semibold px-3 py-1.5 rounded-md bg-[var(--gold)]/15 text-[var(--accent-text)] border border-[var(--gold)]/40 hover:bg-[var(--gold)]/25 transition-colors disabled:opacity-50"
             >
               {loading === "card" ? "Charging…" : "Charge Card Now"}
             </button>

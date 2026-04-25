@@ -118,7 +118,7 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
   const inputClass = selectClass;
 
   return (
-    <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5 bg-black/60">
+    <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5 modal-overlay">
       <div className="relative w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl border border-[var(--brd)] bg-[var(--card)] shadow-2xl animate-slide-up sm:animate-none" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <button
           onClick={onClose}
@@ -153,7 +153,7 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
                   Cancel move for {move.client_name || "this client"}?
                 </h2>
                 {move.move_code && (
-                  <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-[var(--gold)]/10 text-[var(--gold)]">
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-[var(--gold)]/10 text-[var(--accent-text)]">
                     {move.move_code}
                   </span>
                 )}
@@ -266,7 +266,7 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
               )}
 
               {!move.square_payment_id && refundType !== "none" && (
-                <div className="rounded-lg px-4 py-3 mb-5 text-[12px] border bg-[var(--gold)]/5 border-[var(--gold)]/20 text-[var(--gold)]">
+                <div className="rounded-lg px-4 py-3 mb-5 text-[12px] border bg-[var(--gold)]/5 border-[var(--gold)]/20 text-[var(--accent-text)]">
                   No Square payment on file. Refund will be recorded but not processed automatically.
                 </div>
               )}

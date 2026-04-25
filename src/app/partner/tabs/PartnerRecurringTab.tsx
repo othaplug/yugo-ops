@@ -10,6 +10,7 @@ import {
   formatPartnerRecurringTimeWindow,
   LEGACY_PARTNER_RECURRING_TIME_WINDOW_OPTIONS,
 } from "@/lib/time-windows";
+import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme";
 
 /* ─── Types ─────────────────────────────────────── */
 interface RecurringSchedule {
@@ -127,13 +128,12 @@ function ScheduleModal({
   return (
     <div
       data-modal-root
-      data-yugo-glass-modal
       className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5"
       role="presentation"
     >
       <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={onClose} />
-      <div
-        className="relative z-10 yugo-glass-light rounded-t-lg sm:rounded-lg w-full sm:max-w-[520px] shadow-[0_24px_80px_rgba(44,62,45,0.14)] border border-[#2C3E2D]/10 max-h-[92dvh] flex flex-col overflow-hidden animate-slide-up sm:animate-none modal-card"
+      <Yu3PortaledTokenRoot
+        className="relative z-10 w-full max-h-[92dvh] sm:max-w-[520px] flex flex-col overflow-hidden rounded-t-[var(--yu3-r-lg)] sm:rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] animate-slide-up sm:animate-none modal-card"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -309,7 +309,7 @@ function ScheduleModal({
             {saving ? "Saving…" : isEdit ? "Save changes" : "Create schedule"}
           </button>
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>
   );
 }

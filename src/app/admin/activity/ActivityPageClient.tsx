@@ -87,7 +87,7 @@ export default function ActivityPageClient({
   const visible = events;
 
   return (
-    <div className="max-w-[720px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
+    <div className="w-full min-w-0 py-4 sm:py-5 md:py-6 animate-fade-up">
       <div className="flex items-center gap-3 mb-6">
         <BackButton href="/admin" />
         <div className="flex items-center gap-2 min-w-0">
@@ -110,7 +110,7 @@ export default function ActivityPageClient({
               className="group block rounded-xl border border-[var(--brd)]/25 bg-[var(--card)]/50 px-3 py-3 sm:px-3.5 transition-colors hover:bg-[var(--card)]/80 hover:border-[var(--brd)]/40"
             >
               <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4 min-w-0">
-                <p className="text-[13px] leading-snug font-semibold text-[var(--tx)] group-hover:text-[var(--admin-primary-fill)] transition-colors whitespace-normal line-clamp-6 [overflow-wrap:anywhere]">
+                <p className="text-[13px] leading-snug font-semibold text-[var(--tx)] group-hover:text-[var(--accent-text)] transition-colors whitespace-normal line-clamp-6 [overflow-wrap:anywhere]">
                   {formatActivityDescription(e.description || e.event_type, {
                     truncateAt: null,
                   })}

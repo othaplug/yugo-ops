@@ -21,8 +21,14 @@ import {
 export default async function PlatformPage() {
   const supabase = await createClient();
   const db = createAdminClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: platformUser } = await db.from("platform_users").select("role").eq("user_id", user?.id).single();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: platformUser } = await db
+    .from("platform_users")
+    .select("role")
+    .eq("user_id", user?.id)
+    .single();
   const isSuperAdmin = isSuperAdminEmail(user?.email);
   const isOwner = isSuperAdmin || platformUser?.role === "owner";
   if (!isOwner) redirect("/admin");
@@ -47,17 +53,33 @@ export default async function PlatformPage() {
   const reviewConfigMap: Record<string, string> = {};
   for (const r of reviewConfig ?? []) reviewConfigMap[r.key] = r.value ?? "";
   const initialReviewConfig = {
-    autoReviewRequests: reviewConfigMap.auto_review_requests === "true" || reviewConfigMap.auto_review_requests === "1",
-    googleReviewUrl: reviewConfigMap.google_review_url || "https://g.page/r/CU67iDN6TgMIEB0/review/",
+    autoReviewRequests:
+      reviewConfigMap.auto_review_requests === "true" ||
+      reviewConfigMap.auto_review_requests === "1",
+    googleReviewUrl:
+      reviewConfigMap.google_review_url ||
+      "https://g.page/r/CU67iDN6TgMIEB0/review/",
     googleReviewCountLabel: reviewConfigMap.google_review_count_label || "",
   };
   const initialDisplayDateFormat = normalizeDisplayDateFormatPreset(
-    resolveStoredDateFormat(reviewConfigMap.display_date_format, reviewConfigMap.display_date_locale),
+    resolveStoredDateFormat(
+      reviewConfigMap.display_date_format,
+      reviewConfigMap.display_date_locale,
+    ),
   );
 
-  let crewsResult = await db.from("crews").select("id, name, members, active, phone").order("name");
-  if (crewsResult.error && String(crewsResult.error.message).includes("active")) {
-    crewsResult = await db.from("crews").select("id, name, members").order("name") as typeof crewsResult;
+  let crewsResult = await db
+    .from("crews")
+    .select("id, name, members, active, phone")
+    .order("name");
+  if (
+    crewsResult.error &&
+    String(crewsResult.error.message).includes("active")
+  ) {
+    crewsResult = (await db
+      .from("crews")
+      .select("id, name, members")
+      .order("name")) as typeof crewsResult;
   }
   const crews = crewsResult.data || [];
 
@@ -70,7 +92,11 @@ export default async function PlatformPage() {
     .order("last_active_at", { ascending: false });
   const devicePhoneByTeam: Record<string, string> = {};
   for (const dev of activeDevices || []) {
-    if (dev.default_team_id && dev.phone && !devicePhoneByTeam[dev.default_team_id]) {
+    if (
+      dev.default_team_id &&
+      dev.phone &&
+      !devicePhoneByTeam[dev.default_team_id]
+    ) {
       devicePhoneByTeam[dev.default_team_id] = dev.phone;
     }
   }
@@ -78,26 +104,45 @@ export default async function PlatformPage() {
   const { data: quoteDisplayCfg } = await db
     .from("platform_config")
     .select("key, value")
-    .in("key", [QUOTE_RESIDENTIAL_TIER_FEATURES_KEY, QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY]);
+    .in("key", [
+      QUOTE_RESIDENTIAL_TIER_FEATURES_KEY,
+      QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY,
+    ]);
   const quoteDisplayMap: Record<string, string> = {};
   for (const r of quoteDisplayCfg ?? []) quoteDisplayMap[r.key] = r.value ?? "";
   const initialQuoteResidentialDisplay = {
-    tierFeaturesJson: quoteDisplayMap[QUOTE_RESIDENTIAL_TIER_FEATURES_KEY] ?? "",
-    tierMetaOverridesJson: quoteDisplayMap[QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY] ?? "",
+    tierFeaturesJson:
+      quoteDisplayMap[QUOTE_RESIDENTIAL_TIER_FEATURES_KEY] ?? "",
+    tierMetaOverridesJson:
+      quoteDisplayMap[QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY] ?? "",
   };
 
-  const initialTeams = crews.map((c: { id: string; name: string; members?: unknown[]; active?: boolean; phone?: string }) => ({
-    id: c.id,
-    label: c.name,
-    memberIds: (Array.isArray(c.members) ? c.members : []).map((m: unknown) => {
-      if (m == null) return "";
-      if (typeof m === "string") return m.trim();
-      if (typeof m === "object" && m !== null && "name" in m) return String((m as { name?: unknown }).name ?? "").trim();
-      return String(m).trim();
-    }).filter(Boolean),
-    active: typeof (c as { active?: boolean }).active === "boolean" ? (c as { active: boolean }).active : true,
-    phone: devicePhoneByTeam[c.id] || (c as { phone?: string }).phone || "",
-  }));
+  const initialTeams = crews.map(
+    (c: {
+      id: string;
+      name: string;
+      members?: unknown[];
+      active?: boolean;
+      phone?: string;
+    }) => ({
+      id: c.id,
+      label: c.name,
+      memberIds: (Array.isArray(c.members) ? c.members : [])
+        .map((m: unknown) => {
+          if (m == null) return "";
+          if (typeof m === "string") return m.trim();
+          if (typeof m === "object" && m !== null && "name" in m)
+            return String((m as { name?: unknown }).name ?? "").trim();
+          return String(m).trim();
+        })
+        .filter(Boolean),
+      active:
+        typeof (c as { active?: boolean }).active === "boolean"
+          ? (c as { active: boolean }).active
+          : true,
+      phone: devicePhoneByTeam[c.id] || (c as { phone?: string }).phone || "",
+    }),
+  );
 
   return (
     <div className="flex flex-col gap-4">

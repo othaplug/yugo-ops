@@ -96,7 +96,7 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="mb-1">
-            <span className="text-[11px] font-bold tracking-widest uppercase text-[var(--gold)]">
+            <span className="text-[11px] font-bold tracking-widest uppercase text-[var(--accent-text)]">
               Statement
             </span>
           </div>
@@ -118,7 +118,7 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
       {/* KPI cards */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl p-4 text-center">
-          <div className="text-[22px] font-bold text-[var(--gold)]">
+          <div className="text-[22px] font-bold text-[var(--accent-text)]">
             {deliveries.length}
           </div>
           <div className="text-[10px] text-[var(--tx3)] uppercase tracking-wider mt-1">Deliveries</div>
@@ -130,7 +130,7 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
           <div className="text-[10px] text-[var(--tx3)] uppercase tracking-wider mt-1">Subtotal</div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl p-4 text-center">
-          <div className="text-[22px] font-bold text-[var(--gold)]">
+          <div className="text-[22px] font-bold text-[var(--accent-text)]">
             ${Number(statement.total).toFixed(2)}
           </div>
           <div className="text-[10px] text-[var(--tx3)] uppercase tracking-wider mt-1">Total</div>
@@ -193,7 +193,7 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
                     key={d.id || i}
                     className="border-b border-[var(--brd)]/20 last:border-0"
                   >
-                    <td className="px-4 py-3 text-[12px] font-mono text-[var(--gold)]">
+                    <td className="px-4 py-3 text-[12px] font-mono text-[var(--accent-text)]">
                       {d.number || "-"}
                     </td>
                     <td className="px-4 py-3 text-[12px] text-[var(--tx3)]">
@@ -234,7 +234,7 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
               const url = `${window.location.origin}/partner/statements/${statement.id}/pay`;
               navigator.clipboard.writeText(url).then(() => toast("Pay link copied to clipboard"));
             }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--accent-text)] transition-all"
           >
             <LinkSimple size={14} />
             Copy Pay Link
@@ -242,7 +242,7 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
         )}
         <a
           href={`/admin/partners/${org?.id}/billing`}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--accent-text)] transition-all"
         >
           All Statements
         </a>

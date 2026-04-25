@@ -59,7 +59,7 @@ export default function MoveClientsTableBody({ clients }: { clients: MoveClient[
     return (
       <tr>
         <td colSpan={7} className="px-4 py-12 text-center text-[12px] text-[var(--tx3)]">
-          No move clients yet. <Link href="/admin/clients/new" className="text-[var(--gold)] hover:underline">Add one</Link>
+          No move clients yet. <Link href="/admin/clients/new" className="text-[var(--accent-text)] hover:underline">Add one</Link>
         </td>
       </tr>
     );
@@ -79,7 +79,7 @@ export default function MoveClientsTableBody({ clients }: { clients: MoveClient[
         >
           <td className="pl-4 sm:pl-3 pr-3 py-2 border-b border-[var(--brd)]">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold group-hover:text-[var(--gold)] transition-colors">{c.name}</span>
+              <span className="text-[10px] font-semibold group-hover:text-[var(--accent-text)] transition-colors">{c.name}</span>
               {(() => {
                 const s = (c.move_status || "").toLowerCase();
                 const isActive = ["confirmed", "scheduled", "in_progress"].includes(s);
@@ -101,7 +101,7 @@ export default function MoveClientsTableBody({ clients }: { clients: MoveClient[
             <span className={`inline-flex px-2 py-[2px] rounded text-[10px] font-bold ${
               c.move_status === "completed" ? "bg-[var(--grdim)] text-[var(--grn)]" :
               c.move_status === "cancelled" ? "bg-[var(--rdim)] text-[var(--red)]" :
-              "bg-[var(--gdim)] text-[var(--gold)]"
+              "bg-[var(--gdim)] text-[var(--accent-text)]"
             }`}>
               {(c.move_status || "-").replace("_", " ")}
             </span>
@@ -121,8 +121,8 @@ export default function MoveClientsTableBody({ clients }: { clients: MoveClient[
               </button>
               {menuOpenId === c.id && (
                 <div className="absolute right-0 top-full mt-1 py-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-xl z-[100] min-w-[140px]">
-                  <Link href={`/admin/clients/${c.id}`} className="block w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]" onClick={() => setMenuOpenId(null)}>View</Link>
-                  <Link href={`/admin/clients/${c.id}?edit=1`} className="block w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--gold)]" onClick={() => setMenuOpenId(null)}>Edit</Link>
+                  <Link href={`/admin/clients/${c.id}`} className="block w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--accent-text)]" onClick={() => setMenuOpenId(null)}>View</Link>
+                  <Link href={`/admin/clients/${c.id}?edit=1`} className="block w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--tx2)] hover:bg-[var(--gdim)] hover:text-[var(--accent-text)]" onClick={() => setMenuOpenId(null)}>Edit</Link>
                   <button type="button" onClick={() => { setMenuOpenId(null); setDeleteConfirmId(c.id); }} className="w-full text-left px-3 py-2 text-[10px] font-medium text-[var(--red)] hover:bg-[var(--rdim)]">Delete</button>
                 </div>
               )}

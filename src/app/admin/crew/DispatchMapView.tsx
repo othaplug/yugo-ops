@@ -409,7 +409,7 @@ export default function DispatchMapView() {
                       </div>
                     )}
                     {s.navEtaSeconds != null && s.navEtaSeconds > 0 && (
-                      <div className="text-[10px] text-[var(--gold)] mt-0.5 font-semibold">
+                      <div className="text-[10px] text-[var(--accent-text)] mt-0.5 font-semibold">
                         ETA ~{Math.max(1, Math.round(s.navEtaSeconds / 60))} min
                         {s.navDistanceRemainingM != null && s.navDistanceRemainingM > 0 && (
                           <span className="text-[var(--tx2)] font-normal">
@@ -434,7 +434,7 @@ export default function DispatchMapView() {
                           if (!best) return null;
                           return (
                             <>
-                              <div className="font-semibold text-[var(--gold)]">Route selected</div>
+                              <div className="font-semibold text-[var(--accent-text)]">Route selected</div>
                               <div>
                                 {best.distanceLabel} · ETA {best.etaLabel} · Fuel {best.fuelCostLabel} · Score{" "}
                                 {best.score}
@@ -464,7 +464,7 @@ export default function DispatchMapView() {
                     <div className="text-[9px] text-[var(--tx2)] mt-0.5">
                       Last update: {formatRelative(s.updatedAt)}
                     </div>
-                    <div className="text-[10px] text-[var(--gold)] mt-1">View Job Detail →</div>
+                    <div className="text-[10px] text-[var(--accent-text)] mt-1">View Job Detail →</div>
                   </Link>
                 ))
               )}

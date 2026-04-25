@@ -356,8 +356,8 @@ function ChartTooltip({
           {p.name === "grossMargin"
             ? "Gross Margin"
             : p.name === "avgGP"
-                ? "Avg Gross Profit"
-                : p.name}
+              ? "Avg Gross Profit"
+              : p.name}
           {": "}
           <span className="font-semibold tabular-nums text-[#14532d] dark:text-emerald-300">
             {typeof p.value === "number" &&
@@ -818,7 +818,8 @@ export default function ProfitabilityClient() {
         prev.map((r) => {
           if (r.id !== rowId) return r;
           const updated = { ...r, [field]: newValue, hasOverride: true };
-          const { labour, fuel, truck, supplies, processing, revenue } = updated;
+          const { labour, fuel, truck, supplies, processing, revenue } =
+            updated;
           void processing;
           const totalDirect = labour + fuel + truck + supplies;
           const grossProfit = revenue - totalDirect;
@@ -1213,7 +1214,7 @@ export default function ProfitabilityClient() {
 
   /* ════════════ render ════════════ */
   return (
-    <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-6 animate-fade-up">
+    <div className="w-full min-w-0 py-4 md:py-5 space-y-6 animate-fade-up">
       {/* ─── Header ─── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
@@ -1253,10 +1254,11 @@ export default function ProfitabilityClient() {
             ))}
           </div>
           <button
+            type="button"
             onClick={exportCSV}
-            className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] border border-[var(--brd)] rounded-lg px-3 py-1.5 hover:bg-[var(--bg)] transition-colors"
+            className="admin-btn admin-btn-sm admin-btn-secondary"
           >
-            <Download weight="regular" className="w-3 h-3" /> Export CSV
+            <Download weight="regular" className="w-3.5 h-3.5" /> Export CSV
           </button>
         </div>
       </div>
@@ -1308,7 +1310,9 @@ export default function ProfitabilityClient() {
               value={String(summary?.lowMarginCount ?? 0)}
               sub="Jobs below 25% gross"
               className={
-                summary?.lowMarginCount ? "text-red-800 dark:text-red-400" : "text-emerald-800 dark:text-emerald-400"
+                summary?.lowMarginCount
+                  ? "text-red-800 dark:text-red-400"
+                  : "text-emerald-800 dark:text-emerald-400"
               }
               bgClass={
                 summary?.lowMarginCount
@@ -2111,8 +2115,10 @@ export default function ProfitabilityClient() {
                 </span>
                 {overhead && (
                   <span className="text-[11px] text-[var(--tx3)]">
-                    {formatCurrency(overhead.total)}/mo · ~{formatCurrency(overhead.perMove)} per job
-                    if spread (not deducted from job rows) · break-even ~{overhead.breakEven} jobs
+                    {formatCurrency(overhead.total)}/mo · ~
+                    {formatCurrency(overhead.perMove)} per job if spread (not
+                    deducted from job rows) · break-even ~{overhead.breakEven}{" "}
+                    jobs
                   </span>
                 )}
               </div>
@@ -2125,7 +2131,9 @@ export default function ProfitabilityClient() {
             {showOverhead && (
               <div className="px-5 pb-5 border-t border-[var(--brd)]/40">
                 <p className="text-[10px] text-[var(--tx3)] pt-3 pb-4">
-                  Edit fixed monthly business costs. Job-level gross margin uses labour, truck, fuel, and supplies only. Overhead is for company-wide and break-even modeling, not per-job deductions.
+                  Edit fixed monthly business costs. Job-level gross margin uses
+                  labour, truck, fuel, and supplies only. Overhead is for
+                  company-wide and break-even modeling, not per-job deductions.
                 </p>
                 <OverheadEditor config={overheadConfig} onSaved={fetchData} />
               </div>

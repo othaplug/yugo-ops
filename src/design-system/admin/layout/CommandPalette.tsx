@@ -12,7 +12,8 @@ import {
   Clock,
   ArrowRight,
 } from "../icons"
-import { Dialog, DialogContent, DialogOverlay } from "@radix-ui/react-dialog"
+import * as D from "@radix-ui/react-dialog"
+import { useYu3PortalContainer } from "./Yu3PortalContext"
 
 export interface CommandPaletteProps {
   open: boolean
@@ -26,6 +27,7 @@ export function CommandPalette({
   recent = [],
 }: CommandPaletteProps) {
   const router = useRouter()
+  const portalContainer = useYu3PortalContainer()
   const [query, setQuery] = React.useState("")
 
   const navigate = (href: string) => {
@@ -35,27 +37,29 @@ export function CommandPalette({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogOverlay
-        className={cn(
-          "fixed inset-0 z-[var(--yu3-z-palette)] bg-[var(--yu3-bg-overlay)] backdrop-blur-[2px]",
-          "data-[state=open]:animate-in data-[state=closed]:animate-out",
-          "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
-        )}
-      />
-      <DialogContent
-        className={cn(
-          "fixed left-1/2 top-[12%] -translate-x-1/2 z-[var(--yu3-z-palette)]",
-          "w-[calc(100vw-2rem)] max-w-[640px] outline-none",
-        )}
-        aria-describedby={undefined}
-        onEscapeKeyDown={() => onOpenChange(false)}
-        onPointerDownOutside={() => onOpenChange(false)}
-      >
+    <D.Root open={open} onOpenChange={onOpenChange}>
+      <D.Portal container={portalContainer ?? undefined}>
+        <D.Overlay
+          className={cn(
+            "fixed inset-0 z-[var(--yu3-z-palette)] pointer-events-auto",
+            "bg-[var(--yu3-bg-overlay)] backdrop-blur-sm",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out",
+            "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
+          )}
+        />
+        <D.Content
+          className={cn(
+            "fixed left-1/2 top-[12%] -translate-x-1/2 z-[var(--yu3-z-palette)] pointer-events-auto",
+            "w-[calc(100vw-2rem)] max-w-[640px] outline-none",
+          )}
+          aria-describedby={undefined}
+          onEscapeKeyDown={() => onOpenChange(false)}
+          onPointerDownOutside={() => onOpenChange(false)}
+        >
         <CmdK
           label="Search"
           className={cn(
-            "w-full bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)]",
+            "w-full bg-[var(--yu3-bg-surface,#ffffff)] border border-[var(--yu3-line,#d4cdbb)]",
             "rounded-[var(--yu3-r-xl)] shadow-[var(--yu3-shadow-lg)] overflow-hidden",
           )}
           value={undefined}
@@ -180,7 +184,8 @@ export function CommandPalette({
             </CmdK.Group>
           </CmdK.List>
         </CmdK>
-      </DialogContent>
-    </Dialog>
+        </D.Content>
+      </D.Portal>
+    </D.Root>
   )
 }

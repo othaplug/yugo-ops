@@ -58,7 +58,13 @@ export default function CreateButton({
 
   if (href) {
     return (
-      <Link href={href} title={title} aria-label={title} className={combined}>
+      <Link
+        href={href}
+        title={title}
+        aria-label={title}
+        className={combined}
+        data-yu3-button=""
+      >
         {content}
       </Link>
     );

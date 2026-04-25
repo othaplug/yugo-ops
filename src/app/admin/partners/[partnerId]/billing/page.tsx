@@ -55,7 +55,7 @@ export default async function PartnerBillingPage({
   }
 
   return (
-    <div className="max-w-[900px] mx-auto px-5 md:px-6 py-5">
+    <div className="w-full min-w-0 max-w-[min(900px,100%)] mx-auto py-5">
       <BackButton label="Back to Partner Health" fallback="/admin/partners/health" className="mb-4" />
       <PartnerBillingAdmin org={org} statements={statements ?? []} aging={aging} />
     </div>

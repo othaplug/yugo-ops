@@ -626,7 +626,7 @@ export default function AdminPageClient({
         </div>
       )}
 
-      <div className="max-w-[1200px] mx-auto w-full min-w-0 px-4 sm:px-5 md:px-6 py-5 sm:py-6 md:py-8 animate-fade-up">
+      <div className="w-full min-w-0 py-5 sm:py-6 md:py-8 animate-fade-up">
         {/* ── Header ── */}
         <div className="mb-8 min-w-0">
           <div className="flex items-start justify-between gap-3 sm:gap-4 min-w-0 w-full">
@@ -854,7 +854,7 @@ export default function AdminPageClient({
                 </div>
                 {unassignedJobs.length > 5 && (
                   <Link
-                    href="/admin/dispatch"
+                    href="/admin"
                     className="flex items-center justify-center py-2 text-[10px] font-bold text-amber-400 hover:text-amber-300 transition-colors border-t border-amber-500/10"
                   >
                     View all {unassignedJobs.length} unassigned &rarr;
@@ -1597,7 +1597,7 @@ export default function AdminPageClient({
                     <h2 className="admin-section-h2 min-w-0">Crew Capacity</h2>
                   </div>
                   <Link
-                    href="/admin/dispatch"
+                    href="/admin"
                     className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap"
                   >
                     Dispatch

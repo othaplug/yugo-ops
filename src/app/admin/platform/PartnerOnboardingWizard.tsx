@@ -717,7 +717,7 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
         <div className="px-7 pt-7 pb-6 border-b border-[var(--brd)]/60 shrink-0">
           <div className="flex items-start justify-between mb-6">
             <div>
-              <p className="text-[11px] font-semibold tracking-widest uppercase text-[var(--gold)] mb-1.5">
+              <p className="text-[11px] font-semibold tracking-widest uppercase text-[var(--accent-text)] mb-1.5">
                 Partner Onboarding
               </p>
               <h2 className="font-heading text-[22px] font-bold text-[var(--tx)] leading-tight">
@@ -869,7 +869,7 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
               type="button"
               onClick={() => setStep((s) => s + 1)}
               disabled={!canAdvance()}
-              className="px-6 py-3 rounded-xl text-[13px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all duration-150 disabled:opacity-35 shadow-sm shadow-[var(--gold)]/20"
+              className="admin-btn admin-btn-lg admin-btn-primary"
             >
               Continue
             </button>
@@ -887,7 +887,7 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
                 type="button"
                 onClick={() => { setState((s) => ({ ...s, activationMode: "activate" })); setTimeout(handleSubmit, 0); }}
                 disabled={loading}
-                className="px-6 py-3 rounded-xl text-[13px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all duration-150 disabled:opacity-50 shadow-sm shadow-[var(--gold)]/20"
+                className="admin-btn admin-btn-lg admin-btn-primary"
               >
                 {loading ? "Activating…" : "Activate Partner"}
               </button>
@@ -1299,8 +1299,8 @@ function Step1BusinessDetails({
               /* External contact found — offer auto-fill */
               <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Icon name="search" className="w-4 h-4 shrink-0 text-[var(--gold)] stroke-[1.75]" aria-hidden />
-                  <p className="text-[12px] font-bold tracking-wide uppercase text-[var(--gold)]">
+                  <Icon name="search" className="w-4 h-4 shrink-0 text-[var(--accent-text)] stroke-[1.75]" aria-hidden />
+                  <p className="text-[12px] font-bold tracking-wide uppercase text-[var(--accent-text)]">
                     Existing Contact Found
                   </p>
                 </div>
@@ -1333,7 +1333,7 @@ function Step1BusinessDetails({
                   <button
                     type="button"
                     onClick={handleAutoFill}
-                    className="px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
+                    className="admin-btn admin-btn-sm admin-btn-primary"
                   >
                     Auto-fill from HubSpot
                   </button>
@@ -1363,7 +1363,7 @@ function Step1BusinessDetails({
 
         {showPm && (
           <div className="col-span-2 rounded-xl border border-[var(--gold)]/25 bg-[var(--gold)]/5 p-5 space-y-5">
-            <p className="text-[11px] font-bold tracking-widest uppercase text-[var(--gold)]">Property management details</p>
+            <p className="text-[11px] font-bold tracking-widest uppercase text-[var(--accent-text)]">Property management details</p>
             {state.pmProperties.map((prop, idx) => (
               <div key={idx} className="space-y-3 pb-4 border-b border-[var(--brd)]/50 last:border-0 last:pb-0">
                 <p className="text-[12px] font-semibold text-[var(--tx)]">Property {idx + 1}</p>
@@ -1526,7 +1526,7 @@ function Step1BusinessDetails({
             <button
               type="button"
               onClick={addPmProperty}
-              className="text-[12px] font-semibold text-[var(--gold)] hover:underline"
+              className="text-[12px] font-semibold text-[var(--accent-text)] hover:underline"
             >
               + Add property
             </button>
@@ -2011,7 +2011,7 @@ function Step2ServicePreferences({
           <button
             type="button"
             onClick={() => update("pickupLocations", [...state.pickupLocations, ""])}
-            className="flex items-center gap-2 text-[12px] font-semibold text-[var(--gold)] hover:opacity-70 transition-opacity mt-1"
+            className="flex items-center gap-2 text-[12px] font-semibold text-[var(--accent-text)] hover:opacity-70 transition-opacity mt-1"
           >
             <Icon name="plus" className="w-3.5 h-3.5" />
             Add another location
@@ -2192,7 +2192,7 @@ function Step3RateCardBilling({
       {/* Card on file, captured after partner is saved; shown as a reminder */}
       <div className="rounded-xl border border-[var(--brd)]/70 p-4 space-y-2 bg-[var(--bg2)]/40">
         <div className="flex items-start gap-3">
-          <Icon name="creditCard" className="w-4 h-4 mt-0.5 shrink-0 text-[var(--gold)]" />
+          <Icon name="creditCard" className="w-4 h-4 mt-0.5 shrink-0 text-[var(--accent-text)]" />
           <div>
             <p className="text-[12px] font-semibold text-[var(--tx)]">Payment Method</p>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">{paymentBlurb}</p>
@@ -2288,7 +2288,7 @@ function Step4PortalAccess({
               <button
                 type="button"
                 onClick={handleGeneratePassword}
-                className="px-4 py-3 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]/50 hover:text-[var(--gold)] transition-all shrink-0"
+                className="px-4 py-3 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]/50 hover:text-[var(--accent-text)] transition-all shrink-0"
               >
                 Generate
               </button>

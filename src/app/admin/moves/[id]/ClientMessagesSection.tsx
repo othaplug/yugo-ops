@@ -16,11 +16,30 @@ function formatMsgTime(iso: string) {
   const d = new Date(iso);
   const now = new Date();
   const today = now.toDateString() === d.toDateString();
-  if (today) return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + ", " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+  if (today)
+    return d.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  return (
+    d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
+    ", " +
+    d.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })
+  );
 }
 
-export default function ClientMessagesSection({ moveId, clientName }: { moveId: string; clientName?: string }) {
+export default function ClientMessagesSection({
+  moveId,
+  clientName,
+}: {
+  moveId: string;
+  clientName?: string;
+}) {
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,12 +57,18 @@ export default function ClientMessagesSection({ moveId, clientName }: { moveId: 
         if (!res.ok) throw new Error(data.error || "Failed to fetch");
         if (!cancelled) setMessages(data.messages ?? []);
       } catch (e) {
-        if (!cancelled) toast(e instanceof Error ? e.message : "Failed to load messages", "alertTriangle");
+        if (!cancelled)
+          toast(
+            e instanceof Error ? e.message : "Failed to load messages",
+            "alertTriangle",
+          );
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [moveId]);
 
   useEffect(() => {
@@ -76,7 +101,9 @@ export default function ClientMessagesSection({ moveId, clientName }: { moveId: 
     }
   };
 
-  const unreadCount = messages.filter((m) => m.sender_type === "client" && !m.is_read).length;
+  const unreadCount = messages.filter(
+    (m) => m.sender_type === "client" && !m.is_read,
+  ).length;
 
   return (
     <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
@@ -101,10 +128,16 @@ export default function ClientMessagesSection({ moveId, clientName }: { moveId: 
             messages.map((m) => (
               <div key={m.id} className="text-[11px]">
                 <span className="font-medium text-[var(--tx2)]">
-                  {m.sender_type === "client" ? (clientName || m.sender_name) : m.sender_name}
+                  {m.sender_type === "client"
+                    ? clientName || m.sender_name
+                    : m.sender_name}
                 </span>
-                <span className="text-[var(--tx3)] ml-1.5">· {formatMsgTime(m.created_at)}</span>
-                <p className="mt-0.5 text-[var(--tx2)] leading-snug whitespace-pre-wrap">{m.content}</p>
+                <span className="text-[var(--tx3)] ml-1.5">
+                  · {formatMsgTime(m.created_at)}
+                </span>
+                <p className="mt-0.5 text-[var(--tx2)] leading-snug whitespace-pre-wrap">
+                  {m.content}
+                </p>
               </div>
             ))
           )}
@@ -112,7 +145,10 @@ export default function ClientMessagesSection({ moveId, clientName }: { moveId: 
         </div>
       )}
 
-      <form onSubmit={handleSend} className="mt-3 pt-3 border-t border-[var(--brd)]/40">
+      <form
+        onSubmit={handleSend}
+        className="mt-3 pt-3 border-t border-[var(--brd)]/40"
+      >
         <div className="flex gap-2">
           <input
             type="text"
@@ -126,7 +162,7 @@ export default function ClientMessagesSection({ moveId, clientName }: { moveId: 
           <button
             type="submit"
             disabled={sending || !reply.trim()}
-            className="rounded-md px-4 py-2 text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="admin-btn admin-btn-sm admin-btn-primary"
           >
             {sending ? "Sending…" : "Send"}
           </button>

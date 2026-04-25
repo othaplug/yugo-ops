@@ -59,8 +59,8 @@ export default async function DesignersPage() {
   ).length;
 
   return (
-    <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
-      <div className="mb-6"><BackButton label="Partners" href="/admin/platform?tab=partners" /></div>
+    <div className="w-full min-w-0 py-5 md:py-6 animate-fade-up">
+      <div className="mb-6"><BackButton label="Partners" href="/admin/platform/workspace?tab=partners" /></div>
 
       <div className="mb-8">
         <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">Partners</p>

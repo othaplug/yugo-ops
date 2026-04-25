@@ -543,7 +543,7 @@ export default function LeadsHubClient({
     "mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/65";
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6">
+    <div className="w-full min-w-0 py-8">
       <header className="mb-8 space-y-2 sm:mb-10">
         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--tx3)]/55">
           Revenue

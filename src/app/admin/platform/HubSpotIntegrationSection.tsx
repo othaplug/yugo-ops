@@ -150,7 +150,7 @@ export default function HubSpotIntegrationSection() {
             type="button"
             onClick={() => void handleSave()}
             disabled={saving}
-            className="px-4 py-2 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:opacity-90 disabled:opacity-60"
+            className="admin-btn admin-btn-primary"
           >
             {saving ? "Saving…" : "Save HubSpot settings"}
           </button>
@@ -158,7 +158,7 @@ export default function HubSpotIntegrationSection() {
             type="button"
             onClick={() => void handleDiagnose()}
             disabled={diagLoading}
-            className="px-4 py-2 rounded-lg border border-[var(--admin-primary-fill)] text-[var(--admin-primary-fill)] text-[12px] font-semibold hover:bg-[var(--admin-primary-fill)]/10 disabled:opacity-60"
+            className="px-4 py-2 rounded-lg border border-[var(--admin-primary-fill)] text-[var(--accent-text)] text-[12px] font-semibold hover:bg-[var(--admin-primary-fill)]/10 disabled:opacity-60"
           >
             {diagLoading ? "Running…" : "Run diagnostic"}
           </button>

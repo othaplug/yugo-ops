@@ -248,7 +248,7 @@ function ProjectDayScheduleForm({
               type="button"
               disabled={saving}
               onClick={() => void handleSave()}
-              className="text-[10px] font-bold uppercase tracking-wide px-3 py-1.5 rounded border border-[var(--admin-primary-fill)] bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:opacity-95 disabled:opacity-50"
+              className="admin-btn admin-btn-sm admin-btn-primary"
             >
               {saving ? "Saving…" : "Save day"}
             </button>

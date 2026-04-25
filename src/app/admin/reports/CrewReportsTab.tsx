@@ -368,7 +368,7 @@ export default function CrewReportsTab({
             >
               <span>{dateLabel}</span>
               {hasActiveFilters && (
-                <span className="dt-badge tracking-[0.04em] text-[var(--admin-primary-fill)] tabular-nums">
+                <span className="dt-badge tracking-[0.04em] text-[var(--accent-text)] tabular-nums">
                   {
                     [filterJobType !== "all", filterTeamId !== "all"].filter(
                       Boolean,
@@ -392,7 +392,7 @@ export default function CrewReportsTab({
                     <button
                       type="button"
                       onClick={() => setFilterOpen(false)}
-                      className="text-[var(--gold)] text-[11px] font-semibold hover:underline"
+                      className="text-[var(--accent-text)] text-[11px] font-semibold hover:underline"
                     >
                       Done
                     </button>
@@ -440,7 +440,7 @@ export default function CrewReportsTab({
                           handleDateRangeApply();
                           setFilterOpen(false);
                         }}
-                        className="mt-2 w-full px-3 py-2 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] font-semibold text-[11px] hover:opacity-90"
+                        className="admin-btn admin-btn-sm admin-btn-primary mt-2 w-full"
                       >
                         Apply range
                       </button>
@@ -487,7 +487,7 @@ export default function CrewReportsTab({
             type="button"
             onClick={exportCSV}
             disabled={filteredReports.length === 0}
-            className="admin-btn admin-btn-ghost text-[var(--tx2)] hover:text-[var(--gold)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="admin-btn admin-btn-ghost text-[var(--tx2)] hover:text-[var(--accent-text)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             CSV
           </button>
@@ -643,7 +643,7 @@ export default function CrewReportsTab({
                                   Signed
                                 </span>
                               )}
-                              <span className="text-[var(--tx3)] group-hover:text-[var(--gold)] transition-colors">
+                              <span className="text-[var(--tx3)] group-hover:text-[var(--accent-text)] transition-colors">
                                 View details →
                               </span>
                             </div>
@@ -683,7 +683,7 @@ export default function CrewReportsTab({
 
       {detailModal && (
         <div
-          className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[99999]"
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 modal-overlay"
           onClick={() => setDetailModal(null)}
         >
           <div
@@ -720,7 +720,7 @@ export default function CrewReportsTab({
                           onClick={() =>
                             openDetail(detailModal.report, detailModal.job)
                           }
-                          className="shrink-0 text-[11px] font-semibold text-[var(--gold)] hover:underline"
+                          className="shrink-0 text-[11px] font-semibold text-[var(--accent-text)] hover:underline"
                         >
                           Retry
                         </button>
@@ -971,7 +971,7 @@ export default function CrewReportsTab({
                             ? `/admin/moves/${detailData.job?.notFound ? detailModal?.job?.jobId : (detailData.job?.displayId ?? "").replace(/^#/, "")}`
                             : `/admin/deliveries/${detailData.job?.notFound ? detailModal?.job?.jobId : encodeURIComponent((detailData.job?.displayId ?? "").replace(/^#/, ""))}`
                         }
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] font-semibold text-[12px] py-2.5 px-4 hover:opacity-90 transition-opacity"
+                        className="admin-btn admin-btn-primary"
                       >
                         Open{" "}
                         {detailData.job?.type === "move" ? "move" : "delivery"}{" "}

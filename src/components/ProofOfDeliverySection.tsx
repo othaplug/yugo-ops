@@ -102,7 +102,7 @@ export default function ProofOfDeliverySection({
           href={`/api/pod/${pod.id}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)]/10 text-[var(--gold)] hover:bg-[var(--gold)]/20 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)]/10 text-[var(--accent-text)] hover:bg-[var(--gold)]/20 transition-colors"
         >
           <Download className="w-3.5 h-3.5" />
           Download PDF
@@ -171,7 +171,7 @@ export default function ProofOfDeliverySection({
             {[1, 2, 3, 4, 5].map((n) => (
               <Star
                 key={n}
-                className={`w-5 h-5 ${n <= pod.satisfaction_rating! ? "text-[var(--gold)] fill-[var(--gold)]" : "text-[var(--brd)]"}`}
+                className={`w-5 h-5 ${n <= pod.satisfaction_rating! ? "text-[var(--accent-text)] fill-[var(--gold)]" : "text-[var(--brd)]"}`}
               />
             ))}
             <span className="text-[12px] font-semibold text-[var(--tx)] ml-1.5">{pod.satisfaction_rating}/5</span>

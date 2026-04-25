@@ -1,7 +1,7 @@
 /**
  * Shared layout/chrome for admin detail toolbars (Edit / Download / Delete and similar rows).
- * Borderless forward actions: DM Sans caps + tracked label, wine/cream ink via `--yugo-primary-text`
- * (no gold hover — see `.cursor/rules/global-button-system.mdc`). Pair with a trailing `CaretRight`
+ * Borderless forward actions: Brown caps and tracked label, wine/cream ink via `--yugo-primary-text`
+ * (no gold hover; see `.cursor/rules/global-button-system.mdc`). Pair with a trailing `CaretRight`
  * on forward-style actions where it fits.
  */
 export const ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS =

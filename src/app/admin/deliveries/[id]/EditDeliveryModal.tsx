@@ -10,8 +10,15 @@ import { usePhoneInput } from "@/hooks/usePhoneInput";
 import ModalOverlay from "../../components/ModalOverlay";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import {
-  MapPin, Calendar, Users, Money as DollarSign, ListBullets as LayoutList,
-  FileText, Clock, Shield, Buildings as Building,
+  MapPin,
+  Calendar,
+  Users,
+  Money as DollarSign,
+  ListBullets as LayoutList,
+  FileText,
+  Clock,
+  Shield,
+  Buildings as Building,
 } from "@phosphor-icons/react";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
@@ -39,23 +46,42 @@ const TIME_OPTIONS = (() => {
 
 const inputCls = "field-input-compact w-full";
 const IN_PROGRESS_STATUSES = [
-  "en_route", "en_route_to_pickup", "arrived_at_pickup", "loading",
-  "en_route_to_destination", "arrived_at_destination", "unloading",
-  "in_progress", "dispatched", "in_transit",
+  "en_route",
+  "en_route_to_pickup",
+  "arrived_at_pickup",
+  "loading",
+  "en_route_to_destination",
+  "arrived_at_destination",
+  "unloading",
+  "in_progress",
+  "dispatched",
+  "in_transit",
 ];
-function isDeliveryInProgress(status: string | null | undefined, stage: string | null | undefined): boolean {
+function isDeliveryInProgress(
+  status: string | null | undefined,
+  stage: string | null | undefined,
+): boolean {
   const s = (status || "").toLowerCase().replace(/-/g, "_");
   const st = (stage || "").toLowerCase().replace(/-/g, "_");
   return IN_PROGRESS_STATUSES.includes(s) || IN_PROGRESS_STATUSES.includes(st);
 }
 const selectCls = `${inputCls} appearance-none`;
-const labelCls = "block text-[9px] font-bold tracking-[0.1em] uppercase text-[var(--tx3)] mb-1.5";
+const labelCls =
+  "block text-[9px] font-bold tracking-[0.1em] uppercase text-[var(--tx3)] mb-1.5";
 
-function SectionHeader({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
+function SectionHeader({
+  icon: Icon,
+  label,
+}: {
+  icon: React.ElementType;
+  label: string;
+}) {
   return (
     <div className="flex items-center gap-2 pb-2 border-b border-[var(--brd)]/30 mb-3">
       <Icon className="w-3.5 h-3.5 text-[var(--gold)]" />
-      <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx2)]">{label}</span>
+      <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx2)]">
+        {label}
+      </span>
     </div>
   );
 }
@@ -73,18 +99,38 @@ interface EditDeliveryModalProps {
   onSaved?: (updated: any) => void;
 }
 
-export default function EditDeliveryModal({ delivery, organizations = [], crews = [], open: controlledOpen, onOpenChange, onSaved }: EditDeliveryModalProps) {
+export default function EditDeliveryModal({
+  delivery,
+  organizations = [],
+  crews = [],
+  open: controlledOpen,
+  onOpenChange,
+  onSaved,
+}: EditDeliveryModalProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
-  const setOpen = (v: boolean) => { onOpenChange?.(v); if (controlledOpen === undefined) setInternalOpen(v); };
+  const setOpen = (v: boolean) => {
+    onOpenChange?.(v);
+    if (controlledOpen === undefined) setInternalOpen(v);
+  };
   const [loading, setLoading] = useState(false);
-  const [pickupAddress, setPickupAddress] = useState(delivery?.pickup_address ?? "");
-  const [deliveryAddress, setDeliveryAddress] = useState(delivery?.delivery_address ?? "");
+  const [pickupAddress, setPickupAddress] = useState(
+    delivery?.pickup_address ?? "",
+  );
+  const [deliveryAddress, setDeliveryAddress] = useState(
+    delivery?.delivery_address ?? "",
+  );
   const [quotedPrice, setQuotedPrice] = useState("");
   const [crewId, setCrewId] = useState(delivery?.crew_id || "");
-  const [deliveryAccess, setDeliveryAccess] = useState(delivery?.delivery_access || "elevator");
-  const [itemWeightCategory, setItemWeightCategory] = useState(delivery?.item_weight_category || "standard");
-  const [customerPhone, setCustomerPhone] = useState(delivery?.customer_phone ? formatPhone(delivery.customer_phone) : "");
+  const [deliveryAccess, setDeliveryAccess] = useState(
+    delivery?.delivery_access || "elevator",
+  );
+  const [itemWeightCategory, setItemWeightCategory] = useState(
+    delivery?.item_weight_category || "standard",
+  );
+  const [customerPhone, setCustomerPhone] = useState(
+    delivery?.customer_phone ? formatPhone(delivery.customer_phone) : "",
+  );
   const customerPhoneInput = usePhoneInput(customerPhone, setCustomerPhone);
   const router = useRouter();
   const { toast } = useToast();
@@ -97,7 +143,9 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
       setDeliveryAddress(delivery.delivery_address ?? "");
       setQuotedPrice(formatNumberInput(effectivePrice) || "");
       setCrewId(delivery.crew_id || "");
-      setCustomerPhone(delivery.customer_phone ? formatPhone(delivery.customer_phone) : "");
+      setCustomerPhone(
+        delivery.customer_phone ? formatPhone(delivery.customer_phone) : "",
+      );
       setDeliveryAccess(delivery.delivery_access || "elevator");
       setItemWeightCategory(delivery.item_weight_category || "standard");
     }
@@ -108,13 +156,18 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
     setLoading(true);
     const form = new FormData(e.currentTarget);
     const itemsRaw = (form.get("items") as string) || "";
-    const items = itemsRaw.split("\n").filter((i) => i.trim()).map((line) => {
-      const pipeMatch = line.match(/^(.+?)\s*\|\s*(\d+)$/);
-      if (pipeMatch) return { name: pipeMatch[1].trim(), qty: parseInt(pipeMatch[2], 10) };
-      const xMatch = line.match(/^(.+?)\s+x(\d+)$/i);
-      if (xMatch) return { name: xMatch[1].trim(), qty: parseInt(xMatch[2], 10) };
-      return { name: line.trim(), qty: 1 };
-    });
+    const items = itemsRaw
+      .split("\n")
+      .filter((i) => i.trim())
+      .map((line) => {
+        const pipeMatch = line.match(/^(.+?)\s*\|\s*(\d+)$/);
+        if (pipeMatch)
+          return { name: pipeMatch[1].trim(), qty: parseInt(pipeMatch[2], 10) };
+        const xMatch = line.match(/^(.+?)\s+x(\d+)$/i);
+        if (xMatch)
+          return { name: xMatch[1].trim(), qty: parseInt(xMatch[2], 10) };
+        return { name: line.trim(), qty: 1 };
+      });
 
     const orgId = (form.get("organization_id") as string)?.trim() || null;
 
@@ -142,7 +195,10 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
           status: form.get("status") || delivery.status,
           special_handling: !!form.get("special_handling"),
           organization_id: orgId || null,
-          client_name: orgId ? (organizations.find((o) => o.id === orgId)?.name ?? delivery.client_name) : delivery.client_name,
+          client_name: orgId
+            ? (organizations.find((o) => o.id === orgId)?.name ??
+              delivery.client_name)
+            : delivery.client_name,
           crew_id: crewId || null,
           updated_at: new Date().toISOString(),
         }),
@@ -181,33 +237,66 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
   }
 
   return (
-    <ModalOverlay open={open} onClose={() => setOpen(false)} title={`Edit ${delivery.delivery_number}`} maxWidth="md">
-      <form onSubmit={handleSave} className="p-5 space-y-5 max-h-[75vh] overflow-y-auto">
-
+    <ModalOverlay
+      open={open}
+      onClose={() => setOpen(false)}
+      title={`Edit ${delivery.delivery_number}`}
+      maxWidth="md"
+    >
+      <form
+        onSubmit={handleSave}
+        className="p-5 space-y-5 max-h-[75vh] overflow-y-auto"
+      >
         {/* ── Client & Customer ── */}
         <div>
           <SectionHeader icon={Building} label="Client & Customer" />
           {organizations.length > 0 && (
             <div className="mb-3">
               <label className={labelCls}>Client / Partner</label>
-              <select name="organization_id" className={selectCls} defaultValue={delivery.organization_id || ""}>
+              <select
+                name="organization_id"
+                className={selectCls}
+                defaultValue={delivery.organization_id || ""}
+              >
                 <option value="">- None -</option>
-                {organizations.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                {organizations.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name}
+                  </option>
+                ))}
               </select>
             </div>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelCls}>Customer Name</label>
-              <input name="customer_name" defaultValue={delivery.customer_name} className={inputCls} placeholder="Full name" />
+              <input
+                name="customer_name"
+                defaultValue={delivery.customer_name}
+                className={inputCls}
+                placeholder="Full name"
+              />
             </div>
             <div>
               <label className={labelCls}>Email</label>
-              <input name="customer_email" type="email" defaultValue={delivery.customer_email} className={inputCls} placeholder="email@example.com" />
+              <input
+                name="customer_email"
+                type="email"
+                defaultValue={delivery.customer_email}
+                className={inputCls}
+                placeholder="email@example.com"
+              />
             </div>
             <div>
               <label className={labelCls}>Phone</label>
-              <input ref={customerPhoneInput.ref} type="tel" value={customerPhone} onChange={customerPhoneInput.onChange} placeholder={PHONE_PLACEHOLDER} className={inputCls} />
+              <input
+                ref={customerPhoneInput.ref}
+                type="tel"
+                value={customerPhone}
+                onChange={customerPhoneInput.onChange}
+                placeholder={PHONE_PLACEHOLDER}
+                className={inputCls}
+              />
             </div>
           </div>
         </div>
@@ -223,8 +312,19 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
               </div>
               <div className="flex-1">
                 <label className={labelCls}>Pickup</label>
-                <AddressAutocomplete value={pickupAddress} onRawChange={setPickupAddress} onChange={(r) => setPickupAddress(r.fullAddress)} placeholder="Pickup address" label="" className={inputCls} />
-                <input type="hidden" name="pickup_address" value={pickupAddress} />
+                <AddressAutocomplete
+                  value={pickupAddress}
+                  onRawChange={setPickupAddress}
+                  onChange={(r) => setPickupAddress(r.fullAddress)}
+                  placeholder="Pickup address"
+                  label=""
+                  className={inputCls}
+                />
+                <input
+                  type="hidden"
+                  name="pickup_address"
+                  value={pickupAddress}
+                />
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -233,8 +333,19 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
               </div>
               <div className="flex-1">
                 <label className={labelCls}>Delivery</label>
-                <AddressAutocomplete value={deliveryAddress} onRawChange={setDeliveryAddress} onChange={(r) => setDeliveryAddress(r.fullAddress)} placeholder="Delivery address" label="" className={inputCls} />
-                <input type="hidden" name="delivery_address" value={deliveryAddress} />
+                <AddressAutocomplete
+                  value={deliveryAddress}
+                  onRawChange={setDeliveryAddress}
+                  onChange={(r) => setDeliveryAddress(r.fullAddress)}
+                  placeholder="Delivery address"
+                  label=""
+                  className={inputCls}
+                />
+                <input
+                  type="hidden"
+                  name="delivery_address"
+                  value={deliveryAddress}
+                />
               </div>
             </div>
           </div>
@@ -246,26 +357,53 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelCls}>Date</label>
-              <input name="scheduled_date" type="date" defaultValue={delivery.scheduled_date} className={inputCls} />
+              <input
+                name="scheduled_date"
+                type="date"
+                defaultValue={delivery.scheduled_date}
+                className={inputCls}
+              />
             </div>
             <div>
               <label className={labelCls}>Time Slot</label>
-              <select name="time_slot" defaultValue={delivery.time_slot || ""} className={selectCls}>
+              <select
+                name="time_slot"
+                defaultValue={delivery.time_slot || ""}
+                className={selectCls}
+              >
                 <option value="">Select time…</option>
-                {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-                {delivery.time_slot && !TIME_OPTIONS.includes(delivery.time_slot) && (
-                  <option value={delivery.time_slot}>{delivery.time_slot}</option>
-                )}
+                {TIME_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+                {delivery.time_slot &&
+                  !TIME_OPTIONS.includes(delivery.time_slot) && (
+                    <option value={delivery.time_slot}>
+                      {delivery.time_slot}
+                    </option>
+                  )}
               </select>
             </div>
             <div>
               <label className={labelCls}>Window</label>
-              <select name="delivery_window" defaultValue={delivery.delivery_window} className={selectCls}>
+              <select
+                name="delivery_window"
+                defaultValue={delivery.delivery_window}
+                className={selectCls}
+              >
                 <option value="">Select window…</option>
-                {TIME_WINDOW_OPTIONS.map((w) => <option key={w} value={w}>{w}</option>)}
-                {delivery.delivery_window && !TIME_WINDOW_OPTIONS.includes(delivery.delivery_window) && (
-                  <option value={delivery.delivery_window}>{delivery.delivery_window}</option>
-                )}
+                {TIME_WINDOW_OPTIONS.map((w) => (
+                  <option key={w} value={w}>
+                    {w}
+                  </option>
+                ))}
+                {delivery.delivery_window &&
+                  !TIME_WINDOW_OPTIONS.includes(delivery.delivery_window) && (
+                    <option value={delivery.delivery_window}>
+                      {delivery.delivery_window}
+                    </option>
+                  )}
               </select>
             </div>
           </div>
@@ -277,21 +415,39 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelCls}>Crew</label>
-              <select value={crewId} onChange={(e) => setCrewId(e.target.value)} disabled={isDeliveryInProgress(delivery?.status, delivery?.stage)} className={`${selectCls} disabled:opacity-60 disabled:cursor-not-allowed`}>
+              <select
+                value={crewId}
+                onChange={(e) => setCrewId(e.target.value)}
+                disabled={isDeliveryInProgress(
+                  delivery?.status,
+                  delivery?.stage,
+                )}
+                className={`${selectCls} disabled:opacity-60 disabled:cursor-not-allowed`}
+              >
                 <option value="">Unassigned</option>
-                {crews.map((c) => <option key={c.id} value={c.id}>{c.name}{c.members?.length ? ` (${c.members.length})` : ""}</option>)}
+                {crews.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                    {c.members?.length ? ` (${c.members.length})` : ""}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
               <label className={labelCls}>Quoted Price</label>
               <div className="relative">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-[var(--tx3)]">$</span>
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-[var(--tx3)]">
+                  $
+                </span>
                 <input
                   type="text"
                   name="quoted_price"
                   value={quotedPrice}
                   onChange={(e) => setQuotedPrice(e.target.value)}
-                  onBlur={() => { const n = parseNumberInput(quotedPrice); if (n > 0) setQuotedPrice(formatNumberInput(n)); }}
+                  onBlur={() => {
+                    const n = parseNumberInput(quotedPrice);
+                    if (n > 0) setQuotedPrice(formatNumberInput(n));
+                  }}
                   placeholder="0.00"
                   inputMode="decimal"
                   className={`${inputCls} field-input--leading-sm`}
@@ -299,18 +455,31 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
               </div>
               {delivery?.total_price > 0 && (
                 <p className="text-[9px] text-[var(--tx3)] mt-1">
-                  Partner booked at <span className="font-semibold text-[var(--gold)]">${Number(delivery.total_price).toFixed(2)}</span>
-                  {delivery.admin_adjusted_price && delivery.admin_adjusted_price !== delivery.total_price && (
-                    <span className="ml-1 opacity-70">(adjusted to ${Number(delivery.admin_adjusted_price).toFixed(2)})</span>
-                  )}
+                  Partner booked at{" "}
+                  <span className="font-semibold text-[var(--gold)]">
+                    ${Number(delivery.total_price).toFixed(2)}
+                  </span>
+                  {delivery.admin_adjusted_price &&
+                    delivery.admin_adjusted_price !== delivery.total_price && (
+                      <span className="ml-1 opacity-70">
+                        (adjusted to $
+                        {Number(delivery.admin_adjusted_price).toFixed(2)})
+                      </span>
+                    )}
                 </p>
               )}
             </div>
             <div>
               <label className={labelCls}>Delivery Access</label>
-              <select value={deliveryAccess} onChange={(e) => setDeliveryAccess(e.target.value)} className={selectCls}>
+              <select
+                value={deliveryAccess}
+                onChange={(e) => setDeliveryAccess(e.target.value)}
+                className={selectCls}
+              >
                 <option value="elevator">Elevator</option>
-                <option value="ground_floor">Ground Floor / Loading Dock</option>
+                <option value="ground_floor">
+                  Ground Floor / Loading Dock
+                </option>
                 <option value="loading_dock">Loading Dock</option>
                 <option value="walk_up_2nd">Walk-up (2nd floor)</option>
                 <option value="walk_up_3rd">Walk-up (3rd floor)</option>
@@ -322,7 +491,11 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
             </div>
             <div>
               <label className={labelCls}>Item Weight</label>
-              <select value={itemWeightCategory} onChange={(e) => setItemWeightCategory(e.target.value)} className={selectCls}>
+              <select
+                value={itemWeightCategory}
+                onChange={(e) => setItemWeightCategory(e.target.value)}
+                className={selectCls}
+              >
                 <option value="standard">Standard (under 100 lbs)</option>
                 <option value="heavy">Heavy (100–250 lbs)</option>
                 <option value="very_heavy">Very Heavy (250–500 lbs)</option>
@@ -331,7 +504,11 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
             </div>
             <div>
               <label className={labelCls}>Status</label>
-              <select name="status" defaultValue={delivery.status} className={selectCls}>
+              <select
+                name="status"
+                defaultValue={delivery.status}
+                className={selectCls}
+              >
                 <option value="pending">Pending</option>
                 <option value="confirmed">Confirmed</option>
                 <option value="in-transit">In Transit</option>
@@ -341,10 +518,17 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
             </div>
           </div>
           <label className="flex items-center gap-2.5 cursor-pointer mt-3 p-2.5 rounded-lg hover:bg-[var(--bg)] transition-colors">
-            <input name="special_handling" type="checkbox" defaultChecked={!!delivery.special_handling} className="rounded border-[var(--brd)] accent-[var(--gold)]" />
+            <input
+              name="special_handling"
+              type="checkbox"
+              defaultChecked={!!delivery.special_handling}
+              className="rounded border-[var(--brd)] accent-[var(--gold)]"
+            />
             <div className="flex items-center gap-1.5">
               <Shield className="w-3 h-3 text-amber-500" />
-              <span className="text-[11px] font-medium text-[var(--tx)]">Requires special handling</span>
+              <span className="text-[11px] font-medium text-[var(--tx)]">
+                Requires special handling
+              </span>
             </div>
           </label>
         </div>
@@ -352,12 +536,16 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
         {/* ── Items ── */}
         <div>
           <SectionHeader icon={LayoutList} label="Items" />
-          <label className={labelCls}>One item per line (e.g. Sectional Sofa x2)</label>
+          <label className={labelCls}>
+            One item per line (e.g. Sectional Sofa x2)
+          </label>
           <textarea
             name="items"
             rows={4}
             defaultValue={normalizeDeliveryItemsForDisplay(delivery.items || [])
-              .map((row) => (row.qty > 1 ? `${row.name} x${row.qty}` : row.name))
+              .map((row) =>
+                row.qty > 1 ? `${row.name} x${row.qty}` : row.name,
+              )
               .join("\n")}
             className={`${inputCls} resize-y font-mono`}
             placeholder="Leather Sofa&#10;Glass Dining Table&#10;King Mattress x2"
@@ -381,7 +569,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
           <button
             type="submit"
             disabled={loading}
-            className="w-full min-h-12 py-3 rounded-xl text-[12px] font-bold tracking-wide bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50 hover:bg-[var(--admin-primary-fill-hover)] transition-all shadow-sm touch-manipulation"
+            className="admin-btn admin-btn-primary w-full"
           >
             {loading ? "Saving…" : "Save Changes"}
           </button>

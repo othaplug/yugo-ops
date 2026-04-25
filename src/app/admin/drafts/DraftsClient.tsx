@@ -64,7 +64,7 @@ export default function DraftsClient() {
   }
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="w-full min-w-0 p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="admin-page-hero text-[var(--tx)]">Drafts</h1>
@@ -98,7 +98,7 @@ export default function DraftsClient() {
             <div key={draft.id} className="flex items-center gap-3 py-3">
               <ClockCounterClockwise
                 size={18}
-                className="text-[var(--gold)] shrink-0"
+                className="text-[var(--accent-text)] shrink-0"
                 aria-hidden
               />
 
@@ -128,7 +128,7 @@ export default function DraftsClient() {
                 </button>
                 <Link
                   href={draft.path}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--admin-r-md,4px)] text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
+                  className="admin-btn admin-btn-sm admin-btn-primary"
                 >
                   Resume <ArrowRight size={12} />
                 </Link>

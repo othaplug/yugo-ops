@@ -38,12 +38,12 @@ const STATUS_OPTIONS = [
 const STATUS_STAGE_OPTIONS = STATUS_OPTIONS.filter((o) => o.value !== "");
 
 const STATUS_STYLES: Record<string, string> = {
-  new:       "text-[var(--tx3)]",
-  lead:      "text-amber-700 dark:text-amber-300",
-  quoted:    "text-[var(--org)]",
-  booked:    "text-sky-600 dark:text-sky-400",
-  scheduled: "text-sky-600 dark:text-sky-400",
-  completed: "text-[var(--grn)]",
+  new:       "text-[var(--yu3-ink-muted)]",
+  lead:      "text-amber-800 dark:text-amber-200",
+  quoted:    "text-[var(--yu3-wine)]",
+  booked:    "text-sky-800 dark:text-sky-200",
+  scheduled: "text-sky-800 dark:text-sky-200",
+  completed: "text-[var(--yu3-success)]",
 };
 
 const TIER_OPTIONS = [
@@ -56,12 +56,12 @@ const TIER_OPTIONS = [
 ];
 
 const TIER_STYLES: Record<string, string> = {
-  essential:  "text-[var(--tx3)]",
-  curated:    "text-[var(--tx3)]",
-  essentials: "text-[var(--tx3)]",
-  premier:    "text-amber-700 dark:text-amber-300",
-  signature:  "text-sky-600 dark:text-sky-400",
-  estate:     "text-[var(--org)]",
+  essential:  "text-[var(--yu3-ink-muted)]",
+  curated:    "text-[var(--yu3-ink-muted)]",
+  essentials: "text-[var(--yu3-ink-muted)]",
+  premier:    "text-amber-800 dark:text-amber-200",
+  signature:  "text-sky-800 dark:text-sky-200",
+  estate:     "text-[var(--yu3-wine)]",
 };
 
 function initials(name: string | null) {
@@ -93,7 +93,7 @@ function StatusSelect({
         value={key}
         onChange={(e) => onUpdate(referralId, e.target.value)}
         disabled={isUpdating}
-        className={`appearance-none pl-2.5 pr-6 py-1 rounded-md text-[10px] font-bold cursor-pointer outline-none transition-opacity border-0 disabled:opacity-40 dt-badge tracking-[0.04em] ${style}`}
+        className={`appearance-none cursor-pointer rounded-[var(--yu3-r-sm)] border-0 py-1 pl-2.5 pr-6 text-[10px] font-bold tracking-[0.04em] outline-none transition-opacity disabled:opacity-40 dt-badge ${style}`}
         style={{ background: "inherit" }}
       >
         {[
@@ -102,7 +102,11 @@ function StatusSelect({
             ? []
             : [{ value: key, label: key.replace(/\b\w/g, (c) => c.toUpperCase()) }]),
         ].map((o) => (
-          <option key={o.value} value={o.value} className="bg-[#1a1916] text-[var(--tx)]">
+          <option
+            key={o.value}
+            value={o.value}
+            className="bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)]"
+          >
             {o.label}
           </option>
         ))}
@@ -216,16 +220,18 @@ export default function RealtorsTable({
 
   return (
     <>
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div className="overflow-hidden rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)]">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-[var(--brd)] flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <h3 className="font-heading text-[var(--text-base)] font-bold text-[var(--tx)]">Referral Pipeline</h3>
-            <span className="dt-badge tracking-[0.04em] text-[var(--tx3)]">
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--yu3-line)] px-5 py-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <h3 className="font-heading text-base font-bold text-[var(--yu3-ink-strong)]">
+              Referral Pipeline
+            </h3>
+            <span className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">
               {all.length} {all.length === 1 ? "entry" : "entries"}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <AddRealtorButton />
             <AddReferralButton realtors={realtors} />
           </div>
@@ -246,7 +252,7 @@ export default function RealtorsTable({
         <div className="overflow-x-auto">
           <table className="w-full border-collapse min-w-[620px]">
             <thead>
-              <tr className="bg-[var(--bg)]/40">
+              <tr className="bg-[var(--yu3-bg-canvas)]/60">
                 <SortableHeader label="Agent"      sortKey="agent"      currentSort={sortKey} currentDir={sortDir} onSort={handleSort} className="pl-5 w-[200px]" />
                 <SortableHeader label="Client"     sortKey="client"     currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
                 <SortableHeader label="Property"   sortKey="property"   currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
@@ -259,14 +265,14 @@ export default function RealtorsTable({
               {all.length === 0 && (
                 <tr>
                   <td colSpan={6} className="py-16 text-center">
-                    <p className="text-[12px] font-semibold text-[var(--tx3)]">
+                    <p className="text-[12px] font-semibold text-[var(--yu3-ink-muted)]">
                       {hasActiveFilters ? "No referrals match the current filters." : "No referrals yet."}
                     </p>
                     {hasActiveFilters && (
                       <button
                         type="button"
                         onClick={clearFilters}
-                        className="mt-2 text-[11px] text-[var(--gold)] hover:underline"
+                        className="mt-2 text-[11px] font-semibold text-[var(--yu3-wine)] hover:underline"
                       >
                         Clear filters
                       </button>
@@ -276,23 +282,27 @@ export default function RealtorsTable({
               )}
               {all.map((r) => {
                 const tierKey = (r.tier || "").toLowerCase();
-                const tierStyle = TIER_STYLES[tierKey] ?? "text-[var(--tx3)]";
+                const tierStyle = TIER_STYLES[tierKey] ?? "text-[var(--yu3-ink-muted)]";
                 return (
                   <tr
                     key={r.id}
                     onClick={() => setSelectedAgent({ name: r.agent_name || "", brokerage: r.brokerage || null })}
-                    className="hover:bg-[var(--gdim)]/50 transition-colors cursor-pointer group border-t border-[var(--brd)]/60"
+                    className="group cursor-pointer border-t border-[var(--yu3-line-subtle)] transition-colors hover:bg-[var(--yu3-bg-surface-sunken)]/80"
                   >
                     {/* Agent */}
                     <td className="pl-5 pr-4 py-3.5">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-md bg-[var(--brd)] flex items-center justify-center text-[9px] font-bold text-[var(--tx3)] shrink-0 group-hover:bg-[var(--gdim)] transition-colors">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--yu3-r-sm)] bg-[var(--yu3-wine-tint)] text-[9px] font-bold text-[var(--yu3-wine)] transition-colors group-hover:bg-[var(--yu3-wine-wash)]">
                           {initials(r.agent_name)}
                         </div>
                         <div>
-                          <div className="text-[11px] font-semibold text-[var(--tx)] leading-tight">{r.agent_name || "-"}</div>
+                          <div className="text-[11px] font-semibold leading-tight text-[var(--yu3-ink-strong)]">
+                            {r.agent_name || "-"}
+                          </div>
                           {r.brokerage && (
-                            <div className="text-[9px] text-[var(--tx3)] mt-0.5 leading-tight">{r.brokerage}</div>
+                            <div className="mt-0.5 text-[9px] leading-tight text-[var(--yu3-ink-muted)]">
+                              {r.brokerage}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -300,12 +310,12 @@ export default function RealtorsTable({
 
                     {/* Client */}
                     <td className="px-4 py-3.5">
-                      <span className="text-[11px] text-[var(--tx2)]">{r.client_name || "-"}</span>
+                      <span className="text-[11px] text-[var(--yu3-ink)]">{r.client_name || "-"}</span>
                     </td>
 
                     {/* Property */}
                     <td className="px-4 py-3.5">
-                      <span className="text-[11px] text-[var(--tx2)]">{r.property || "-"}</span>
+                      <span className="text-[11px] text-[var(--yu3-ink)]">{r.property || "-"}</span>
                     </td>
 
                     {/* Tier */}
@@ -315,7 +325,7 @@ export default function RealtorsTable({
                           {r.tier}
                         </span>
                       ) : (
-                        <span className="text-[11px] text-[var(--tx3)]">-</span>
+                        <span className="text-[11px] text-[var(--yu3-ink-muted)]">-</span>
                       )}
                     </td>
 
@@ -332,11 +342,11 @@ export default function RealtorsTable({
                     {/* Commission */}
                     <td className="px-4 pl-4 pr-5 py-3.5 text-right">
                       {Number(r.commission) > 0 ? (
-                        <span className="text-[12px] font-semibold text-[var(--gold)]">
+                        <span className="text-[12px] font-semibold text-[var(--yu3-wine)]">
                           {formatCurrency(r.commission)}
                         </span>
                       ) : (
-                        <span className="text-[11px] text-[var(--tx3)]">-</span>
+                        <span className="text-[11px] text-[var(--yu3-ink-muted)]">-</span>
                       )}
                     </td>
                   </tr>
@@ -348,11 +358,11 @@ export default function RealtorsTable({
 
         {/* Footer count */}
         {all.length > 0 && (
-          <div className="px-5 py-3 border-t border-[var(--brd)] flex items-center justify-between">
-            <span className="text-[10px] text-[var(--tx3)]">
+          <div className="flex items-center justify-between border-t border-[var(--yu3-line)] px-5 py-3">
+            <span className="text-[10px] text-[var(--yu3-ink-muted)]">
               Showing {all.length} of {referrals.length} referral{referrals.length !== 1 ? "s" : ""}
             </span>
-            <span className="text-[10px] font-semibold text-[var(--gold)]">
+            <span className="text-[10px] font-semibold text-[var(--yu3-wine)]">
               {formatCurrency(all.reduce((s, r) => s + (Number(r.commission) || 0), 0))} total commission
             </span>
           </div>

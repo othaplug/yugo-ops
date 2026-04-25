@@ -91,14 +91,14 @@ export default function AddRealtorModal({ open, onClose }: AddRealtorModalProps)
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+            className="admin-btn admin-btn-secondary flex-1"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
+            className="admin-btn admin-btn-primary flex-1"
           >
             {loading ? "Creating…" : "Add Realtor"}
           </button>

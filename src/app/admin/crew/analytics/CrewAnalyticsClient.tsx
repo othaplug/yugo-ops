@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { KpiStrip, type KpiTile } from "@/design-system/admin/dashboard";
 import {
   CalendarBlank,
   CaretLeft,
@@ -14,12 +15,6 @@ import {
 } from "@phosphor-icons/react";
 
 const LineChart = dynamic(() => import("recharts").then((m) => m.LineChart), {
-  ssr: false,
-});
-const BarChart = dynamic(() => import("recharts").then((m) => m.BarChart), {
-  ssr: false,
-});
-const Bar = dynamic(() => import("recharts").then((m) => m.Bar), {
   ssr: false,
 });
 const Line = dynamic(() => import("recharts").then((m) => m.Line), {
@@ -327,7 +322,7 @@ export default function CrewAnalyticsClient({
   }
 
   return (
-    <div className="max-w-[960px] mx-auto px-4 sm:px-5 md:px-6 py-5 md:py-6 animate-fade-up">
+    <div className="w-full min-w-0 py-5 md:py-6 animate-fade-up">
       {/* Header */}
       <div className="mb-1 flex w-full min-w-0 max-w-full flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
@@ -341,23 +336,11 @@ export default function CrewAnalyticsClient({
         </div>
         <Link
           href="/admin/reports"
-          className="group inline-flex shrink-0 items-center gap-2 self-start rounded-xl border border-[var(--brd)]/60 bg-[var(--card)]/60 px-3.5 py-2 transition-all duration-200 hover:border-[var(--tx2)]/40 hover:bg-[var(--bg2)]/60 sm:mt-0.5"
+          className="admin-btn admin-btn-secondary self-start sm:mt-0.5"
         >
-          <FileText
-            size={13}
-            weight="regular"
-            className="text-[var(--tx2)] shrink-0"
-            aria-hidden
-          />
-          <span className="text-[11px] font-semibold text-[var(--tx)] whitespace-nowrap">
-            EOD Reports
-          </span>
-          <ArrowRight
-            size={11}
-            weight="bold"
-            className="text-[var(--tx3)] group-hover:text-[var(--tx)] group-hover:translate-x-0.5 transition-all duration-200 shrink-0"
-            aria-hidden
-          />
+          <FileText size={14} weight="regular" aria-hidden />
+          EOD Reports
+          <ArrowRight size={12} weight="bold" aria-hidden />
         </Link>
       </div>
       <p className="text-[12px] text-[var(--tx3)] mt-2 mb-5 font-medium">
@@ -482,7 +465,7 @@ export default function CrewAnalyticsClient({
                 type="button"
                 onClick={applyCustomRange}
                 disabled={!rangeStart || !rangeEnd}
-                className="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-40 transition-colors"
+                className="admin-btn admin-btn-sm admin-btn-primary"
               >
                 Apply
               </button>
@@ -635,7 +618,9 @@ export default function CrewAnalyticsClient({
                       {a.jobsCompleted} jobs
                     </span>
                     <span style={{ color: satColor }}>
-                      {a.avgSatisfaction != null ? `${a.avgSatisfaction}/5` : ""}
+                      {a.avgSatisfaction != null
+                        ? `${a.avgSatisfaction}/5`
+                        : ""}
                     </span>
                   </div>
 
@@ -682,8 +667,68 @@ function CrewDetailView({
   >("jobs");
   const name = detail?.crew.name || crewItem?.name || "Crew";
 
+  const kpiTiles = useMemo((): KpiTile[] => {
+    if (!detail) return [];
+    const s = detail.summary;
+    const r = s.avgRating;
+    const satValue = r != null ? `${r}/5` : "N/A";
+    const satValueClass =
+      r == null
+        ? "text-[var(--yu3-ink-faint)]"
+        : r >= 4.5
+          ? "text-[var(--yu3-forest)]"
+          : r >= 3.5
+            ? "text-[var(--yu3-warning)]"
+            : "text-[var(--yu3-danger)]";
+
+    const otr = s.onTimeRate;
+    const otrValue = otr != null ? `${otr}%` : "N/A";
+    const otrValueClass =
+      otr == null
+        ? "text-[var(--yu3-ink-faint)]"
+        : otr >= 80
+          ? "text-[var(--yu3-success)]"
+          : "text-[var(--yu3-warning)]";
+
+    const tipsValue =
+      s.totalTips > 0
+        ? `$${s.totalTips.toLocaleString()}`
+        : "$0";
+    const tipsValueClass =
+      s.totalTips > 0
+        ? "text-[var(--yu3-forest)]"
+        : "text-[var(--yu3-ink-muted)]";
+
+    return [
+      {
+        id: "jobs",
+        label: "Jobs completed",
+        value: String(s.totalJobs),
+        valueClassName: "text-[var(--yu3-ink-strong)]",
+      },
+      {
+        id: "satisfaction",
+        label: "Avg satisfaction",
+        value: satValue,
+        valueClassName: satValueClass,
+      },
+      {
+        id: "ontime",
+        label: "On-time rate",
+        value: otrValue,
+        valueClassName: otrValueClass,
+      },
+      {
+        id: "tips",
+        label: "Total tips",
+        value: tipsValue,
+        valueClassName: tipsValueClass,
+      },
+    ];
+  }, [detail]);
+
   return (
-    <div className="max-w-[1100px] mx-auto px-4 sm:px-5 md:px-6 py-5 md:py-6 animate-fade-up">
+    <div className="w-full min-w-0 py-5 md:py-6 animate-fade-up">
       {/* Back nav */}
       <div className="flex items-center gap-3 mb-5">
         <button
@@ -732,55 +777,12 @@ function CrewDetailView({
             </div>
           </div>
 
-          {/* Summary KPIs */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-            <KpiCard
-              label="Jobs Completed"
-              value={String(detail.summary.totalJobs)}
-              color="var(--tx)"
-            />
-            <KpiCard
-              label="Avg Satisfaction"
-              value={
-                detail.summary.avgRating != null
-                  ? `${detail.summary.avgRating}/5`
-                  : ""
-              }
-              color={
-                detail.summary.avgRating != null
-                  ? detail.summary.avgRating >= 4.5
-                    ? "var(--grn)"
-                    : detail.summary.avgRating >= 3.5
-                      ? "var(--org)"
-                      : "var(--red)"
-                  : "var(--tx3)"
-              }
-            />
-            <KpiCard
-              label="On-Time Rate"
-              value={
-                detail.summary.onTimeRate != null
-                  ? `${detail.summary.onTimeRate}%`
-                  : ""
-              }
-              color={
-                detail.summary.onTimeRate != null
-                  ? detail.summary.onTimeRate >= 80
-                    ? "var(--grn)"
-                    : "var(--org)"
-                  : "var(--tx3)"
-              }
-            />
-            <KpiCard
-              label="Total Tips"
-              value={
-                detail.summary.totalTips > 0
-                  ? `$${detail.summary.totalTips.toLocaleString()}`
-                  : "$0"
-              }
-              color={detail.summary.totalTips > 0 ? "var(--grn)" : "var(--tx3)"}
-            />
-          </div>
+          <KpiStrip
+            variant="grid"
+            columns={4}
+            tiles={kpiTiles}
+            className="mb-8 sm:grid-cols-4 md:grid-cols-4"
+          />
 
           {/* Performance Charts */}
           {detail.trends.length > 1 && (
@@ -814,7 +816,7 @@ function CrewDetailView({
               <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-sm p-4 h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
                   {activeChart === "jobs" ? (
-                    <BarChart
+                    <LineChart
                       data={detail.trends}
                       margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
                     >
@@ -844,15 +846,21 @@ function CrewDetailView({
                           fontWeight: 600,
                           fontFamily: "var(--font-body)",
                         }}
+                        formatter={(v) => [String(v ?? ""), "Jobs"]}
                         itemStyle={{ color: "var(--tx)" }}
-                        cursor={{ fill: "var(--gdim)" }}
                       />
-                      <Bar
+                      <Line
+                        type="monotone"
                         dataKey="jobs"
-                        fill="var(--tx)"
-                        radius={[4, 4, 0, 0]}
+                        stroke="var(--tx)"
+                        strokeWidth={2}
+                        dot={{
+                          r: 3,
+                          fill: "var(--tx)",
+                        }}
+                        connectNulls
                       />
-                    </BarChart>
+                    </LineChart>
                   ) : activeChart === "duration" ? (
                     <LineChart
                       data={detail.trends}
@@ -1246,26 +1254,3 @@ function SummaryCell({
   );
 }
 
-function KpiCard({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string;
-  color: string;
-}) {
-  return (
-    <div className="bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] rounded-[var(--yu3-r-lg)] p-5 md:p-6 flex flex-col gap-2">
-      <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-[var(--yu3-ink-muted)]">
-        {label}
-      </div>
-      <div
-        className="text-[28px] font-semibold leading-none [font-feature-settings:'tnum'_1]"
-        style={{ color }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}

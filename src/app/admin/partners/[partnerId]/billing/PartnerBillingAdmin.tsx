@@ -167,7 +167,7 @@ export default function PartnerBillingAdmin({
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[11px] font-bold tracking-widest uppercase text-[var(--gold)]">
+            <span className="text-[11px] font-bold tracking-widest uppercase text-[var(--accent-text)]">
               Billing Overview
             </span>
           </div>
@@ -195,7 +195,7 @@ export default function PartnerBillingAdmin({
         </div>
         <button
           onClick={() => setShowGenForm((v) => !v)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold border border-[var(--gold)]/30 text-[var(--gold)] hover:bg-[var(--gold)]/8 transition-all"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold border border-[var(--gold)]/30 text-[var(--accent-text)] hover:bg-[var(--gold)]/8 transition-all"
         >
           <PlusCircle size={15} />
           Generate Statement
@@ -314,7 +314,7 @@ export default function PartnerBillingAdmin({
                       <td className="px-4 py-3">
                         <Link
                           href={`/admin/partners/statements/${s.id}`}
-                          className="text-[12px] font-mono font-semibold text-[var(--gold)] hover:underline"
+                          className="text-[12px] font-mono font-semibold text-[var(--accent-text)] hover:underline"
                         >
                           {s.statement_number}
                         </Link>
@@ -345,7 +345,7 @@ export default function PartnerBillingAdmin({
                         <div className="flex items-center gap-2">
                           <Link
                             href={`/admin/partners/statements/${s.id}`}
-                            className="flex items-center gap-1 text-[11px] text-[var(--tx3)] hover:text-[var(--gold)] transition-colors"
+                            className="flex items-center gap-1 text-[11px] text-[var(--tx3)] hover:text-[var(--accent-text)] transition-colors"
                           >
                             <ArrowRight size={12} />
                             View

@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import AdminShell from "./components/AdminShell";
+import AdminShellV3Wrapper from "./components/AdminShellV3Wrapper";
 import ChangePasswordGate from "./components/ChangePasswordGate";
 import TwoFAGate from "./components/TwoFAGate";
 
@@ -47,9 +47,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <ChangePasswordGate>
       <TwoFAGate>
-        <AdminShell user={user} isSuperAdmin={isSuperAdmin} isAdmin={isAdmin} role={role} twoFactorEnabled={twoFactorEnabled}>
+        <AdminShellV3Wrapper user={user} isSuperAdmin={isSuperAdmin} isAdmin={isAdmin} role={role} twoFactorEnabled={twoFactorEnabled}>
           {children}
-        </AdminShell>
+        </AdminShellV3Wrapper>
       </TwoFAGate>
     </ChangePasswordGate>
   );

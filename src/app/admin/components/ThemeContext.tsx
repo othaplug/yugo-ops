@@ -62,6 +62,12 @@ export function ThemeProvider({
   useEffect(() => {
     if (lockTheme !== "light") {
       localStorage.setItem("yugo-theme", theme);
+      /* Keep in sync with AdminShell (legacy yu3.theme) so [data-yugo-admin-v3] tokens match document */
+      try {
+        localStorage.setItem("yu3.theme", theme);
+      } catch {
+        /* ignore */
+      }
     }
   }, [theme, lockTheme]);
 

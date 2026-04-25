@@ -12,7 +12,7 @@ export default async function NewMovePage() {
   ]);
 
   return (
-    <div className="w-full max-w-none mx-0 px-4 sm:px-5 md:px-8 lg:px-10 py-4 md:py-6">
+    <div className="w-full min-w-0 py-4 md:py-6">
       <CreateMoveForm organizations={orgs || []} crews={crews || []} itemWeights={itemWeights || []} />
     </div>
   );

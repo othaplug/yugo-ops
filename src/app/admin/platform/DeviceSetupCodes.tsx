@@ -157,7 +157,7 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
           <div className="flex flex-wrap gap-2 shrink-0">
             <button
               onClick={() => setCreateModalOpen(true)}
-              className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all"
+              className="admin-btn admin-btn-sm admin-btn-primary"
             >
               + Create Setup Code
             </button>
@@ -167,7 +167,7 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
           {trucks.length === 0 && (
             <p className="text-[11px] text-[var(--tx3)] mb-4 px-1">
               Add a vehicle under{" "}
-              <a href="#fleet-vehicles" className="text-[var(--gold)] font-semibold hover:underline">
+              <a href="#fleet-vehicles" className="text-[var(--accent-text)] font-semibold hover:underline">
                 Fleet Vehicles
               </a>{" "}
               before you can attach a truck to a setup code.
@@ -181,7 +181,7 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
               </p>
               <button
                 onClick={() => setCreateModalOpen(true)}
-                className="px-6 py-3 rounded-lg text-[13px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all"
+                className="admin-btn admin-btn-lg admin-btn-primary"
               >
                 Create your first code
               </button>
@@ -195,10 +195,10 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <code className="text-[var(--text-base)] font-bold text-[var(--gold)] tracking-wider">{c.code}</code>
+                      <code className="text-[var(--text-base)] font-bold text-[var(--accent-text)] tracking-wider">{c.code}</code>
                       <button
                         onClick={() => copyCode(c.code)}
-                        className="text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors"
+                        className="text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--accent-text)] transition-colors"
                       >
                         Copy
                       </button>
@@ -260,7 +260,7 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
             </select>
             <p className="text-[10px] text-[var(--tx3)] mt-1">
               Vehicles and call numbers are managed in{" "}
-              <a href="#fleet-vehicles" className="text-[var(--gold)] font-semibold hover:underline">
+              <a href="#fleet-vehicles" className="text-[var(--accent-text)] font-semibold hover:underline">
                 Fleet Vehicles
               </a>
               .
@@ -319,7 +319,7 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
             <button
               type="submit"
               disabled={creating || (!formTruckId && !formTeamId)}
-              className="flex-1 py-2.5 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--admin-primary-fill-hover)] transition-colors disabled:opacity-50"
+              className="admin-btn admin-btn-primary flex-1"
             >
               {creating ? "Creating…" : "Create Code"}
             </button>
@@ -338,10 +338,10 @@ export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesPro
               Share this code with the crew. They enter it at <strong>/crew/setup</strong> on the iPad.
             </p>
             <div className="p-4 rounded-xl bg-[var(--bg)] border-2 border-[var(--gold)] text-center">
-              <code className="text-[24px] font-bold text-[var(--gold)] tracking-[4px]">{createdCode.code}</code>
+              <code className="text-[24px] font-bold text-[var(--accent-text)] tracking-[4px]">{createdCode.code}</code>
               <button
                 onClick={() => copyCode(createdCode.code)}
-                className="mt-3 block w-full py-2 rounded-lg text-[12px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-colors"
+                className="admin-btn admin-btn-primary mt-3 w-full"
               >
                 Copy Code
               </button>

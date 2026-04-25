@@ -9,6 +9,7 @@ import { useConfirm } from "@/hooks/useConfirm";
 import { getDisplayLabel } from "@/lib/displayLabels";
 import { toTitleCase } from "@/lib/format-text";
 import { getTrackingUrl } from "@/lib/tracking-url";
+import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme";
 import { VendorStatusCompactTable } from "@/components/VendorStatusCompactTable";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import {
@@ -652,13 +653,12 @@ export default function PartnerB2BProjectsTab({
   const NewProjectModal = showNewProject && typeof document !== "undefined" ? createPortal(
     <div
       data-modal-root
-      data-yugo-glass-modal
       className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center p-4 sm:p-5"
       role="presentation"
     >
       <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={() => setShowNewProject(false)} />
-      <div
-        className="relative z-10 yugo-glass-light rounded-t-lg sm:rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4 modal-card"
+      <Yu3PortaledTokenRoot
+        className="relative z-10 w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4 rounded-t-[var(--yu3-r-lg)] sm:rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] modal-card"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
@@ -714,7 +714,7 @@ export default function PartnerB2BProjectsTab({
             </button>
           </div>
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>,
     document.body
   ) : null;
@@ -722,13 +722,12 @@ export default function PartnerB2BProjectsTab({
   const EditProjectModal = showEditProject && selectedProject && typeof document !== "undefined" ? createPortal(
     <div
       data-modal-root
-      data-yugo-glass-modal
       className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center p-4 sm:p-5"
       role="presentation"
     >
       <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={() => setShowEditProject(false)} />
-      <div
-        className="relative z-10 yugo-glass-light rounded-t-lg sm:rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4 modal-card"
+      <Yu3PortaledTokenRoot
+        className="relative z-10 w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4 rounded-t-[var(--yu3-r-lg)] sm:rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] modal-card"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
@@ -789,7 +788,7 @@ export default function PartnerB2BProjectsTab({
             </button>
           </div>
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>,
     document.body
   ) : null;
@@ -797,7 +796,6 @@ export default function PartnerB2BProjectsTab({
   const AddItemModal = showAddItem && selectedProject && typeof document !== "undefined" ? createPortal(
     <div
       data-modal-root
-      data-yugo-glass-modal
       className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center p-4 sm:p-5"
       role="presentation"
     >
@@ -809,8 +807,8 @@ export default function PartnerB2BProjectsTab({
           resetAddItem();
         }}
       />
-      <div
-        className="relative z-10 yugo-glass-light rounded-t-lg sm:rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[520px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4 modal-card"
+      <Yu3PortaledTokenRoot
+        className="relative z-10 w-full max-w-[520px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4 rounded-t-[var(--yu3-r-lg)] sm:rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] modal-card"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] flex items-center justify-between px-5 py-4 shrink-0 z-10">
@@ -997,7 +995,7 @@ export default function PartnerB2BProjectsTab({
             </button>
           </div>
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>,
     document.body
   ) : null;
@@ -1005,13 +1003,12 @@ export default function PartnerB2BProjectsTab({
   const StatusUpdateModal = statusItem && typeof document !== "undefined" ? createPortal(
     <div
       data-modal-root
-      data-yugo-glass-modal
       className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center p-4 sm:p-5"
       role="presentation"
     >
       <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={() => setStatusItem(null)} />
-      <div
-        className="relative z-10 yugo-glass-light rounded-t-lg sm:rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[420px] overflow-hidden flex flex-col mx-0 sm:mx-4 modal-card"
+      <Yu3PortaledTokenRoot
+        className="relative z-10 w-full max-w-[420px] overflow-hidden flex flex-col mx-0 sm:mx-4 rounded-t-[var(--yu3-r-lg)] sm:rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] modal-card"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E4DF] shrink-0">
@@ -1057,7 +1054,7 @@ export default function PartnerB2BProjectsTab({
             </button>
           </div>
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>,
     document.body
   ) : null;
@@ -1065,13 +1062,12 @@ export default function PartnerB2BProjectsTab({
   const SchedulePromptModal = scheduleItem && typeof document !== "undefined" ? createPortal(
     <div
       data-modal-root
-      data-yugo-glass-modal
       className="fixed inset-0 z-[99990] flex items-center justify-center p-4"
       role="presentation"
     >
       <div className="fixed inset-0 z-0 modal-overlay" aria-hidden onClick={() => setScheduleItem(null)} />
-      <div
-        className="relative z-10 yugo-glass-light rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[380px] p-6 text-center modal-card"
+      <Yu3PortaledTokenRoot
+        className="relative z-10 w-full max-w-[380px] rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] p-6 text-center text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)] modal-card"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-[18px] font-bold text-[#1A1A1A] mb-2">
@@ -1105,7 +1101,7 @@ export default function PartnerB2BProjectsTab({
             Schedule →
           </button>
         </div>
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>,
     document.body
   ) : null;

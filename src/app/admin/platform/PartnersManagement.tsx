@@ -45,12 +45,12 @@ interface PartnerData {
 const TYPE_COLORS: Record<string, string> = {
   retail: "text-[#4A7CE5]",
   designer: "text-[#8B5CF6]",
-  gallery: "text-[var(--gold)]",
+  gallery: "text-[var(--accent-text)]",
   furniture_retailer: "text-[#3B82F6]",
   interior_designer: "text-[#A78BFA]",
   cabinetry: "text-[#B45309]",
   flooring: "text-[#0D9488]",
-  art_gallery: "text-[var(--gold)]",
+  art_gallery: "text-[var(--accent-text)]",
   antique_dealer: "text-[#BE123C]",
   hospitality: "text-[var(--org)]",
   medical_equipment: "text-[#0EA5E9]",
@@ -59,8 +59,8 @@ const TYPE_COLORS: Record<string, string> = {
   realtor: "text-[var(--grn)]",
   property_manager: "text-[#16A34A]",
   developer: "text-[#7C3AED]",
-  property_management_residential: "text-[var(--gold)]",
-  property_management_commercial: "text-[var(--gold)]",
+  property_management_residential: "text-[var(--accent-text)]",
+  property_management_commercial: "text-[var(--accent-text)]",
   developer_builder: "text-[#7C3AED]",
 };
 
@@ -272,13 +272,13 @@ export default function PartnersManagement() {
           <div className="flex gap-2">
             <button
               onClick={handleOpenProvision}
-              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all shrink-0"
+              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--accent-text)] transition-all shrink-0"
             >
               Provision All Partners
             </button>
             <button
               onClick={() => setInviteOpen(true)}
-              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all shrink-0"
+              className="admin-btn admin-btn-sm admin-btn-primary shrink-0"
             >
               + Invite New Partner
             </button>
@@ -371,7 +371,7 @@ export default function PartnersManagement() {
               const isExpanded = expandedOrg === partner.id;
               const usersCount = partner.portal_users.length;
               const activeCount = partner.portal_users.filter((u) => u.status === "activated").length;
-              const typeColor = TYPE_COLORS[partner.type] || "text-[var(--gold)]";
+              const typeColor = TYPE_COLORS[partner.type] || "text-[var(--accent-text)]";
 
               return (
                 <div key={partner.id}>
@@ -476,14 +476,14 @@ export default function PartnersManagement() {
                                 )}
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleResend(partner.id); }}
-                                  className="px-2 py-0.5 rounded-md text-[9px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+                                  className="px-2 py-0.5 rounded-md text-[9px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--accent-text)] transition-all"
                                   title="Resend welcome email"
                                 >
                                   Resend
                                 </button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setResetTarget({ orgId: partner.id, user: u }); setResetPassword(generatePwd()); }}
-                                  className="px-2 py-0.5 rounded-md text-[9px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+                                  className="px-2 py-0.5 rounded-md text-[9px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--accent-text)] transition-all"
                                 >
                                   Reset
                                 </button>
@@ -538,7 +538,7 @@ export default function PartnersManagement() {
                   minLength={8}
                   className="admin-premium-input flex-1"
                 />
-                <button type="button" onClick={() => setResetPassword(generatePwd())} className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]">
+                <button type="button" onClick={() => setResetPassword(generatePwd())} className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--accent-text)]">
                   Generate
                 </button>
               </div>
@@ -547,7 +547,7 @@ export default function PartnersManagement() {
               <button type="button" onClick={() => { setResetTarget(null); setResetPassword(""); }} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">
                 Cancel
               </button>
-              <button type="submit" disabled={resetLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+              <button type="submit" disabled={resetLoading} className="admin-btn admin-btn-sm admin-btn-primary flex-1">
                 {resetLoading ? "Sending..." : "Set Password & Send Email"}
               </button>
             </div>
@@ -572,7 +572,7 @@ export default function PartnersManagement() {
             <>
               <div className="flex gap-4 p-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
                 <div className="text-center flex-1">
-                  <div className="text-[22px] font-bold text-[var(--gold)]">{provisionDryRun.to_provision}</div>
+                  <div className="text-[22px] font-bold text-[var(--accent-text)]">{provisionDryRun.to_provision}</div>
                   <div className="text-[10px] text-[var(--tx3)] mt-0.5">Need Access</div>
                 </div>
                 <div className="text-center flex-1">
@@ -609,7 +609,7 @@ export default function PartnersManagement() {
                     <button
                       type="button"
                       onClick={handleRunProvision}
-                      className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)]"
+                      className="admin-btn admin-btn-sm admin-btn-primary flex-1"
                     >
                       Provision {provisionDryRun.to_provision} Partner{provisionDryRun.to_provision !== 1 ? "s" : ""}
                     </button>
@@ -655,7 +655,7 @@ export default function PartnersManagement() {
               <button
                 type="button"
                 onClick={() => { setProvisionOpen(false); setProvisionResults(null); }}
-                className="w-full py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)]"
+                className="admin-btn admin-btn-sm admin-btn-primary w-full"
               >
                 Done
               </button>
@@ -709,7 +709,7 @@ export default function PartnersManagement() {
                   minLength={8}
                   className="admin-premium-input flex-1"
                 />
-                <button type="button" onClick={() => setAddPassword(generatePwd())} className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]">
+                <button type="button" onClick={() => setAddPassword(generatePwd())} className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--accent-text)]">
                   Generate
                 </button>
               </div>
@@ -718,7 +718,7 @@ export default function PartnersManagement() {
               <button type="button" onClick={() => { setAddUserOrg(null); setAddEmail(""); setAddName(""); setAddPassword(""); }} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]">
                 Cancel
               </button>
-              <button type="submit" disabled={addLoading} className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+              <button type="submit" disabled={addLoading} className="admin-btn admin-btn-sm admin-btn-primary flex-1">
                 {addLoading ? "Sending..." : "Send Invitation"}
               </button>
             </div>

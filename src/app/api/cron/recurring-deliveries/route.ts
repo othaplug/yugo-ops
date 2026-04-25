@@ -156,8 +156,9 @@ export async function GET(req: NextRequest) {
 
       const servicesSelected = Array.isArray(schedule.default_services) ? schedule.default_services : [];
 
+      const scheduleDeliveryNumber = await generateDeliveryNumber(supabase);
       const insertPayload: Record<string, unknown> = {
-        delivery_number: generateDeliveryNumber(),
+        delivery_number: scheduleDeliveryNumber,
         organization_id: schedule.organization_id,
         client_name: orgName,
         customer_name: orgName,

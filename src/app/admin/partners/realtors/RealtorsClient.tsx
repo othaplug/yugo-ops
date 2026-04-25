@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/design-system/admin/primitives";
 import AddReferralModal from "./AddReferralModal";
 import AddRealtorModal from "./AddRealtorModal";
 
@@ -10,12 +11,15 @@ export function AddReferralButton({ realtors = [], label = "Add Referral" }: { r
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all whitespace-nowrap"
+        className="whitespace-nowrap"
       >
         {label}
-      </button>
+      </Button>
       <AddReferralModal open={open} onClose={() => setOpen(false)} realtors={realtors} />
     </>
   );
@@ -25,12 +29,15 @@ export function AddRealtorButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all whitespace-nowrap"
+        className="whitespace-nowrap"
       >
         Add Realtor
-      </button>
+      </Button>
       <AddRealtorModal open={open} onClose={() => setOpen(false)} />
     </>
   );

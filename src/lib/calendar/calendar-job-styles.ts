@@ -34,7 +34,10 @@ export function calendarPillForeground(ev: CalendarEvent): {
   muted: string;
 } {
   if (calendarPillUsesLightInk(ev)) {
-    return { main: CALENDAR_WINE_PILL_TEXT, muted: CALENDAR_WINE_PILL_TEXT_MUTED };
+    return {
+      main: CALENDAR_WINE_PILL_TEXT,
+      muted: CALENDAR_WINE_PILL_TEXT_MUTED,
+    };
   }
   return { main: CALENDAR_PILL_TEXT, muted: CALENDAR_PILL_TEXT_MUTED };
 }
@@ -73,6 +76,50 @@ export function jobPillSurfaceStyle(ev: CalendarEvent): CSSProperties {
       : `4px solid rgba(15, 23, 42, 0.35)`,
     opacity: completed ? 0.72 : 1,
     boxShadow: "none",
+  };
+}
+
+/**
+ * GCal-style week blocks: light tinted fill, saturated left border, dark accent ink.
+ * Works with admin v3 cream canvas; keeps move/delivery type hues from `ev.color`.
+ */
+export function weekEventBlockStyle(ev: CalendarEvent): {
+  container: CSSProperties;
+  timeColor: string;
+  titleColor: string;
+  subtleColor: string;
+} {
+  const cancelled = ev.calendarStatus === "cancelled";
+  const completed = ev.calendarStatus === "completed";
+  const accent = ev.color;
+
+  if (cancelled) {
+    return {
+      container: {
+        backgroundColor: "color-mix(in srgb, var(--brd) 30%, var(--card))",
+        borderLeft: `3px solid ${accent}`,
+        color: "var(--tx2)",
+        opacity: 0.9,
+        boxShadow: "none",
+      },
+      timeColor: "var(--tx2)",
+      titleColor: "var(--tx2)",
+      subtleColor: "var(--tx3)",
+    };
+  }
+
+  const fill = `color-mix(in srgb, ${accent} 16%, #ffffff)`;
+  return {
+    container: {
+      backgroundColor: fill,
+      borderLeft: `3px solid ${accent}`,
+      color: "var(--tx)",
+      boxShadow: "0 1px 0 rgba(26, 20, 16, 0.05)",
+      opacity: completed ? 0.78 : 1,
+    },
+    timeColor: accent,
+    titleColor: "color-mix(in srgb, #1a1410 78%, " + accent + ")",
+    subtleColor: "color-mix(in srgb, #605750 80%, " + accent + ")",
   };
 }
 

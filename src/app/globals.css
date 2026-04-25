@@ -2,6 +2,7 @@
 /*
  * PR 1 design tokens (foundation). See /docs/design-tokens.md.
  */
+@import "../styles/fonts.css";
 @import "../styles/tokens.css";
 @import "../styles/typography.css";
 @import "../styles/admin-tokens.css";
@@ -104,8 +105,8 @@
   --z-toast: 99999;
   --z-top: 100000;
 
-  /* Admin / crew / partner mobile bottom nav — main padding + toasts/sheets must match (FAB column can exceed 56px) */
-  --admin-mobile-nav-bar: 76px;
+  /* Admin / crew / partner mobile bottom nav — main padding + toasts/sheets must match (floating nav + FAB) */
+  --admin-mobile-nav-bar: 96px;
 
   /* B2B / brand text on admin dark surfaces (avoid wine #2B0416 on dark bg) */
   --yugo-primary-text: #f9ede4;
@@ -129,10 +130,10 @@
   --yu-text-3: #d4c4cf;
 
   /* ── Fonts ── */
-  --font-heading: "Instrument Sans", "DM Sans", system-ui, sans-serif;
+  --font-heading: "Brown", "Instrument Sans", system-ui, sans-serif;
   --font-hero: "Instrument Serif", serif;
-  --font-body: "DM Sans", system-ui, sans-serif;
-  /* App-wide system UI stack (Apple-adjacent); pair with var(--font-body) for brand DM Sans */
+  --font-body: "Brown", system-ui, sans-serif;
+  /* App-wide system UI stack (Apple-adjacent); pair with var(--font-body) for brand Brown */
   --app-font-ui:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
     sans-serif;
@@ -148,10 +149,10 @@
   --bg2: #ffffff;
   --card: #ffffff;
   /* Hairline borders + strong secondary contrast on white */
-  --brd: #e1dbcb;
+  --brd: #d4cdbb;
   --tx: #1a1410;
   --tx2: #2b2420;
-  --tx3: #6b6259;
+  --tx3: #605750;
   /* Gold accent retired — all `--gold*` slots resolve to wine. */
   --gold: #5c1a33;
   --gold2: #471426;
@@ -169,10 +170,10 @@
   --surface: #fbf9f4;
   --surface-raised: #ffffff;
   --surface-card: #ffffff;
-  --surface-border: #e1dbcb;
+  --surface-border: #d4cdbb;
   --text-primary: #1a1410;
   --text-secondary: #2b2420;
-  --text-tertiary: #6b6259;
+  --text-tertiary: #605750;
   --text-accent: #1a1410;
   /* admin-primary-fill defaults to wine; gold legacy retired. */
   --admin-primary-fill: #5c1a33;
@@ -187,31 +188,29 @@
 }
 
 /*
- * Admin dark — neutral warm-charcoal canvas (NOT wine-flooded).
- * Wine is reserved for primary CTAs + active nav indicators only.
- * Reference: modern operator dashboards (Microdose / Relatel) — near-black
- * canvas, subtle hairlines, crisp cream ink, accent applied surgically.
+ * Admin dark — neutral warm-charcoal canvas.
+ * Primary CTA and legacy accent slots use cream/off-white fills (see yu3 dark --yu3-wine*).
+ * Reference: near-black canvas, subtle hairlines, crisp cream type.
  */
 :is(html[data-theme="dark"], html.dark) {
   --bg: #0b0a09;
   --bg2: #131210;
   --card: #1a1816;
   --tx: #f6f3ee;
-  --tx2: #c4bfb7;
-  --tx3: #8a857d;
-  --brd: rgba(255, 248, 240, 0.08);
-  --hover: rgba(255, 248, 240, 0.04);
+  --tx2: #cfcac2;
+  --tx3: #a39d94;
+  --brd: rgba(255, 248, 240, 0.14);
+  --hover: rgba(255, 248, 240, 0.06);
   /*
-   * Wine reserved for primary CTAs + active nav. For ambient text-accent
-   * (links, eyebrows, badges) we use cream/ink ink so the chrome reads neutral.
+   * Legacy primary slot: warm cream on charcoal in dark (matches yu3 dark --yu3-wine*).
    */
-  --gold: #d8cfc1;
-  --gold2: #efe8db;
-  --gdim: rgba(255, 248, 240, 0.06);
-  --text-accent: #d8cfc1;
-  --admin-primary-fill: #8b1a3a;
-  --admin-primary-fill-hover: #a32049;
-  --btn-text-on-accent: #fcf8f5;
+  --gold: #d9cfc0;
+  --gold2: #e4dbcc;
+  --gdim: rgba(245, 240, 232, 0.1);
+  --text-accent: #f6f3ee;
+  --admin-primary-fill: #d9cfc0;
+  --admin-primary-fill-hover: #e4dbcc;
+  --btn-text-on-accent: #12100c;
   --grn: #6dbf86;
   --grdim: rgba(42, 74, 53, 0.18);
   --red: #e87070;
@@ -230,12 +229,12 @@
   --ui-foreground: 36 30% 94%;
   --ui-card: 30 6% 10%;
   --ui-card-foreground: 36 30% 94%;
-  --ui-primary: 340 68% 32%;
-  --ui-primary-foreground: 24 60% 96%;
+  --ui-primary: 38 20% 80%;
+  --ui-primary-foreground: 20 20% 8%;
   --ui-muted: 30 6% 14%;
   --ui-muted-foreground: 30 8% 64%;
   --ui-border: 30 8% 18% / 0.5;
-  --ui-ring: 340 68% 32%;
+  --ui-ring: 38 16% 72%;
 }
 
 /* Override the legacy --yu-* surface tokens in dark mode so any component
@@ -246,7 +245,7 @@
   --yu-bg-sidebar: #0e0d0b;
   --yu-bg-card: #1a1816;
   --yu-bg-hover: #221f1c;
-  --yu-accent: #8b1a3a;
+  --yu-accent: #d4cbbf;
   --yu-border: rgba(255, 248, 240, 0.1);
   --yu-border-em: rgba(255, 248, 240, 0.18);
   --yu-text-1: #f6f3ee;
@@ -368,8 +367,9 @@
   background: rgba(255, 248, 240, 0.2);
 }
 
-/* Dark admin widget titles — same DM Sans caps as light (no serif section labels) */
-[data-theme="dark"] .admin-app .admin-section-h2 {
+/* Dark admin widget titles — same Brown caps as light (no serif section labels) */
+[data-theme="dark"] .admin-app .admin-section-h2,
+[data-yugo-admin-v3][data-theme="dark"] .admin-section-h2 {
   font-family: var(--font-body);
   font-weight: 700;
   font-size: 11px;
@@ -380,14 +380,17 @@
   padding-bottom: 8px;
 }
 @media (min-width: 640px) {
-  [data-theme="dark"] .admin-app .admin-section-h2 {
+  [data-theme="dark"] .admin-app .admin-section-h2,
+  [data-yugo-admin-v3][data-theme="dark"] .admin-section-h2 {
     font-size: 12px;
   }
 }
 
-/* Hero serif for page titles only — not widget/section labels (.admin-section-h2 is DM Sans caps). */
-[data-theme="dark"] .admin-app h2:not(.font-mono):not(.admin-section-h2) {
-  font-family: var(--font-hero);
+/* Page titles use Brown in admin — not widget/section labels (.admin-section-h2 is Brown caps). */
+[data-theme="dark"] .admin-app h2:not(.font-mono):not(.admin-section-h2),
+[data-yugo-admin-v3][data-theme="dark"]
+  h2:not(.font-mono):not(.admin-section-h2) {
+  font-family: var(--font-body);
 }
 
 [data-theme="dark"] .field-input:focus,
@@ -395,7 +398,7 @@
   border-bottom-color: var(--yu3-wine, var(--admin-primary-fill));
 }
 
-/* Admin eyebrow caps — DM Sans, uppercase, tight tracking */
+/* Admin eyebrow caps — Brown, uppercase, tight tracking */
 .admin-eyebrow {
   font-size: 10px;
   font-weight: 700;
@@ -405,11 +408,13 @@
   color: var(--tx2);
   font-family: var(--font-body);
 }
-html[data-theme="light"] .admin-app .admin-eyebrow {
+html[data-theme="light"] .admin-app .admin-eyebrow,
+html[data-theme="light"] [data-yugo-admin-v3] .admin-eyebrow {
   color: var(--yugo-primary-text);
 }
 
-[data-theme="dark"] .admin-app main table thead th {
+[data-theme="dark"] .admin-app main table thead th,
+[data-yugo-admin-v3][data-theme="dark"] .yu3-main table thead th {
   background: transparent;
   border-bottom: 1px solid var(--yu-border);
   color: var(--tx2);
@@ -417,10 +422,12 @@ html[data-theme="light"] .admin-app .admin-eyebrow {
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-[data-theme="dark"] .admin-app main table tbody tr {
+[data-theme="dark"] .admin-app main table tbody tr,
+[data-yugo-admin-v3][data-theme="dark"] .yu3-main table tbody tr {
   border-bottom: 1px solid var(--yu-border);
 }
-[data-theme="dark"] .admin-app main table tbody tr:hover {
+[data-theme="dark"] .admin-app main table tbody tr:hover,
+[data-yugo-admin-v3][data-theme="dark"] .yu3-main table tbody tr:hover {
   background: rgba(255, 248, 240, 0.03);
 }
 
@@ -429,6 +436,11 @@ html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
   scroll-padding-top: 1rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 /**
@@ -470,8 +482,9 @@ body {
   line-height: 1.3;
   font-family: var(--font-heading);
 }
-/* Light admin widget / column titles — DM Sans caps (not serif); wine ink */
-html[data-theme="light"] .admin-app .admin-section-h2 {
+/* Light admin widget / column titles — Brown caps (not serif); wine ink */
+html[data-theme="light"] .admin-app .admin-section-h2,
+html[data-theme="light"] [data-yugo-admin-v3] .admin-section-h2 {
   font-family: var(--font-body);
   font-weight: 700;
   font-size: 13px;
@@ -485,7 +498,8 @@ html[data-theme="light"] .admin-app .admin-section-h2 {
   .admin-section-h2 {
     font-size: 17px;
   }
-  html[data-theme="light"] .admin-app .admin-section-h2 {
+  html[data-theme="light"] .admin-app .admin-section-h2,
+  html[data-theme="light"] [data-yugo-admin-v3] .admin-section-h2 {
     font-size: 14px;
   }
 }
@@ -552,6 +566,41 @@ html[data-theme="light"] .admin-app .admin-section-h2 {
   background: var(--yu3-wine-hover, var(--admin-primary-fill-hover));
   border-color: var(--yu3-wine-hover, var(--admin-primary-fill-hover));
 }
+
+/* v3: base.css [data-yugo-admin-v3] a:hover out-specified plain .admin-btn-*; anchor CTAs need explicit ink */
+[data-yugo-admin-v3] a.admin-btn-primary,
+[data-yugo-admin-v3] a.admin-btn-primary:visited,
+[data-yugo-admin-v3] a.admin-btn-primary:hover,
+[data-yugo-admin-v3] a.admin-btn-primary:focus-visible {
+  color: var(--yu3-on-wine, var(--btn-text-on-accent));
+}
+[data-yugo-admin-v3] a.admin-btn-secondary,
+[data-yugo-admin-v3] a.admin-btn-secondary:visited,
+[data-yugo-admin-v3] a.admin-btn-secondary:hover,
+[data-yugo-admin-v3] a.admin-btn-secondary:focus-visible {
+  color: var(--yu3-ink, var(--tx));
+}
+[data-yugo-admin-v3] a.admin-btn-ghost,
+[data-yugo-admin-v3] a.admin-btn-ghost:visited,
+[data-yugo-admin-v3] a.admin-btn-ghost:focus-visible {
+  color: var(--yu3-ink, var(--tx));
+}
+[data-yugo-admin-v3] a.admin-btn-ghost:hover {
+  color: var(--yu3-ink-strong, var(--tx));
+}
+[data-yugo-admin-v3] a.admin-btn-danger,
+[data-yugo-admin-v3] a.admin-btn-danger:visited,
+[data-yugo-admin-v3] a.admin-btn-danger:hover,
+[data-yugo-admin-v3] a.admin-btn-danger:focus-visible {
+  color: var(--yu3-danger, var(--red));
+}
+[data-yugo-admin-v3] a.admin-btn-icon,
+[data-yugo-admin-v3] a.admin-btn-icon:visited,
+[data-yugo-admin-v3] a.admin-btn-icon:hover,
+[data-yugo-admin-v3] a.admin-btn-icon:focus-visible {
+  color: var(--yu3-ink-muted, var(--tx2));
+}
+
 .admin-btn-secondary {
   background: var(--yu3-bg-surface, #ffffff);
   color: var(--yu3-ink, var(--tx));
@@ -607,12 +656,12 @@ html[data-theme="light"] .admin-app .admin-section-h2 {
 .admin-kpi-card {
   position: relative;
   flex-shrink: 0;
-  padding: 0.875rem 1rem;
+  padding: 0.75rem 0.875rem;
   border-radius: var(--yu3-r-lg, 12px);
   border: 1px solid var(--yu3-line, #eaeaec);
   text-align: left;
   overflow: hidden;
-  min-width: 96px;
+  min-width: 88px;
   cursor: pointer;
   touch-action: manipulation;
   background: var(--yu3-bg-surface, #fff);
@@ -624,13 +673,13 @@ html[data-theme="light"] .admin-app .admin-section-h2 {
   }
 }
 .admin-kpi-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
   line-height: 1.2;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.375rem;
   color: var(--yu3-ink-muted, #52525b);
 }
 @media (min-width: 640px) {
@@ -640,7 +689,7 @@ html[data-theme="light"] .admin-app .admin-section-h2 {
   }
 }
 .admin-kpi-value {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
   font-family: var(--yu3-font-num, var(--font-heading));
   line-height: 1;
@@ -692,16 +741,27 @@ button,
 [role="button"] {
   transition-property:
     color, background-color, border-color, box-shadow, transform, opacity,
-    text-decoration-color;
-  transition-duration: var(--transition-fast);
+    text-decoration-color, filter;
+  transition-duration: var(--transition-normal);
   transition-timing-function: var(--ease-smooth);
 }
 input,
 select,
 textarea {
-  transition-property: border-color, box-shadow, background-color;
-  transition-duration: var(--transition-fast);
+  transition-property: border-color, box-shadow, background-color, color;
+  transition-duration: var(--transition-normal);
   transition-timing-function: var(--ease-smooth);
+}
+summary,
+label,
+nav a {
+  transition-property: color, background-color, opacity, transform;
+  transition-duration: var(--transition-normal);
+  transition-timing-function: var(--ease-smooth);
+}
+/* Tables: calmer row hover (many admin list pages) */
+tbody tr {
+  transition: background-color var(--transition-normal) var(--ease-smooth);
 }
 @media (prefers-reduced-motion: reduce) {
   a,
@@ -710,6 +770,10 @@ textarea {
   input,
   select,
   textarea,
+  summary,
+  label,
+  nav a,
+  tbody tr,
   [tabindex]:not([tabindex="-1"]),
   .animate-fade-up,
   .animate-fade-in,
@@ -725,6 +789,10 @@ textarea {
 [data-reduce-motion="true"] input,
 [data-reduce-motion="true"] select,
 [data-reduce-motion="true"] textarea,
+[data-reduce-motion="true"] summary,
+[data-reduce-motion="true"] label,
+[data-reduce-motion="true"] nav a,
+[data-reduce-motion="true"] tbody tr,
 [data-reduce-motion="true"] .animate-fade-up,
 [data-reduce-motion="true"] .animate-fade-in,
 [data-reduce-motion="true"] .animate-slide-in {
@@ -734,12 +802,13 @@ textarea {
 
 /* ═══════════════════════════════════════════════════════
    PAGE VIEW TRANSITIONS (Next.js 16 native API)
+   Slightly longer out / in for a calmer read on route change.
    ═══════════════════════════════════════════════════════ */
 ::view-transition-old(root) {
-  animation: 160ms var(--ease-smooth) both vt-page-out;
+  animation: 200ms var(--ease-smooth) both vt-page-out;
 }
 ::view-transition-new(root) {
-  animation: 320ms var(--ease-out-expo) both vt-page-in;
+  animation: 400ms var(--ease-out-expo) 40ms both vt-page-in;
 }
 @keyframes vt-page-out {
   from {
@@ -748,17 +817,19 @@ textarea {
   }
   to {
     opacity: 0;
-    transform: translateY(-6px) scale(0.998);
+    transform: translateY(-8px) scale(0.996);
   }
 }
 @keyframes vt-page-in {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(10px);
+    filter: blur(1.5px);
   }
   to {
     opacity: 1;
     transform: none;
+    filter: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -842,21 +913,16 @@ html:has(.estate-welcome-root) {
   }
 }
 
-/* Modal overlay — solid scrim, no blur (glass UI retired). */
-[data-modal-root] > .modal-overlay {
-  background: rgba(26, 20, 16, 0.5) !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+/* Modal overlay — Yugo+ v3: light warm scrim + subtle blur. Page stays legible behind.
+   Add class `modal-overlay` to any full-bleed dim layer (with or without `data-modal-root`). */
+.modal-overlay {
+  background: rgba(26, 20, 16, 0.1) !important;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
-[data-theme="light"] [data-modal-root] > .modal-overlay {
-  background: rgba(26, 20, 16, 0.4) !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-[data-theme="dark"] [data-modal-root] > .modal-overlay {
-  background: rgba(0, 0, 0, 0.65) !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+html[data-theme="dark"] .modal-overlay,
+[data-theme="dark"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.2) !important;
 }
 
 /* Centre-screen card (desktop modals) */
@@ -993,6 +1059,7 @@ html:has(.estate-welcome-root) {
   .stagger-item {
     animation: none !important;
   }
+  .modal-overlay,
   [data-modal-root] > .modal-overlay,
   [data-yugo-glass-modal] .yugo-glass-light {
     backdrop-filter: none !important;
@@ -1125,6 +1192,19 @@ html[data-theme="light"] .admin-app .admin-row-hover:hover {
   height: 36px;
   padding: 0 12px;
 }
+.admin-input-sm,
+.admin-select-sm {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+  border-radius: var(--yu3-r-sm, 6px);
+}
+.admin-input-lg,
+.admin-select-lg {
+  height: 40px;
+  padding: 0 14px;
+  font-size: 14px;
+}
 .admin-textarea {
   min-height: 88px;
   padding: 8px 12px;
@@ -1143,7 +1223,8 @@ html[data-theme="light"] .admin-app .admin-row-hover:hover {
 .admin-select:focus,
 .admin-textarea:focus {
   border-color: var(--yu3-wine, #5c1a33);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--yu3-wine, #5c1a33) 22%, transparent);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--yu3-wine, #5c1a33) 22%, transparent);
 }
 .admin-input:disabled,
 .admin-select:disabled,
@@ -1273,28 +1354,46 @@ html[data-theme="light"] .admin-app .admin-row-hover:hover {
   animation: client-completed-dot 2s ease-in-out infinite;
 }
 
-/* Instrument Sans for h2+ / UI headings; `.admin-app` overrides to body stack (DM Sans) */
+/* UI headings use var(--font-heading); admin v3 overrides to Brown on [data-yugo-admin-v3]. */
 .font-heading {
   font-family: var(--font-heading);
 }
 
 .admin-app {
   --font-heading: var(--font-body);
+  --font-hero: var(--font-body);
   /* Wine page canvas — does not depend on Tailwind resolving `bg-[var(--bg)]` */
   background-color: var(--yu-bg-page);
   --admin-chrome-h: var(--app-chrome-h);
   --admin-r: var(--app-r);
   --admin-r-md: var(--app-r-md);
   --admin-font-ui: var(--app-font-ui);
-  font-family: var(--app-font-ui), var(--font-body);
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* Partner + crew shells: same system typography as root (explicit for nested resets) */
 .partner-app,
-.crew-app {
+.crew-app:not([data-yugo-admin-v3]) {
   font-family: var(--app-font-ui), var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Bridge shared admin DataTable (yu3 classes) when not under [data-yugo-admin-v3] */
+  --yu3-bg-surface: var(--card);
+  --yu3-bg-surface-sunken: var(--hover);
+  --yu3-line: var(--brd);
+  --yu3-line-subtle: var(--surface-border, var(--brd));
+  --yu3-ink: var(--tx);
+  --yu3-ink-muted: var(--tx2);
+  --yu3-ink-faint: var(--tx3);
+  --yu3-wine: var(--text-accent, #5c1a33);
+  --yu3-wine-wash: color-mix(in srgb, var(--yu3-wine) 7%, var(--card));
+  --yu3-success: var(--grn, #2f6f3c);
+  --yu3-success-tint: color-mix(in srgb, var(--grn, #2f6f3c) 12%, var(--card));
+}
+.crew-app[data-yugo-admin-v3] {
+  font-family: var(--yu3-font-base, var(--app-font-ui)), var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -1514,7 +1613,8 @@ html[data-theme="light"]
 }
 
 /* Admin: one scale for primary page titles — sans (operational pages, not estate/client) */
-.admin-app .admin-page-hero {
+.admin-app .admin-page-hero,
+[data-yugo-admin-v3] .admin-page-hero {
   font-family: var(--font-body);
   font-size: 1.375rem; /* 22px */
   font-weight: 600;
@@ -1522,17 +1622,20 @@ html[data-theme="light"]
   line-height: 1.2;
   color: var(--tx);
 }
-html[data-theme="light"] .admin-app .admin-page-hero {
+html[data-theme="light"] .admin-app .admin-page-hero,
+html[data-theme="light"] [data-yugo-admin-v3] .admin-page-hero {
   color: var(--yugo-primary-text);
 }
 @media (min-width: 640px) {
-  .admin-app .admin-page-hero {
+  .admin-app .admin-page-hero,
+  [data-yugo-admin-v3] .admin-page-hero {
     font-size: 1.625rem; /* 26px */
   }
 }
 
 /* Admin: large sans figures (estimates, KPI-style values) — one step below page hero */
-.admin-app .admin-page-hero-stat {
+.admin-app .admin-page-hero-stat,
+[data-yugo-admin-v3] .admin-page-hero-stat {
   font-family: var(--font-body);
   font-size: 1.5rem; /* 24px */
   font-weight: 700;
@@ -1541,13 +1644,15 @@ html[data-theme="light"] .admin-app .admin-page-hero {
   color: var(--tx);
   font-variant-numeric: tabular-nums;
 }
-html[data-theme="light"] .admin-app .admin-page-hero-stat {
+html[data-theme="light"] .admin-app .admin-page-hero-stat,
+html[data-theme="light"] [data-yugo-admin-v3] .admin-page-hero-stat {
   font-family: var(--font-body);
   font-weight: 700;
   color: var(--tx);
 }
 @media (min-width: 640px) {
-  .admin-app .admin-page-hero-stat {
+  .admin-app .admin-page-hero-stat,
+  [data-yugo-admin-v3] .admin-page-hero-stat {
     font-size: 1.875rem; /* 30px */
   }
 }
@@ -1562,7 +1667,8 @@ h1:not(.font-mono) {
 }
 
 /* Admin operational pages use sans for h1 titles (retires serif on admin operational surfaces). */
-.admin-app h1:not(.font-mono):not(.font-hero) {
+.admin-app h1:not(.font-mono):not(.font-hero),
+[data-yugo-admin-v3] h1:not(.font-mono):not(.font-hero) {
   font-family: var(--font-body);
 }
 
@@ -3160,6 +3266,59 @@ select:focus-visible {
   background: var(--surface);
   border-bottom: 1px solid var(--surface-border);
 }
+/* v3: legacy DataTable (admin-dt) — one sunken header band, full-width row lines */
+[data-yugo-admin-v3] table.admin-dt thead.yu3-dt-thead th {
+  background: transparent;
+  border-bottom: 1px solid var(--yu3-line, var(--brd));
+  box-shadow: none;
+  vertical-align: middle;
+}
+[data-yugo-admin-v3] table.admin-dt tbody tr.dt-row-divider {
+  border-bottom: 1px solid var(--yu3-line-subtle, var(--surface-border));
+}
+[data-yugo-admin-v3] table.admin-dt tbody td {
+  background: transparent;
+  vertical-align: middle;
+}
+/* Legacy DataTable: Yugo+ header labels + row hover (no gold wash) */
+[data-yugo-admin-v3] table.admin-dt thead.yu3-dt-thead th.dt-th {
+  color: var(--yu3-ink-faint);
+  letter-spacing: 0.1em;
+  font-size: 10px;
+  font-weight: 600;
+  border-bottom-color: var(--yu3-line);
+}
+[data-yugo-admin-v3] table.admin-dt .dt-td {
+  color: var(--yu3-ink);
+  font-size: 13px;
+}
+[data-yugo-admin-v3] table.admin-dt tbody tr.dt-row-clickable:hover {
+  background: color-mix(
+    in srgb,
+    var(--yu3-wine) 4%,
+    var(--yu3-bg-surface)
+  ) !important;
+}
+[data-yugo-admin-v3] table.admin-dt tbody tr.dt-row-clickable:active {
+  background: color-mix(
+    in srgb,
+    var(--yu3-wine) 6%,
+    var(--yu3-bg-surface)
+  ) !important;
+}
+[data-yugo-admin-v3] table.admin-dt.dt-striped tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--yu3-ink) 1.2%, var(--yu3-bg-surface));
+}
+[data-yugo-admin-v3]
+  table.admin-dt.dt-striped
+  tbody
+  tr:nth-child(even).dt-row-clickable:hover {
+  background: color-mix(
+    in srgb,
+    var(--yu3-wine) 5.5%,
+    var(--yu3-bg-surface)
+  ) !important;
+}
 /* Table data cells */
 .dt-td {
   font-size: 14px;
@@ -3555,7 +3714,27 @@ select:focus-visible {
 /* ═══════════════════════════════════════════════════════
    CREW SHELL SIDEBAR — light-only crew portal nav tokens
    ═══════════════════════════════════════════════════════ */
-.crew-app .glass-sidebar {
+.crew-app[data-yugo-admin-v3] .glass-sidebar {
+  --crew-nav-active-bg: var(--yu3-wine-wash);
+  --crew-nav-active-fg: var(--yu3-wine);
+  --crew-nav-active-border: color-mix(
+    in srgb,
+    var(--yu3-wine) 38%,
+    transparent
+  );
+  --crew-nav-hover-bg: var(--yu3-bg-surface-sunken);
+  --crew-nav-hover-fg: var(--yu3-ink-strong);
+  --crew-nav-item-fg: var(--yu3-ink-muted);
+  --crew-nav-disabled-fg: color-mix(
+    in srgb,
+    var(--yu3-ink-faint) 75%,
+    transparent
+  );
+  background: var(--yu3-bg-surface);
+  border-right-color: var(--yu3-line-subtle) !important;
+  box-shadow: var(--yu3-shadow-md);
+}
+.crew-app:not([data-yugo-admin-v3]) .glass-sidebar {
   --crew-nav-active-bg: color-mix(in srgb, #5c1a33 11%, transparent);
   --crew-nav-active-fg: #5c1a33;
   --crew-nav-active-border: color-mix(in srgb, #5c1a33 38%, transparent);
@@ -3638,7 +3817,23 @@ select:focus-visible {
 }
 
 /* Crew active job detail — warm cream canvas, soft-radius controls */
-.crew-app main#crew-main.tab-content:has(.crew-job-premium) {
+.crew-app[data-yugo-admin-v3]
+  main#crew-main.tab-content:has(.crew-job-premium) {
+  background:
+    radial-gradient(
+      ellipse 100% 70% at 50% -8%,
+      color-mix(in srgb, var(--yu3-wine) 6%, transparent) 0%,
+      transparent 52%
+    ),
+    linear-gradient(
+      180deg,
+      var(--yu3-bg-canvas) 0%,
+      color-mix(in srgb, var(--yu3-bg-canvas) 88%, var(--yu3-line-subtle) 12%)
+        100%
+    );
+}
+.crew-app:not([data-yugo-admin-v3])
+  main#crew-main.tab-content:has(.crew-job-premium) {
   background:
     radial-gradient(
       ellipse 100% 70% at 50% -8%,
@@ -3650,11 +3845,14 @@ select:focus-visible {
 
 /* ═══════════════════════════════════════════════════════
    CREW PORTAL — rectangular buttons (body portals: data-crew-portal)
-   Use .crew-keep-round on rare controls that must stay circular.
+   Yugo+ v3 crew: rounded-md to match operator. Use .crew-keep-round on rare controls that must stay circular.
    ═══════════════════════════════════════════════════════ */
-.crew-app button:not(.crew-keep-round),
+.crew-app:not([data-yugo-admin-v3]) button:not(.crew-keep-round),
 [data-crew-portal] button:not(.crew-keep-round) {
   border-radius: 0 !important;
+}
+.crew-app[data-yugo-admin-v3] button:not(.crew-keep-round) {
+  border-radius: var(--yu3-r-md) !important;
 }
 .crew-app button.crew-keep-round,
 [data-crew-portal] button.crew-keep-round {
@@ -3662,26 +3860,48 @@ select:focus-visible {
 }
 
 /* Anchor CTAs use the same rectangular chrome as buttons. */
-.crew-app a.crew-premium-cta:not(.crew-keep-round),
+.crew-app:not([data-yugo-admin-v3]) a.crew-premium-cta:not(.crew-keep-round),
 [data-crew-portal] a.crew-premium-cta:not(.crew-keep-round) {
   border-radius: 0 !important;
+}
+.crew-app[data-yugo-admin-v3] a.crew-premium-cta:not(.crew-keep-round) {
+  border-radius: var(--yu3-r-md) !important;
 }
 
 /* Premium crew CTAs — solid forest (no gold gradient). */
 .crew-app .crew-premium-cta,
 [data-crew-portal] .crew-premium-cta {
   background-color: #2c3e2d !important;
+  /* Must not inherit body --yu3-ink on green (WCAG on accent). */
+  color: #f7fbf5 !important;
   transition:
     background-color 0.15s ease,
+    color 0.15s ease,
     opacity 0.15s ease,
     transform 0.1s ease;
+}
+.crew-app[data-yugo-admin-v3] .crew-premium-cta {
+  background-color: var(--yu3-forest) !important;
+  color: var(--yu3-on-forest) !important;
+  box-shadow: 0 4px 16px
+    color-mix(in srgb, var(--yu3-forest) 24%, transparent) !important;
 }
 .crew-app .crew-premium-cta:hover:not(:disabled),
 [data-crew-portal] .crew-premium-cta:hover:not(:disabled) {
   background-color: #243524 !important;
+  color: #f7fbf5 !important;
+}
+.crew-app[data-yugo-admin-v3] .crew-premium-cta:hover:not(:disabled) {
+  background-color: var(--yu3-forest-hover) !important;
+  color: var(--yu3-on-forest) !important;
 }
 .crew-app a.crew-premium-cta:hover {
   background-color: #243524 !important;
+  color: #f7fbf5 !important;
+}
+.crew-app[data-yugo-admin-v3] a.crew-premium-cta:hover {
+  background-color: var(--yu3-forest-hover) !important;
+  color: var(--yu3-on-forest) !important;
 }
 
 /* Crew job detail premium — after square defaults: soft corners + wine primary CTAs (cream ink).
@@ -3709,23 +3929,29 @@ select:focus-visible {
 
 .crew-app .crew-job-premium .crew-premium-cta,
 .crew-app .crew-job-premium a.crew-premium-cta,
+.crew-app[data-yugo-admin-v3] .crew-job-premium .crew-premium-cta,
+.crew-app[data-yugo-admin-v3] .crew-job-premium a.crew-premium-cta,
 [data-crew-portal] [data-crew-job-premium] .crew-premium-cta,
 [data-crew-portal] [data-crew-job-premium] a.crew-premium-cta {
-  background-color: #5c1a33 !important;
-  color: rgba(255, 251, 247, 0.96) !important;
-  border: 1px solid rgba(61, 18, 36, 0.95) !important;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset !important;
+  background-color: var(--yu3-wine) !important;
+  color: var(--yu3-on-wine) !important;
+  border: 1px solid color-mix(in srgb, var(--yu3-wine) 88%, #000) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 4px 14px color-mix(in srgb, var(--yu3-wine) 22%, transparent) !important;
 }
 
 .crew-app .crew-job-premium .crew-premium-cta:hover:not(:disabled),
 .crew-app .crew-job-premium a.crew-premium-cta:hover,
+.crew-app[data-yugo-admin-v3] .crew-job-premium .crew-premium-cta:hover:not(:disabled),
+.crew-app[data-yugo-admin-v3] .crew-job-premium a.crew-premium-cta:hover,
 [data-crew-portal]
   [data-crew-job-premium]
   .crew-premium-cta:hover:not(:disabled),
 [data-crew-portal] [data-crew-job-premium] a.crew-premium-cta:hover {
-  background-color: #4a1529 !important;
-  color: #fffbf7 !important;
-  border-color: #2f0e1a !important;
+  background-color: var(--yu3-wine-hover) !important;
+  color: var(--yu3-on-wine) !important;
+  border-color: color-mix(in srgb, var(--yu3-wine-hover) 80%, #000) !important;
 }
 
 .crew-app .crew-job-premium .crew-premium-cta:disabled,

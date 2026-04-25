@@ -9,7 +9,7 @@ import {
   PendingChangeRequestsProvider,
   usePendingChangeRequests,
 } from "./PendingChangeRequestsContext"
-import { ThemeProvider } from "./ThemeContext"
+import { ThemeProvider, useTheme } from "./ThemeContext"
 import RealtimeListener from "./RealtimeListener"
 import SessionTimeout from "./SessionTimeout"
 import OfflineBanner from "@/components/ui/OfflineBanner"
@@ -26,6 +26,7 @@ function PendingAwareShell({
   isSuperAdmin: boolean
   role: string
 }) {
+  const { theme, toggleTheme } = useTheme()
   const router = useRouter()
   const supabase = React.useMemo(() => createClient(), [])
   const { pendingCount } = usePendingChangeRequests()
@@ -62,6 +63,8 @@ function PendingAwareShell({
 
   return (
     <AdminShell
+      theme={theme}
+      onToggleTheme={toggleTheme}
       user={{
         id: user?.id,
         email: user?.email,

@@ -1,35 +1,34 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency"
-import { formatMoveDate } from "@/lib/date-format"
-import { serviceTypeDisplayLabel } from "@/lib/displayLabels"
+import * as React from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
+import { formatMoveDate } from "@/lib/date-format";
+import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
 import {
   getStatusLabel,
   normalizeStatus,
   MOVE_STATUS_LINE_COLOR,
   DELIVERY_STATUS_LINE_COLOR,
-} from "@/lib/move-status"
-import {
-  getLocalHourInAppTimezone,
-} from "@/lib/business-timezone"
-import { formatDate } from "@/lib/client-timezone"
+} from "@/lib/move-status";
+import { getLocalHourInAppTimezone } from "@/lib/business-timezone";
+import { formatDate } from "@/lib/client-timezone";
 
-import { PageHeader } from "@/design-system/admin/layout"
-import { Button } from "@/design-system/admin/primitives"
-import { StatusPill, TrendPill } from "@/design-system/admin/primitives/Badge"
-import { Avatar, AvatarStack } from "@/design-system/admin/primitives"
+import { PageHeader } from "@/design-system/admin/layout";
+import { Button } from "@/design-system/admin/primitives";
+import { StatusPill, TrendPill } from "@/design-system/admin/primitives/Badge";
+import { Avatar, AvatarStack } from "@/design-system/admin/primitives";
 import {
   KpiStrip,
-  GaugeCard,
   SparkPanel,
   ActivityCard,
   MetricCard,
-} from "@/design-system/admin/dashboard"
-import { BreakdownList } from "@/design-system/admin/dashboard/GaugeCard"
-import { cn } from "@/design-system/admin/lib/cn"
+  BarChartCard,
+} from "@/design-system/admin/dashboard";
+import { BreakdownList } from "@/design-system/admin/dashboard/GaugeCard";
+import type { RevenueBarPoint } from "@/lib/admin/command-center-data";
+import { cn } from "@/design-system/admin/lib/cn";
 
 import {
   CaretRight,
@@ -50,123 +49,124 @@ import {
   PencilSimple,
   Bell,
   Info,
-} from "@/design-system/admin/icons"
+} from "@/design-system/admin/icons";
 
 /* ─────────────────────────────────────────────────────────────────────────
  * Types (mirror the existing Command Center props)
  * ──────────────────────────────────────────────────────────────────────── */
 
 type Job = {
-  id: string
-  type: "delivery" | "move"
-  name: string
-  subtitle: string
-  time: string
-  status: string
-  date: string
-  tag: string
-  delivery_number?: string | null
-  move_code?: string | null
-}
+  id: string;
+  type: "delivery" | "move";
+  name: string;
+  subtitle: string;
+  time: string;
+  status: string;
+  date: string;
+  tag: string;
+  delivery_number?: string | null;
+  move_code?: string | null;
+};
 
 type ActionTask = {
-  id: string
-  taskType: "delivery_request" | "change_request"
-  title: string
-  subtitle: string
-  createdAt: string
-  href: string
-}
+  id: string;
+  taskType: "delivery_request" | "change_request";
+  title: string;
+  subtitle: string;
+  createdAt: string;
+  href: string;
+};
 
 type ActivityEvent = {
-  id: string
-  entity_type: string
-  entity_id: string
-  event_type: string
-  description: string | null
-  icon: string | null
-  created_at: string
-}
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  event_type: string;
+  description: string | null;
+  icon: string | null;
+  created_at: string;
+};
 
-type MonthRevenue = { m: string; moves: number; partner: number }
+type MonthRevenue = { m: string; moves: number; partner: number };
 
 type UnassignedJob = {
-  id: string
-  name: string
-  date: string
-  type: "move" | "delivery"
-  code: string
-  href: string
-}
+  id: string;
+  name: string;
+  date: string;
+  type: "move" | "delivery";
+  code: string;
+  href: string;
+};
 
 type CrewCapacityDay = {
-  date: string
-  label: string
-  total: number
-  booked: number
-}
+  date: string;
+  label: string;
+  total: number;
+  booked: number;
+};
 
 type QuotePipeline = {
-  openCount: number
-  openValue: number
-  viewedCount: number
-  acceptedThisWeek: number
-  conversionRate: number
-  expiringToday: number
-}
+  openCount: number;
+  openValue: number;
+  viewedCount: number;
+  acceptedThisWeek: number;
+  conversionRate: number;
+  expiringToday: number;
+};
 
 type TodayEarnings = {
-  potential: number
-  collected: number
-  pending: number
-  jobCount: number
-}
+  potential: number;
+  collected: number;
+  pending: number;
+  jobCount: number;
+};
 
 type SatisfactionData = {
-  avgRating: number
-  count: number
-  pendingReviews: number
-}
+  avgRating: number;
+  count: number;
+  pendingReviews: number;
+};
 
 type LeadAttentionPreviewRow = {
-  id: string
-  lead_number: string
-  first_name: string | null
-  last_name: string | null
-  created_at: string
-  completeness_path: string | null
-  status: string
-  service_type: string | null
-  follow_up_sent_at: string | null
-}
+  id: string;
+  lead_number: string;
+  first_name: string | null;
+  last_name: string | null;
+  created_at: string;
+  completeness_path: string | null;
+  status: string;
+  service_type: string | null;
+  follow_up_sent_at: string | null;
+};
 
 type LeadPulse = {
-  needsAttention: number
-  avgResponseMin: number | null
-  monthReceived: number
-  attentionPreview?: LeadAttentionPreviewRow[]
-}
+  needsAttention: number;
+  avgResponseMin: number | null;
+  monthReceived: number;
+  attentionPreview?: LeadAttentionPreviewRow[];
+};
 
 export interface CommandCenterV3Props {
-  todayJobs: Job[]
-  upcomingJobs: Job[]
-  todayJobCount: number
-  overdueAmount: number
-  overdueCount: number
-  currentMonthRevenue: number
-  revenuePctChange: number
-  revenueBreakdown: { moves: number; partner: number }
-  monthlyRevenue: MonthRevenue[]
-  activityEvents: ActivityEvent[]
-  activeQuotesCount: number
-  actionTasks: ActionTask[]
-  unassignedJobs: UnassignedJob[]
-  crewCapacity: CrewCapacityDay[]
-  quotePipeline: QuotePipeline
-  todayEarnings: TodayEarnings
-  satisfaction: SatisfactionData
-  dailyBrief: string
-  leadPulse: LeadPulse | null
+  todayJobs: Job[];
+  upcomingJobs: Job[];
+  todayJobCount: number;
+  overdueAmount: number;
+  overdueCount: number;
+  currentMonthRevenue: number;
+  revenuePctChange: number;
+  revenueBreakdown: { moves: number; partner: number };
+  monthlyRevenue: MonthRevenue[];
+  revenueByDay: RevenueBarPoint[];
+  activityEvents: ActivityEvent[];
+  activeQuotesCount: number;
+  actionTasks: ActionTask[];
+  unassignedJobs: UnassignedJob[];
+  crewCapacity: CrewCapacityDay[];
+  quotePipeline: QuotePipeline;
+  todayEarnings: TodayEarnings;
+  satisfaction: SatisfactionData;
+  dailyBrief: string;
+  leadPulse: LeadPulse | null;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -175,23 +175,23 @@ export interface CommandCenterV3Props {
 
 function jobHref(job: Job) {
   if (job.type === "delivery") {
-    const slug = job.delivery_number || job.id
-    return `/admin/deliveries/${encodeURIComponent(slug)}`
+    const slug = job.delivery_number || job.id;
+    return `/admin/deliveries/${encodeURIComponent(slug)}`;
   }
-  const slug = job.move_code?.trim().replace(/^#/, "").toUpperCase() || job.id
-  return `/admin/moves/${slug}`
+  const slug = job.move_code?.trim().replace(/^#/, "").toUpperCase() || job.id;
+  return `/admin/moves/${slug}`;
 }
 
 function jobTint(job: Job) {
   if (job.type === "delivery") {
-    return DELIVERY_STATUS_LINE_COLOR[job.status] || "var(--yu3-ink-faint)"
+    return DELIVERY_STATUS_LINE_COLOR[job.status] || "var(--yu3-ink-faint)";
   }
-  const n = normalizeStatus(job.status) || ""
+  const n = normalizeStatus(job.status) || "";
   return (
     MOVE_STATUS_LINE_COLOR[job.status] ||
     MOVE_STATUS_LINE_COLOR[n] ||
     "var(--yu3-ink-faint)"
-  )
+  );
 }
 
 function jobStatusLabel(job: Job) {
@@ -199,43 +199,47 @@ function jobStatusLabel(job: Job) {
     return job.status
       .split(/[-_]/)
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ")
+      .join(" ");
   }
-  return getStatusLabel(job.status)
+  return getStatusLabel(job.status);
 }
 
 function jobStatusTone(
   job: Job,
 ): "wine" | "forest" | "neutral" | "warning" | "success" | "danger" | "info" {
-  const n = (normalizeStatus(job.status) || job.status || "").toLowerCase()
-  if (/(complete|delivered|paid|confirm|accepted|active)/.test(n)) return "success"
-  if (/(cancel|void|reject|expired|failed)/.test(n)) return "danger"
-  if (/(progress|transit|dispatch|schedul|loading|unloading|en[_-]route)/.test(n)) return "info"
-  if (/(pending|draft|review|cold|^new$|lost)/.test(n)) return "neutral"
-  return "neutral"
+  const n = (normalizeStatus(job.status) || job.status || "").toLowerCase();
+  if (/(complete|delivered|paid|confirm|accepted|active)/.test(n))
+    return "success";
+  if (/(cancel|void|reject|expired|failed)/.test(n)) return "danger";
+  if (
+    /(progress|transit|dispatch|schedul|loading|unloading|en[_-]route)/.test(n)
+  )
+    return "info";
+  if (/(pending|draft|review|cold|^new$|lost)/.test(n)) return "neutral";
+  return "neutral";
 }
 
 function relativeTime(iso: string): string {
-  const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
-  if (sec < 60) return "just now"
-  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`
-  if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`
-  return `${Math.floor(sec / 86400)}d ago`
+  const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (sec < 60) return "just now";
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
+  return `${Math.floor(sec / 86400)}d ago`;
 }
 
 function shortActivityDesc(desc: string): string {
-  const m = desc.match(/Notification sent to (.+?): Status is (.+)$/)
-  if (m) return `${m[1]} · ${getStatusLabel(m[2] || null)}`
+  const m = desc.match(/Notification sent to (.+?): Status is (.+)$/);
+  if (m) return `${m[1]} · ${getStatusLabel(m[2] || null)}`;
   if (desc.toLowerCase().includes("payment")) {
-    const nameMatch = desc.match(/(.+?)\s*[·]/)
-    return nameMatch ? `${nameMatch[1].trim()} · Paid` : desc
+    const nameMatch = desc.match(/(.+?)\s*[·]/);
+    return nameMatch ? `${nameMatch[1].trim()} · Paid` : desc;
   }
-  return desc.length > 80 ? desc.slice(0, 77) + "…" : desc
+  return desc.length > 80 ? desc.slice(0, 77) + "…" : desc;
 }
 
 function safeTrend(curr: number, prev: number): number {
-  if (prev <= 0) return 0
-  return ((curr - prev) / prev) * 100
+  if (prev <= 0) return 0;
+  return ((curr - prev) / prev) * 100;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -252,6 +256,7 @@ export default function CommandCenterV3Client({
   revenuePctChange,
   revenueBreakdown,
   monthlyRevenue,
+  revenueByDay,
   activityEvents,
   activeQuotesCount,
   actionTasks,
@@ -262,22 +267,22 @@ export default function CommandCenterV3Client({
   satisfaction,
   leadPulse,
 }: CommandCenterV3Props) {
-  const router = useRouter()
+  const router = useRouter();
 
-  const now = new Date()
-  const hour = getLocalHourInAppTimezone(now)
+  const now = new Date();
+  const hour = getLocalHourInAppTimezone(now);
   const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening"
+    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const dateStr = formatDate(now, {
     weekday: "long",
     month: "short",
     day: "numeric",
-  })
+  });
 
   const revenueSeries = React.useMemo(
     () => monthlyRevenue.map((m) => m.moves + m.partner),
     [monthlyRevenue],
-  )
+  );
 
   const kpiTiles = React.useMemo(
     () => [
@@ -332,7 +337,7 @@ export default function CommandCenterV3Client({
       overdueAmount,
       overdueCount,
     ],
-  )
+  );
 
   const sparkItems = React.useMemo(() => {
     return [
@@ -361,7 +366,9 @@ export default function CommandCenterV3Client({
       {
         id: "satisfaction",
         label: "Client rating",
-        value: satisfaction.avgRating ? satisfaction.avgRating.toFixed(1) : "0.0",
+        value: satisfaction.avgRating
+          ? satisfaction.avgRating.toFixed(1)
+          : "0.0",
         hint: `${satisfaction.count} reviews · ${satisfaction.pendingReviews} pending`,
       },
       {
@@ -372,7 +379,7 @@ export default function CommandCenterV3Client({
           ? `${leadPulse.needsAttention} need attention${leadPulse.avgResponseMin != null ? ` · ${Math.round(leadPulse.avgResponseMin)}m avg` : ""}`
           : "Lead pulse unavailable",
       },
-    ]
+    ];
   }, [
     activeQuotesCount,
     leadPulse,
@@ -384,25 +391,7 @@ export default function CommandCenterV3Client({
     todayEarnings.collected,
     todayEarnings.jobCount,
     todayEarnings.potential,
-  ])
-
-  const revenueSegments = React.useMemo(
-    () => [
-      {
-        id: "moves",
-        label: "Moves",
-        value: revenueBreakdown.moves,
-        color: "var(--yu3-ink-strong)",
-      },
-      {
-        id: "partner",
-        label: "Partner",
-        value: revenueBreakdown.partner,
-        color: "var(--yu3-success)",
-      },
-    ],
-    [revenueBreakdown.moves, revenueBreakdown.partner],
-  )
+  ]);
 
   const quotePipelineBreakdown = React.useMemo(
     () => [
@@ -437,7 +426,7 @@ export default function CommandCenterV3Client({
       quotePipeline.openCount,
       quotePipeline.viewedCount,
     ],
-  )
+  );
 
   const activityItems = React.useMemo(
     () =>
@@ -451,13 +440,13 @@ export default function CommandCenterV3Client({
         onClick: () => router.push(entityHref(e.entity_type, e.entity_id)),
       })),
     [activityEvents, router],
-  )
+  );
 
   const attentionCount =
     (actionTasks?.length ?? 0) +
     (leadPulse?.needsAttention ?? 0) +
     (unassignedJobs?.length ?? 0) +
-    overdueCount
+    overdueCount;
 
   return (
     <div className="flex flex-col gap-6 pb-10">
@@ -512,7 +501,7 @@ export default function CommandCenterV3Client({
       />
 
       {/* Row 1 — KPI Strip */}
-      <KpiStrip tiles={kpiTiles} columns={4} />
+      <KpiStrip tiles={kpiTiles} />
 
       {/* Row 2 — Split 7 / 5 */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
@@ -604,9 +593,7 @@ export default function CommandCenterV3Client({
                     href={jobHref(u)}
                     className="hover:text-[var(--yu3-ink)] truncate max-w-[160px]"
                   >
-                    <span className="yu3-num">
-                      {formatMoveDate(u.date)}
-                    </span>
+                    <span className="yu3-num">{formatMoveDate(u.date)}</span>
                     <span className="mx-1">·</span>
                     {u.name}
                   </Link>
@@ -617,31 +604,14 @@ export default function CommandCenterV3Client({
         </section>
 
         <aside className="xl:col-span-5 flex flex-col gap-4">
-          <GaugeCard
-            eyebrow="This month"
+          <BarChartCard
+            eyebrow="Last 30 days"
             title="Revenue mix"
-            value={
-              currentMonthRevenue > 0
-                ? revenueBreakdown.moves / currentMonthRevenue
-                : 0
-            }
-            valueLabel={formatCurrency(currentMonthRevenue)}
-            valueHint={
-              <>
-                <span
-                  className={
-                    revenuePctChange >= 0
-                      ? "text-[var(--yu3-success)] font-semibold"
-                      : "text-[var(--yu3-danger)] font-semibold"
-                  }
-                >
-                  {revenuePctChange >= 0 ? "+" : ""}
-                  {revenuePctChange.toFixed(1)}%
-                </span>
-                {" vs last month"}
-              </>
-            }
-            segments={revenueSegments}
+            series={[
+              { key: "moves", label: "Moves", color: "var(--yu3-info)" },
+              { key: "partner", label: "Partner", color: "var(--yu3-success)" },
+            ]}
+            data={revenueByDay}
             rightSlot={
               <Button
                 variant="ghost"
@@ -653,16 +623,27 @@ export default function CommandCenterV3Client({
               </Button>
             }
           >
-            <BreakdownList
-              items={revenueSegments.map((s) => ({
-                id: s.id,
-                label: s.label,
-                value: s.value,
-                color: s.color,
-              }))}
-              currency
-            />
-          </GaugeCard>
+            <div className="flex items-center justify-between pt-1 border-t border-[var(--yu3-line-subtle)]">
+              <div className="text-[13px] text-[var(--yu3-ink-muted)]">
+                This month total
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[15px] font-semibold text-[var(--yu3-ink-strong)] yu3-num">
+                  {formatCurrency(currentMonthRevenue)}
+                </span>
+                <span
+                  className={`text-[11px] font-semibold yu3-num ${
+                    revenuePctChange >= 0
+                      ? "text-[var(--yu3-success)]"
+                      : "text-[var(--yu3-danger)]"
+                  }`}
+                >
+                  {revenuePctChange >= 0 ? "+" : ""}
+                  {revenuePctChange.toFixed(1)}%
+                </span>
+              </div>
+            </div>
+          </BarChartCard>
 
           <MetricCard
             eyebrow="Quote pipeline"
@@ -768,21 +749,21 @@ export default function CommandCenterV3Client({
               variant="ghost"
               size="sm"
               trailingIcon={<CaretRight size={14} />}
-              onClick={() => router.push("/admin/dispatch")}
+              onClick={() => router.push("/admin")}
             >
               Dispatch board
             </Button>
           </header>
           <div className="grid grid-cols-7 gap-2">
             {crewCapacity.map((day) => {
-              const hasCapacity = day.total > 0
-              const pct = hasCapacity ? day.booked / day.total : 0
+              const hasCapacity = day.total > 0;
+              const pct = hasCapacity ? day.booked / day.total : 0;
               const tone =
                 pct >= 0.9
                   ? "var(--yu3-danger)"
                   : pct >= 0.7
                     ? "var(--yu3-warning)"
-                    : "var(--yu3-success)"
+                    : "var(--yu3-success)";
               return (
                 <div
                   key={day.date}
@@ -816,7 +797,7 @@ export default function CommandCenterV3Client({
                     </div>
                   )}
                 </div>
-              )
+              );
             })}
           </div>
         </section>
@@ -841,7 +822,7 @@ export default function CommandCenterV3Client({
         }
       />
     </div>
-  )
+  );
 }
 
 /* ─── Inline subcomponents ──────────────────────────────────────────── */
@@ -854,25 +835,31 @@ function AttentionCard({
   tone,
   items,
 }: {
-  eyebrow: string
-  title: string
-  empty: string
-  icon: React.ReactNode
-  tone: "wine" | "forest" | "warning"
-  items: { id: string; label: string; meta: string; time: string; href: string }[]
+  eyebrow: string;
+  title: string;
+  empty: string;
+  icon: React.ReactNode;
+  tone: "wine" | "forest" | "warning";
+  items: {
+    id: string;
+    label: string;
+    meta: string;
+    time: string;
+    href: string;
+  }[];
 }) {
   const toneBg =
     tone === "wine"
       ? "var(--yu3-wine-tint)"
       : tone === "forest"
         ? "var(--yu3-forest-tint)"
-        : "var(--yu3-warning-tint)"
+        : "var(--yu3-warning-tint)";
   const toneFg =
     tone === "wine"
       ? "var(--yu3-wine)"
       : tone === "forest"
         ? "var(--yu3-forest)"
-        : "var(--yu3-warning)"
+        : "var(--yu3-warning)";
   return (
     <div className="bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line-subtle)] rounded-[var(--yu3-r-lg)] flex flex-col">
       <header className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[var(--yu3-line-subtle)]">
@@ -884,7 +871,9 @@ function AttentionCard({
             {icon}
           </span>
           <div>
-            <div className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">{eyebrow}</div>
+            <div className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">
+              {eyebrow}
+            </div>
             <h3 className="text-[14px] font-semibold text-[var(--yu3-ink-strong)] leading-tight mt-0.5">
               {title}
             </h3>
@@ -929,28 +918,23 @@ function AttentionCard({
         </ul>
       )}
     </div>
-  )
+  );
 }
 
 function eventTone(
   event: string,
-):
-  | "neutral"
-  | "success"
-  | "warning"
-  | "danger"
-  | "info" {
-  const e = event.toLowerCase()
-  if (e.includes("payment") || e.includes("paid")) return "success"
+): "neutral" | "success" | "warning" | "danger" | "info" {
+  const e = event.toLowerCase();
+  if (e.includes("payment") || e.includes("paid")) return "success";
   if (e.includes("cancel") || e.includes("reject") || e.includes("failed"))
-    return "danger"
+    return "danger";
   if (
     e.includes("skip") ||
     e.includes("warn") ||
     e.includes("claim") ||
     e.includes("overdue")
   )
-    return "warning"
+    return "warning";
   if (
     e.includes("created") ||
     e.includes("updated") ||
@@ -963,36 +947,37 @@ function eventTone(
     e.includes("notification") ||
     e.includes("signoff")
   )
-    return "info"
-  return "neutral"
+    return "info";
+  return "neutral";
 }
 
 function eventIcon(event: string): React.ReactNode {
-  const e = event.toLowerCase()
+  const e = event.toLowerCase();
   if (e.includes("payment") || e.includes("paid"))
-    return <CheckCircle size={14} />
+    return <CheckCircle size={14} />;
   if (e.includes("cancel") || e.includes("reject") || e.includes("failed"))
-    return <XCircle size={14} />
+    return <XCircle size={14} />;
   if (e.includes("skip") || e.includes("warn") || e.includes("overdue"))
-    return <Warning size={14} />
-  if (e.includes("claim")) return <Shield size={14} />
-  if (e.includes("arrived")) return <MapPin size={14} />
+    return <Warning size={14} />;
+  if (e.includes("claim")) return <Shield size={14} />;
+  if (e.includes("arrived")) return <MapPin size={14} />;
   if (e.includes("en_route") || e.includes("en route"))
-    return <ArrowRight size={14} />
-  if (e.includes("tracking")) return <MapPin size={14} />
-  if (e.includes("change")) return <PencilSimple size={14} />
-  if (e.includes("notification")) return <Bell size={14} />
-  if (e.includes("created")) return <Plus size={14} />
+    return <ArrowRight size={14} />;
+  if (e.includes("tracking")) return <MapPin size={14} />;
+  if (e.includes("change")) return <PencilSimple size={14} />;
+  if (e.includes("notification")) return <Bell size={14} />;
+  if (e.includes("created")) return <Plus size={14} />;
   if (e.includes("updated") || e.includes("status"))
-    return <PencilSimple size={14} />
-  return <Info size={14} />
+    return <PencilSimple size={14} />;
+  return <Info size={14} />;
 }
 
 function entityHref(entity: string, id: string) {
-  if (entity === "move") return `/admin/moves/${id}`
-  if (entity === "delivery") return id ? `/admin/deliveries/${id}` : "/admin/deliveries"
-  if (entity === "invoice") return "/admin/invoices"
-  if (entity === "quote") return `/admin/quotes/${id}`
-  if (entity === "lead") return `/admin/leads/${id}`
-  return "/admin"
+  if (entity === "move") return `/admin/moves/${id}`;
+  if (entity === "delivery")
+    return id ? `/admin/deliveries/${id}` : "/admin/deliveries";
+  if (entity === "invoice") return "/admin/invoices";
+  if (entity === "quote") return `/admin/quotes/${id}`;
+  if (entity === "lead") return `/admin/leads/${id}`;
+  return "/admin";
 }

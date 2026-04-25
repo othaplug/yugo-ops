@@ -124,13 +124,13 @@ export default function PartnerVerticalRatesEditor({ organizationId }: { organiz
           type="button"
           onClick={save}
           disabled={saving || !selectedCode}
-          className="px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] disabled:opacity-50 shrink-0"
+          className="admin-btn admin-btn-sm admin-btn-primary shrink-0"
         >
           {saving ? "Saving…" : "Save overrides"}
         </button>
       </div>
       <details className="rounded-lg border border-[var(--brd)]/60 bg-[var(--bg)]/30 p-3">
-        <summary className="cursor-pointer text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--gold)]">
+        <summary className="cursor-pointer text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--accent-text)]">
           Advanced: edit override data
         </summary>
         <p className="text-[10px] text-[var(--tx3)] mt-2 mb-2 leading-snug">

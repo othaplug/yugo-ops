@@ -144,9 +144,7 @@ export default function ClientsV3Client({
             <StatusPill tone={statusTone(r.move_status)}>
               {getStatusLabel(r.move_status) || toTitleCase(r.move_status)}
             </StatusPill>
-          ) : (
-            <span className="text-[12px] text-[var(--yu3-ink-faint)]">—</span>
-          ),
+          ) : null,
       },
       {
         id: "move_date",
@@ -156,7 +154,7 @@ export default function ClientsV3Client({
         width: 130,
         cell: (r) => (
           <span className="yu3-num text-[12px] text-[var(--yu3-ink)] whitespace-nowrap">
-            {r.move_date ? formatMoveDate(r.move_date) : "—"}
+            {r.move_date ? formatMoveDate(r.move_date) : ""}
           </span>
         ),
       },
@@ -188,7 +186,7 @@ export default function ClientsV3Client({
         width: 120,
         cell: (r) => (
           <span className="yu3-num text-[13px] text-[var(--yu3-ink)]">
-            {r.estimate ? formatCurrency(r.estimate) : "—"}
+            {r.estimate ? formatCurrency(r.estimate) : ""}
           </span>
         ),
       },
@@ -200,7 +198,7 @@ export default function ClientsV3Client({
         width: 120,
         cell: (r) => (
           <span className="yu3-num text-[12px] text-[var(--yu3-ink-muted)]">
-            {r.created_at ? formatAdminCreatedAt(r.created_at) : "—"}
+            {r.created_at ? formatAdminCreatedAt(r.created_at) : ""}
           </span>
         ),
       },

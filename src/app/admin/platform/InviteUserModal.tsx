@@ -158,7 +158,7 @@ export default function InviteUserModal({ open, onClose }: InviteUserModalProps)
               <button
                 type="button"
                 onClick={handleGeneratePassword}
-                className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all shrink-0"
+                className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--accent-text)] transition-all shrink-0"
               >
                 Generate
               </button>
@@ -191,7 +191,7 @@ export default function InviteUserModal({ open, onClose }: InviteUserModalProps)
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
+              className="admin-btn admin-btn-sm admin-btn-primary flex-1"
             >
               {loading ? "Sending…" : "Send Invitation"}
             </button>

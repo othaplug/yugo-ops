@@ -5,13 +5,13 @@ import { toTitleCase } from "@/lib/format-text";
 const BADGE_COLORS: Record<string, string> = {
   done: "text-[var(--grn)]",
   transit: "text-[var(--org)]",
-  wait: "text-[var(--gold)]",
+  wait: "text-[var(--accent-text)]",
   late: "text-[var(--red)]",
   installing: "text-[var(--org)]",
   staging: "text-blue-700 dark:text-sky-300",
-  new: "text-[var(--gold)]",
+  new: "text-[var(--accent-text)]",
   in_transit: "text-[var(--org)]",
-  pending: "text-[var(--gold)]",
+  pending: "text-[var(--accent-text)]",
   scheduled: "text-blue-700 dark:text-sky-300",
   confirmed: "text-blue-700 dark:text-sky-300",
   dispatched: "text-[var(--org)]",
@@ -25,7 +25,7 @@ const BADGE_COLORS: Record<string, string> = {
   cancelled: "text-[var(--tx3)]",
   archived: "text-[var(--tx3)]",
   booked: "text-blue-700 dark:text-sky-300",
-  lead: "text-[var(--gold)]",
+  lead: "text-[var(--accent-text)]",
   quoted: "text-[var(--org)]",
 };
 

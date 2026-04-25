@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import Image from "next/image";
 import { WINE, GOLD, CREAM, FOREST } from "@/lib/client-theme";
+import YugoLogo from "@/components/YugoLogo";
 import { Star } from "@phosphor-icons/react";
 
 const STAR_SIZE = 36;
@@ -139,7 +139,7 @@ export default function ReviewPageClient() {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: "linear-gradient(180deg, #0F0F0F 0%, #1a1a1a 100%)" }}>
-        <Image src="/images/yugo-logo-cream.png" alt="Yugo" width={120} height={36} className="opacity-90 mb-6" />
+        <YugoLogo size={32} variant="cream" className="mb-6 opacity-90" />
         <p className="text-[var(--text-base)]" style={{ color: CREAM }}>Loading…</p>
       </div>
     );
@@ -148,7 +148,7 @@ export default function ReviewPageClient() {
   if (invalid || !state) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4 text-center" style={{ background: "linear-gradient(180deg, #0F0F0F 0%, #1a1a1a 100%)" }}>
-        <Image src="/images/yugo-logo-cream.png" alt="Yugo" width={120} height={36} className="opacity-90 mb-6" />
+        <YugoLogo size={32} variant="cream" className="mb-6 opacity-90" />
         <h1 className="font-semibold text-[18px] mb-2" style={{ color: CREAM }}>Invalid or expired link</h1>
         <p className="text-[13px] max-w-[280px]" style={{ color: "rgba(250,247,242,0.8)" }}>
           This review link may have expired. If you received this from Yugo, please use the latest link from your email.
@@ -169,7 +169,7 @@ export default function ReviewPageClient() {
 
   return (
     <div className="min-h-screen flex flex-col items-center px-4 py-8" style={{ background: "linear-gradient(180deg, #0F0F0F 0%, #1a1a1a 100%)" }}>
-      <Image src="/images/yugo-logo-cream.png" alt="Yugo" width={120} height={36} className="opacity-95 mb-6" priority />
+      <YugoLogo size={32} variant="cream" className="mb-6 opacity-95" />
       <div
         className="flex flex-col items-center text-center w-full max-w-[340px] rounded-2xl p-6 sm:p-8"
         style={{ backgroundColor: "rgba(250,247,242,0.06)", border: `1px solid rgba(184,181,176,0.2)` }}

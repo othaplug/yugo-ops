@@ -34,7 +34,9 @@ interface InvoicesPageClientProps {
 function InvoicesPageInner({ invoices }: InvoicesPageClientProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [detailInvoice, setDetailInvoice] = useState<typeof invoices[0] | null>(null);
+  const [detailInvoice, setDetailInvoice] = useState<
+    (typeof invoices)[0] | null
+  >(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortCol, setSortCol] = useState<string>("created_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -46,9 +48,15 @@ function InvoicesPageInner({ invoices }: InvoicesPageClientProps) {
     setBackfilling(true);
     setBackfillResult(null);
     try {
-      const res = await fetch("/api/admin/invoices/backfill-deliveries", { method: "POST" });
+      const res = await fetch("/api/admin/invoices/backfill-deliveries", {
+        method: "POST",
+      });
       const data = await res.json();
-      setBackfillResult(data.created > 0 ? `Created ${data.created} invoice${data.created !== 1 ? "s" : ""}` : "All caught up");
+      setBackfillResult(
+        data.created > 0
+          ? `Created ${data.created} invoice${data.created !== 1 ? "s" : ""}`
+          : "All caught up",
+      );
       if (data.created > 0) router.refresh();
     } catch {
       setBackfillResult("Failed");
@@ -73,14 +81,21 @@ function InvoicesPageInner({ invoices }: InvoicesPageClientProps) {
       const n = typeof data.markedPaid === "number" ? data.markedPaid : 0;
       const checked = typeof data.checked === "number" ? data.checked : 0;
       const linked = typeof data.linkedIds === "number" ? data.linkedIds : 0;
-      const errList = Array.isArray(data.errors) ? (data.errors as string[]).slice(0, 2).join(" ") : "";
+      const errList = Array.isArray(data.errors)
+        ? (data.errors as string[]).slice(0, 2).join(" ")
+        : "";
       const parts = [
         n > 0 ? `Marked ${n} paid` : "No new paid matches",
         checked > 0 ? `checked ${checked}` : null,
-        linked > 0 ? `linked ${linked} Square id${linked !== 1 ? "s" : ""}` : null,
+        linked > 0
+          ? `linked ${linked} Square id${linked !== 1 ? "s" : ""}`
+          : null,
         errList ? `Notes: ${errList}` : null,
       ].filter(Boolean);
-      toast(parts.join(". ") || "Done", n > 0 || linked > 0 ? "check" : "check");
+      toast(
+        parts.join(". ") || "Done",
+        n > 0 || linked > 0 ? "check" : "check",
+      );
       if (n > 0 || linked > 0) router.refresh();
     } catch {
       toast("Sync failed", "x");
@@ -91,20 +106,24 @@ function InvoicesPageInner({ invoices }: InvoicesPageClientProps) {
 
   const filteredInvoices = useMemo(() => {
     if (statusFilter === "all") return invoices;
-    return invoices.filter((inv) => (inv.status || "").toLowerCase() === statusFilter);
+    return invoices.filter(
+      (inv) => (inv.status || "").toLowerCase() === statusFilter,
+    );
   }, [invoices, statusFilter]);
 
   return (
     <>
       <div>
         <div className="px-0 py-4 border-b border-[var(--brd)]/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h3 className="font-heading text-[15px] font-bold text-[var(--tx)]">All Invoices</h3>
+          <h3 className="font-heading text-[15px] font-bold text-[var(--tx)]">
+            All Invoices
+          </h3>
           <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
               onClick={runBackfill}
               disabled={backfilling}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
+              className="admin-btn admin-btn-sm admin-btn-primary"
             >
               {backfilling ? "Generating…" : "Generate Invoices"}
             </button>
@@ -112,12 +131,14 @@ function InvoicesPageInner({ invoices }: InvoicesPageClientProps) {
               type="button"
               onClick={runSquareSync}
               disabled={syncingSquare}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:bg-[var(--bg2)] transition-all disabled:opacity-50"
+              className="admin-btn admin-btn-sm admin-btn-secondary"
             >
               {syncingSquare ? "Syncing…" : "Sync paid from Square"}
             </button>
             {backfillResult && (
-              <span className="text-[10px] text-[var(--tx3)]">{backfillResult}</span>
+              <span className="text-[10px] text-[var(--tx3)]">
+                {backfillResult}
+              </span>
             )}
           </div>
         </div>
@@ -137,11 +158,16 @@ function InvoicesPageInner({ invoices }: InvoicesPageClientProps) {
             </button>
           ))}
           <div className="ml-auto flex items-center gap-2">
-            <span className="text-[10px] font-semibold text-[var(--tx3)]">Sort by</span>
+            <span className="text-[10px] font-semibold text-[var(--tx3)]">
+              Sort by
+            </span>
             <select
               value={`${sortCol}:${sortDir}`}
               onChange={(e) => {
-                const [col, dir] = (e.target.value as string).split(":") as [string, "asc" | "desc"];
+                const [col, dir] = (e.target.value as string).split(":") as [
+                  string,
+                  "asc" | "desc",
+                ];
                 if (col && dir) {
                   setSortCol(col);
                   setSortDir(dir);
@@ -150,7 +176,10 @@ function InvoicesPageInner({ invoices }: InvoicesPageClientProps) {
               className="text-[10px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
             >
               {SORT_OPTIONS.map((opt) => (
-                <option key={`${opt.col}:${opt.dir}`} value={`${opt.col}:${opt.dir}`}>
+                <option
+                  key={`${opt.col}:${opt.dir}`}
+                  value={`${opt.col}:${opt.dir}`}
+                >
                   {opt.label}
                 </option>
               ))}

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useYu3PortalContainer } from "@/design-system/admin/layout/Yu3PortalContext";
 import {
   ArrowLeft,
   CheckCircle,
@@ -18,6 +20,7 @@ import {
 } from "@/app/admin/components/admin-toolbar-action-classes";
 import { formatPlatformDisplay } from "@/lib/date-format";
 import { InfoHint } from "@/components/ui/InfoHint";
+import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme";
 
 const toDateInputValue = (d: string | null | undefined): string => {
   if (!d) return "";
@@ -495,7 +498,7 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
                 type="button"
                 onClick={handleChargeBalance}
                 disabled={saving}
-                className="inline-flex items-center justify-center min-h-[40px] px-5 rounded-xl text-[10px] font-bold uppercase tracking-[0.12em] leading-none [font-family:var(--font-body)] bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-45 transition-colors"
+                className="admin-btn admin-btn-primary"
               >
                 Charge balance to card on file
               </button>
@@ -646,18 +649,31 @@ function InfoRow({
 }
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  const portal = useYu3PortalContainer();
+  const shell = (
+    <div
+      className="pointer-events-auto fixed inset-0 z-[var(--yu3-z-modal,80)] flex items-center justify-center p-4"
+      data-modal-root
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="bin-order-modal-title"
+    >
       <div
-        className="absolute inset-0 bg-black/60"
+        className="modal-overlay absolute inset-0"
         role="presentation"
         onClick={onClose}
         onKeyDown={(e) => e.key === "Escape" && onClose()}
       />
-      <div className="relative bg-[var(--card)] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-        <h3 className="text-[16px] font-bold text-[var(--tx)] mb-1">{title}</h3>
+      <Yu3PortaledTokenRoot className="relative z-[1] w-full max-w-sm rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] p-6 text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)]">
+        <h3 id="bin-order-modal-title" className="mb-1 text-[16px] font-bold text-[var(--yu3-ink-strong)]">
+          {title}
+        </h3>
         {children}
-      </div>
+      </Yu3PortaledTokenRoot>
     </div>
   );
+  if (portal) {
+    return createPortal(shell, portal);
+  }
+  return shell;
 }

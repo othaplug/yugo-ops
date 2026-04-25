@@ -55,7 +55,7 @@ export default function MoveNotifyButton({ move }: { move: any }) {
     <button
       onClick={handleNotify}
       disabled={loading}
-      className="inline-flex items-center gap-0.5 dt-badge tracking-[0.04em] text-[var(--gold)] hover:underline disabled:opacity-50 shrink-0"
+      className="inline-flex items-center gap-0.5 dt-badge tracking-[0.04em] text-[var(--accent-text)] hover:underline disabled:opacity-50 shrink-0"
     >
       {loading ? "Sending…" : "Notify"}
     </button>

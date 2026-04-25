@@ -52,7 +52,7 @@ function priceColor(status?: string): string {
   const s = (status || "").toLowerCase();
   if (s === "paid" || s === "final_payment_received" || s === "completed") return "text-[var(--grn)]";
   if (s === "cancelled") return "text-[var(--red)]";
-  return "text-[var(--gold)]";
+  return "text-[var(--accent-text)]";
 }
 
 const today = new Date().toISOString().slice(0, 10);
@@ -124,7 +124,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
+    <div className="w-full min-w-0 py-4 sm:py-5 md:py-6 animate-fade-up">
       <div className="mb-4"><BackButton label="Back" /></div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4 sm:mb-6">
@@ -145,7 +145,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
         <Link href="/admin/revenue" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
           <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Total Revenue</div>
           <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold font-heading text-[var(--gold)]">{formatCompactCurrency(totalRevenue)}</span>
+            <span className="text-xl font-bold font-heading text-[var(--accent-text)]">{formatCompactCurrency(totalRevenue)}</span>
             <StatPctChange current={totalRevenue} previous={totalRevenuePrev} />
           </div>
         </Link>
@@ -168,7 +168,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
             >
               Filter
               {activeFilterCount > 0 && (
-                <span className="dt-badge tracking-[0.04em] text-[var(--admin-primary-fill)] tabular-nums">
+                <span className="dt-badge tracking-[0.04em] text-[var(--accent-text)] tabular-nums">
                   {activeFilterCount}
                 </span>
               )}
@@ -188,7 +188,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
               </div>
               <MoveDateFilter value={moveDatePreset} onChange={setMoveDatePreset} />
               {hasActiveFilters && (
-                <button type="button" onClick={clearFilters} className="text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors">
+                <button type="button" onClick={clearFilters} className="text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--accent-text)] transition-colors">
                   Clear filters
                 </button>
               )}
@@ -201,7 +201,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
           <div className="md:hidden border-b border-[var(--brd)] bg-[var(--bg)]/80 px-3 py-4 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase text-[var(--tx3)]">Filters</span>
-              <button type="button" onClick={() => setFilterOpen(false)} className="text-[var(--gold)] text-[12px] font-semibold">Done</button>
+              <button type="button" onClick={() => setFilterOpen(false)} className="text-[var(--accent-text)] text-[12px] font-semibold">Done</button>
             </div>
             <div className="flex flex-col gap-3">
               <div>
@@ -252,7 +252,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
                 </select>
               </div>
               {hasActiveFilters && (
-                <button type="button" onClick={clearFilters} className="text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)]">
+                <button type="button" onClick={clearFilters} className="text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--accent-text)]">
                   Clear all filters
                 </button>
               )}

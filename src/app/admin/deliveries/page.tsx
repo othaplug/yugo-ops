@@ -28,7 +28,7 @@ export default async function DeliveriesPage({
   const initialView = params.view === "recurring" ? "recurring" : params.view === "projects" ? "projects" : undefined;
 
   return (
-    <div className="max-w-[1400px] mx-auto px-3 sm:px-5 md:px-6 py-5 md:py-6 animate-fade-up w-full">
+    <div className="w-full min-w-0 py-5 md:py-6 animate-fade-up">
       <AllDeliveriesView
         deliveries={deliveries || []}
         projects={projects || []}

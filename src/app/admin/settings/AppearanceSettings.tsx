@@ -8,7 +8,7 @@ import { Check } from "@phosphor-icons/react";
 const DEFAULT_PAGES = [
   { value: "/admin", label: "Command Center (Dashboard)" },
   { value: "/admin/moves", label: "All Moves" },
-  { value: "/admin/dispatch", label: "Dispatch Board" },
+  { value: "/admin", label: "Overview" },
   { value: "/admin/calendar", label: "Calendar" },
   { value: "/admin/quotes", label: "Quotes" },
 ];
@@ -138,7 +138,7 @@ export default function AppearanceSettings() {
                 </div>
               )}
               <span
-                className={`text-[11px] font-semibold uppercase ${theme === t ? "text-[var(--gold)]" : "text-[var(--tx2)]"}`}
+                className={`text-[11px] font-semibold uppercase ${theme === t ? "text-[var(--accent-text)]" : "text-[var(--tx2)]"}`}
               >
                 {t} Mode
               </span>
@@ -248,7 +248,7 @@ export default function AppearanceSettings() {
 
       <button
         onClick={handleSave}
-        className="w-full py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all"
+        className="admin-btn admin-btn-sm admin-btn-primary w-full"
       >
         {saved ? "Saved ✓" : "Save Preferences"}
       </button>

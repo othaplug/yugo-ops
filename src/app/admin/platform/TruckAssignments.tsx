@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "../components/Toast";
 import { Icon } from "@/components/AppIcons";
 import { formatPlatformDisplay } from "@/lib/date-format";
+import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme";
 
 interface Truck {
   id: string;
@@ -147,7 +148,7 @@ export default function TruckAssignments({ refreshKey = 0 }: TruckAssignmentsPro
           <button
             onClick={() => setAddModalOpen(true)}
             disabled={trucks.length === 0 || teams.length === 0}
-            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--accent-text)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             + Assign
           </button>
@@ -168,7 +169,7 @@ export default function TruckAssignments({ refreshKey = 0 }: TruckAssignmentsPro
                 <button
                   onClick={() => setAddModalOpen(true)}
                   disabled={trucks.length === 0 || teams.length === 0}
-                  className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50"
+                  className="admin-btn admin-btn-sm admin-btn-primary"
                 >
                   + Add assignment
                 </button>
@@ -183,7 +184,7 @@ export default function TruckAssignments({ refreshKey = 0 }: TruckAssignmentsPro
                     <div className="flex items-center gap-2">
                       <span className="text-[13px] font-semibold text-[var(--tx)]">{truckMap.get(a.truck_id) || "Truck"}</span>
                       <span className="text-[11px] text-[var(--tx3)]">→</span>
-                      <span className="text-[13px] font-medium text-[var(--gold)]">{teamMap.get(a.team_id) || "Team"}</span>
+                      <span className="text-[13px] font-medium text-[var(--accent-text)]">{teamMap.get(a.team_id) || "Team"}</span>
                     </div>
                     <button
                       type="button"
@@ -202,14 +203,14 @@ export default function TruckAssignments({ refreshKey = 0 }: TruckAssignmentsPro
       </div>
 
       {addModalOpen && (
-        <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5" data-modal-root data-yugo-glass-modal aria-modal="true">
+        <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5" data-modal-root aria-modal="true">
           <div
-            className="fixed inset-0 z-0 bg-black/60 modal-overlay"
+            className="fixed inset-0 z-0 modal-overlay"
             onClick={() => setAddModalOpen(false)}
             aria-hidden="true"
           />
-          <div
-            className="relative z-10 w-full sm:max-w-md yugo-glass-light rounded-t-2xl sm:rounded-xl p-5 shadow-2xl sheet-card sm:modal-card pointer-events-auto"
+          <Yu3PortaledTokenRoot
+            className="relative z-10 w-full rounded-t-[var(--yu3-r-xl)] p-5 shadow-[var(--yu3-shadow-lg)] sm:max-w-md sm:rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink)] sheet-card sm:modal-card pointer-events-auto"
             style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -271,13 +272,13 @@ export default function TruckAssignments({ refreshKey = 0 }: TruckAssignmentsPro
                 <button
                   type="submit"
                   disabled={saving || !formTruckId || !formTeamId}
-                  className="flex-1 py-2.5 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--admin-primary-fill-hover)] transition-colors disabled:opacity-50"
+                  className="admin-btn admin-btn-primary flex-1"
                 >
                   {saving ? "Saving…" : "Save"}
                 </button>
               </div>
             </form>
-          </div>
+          </Yu3PortaledTokenRoot>
         </div>
       )}
     </div>

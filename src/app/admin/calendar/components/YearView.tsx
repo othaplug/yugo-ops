@@ -39,7 +39,7 @@ export default function YearView({ year, heatData, todayKey, onDayClick, onMonth
               <button
                 type="button"
                 onClick={() => onMonthClick(monthIdx)}
-                className="text-[11px] font-bold text-[var(--tx)] mb-1 hover:text-[var(--gold)] transition-colors block"
+                className="text-[11px] font-bold text-[var(--tx)] mb-1 hover:text-[var(--accent-text)] transition-colors block"
               >
                 {name}
               </button>

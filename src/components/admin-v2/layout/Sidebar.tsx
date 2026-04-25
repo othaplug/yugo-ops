@@ -1,9 +1,9 @@
 "use client"
 
 import * as React from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import YugoLogo from "@/components/YugoLogo"
 import { Icon, type IconName } from "../primitives/Icon"
 import { Badge } from "../primitives/Badge"
 import { Avatar } from "../primitives/Avatar"
@@ -112,14 +112,11 @@ export const Sidebar = ({ user, badges, onSignOut, className }: SidebarProps) =>
               className="flex size-9 items-center justify-center rounded-md"
               aria-label="Yugo"
             >
-              <Image
-                src="/yugo-symbol.png"
-                alt="Yugo"
-                width={28}
-                height={28}
-                className="size-7 select-none object-contain"
-                priority
-                unoptimized
+              <YugoLogo
+                size={28}
+                variant="black"
+                symbolOnly
+                className="size-7 select-none"
               />
             </Link>
           ) : (
@@ -128,23 +125,15 @@ export const Sidebar = ({ user, badges, onSignOut, className }: SidebarProps) =>
               className="flex items-center"
               aria-label="Yugo admin home"
             >
-              <Image
-                src="/images/yugo-logo-black.png"
-                alt="Yugo"
-                width={96}
-                height={24}
-                className="h-6 w-auto select-none object-contain dark:hidden"
-                priority
-                unoptimized
+              <YugoLogo
+                size={24}
+                variant="black"
+                className="h-6 shrink-0 select-none dark:hidden"
               />
-              <Image
-                src="/images/yugo-logo-cream.png"
-                alt="Yugo"
-                width={96}
-                height={24}
-                className="hidden h-6 w-auto select-none object-contain dark:block"
-                priority
-                unoptimized
+              <YugoLogo
+                size={24}
+                variant="cream"
+                className="hidden h-6 shrink-0 select-none dark:inline-flex"
               />
             </Link>
           )}

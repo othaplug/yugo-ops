@@ -1,18 +1,21 @@
-"use client";
+"use client"
 
-import { useEffect, useCallback } from "react";
-import { createPortal } from "react-dom";
-import { Info, Warning } from "@phosphor-icons/react";
+import { useEffect, useCallback } from "react"
+import { createPortal } from "react-dom"
+import { Info, Warning } from "@phosphor-icons/react"
+import { Button } from "@/design-system/admin/primitives"
+import { cn } from "@/design-system/admin/lib/cn"
+import { useAdminShellTheme } from "@/hooks/useAdminShellTheme"
 
 export interface ConfirmDialogProps {
-  open: boolean;
-  title: string;
-  message?: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  variant?: "danger" | "default";
-  onConfirm: () => void;
-  onCancel: () => void;
+  open: boolean
+  title: string
+  message?: string
+  confirmLabel?: string
+  cancelLabel?: string
+  variant?: "danger" | "default"
+  onConfirm: () => void
+  onCancel: () => void
 }
 
 export default function ConfirmDialog({
@@ -25,94 +28,103 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const adminShellTheme = useAdminShellTheme()
   const handleEscape = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
+    (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") onCancel()
     },
-    [onCancel]
-  );
+    [onCancel],
+  )
 
   useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleEscape);
+    if (!open) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    window.addEventListener("keydown", handleEscape)
     return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [open, handleEscape]);
+      document.body.style.overflow = prev
+      window.removeEventListener("keydown", handleEscape)
+    }
+  }, [open, handleEscape])
 
-  if (!open || typeof document === "undefined") return null;
+  if (!open || typeof document === "undefined") return null
 
-  const isDanger = variant === "danger";
+  const isDanger = variant === "danger"
 
   const modal = (
     <div
       data-modal-root
-      data-yugo-glass-modal
       className="fixed inset-0 z-[100000] flex min-h-0 items-center justify-center p-4 sm:p-5"
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="confirm-title"
     >
+      <div className="modal-overlay fixed inset-0" aria-hidden="true" onClick={onCancel} />
       <div
-        className="fixed inset-0 bg-black/60 modal-overlay"
-        aria-hidden="true"
-        onClick={onCancel}
-      />
-      <div
-        className="relative z-10 w-full max-w-sm yugo-glass-light rounded-2xl shadow-2xl modal-card overflow-hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)", maxHeight: "min(90dvh, 90vh)" }}
+        data-yugo-admin-v3=""
+        data-theme={adminShellTheme}
+        className="modal-card relative z-10 w-full max-w-sm overflow-hidden rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] shadow-2xl"
+        style={{
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          maxHeight: "min(90dvh, 90vh)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
-          {/* Icon */}
           <div
-            className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 ${
-              isDanger ? "bg-[var(--rdim)]" : "bg-[var(--gdim)]"
+            className={`mb-4 flex h-11 w-11 items-center justify-center rounded-[var(--yu3-r-md)] ${
+              isDanger ? "bg-[var(--yu3-danger-tint)]" : "bg-[var(--yu3-wine-tint)]"
             }`}
           >
             {isDanger ? (
-              <Warning size={20} color="var(--red)" aria-hidden />
+              <Warning size={20} className="text-[var(--yu3-danger)]" aria-hidden />
             ) : (
-              <Info size={20} color="var(--gold)" aria-hidden />
+              <Info size={20} className="text-[var(--yu3-wine)]" aria-hidden />
             )}
           </div>
 
-          {/* Text */}
-          <h2 id="confirm-title" className="text-[16px] font-bold text-[var(--tx)] mb-2">
+          <h2
+            id="confirm-title"
+            className="mb-2 text-[16px] font-bold text-[var(--yu3-ink-strong)]"
+          >
             {title}
           </h2>
           {message && (
-            <p className="text-[13px] text-[var(--tx3)] leading-relaxed">{message}</p>
+            <p className="text-[13px] leading-relaxed text-[var(--yu3-ink-muted)]">
+              {message}
+            </p>
           )}
         </div>
 
-        {/* Actions */}
-        <div className="px-6 pb-6 flex gap-3">
-          <button
+        <div className="flex gap-3 px-6 pb-6">
+          <Button
             type="button"
+            variant="secondary"
+            size="md"
+            className="min-h-[44px] flex-1 touch-manipulation sm:min-h-0"
             onClick={onCancel}
-            className="flex-1 px-4 py-3.5 sm:py-2.5 rounded-xl text-[13px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--tx3)] hover:text-[var(--tx)] transition-colors touch-manipulation"
           >
             {cancelLabel}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            onClick={() => { onConfirm(); }}
-            className={`flex-1 px-4 py-3.5 sm:py-2.5 rounded-xl text-[13px] font-bold transition-all active:scale-95 touch-manipulation ${
-              isDanger
-                ? "bg-[var(--red)] text-white hover:opacity-90"
-                : "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)]"
-            }`}
+            variant="primary"
+            size="md"
+            className={cn(
+              "min-h-[44px] flex-1 touch-manipulation sm:min-h-0",
+              isDanger &&
+                "!border-[var(--yu3-danger)] !bg-[var(--yu3-danger)] !text-white hover:!border-[var(--yu3-danger)] hover:!bg-[var(--yu3-danger)] hover:!opacity-90",
+            )}
+            onClick={() => {
+              onConfirm()
+            }}
           >
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
-  );
+  )
 
-  return createPortal(modal, document.body);
+  return createPortal(modal, document.body)
 }

@@ -6,6 +6,10 @@ import { getMoveCode } from "@/lib/move-code"
 import { getTodayString } from "@/lib/business-timezone"
 import { formatCompactCurrency } from "@/lib/format-currency"
 import { toTitleCase } from "@/lib/format-text"
+import {
+  pickLatestTrackingSession,
+  resolveAdminMoveListDisplayStatus,
+} from "@/lib/move-status"
 import { isMoveWeatherBrief, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief"
 import {
   deliveryPreTaxForAdminList,
@@ -104,7 +108,7 @@ function moveRevenueOnLocalDay(
 }
 
 /**
- * Data for Command Center (v1 `/admin`) and v2 `/admin-v2/dashboard`.
+ * Data for Command Center (`/admin`).
  * Pulls 730d of moves/deliveries for accurate MRR- and year-style series.
  * All aggregates come from the live Supabase (Ops+) service client when configured.
  */
@@ -300,6 +304,55 @@ export const loadCommandCenterData = async () => {
   const allMoves = (moves || []) as Record<string, unknown>[]
   const allInvoices = (invoices || []) as Record<string, unknown>[]
 
+  const moveIdList = allMoves
+    .map((m) => String((m as { id?: string }).id || ""))
+    .filter(Boolean)
+  const latestSessionByMoveId: Record<string, { status: string }> = {}
+  if (moveIdList.length > 0) {
+    type SessionRow = {
+      job_id?: string
+      status?: string
+      created_at?: string
+      updated_at?: string
+    }
+    const byJob = new Map<string, SessionRow[]>()
+    try {
+      const CHUNK = 500
+      for (let i = 0; i < moveIdList.length; i += CHUNK) {
+        const { data: sessionRows } = await admin
+          .from("tracking_sessions")
+          .select("job_id, status, created_at, updated_at")
+          .eq("job_type", "move")
+          .in("job_id", moveIdList.slice(i, i + CHUNK))
+        for (const row of (sessionRows || []) as SessionRow[]) {
+          const jid = String(row.job_id || "")
+          if (!jid) continue
+          const list = byJob.get(jid) || []
+          list.push(row)
+          byJob.set(jid, list)
+        }
+      }
+      for (const [jid, rows] of byJob) {
+        const best = pickLatestTrackingSession(rows)
+        if (best) {
+          latestSessionByMoveId[jid] = {
+            status: String((best as SessionRow).status || ""),
+          }
+        }
+      }
+    } catch {
+      // tracking_sessions may be missing in some envs; fall back to move row only
+    }
+  }
+
+  const effectiveMoveListStatus = (m: Record<string, unknown>) =>
+    resolveAdminMoveListDisplayStatus(
+      String(m.status ?? ""),
+      latestSessionByMoveId[String(m.id)]?.status ?? null,
+    )
+      .toLowerCase()
+      .trim()
+
   const clientTypeMap: Record<string, string> = {}
   const orgIdToType: Record<string, string> = {}
   ;(orgs || []).forEach((o: { id: string; name: string; type?: string | null }) => {
@@ -403,7 +456,7 @@ export const loadCommandCenterData = async () => {
       name: String(m.client_name || "Move"),
       subtitle,
       time: String(m.scheduled_time || m.time_slot || "TBD"),
-      status: String(m.status || "confirmed").toLowerCase(),
+      status: effectiveMoveListStatus(m) || String(m.status || "confirmed").toLowerCase(),
       date: String(m.scheduled_date || ""),
       tag:
         m.service_type === "office_move"
@@ -424,7 +477,9 @@ export const loadCommandCenterData = async () => {
   const activeDeliveries = allDeliveries.filter(
     (d) => !DONE_DELIVERY.has(String(d.status)),
   )
-  const activeMoves = allMoves.filter((m) => !DONE_MOVE.has(String(m.status)))
+  const activeMoves = allMoves.filter(
+    (m) => !DONE_MOVE.has(effectiveMoveListStatus(m)),
+  )
 
   const todayJobs: CommandCenterJob[] = [
     ...activeDeliveries
@@ -483,7 +538,7 @@ export const loadCommandCenterData = async () => {
 
   const paidMoves = allMoves.filter(
     (m) =>
-      PAID_MOVE_STATUSES.has(String(m.status)) ||
+      PAID_MOVE_STATUSES.has(effectiveMoveListStatus(m)) ||
       m.payment_marked_paid === true,
   )
   const paidInvoices = allInvoices.filter((i) => i.status === "paid")
@@ -828,7 +883,10 @@ export const loadCommandCenterData = async () => {
   for (const m of todayMovesList) {
     const val = movRev(m)
     potentialEarnings += val
-    if (PAID_MOVE_STATUSES.has(String(m.status)) || m.payment_marked_paid === true)
+    if (
+      PAID_MOVE_STATUSES.has(effectiveMoveListStatus(m)) ||
+      m.payment_marked_paid === true
+    )
       collectedEarnings += val
   }
   for (const d of todayDeliveriesAll) {

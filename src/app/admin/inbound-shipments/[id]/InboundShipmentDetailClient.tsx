@@ -137,10 +137,10 @@ export default function InboundShipmentDetailClient({
   const photos = Array.isArray(shipment.inspection_photos) ? (shipment.inspection_photos as string[]) : [];
 
   return (
-    <div className="max-w-[900px] mx-auto px-3 sm:px-5 py-6 space-y-6">
+    <div className="w-full min-w-0 py-6 space-y-6">
       <Link
         href="/admin/inbound-shipments"
-        className="inline-flex items-center gap-1.5 text-sm text-[var(--tx3)] hover:text-[var(--gold)]"
+        className="inline-flex items-center gap-1.5 text-sm text-[var(--tx3)] hover:text-[var(--accent-text)]"
       >
         <ArrowLeft size={16} aria-hidden />
         Inbound Shipments
@@ -148,7 +148,7 @@ export default function InboundShipmentDetailClient({
 
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold font-mono text-[var(--gold)]">{shipment.shipment_number}</h1>
+          <h1 className="text-2xl font-semibold font-mono text-[var(--accent-text)]">{shipment.shipment_number}</h1>
           <p className="text-sm text-[var(--tx3)] mt-1">
             {INBOUND_SHIPMENT_STATUS_LABELS[shipment.status] || shipment.status}
           </p>
@@ -255,7 +255,7 @@ export default function InboundShipmentDetailClient({
 
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
         <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--tx3)] flex items-center gap-2">
-          <Camera size={18} className="text-[var(--gold)]" aria-hidden />
+          <Camera size={18} className="text-[var(--accent-text)]" aria-hidden />
           Inspection
         </h2>
         <p className="text-xs text-[var(--tx3)]">

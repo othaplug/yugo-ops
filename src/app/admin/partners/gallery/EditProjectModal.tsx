@@ -152,7 +152,7 @@ export default function EditProjectModal({ open, onClose, project, galleryPartne
             onClick={() => setActiveTab(tab)}
             className={`px-3 py-2.5 text-[12px] font-semibold transition-colors border-b-2 -mb-px ${
               activeTab === tab
-                ? "border-[var(--gold)] text-[var(--gold)]"
+                ? "border-[var(--gold)] text-[var(--accent-text)]"
                 : "border-transparent text-[var(--tx3)] hover:text-[var(--tx)]"
             }`}
           >
@@ -247,7 +247,7 @@ export default function EditProjectModal({ open, onClose, project, galleryPartne
         </div>
         <div className="flex gap-2 pt-2">
           <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all">Cancel</button>
-          <button type="submit" disabled={loading} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] hover:bg-[var(--admin-primary-fill-hover)] transition-all disabled:opacity-50">{loading ? "Saving…" : "Save changes"}</button>
+          <button type="submit" disabled={loading} className="admin-btn admin-btn-sm admin-btn-primary flex-1">{loading ? "Saving…" : "Save changes"}</button>
         </div>
       </form>
       )}
