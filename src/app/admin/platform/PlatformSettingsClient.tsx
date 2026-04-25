@@ -228,7 +228,7 @@ const ACTION_OPTIONS: { value: string; label: string }[] = [
 ];
 
 function humanizeAction(action: string): string {
-  if (!action) return "-";
+  if (!action) return "";
   const match = ACTION_OPTIONS.find((o) => o.value === action);
   if (match) return match.label;
   return action.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -344,24 +344,22 @@ function AuditLogSection() {
                       <td className="text-[11px] text-[var(--tx)] py-2.5 pr-4 whitespace-nowrap">{formatAuditTime(log.created_at)}</td>
                       <td className="text-[11px] text-[var(--tx)] py-2.5 pr-4 max-w-[140px] truncate" title={log.user_email}>{log.user_email}</td>
                       <td className="py-2.5 pr-4">
-                        <span className={`dt-badge ${roleCls}`}>{roleKey || "-"}</span>
+                        <span className={`dt-badge ${roleCls}`}>{roleKey || ""}</span>
                       </td>
                       <td className="py-2.5 pr-4">
                         <span className={`dt-badge ${actionCls}`}>{humanizeAction(log.action)}</span>
                       </td>
-                      <td className="text-[11px] text-[var(--tx3)] py-2.5 pr-4 max-w-[120px] truncate" title={log.resource_id}>{log.resource_id || "-"}</td>
+                      <td className="text-[11px] text-[var(--tx3)] py-2.5 pr-4 max-w-[120px] truncate" title={log.resource_id}>{log.resource_id || ""}</td>
                       <td className="text-[11px] text-[var(--tx3)] py-2.5">
                         {hasDetails ? (
                           <button
                             type="button"
                             onClick={() => setExpandedRow(isExpanded ? null : log.id)}
-                            className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                            className="text-[10px] font-semibold text-[var(--yu3-wine)] hover:underline"
                           >
                             {isExpanded ? "Hide" : "View"}
                           </button>
-                        ) : (
-                          "-"
-                        )}
+                        ) : null}
                         {isExpanded && hasDetails && (
                           <pre className="mt-2 p-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[10px] text-[var(--tx3)] whitespace-pre-wrap break-all max-w-[320px] overflow-auto max-h-[160px]">
                             {JSON.stringify(log.details, null, 2)}
@@ -1774,24 +1772,24 @@ export default function PlatformSettingsClient({
               href={`/admin/platform?tab=${t.id}`}
               className={`group flex items-center gap-2 px-2 py-2 rounded-lg text-left transition-all ${
                 active
-                  ? "bg-[var(--gdim)] text-[var(--gold)]"
-                  : "text-[var(--tx3)] hover:bg-[var(--gdim)]/50 hover:text-[var(--tx)]"
+                  ? "bg-[var(--yu3-wine-wash)] text-[var(--yu3-wine)]"
+                  : "text-[var(--tx2)] hover:bg-[var(--yu3-bg-surface-subtle)] hover:text-[var(--tx)]"
               }`}
             >
               <TabIcon
                 size={15}
                 weight={active ? "fill" : "regular"}
-                className={`shrink-0 transition-colors ${active ? "text-[var(--gold)]" : "text-[var(--tx3)] group-hover:text-[var(--tx2)]"}`}
+                className={`shrink-0 transition-colors ${active ? "text-[var(--yu3-wine)]" : "text-[var(--tx3)] group-hover:text-[var(--tx2)]"}`}
               />
               <div className="min-w-0 flex-1">
-                <div className={`text-[11px] font-semibold leading-snug ${active ? "text-[var(--gold)]" : ""}`}>
+                <div className={`text-[11px] font-semibold leading-snug ${active ? "text-[var(--yu3-wine)]" : ""}`}>
                   {t.label}
                 </div>
                 <div className="text-[9px] text-[var(--tx3)] leading-tight mt-0.5 hidden xl:block line-clamp-2">
                   {"desc" in t ? t.desc : ""}
                 </div>
               </div>
-              {active && <span className="ml-0.5 w-1 h-1 rounded-full bg-[var(--admin-primary-fill)] shrink-0 self-start mt-1.5" />}
+              {active && <span className="ml-0.5 w-1 h-1 rounded-full bg-[var(--yu3-wine)] shrink-0 self-start mt-1.5" />}
             </Link>
           );
         })}
@@ -1808,8 +1806,8 @@ export default function PlatformSettingsClient({
               href={`/admin/platform?tab=${t.id}`}
               className={`flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all shrink-0 ${
                 active
-                  ? "bg-[var(--gdim)] text-[var(--gold)] border border-[var(--gold)]/30"
-                  : "text-[var(--tx3)] border border-transparent hover:bg-[var(--gdim)]/50"
+                  ? "bg-[var(--yu3-wine-wash)] text-[var(--yu3-wine)] border border-[var(--yu3-wine)]/30"
+                  : "text-[var(--tx2)] border border-transparent hover:bg-[var(--yu3-bg-surface-subtle)]"
               }`}
             >
               <TabIcon size={13} weight={active ? "fill" : "regular"} />
