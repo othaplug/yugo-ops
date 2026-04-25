@@ -21,8 +21,8 @@ export function MobileBottomNav({
     <nav
       className={cn(
         "lg:hidden fixed bottom-0 left-0 right-0 z-[var(--yu3-z-sidebar)]",
-        "bg-[var(--yu3-bg-glass)] backdrop-blur-[14px]",
-        "border-t border-[var(--yu3-line-subtle)]",
+        "bg-[var(--yu3-bg-surface)]",
+        "border-t border-[var(--yu3-line)]",
         "pb-[max(env(safe-area-inset-bottom),var(--yu3-sp-2))]",
       )}
       style={{ height: "var(--yu3-mobile-navbar-h)" }}

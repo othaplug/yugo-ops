@@ -39,7 +39,8 @@ export function applyDocumentLightTheme(): void {
   root.setProperty("--prdim", "rgba(201, 169, 98, 0.08)");
 }
 
-/** Yugo+ admin dark — wine surfaces + accent (quote-adjacent). Login page is unchanged. */
+/** Yugo+ admin dark — neutral warm-charcoal canvas. Wine reserved for primary
+ * CTAs + active nav indicators only (matches /docs/admin-consistency-audit.md). */
 export function applyDocumentDarkTheme(): void {
   if (typeof document === "undefined") return;
   const el = document.documentElement;
@@ -47,30 +48,29 @@ export function applyDocumentDarkTheme(): void {
   el.classList.add("dark");
   el.style.colorScheme = "dark";
   const root = el.style;
-  root.setProperty("--bg", "#2B0416");
-  root.setProperty("--bg2", "#3A0820");
-  root.setProperty("--card", "#4A1428");
-  root.setProperty("--tx", "#FCF8F5");
-  root.setProperty("--tx2", "#E8D4DF");
-  root.setProperty("--tx3", "#D4C4CF");
-  root.setProperty("--brd", "rgba(139,26,58,0.32)");
-  root.setProperty("--hover", "rgba(139,26,58,0.12)");
-  /* Readable on wine: tabs, links, table accents — not same-hue-as-bg burgundy */
-  root.setProperty("--gold", "#F0D0E3");
-  root.setProperty("--gold2", "#FAF2F7");
-  root.setProperty("--gdim", "rgba(252,236,244,0.16)");
-  root.setProperty("--text-accent", "#F0D0E3");
-  root.setProperty("--admin-primary-fill", "#6E2442");
-  root.setProperty("--admin-primary-fill-hover", "#823052");
+  root.setProperty("--bg", "#0B0A09");
+  root.setProperty("--bg2", "#131210");
+  root.setProperty("--card", "#1A1816");
+  root.setProperty("--tx", "#F6F3EE");
+  root.setProperty("--tx2", "#C4BFB7");
+  root.setProperty("--tx3", "#8A857D");
+  root.setProperty("--brd", "rgba(255,248,240,0.08)");
+  root.setProperty("--hover", "rgba(255,248,240,0.04)");
+  root.setProperty("--gold", "#D8CFC1");
+  root.setProperty("--gold2", "#EFE8DB");
+  root.setProperty("--gdim", "rgba(255,248,240,0.06)");
+  root.setProperty("--text-accent", "#D8CFC1");
+  root.setProperty("--admin-primary-fill", "#8B1A3A");
+  root.setProperty("--admin-primary-fill-hover", "#A32049");
   root.setProperty("--btn-text-on-accent", "#FCF8F5");
   root.setProperty("--grn", "#6DBF86");
-  root.setProperty("--grdim", "rgba(42,74,53,0.35)");
+  root.setProperty("--grdim", "rgba(42,74,53,0.18)");
   root.setProperty("--red", "#E87070");
-  root.setProperty("--rdim", "rgba(163,45,45,0.2)");
-  root.setProperty("--org", "#B46414");
-  root.setProperty("--ordim", "rgba(180,100,20,0.12)");
-  root.setProperty("--blue", "#6B9FE8");
-  root.setProperty("--bldim", "rgba(107,159,232,0.12)");
-  root.setProperty("--pur", "#C084FC");
-  root.setProperty("--prdim", "rgba(192,132,252,0.12)");
+  root.setProperty("--rdim", "rgba(163,45,45,0.14)");
+  root.setProperty("--org", "#D39550");
+  root.setProperty("--ordim", "rgba(180,100,20,0.1)");
+  root.setProperty("--blue", "#7AA6E8");
+  root.setProperty("--bldim", "rgba(107,159,232,0.1)");
+  root.setProperty("--pur", "#B790F0");
+  root.setProperty("--prdim", "rgba(183,144,240,0.1)");
 }

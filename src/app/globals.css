@@ -183,84 +183,99 @@
 }
 
 /*
- * Admin dark wine — core tokens on the document root so body + Tailwind `bg-[var(--bg)]`
- * always match `applyDocumentDarkTheme` (warm page #2B0416, not neutral #0f0f0f).
+ * Admin dark — neutral warm-charcoal canvas (NOT wine-flooded).
+ * Wine is reserved for primary CTAs + active nav indicators only.
+ * Reference: modern operator dashboards (Microdose / Relatel) — near-black
+ * canvas, subtle hairlines, crisp cream ink, accent applied surgically.
  */
 :is(html[data-theme="dark"], html.dark) {
-  --bg: #2b0416;
-  --bg2: #3a0820;
-  --card: #4a1428;
-  /* High-legibility cream + rose-mist on wine (WCAG-friendly small text) */
-  --tx: #fcf8f5;
-  --tx2: #e8d4df;
-  --tx3: #d4c4cf;
-  --brd: rgba(139, 26, 58, 0.32);
-  --hover: rgba(139, 26, 58, 0.12);
+  --bg: #0b0a09;
+  --bg2: #131210;
+  --card: #1a1816;
+  --tx: #f6f3ee;
+  --tx2: #c4bfb7;
+  --tx3: #8a857d;
+  --brd: rgba(255, 248, 240, 0.08);
+  --hover: rgba(255, 248, 240, 0.04);
   /*
-   * “Gold” slot on wine = readable rose/cream for TEXT, borders, tabs, links — not near-bg burgundy.
-   * Solid fills use --admin-primary-fill so cream button text still passes contrast.
+   * Wine reserved for primary CTAs + active nav. For ambient text-accent
+   * (links, eyebrows, badges) we use cream/ink ink so the chrome reads neutral.
    */
-  --gold: #f0d0e3;
-  --gold2: #faf2f7;
-  --gdim: rgba(252, 236, 244, 0.16);
-  --text-accent: #f0d0e3;
-  /* Solid CTAs — deeper wine (not hot magenta); text/links stay --gold rose */
-  --admin-primary-fill: #6e2442;
-  --admin-primary-fill-hover: #823052;
+  --gold: #d8cfc1;
+  --gold2: #efe8db;
+  --gdim: rgba(255, 248, 240, 0.06);
+  --text-accent: #d8cfc1;
+  --admin-primary-fill: #8b1a3a;
+  --admin-primary-fill-hover: #a32049;
   --btn-text-on-accent: #fcf8f5;
   --grn: #6dbf86;
-  --grdim: rgba(42, 74, 53, 0.35);
+  --grdim: rgba(42, 74, 53, 0.18);
   --red: #e87070;
-  --rdim: rgba(163, 45, 45, 0.2);
-  --org: #b46414;
-  --ordim: rgba(180, 100, 20, 0.12);
-  --blue: #6b9fe8;
-  --bldim: rgba(107, 159, 232, 0.12);
-  --pur: #c084fc;
-  --prdim: rgba(192, 132, 252, 0.12);
+  --rdim: rgba(163, 45, 45, 0.14);
+  --org: #d39550;
+  --ordim: rgba(180, 100, 20, 0.1);
+  --blue: #7aa6e8;
+  --bldim: rgba(107, 159, 232, 0.1);
+  --pur: #b790f0;
+  --prdim: rgba(183, 144, 240, 0.1);
 }
 
-/* shadcn-style channels (admin dark wine) — use hsl(var(--ui-*)) if needed; no collision with --card hex */
+/* shadcn-style channels (admin dark, neutral charcoal) */
 :is(html[data-theme="dark"], html.dark) {
-  --ui-background: 320 90% 8%;
-  --ui-foreground: 24 60% 93%;
-  --ui-card: 330 85% 18%;
-  --ui-card-foreground: 24 60% 93%;
-  --ui-primary: 340 51% 29%;
-  --ui-primary-foreground: 24 60% 93%;
-  --ui-muted: 330 40% 28%;
-  --ui-muted-foreground: 330 20% 82%;
-  --ui-border: 330 51% 29% / 0.28;
-  --ui-ring: 340 51% 29%;
+  --ui-background: 30 8% 5%;
+  --ui-foreground: 36 30% 94%;
+  --ui-card: 30 6% 10%;
+  --ui-card-foreground: 36 30% 94%;
+  --ui-primary: 340 68% 32%;
+  --ui-primary-foreground: 24 60% 96%;
+  --ui-muted: 30 6% 14%;
+  --ui-muted-foreground: 30 8% 64%;
+  --ui-border: 30 8% 18% / 0.5;
+  --ui-ring: 340 68% 32%;
 }
 
+/* Override the legacy --yu-* surface tokens in dark mode so any component
+ * still pulling from them renders on charcoal, not wine. */
+:is(html[data-theme="dark"], html.dark) {
+  --yu-bg-chrome: #0b0a09;
+  --yu-bg-page: #0b0a09;
+  --yu-bg-sidebar: #0e0d0b;
+  --yu-bg-card: #1a1816;
+  --yu-bg-hover: #221f1c;
+  --yu-accent: #8b1a3a;
+  --yu-border: rgba(255, 248, 240, 0.1);
+  --yu-border-em: rgba(255, 248, 240, 0.18);
+  --yu-text-1: #f6f3ee;
+  --yu-text-2: #c4bfb7;
+  --yu-text-3: #8a857d;
+}
+
+/* Glass UI retired — chrome is solid, not blurred. Surfaces use --yu-bg-* directly. */
 [data-theme="dark"] .glass-topbar {
-  background: color-mix(in srgb, var(--yu-bg-chrome) 82%, transparent);
-  border-bottom: 0.5px solid rgba(139, 26, 58, 0.32);
+  background: var(--yu-bg-chrome);
+  border-bottom: 1px solid var(--yu-border);
   box-shadow: none;
-  backdrop-filter: saturate(150%) blur(28px);
-  -webkit-backdrop-filter: saturate(150%) blur(28px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 [data-theme="dark"] .glass-sidebar {
-  background: color-mix(in srgb, var(--yu-bg-sidebar) 86%, transparent);
-  border-right: 0.5px solid rgba(139, 26, 58, 0.28);
+  background: var(--yu-bg-sidebar);
+  border-right: 1px solid var(--yu-border);
   border-top: none;
   border-bottom: none;
   border-left: none;
-  backdrop-filter: saturate(145%) blur(32px);
-  -webkit-backdrop-filter: saturate(145%) blur(32px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 [data-theme="dark"] .glass-card {
   background: var(--yu-bg-card);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  border: 0.5px solid var(--yu-border);
-  border-radius: var(--admin-r-md, 4px);
-  box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--yu-border);
+  border-radius: var(--yu3-r-lg, 10px);
+  box-shadow: none;
 }
 
 [data-theme="dark"] .btn-p {
@@ -305,8 +320,8 @@
 }
 
 [data-theme="dark"] .sidebar-nav-lift:hover {
-  transform: translateX(2px);
-  background-color: rgba(139, 26, 58, 0.12) !important;
+  transform: none;
+  background-color: rgba(255, 248, 240, 0.04) !important;
   color: var(--tx) !important;
   box-shadow: none;
 }
@@ -315,8 +330,8 @@
 }
 
 [data-theme="dark"] .admin-row-hover:hover {
-  background-color: rgba(139, 26, 58, 0.1) !important;
-  border-left-color: var(--gold) !important;
+  background-color: rgba(255, 248, 240, 0.03) !important;
+  border-left-color: transparent !important;
   box-shadow: none;
 }
 
@@ -326,27 +341,27 @@
 
 [data-theme="dark"] .embossed-hover:hover {
   box-shadow: none;
-  border-color: rgba(139, 26, 58, 0.4) !important;
+  border-color: rgba(255, 248, 240, 0.18) !important;
 }
 
 [data-theme="dark"] *::-webkit-scrollbar-thumb {
-  background: rgba(139, 26, 58, 0.22);
+  background: rgba(255, 248, 240, 0.12);
 }
 [data-theme="dark"] *::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 26, 58, 0.35);
+  background: rgba(255, 248, 240, 0.2);
 }
 [data-theme="dark"] *::-webkit-scrollbar-thumb:active {
-  background: rgba(139, 26, 58, 0.45);
+  background: rgba(255, 248, 240, 0.28);
 }
 
 [data-theme="dark"] .sidebar-scroll {
-  scrollbar-color: rgba(139, 26, 58, 0.28) transparent;
+  scrollbar-color: rgba(255, 248, 240, 0.12) transparent;
 }
 [data-theme="dark"] .sidebar-scroll::-webkit-scrollbar-thumb {
-  background: rgba(139, 26, 58, 0.22);
+  background: rgba(255, 248, 240, 0.12);
 }
 [data-theme="dark"] .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 26, 58, 0.35);
+  background: rgba(255, 248, 240, 0.2);
 }
 
 /* Dark admin widget titles — same DM Sans caps as light (no serif section labels) */
@@ -373,7 +388,7 @@
 
 [data-theme="dark"] .field-input:focus,
 [data-theme="dark"] .field-input-compact:focus {
-  border-bottom-color: rgba(139, 26, 58, 0.65);
+  border-bottom-color: var(--yu3-wine, var(--admin-primary-fill));
 }
 
 /* Admin eyebrow caps — DM Sans, uppercase, tight tracking */
@@ -392,17 +407,17 @@ html[data-theme="light"] .admin-app .admin-eyebrow {
 
 [data-theme="dark"] .admin-app main table thead th {
   background: transparent;
-  border-bottom: 0.5px solid rgba(139, 26, 58, 0.35);
+  border-bottom: 1px solid var(--yu-border);
   color: var(--tx2);
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 [data-theme="dark"] .admin-app main table tbody tr {
-  border-bottom: 0.5px solid rgba(249, 237, 228, 0.08);
+  border-bottom: 1px solid var(--yu-border);
 }
 [data-theme="dark"] .admin-app main table tbody tr:hover {
-  background: rgba(139, 26, 58, 0.1);
+  background: rgba(255, 248, 240, 0.03);
 }
 
 html {
@@ -471,61 +486,118 @@ html[data-theme="light"] .admin-app .admin-section-h2 {
   }
 }
 
+/* ── Canonical admin buttons (3 variants only) ───────────────────────────
+ * Spec: /docs/admin-consistency-audit.md §1.3 + P2.3.
+ * - Primary  = wine fill, cream text, used once per page max.
+ * - Secondary = surface fill, hairline border, ink text.
+ * - Ghost    = transparent, ink text, subtle hover wash.
+ * Sizes: 32px sm (h-8), 36px md (h-9), 40px lg (h-10) — md is default. */
 .admin-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.25rem 0.625rem;
-  border-radius: var(--admin-r, 2px);
-  font-size: 12px;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 36px;
+  padding: 0 0.875rem;
+  border-radius: var(--yu3-r-md, 8px);
+  font-size: 13px;
   font-weight: 600;
+  letter-spacing: 0;
   white-space: nowrap;
   cursor: pointer;
   touch-action: manipulation;
   border: 1px solid transparent;
   font-family: var(--font-body);
-  line-height: 1.2;
+  line-height: 1;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
 }
-@media (min-width: 640px) {
+.admin-btn:disabled,
+.admin-btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.admin-btn-sm {
+  height: 32px;
+  padding: 0 0.625rem;
+  font-size: 12px;
+  border-radius: var(--yu3-r-sm, 6px);
+}
+.admin-btn-lg {
+  height: 40px;
+  padding: 0 1rem;
+  font-size: 14px;
+}
+@media (max-width: 640px) {
   .admin-btn {
-    padding: 0.375rem 0.875rem;
-    font-size: 13px;
+    height: 40px;
+    padding: 0 1rem;
   }
 }
+
 .admin-btn-primary {
-  background: var(--admin-primary-fill);
-  color: var(--btn-text-on-accent);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--admin-primary-fill) 35%, #000);
+  background: var(--yu3-wine, var(--admin-primary-fill));
+  color: var(--yu3-on-wine, var(--btn-text-on-accent));
+  border-color: var(--yu3-wine, var(--admin-primary-fill));
+  box-shadow: none;
 }
 .admin-btn-primary:hover {
-  background: var(--admin-primary-fill-hover);
+  background: var(--yu3-wine-hover, var(--admin-primary-fill-hover));
+  border-color: var(--yu3-wine-hover, var(--admin-primary-fill-hover));
+}
+.admin-btn-secondary {
+  background: var(--yu3-bg-surface, #ffffff);
+  color: var(--yu3-ink, var(--tx));
+  border-color: var(--yu3-line, var(--brd));
+}
+.admin-btn-secondary:hover {
+  background: var(--yu3-bg-surface-sunken, var(--hover));
+  border-color: var(--yu3-line-strong, var(--brd));
 }
 .admin-btn-ghost {
-  border-color: var(--brd);
-  color: var(--tx2);
   background: transparent;
+  color: var(--yu3-ink, var(--tx));
+  border-color: transparent;
 }
 .admin-btn-ghost:hover {
-  border-color: color-mix(in srgb, var(--gold) 60%, transparent);
-  color: var(--gold);
+  background: var(--yu3-bg-surface-sunken, var(--hover));
+  color: var(--yu3-ink-strong, var(--tx));
 }
+.admin-btn-danger {
+  background: var(--yu3-bg-surface, #ffffff);
+  color: var(--yu3-danger, var(--red));
+  border-color: var(--yu3-line, var(--brd));
+}
+.admin-btn-danger:hover {
+  background: var(--yu3-danger-tint, var(--rdim));
+  border-color: var(--yu3-danger, var(--red));
+}
+
 .admin-btn-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: var(--admin-r, 2px);
-  border: 1px solid var(--brd);
-  color: var(--tx2);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--yu3-r-md, 8px);
+  border: 1px solid var(--yu3-line, var(--brd));
+  color: var(--yu3-ink-muted, var(--tx2));
   cursor: pointer;
   touch-action: manipulation;
-  background: transparent;
+  background: var(--yu3-bg-surface, transparent);
   flex-shrink: 0;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
 }
 .admin-btn-icon:hover {
-  border-color: color-mix(in srgb, var(--gold) 60%, transparent);
-  color: var(--gold);
+  background: var(--yu3-bg-surface-sunken, var(--hover));
+  color: var(--yu3-ink, var(--tx));
+  border-color: var(--yu3-line-strong, var(--brd));
 }
 
 .admin-kpi-card {
@@ -766,42 +838,21 @@ html:has(.estate-welcome-root) {
   }
 }
 
-/* Portaled modals — heavily frosted + tinted scrim (blurs page behind the overlay) */
+/* Modal overlay — solid scrim, no blur (glass UI retired). */
 [data-modal-root] > .modal-overlay {
-  background:
-    linear-gradient(
-      145deg,
-      rgba(250, 247, 242, 0.5) 0%,
-      rgba(244, 236, 248, 0.35) 42%,
-      rgba(236, 246, 240, 0.4) 100%
-    ),
-    rgba(44, 62, 45, 0.28) !important;
-  backdrop-filter: blur(36px) saturate(1.45);
-  -webkit-backdrop-filter: blur(36px) saturate(1.45);
+  background: rgba(26, 20, 16, 0.5) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 [data-theme="light"] [data-modal-root] > .modal-overlay {
-  background:
-    linear-gradient(
-      155deg,
-      rgba(255, 251, 247, 0.72) 0%,
-      rgba(250, 240, 245, 0.55) 38%,
-      rgba(245, 252, 248, 0.5) 78%,
-      rgba(255, 248, 242, 0.62) 100%
-    ),
-    rgba(92, 26, 51, 0.14), rgba(44, 62, 45, 0.12) !important;
-  backdrop-filter: blur(44px) saturate(1.55);
-  -webkit-backdrop-filter: blur(44px) saturate(1.55);
+  background: rgba(26, 20, 16, 0.4) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 [data-theme="dark"] [data-modal-root] > .modal-overlay {
-  background:
-    linear-gradient(
-      160deg,
-      rgba(43, 4, 22, 0.55) 0%,
-      rgba(20, 12, 18, 0.72) 100%
-    ),
-    rgba(0, 0, 0, 0.45) !important;
-  backdrop-filter: blur(32px) saturate(1.35);
-  -webkit-backdrop-filter: blur(32px) saturate(1.35);
+  background: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 /* Centre-screen card (desktop modals) */
@@ -1959,39 +2010,47 @@ button:focus-visible,
   border-color: rgba(0, 0, 0, 0.06);
 }
 
+/* Glass UI retired (light + dark). Chrome is solid; no backdrop blur, no
+ * translucency. Names retained as utility classes so existing markup keeps
+ * working — they now resolve to plain solid surfaces. */
 .glass-sidebar {
-  background: #151518;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--yu-bg-sidebar, #fbf9f4);
+  border-right: 1px solid var(--brd);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 [data-theme="light"] .glass-sidebar {
-  background: rgba(250, 247, 242, 0.82);
-  border: none;
-  border-right: 0.5px solid color-mix(in srgb, var(--brd) 55%, transparent);
-  backdrop-filter: saturate(160%) blur(24px);
-  -webkit-backdrop-filter: saturate(160%) blur(24px);
+  background: #fbf9f4;
+  border-right: 1px solid var(--brd);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .glass-topbar {
-  background: #151518;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--yu-bg-chrome, #ffffff);
+  border-bottom: 1px solid var(--brd);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 [data-theme="light"] .glass-topbar {
-  background: rgba(255, 255, 255, 0.72);
-  border-bottom: 0.5px solid color-mix(in srgb, var(--brd) 55%, transparent);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  background: #ffffff;
+  border-bottom: 1px solid var(--brd);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .glass-card {
-  background: #2a2228;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 4px;
+  background: var(--yu-bg-card, #ffffff);
+  border: 1px solid var(--brd);
+  border-radius: var(--yu3-r-lg, 10px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 [data-theme="light"] .glass-card {
   background: #ffffff;
-  border-color: rgba(0, 0, 0, 0.08);
-  border-radius: 4px;
+  border-color: var(--brd);
+  border-radius: var(--yu3-r-lg, 10px);
 }
 
 /* Yugo+ tinted chrome — sidebar, modal stacks, toasts (not for dense tables) */
@@ -2013,62 +2072,42 @@ button:focus-visible,
   border-color: rgba(43, 4, 22, 0.06);
 }
 
-/* Modal / dialog panels: tinted frosted glass (must sit after base .yugo-glass-light) */
+/* Modal / dialog panels — solid surface, no frosted glass. */
 [data-yugo-glass-modal] .yugo-glass-light {
-  background: linear-gradient(
-    165deg,
-    rgba(255, 255, 255, 0.82) 0%,
-    rgba(255, 251, 247, 0.68) 45%,
-    rgba(250, 245, 252, 0.62) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  box-shadow:
-    0 0 0 1px rgba(92, 26, 51, 0.07),
-    0 28px 64px -20px rgba(44, 62, 45, 0.3);
-  backdrop-filter: blur(40px) saturate(1.4);
-  -webkit-backdrop-filter: blur(40px) saturate(1.4);
+  background: var(--yu-bg-card, #ffffff);
+  border: 1px solid var(--brd);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 [data-theme="light"] [data-yugo-glass-modal] .yugo-glass-light {
-  background:
-    linear-gradient(
-      170deg,
-      rgba(255, 255, 255, 0.88) 0%,
-      rgba(255, 249, 244, 0.72) 40%,
-      rgba(252, 248, 255, 0.65) 100%
-    ),
-    rgba(92, 26, 51, 0.04);
-  border-color: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(48px) saturate(1.5);
-  -webkit-backdrop-filter: blur(48px) saturate(1.5);
+  background: #ffffff;
+  border-color: var(--brd);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 [data-theme="dark"] [data-yugo-glass-modal] .yugo-glass-light {
-  background: linear-gradient(
-    165deg,
-    rgba(55, 18, 35, 0.88) 0%,
-    rgba(32, 8, 22, 0.82) 100%
-  );
-  border: 1px solid rgba(249, 237, 228, 0.16);
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.25),
-    0 28px 64px -16px rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(36px) saturate(1.32);
-  -webkit-backdrop-filter: blur(36px) saturate(1.32);
+  background: var(--yu-bg-card);
+  border: 1px solid var(--yu-border);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-/* Wine sidebars using yugo-glass (e.g. admin): frosted strip; base .yugo-glass stays for cards/toasts */
+/* Sidebars — solid, never frosted. */
 html[data-theme="light"] aside.yugo-glass {
-  background: rgba(255, 251, 247, 0.78);
+  background: #fbf9f4;
   border: none;
-  border-right: 0.5px solid rgba(43, 4, 22, 0.09);
-  backdrop-filter: saturate(160%) blur(28px);
-  -webkit-backdrop-filter: saturate(160%) blur(28px);
+  border-right: 1px solid var(--brd);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 html[data-theme="dark"] aside.yugo-glass {
-  background: color-mix(in srgb, var(--yu-bg-sidebar) 86%, transparent);
+  background: var(--yu-bg-sidebar);
   border: none;
-  border-right: 0.5px solid rgba(139, 26, 58, 0.28);
-  backdrop-filter: saturate(145%) blur(32px);
-  -webkit-backdrop-filter: saturate(145%) blur(32px);
+  border-right: 1px solid var(--yu-border);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 @media (prefers-reduced-transparency: reduce) {
   html[data-theme="light"] .glass-topbar,
@@ -2092,15 +2131,15 @@ html[data-theme="dark"] aside.yugo-glass {
   }
   html[data-theme="dark"] .glass-sidebar {
     background: var(--yu-bg-sidebar);
-    border-right: 0.5px solid rgba(139, 26, 58, 0.25);
+    border-right: 1px solid var(--yu-border);
   }
   html[data-theme="light"] aside.yugo-glass {
     background: #fffbf7;
-    border: 1px solid rgba(43, 4, 22, 0.08);
+    border: 1px solid var(--brd);
   }
   html[data-theme="dark"] aside.yugo-glass {
     background: var(--yu-bg-sidebar);
-    border: 1px solid rgba(249, 237, 228, 0.1);
+    border: 1px solid var(--yu-border);
   }
 }
 
