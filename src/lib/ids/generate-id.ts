@@ -10,8 +10,8 @@ import type { SupabaseClient } from "@supabase/supabase-js"
  * MV  — Confirmed MOVES (any tier, any type — residential, office, PM, estate)
  * DLV — ALL delivery-related records (B2B quotes, B2B jobs, one-offs, partner deliveries)
  *
- * Examples: YG-30201 (quote) → MV-30202 (move booked from it) → DLV-30203 (separate B2B delivery)
- * Lineage is in data (source_quote_id / quote_id FK), not in matching digits.
+ * Quote → move / quote → delivery reuse the same numeric suffix (YG-30245 → MV-30245 / DLV-30245).
+ * Use generateRecordId only for brand-new records (new quotes, direct move/delivery without a quote).
  */
 export type RecordPrefix = "YG" | "MV" | "DLV"
 

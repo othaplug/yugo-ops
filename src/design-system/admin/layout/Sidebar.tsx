@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   SIDEBAR_SECTIONS,
   ROLE_LEVEL,
-  ALL_NAV_HREFS,
+  isNavItemActive,
   type NavItem,
 } from "./nav";
 import { cn } from "../lib/cn";
@@ -32,19 +32,6 @@ export interface SidebarProps {
   workspacePlan?: string;
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
-}
-
-function isActive(pathname: string, item: NavItem): boolean {
-  if (item.activePath) return item.activePath(pathname);
-  const { href } = item;
-  if (href === "/admin") return pathname === "/admin";
-  if (!pathname.startsWith(href)) return false;
-  const more = ALL_NAV_HREFS.filter(
-    (h) => h !== href && h.startsWith(`${href}/`),
-  );
-  if (more.length === 0) return true;
-  if (pathname === href || pathname === `${href}/`) return true;
-  return !more.some((l) => pathname === l || pathname.startsWith(`${l}/`));
 }
 
 function InsetRule({ className }: { className?: string }) {
@@ -279,7 +266,7 @@ export function Sidebar({
                     <NavRow
                       key={`${section.label ?? "s"}-${item.href}-${item.label}`}
                       item={item}
-                      active={isActive(pathname, item)}
+                      active={isNavItemActive(pathname, item)}
                       collapsed={collapsed}
                       badge={badge}
                       onNavigate={onNavigate}

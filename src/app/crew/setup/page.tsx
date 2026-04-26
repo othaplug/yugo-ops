@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import YugoLogo from "@/components/YugoLogo";
+import { cn } from "@/lib/utils";
 
 const DEVICE_STORAGE_KEY = "yugo-crew-device-id";
 
@@ -67,212 +68,107 @@ export default function CrewSetupPage() {
 
   return (
     <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#0D0D0D",
-        fontFamily: "'DM Sans', sans-serif",
-      }}
+      className={cn(
+        "flex min-h-dvh items-center justify-center px-4 py-8",
+        "[font-family:var(--font-body)]",
+        "bg-zinc-950",
+      )}
     >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 420,
-          padding: "0 28px",
-        }}
-      >
-        <style>{`
-          @keyframes setupFadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-          .crew-setup-input:focus { border-bottom-color: rgba(201,169,98,0.65) !important; outline: none; box-shadow: none !important; }
-          .crew-setup-btn:hover:not(:disabled) { background: #243524 !important; transform: translateY(-1px); }
-        `}</style>
-
+      <div className="w-full max-w-[420px]">
         <div
-          style={{
-            background: "#1A1A1A",
-            border: "1px solid #2A2A2A",
-            borderRadius: 20,
-            padding: "36px 40px",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
-            animation: "setupFadeIn 0.6s ease",
-          }}
+          className={cn(
+            "border border-zinc-800/90 bg-zinc-900/95 p-8 shadow-xl sm:p-10",
+            "animate-[setupFadeIn_0.5s_ease_both]",
+          )}
         >
+          <style>{`
+            @keyframes setupFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+          `}</style>
+
           {setupWarning ? (
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 22, color: "#F5F5F3", marginBottom: 12 }}>
+            <div className="text-left">
+              <h1 className="font-hero text-[22px] font-normal text-stone-100">
                 Registered with a note
-              </div>
-              <p style={{ fontSize: 13, color: "#A8A29E", lineHeight: 1.5, marginBottom: 20 }}>{setupWarning}</p>
+              </h1>
+              <p className="mb-5 mt-2 text-[14px] leading-relaxed text-stone-400 [font-family:var(--font-body)]">
+                {setupWarning}
+              </p>
               <button
                 type="button"
                 onClick={goToLogin}
-                className="crew-setup-btn"
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  background: "#2C3E2D",
-                  color: "#0D0D0D",
-                  border: "none",
-                  borderRadius: 0,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  fontFamily: "'DM Sans', sans-serif",
-                  cursor: "pointer",
-                }}
+                className="crew-premium-cta w-full min-h-[48px] border border-[#3d1426] text-[11px] font-bold uppercase tracking-[0.12em] text-[#FFFBF7] [font-family:var(--font-body)]"
               >
                 Continue to crew login
               </button>
             </div>
           ) : (
             <>
-          <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "8px 20px",
-                borderRadius: 9999,
-                background: "rgba(201,169,98,0.08)",
-                border: "1px solid rgba(201,169,98,0.4)",
-              }}
-            >
-              <YugoLogo size={18} variant="cream" />
-            </div>
-          </div>
+              <div className="mb-7 flex justify-center">
+                <div className="inline-flex items-center justify-center rounded-full border border-[var(--yu3-wine)]/40 bg-[var(--yu3-wine)]/10 px-5 py-2">
+                  <YugoLogo size={18} variant="cream" />
+                </div>
+              </div>
 
-          <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: "#F5F5F3", marginBottom: 6 }}>
-            iPad Setup
-          </div>
-          <div style={{ fontSize: 14, color: "#666", marginBottom: 32 }}>
-            Enter the setup code from your admin to register this device
-          </div>
+              <h1 className="font-hero text-center text-[24px] font-normal text-stone-100">
+                iPad setup
+              </h1>
+              <p className="mb-8 mt-1 text-center text-[14px] text-stone-500 [font-family:var(--font-body)]">
+                Enter the setup code from your admin to register this device
+              </p>
 
-          <div
-            style={{
-              width: 48,
-              height: 1,
-              background: "linear-gradient(90deg, transparent, #2C3E2D, transparent)",
-              margin: "0 auto 32px",
-            }}
-          />
-
-          {error && (
-            <div
-              style={{
-                background: "rgba(248,113,113,0.1)",
-                border: "1px solid rgba(248,113,113,0.2)",
-                color: "#F87171",
-                fontSize: 12,
-                padding: "10px 14px",
-                borderRadius: 8,
-                marginBottom: 18,
-              }}
-            >
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: 18 }}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: 0.5,
-                  textTransform: "uppercase",
-                  color: "#666",
-                  marginBottom: 6,
-                }}
-              >
-                Setup Code
-              </label>
-              <input
-                className="crew-setup-input"
-                type="text"
-                placeholder="e.g. ABCD-1234"
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))}
-                required
-                autoFocus
-                style={{
-                  width: "100%",
-                  padding: "12px 0",
-                  background: "transparent",
-                  border: "none",
-                  borderBottom: "1px solid #3A3A3E",
-                  borderRadius: 0,
-                  color: "#F5F5F3",
-                  fontSize: 16,
-                  fontFamily: "'DM Sans', sans-serif",
-                  letterSpacing: 2,
-                  outline: "none",
-                  transition: "border-color 0.2s",
-                }}
+              <div
+                className="mb-8 h-px w-12 bg-gradient-to-r from-transparent via-[var(--yu3-forest)] to-transparent"
+                aria-hidden
               />
-            </div>
 
-            <div style={{ marginBottom: 24 }}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: 0.5,
-                  textTransform: "uppercase",
-                  color: "#666",
-                  marginBottom: 6,
-                }}
-              >
-                Device Name (optional)
-              </label>
-              <input
-                className="crew-setup-input"
-                type="text"
-                placeholder="e.g. Truck 1 iPad"
-                value={deviceName}
-                onChange={(e) => setDeviceName(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "12px 0",
-                  background: "transparent",
-                  border: "none",
-                  borderBottom: "1px solid #3A3A3E",
-                  borderRadius: 0,
-                  color: "#F5F5F3",
-                  fontSize: 14,
-                  fontFamily: "'DM Sans', sans-serif",
-                  outline: "none",
-                  transition: "border-color 0.2s",
-                }}
-              />
-            </div>
+              {error && (
+                <div
+                  className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-[13px] text-red-300 [font-family:var(--font-body)]"
+                  role="alert"
+                >
+                  {error}
+                </div>
+              )}
 
-            <button
-              type="submit"
-              className="crew-setup-btn"
-              disabled={loading}
-              style={{
-                width: "100%",
-                padding: "10px 14px",
-                background: "#2C3E2D",
-                color: "#0D0D0D",
-                border: "none",
-                borderRadius: 0,
-                fontSize: 14,
-                fontWeight: 600,
-                fontFamily: "'DM Sans', sans-serif",
-                cursor: loading ? "not-allowed" : "pointer",
-                transition: "all 0.2s",
-                opacity: loading ? 0.5 : 1,
-              }}
-            >
-              {loading ? "Registering..." : "Register Device"}
-            </button>
-          </form>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.12em] text-stone-500 [font-family:var(--font-body)]">
+                    Setup code
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. ABCD-1234"
+                    value={code}
+                    onChange={(e) =>
+                      setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))
+                    }
+                    required
+                    autoFocus
+                    className="w-full border-0 border-b border-zinc-700 bg-transparent py-3 text-[16px] tracking-[0.2em] text-stone-100 placeholder:text-stone-600 outline-none [font-family:var(--font-body)] focus:border-b-[var(--yu3-wine)]/60"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.12em] text-stone-500 [font-family:var(--font-body)]">
+                    Device name (optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Truck 1 iPad"
+                    value={deviceName}
+                    onChange={(e) => setDeviceName(e.target.value)}
+                    className="w-full border-0 border-b border-zinc-700 bg-transparent py-3 text-[14px] text-stone-100 placeholder:text-stone-600 outline-none [font-family:var(--font-body)] focus:border-b-[var(--yu3-wine)]/60"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="crew-premium-cta w-full min-h-[48px] text-[11px] font-bold uppercase tracking-[0.12em] text-[#FFFBF7] [font-family:var(--font-body)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loading ? "Registering" : "Register device"}
+                </button>
+              </form>
             </>
           )}
         </div>

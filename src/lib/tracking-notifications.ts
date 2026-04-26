@@ -1,8 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
 import { getEmailFrom, sendEmail } from "@/lib/email/send";
-import { signTrackToken } from "@/lib/track-token";
-import { getEmailBaseUrl } from "@/lib/email-base-url";
+import {
+  buildPublicDeliveryTrackUrl,
+  buildPublicMoveTrackUrl,
+} from "@/lib/notifications/public-track-url";
 import { formatJobId } from "@/lib/move-code";
 import {
   PREMIUM_TRACK_CTA_LABEL,
@@ -35,7 +37,17 @@ const CONFIG: Record<
     notifyAdmin: true,
     notifyPartner: false,
   },
+  inventory_check: {
+    notifyClient: false,
+    notifyAdmin: false,
+    notifyPartner: false,
+  },
   loading: {
+    notifyClient: false,
+    notifyAdmin: false,
+    notifyPartner: false,
+  },
+  wrapping: {
     notifyClient: false,
     notifyAdmin: false,
     notifyPartner: false,
@@ -254,6 +266,7 @@ export async function notifyOnCheckpoint(
   let moveFromAddress: string | undefined;
   let moveToAddress: string | undefined;
   let moveClientName: string | undefined;
+  let deliveryClientName: string | undefined;
 
   let estateMove = false;
   let movePartnerEligible = false;
@@ -307,7 +320,10 @@ export async function notifyOnCheckpoint(
           partnerEmail = (org.email || "").trim() || null;
         }
       }
-      trackUrl = `${getEmailBaseUrl()}/track/move/${move.move_code || move.id}?token=${signTrackToken("move", move.id)}`;
+      trackUrl = buildPublicMoveTrackUrl({
+        id: move.id,
+        move_code: (move as { move_code?: string | null }).move_code,
+      });
       moveCode = move.move_code || move.id;
       moveFromAddress = move.from_address || undefined;
       moveToAddress = move.to_address || undefined;
@@ -317,7 +333,7 @@ export async function notifyOnCheckpoint(
     const { data: delivery } = await admin
       .from("deliveries")
       .select(
-        "id, delivery_number, client_name, customer_email, end_customer_email, contact_email, category, organization_id, booking_type, contact_phone, customer_phone, end_customer_phone, tracking_token, recipient_tracking_token",
+        "id, delivery_number, client_name, customer_name, customer_email, end_customer_email, contact_email, category, organization_id, booking_type, contact_phone, customer_phone, end_customer_phone, tracking_token, recipient_tracking_token",
       )
       .eq("id", jobId)
       .single();
@@ -372,8 +388,17 @@ export async function notifyOnCheckpoint(
       } else {
         partnerEmail = null;
       }
-      trackUrl = `${getEmailBaseUrl()}/track/delivery/${delivery.delivery_number}?token=${signTrackToken("delivery", delivery.id)}`;
+      trackUrl = buildPublicDeliveryTrackUrl({
+        id: delivery.id,
+        delivery_number: delivery.delivery_number,
+      });
       moveCode = delivery.delivery_number;
+      deliveryClientName = (
+        (delivery as { customer_name?: string | null }).customer_name ||
+        delivery.client_name ||
+        ""
+      )
+        .trim() || undefined;
     }
   }
 
@@ -556,7 +581,10 @@ export async function notifyOnCheckpoint(
         status,
         jobType,
         phone: clientPhone,
-        jobCode: String(moveCode || jobId),
+        clientName:
+          jobType === "move"
+            ? moveClientName
+            : deliveryClientName ?? undefined,
         trackUrl,
         estateMove: estateMove && jobType === "move",
         jobUuid: jobId,

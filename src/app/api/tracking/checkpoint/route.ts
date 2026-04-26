@@ -14,6 +14,11 @@ import {
   persistDeliveryArrivedLateIfNeeded,
   persistMoveArrivalOnTimeIfNeeded,
 } from "@/lib/crew/persist-arrival-punctuality";
+import { DELIVERY_STATUS_FLOW } from "@/lib/crew-tracking-status";
+import {
+  getCrewStatusFlowForMove,
+  isAllowedTrackingCheckpointStatus,
+} from "@/lib/crew/service-type-flow";
 
 export async function POST(req: NextRequest) {
   // Checkpoints always allowed; `crew_tracking` gates live location pings only.
@@ -49,6 +54,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Not your session" }, { status: 403 });
   if (!session.is_active && status !== "completed")
     return NextResponse.json({ error: "Session completed" }, { status: 400 });
+
+  if (!isAllowedTrackingCheckpointStatus(String(status))) {
+    return NextResponse.json({ error: "Invalid checkpoint status" }, { status: 400 });
+  }
+
+  let moveServiceType: string | null | undefined;
+  if (session.job_type === "move") {
+    const { data: moveRow } = await admin
+      .from("moves")
+      .select("service_type")
+      .eq("id", session.job_id)
+      .maybeSingle();
+    moveServiceType = moveRow?.service_type as string | null | undefined;
+  }
+  const flowForJob =
+    session.job_type === "move"
+      ? getCrewStatusFlowForMove(moveServiceType)
+      : [...DELIVERY_STATUS_FLOW];
+  const allowed = new Set<string>([...flowForJob, "completed"]);
+  if (session.job_type === "delivery") {
+    allowed.add("en_route");
+    allowed.add("arrived");
+    allowed.add("delivering");
+  }
+  if (!allowed.has(String(status))) {
+    return NextResponse.json(
+      { error: "That step is not part of this job type flow" },
+      { status: 400 },
+    );
+  }
 
   const checkpoints = Array.isArray(session.checkpoints)
     ? [...session.checkpoints]
@@ -128,7 +163,9 @@ export async function POST(req: NextRequest) {
     const statusMap: Record<string, string> = {
       en_route_to_pickup: "en_route_pickup",
       arrived_at_pickup: "at_pickup",
+      inventory_check: "loading",
       loading: "loading",
+      wrapping: "loading",
       en_route_to_destination: "en_route_delivery",
       arrived_at_destination: "at_delivery",
       unloading: "unloading",

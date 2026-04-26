@@ -22,6 +22,8 @@ import {
   ClipboardText,
   Image,
   Clock,
+  Phone,
+  ChatCircle,
   Lock,
   Check,
   Toolbox,
@@ -41,6 +43,10 @@ import {
   getNextStatus,
   getCrewCheckpointDisplayLabel,
 } from "@/lib/crew-tracking-status";
+import {
+  getCrewStatusFlowForMove,
+  crewStatusRequiresFinalWalkPhotos,
+} from "@/lib/crew/service-type-flow";
 import { normalizePhone } from "@/lib/phone";
 import { formatAccessForDisplay } from "@/lib/format-text";
 import PageContent from "@/app/admin/components/PageContent";
@@ -221,6 +227,14 @@ interface JobDetail {
   estimatedDurationMinutes?: number | null;
   marginAlertMinutes?: number | null;
   operationalAlerts?: OperationalJobAlerts | null;
+  clientPhone?: string | null;
+  clientEmail?: string | null;
+  partnerName?: string | null;
+  partnerPhone?: string | null;
+  coordinatorName?: string | null;
+  coordinatorPhone?: string | null;
+  /** Completed jobs: crew still owes cash / none tip report. */
+  tipReportNeeded?: boolean;
 }
 
 interface Session {
@@ -285,6 +299,7 @@ export default function CrewJobPage({
   const [walkthroughModalOpen, setWalkthroughModalOpen] = useState(false);
   const [walkthroughDone, setWalkthroughDone] = useState(false);
   const [walkthroughSkipped, setWalkthroughSkipped] = useState(false);
+  const [finalWalkPhotoCount, setFinalWalkPhotoCount] = useState(0);
   const [walkthroughResult, setWalkthroughResult] = useState<{
     itemsMatched: number;
     itemsMissing: number;
@@ -298,10 +313,16 @@ export default function CrewJobPage({
   const [equipmentCheckPending, setEquipmentCheckPending] = useState(false);
   const { setImmersiveNav } = useCrewImmersiveNav();
 
+  const moveStatusFlow = useMemo(
+    () => getCrewStatusFlowForMove(job?.serviceType),
+    [job?.serviceType],
+  );
   const statusFlow =
-    jobType === "move" ? MOVE_STATUS_FLOW : DELIVERY_STATUS_FLOW;
+    jobType === "move" ? moveStatusFlow : DELIVERY_STATUS_FLOW;
   const currentStatus = session?.status || "not_started";
-  const nextStatus = getNextStatus(currentStatus, jobType);
+  const nextStatus = getNextStatus(currentStatus, jobType, {
+    moveFlow: jobType === "move" ? moveStatusFlow : undefined,
+  });
   const isCompleted = currentStatus === "completed";
   const progressIdx = statusFlow.indexOf(currentStatus as any);
   const progressPercent = isCompleted
@@ -374,6 +395,25 @@ export default function CrewJobPage({
       setSession(null);
     }
   }, [id, jobType]);
+
+  const refreshFinalWalkPhotos = useCallback(async () => {
+    try {
+      const r = await fetch(
+        `/api/crew/photos/${encodeURIComponent(id)}?jobType=${encodeURIComponent(jobType)}`,
+      );
+      const d = await r.json();
+      const list = (d.photos || []) as { category?: string }[];
+      setFinalWalkPhotoCount(
+        list.filter((p) => p.category === "walkthrough_final").length,
+      );
+    } catch {
+      setFinalWalkPhotoCount(0);
+    }
+  }, [id, jobType]);
+
+  useEffect(() => {
+    void refreshFinalWalkPhotos();
+  }, [refreshFinalWalkPhotos, session?.status, session?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -516,6 +556,17 @@ export default function CrewJobPage({
   const advanceStatus = async () => {
     if (!session || !nextStatus) return;
     if (nextStatus === "completed") {
+      const needsFinalWalk = crewStatusRequiresFinalWalkPhotos(
+        jobType,
+        currentStatus,
+        jobType === "move" ? moveStatusFlow : DELIVERY_STATUS_FLOW,
+      );
+      if (needsFinalWalk && finalWalkPhotoCount < 1) {
+        setActionError(
+          "Add at least one final walkthrough photo in the Photos tab before sign-off.",
+        );
+        return;
+      }
       router.push(`/crew/dashboard/job/${jobType}/${id}/signoff`);
       return;
     }
@@ -671,10 +722,7 @@ export default function CrewJobPage({
             <CaretLeft size={15} weight="regular" />
             Jobs
           </Link>
-          <span
-            className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-            style={{ background: "#0D948820", color: "#0D9488" }}
-          >
+          <span className="rounded-full bg-teal-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-700 [font-family:var(--font-body)]">
             Day Rate
           </span>
         </div>
@@ -708,6 +756,15 @@ export default function CrewJobPage({
     "arrived",
   ].includes(currentStatus);
   const blockedByPhotos = atArrivedRequiringPhotos && !canAdvanceFromArrived;
+  const needsFinalWalkPhotos = crewStatusRequiresFinalWalkPhotos(
+    jobType,
+    currentStatus,
+    jobType === "move" ? moveStatusFlow : DELIVERY_STATUS_FLOW,
+  );
+  const blockedByFinalWalkPhotos =
+    needsFinalWalkPhotos && finalWalkPhotoCount < 1;
+  const finalWalkPhotoAtLoading =
+    jobType === "move" && !moveStatusFlow.includes("unloading");
   // Walkthrough must be done (or skipped) before loading can start
   const blockedByWalkthrough =
     currentStatus === "arrived_at_pickup" &&
@@ -741,6 +798,34 @@ export default function CrewJobPage({
       const st = (job.serviceType || "").toLowerCase();
       return st === "b2b_delivery" || st === "b2b_oneoff";
     })();
+  const isDefaultMoveBar =
+    jobType === "move" &&
+    moveStatusFlow.length === MOVE_STATUS_FLOW.length &&
+    moveStatusFlow.every((s, i) => s === MOVE_STATUS_FLOW[i]);
+  const progressBarStages = useMemo(() => {
+    if (jobType === "delivery") {
+      return CREW_DELIVERY_PROGRESS_BAR_LABELS.map((label) => ({ label }));
+    }
+    if (isDefaultMoveBar) {
+      return CREW_MOVE_PROGRESS_BAR_LABELS.map((label) => ({ label }));
+    }
+    return moveStatusFlow.map((s) => ({
+      label: getCrewCheckpointDisplayLabel(s, useLogisticsCopy),
+    }));
+  }, [jobType, isDefaultMoveBar, moveStatusFlow, useLogisticsCopy]);
+  const progressBarCurrentIndex = useMemo(() => {
+    if (progressIdx < 0) return -1;
+    if (jobType === "delivery") return progressIdx;
+    if (isDefaultMoveBar) return mapMoveProgressIdxToBarIndex(progressIdx);
+    if (isCompleted) return moveStatusFlow.length - 1;
+    return progressIdx;
+  }, [
+    progressIdx,
+    jobType,
+    isDefaultMoveBar,
+    isCompleted,
+    moveStatusFlow.length,
+  ]);
   const originLabel = useLogisticsCopy ? "Origin" : "Pickup";
   const destinationLabel = useLogisticsCopy ? "Destination" : "Drop-off";
 
@@ -877,6 +962,82 @@ export default function CrewJobPage({
                 })}
               </p>
             )}
+            <div className="mt-4 space-y-3 border-t border-[var(--yu3-line-subtle)] pt-4 text-left">
+                {(job.clientPhone || job.clientEmail) && (
+                  <div className="rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/90 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] mb-1 [font-family:var(--font-body)] leading-none">
+                      Client
+                    </p>
+                    <p className="text-[13px] font-semibold text-[var(--yu3-ink-strong)] [font-family:var(--font-body)]">
+                      {job.clientName}
+                    </p>
+                    {job.clientPhone ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <a
+                          href={`tel:${normalizePhone(job.clientPhone)}`}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--yu3-forest)] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-white [font-family:var(--font-body)]"
+                          aria-label={`Call client at ${job.clientPhone}`}
+                        >
+                          <Phone className="h-4 w-4" weight="bold" aria-hidden />
+                          Call
+                        </a>
+                        <a
+                          href={`sms:${normalizePhone(job.clientPhone)}`}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--yu3-ink-strong)] [font-family:var(--font-body)]"
+                          aria-label={`Text client at ${job.clientPhone}`}
+                        >
+                          <ChatCircle className="h-4 w-4" weight="bold" aria-hidden />
+                          Text
+                        </a>
+                      </div>
+                    ) : null}
+                    {job.clientEmail ? (
+                      <a
+                        href={`mailto:${encodeURIComponent(job.clientEmail)}`}
+                        className="mt-2 block text-[12px] font-medium text-[var(--yu3-wine)] underline-offset-2 hover:underline [font-family:var(--font-body)]"
+                      >
+                        {job.clientEmail}
+                      </a>
+                    ) : null}
+                  </div>
+                )}
+                {job.partnerName ? (
+                  <div className="rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/90 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] mb-1 [font-family:var(--font-body)] leading-none">
+                      Partner
+                    </p>
+                    <p className="text-[13px] font-semibold text-[var(--yu3-ink-strong)] [font-family:var(--font-body)]">
+                      {job.partnerName}
+                    </p>
+                    {job.partnerPhone ? (
+                      <a
+                        href={`tel:${normalizePhone(job.partnerPhone)}`}
+                        className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--yu3-ink-strong)] [font-family:var(--font-body)]"
+                        aria-label={`Call partner at ${job.partnerPhone}`}
+                      >
+                        <Phone className="h-4 w-4" weight="bold" aria-hidden />
+                        Call partner
+                      </a>
+                    ) : null}
+                  </div>
+                ) : null}
+                <div className="rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/90 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] mb-1 [font-family:var(--font-body)] leading-none">
+                    Coordinator
+                  </p>
+                  <p className="text-[13px] font-semibold text-[var(--yu3-ink-strong)] [font-family:var(--font-body)]">
+                    {job.coordinatorName || "Yugo Operations"}
+                  </p>
+                  <a
+                    href={`tel:${normalizePhone(job.coordinatorPhone || DISPATCH_PHONE)}`}
+                    className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--yu3-ink-strong)] [font-family:var(--font-body)]"
+                    aria-label="Call coordinator"
+                  >
+                    <Phone className="h-4 w-4" weight="bold" aria-hidden />
+                    Call coordinator
+                  </a>
+                </div>
+            </div>
             {(() => {
               const n =
                 job.estCrewSize != null && Number.isFinite(job.estCrewSize)
@@ -1003,6 +1164,23 @@ export default function CrewJobPage({
       {/* ══════════════ STATUS TAB ══════════════ */}
       {activeTab === "status" && (
         <div className="space-y-5">
+          {jobCompleted && job.tipReportNeeded && (
+            <div className="rounded-2xl border border-[var(--yu3-wine)]/25 bg-[var(--yu3-wine-tint)] px-4 py-3.5">
+              <p className="text-[12px] font-bold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+                Tip report
+              </p>
+              <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1 leading-snug [font-family:var(--font-body)]">
+                Log cash or Interac tips, or confirm no tip, for this completed job.
+              </p>
+              <Link
+                href={`/crew/dashboard/job/${jobType}/${id}/tip-report`}
+                className="mt-3 inline-flex items-center justify-center gap-2 w-full min-h-[48px] rounded-xl border border-[#3d1426] bg-[var(--yu3-wine)] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-on-wine)] [font-family:var(--font-body)] leading-none active:scale-[0.99]"
+              >
+                Open tip report
+                <CaretRight size={16} weight="bold" className="shrink-0 opacity-95" aria-hidden />
+              </Link>
+            </div>
+          )}
           {actionError && (
             <div className="mx-2 rounded-[10px] border border-red-200/80 bg-red-50/90 px-3 py-2.5">
               <p className="text-[11px] text-red-800 leading-relaxed">
@@ -1184,20 +1362,8 @@ export default function CrewJobPage({
           {/* Progress */}
           <div className="px-2">
             <StageProgressBar
-              stages={
-                jobType === "move"
-                  ? CREW_MOVE_PROGRESS_BAR_LABELS.map((label) => ({ label }))
-                  : CREW_DELIVERY_PROGRESS_BAR_LABELS.map((label) => ({
-                      label,
-                    }))
-              }
-              currentIndex={
-                progressIdx < 0
-                  ? -1
-                  : jobType === "move"
-                    ? mapMoveProgressIdxToBarIndex(progressIdx)
-                    : progressIdx
-              }
+              stages={progressBarStages}
+              currentIndex={progressBarCurrentIndex}
               variant="light"
               lightAccent="wine"
             />
@@ -1317,6 +1483,7 @@ export default function CrewJobPage({
           {showAdvanceButton &&
             !blockedByPhotos &&
             !blockedByWalkthrough &&
+            !blockedByFinalWalkPhotos &&
             (nextStatus === "completed" ? (
               <Link
                 href={`/crew/dashboard/job/${jobType}/${id}/signoff`}
@@ -1364,6 +1531,11 @@ export default function CrewJobPage({
           {showAdvanceButton && canUseLocationActions && blockedByPhotos && (
             <p className="text-center text-[11px] text-[var(--yu3-ink-faint)] py-2 [font-family:var(--font-body)]">
               Take photos in the Photos tab to advance
+            </p>
+          )}
+          {showAdvanceButton && blockedByFinalWalkPhotos && (
+            <p className="text-center text-[11px] text-[var(--yu3-ink-faint)] py-2 [font-family:var(--font-body)]">
+              Add final walkthrough photos in the Photos tab before client sign-off
             </p>
           )}
 
@@ -1797,6 +1969,8 @@ export default function CrewJobPage({
               sessionId={session?.id ?? null}
               currentStatus={currentStatus}
               onCanAdvanceFromArrivedChange={setCanAdvanceFromArrived}
+              onPhotoTaken={() => void refreshFinalWalkPhotos()}
+              finalWalkPhotoAtLoading={finalWalkPhotoAtLoading}
               readOnly={isCompleted}
             />
           ) : (
@@ -1890,6 +2064,8 @@ export default function CrewJobPage({
                     currentStatus={currentStatus}
                     onPhotoCountChange={(count) => setPickupPhotosCount(count)}
                     onCanAdvanceFromArrivedChange={setCanAdvanceFromArrived}
+                    onPhotoTaken={() => void refreshFinalWalkPhotos()}
+                    finalWalkPhotoAtLoading={finalWalkPhotoAtLoading}
                   />
                 )}
               </div>

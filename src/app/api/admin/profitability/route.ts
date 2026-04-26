@@ -134,6 +134,57 @@ export async function GET(req: NextRequest) {
   const config: Record<string, string> = {};
   for (const r of configRows ?? []) config[r.key] = r.value;
 
+  const SHARE_DAY_STATUSES = new Set([
+    "completed",
+    "in_progress",
+    "delivered",
+    "done",
+    "paid",
+  ]);
+
+  const scheduledDayKey = (row: { scheduled_date?: string | null }): string | null => {
+    const raw = row.scheduled_date;
+    if (raw == null) return null;
+    const s = String(raw).trim().slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+  };
+
+  const uniqueScheduledDays = new Set<string>();
+  for (const m of completedMoves) {
+    const d = scheduledDayKey(m);
+    if (d) uniqueScheduledDays.add(d);
+  }
+  for (const d of completedDeliveries) {
+    const day = scheduledDayKey(d);
+    if (day) uniqueScheduledDays.add(day);
+  }
+
+  let jobsOnScheduledDay: Record<string, number> = {};
+  if (uniqueScheduledDays.size > 0) {
+    const sorted = [...uniqueScheduledDays].sort();
+    const minDay = sorted[0]!;
+    const maxDay = sorted[sorted.length - 1]!;
+    const [{ data: moveDays }, { data: delivDays }] = await Promise.all([
+      sb
+        .from("moves")
+        .select("scheduled_date, status")
+        .gte("scheduled_date", minDay)
+        .lte("scheduled_date", maxDay),
+      sb
+        .from("deliveries")
+        .select("scheduled_date, status")
+        .gte("scheduled_date", minDay)
+        .lte("scheduled_date", maxDay),
+    ]);
+    for (const r of [...(moveDays ?? []), ...(delivDays ?? [])]) {
+      const day = scheduledDayKey(r as { scheduled_date?: string | null });
+      if (!day) continue;
+      const st = String((r as { status?: string | null }).status ?? "").toLowerCase();
+      if (!SHARE_DAY_STATUSES.has(st)) continue;
+      jobsOnScheduledDay[day] = (jobsOnScheduledDay[day] ?? 0) + 1;
+    }
+  }
+
   const totalJobCount = completedMoves.length + completedDeliveries.length;
   const monthlyMoveCount = totalJobCount || 1;
   const targetMargin = parseFloat(config.target_gross_margin_pct ?? "40");
@@ -167,7 +218,11 @@ export async function GET(req: NextRequest) {
       deposit_method: m.deposit_method ?? null,
     };
     const revenue = moveCostInput.estimate;
-    let costs = calculateMoveProfitability(moveCostInput, config, monthlyMoveCount);
+    const dayStr = scheduledDayKey(m);
+    const jobsOnSameDay = dayStr ? (jobsOnScheduledDay[dayStr] ?? 1) : 1;
+    let costs = calculateMoveProfitability(moveCostInput, config, monthlyMoveCount, {
+      jobsOnSameDay,
+    });
     // Apply per-job overrides (only override fields that were explicitly set)
     const ov = costOverridesMap[m.id];
     if (ov) {
@@ -223,7 +278,15 @@ export async function GET(req: NextRequest) {
     const trackedHoursD = sessionHoursMap[d.id] ?? null;
     const revenue = invoiceBilledByDelivery[d.id] ?? Number(d.admin_adjusted_price ?? d.total_price ?? d.quoted_price ?? 0);
     // Inject tracked hours so calculateDeliveryProfitability uses them
-    let costs = calculateDeliveryProfitability({ ...d, actual_hours: trackedHoursD ?? d.actual_hours ?? null }, revenue, config, monthlyMoveCount);
+    const dDay = scheduledDayKey(d as { scheduled_date?: string | null });
+    const dJobsOnSameDay = dDay ? (jobsOnScheduledDay[dDay] ?? 1) : 1;
+    let costs = calculateDeliveryProfitability(
+      { ...d, actual_hours: trackedHoursD ?? d.actual_hours ?? null },
+      revenue,
+      config,
+      monthlyMoveCount,
+      { jobsOnSameDay: dJobsOnSameDay },
+    );
     // Apply per-job overrides
     const ov = costOverridesMap[d.id];
     if (ov) {

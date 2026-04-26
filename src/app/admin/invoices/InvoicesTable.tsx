@@ -155,6 +155,7 @@ export default function InvoicesTable({
       },
       {
         id: "client_name",
+        shortLabel: "Client",
         header: "Client",
         accessor: (r) => String(r.client_name ?? ""),
         width: 180,
@@ -170,6 +171,7 @@ export default function InvoicesTable({
       },
       {
         id: "amount",
+        shortLabel: "Amount",
         header: "Amount",
         accessor: (r) => invoicePreTaxForDisplay(r as never),
         sortable: true,
@@ -207,6 +209,7 @@ export default function InvoicesTable({
       },
       {
         id: "due_date",
+        shortLabel: "Due",
         header: "Due date",
         accessor: (r) => String((r as { due_date?: string }).due_date || ""),
         sortable: true,
@@ -229,6 +232,7 @@ export default function InvoicesTable({
       },
       {
         id: "status",
+        shortLabel: "Status",
         header: "Status",
         accessor: (r) => getInvoiceStatusLabel((r as { status?: string }).status),
         sortable: true,

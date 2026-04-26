@@ -3,8 +3,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getFeatureConfig } from "@/lib/platform-settings";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { buildETAMessage } from "@/lib/sms/etaMessages";
-import { getEmailBaseUrl } from "@/lib/email-base-url";
-import { signTrackToken } from "@/lib/track-token";
+import {
+  buildPublicDeliveryTrackUrl,
+  buildPublicMoveTrackUrl,
+} from "@/lib/notifications/public-track-url";
 
 const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 
@@ -36,13 +38,11 @@ export async function POST(req: NextRequest) {
     const cfg = await getFeatureConfig(["sms_eta_enabled"]);
     const smsEnabled = cfg.sms_eta_enabled === "true";
 
-    const baseUrl = getEmailBaseUrl();
-
     if (jobType === "move") {
       const { data: move } = await admin
         .from("moves")
         .select(
-          "id, client_name, client_phone, from_address, to_address, to_lat, to_lng, tracking_code, tier_selected, dedicated_coordinator, crew_id"
+          "id, move_code, client_name, client_phone, from_address, to_address, to_lat, to_lng, tier_selected, dedicated_coordinator, crew_id"
         )
         .eq("id", jobId)
         .maybeSingle();
@@ -67,7 +67,10 @@ export async function POST(req: NextRequest) {
         etaMinutes = await getETAMinutes(crewLat || 0, crewLng || 0, destLat, destLng);
       }
 
-      const trackingLink = `${baseUrl}/track/move/${move.tracking_code ?? move.id}?token=${signTrackToken("move", move.id)}`;
+      const trackingLink = buildPublicMoveTrackUrl({
+        id: move.id,
+        move_code: (move as { move_code?: string | null }).move_code,
+      });
 
       if (smsEnabled) {
         const tier = move.tier_selected || "";
@@ -113,7 +116,7 @@ export async function POST(req: NextRequest) {
     const { data: delivery } = await admin
       .from("deliveries")
       .select(
-        "id, end_customer_name, end_customer_phone, customer_phone, pickup_address, delivery_address, delivery_lat, delivery_lng, tracking_code, organization_id, crew_id"
+        "id, delivery_number, end_customer_name, end_customer_phone, customer_phone, pickup_address, delivery_address, delivery_lat, delivery_lng, organization_id, crew_id"
       )
       .eq("id", jobId)
       .maybeSingle();
@@ -155,7 +158,11 @@ export async function POST(req: NextRequest) {
       etaMinutes = await getETAMinutes(crewLat || 0, crewLng || 0, destLat, destLng);
     }
 
-    const trackingLink = `${baseUrl}/track/delivery/${encodeURIComponent(delivery.tracking_code || delivery.id)}?token=${signTrackToken("delivery", delivery.id)}`;
+    const trackingLink = buildPublicDeliveryTrackUrl({
+      id: delivery.id,
+      delivery_number: (delivery as { delivery_number?: string | null })
+        .delivery_number,
+    });
     const partnerName = org?.name || "";
 
     const canSendDeliveryEta =

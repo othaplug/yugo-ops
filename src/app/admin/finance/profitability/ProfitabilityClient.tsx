@@ -30,6 +30,10 @@ import {
   PencilSimple as Pencil,
 } from "@phosphor-icons/react";
 import { useToast } from "@/app/admin/components/Toast";
+import {
+  TierLetterBadge,
+  residentialTierFullLabel,
+} from "@/design-system/admin/primitives";
 import type { CustomOverheadItem } from "@/lib/finance/calculateProfit";
 
 /* ════════════ types ════════════ */
@@ -191,15 +195,6 @@ const marginBg = (m: number, t: number) =>
     : m >= t - 5
       ? "bg-[var(--gold)]/10 border-[var(--gold)]/20"
       : "bg-red-500/10 border-red-500/20";
-
-const TIER_COLORS: Record<string, string> = {
-  essential: "#6B7280",
-  curated: "#6B7280",
-  essentials: "#6B7280",
-  signature: "#2C3E2D",
-  premier: "#2C3E2D",
-  estate: "#2D6A4F",
-};
 
 /* ════════════ Inline Cost Cell ════════════ */
 function EditableCostCell({
@@ -1795,7 +1790,7 @@ export default function ProfitabilityClient() {
                       setTableTab(key);
                       setVisibleCount(20);
                     }}
-                    className={`text-[10px] px-3 py-1.5 rounded-md font-semibold transition-colors ${tableTab === key ? "bg-[var(--card)] text-[var(--tx)]" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
+                    className={`text-[10px] px-3 py-1.5 rounded-md font-semibold tabular-nums transition-colors ${tableTab === key ? "bg-[var(--card)] text-[var(--tx)]" : "text-[var(--tx3)] hover:text-[var(--tx)]"}`}
                   >
                     {label}
                   </button>
@@ -2007,17 +2002,16 @@ export default function ProfitabilityClient() {
                           <span className="font-medium text-[var(--tx)] truncate">
                             {r.client}
                           </span>
-                          {r.tier && (
-                            <span
-                              className="ml-1.5 inline-flex items-center px-1 py-px rounded text-[10px] font-bold leading-none uppercase"
-                              style={{
-                                color: TIER_COLORS[r.tier] ?? "#2C3E2D",
-                                backgroundColor: `${TIER_COLORS[r.tier] ?? "#2C3E2D"}22`,
-                              }}
-                            >
-                              {r.tier}
+                          {r.tier ? (
+                            <span className="ml-1.5 inline-flex align-middle">
+                              <TierLetterBadge
+                                tier={r.tier}
+                                label={
+                                  residentialTierFullLabel(r.tier) ?? r.tier
+                                }
+                              />
                             </span>
-                          )}
+                          ) : null}
                         </td>
                         <td className="py-1.5 px-2 text-[var(--tx3)] overflow-hidden text-ellipsis whitespace-nowrap">
                           {typeLabel(r.type)}

@@ -1,13 +1,19 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react"
-import Link from "next/link"
-import { CaretDown, CaretUp } from "@phosphor-icons/react"
-import { PageHeader } from "@/design-system/admin/layout"
-import { KpiStrip } from "@/design-system/admin/dashboard"
-import { Button, SearchInput, Select, StatusPill, Badge } from "@/design-system/admin/primitives"
-import type { BuildingProfileRow } from "@/lib/buildings/types"
-import BackButton from "../components/BackButton"
+import { useState, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
+import { CaretDown, CaretUp } from "@phosphor-icons/react";
+import { PageHeader } from "@/design-system/admin/layout";
+import { KpiStrip } from "@/design-system/admin/dashboard";
+import {
+  Button,
+  SearchInput,
+  Select,
+  StatusPill,
+  Badge,
+} from "@/design-system/admin/primitives";
+import type { BuildingProfileRow } from "@/lib/buildings/types";
+import BackButton from "../components/BackButton";
 
 const ELEVATOR_LABELS: Record<string, string> = {
   standard: "Standard (direct to floor)",
@@ -15,7 +21,7 @@ const ELEVATOR_LABELS: Record<string, string> = {
   multi_transfer: "Multiple transfers",
   no_freight: "No freight elevator",
   stairs_only: "Stairs only",
-}
+};
 
 const BUILDING_TYPE_LABELS: Record<string, string> = {
   residential: "Residential",
@@ -24,7 +30,7 @@ const BUILDING_TYPE_LABELS: Record<string, string> = {
   condo_tower: "Condo tower",
   low_rise: "Low-rise",
   townhouse_complex: "Townhouse complex",
-}
+};
 
 const SOURCE_LABELS: Record<string, string> = {
   coordinator_visit: "Coordinator visit",
@@ -32,66 +38,66 @@ const SOURCE_LABELS: Record<string, string> = {
   client_provided: "Client provided",
   admin_entry: "Admin entry",
   unknown: "Unknown",
-}
+};
 
 const fmtDate = (s: string | null | undefined): string => {
-  if (!s) return "Never"
-  const d = new Date(s)
-  if (Number.isNaN(d.getTime())) return s
+  if (!s) return "Never";
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return s;
   return d.toLocaleDateString("en-CA", {
     year: "numeric",
     month: "short",
     day: "numeric",
-  })
-}
+  });
+};
 
 // Use white on solid status fills. Do not use --yu3-ink-inverse: in dark mode it
 // switches to a dark value meant for type on light UI, so digits vanish on red/green.
 const complexityPillClass = (rating: number | null): string => {
-  const r = rating ?? 1
+  const r = rating ?? 1;
   if (r >= 4) {
-    return "bg-[var(--yu3-danger)] text-white"
+    return "bg-[var(--yu3-danger)] text-white";
   }
   if (r >= 3) {
-    return "bg-[var(--yu3-warning)] text-white"
+    return "bg-[var(--yu3-warning)] text-white";
   }
-  return "bg-[var(--yu3-success)] text-white"
-}
+  return "bg-[var(--yu3-success)] text-white";
+};
 
 const complexityLabel = (rating: number | null): string => {
-  const r = rating ?? 1
-  if (r >= 4) return "High"
-  if (r >= 3) return "Med"
-  return "Low"
-}
+  const r = rating ?? 1;
+  if (r >= 4) return "High";
+  if (r >= 3) return "Med";
+  return "Low";
+};
 
 function BuildingCard({
   building,
   onVerified,
 }: {
-  building: BuildingProfileRow
-  onVerified: (id: string) => void
+  building: BuildingProfileRow;
+  onVerified: (id: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(false)
-  const [verifying, setVerifying] = useState(false)
+  const [expanded, setExpanded] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   const handleVerify = useCallback(async () => {
-    setVerifying(true)
+    setVerifying(true);
     try {
       await fetch(`/api/admin/buildings/${building.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ verified: true }),
-      })
-      onVerified(building.id)
+      });
+      onVerified(building.id);
     } catch {
       /* non-fatal */
     } finally {
-      setVerifying(false)
+      setVerifying(false);
     }
-  }, [building.id, onVerified])
+  }, [building.id, onVerified]);
 
-  const rating = building.complexity_rating ?? 1
+  const rating = building.complexity_rating ?? 1;
 
   return (
     <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] overflow-hidden">
@@ -342,7 +348,7 @@ function BuildingCard({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function Row({
@@ -350,11 +356,11 @@ function Row({
   value,
   highlight,
 }: {
-  label: string
-  value: string | null | undefined
-  highlight?: boolean
+  label: string;
+  value: string | null | undefined;
+  highlight?: boolean;
 }) {
-  if (!value) return null
+  if (!value) return null;
   return (
     <div className="flex justify-between gap-3">
       <span className="text-[var(--yu3-ink-muted)] shrink-0">{label}</span>
@@ -364,7 +370,7 @@ function Row({
         {value}
       </span>
     </div>
-  )
+  );
 }
 
 function NoteBox({
@@ -372,9 +378,9 @@ function NoteBox({
   text,
   className = "",
 }: {
-  label: string
-  text: string
-  className?: string
+  label: string;
+  text: string;
+  className?: string;
 }) {
   return (
     <div
@@ -383,42 +389,44 @@ function NoteBox({
       <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--yu3-ink-muted)] mb-1">
         {label}
       </p>
-      <p className="text-[11px] text-[var(--yu3-ink)] leading-relaxed">{text}</p>
+      <p className="text-[11px] text-[var(--yu3-ink)] leading-relaxed">
+        {text}
+      </p>
     </div>
-  )
+  );
 }
 
 export default function BuildingsAdminClient({
   initial,
 }: {
-  initial: BuildingProfileRow[]
+  initial: BuildingProfileRow[];
 }) {
-  const [search, setSearch] = useState("")
-  const [complexityFilter, setComplexityFilter] = useState("")
-  const [verifiedFilter, setVerifiedFilter] = useState("")
-  const [rows, setRows] = useState<BuildingProfileRow[]>(initial)
-  const [loading, setLoading] = useState(false)
+  const [search, setSearch] = useState("");
+  const [complexityFilter, setComplexityFilter] = useState("");
+  const [verifiedFilter, setVerifiedFilter] = useState("");
+  const [rows, setRows] = useState<BuildingProfileRow[]>(initial);
+  const [loading, setLoading] = useState(false);
 
   const load = useCallback(async (query: string) => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const u = new URL("/api/admin/buildings", window.location.origin)
-      if (query.trim().length >= 2) u.searchParams.set("q", query.trim())
-      const res = await fetch(u.toString())
-      const data = await res.json()
+      const u = new URL("/api/admin/buildings", window.location.origin);
+      if (query.trim().length >= 2) u.searchParams.set("q", query.trim());
+      const res = await fetch(u.toString());
+      const data = await res.json();
       if (Array.isArray(data.buildings))
-        setRows(data.buildings as BuildingProfileRow[])
+        setRows(data.buildings as BuildingProfileRow[]);
     } catch {
       /* keep list */
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    const t = window.setTimeout(() => void load(search), 320)
-    return () => window.clearTimeout(t)
-  }, [search, load])
+    const t = window.setTimeout(() => void load(search), 320);
+    return () => window.clearTimeout(t);
+  }, [search, load]);
 
   const handleVerified = useCallback((id: string) => {
     setRows((prev) =>
@@ -427,27 +435,27 @@ export default function BuildingsAdminClient({
           ? { ...r, verified: true, verified_at: new Date().toISOString() }
           : r,
       ),
-    )
-  }, [])
+    );
+  }, []);
 
   const filtered = rows.filter((b) => {
     if (complexityFilter === "high" && (b.complexity_rating ?? 1) < 4)
-      return false
+      return false;
     if (complexityFilter === "medium" && (b.complexity_rating ?? 1) !== 3)
-      return false
+      return false;
     if (complexityFilter === "low" && (b.complexity_rating ?? 1) > 2)
-      return false
-    if (verifiedFilter === "verified" && !b.verified) return false
-    if (verifiedFilter === "unverified" && b.verified) return false
-    return true
-  })
+      return false;
+    if (verifiedFilter === "verified" && !b.verified) return false;
+    if (verifiedFilter === "unverified" && b.verified) return false;
+    return true;
+  });
 
-  const totalBuildings = rows.length
+  const totalBuildings = rows.length;
   const highComplexity = rows.filter(
     (b) => (b.complexity_rating ?? 1) >= 4,
-  ).length
-  const verifiedCount = rows.filter((b) => b.verified).length
-  const unverifiedCount = rows.filter((b) => !b.verified).length
+  ).length;
+  const verifiedCount = rows.filter((b) => b.verified).length;
+  const unverifiedCount = rows.filter((b) => !b.verified).length;
 
   const kpiTiles = useMemo(
     () => [
@@ -480,7 +488,7 @@ export default function BuildingsAdminClient({
       },
     ],
     [totalBuildings, highComplexity, verifiedCount, unverifiedCount],
-  )
+  );
 
   return (
     <div
@@ -575,5 +583,5 @@ export default function BuildingsAdminClient({
         </div>
       </section>
     </div>
-  )
+  );
 }

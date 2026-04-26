@@ -47,15 +47,17 @@ type SignOffData = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatShort(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
   try {
-    return new Date(iso).toLocaleString("en-US", {
+    return d.toLocaleString("en-US", {
       month: "short",
       day: "numeric",
       hour: "numeric",
       minute: "2-digit",
     });
   } catch {
-    return iso;
+    return "—";
   }
 }
 
@@ -546,7 +548,9 @@ export default function MoveFilesSection({
                     {signOff.signed_at && (
                       <div>
                         <span className="text-[var(--tx3)]">Date: </span>
-                        {new Date(signOff.signed_at).toLocaleString()}
+                        <span className="tabular-nums">
+                          {formatShort(signOff.signed_at)}
+                        </span>
                       </div>
                     )}
                     {signOff.satisfaction_rating != null && (

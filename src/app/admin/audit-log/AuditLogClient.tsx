@@ -2,20 +2,7 @@
 
 import { useMemo, useState, useCallback } from "react"
 import Link from "next/link"
-import {
-  Truck,
-  CurrencyDollar,
-  ChatText,
-  CheckCircle,
-  EnvelopeSimple,
-  X,
-  FileText,
-  Camera,
-  CalendarBlank,
-  ClockClockwise,
-  ListBullets,
-  ArrowSquareOut,
-} from "@phosphor-icons/react";
+import { ArrowSquareOut } from "@phosphor-icons/react";
 import { PageHeader } from "@/design-system/admin/layout"
 import { csvField } from "@/lib/admin-csv-field"
 import {
@@ -96,117 +83,6 @@ function humanizeEventType(eventType: string): string {
     .join(" ");
 }
 
-function looksLikeEmojiOrGlyph(icon: string): boolean {
-  const t = icon.trim();
-  if (!t) return false;
-  if (/^[\w_-]+$/.test(t)) return false;
-  return true;
-}
-
-function EventGlyph({
-  icon,
-  entityType,
-}: {
-  icon: string | null;
-  entityType: string;
-}) {
-  const size = 16;
-  const cls = "shrink-0 text-[var(--tx3)]";
-  if (icon && looksLikeEmojiOrGlyph(icon)) {
-    return (
-      <span
-        className="text-[15px] leading-none w-4 h-4 flex items-center justify-center"
-        aria-hidden
-      >
-        {icon}
-      </span>
-    );
-  }
-  const key = (icon || "").toLowerCase().replace(/\s+/g, "_");
-  switch (key) {
-    case "check":
-      return (
-        <CheckCircle size={size} className={cls} weight="duotone" aria-hidden />
-      );
-    case "truck":
-    case "delivery":
-      return <Truck size={size} className={cls} weight="duotone" aria-hidden />;
-    case "mail":
-      return (
-        <EnvelopeSimple
-          size={size}
-          className={cls}
-          weight="duotone"
-          aria-hidden
-        />
-      );
-    case "x":
-      return <X size={size} className={cls} weight="duotone" aria-hidden />;
-    case "file":
-      return (
-        <FileText size={size} className={cls} weight="duotone" aria-hidden />
-      );
-    case "dollar":
-      return (
-        <CurrencyDollar
-          size={size}
-          className={cls}
-          weight="duotone"
-          aria-hidden
-        />
-      );
-    case "camera":
-      return (
-        <Camera size={size} className={cls} weight="duotone" aria-hidden />
-      );
-    case "calendar":
-      return (
-        <CalendarBlank
-          size={size}
-          className={cls}
-          weight="duotone"
-          aria-hidden
-        />
-      );
-    case "follow_up":
-      return (
-        <ClockClockwise
-          size={size}
-          className={cls}
-          weight="duotone"
-          aria-hidden
-        />
-      );
-    default: {
-      const et = normalizeEntityType(entityType);
-      if (et === "move")
-        return (
-          <Truck size={size} className={cls} weight="duotone" aria-hidden />
-        );
-      if (et === "delivery")
-        return (
-          <Truck size={size} className={cls} weight="duotone" aria-hidden />
-        );
-      if (et === "invoice")
-        return (
-          <CurrencyDollar
-            size={size}
-            className={cls}
-            weight="duotone"
-            aria-hidden
-          />
-        );
-      if (et === "quote")
-        return (
-          <ChatText size={size} className={cls} weight="duotone" aria-hidden />
-        );
-      return (
-        <ListBullets size={size} className={cls} weight="duotone" aria-hidden />
-      );
-    }
-  }
-}
-
 function matchesDatePreset(
   createdAt: string,
   preset: (typeof DATE_PRESETS)[number]["key"],
@@ -257,19 +133,17 @@ export default function AuditLogClient({
         sortable: true,
         width: 150,
         cell: (e) => (
-          <div className="flex items-start gap-2 min-w-0">
-            <EventGlyph icon={e.icon} entityType={e.entity_type} />
-            <span
-              className="t-num text-[11px] font-medium text-[var(--yu3-ink-muted)] cursor-default"
-              title={new Date(e.created_at).toLocaleString()}
-            >
-              {formatActivityTime(e.created_at)}
-            </span>
-          </div>
+          <span
+            className="t-num text-[11px] font-medium text-[var(--yu3-ink-muted)] cursor-default tabular-nums"
+            title={new Date(e.created_at).toLocaleString()}
+          >
+            {formatActivityTime(e.created_at)}
+          </span>
         ),
       },
       {
         id: "entity",
+        shortLabel: "Entity",
         header: "Entity",
         accessor: (e) => entityBadgeLabel(e.entity_type),
         sortable: true,
@@ -282,6 +156,7 @@ export default function AuditLogClient({
       },
       {
         id: "event",
+        shortLabel: "Event",
         header: "Event",
         accessor: (e) => humanizeEventType(e.event_type),
         sortable: true,
@@ -294,6 +169,7 @@ export default function AuditLogClient({
       },
       {
         id: "description",
+        shortLabel: "Description",
         header: "Description",
         accessor: (e) => {
           const base =

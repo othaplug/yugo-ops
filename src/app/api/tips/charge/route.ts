@@ -147,6 +147,8 @@ export async function POST(req: NextRequest) {
       .from("tips")
       .insert({
         move_id: resolvedMoveId,
+        job_type: "move",
+        method: "square",
         crew_id: move.crew_id,
         client_name: move.client_name,
         crew_name: crewName,

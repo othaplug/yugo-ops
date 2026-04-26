@@ -385,6 +385,10 @@ export async function POST(req: NextRequest) {
         ? quote.hubspot_deal_id.trim()
         : null);
 
+    let hubspotDuplicate:
+      | { dealId: string; dealName: string; dealStageId: string }
+      | undefined;
+
     const hsToken = process.env.HUBSPOT_ACCESS_TOKEN;
     if (
       !effectiveDealId &&
@@ -402,9 +406,15 @@ export async function POST(req: NextRequest) {
         lastName: lName,
         clientPhone: clientPhone || undefined,
       });
-      if (created?.dealId) {
+      if (created?.status === "created" && created.dealId) {
         await supabase.from("quotes").update({ hubspot_deal_id: created.dealId }).eq("quote_id", quoteId);
         effectiveDealId = created.dealId;
+      } else if (created?.status === "duplicate") {
+        hubspotDuplicate = {
+          dealId: created.existingDealId,
+          dealName: created.existingDealName,
+          dealStageId: created.existingDealStageId,
+        };
       }
     }
 
@@ -473,7 +483,11 @@ export async function POST(req: NextRequest) {
       }).catch((e) => console.warn("[quotes/send] lead update:", e));
     }
 
-    return NextResponse.json({ success: true, emailId: result.id });
+    return NextResponse.json({
+      success: true,
+      emailId: result.id,
+      ...(hubspotDuplicate ? { hubspotDuplicate } : {}),
+    });
   } catch (err) {
     console.error("[quotes/send]", err);
     return NextResponse.json(

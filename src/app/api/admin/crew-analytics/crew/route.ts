@@ -30,7 +30,9 @@ type Stage = {
 const STAGE_LABELS: Record<string, string> = {
   en_route_to_pickup: "Travel to Pickup",
   arrived_at_pickup: "At Pickup",
+  inventory_check: "Inventory check",
   loading: "Loading",
+  wrapping: "Wrapping / prep",
   en_route_to_destination: "Travel to drop off",
   arrived_at_destination: "At Drop off",
   unloading: "Unloading",
@@ -216,8 +218,9 @@ export async function GET(req: NextRequest) {
     ),
   ];
 
+  /** Only columns that exist on `public.moves` — invalid names make PostgREST return an error and this route loads zero move rows (client/route show as —). */
   const MOVE_SELECT =
-    "id, client_name, from_address, to_address, move_date, quoted_hours, move_size, arrival_window, scheduled_date, scheduled_time, quote_id, move_project_id, estimated_duration_minutes, est_hours, arrived_on_time, move_code";
+    "id, client_name, from_address, to_address, move_size, arrival_window, scheduled_date, scheduled_time, quote_id, move_project_id, estimated_duration_minutes, est_hours, arrived_on_time, move_code";
   const DELIVERY_SELECT =
     "id, customer_name, client_name, business_name, pickup_address, delivery_address, scheduled_date, scheduled_start, scheduled_end, delivery_window, time_slot, source_quote_id, estimated_duration_minutes, estimated_duration_hours, day_type, delivery_number, score_arrived_late";
 
@@ -226,8 +229,6 @@ export async function GET(req: NextRequest) {
     client_name?: string | null;
     from_address?: string | null;
     to_address?: string | null;
-    move_date?: string | null;
-    quoted_hours?: number | null;
     move_size?: string | null;
     arrival_window?: string | null;
     scheduled_date?: string | null;
@@ -313,8 +314,9 @@ export async function GET(req: NextRequest) {
     return rows;
   };
 
-  const [moveRowsById, deliveryRowsById, benchmarksRes] = await Promise.all([
+  const [moveRowsById, moveRowsByQuoteId, deliveryRowsById, benchmarksRes] = await Promise.all([
     fetchMovesIn("id", allJobIds),
+    fetchMovesIn("quote_id", allJobIds),
     fetchDeliveriesIn("id", allJobIds),
     admin.from("volume_benchmarks").select("move_size, baseline_hours"),
   ]);
@@ -329,6 +331,7 @@ export async function GET(req: NextRequest) {
   };
 
   for (const m of moveRowsById) putMove(m);
+  for (const m of moveRowsByQuoteId) putMove(m);
   for (const d of deliveryRowsById) putDel(d);
 
   const orphanJobIds = allJobIds.filter(
@@ -693,7 +696,6 @@ export async function GET(req: NextRequest) {
         if (est != null && Number.isFinite(Number(est)) && Number(est) > 0) return Number(est);
         const estH = m.est_hours;
         if (estH != null && Number.isFinite(Number(estH)) && Number(estH) > 0) return Number(estH) * 60;
-        if (m.quoted_hours != null) return Number(m.quoted_hours) * 60;
         if (m.move_size) {
           const baseline = baselineBySize.get(m.move_size);
           if (baseline != null) return Number(baseline) * 60;
@@ -702,10 +704,10 @@ export async function GET(req: NextRequest) {
       })();
 
       let onTime: boolean | null = null;
-      const dateStr = m.move_date || s.started_at?.split("T")[0];
+      const dateStr = m.scheduled_date || s.started_at?.split("T")[0];
       const arrivalIso = getFirstArrivalIso(cps, ARRIVAL_CHECKPOINTS_MOVE);
       const moveWin = parseMoveScheduleWindow({
-        scheduled_date: m.move_date || m.scheduled_date,
+        scheduled_date: m.scheduled_date,
         arrival_window: m.arrival_window,
         scheduled_time: m.scheduled_time,
       });
@@ -803,12 +805,18 @@ export async function GET(req: NextRequest) {
     };
   });
 
+  /** Job history rows with no resolved move/delivery (client/route placeholders only) add noise; omit from UI and aggregates. */
+  const PLACEHOLDER_EMDASH = "—";
+  const jobsForUi = jobs.filter(
+    (j) => !(j.clientName === PLACEHOLDER_EMDASH && j.route === PLACEHOLDER_EMDASH),
+  );
+
   // Build weekly trend data
   const weekMap = new Map<
     string,
     { jobs: number; totalDuration: number; ratings: number[]; tips: number }
   >();
-  jobs.forEach((j) => {
+  jobsForUi.forEach((j) => {
     if (!j.date) return;
     const d = new Date(j.date + "T00:00:00");
     const weekStart = new Date(d);
@@ -836,10 +844,10 @@ export async function GET(req: NextRequest) {
     }));
 
   const totalTips = totalTipsFromTable;
-  const onTimeJobs = jobs.filter((j) => j.onTime === true).length;
-  const timedJobs = jobs.filter((j) => j.onTime !== null).length;
+  const onTimeJobs = jobsForUi.filter((j) => j.onTime === true).length;
+  const timedJobs = jobsForUi.filter((j) => j.onTime !== null).length;
   const onTimeRate = timedJobs > 0 ? Math.round((onTimeJobs / timedJobs) * 100) : null;
-  const allRatings = jobs.filter((j) => j.rating != null).map((j) => j.rating!);
+  const allRatings = jobsForUi.filter((j) => j.rating != null).map((j) => j.rating!);
   const avgRating =
     allRatings.length > 0
       ? Math.round((allRatings.reduce((a, b) => a + b, 0) / allRatings.length) * 10) / 10
@@ -847,10 +855,10 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     crew: { id: crew.id, name: crew.name, members: (crew.members as string[]) || [] },
-    jobs,
+    jobs: jobsForUi,
     trends,
     summary: {
-      totalJobs: jobs.length,
+      totalJobs: jobsForUi.length,
       avgRating,
       onTimeRate,
       totalTips,

@@ -5,7 +5,9 @@ import { Plus, Image } from "@phosphor-icons/react";
 
 const CHECKPOINT_TO_CATEGORY: Record<string, string> = {
   arrived_at_pickup: "pre_move_condition",
+  inventory_check: "pre_move_condition",
   loading: "loading",
+  wrapping: "loading",
   en_route_to_destination: "in_transit",
   arrived_at_destination: "delivery_placement",
   unloading: "post_move_condition",
@@ -19,9 +21,29 @@ const CATEGORY_PROMPTS: Record<string, string> = {
   in_transit: "Document items secured in truck",
   delivery_placement: "Document items in final position",
   post_move_condition: "Document room condition after completion",
+  walkthrough_final: "Final walkthrough: document completed placement before sign-off",
   damage_documentation: "Document damage",
   other: "Add photo",
 };
+
+function resolvePhotoCategory(
+  jobType: "move" | "delivery",
+  currentStatus: string,
+  finalWalkPhotoAtLoading: boolean,
+): string {
+  if (jobType === "move" && currentStatus === "unloading") return "walkthrough_final";
+  if (
+    jobType === "move" &&
+    finalWalkPhotoAtLoading &&
+    currentStatus === "loading"
+  ) {
+    return "walkthrough_final";
+  }
+  if (jobType === "delivery" && currentStatus === "arrived_at_destination") {
+    return "walkthrough_final";
+  }
+  return CHECKPOINT_TO_CATEGORY[currentStatus] || "other";
+}
 
 const MIN_PHOTOS_AT_ARRIVED = 1;
 
@@ -34,6 +56,8 @@ interface JobPhotosProps {
   onPhotoCountChange?: (count: number, atArrived: number) => void;
   /** Called when crew can advance from an arrived checkpoint (has photos or skipped). */
   onCanAdvanceFromArrivedChange?: (canAdvance: boolean) => void;
+  /** Labour-only / bin flows: final photos taken at loading (no unloading leg). */
+  finalWalkPhotoAtLoading?: boolean;
   /** When true, only show photos; no add/upload. */
   readOnly?: boolean;
 }
@@ -52,14 +76,18 @@ const ARRIVED_CHECKPOINTS = ["arrived_at_pickup", "arrived_at_destination", "arr
 /** No add-photo while crew is in transit (driving). Photos only at pickup/destination. */
 const NO_PHOTO_STATUSES = ["en_route_to_pickup", "en_route", "en_route_to_destination"];
 
-export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, onPhotoTaken, onPhotoCountChange, onCanAdvanceFromArrivedChange, readOnly = false }: JobPhotosProps) {
+export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, onPhotoTaken, onPhotoCountChange, onCanAdvanceFromArrivedChange, finalWalkPhotoAtLoading = false, readOnly = false }: JobPhotosProps) {
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [photosAtArrived, setPhotosAtArrived] = useState(0);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const category = CHECKPOINT_TO_CATEGORY[currentStatus] || "other";
+  const category = resolvePhotoCategory(
+    jobType,
+    currentStatus,
+    finalWalkPhotoAtLoading,
+  );
   const prompt = CATEGORY_PROMPTS[category] || "Add photo";
   const showPrompt = ARRIVED_CHECKPOINTS.includes(currentStatus);
   const canAddPhotos = !NO_PHOTO_STATUSES.includes(currentStatus);

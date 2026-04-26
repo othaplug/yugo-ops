@@ -175,8 +175,9 @@ export function parseDeliveryScheduleWindow(row: {
 }
 
 /**
- * true = arrival within window on scheduled calendar day; false = late or too early same day, or after scheduled day;
- * null = cannot score (no window, wrong-day early, invalid data).
+ * true = on scheduled calendar day and arrived by end of commitment window (early same day counts as on time);
+ * false = after window end on scheduled day, or arrival on a later calendar day than scheduled;
+ * null = cannot score (arrival before scheduled calendar day, invalid data).
  */
 export function evaluateArrivalVsCommitmentWindow(args: {
   scheduledYmd: string;
@@ -185,6 +186,7 @@ export function evaluateArrivalVsCommitmentWindow(args: {
   arrivalIso: string;
   timeZone?: string;
 }): boolean | null {
+  void args.startMin;
   const tz = args.timeZone ?? getAppTimezone();
   const arrivalMs = new Date(args.arrivalIso).getTime();
   if (!Number.isFinite(arrivalMs)) return null;
@@ -195,7 +197,6 @@ export function evaluateArrivalVsCommitmentWindow(args: {
 
   if (arrivalYmd < args.scheduledYmd) return null;
   if (arrivalYmd > args.scheduledYmd) return false;
-  if (arrivalMin < args.startMin) return false;
   if (arrivalMin > args.endMin) return false;
   return true;
 }

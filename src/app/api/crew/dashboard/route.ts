@@ -15,6 +15,11 @@ import {
 import { isMoveStatusCompleted } from "@/lib/move-status";
 import { countActiveBinTasks } from "@/lib/bin-orders-active-tasks";
 import { isMoveWeatherBrief, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
+import {
+  shouldIncludeCrewDashboardSampleMove,
+  buildCrewSampleDashboardMoveJob,
+  isCrewSampleDashboardJobId,
+} from "@/lib/crew/sample-dashboard-job";
 
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
@@ -226,6 +231,12 @@ export async function GET(req: NextRequest) {
     return tA - tB;
   });
 
+  if (shouldIncludeCrewDashboardSampleMove()) {
+    jobs.push(buildCrewSampleDashboardMoveJob());
+  }
+
+  const realJobCount = jobs.filter((j) => !isCrewSampleDashboardJobId(j.id)).length;
+
   const [{ data: readinessCheck }, { data: crewRow }, { data: endOfDayReport }, { data: binOrdersRaw }] = await Promise.all([
     supabase.from("readiness_checks").select("id").eq("team_id", payload.teamId).eq("check_date", today).maybeSingle(),
     supabase.from("crews").select("name").eq("id", payload.teamId).single(),
@@ -243,7 +254,8 @@ export async function GET(req: NextRequest) {
   const readinessCompleted = !!readinessCheck?.id;
   const endOfDaySubmitted = !!endOfDayReport?.id;
   const isCrewLead = payload.role === "lead";
-  const readinessRequired = !readinessCompleted && (isCrewLead || jobs.length > 0);
+  const readinessRequired =
+    !readinessCompleted && (isCrewLead || realJobCount > 0);
   const teamName = crewRow?.name || "Team";
 
   const now = new Date();

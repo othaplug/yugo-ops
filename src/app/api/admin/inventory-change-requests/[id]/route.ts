@@ -3,9 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 import { inventoryChangeRequestClientEmail } from "@/lib/email-templates";
 import { getResend } from "@/lib/resend";
-import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { getEmailFrom } from "@/lib/email/send";
-import { signTrackToken } from "@/lib/track-token";
+import { buildPublicMoveTrackUrl } from "@/lib/notifications/public-track-url";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { normalizePhone } from "@/lib/phone";
 
@@ -112,10 +111,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const { data: move } = await admin
       .from("moves")
-      .select("client_email, client_name, client_phone, amount")
+      .select("client_email, client_name, client_phone, amount, move_code")
       .eq("id", moveId)
       .single();
-    const trackUrl = `${getEmailBaseUrl()}/track/move/${moveId}?token=${signTrackToken("move", moveId)}`;
+    const trackUrl = buildPublicMoveTrackUrl({
+      id: moveId,
+      move_code: move?.move_code ?? null,
+    });
 
     if (move?.client_email && process.env.RESEND_API_KEY) {
       try {
@@ -221,7 +223,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     })
     .eq("id", id);
 
-  const trackUrl = `${getEmailBaseUrl()}/track/move/${moveId}?token=${signTrackToken("move", moveId)}`;
+  const trackUrl = buildPublicMoveTrackUrl({
+    id: moveId,
+    move_code: move.move_code ?? null,
+  });
 
   if (move.client_email && process.env.RESEND_API_KEY) {
     try {

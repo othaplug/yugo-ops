@@ -1,21 +1,21 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { PageHeader } from "@/design-system/admin/layout"
-import { KpiStrip } from "@/design-system/admin/dashboard"
-import { Button, Select, StatusPill } from "@/design-system/admin/primitives"
+import * as React from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { PageHeader } from "@/design-system/admin/layout";
+import { KpiStrip } from "@/design-system/admin/dashboard";
+import { Button, Select, StatusPill } from "@/design-system/admin/primitives";
 import {
   DataTable,
   type ColumnDef,
   type ColumnSort,
   type BulkAction,
   type RowAction,
-} from "@/design-system/admin/table"
-import { formatCompactCurrency } from "@/lib/format-currency"
-import { csvField } from "@/lib/admin-csv-field"
-import BackButton from "../components/BackButton"
+} from "@/design-system/admin/table";
+import { formatCompactCurrency } from "@/lib/format-currency";
+import { csvField } from "@/lib/admin-csv-field";
+import BackButton from "../components/BackButton";
 
 const STATUS_LABELS: Record<string, string> = {
   confirmed: "Confirmed",
@@ -27,7 +27,7 @@ const STATUS_LABELS: Record<string, string> = {
   completed: "Completed",
   overdue: "Overdue",
   cancelled: "Cancelled",
-}
+};
 
 const BUNDLE_LABELS: Record<string, string> = {
   studio: "Studio",
@@ -36,79 +36,79 @@ const BUNDLE_LABELS: Record<string, string> = {
   "3br": "3BR",
   "4br_plus": "4BR+",
   individual: "Custom",
-}
+};
 
 function binStatusTone(
   s: string,
 ): React.ComponentProps<typeof StatusPill>["tone"] {
-  const k = (s || "").toLowerCase()
-  if (["confirmed", "bins_delivered", "bins_collected", "completed"].includes(k))
-    return "success"
-  if (k === "overdue") return "danger"
+  const k = (s || "").toLowerCase();
+  if (
+    ["confirmed", "bins_delivered", "bins_collected", "completed"].includes(k)
+  )
+    return "success";
+  if (k === "overdue") return "danger";
   if (["drop_off_scheduled", "in_use", "pickup_scheduled"].includes(k))
-    return "info"
-  if (k === "cancelled") return "neutral"
-  return "neutral"
+    return "info";
+  if (k === "cancelled") return "neutral";
+  return "neutral";
 }
 
 function fmtBinDate(d: string) {
   return new Date(d + "T12:00:00").toLocaleDateString("en-CA", {
     month: "short",
     day: "numeric",
-  })
+  });
 }
 
 interface BinOrder {
-  id: string
-  order_number: string
-  client_name: string
-  client_email: string
-  client_phone: string
-  delivery_address: string
-  bundle_type: string
-  bin_count: number
-  move_date: string
-  drop_off_date: string
-  pickup_date: string
-  status: string
-  total: number
-  source: string
-  created_at: string
-  drop_off_completed_at: string | null
-  pickup_completed_at: string | null
-  bins_missing: number
-  move_id: string | null
+  id: string;
+  order_number: string;
+  client_name: string;
+  client_email: string;
+  client_phone: string;
+  delivery_address: string;
+  bundle_type: string;
+  bin_count: number;
+  move_date: string;
+  drop_off_date: string;
+  pickup_date: string;
+  status: string;
+  total: number;
+  source: string;
+  created_at: string;
+  drop_off_completed_at: string | null;
+  pickup_completed_at: string | null;
+  bins_missing: number;
+  move_id: string | null;
 }
 
 interface Stats {
-  activeOrders: number
-  dropoffsThisWeek: number
-  pickupsThisWeek: number
-  revenue30d: number
+  activeOrders: number;
+  dropoffsThisWeek: number;
+  pickupsThisWeek: number;
+  revenue30d: number;
 }
 
 export default function BinRentalsClient({
   orders,
   stats,
 }: {
-  orders: BinOrder[]
-  stats: Stats
+  orders: BinOrder[];
+  stats: Stats;
 }) {
-  const router = useRouter()
-  const [search, setSearch] = React.useState("")
-  const [statusFilter, setStatusFilter] = React.useState<string>("all")
+  const router = useRouter();
+  const [search, setSearch] = React.useState("");
+  const [statusFilter, setStatusFilter] = React.useState<string>("all");
   const [sort, setSort] = React.useState<ColumnSort | null>({
     columnId: "created_at",
     direction: "desc",
-  })
-  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(
-    new Set(),
-  )
+  });
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
 
   const baseRows = React.useMemo(() => {
-    if (statusFilter === "all") return orders
-    return orders.filter((o) => o.status === statusFilter)
-  }, [orders, statusFilter])
+    if (statusFilter === "all") return orders;
+    return orders.filter((o) => o.status === statusFilter);
+  }, [orders, statusFilter]);
 
   const kpiTiles = React.useMemo(
     () => [
@@ -137,20 +137,20 @@ export default function BinRentalsClient({
       },
     ],
     [stats],
-  )
+  );
 
   const matchCount = React.useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return baseRows.length
+    const q = search.trim().toLowerCase();
+    if (!q) return baseRows.length;
     return baseRows.filter((o) => {
       return (
         o.order_number.toLowerCase().includes(q) ||
         o.client_name.toLowerCase().includes(q) ||
         o.client_email.toLowerCase().includes(q) ||
         o.delivery_address.toLowerCase().includes(q)
-      )
-    }).length
-  }, [baseRows, search])
+      );
+    }).length;
+  }, [baseRows, search]);
 
   const columns = React.useMemo<ColumnDef<BinOrder>[]>(
     () => [
@@ -175,8 +175,11 @@ export default function BinRentalsClient({
       {
         id: "client",
         header: "Client",
+        shortLabel: "Client",
         accessor: (o) =>
-          [o.client_name, o.client_email, o.delivery_address].filter(Boolean).join(" "),
+          [o.client_name, o.client_email, o.delivery_address]
+            .filter(Boolean)
+            .join(" "),
         sortable: true,
         width: 220,
         cell: (o) => (
@@ -193,6 +196,7 @@ export default function BinRentalsClient({
       {
         id: "bundle",
         header: "Bundle",
+        shortLabel: "Bundle",
         accessor: (o) =>
           `${BUNDLE_LABELS[o.bundle_type] || o.bundle_type} (${o.bin_count})`,
         sortable: true,
@@ -202,13 +206,16 @@ export default function BinRentalsClient({
             <span className="font-medium text-[var(--yu3-ink)]">
               {BUNDLE_LABELS[o.bundle_type] || o.bundle_type}
             </span>
-            <span className="text-[var(--yu3-ink-muted)] ml-1">({o.bin_count})</span>
+            <span className="text-[var(--yu3-ink-muted)] ml-1">
+              ({o.bin_count})
+            </span>
           </span>
         ),
       },
       {
         id: "move_date",
         header: "Move date",
+        shortLabel: "Move date",
         accessor: (o) => o.move_date,
         sortable: true,
         width: 100,
@@ -221,6 +228,7 @@ export default function BinRentalsClient({
       {
         id: "drop_off_date",
         header: "Drop-off",
+        shortLabel: "Drop-off",
         accessor: (o) => o.drop_off_date,
         sortable: true,
         width: 100,
@@ -233,6 +241,7 @@ export default function BinRentalsClient({
       {
         id: "pickup_date",
         header: "Pickup",
+        shortLabel: "Pickup",
         accessor: (o) => o.pickup_date,
         sortable: true,
         width: 100,
@@ -245,6 +254,7 @@ export default function BinRentalsClient({
       {
         id: "status",
         header: "Status",
+        shortLabel: "Status",
         accessor: (o) => STATUS_LABELS[o.status] || o.status,
         sortable: true,
         width: 150,
@@ -257,6 +267,7 @@ export default function BinRentalsClient({
       {
         id: "total",
         header: "Total",
+        shortLabel: "Total",
         accessor: (o) => Number(o.total || 0),
         sortable: true,
         align: "right",
@@ -271,6 +282,7 @@ export default function BinRentalsClient({
       {
         id: "created_at",
         header: "Created",
+        shortLabel: "Created",
         accessor: (o) => o.created_at,
         sortable: true,
         width: 120,
@@ -289,19 +301,19 @@ export default function BinRentalsClient({
       },
     ],
     [],
-  )
+  );
 
   const rowsMatchingSearch = React.useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return baseRows
+    const q = search.trim().toLowerCase();
+    if (!q) return baseRows;
     return baseRows.filter(
       (o) =>
         o.order_number.toLowerCase().includes(q) ||
         o.client_name.toLowerCase().includes(q) ||
         o.client_email.toLowerCase().includes(q) ||
         o.delivery_address.toLowerCase().includes(q),
-    )
-  }, [baseRows, search])
+    );
+  }, [baseRows, search]);
 
   const onExport = React.useCallback(() => {
     const headers = [
@@ -314,7 +326,7 @@ export default function BinRentalsClient({
       "Pickup",
       "Status",
       "Total",
-    ]
+    ];
     const lines = rowsMatchingSearch.map((o) =>
       [
         o.order_number,
@@ -329,16 +341,16 @@ export default function BinRentalsClient({
       ]
         .map((c) => csvField(String(c)))
         .join(","),
-    )
-    const csv = [headers.map(csvField).join(","), ...lines].join("\n")
-    const blob = new Blob([csv], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "bin-orders.csv"
-    a.click()
-    URL.revokeObjectURL(url)
-  }, [rowsMatchingSearch])
+    );
+    const csv = [headers.map(csvField).join(","), ...lines].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "bin-orders.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [rowsMatchingSearch]);
 
   const bulkActions = React.useMemo<BulkAction<BinOrder>[]>(
     () => [
@@ -346,7 +358,7 @@ export default function BinRentalsClient({
         id: "export",
         label: "Export selected CSV",
         run: (rows) => {
-          if (rows.length === 0) return
+          if (rows.length === 0) return;
           const headers = [
             "Order",
             "Client",
@@ -357,7 +369,7 @@ export default function BinRentalsClient({
             "Pickup",
             "Status",
             "Total",
-          ]
+          ];
           const lines = rows.map((o) =>
             [
               o.order_number,
@@ -372,20 +384,20 @@ export default function BinRentalsClient({
             ]
               .map((c) => csvField(String(c)))
               .join(","),
-          )
-          const csv = [headers.map(csvField).join(","), ...lines].join("\n")
-          const blob = new Blob([csv], { type: "text/csv" })
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement("a")
-          a.href = url
-          a.download = "bin-orders-selected.csv"
-          a.click()
-          URL.revokeObjectURL(url)
+          );
+          const csv = [headers.map(csvField).join(","), ...lines].join("\n");
+          const blob = new Blob([csv], { type: "text/csv" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "bin-orders-selected.csv";
+          a.click();
+          URL.revokeObjectURL(url);
         },
       },
     ],
     [],
-  )
+  );
 
   const rowActions = React.useMemo<RowAction<BinOrder>[]>(
     () => [
@@ -396,7 +408,7 @@ export default function BinRentalsClient({
       },
     ],
     [router],
-  )
+  );
 
   return (
     <div className="w-full min-w-0 flex flex-col gap-6 py-1 animate-fade-up">
@@ -414,7 +426,9 @@ export default function BinRentalsClient({
         description="Track bin orders, drop offs, and pickups across every active rental."
         actions={
           <Button asChild variant="primary" size="sm">
-            <Link href="/admin/quotes/new?service=bin_rental">Generate quote</Link>
+            <Link href="/admin/quotes/new?service=bin_rental">
+              Generate quote
+            </Link>
           </Button>
         }
       />
@@ -470,5 +484,5 @@ export default function BinRentalsClient({
         </p>
       </section>
     </div>
-  )
+  );
 }

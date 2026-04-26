@@ -58,24 +58,40 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const BUNDLE_LABELS: Record<string, string> = {
-  studio: "Studio", "1br": "1 Bedroom", "2br": "2 Bedroom",
-  "3br": "3 Bedroom", "4br_plus": "4 Bedroom+", individual: "Custom",
+  studio: "Studio",
+  "1br": "1 Bedroom",
+  "2br": "2 Bedroom",
+  "3br": "3 Bedroom",
+  "4br_plus": "4 Bedroom+",
+  individual: "Custom",
 };
 
 const ACCESS_LABELS: Record<string, string> = {
-  elevator: "Elevator", ground: "Ground Floor", walkup: "Walk-up", concierge: "Concierge",
+  elevator: "Elevator",
+  ground: "Ground Floor",
+  walkup: "Walk-up",
+  concierge: "Concierge",
 };
 
 const ALL_STATUSES = [
-  "confirmed", "drop_off_scheduled", "bins_delivered", "in_use",
-  "pickup_scheduled", "bins_collected", "completed", "overdue", "cancelled",
+  "confirmed",
+  "drop_off_scheduled",
+  "bins_delivered",
+  "in_use",
+  "pickup_scheduled",
+  "bins_collected",
+  "completed",
+  "overdue",
+  "cancelled",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function BinOrderDetailClient({ order }: { order: any }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(
+    null,
+  );
 
   // Pickup complete modal
   const [pickupModal, setPickupModal] = useState(false);
@@ -113,11 +129,15 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
 
   const fmtDate = (d: string | null) => {
     if (!d) return "-";
-    return formatPlatformDisplay(new Date(d + (d.includes("T") ? "" : "T12:00:00")), {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    }, "-");
+    return formatPlatformDisplay(
+      new Date(d + (d.includes("T") ? "" : "T12:00:00")),
+      {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      },
+      "-",
+    );
   };
 
   const fmtMoney = (n: number | null) =>
@@ -136,9 +156,13 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
       if (!res.ok) throw new Error(data.error || "Update failed");
       if (data.success !== true) throw new Error(data.error || "Update failed");
       if (payload.bundle_type != null) {
-        const due = typeof data.amountDueCents === "number" ? data.amountDueCents : 0;
+        const due =
+          typeof data.amountDueCents === "number" ? data.amountDueCents : 0;
         if (data.chargedUpgrade) {
-          setMsg({ type: "ok", text: "Bundle updated and card charged for the difference." });
+          setMsg({
+            type: "ok",
+            text: "Bundle updated and card charged for the difference.",
+          });
         } else if (due > 0) {
           setMsg({
             type: "ok",
@@ -153,7 +177,10 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
       }
       router.refresh();
     } catch (e) {
-      setMsg({ type: "err", text: e instanceof Error ? e.message : "Update failed" });
+      setMsg({
+        type: "err",
+        text: e instanceof Error ? e.message : "Update failed",
+      });
     } finally {
       setSaving(false);
     }
@@ -190,7 +217,10 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
       setMsg({ type: "ok", text: "Balance charged to card on file." });
       router.refresh();
     } catch (e) {
-      setMsg({ type: "err", text: e instanceof Error ? e.message : "Charge failed" });
+      setMsg({
+        type: "err",
+        text: e instanceof Error ? e.message : "Charge failed",
+      });
     } finally {
       setSaving(false);
     }
@@ -209,12 +239,18 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
       const res = await fetch(`/api/bin-orders/${order.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "complete_dropoff", crewName: dropoffCrew }),
+        body: JSON.stringify({
+          action: "complete_dropoff",
+          crewName: dropoffCrew,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || "Failed");
       setDropoffModal(false);
-      setMsg({ type: "ok", text: "Drop-off marked complete. Client notified." });
+      setMsg({
+        type: "ok",
+        text: "Drop-off marked complete. Client notified.",
+      });
       router.refresh();
     } catch (e) {
       setMsg({ type: "err", text: e instanceof Error ? e.message : "Failed" });
@@ -229,7 +265,11 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
       const res = await fetch(`/api/bin-orders/${order.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "complete_pickup", crewName: pickupCrew, binsReturned: pickupBins }),
+        body: JSON.stringify({
+          action: "complete_pickup",
+          crewName: pickupCrew,
+          binsReturned: pickupBins,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || "Failed");
@@ -237,9 +277,10 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
       const missing = data.binsMissing || 0;
       setMsg({
         type: "ok",
-        text: missing > 0
-          ? `Pickup complete. ${missing} bin(s) missing, $${data.missingCharge?.toFixed(2)} charged to card.`
-          : "Pickup complete. Client thanked via SMS.",
+        text:
+          missing > 0
+            ? `Pickup complete. ${missing} bin(s) missing, $${data.missingCharge?.toFixed(2)} charged to card.`
+            : "Pickup complete. Client thanked via SMS.",
       });
       router.refresh();
     } catch (e) {
@@ -254,13 +295,20 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-start gap-3">
-          <Link href="/admin/bin-rentals" className="mt-1 text-[var(--tx3)] hover:text-[var(--tx)] transition-colors">
+          <Link
+            href="/admin/bin-rentals"
+            className="mt-1 text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
+          >
             <ArrowLeft size={18} />
           </Link>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-[var(--tx)]">{order.order_number}</h1>
-              <span className={`dt-badge tracking-[0.04em] ${STATUS_STYLES[order.status] || "text-[var(--tx3)]"}`}>
+              <h1 className="text-xl font-bold text-[var(--tx)]">
+                {order.order_number}
+              </h1>
+              <span
+                className={`dt-badge tracking-[0.04em] ${STATUS_STYLES[order.status] || "text-[var(--tx3)]"}`}
+              >
                 {STATUS_LABELS[order.status] || order.status}
               </span>
               {order.status === "overdue" && (
@@ -270,39 +318,49 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
               )}
             </div>
             <p className="text-[13px] text-[var(--tx3)] mt-0.5">
-              {BUNDLE_LABELS[order.bundle_type] || order.bundle_type} · {order.bin_count} bins ·{" "}
-              Booked {fmtDate(order.created_at)}
+              {BUNDLE_LABELS[order.bundle_type] || order.bundle_type} ·{" "}
+              {order.bin_count} bins · Booked {fmtDate(order.created_at)}
             </p>
           </div>
         </div>
 
         {/* Action buttons */}
         <div className="flex gap-2 shrink-0">
-          {!order.drop_off_completed_at && order.status !== "cancelled" && order.status !== "completed" && (
-            <button
-              type="button"
-              onClick={() => setDropoffModal(true)}
-              className={ADMIN_PREMIUM_SOLID_CTA_CLASS}
-            >
-              Mark delivered
-            </button>
-          )}
-          {order.drop_off_completed_at && !order.pickup_completed_at && order.status !== "cancelled" && (
-            <button
-              type="button"
-              onClick={() => setPickupModal(true)}
-              className={ADMIN_PREMIUM_SOLID_CTA_CLASS}
-            >
-              Mark picked up
-            </button>
-          )}
+          {!order.drop_off_completed_at &&
+            order.status !== "cancelled" &&
+            order.status !== "completed" && (
+              <button
+                type="button"
+                onClick={() => setDropoffModal(true)}
+                className={ADMIN_PREMIUM_SOLID_CTA_CLASS}
+              >
+                Mark delivered
+              </button>
+            )}
+          {order.drop_off_completed_at &&
+            !order.pickup_completed_at &&
+            order.status !== "cancelled" && (
+              <button
+                type="button"
+                onClick={() => setPickupModal(true)}
+                className={ADMIN_PREMIUM_SOLID_CTA_CLASS}
+              >
+                Mark picked up
+              </button>
+            )}
         </div>
       </div>
 
       {/* Feedback */}
       {msg && (
-        <div className={`mb-4 px-4 py-3 rounded-xl text-[13px] font-medium flex items-center gap-2 ${msg.type === "ok" ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
-          {msg.type === "ok" ? <CheckCircle size={14} /> : <XCircle size={14} />}
+        <div
+          className={`mb-4 px-4 py-3 rounded-xl text-[13px] font-medium flex items-center gap-2 ${msg.type === "ok" ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}
+        >
+          {msg.type === "ok" ? (
+            <CheckCircle size={14} />
+          ) : (
+            <XCircle size={14} />
+          )}
           {msg.text}
         </div>
       )}
@@ -313,37 +371,83 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
           <InfoRow label="Name" value={order.client_name} />
           <InfoRow
             label="Email"
-            value={<a href={`mailto:${order.client_email}`} className="text-[var(--yugo-primary-text)] hover:underline flex items-center gap-1 font-semibold"><Envelope size={12} aria-hidden />{order.client_email}</a>}
+            value={
+              <a
+                href={`mailto:${order.client_email}`}
+                className="text-[var(--yugo-primary-text)] hover:underline flex items-center gap-1 font-semibold"
+              >
+                <Envelope size={12} aria-hidden />
+                {order.client_email}
+              </a>
+            }
           />
           <InfoRow
             label="Phone"
-            value={<a href={`tel:${order.client_phone}`} className="text-[var(--yugo-primary-text)] hover:underline flex items-center gap-1 font-semibold"><Phone size={12} aria-hidden />{order.client_phone}</a>}
+            value={
+              <a
+                href={`tel:${order.client_phone}`}
+                className="text-[var(--yugo-primary-text)] hover:underline flex items-center gap-1 font-semibold"
+              >
+                <Phone size={12} aria-hidden />
+                {order.client_phone}
+              </a>
+            }
           />
-          <InfoRow label="Source" value={order.source === "move_addon" ? "Moving add-on" : order.source === "admin" ? "Admin created" : "Standalone booking"} />
+          <InfoRow
+            label="Source"
+            value={
+              order.source === "move_addon"
+                ? "Moving add-on"
+                : order.source === "admin"
+                  ? "Admin created"
+                  : "Standalone booking"
+            }
+          />
         </Section>
 
         {/* Delivery */}
         <Section title="Delivery">
           <InfoRow label="Address" value={order.delivery_address} />
-          {order.delivery_postal && <InfoRow label="Postal code" value={order.delivery_postal} />}
-          <InfoRow label="Access" value={ACCESS_LABELS[order.delivery_access] || order.delivery_access || "-"} />
-          {order.delivery_notes && <InfoRow label="Notes" value={order.delivery_notes} />}
+          {order.delivery_postal && (
+            <InfoRow label="Postal code" value={order.delivery_postal} />
+          )}
+          <InfoRow
+            label="Access"
+            value={
+              ACCESS_LABELS[order.delivery_access] ||
+              order.delivery_access ||
+              "-"
+            }
+          />
+          {order.delivery_notes && (
+            <InfoRow label="Notes" value={order.delivery_notes} />
+          )}
         </Section>
 
         {/* Bundle */}
         <Section title="Bundle">
           <div className="flex items-start justify-between gap-2">
             <p className="text-[11px] text-[var(--tx3)] leading-snug flex-1">
-              Bundle and totals follow platform pricing. Edits apply to this order everywhere it appears.
+              Bundle and totals follow platform pricing. Edits apply to this
+              order everywhere it appears.
             </p>
-            <InfoHint variant="admin" ariaLabel="Bundle upgrade workflow" className="shrink-0">
-              If the new total is higher than what the client already paid, leave the difference as balance due
-              or charge the card on file when you apply the change. If there is no card, collect payment outside
-              the app and use Charge balance after you record the payment in Square.
+            <InfoHint
+              variant="admin"
+              ariaLabel="Bundle upgrade workflow"
+              className="shrink-0"
+            >
+              If the new total is higher than what the client already paid,
+              leave the difference as balance due or charge the card on file
+              when you apply the change. If there is no card, collect payment
+              outside the app and use Charge balance after you record the
+              payment in Square.
             </InfoHint>
           </div>
           <div className="space-y-2 pt-1">
-            <label className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide" htmlFor="bin-bundle-type">
+            <label
+              className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide"
+              htmlFor="bin-bundle-type"
+            >
               Bundle type
             </label>
             <select
@@ -371,7 +475,8 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
               </label>
             ) : (
               <p className="text-[11px] text-amber-500/90">
-                No card on file. After you apply a more expensive bundle, collect payment manually or add a card, then use Charge balance.
+                No card on file. After you apply a more expensive bundle,
+                collect payment manually or add a card, then use Charge balance.
               </p>
             )}
             <button
@@ -384,8 +489,14 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
             </button>
           </div>
           <InfoRow label="Bins allocated" value={String(order.bin_count)} />
-          <InfoRow label="Includes paper" value={order.includes_paper ? "Yes" : "No"} />
-          <InfoRow label="Includes zip ties" value={order.includes_zip_ties ? "Yes" : "No"} />
+          <InfoRow
+            label="Includes paper"
+            value={order.includes_paper ? "Yes" : "No"}
+          />
+          <InfoRow
+            label="Includes zip ties"
+            value={order.includes_zip_ties ? "Yes" : "No"}
+          />
         </Section>
 
         {/* Schedule */}
@@ -395,7 +506,10 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
           </p>
           <div className="space-y-3">
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1" htmlFor="sched-drop">
+              <label
+                className="block text-[11px] font-semibold text-[var(--tx3)] mb-1"
+                htmlFor="sched-drop"
+              >
                 Drop-off date
               </label>
               <input
@@ -403,14 +517,20 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
                 type="date"
                 value={scheduleDraft.drop_off_date}
                 onChange={(e) =>
-                  setScheduleDraft((s) => ({ ...s, drop_off_date: e.target.value }))
+                  setScheduleDraft((s) => ({
+                    ...s,
+                    drop_off_date: e.target.value,
+                  }))
                 }
                 disabled={saving}
                 className={`${FIELD_WASH} disabled:opacity-50`}
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1" htmlFor="sched-move">
+              <label
+                className="block text-[11px] font-semibold text-[var(--tx3)] mb-1"
+                htmlFor="sched-move"
+              >
                 Move date
               </label>
               <input
@@ -425,7 +545,10 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1" htmlFor="sched-pickup">
+              <label
+                className="block text-[11px] font-semibold text-[var(--tx3)] mb-1"
+                htmlFor="sched-pickup"
+              >
                 Pickup date
               </label>
               <input
@@ -433,7 +556,10 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
                 type="date"
                 value={scheduleDraft.pickup_date}
                 onChange={(e) =>
-                  setScheduleDraft((s) => ({ ...s, pickup_date: e.target.value }))
+                  setScheduleDraft((s) => ({
+                    ...s,
+                    pickup_date: e.target.value,
+                  }))
                 }
                 disabled={saving}
                 className={`${FIELD_WASH} disabled:opacity-50`}
@@ -449,15 +575,31 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
             </button>
           </div>
           {order.drop_off_completed_at && (
-            <InfoRow label="Delivered at" value={fmtDate(order.drop_off_completed_at)} highlight="green" />
+            <InfoRow
+              label="Delivered at"
+              value={fmtDate(order.drop_off_completed_at)}
+              highlight="green"
+            />
           )}
-          {order.drop_off_crew && <InfoRow label="Drop-off crew" value={order.drop_off_crew} />}
+          {order.drop_off_crew && (
+            <InfoRow label="Drop-off crew" value={order.drop_off_crew} />
+          )}
           {order.pickup_completed_at && (
-            <InfoRow label="Picked up at" value={fmtDate(order.pickup_completed_at)} highlight="green" />
+            <InfoRow
+              label="Picked up at"
+              value={fmtDate(order.pickup_completed_at)}
+              highlight="green"
+            />
           )}
-          {order.pickup_crew && <InfoRow label="Pickup crew" value={order.pickup_crew} />}
+          {order.pickup_crew && (
+            <InfoRow label="Pickup crew" value={order.pickup_crew} />
+          )}
           {order.bins_missing > 0 && (
-            <InfoRow label="Bins missing" value={`${order.bins_missing} bins`} highlight="red" />
+            <InfoRow
+              label="Bins missing"
+              value={`${order.bins_missing} bins`}
+              highlight="red"
+            />
           )}
         </Section>
 
@@ -465,10 +607,17 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
         <Section title="Payment">
           <InfoRow label="Bundle price" value={fmtMoney(order.bundle_price)} />
           {Number(order.delivery_surcharge) > 0 && (
-            <InfoRow label="GTA surcharge" value={fmtMoney(order.delivery_surcharge)} />
+            <InfoRow
+              label="GTA surcharge"
+              value={fmtMoney(order.delivery_surcharge)}
+            />
           )}
           <InfoRow label="HST" value={fmtMoney(order.hst)} />
-          <InfoRow label="Total" value={fmtMoney(order.total)} highlight="primary" />
+          <InfoRow
+            label="Total"
+            value={fmtMoney(order.total)}
+            highlight="primary"
+          />
           {balanceDueCents > 0 && (
             <InfoRow
               label="Balance due"
@@ -477,19 +626,31 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
             />
           )}
           {Number(order.late_return_fees) > 0 && (
-            <InfoRow label="Late fees" value={fmtMoney(order.late_return_fees)} highlight="red" />
+            <InfoRow
+              label="Late fees"
+              value={fmtMoney(order.late_return_fees)}
+              highlight="red"
+            />
           )}
           {Number(order.missing_bin_charge) > 0 && (
-            <InfoRow label="Missing bin charge" value={fmtMoney(order.missing_bin_charge)} highlight="red" />
+            <InfoRow
+              label="Missing bin charge"
+              value={fmtMoney(order.missing_bin_charge)}
+              highlight="red"
+            />
           )}
           <InfoRow
             label="Payment status"
             value={
-              order.payment_status === "paid"
-                ? <span className="flex items-center gap-1"><CheckCircle size={12} weight="fill" /> Paid</span>
-                : order.payment_status === "balance_due"
-                  ? "Balance due"
-                  : order.payment_status || "-"
+              order.payment_status === "paid" ? (
+                <span className="flex items-center gap-1">
+                  <CheckCircle size={12} weight="fill" /> Paid
+                </span>
+              ) : order.payment_status === "balance_due" ? (
+                "Balance due"
+              ) : (
+                order.payment_status || "-"
+              )
             }
           />
           {balanceDueCents > 0 && order.square_card_id && (
@@ -503,12 +664,21 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
                 Charge balance to card on file
               </button>
               <p className="text-[11px] text-[var(--tx3)] mt-2">
-                Charges the remaining balance for this order total using Square. If you already collected outside Square, skip this and reconcile in your books.
+                Charges the remaining balance for this order total using Square.
+                If you already collected outside Square, skip this and reconcile
+                in your books.
               </p>
             </div>
           )}
           {order.square_payment_id && (
-            <InfoRow label="Square payment ID" value={<span className="font-mono text-[11px]">{order.square_payment_id}</span>} />
+            <InfoRow
+              label="Square payment ID"
+              value={
+                <span className="font-mono text-[11px]">
+                  {order.square_payment_id}
+                </span>
+              }
+            />
           )}
         </Section>
 
@@ -522,23 +692,35 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
               className={`${FIELD_WASH} disabled:opacity-50 cursor-pointer`}
             >
               {ALL_STATUSES.map((s) => (
-                <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                <option key={s} value={s}>
+                  {STATUS_LABELS[s]}
+                </option>
               ))}
             </select>
-            <p className="text-[11px] text-[var(--tx3)]">Status change takes effect immediately.</p>
+            <p className="text-[11px] text-[var(--tx3)]">
+              Status change takes effect immediately.
+            </p>
           </div>
         </Section>
       </div>
 
       {/* Photos */}
-      {(order.drop_off_photos?.length > 0 || order.pickup_photos?.length > 0) && (
+      {(order.drop_off_photos?.length > 0 ||
+        order.pickup_photos?.length > 0) && (
         <div className="mt-10 pt-8 border-t border-[color-mix(in_srgb,var(--yugo-primary-text)_14%,transparent)]">
           <Section title="Photos">
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-              {[...(order.drop_off_photos || []), ...(order.pickup_photos || [])].map((url: string, i: number) => (
+              {[
+                ...(order.drop_off_photos || []),
+                ...(order.pickup_photos || []),
+              ].map((url: string, i: number) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                  <img src={url} alt={`Bin photo ${i + 1}`} className="w-full aspect-square object-cover rounded-lg shadow-sm hover:opacity-80 transition-opacity" />
+                  <img
+                    src={url}
+                    alt={`Bin photo ${i + 1}`}
+                    className="w-full aspect-square object-cover rounded-lg shadow-sm hover:opacity-80 transition-opacity"
+                  />
                 </a>
               ))}
             </div>
@@ -548,17 +730,32 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
 
       {/* Drop-off modal */}
       {dropoffModal && (
-        <Modal title="Mark Bins Delivered" onClose={() => setDropoffModal(false)}>
-          <p className="text-[13px] text-[var(--tx3)] mb-4">Confirm that bins have been delivered to {order.delivery_address}.</p>
-          <label className="block text-[12px] font-semibold text-[var(--tx3)] mb-1.5">Crew member name (optional)</label>
+        <Modal
+          title="Mark Bins Delivered"
+          onClose={() => setDropoffModal(false)}
+        >
+          <p className="text-[13px] text-[var(--tx3)] mb-4">
+            Confirm that bins have been delivered to {order.delivery_address}.
+          </p>
+          <label className="block text-[12px] font-semibold text-[var(--tx3)] mb-1.5">
+            Crew member name (optional)
+          </label>
           <input
-            type="text" value={dropoffCrew} onChange={(e) => setDropoffCrew(e.target.value)}
+            type="text"
+            value={dropoffCrew}
+            onChange={(e) => setDropoffCrew(e.target.value)}
             placeholder="e.g. Marcus, Alex"
             className={`${FIELD_WASH} mb-4`}
           />
-          <p className="text-[12px] text-[var(--tx3)] mb-4">Client will receive SMS: &quot;Your bins have been delivered!&quot;</p>
+          <p className="text-[12px] text-[var(--tx3)] mb-4">
+            Client will receive SMS: &quot;Your bins have been delivered!&quot;
+          </p>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setDropoffModal(false)} className={ADMIN_PREMIUM_GHOST_CANCEL_CLASS}>
+            <button
+              type="button"
+              onClick={() => setDropoffModal(false)}
+              className={ADMIN_PREMIUM_GHOST_CANCEL_CLASS}
+            >
               Cancel
             </button>
             <button
@@ -575,27 +772,54 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
 
       {/* Pickup modal */}
       {pickupModal && (
-        <Modal title="Mark Bins Picked Up" onClose={() => setPickupModal(false)}>
-          <p className="text-[13px] text-[var(--tx3)] mb-4">Order delivered {order.bin_count} bins. How many were returned?</p>
-          <label className="block text-[12px] font-semibold text-[var(--tx3)] mb-1.5">Bins returned *</label>
+        <Modal
+          title="Mark Bins Picked Up"
+          onClose={() => setPickupModal(false)}
+        >
+          <p className="text-[13px] text-[var(--tx3)] mb-4">
+            Order delivered {order.bin_count} bins. How many were returned?
+          </p>
+          <label className="block text-[12px] font-semibold text-[var(--tx3)] mb-1.5">
+            Bins returned *
+          </label>
           <input
-            type="number" min={0} max={order.bin_count} value={pickupBins}
-            onChange={(e) => setPickupBins(Math.min(order.bin_count, Math.max(0, parseInt(e.target.value) || 0)))}
+            type="number"
+            min={0}
+            max={order.bin_count}
+            value={pickupBins}
+            onChange={(e) =>
+              setPickupBins(
+                Math.min(
+                  order.bin_count,
+                  Math.max(0, parseInt(e.target.value) || 0),
+                ),
+              )
+            }
             className={`${FIELD_WASH} mb-2`}
           />
           {pickupBins < order.bin_count && (
             <p className="text-[12px] text-red-400 mb-3 flex items-center gap-1">
-              <Warning size={12} /> {order.bin_count - pickupBins} missing, ${(order.bin_count - pickupBins) * 20} charge will be applied to card on file.
+              <Warning size={12} /> {order.bin_count - pickupBins} missing, $
+              {(order.bin_count - pickupBins) * 20} charge will be applied to
+              card on file.
             </p>
           )}
-          <label className="block text-[12px] font-semibold text-[var(--tx3)] mb-1.5">Crew member name (optional)</label>
+          <label className="block text-[12px] font-semibold text-[var(--tx3)] mb-1.5">
+            Crew member name (optional)
+          </label>
           <input
-            type="text" value={pickupCrew} onChange={(e) => setPickupCrew(e.target.value)}
+            type="text"
+            value={pickupCrew}
+            onChange={(e) => setPickupCrew(e.target.value)}
             placeholder="e.g. Marcus, Alex"
             className={`${FIELD_WASH} mb-4`}
           />
           <div className="flex gap-2">
-            <button type="button" onClick={() => setPickupModal(false)} className={ADMIN_PREMIUM_GHOST_CANCEL_CLASS}>
+            <button
+              type="button"
+              onClick={() => setPickupModal(false)}
+              className={ADMIN_PREMIUM_GHOST_CANCEL_CLASS}
+            >
               Cancel
             </button>
             <button
@@ -613,12 +837,26 @@ export default function BinOrderDetailClient({ order }: { order: any }) {
   );
 }
 
-function Section({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
+function Section({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <section>
       <div className={`flex items-center gap-2 ${SECTION_RULE}`}>
-        {icon && <span className="text-[var(--yugo-primary-text)] opacity-90">{icon}</span>}
-        <h3 className="text-[11px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]">{title}</h3>
+        {icon && (
+          <span className="text-[var(--yugo-primary-text)] opacity-90">
+            {icon}
+          </span>
+        )}
+        <h3 className="text-[11px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]">
+          {title}
+        </h3>
       </div>
       <div className="space-y-2.5">{children}</div>
     </section>
@@ -643,34 +881,53 @@ function InfoRow({
   return (
     <div className="flex justify-between items-start gap-3 text-[13px]">
       <span className="text-[var(--tx3)] shrink-0">{label}</span>
-      <span className={`text-right ${highlight ? colorMap[highlight] : "text-[var(--tx)]"} font-medium`}>{value}</span>
+      <span
+        className={`text-right ${highlight ? colorMap[highlight] : "text-[var(--tx)]"} font-medium`}
+      >
+        {value}
+      </span>
     </div>
   );
 }
 
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+function Modal({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
   const portal = useYu3PortalContainer();
   const shell = (
-    <div
-      className="pointer-events-auto fixed inset-0 z-[var(--yu3-z-modal,80)] flex items-center justify-center p-4"
-      data-modal-root
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="bin-order-modal-title"
-    >
+    <>
       <div
-        className="modal-overlay absolute inset-0"
+        className="modal-overlay pointer-events-auto fixed inset-0 z-[var(--yu3-z-modal-scrim)]"
+        aria-hidden
         role="presentation"
         onClick={onClose}
-        onKeyDown={(e) => e.key === "Escape" && onClose()}
       />
-      <Yu3PortaledTokenRoot className="relative z-[1] w-full max-w-sm rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] p-6 text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)]">
-        <h3 id="bin-order-modal-title" className="mb-1 text-[16px] font-bold text-[var(--yu3-ink-strong)]">
-          {title}
-        </h3>
-        {children}
-      </Yu3PortaledTokenRoot>
-    </div>
+      <div
+        className="pointer-events-auto fixed inset-0 z-[var(--yu3-z-modal)] flex items-center justify-center p-4"
+        data-modal-root
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bin-order-modal-title"
+        onKeyDown={(e) => e.key === "Escape" && onClose()}
+        tabIndex={-1}
+      >
+        <Yu3PortaledTokenRoot className="relative z-[1] w-full max-w-sm rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] p-6 text-[var(--yu3-ink)] shadow-[var(--yu3-shadow-lg)]">
+          <h3
+            id="bin-order-modal-title"
+            className="mb-1 text-[16px] font-bold text-[var(--yu3-ink-strong)]"
+          >
+            {title}
+          </h3>
+          {children}
+        </Yu3PortaledTokenRoot>
+      </div>
+    </>
   );
   if (portal) {
     return createPortal(shell, portal);

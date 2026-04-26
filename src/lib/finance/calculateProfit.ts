@@ -100,6 +100,11 @@ function buildCosts(
   };
 }
 
+export type ProfitabilitySpreadOpts = {
+  /** Jobs (moves + deliveries) on the same scheduled calendar day sharing daily truck/insurance; min 1. */
+  jobsOnSameDay?: number;
+};
+
 export function calculateMoveProfitability(
   move: {
     actual_hours?: number | null;
@@ -118,8 +123,10 @@ export function calculateMoveProfitability(
   },
   config: Record<string, string>,
   _monthlyMoveCountUnused: number,
+  spreadOpts?: ProfitabilitySpreadOpts,
 ): MoveCosts {
   void _monthlyMoveCountUnused;
+  const divisor = Math.max(1, spreadOpts?.jobsOnSameDay ?? 1);
   const revenue = Number(move.estimate ?? 0) || 0;
   const hours = Number(move.actual_hours ?? move.est_hours ?? 4) || 4;
   const crewSize = Number(move.actual_crew_count ?? move.est_crew_size ?? move.crew_count ?? 2) || 2;
@@ -138,8 +145,11 @@ export function calculateMoveProfitability(
     return defaults[type] ?? 75;
   };
   const truckType = (move.truck_primary ?? "sprinter").toLowerCase().replace(/[^a-z0-9]/g, "");
-  const truck = truckDailyRate(truckType) +
+  const truckDailyCombined =
+    truckDailyRate(truckType) +
     (move.truck_secondary ? truckDailyRate(move.truck_secondary.toLowerCase().replace(/[^a-z0-9]/g, "")) : 0);
+  const insuranceDaily = cfg(config, "daily_truck_insurance_cad", 0);
+  const truck = Math.round((truckDailyCombined + insuranceDaily) / divisor);
 
   const svc = (move.service_type ?? "local_move").toLowerCase();
   let suppliesKey: string;
@@ -163,8 +173,10 @@ export function calculateDeliveryProfitability(
   revenue: number,
   config: Record<string, string>,
   _monthlyMoveCountUnused: number,
+  spreadOpts?: ProfitabilitySpreadOpts,
 ): MoveCosts {
   void _monthlyMoveCountUnused;
+  const divisor = Math.max(1, spreadOpts?.jobsOnSameDay ?? 1);
   const isDayRate = String(d.booking_type || "").toLowerCase() === "day_rate";
   const defaultHours = isDayRate ? 8 : 4;
   const hours = Number(d.actual_hours ?? defaultHours) || defaultHours;
@@ -185,7 +197,8 @@ export function calculateDeliveryProfitability(
     return defaults[type] ?? 75;
   };
   const truckType = String(d.vehicle_type || "sprinter").toLowerCase().replace(/[^a-z0-9]/g, "");
-  const truck = delivTruckDaily(truckType);
+  const insuranceDaily = cfg(config, "daily_truck_insurance_cad", 0);
+  const truck = Math.round((delivTruckDaily(truckType) + insuranceDaily) / divisor);
 
   const supplies = 0;
 

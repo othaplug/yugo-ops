@@ -118,12 +118,12 @@
   --yu3-r-pill: 9999px;
 
   /* ── Shadow ── */
-  --yu3-shadow-sm: 0 1px 0 rgba(26, 20, 16, 0.04),
-    0 1px 2px rgba(26, 20, 16, 0.05);
-  --yu3-shadow-md: 0 4px 14px rgba(26, 20, 16, 0.08),
-    0 1px 2px rgba(26, 20, 16, 0.04);
-  --yu3-shadow-lg: 0 24px 60px rgba(26, 20, 16, 0.14),
-    0 4px 10px rgba(26, 20, 16, 0.06);
+  --yu3-shadow-sm:
+    0 1px 0 rgba(26, 20, 16, 0.04), 0 1px 2px rgba(26, 20, 16, 0.05);
+  --yu3-shadow-md:
+    0 4px 14px rgba(26, 20, 16, 0.08), 0 1px 2px rgba(26, 20, 16, 0.04);
+  --yu3-shadow-lg:
+    0 24px 60px rgba(26, 20, 16, 0.14), 0 4px 10px rgba(26, 20, 16, 0.06);
   --yu3-ring-focus: 0 0 0 2px var(--yu3-bg-canvas), 0 0 0 4px var(--yu3-wine);
 
   /* ── Motion ── */
@@ -144,12 +144,19 @@
   /* Clearance for floating bottom nav (compact FAB or expanded pill) + safe area */
   --yu3-mobile-navbar-h: 96px;
   --yu3-content-max-w: 1440px;
+  /* Sticky in-page nav: sit below shell topbar (offset + bar height + gap) */
+  --yu3-sticky-subnav-offset: calc(
+    var(--yu3-sp-4) + var(--yu3-topbar-h) + var(--yu3-sp-2)
+  );
 
   /* ── Z-index ladder (scoped) ── */
   --yu3-z-rail: 40;
+  /* Modal dim/blur: below topbar so shell nav (e.g. mobile sidebar trigger) stays usable */
+  --yu3-z-modal-scrim: 45;
   --yu3-z-topbar: 50;
   --yu3-z-sidebar: 60;
   --yu3-z-drawer: 70;
+  /* Dialog/sheet content and focused modal UI (above topbar) */
   --yu3-z-modal: 80;
   --yu3-z-palette: 90;
   --yu3-z-toast: 100;
@@ -261,7 +268,8 @@
   --yu3-topbar-search-ink: #c4beb2;
 
   /* Focus ring: neutral hairline, not wine */
-  --yu3-ring-focus: 0 0 0 2px var(--yu3-bg-canvas), 0 0 0 4px var(--yu3-line-strong);
+  --yu3-ring-focus:
+    0 0 0 2px var(--yu3-bg-canvas), 0 0 0 4px var(--yu3-line-strong);
 
   /* Charts: c1 is qualitative slot 1 — taupe, not brand wine */
   --yu3-c1: #6f6860;
@@ -291,11 +299,19 @@
   --gdim: rgba(245, 240, 232, 0.08);
   --color-accent: var(--yu3-ink-strong);
   --color-accent-hover: var(--yu3-ink);
-  --color-accent-subtle: color-mix(in srgb, var(--yu3-ink-strong) 8%, transparent);
+  --color-accent-subtle: color-mix(
+    in srgb,
+    var(--yu3-ink-strong) 8%,
+    transparent
+  );
   --admin-primary-fill: var(--yu3-wine);
   --admin-primary-fill-hover: var(--yu3-wine-hover);
   --text-accent: var(--yu3-ink-strong);
   --color-primary: var(--yu3-wine);
   --color-primary-hover: var(--yu3-wine-hover);
-  --color-primary-dim: color-mix(in srgb, var(--yu3-ink) 20%, var(--yu3-bg-surface));
+  --color-primary-dim: color-mix(
+    in srgb,
+    var(--yu3-ink) 20%,
+    var(--yu3-bg-surface)
+  );
 }

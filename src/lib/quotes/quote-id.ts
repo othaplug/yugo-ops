@@ -12,6 +12,35 @@ export function quoteNumericSuffixForHubSpot(quoteId: string, prefix: string): s
   return num
 }
 
+/**
+ * Parse numeric suffix from a display quote id (e.g. YG-30245 → 30245).
+ * Accepts common casing; does not require a specific prefix beyond LETTER(S)-DIGITS.
+ */
+export function numericSuffixFromQuoteDisplayId(quoteIdText: string): string | null {
+  const t = quoteIdText.trim()
+  const m = t.match(/^([A-Za-z]+)-(\d+)$/)
+  if (!m) return null
+  return m[2] || null
+}
+
+/**
+ * When converting a quote to a move or B2B delivery, reuse the same numeric suffix; only the prefix changes.
+ * @throws if the quote id does not contain a plain numeric suffix
+ */
+export function convertedRecordCodeFromQuoteId(
+  quoteIdText: string,
+  prefix: "MV" | "DLV",
+): string {
+  const raw = quoteIdText.trim()
+  const num =
+    quoteNumericSuffixForHubSpot(raw.toUpperCase(), "YG-") ??
+    numericSuffixFromQuoteDisplayId(raw)
+  if (!num) {
+    throw new Error(`Cannot derive record code from quote id (expected e.g. YG-30245): ${quoteIdText}`)
+  }
+  return `${prefix}-${num}`
+}
+
 export type GenerateNextQuoteIdOptions = {
   /** When set, next id syncs above HubSpot job_no if that exceeds the sequence value. */
   hubspotAccessToken?: string | null

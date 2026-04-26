@@ -65,9 +65,20 @@ export async function GET(
 
   const equipmentQueryFailed = !!(eqErr && isEquipmentRelationUnavailable(eqErr.message));
 
+  let serviceType: string | null = null;
+  if (jobType === "move") {
+    const { data: moveMeta } = await admin
+      .from("moves")
+      .select("service_type")
+      .eq("id", entityId)
+      .maybeSingle();
+    serviceType = (moveMeta?.service_type as string | null) ?? null;
+  }
+
   return NextResponse.json({
     ...(data || {}),
     partnerVertical,
+    serviceType,
     equipmentCheckDone: equipmentQueryFailed ? false : !!eqRow,
     equipmentCheckSkippedReason: eqRow?.skip_reason ?? null,
     equipmentTrackingUnavailable: equipmentQueryFailed,

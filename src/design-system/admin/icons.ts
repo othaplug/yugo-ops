@@ -70,6 +70,8 @@ export {
   Receipt,
   FilePlus,
   Gift,
+  Flag,
+  Code,
   Lock,
   Lightning,
   Palette,

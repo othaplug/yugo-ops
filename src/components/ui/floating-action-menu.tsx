@@ -4,7 +4,7 @@ import * as React from "react"
 import { createPortal } from "react-dom"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { X } from "@phosphor-icons/react"
+import { CaretLeft, X } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -17,10 +17,14 @@ export type FloatingActionMenuOption = {
   title?: string
   active?: boolean
   form?: string
+  /** When true, opens `subMenuOptions` in the same panel animation (no navigation). */
+  opensSubMenu?: boolean
 }
 
 export type FloatingActionMenuProps = {
   options: FloatingActionMenuOption[]
+  /** Second-level items (e.g. full app routes). Shown when an option has `opensSubMenu`. */
+  subMenuOptions?: FloatingActionMenuOption[]
   className?: string
   triggerIcon: React.ReactNode
   triggerLabelClosed?: string
@@ -45,8 +49,11 @@ const optionButtonClass = cn(
   "disabled:pointer-events-none disabled:bg-white disabled:text-[var(--yu3-ink-faint)]",
 )
 
+type MenuPanel = "main" | "sub"
+
 export function FloatingActionMenu({
   options,
+  subMenuOptions,
   className,
   triggerIcon,
   triggerLabelClosed = "Open menu",
@@ -55,12 +62,33 @@ export function FloatingActionMenu({
   zIndexClass = "z-[var(--yu3-z-sidebar)]",
 }: FloatingActionMenuProps) {
   const [isOpen, setIsOpen] = React.useState(false)
+  const [panel, setPanel] = React.useState<MenuPanel>("main")
   const [mounted, setMounted] = React.useState(false)
   const ref = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
     setMounted(true)
   }, [])
+
+  React.useEffect(() => {
+    if (!isOpen) setPanel("main")
+  }, [isOpen])
+
+  const hasSub = Boolean(subMenuOptions && subMenuOptions.length > 0)
+  const backOption = React.useMemo((): FloatingActionMenuOption => {
+    return {
+      label: "Back",
+      onClick: () => setPanel("main"),
+      Icon: <CaretLeft size={16} weight="bold" aria-hidden />,
+    }
+  }, [])
+
+  const currentOptions = React.useMemo((): FloatingActionMenuOption[] => {
+    if (panel === "sub" && hasSub) {
+      return [backOption, ...subMenuOptions!]
+    }
+    return options
+  }, [panel, hasSub, backOption, options, subMenuOptions])
 
   React.useEffect(() => {
     if (!isOpen) return
@@ -84,7 +112,10 @@ export function FloatingActionMenu({
 
   const handleToggle = () => setIsOpen((v) => !v)
 
-  const close = () => setIsOpen(false)
+  const close = () => {
+    setIsOpen(false)
+    setPanel("main")
+  }
 
   const positionClass =
     align === "right"
@@ -101,7 +132,7 @@ export function FloatingActionMenu({
         createPortal(
           <div
             role="presentation"
-            className="fixed inset-0 z-[99990] bg-black/45 backdrop-blur-[10px] touch-manipulation"
+            className="fixed inset-0 z-[var(--yu3-z-modal-scrim,45)] bg-black/40 backdrop-blur-sm touch-manipulation"
             onClick={close}
             aria-hidden
           />,
@@ -115,7 +146,6 @@ export function FloatingActionMenu({
           zIndexClass,
           className,
         )}
-        style={{ zIndex: "var(--z-top)" }}
       >
       <button
         type="button"
@@ -151,9 +181,10 @@ export function FloatingActionMenu({
         </AnimatePresence>
       </button>
 
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {isOpen ? (
           <motion.div
+            key={panel}
             initial={{
               opacity: 0,
               x: panelSlideX,
@@ -175,11 +206,11 @@ export function FloatingActionMenu({
               delay: 0.1,
             }}
             className={cn(
-              "absolute bottom-[calc(3.5rem+0.125rem)] mb-0 flex flex-col gap-2",
+              "absolute bottom-[calc(3.5rem+0.125rem)] mb-0 flex max-h-[min(52dvh,420px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-0.5",
               align === "right" ? "right-0 items-end" : "left-0 items-start",
             )}
           >
-            {options.map((option, index) => {
+            {currentOptions.map((option, index) => {
               const activeRing = option.active
                 ? "ring-2 ring-[var(--yu3-wine)]/35 ring-offset-2 ring-offset-white"
                 : ""
@@ -195,9 +226,37 @@ export function FloatingActionMenu({
                 </>
               )
 
+              if (
+                option.opensSubMenu &&
+                hasSub &&
+                panel === "main"
+              ) {
+                return (
+                  <motion.div
+                    key="opens-sub"
+                    initial={{ opacity: 0, x: itemSlideX }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: itemSlideX }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className={align === "left" ? "self-start" : "self-end"}
+                  >
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      title={option.title}
+                      onClick={() => setPanel("sub")}
+                      className={cn(optionButtonClass, activeRing)}
+                    >
+                      {inner}
+                    </Button>
+                  </motion.div>
+                )
+              }
+
               return (
                 <motion.div
-                  key={`${option.label}-${index}`}
+                  key={`${option.label}-${index}-${option.href ?? ""}`}
                   initial={{ opacity: 0, x: itemSlideX }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: itemSlideX }}
@@ -244,10 +303,13 @@ export function FloatingActionMenu({
                       disabled={option.disabled}
                       title={option.title}
                       onClick={() => {
-                        if (!option.disabled) {
-                          close()
+                        if (option.disabled) return
+                        if (option.label === "Back") {
                           option.onClick?.()
+                          return
                         }
+                        close()
+                        option.onClick?.()
                       }}
                       className={cn(optionButtonClass, activeRing)}
                     >

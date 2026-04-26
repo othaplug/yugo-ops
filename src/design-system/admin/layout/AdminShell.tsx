@@ -171,12 +171,9 @@ export function AdminShell({
     <div data-yugo-admin-v3="" data-theme={theme} className="min-h-dvh w-full">
       <Yu3PortalProvider portalNode={portalNode}>
         <div
-          id="yu3-admin-portal-root"
-          ref={setPortalNode}
-          className="pointer-events-none fixed inset-0 z-[var(--yu3-z-drawer)] m-0 min-h-0 border-0 p-0 isolate overflow-x-hidden overflow-y-visible"
-          aria-hidden
-        />
-        <div className="yu3-shell" data-collapsed={collapsed ? "true" : "false"}>
+          className="yu3-shell"
+          data-collapsed={collapsed ? "true" : "false"}
+        >
           <Sidebar
             role={role}
             isSuperAdmin={isSuperAdmin}
@@ -190,7 +187,6 @@ export function AdminShell({
           />
           <div className="yu3-main">
             <TopBar
-              onOpenMobileNav={() => setMobileOpen(true)}
               userEmail={user?.email}
               userName={user?.full_name}
               userRole={role}
@@ -209,8 +205,16 @@ export function AdminShell({
             </main>
           </div>
         </div>
+        {/* No z-index here: a high z on this root stacked the whole portal above the top bar, so
+            modal-scrims could never sit "under" the hamburger. Order: shell, then this portal. */}
+        <div
+          id="yu3-admin-portal-root"
+          ref={setPortalNode}
+          className="pointer-events-none fixed inset-0 m-0 min-h-0 border-0 p-0 overflow-x-hidden overflow-y-visible"
+          aria-hidden
+        />
 
-        <MobileBottomNav onOpenMobileSidebar={() => setMobileOpen(true)} />
+        <MobileBottomNav role={role} isSuperAdmin={isSuperAdmin} />
 
         <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       </Yu3PortalProvider>

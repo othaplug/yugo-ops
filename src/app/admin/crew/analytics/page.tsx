@@ -1,8 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTodayString, getLocalDateString } from "@/lib/business-timezone";
+import { filterCompletedSessionsWithResolvableJobs } from "@/lib/crew/analytics-countable-sessions";
 import CrewAnalyticsClient from "./CrewAnalyticsClient";
 
 export const metadata = { title: "Crew Analytics" };
+export const dynamic = "force-dynamic";
 
 export default async function CrewAnalyticsPage({
   searchParams,
@@ -35,8 +37,9 @@ export default async function CrewAnalyticsPage({
   const sessions = sessionsRes.data || [];
 
   const completedSessions = sessions.filter((s) => s.status === "completed");
-  const moveIds = completedSessions.filter((s) => s.job_type === "move").map((s) => s.job_id);
-  const deliveryIds = completedSessions.filter((s) => s.job_type === "delivery").map((s) => s.job_id);
+  const countableSessions = await filterCompletedSessionsWithResolvableJobs(admin, completedSessions);
+  const moveIds = countableSessions.filter((s) => s.job_type === "move").map((s) => s.job_id);
+  const deliveryIds = countableSessions.filter((s) => s.job_type === "delivery").map((s) => s.job_id);
 
   const [podsMoveRes, podsDeliveryRes] = await Promise.all([
     moveIds.length > 0
@@ -74,7 +77,7 @@ export default async function CrewAnalyticsPage({
     byCrew.set(c.id, { jobs: 0, signOffs: 0, totalDuration: 0, ratings: [] });
   });
 
-  completedSessions.forEach((s) => {
+  countableSessions.forEach((s) => {
     const stats = byCrew.get(s.team_id);
     if (!stats) return;
     stats.jobs += 1;

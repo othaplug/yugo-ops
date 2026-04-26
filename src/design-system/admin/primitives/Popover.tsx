@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as RadixPopover from "@radix-ui/react-popover"
-import { cn } from "../lib/cn"
-import { useYu3PortalContainer } from "../layout/Yu3PortalContext"
+import * as React from "react";
+import * as RadixPopover from "@radix-ui/react-popover";
+import { cn } from "../lib/cn";
+import { useYu3PortalContainer } from "../layout/Yu3PortalContext";
 
-export const Popover = RadixPopover.Root
-export const PopoverTrigger = RadixPopover.Trigger
-export const PopoverAnchor = RadixPopover.Anchor
+export const Popover = RadixPopover.Root;
+export const PopoverTrigger = RadixPopover.Trigger;
+export const PopoverAnchor = RadixPopover.Anchor;
 
 export const PopoverContent = React.forwardRef<
   React.ElementRef<typeof RadixPopover.Content>,
   React.ComponentPropsWithoutRef<typeof RadixPopover.Content>
 >(({ className, align = "start", sideOffset = 6, ...rest }, ref) => {
-  const portalContainer = useYu3PortalContainer()
+  const portalContainer = useYu3PortalContainer();
   return (
     <RadixPopover.Portal container={portalContainer ?? undefined}>
       <RadixPopover.Content
@@ -33,6 +33,6 @@ export const PopoverContent = React.forwardRef<
         {...rest}
       />
     </RadixPopover.Portal>
-  )
-})
-PopoverContent.displayName = "PopoverContent"
+  );
+});
+PopoverContent.displayName = "PopoverContent";

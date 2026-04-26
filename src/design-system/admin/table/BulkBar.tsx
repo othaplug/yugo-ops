@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "../lib/cn"
-import { Button } from "../primitives/Button"
-import { X } from "../icons"
-import type { BulkAction } from "./types"
+import * as React from "react";
+import { cn } from "../lib/cn";
+import { Button } from "../primitives/Button";
+import { X } from "../icons";
+import type { BulkAction } from "./types";
 
 export interface BulkBarProps<Row> {
-  selectedCount: number
-  totalCount: number
-  actions: BulkAction<Row>[]
-  rows: Row[]
-  onClear: () => void
+  selectedCount: number;
+  totalCount: number;
+  actions: BulkAction<Row>[];
+  rows: Row[];
+  onClear: () => void;
 }
 
 export function BulkBar<Row>({
@@ -21,7 +21,7 @@ export function BulkBar<Row>({
   rows,
   onClear,
 }: BulkBarProps<Row>) {
-  if (selectedCount === 0) return null
+  if (selectedCount === 0) return null;
   return (
     <div
       className={cn(
@@ -52,7 +52,7 @@ export function BulkBar<Row>({
       <div className="h-5 w-px bg-[color-mix(in_srgb,white_14%,transparent)]" />
       <div className="flex items-center gap-1">
         {actions.map((action) => {
-          const disabled = action.disabled?.(rows) || false
+          const disabled = action.disabled?.(rows) || false;
           return (
             <Button
               key={action.id}
@@ -68,7 +68,7 @@ export function BulkBar<Row>({
             >
               {action.label}
             </Button>
-          )
+          );
         })}
       </div>
       <div className="h-5 w-px bg-[color-mix(in_srgb,white_14%,transparent)]" />
@@ -82,5 +82,5 @@ export function BulkBar<Row>({
         Clear
       </button>
     </div>
-  )
+  );
 }

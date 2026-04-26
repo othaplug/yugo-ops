@@ -19,11 +19,7 @@ import {
   Ranking,
 } from "@phosphor-icons/react";
 import PageContent from "@/app/admin/components/PageContent";
-
-const FOREST = "#2C3E2D";
-const WINE = "#5C1A33";
-/** Tips / money emphasis — dark forest ink, not neon green */
-const MONEY_INK = "#243524";
+import { cn } from "@/lib/utils";
 
 const CREW_EYEBROW =
   "block pl-0.5 text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx2)] mb-1 [font-family:var(--font-body)]";
@@ -32,9 +28,10 @@ const SECTION_EYEBROW =
   "block pl-0.5 text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx2)] mb-2 [font-family:var(--font-body)]";
 
 const STAT_TILE =
-  "rounded-2xl bg-[#FFFBF7] p-4 shadow-[0_2px_22px_rgba(44,62,45,0.07)]";
+  "rounded-2xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 shadow-[var(--yu3-shadow-sm)]";
 
-const PANEL_SOFT = "rounded-2xl bg-[#FAF7F2] shadow-[0_2px_28px_rgba(44,62,45,0.06)]";
+const PANEL_SOFT =
+  "rounded-2xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)]";
 
 const BADGE_ICONS: Record<string, React.ReactNode> = {
   Trophy: <Trophy size={16} weight="fill" />,
@@ -137,7 +134,7 @@ export default function CrewStatsPage() {
   const monthLabel = now.toLocaleDateString("en-CA", { month: "long", year: "numeric" });
 
   const onTimeDisplay = (rate: number, totalJobs: number) => {
-    if (totalJobs <= 0) return "—";
+    if (totalJobs <= 0) return "n/a";
     const pct = rate > 1 ? Math.round(rate) : Math.round(rate * 100);
     return `${pct}%`;
   };
@@ -145,8 +142,8 @@ export default function CrewStatsPage() {
   if (loading) {
     return (
       <PageContent>
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <div className="w-8 h-8 border-2 border-[#5C1A33]/25 border-t-[#5C1A33] rounded-full animate-spin" />
+        <div className="flex min-h-[40vh] items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--yu3-wine)]/25 border-t-[var(--yu3-wine)]" />
         </div>
       </PageContent>
     );
@@ -165,15 +162,9 @@ export default function CrewStatsPage() {
   return (
     <PageContent>
       <div className="max-w-[520px] mx-auto">
-        <section
-          className={`relative overflow-hidden rounded-2xl ${PANEL_SOFT} p-6 sm:p-7 mb-10`}
-          style={{
-            background: "linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(255,251,247,0.95) 45%, rgba(245,240,234,0.88) 100%)",
-          }}
-        >
+        <section className="relative mb-10 overflow-hidden rounded-2xl border border-[var(--yu3-line-subtle)] bg-gradient-to-br from-[#FFFBF7] via-[var(--yu3-bg-surface)] to-[var(--yu3-wine-tint)]/35 p-6 shadow-[var(--yu3-shadow-sm)] sm:p-7">
           <div
-            className="pointer-events-none absolute -top-14 -right-8 h-44 w-44 rounded-full blur-3xl"
-            style={{ background: "rgba(92, 26, 51, 0.07)" }}
+            className="pointer-events-none absolute -top-14 -right-8 h-44 w-44 rounded-full bg-[var(--yu3-wine)]/10 blur-3xl"
             aria-hidden
           />
           <div className="relative min-w-0">
@@ -223,7 +214,7 @@ export default function CrewStatsPage() {
               </span>
             </div>
             <div className="text-[26px] font-bold text-[var(--tx)] tabular-nums leading-none">
-              {stats.thisMonth.avgRating != null ? stats.thisMonth.avgRating.toFixed(1) : "—"}
+              {stats.thisMonth.avgRating != null ? stats.thisMonth.avgRating.toFixed(1) : "n/a"}
             </div>
             <div className="text-[10px] text-[var(--tx3)] mt-2">Avg this month</div>
           </div>
@@ -234,7 +225,7 @@ export default function CrewStatsPage() {
                 Tips
               </span>
             </div>
-            <div className="text-[26px] font-bold tabular-nums leading-none" style={{ color: MONEY_INK }}>
+            <div className="text-[26px] font-bold leading-none tabular-nums text-[var(--yu3-forest)]">
               ${stats.thisMonth.tips}
             </div>
             <div className="text-[10px] text-[var(--tx3)] mt-2">${stats.thisMonth.avgTipPerJob} avg/job</div>
@@ -285,10 +276,7 @@ export default function CrewStatsPage() {
             <div className="grid grid-cols-2 gap-3">
               {stats.badges.map((badge) => (
                 <div key={badge.id} className={`flex items-start gap-3 ${STAT_TILE} p-3.5`}>
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: "rgba(92, 26, 51, 0.1)", color: WINE }}
-                  >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--yu3-wine-tint)] text-[var(--yu3-wine)]">
                     {BADGE_ICONS[badge.icon] || <Medal size={16} weight="fill" />}
                   </div>
                   <div className="min-w-0">
@@ -299,11 +287,11 @@ export default function CrewStatsPage() {
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl bg-[#2C3E2D]/[0.04] px-5 py-8 text-center">
+            <div className="rounded-2xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-forest)]/[0.04] px-5 py-8 text-center">
               <Medal size={28} className="mx-auto mb-3 text-[var(--tx3)]" weight="duotone" aria-hidden />
               <p className="text-[13px] font-semibold text-[var(--tx)]">No badges yet</p>
               <p className="text-[12px] text-[var(--tx2)] mt-2 leading-relaxed max-w-[34ch] mx-auto">
-                Complete jobs, earn strong ratings, and keep claims low — badges unlock as you hit milestones.
+                Complete jobs, earn strong ratings, and keep claims low. Badges unlock as you hit milestones.
               </p>
             </div>
           )}
@@ -321,14 +309,18 @@ export default function CrewStatsPage() {
                 return (
                   <div
                     key={entry.name || i}
-                    className={`flex items-center gap-3 px-4 py-3.5 ${isYou ? "bg-[#2C3E2D]/[0.04]" : ""}`}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3.5",
+                      isYou && "bg-[var(--yu3-forest)]/[0.05]",
+                    )}
                   >
                     <span
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 tabular-nums"
-                      style={{
-                        background: i === 0 ? "rgba(92, 26, 51, 0.12)" : "rgba(44, 62, 45, 0.06)",
-                        color: i === 0 ? WINE : "var(--tx3)",
-                      }}
+                      className={cn(
+                        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold tabular-nums",
+                        i === 0
+                          ? "bg-[var(--yu3-wine-tint)] text-[var(--yu3-wine)]"
+                          : "bg-[var(--yu3-forest)]/10 text-[var(--tx3)]",
+                      )}
                     >
                       {i + 1}
                     </span>
@@ -336,7 +328,7 @@ export default function CrewStatsPage() {
                       <div className="flex items-center gap-2 min-w-0">
                         <p className="text-[13px] font-semibold text-[var(--tx)] truncate">{entry.name}</p>
                         {isYou && (
-                          <span className="shrink-0 rounded-md bg-[#2C3E2D]/12 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#243524]">
+                          <span className="shrink-0 rounded-md bg-[var(--yu3-forest-tint)] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[var(--yu3-forest)] [font-family:var(--font-body)]">
                             You
                           </span>
                         )}
@@ -348,7 +340,7 @@ export default function CrewStatsPage() {
                     <div className="flex items-center gap-1 shrink-0">
                       <Star size={12} className="text-[var(--tx)]" weight="fill" aria-hidden />
                       <span className="text-[12px] font-bold text-[var(--tx)] tabular-nums">
-                        {entry.avgRating > 0 ? entry.avgRating.toFixed(1) : "—"}
+                        {entry.avgRating > 0 ? entry.avgRating.toFixed(1) : "n/a"}
                       </span>
                     </div>
                   </div>
@@ -356,7 +348,7 @@ export default function CrewStatsPage() {
               })}
             </div>
           ) : (
-            <div className="rounded-2xl bg-white/70 px-5 py-10 text-center shadow-[0_2px_24px_rgba(44,62,45,0.05)]">
+            <div className="rounded-2xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] px-5 py-10 text-center shadow-[var(--yu3-shadow-sm)]">
               <Trophy size={32} className="mx-auto mb-3 text-[var(--tx3)]" weight="duotone" aria-hidden />
               <p className="text-[13px] font-semibold text-[var(--tx)]">No rankings yet this month</p>
               <p className="text-[12px] text-[var(--tx2)] mt-2 leading-relaxed max-w-[34ch] mx-auto">
@@ -376,7 +368,7 @@ export default function CrewStatsPage() {
                 <div className="flex items-center justify-center mb-1">
                   <Coins size={14} className="text-[var(--tx)]" weight="duotone" aria-hidden />
                 </div>
-                <div className="text-[17px] font-bold tabular-nums leading-none" style={{ color: MONEY_INK }}>
+                <div className="text-[17px] font-bold leading-none tabular-nums text-[var(--yu3-forest)]">
                   ${Math.round(tipData.summary.totalEarned)}
                 </div>
                 <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)] mt-2 [font-family:var(--font-body)]">
@@ -392,7 +384,7 @@ export default function CrewStatsPage() {
                 </div>
               </div>
               <div className={`${STAT_TILE} p-3 text-center`}>
-                <div className="text-[17px] font-bold tabular-nums leading-none" style={{ color: WINE }}>
+                <div className="text-[17px] font-bold leading-none tabular-nums text-[var(--yu3-wine)]">
                   ${Math.round(tipData.summary.highestTip)}
                 </div>
                 <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)] mt-2 [font-family:var(--font-body)]">
@@ -413,12 +405,13 @@ export default function CrewStatsPage() {
                     return (
                       <div key={m.label} className="flex-1 flex flex-col items-center gap-1">
                         <div
-                          className="w-full rounded-t-sm transition-opacity"
-                          style={{
-                            height,
-                            background: m.amount > 0 ? FOREST : "var(--brd)",
-                            opacity: m.amount > 0 ? 0.85 : 0.25,
-                          }}
+                          className={cn(
+                            "w-full rounded-t-sm transition-opacity",
+                            m.amount > 0
+                              ? "bg-[var(--yu3-forest)] [opacity:0.85]"
+                              : "bg-[var(--brd)] [opacity:0.25]",
+                          )}
+                          style={{ height }}
                           title={`${m.label}: $${Math.round(m.amount)}`}
                         />
                       </div>
@@ -453,7 +446,7 @@ export default function CrewStatsPage() {
                       })}
                     </p>
                   </div>
-                  <span className="text-[14px] font-bold tabular-nums shrink-0" style={{ color: MONEY_INK }}>
+                  <span className="shrink-0 text-[14px] font-bold tabular-nums text-[var(--yu3-forest)]">
                     +${Math.round(Number(tip.net_amount ?? tip.amount))}
                   </span>
                 </div>

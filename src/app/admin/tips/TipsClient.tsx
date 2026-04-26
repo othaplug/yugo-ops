@@ -17,7 +17,13 @@ import { KpiStrip } from "@/design-system/admin/dashboard"
 
 interface Tip {
   id: string
-  move_id: string
+  move_id: string | null
+  delivery_id?: string | null
+  job_type?: string | null
+  method?: string | null
+  service_type?: string | null
+  tier?: string | null
+  neighbourhood?: string | null
   crew_id: string
   crew_name: string | null
   client_name: string | null
@@ -26,6 +32,7 @@ interface Tip {
   net_amount: number | null
   charged_at: string
   move_code?: string | null
+  delivery_number?: string | null
 }
 
 interface CrewAllocation {
@@ -37,18 +44,27 @@ interface CrewAllocation {
   highest: number
 }
 
+interface ServiceTypeAgg {
+  label: string
+  count: number
+  total: number
+  avg: number
+}
+
 export default function TipsClient({
   tips,
   totalTips,
   avgTip,
   tipCount,
   crewAllocations = [],
+  serviceTypeBreakdown = [],
 }: {
   tips: Tip[]
   totalTips: number
   avgTip: number
   tipCount: number
   crewAllocations?: CrewAllocation[]
+  serviceTypeBreakdown?: ServiceTypeAgg[]
 }) {
   const [search, setSearch] = React.useState("")
   const [sort, setSort] = React.useState<ColumnSort | null>({
@@ -71,12 +87,18 @@ export default function TipsClient({
           ) : null,
       },
       {
-        id: "move",
-        header: "Move",
-        accessor: (r) => r.move_code || r.move_id || "",
+        id: "job",
+        shortLabel: "Job",
+        header: "Job",
+        accessor: (r) =>
+          r.move_code || r.move_id || r.delivery_number || r.delivery_id || "",
         width: 140,
         cell: (r) =>
-          r.move_code ? (
+          r.job_type === "delivery" && r.delivery_number ? (
+            <span className="text-[12px] font-semibold text-[var(--yu3-ink)]">
+              DLV {r.delivery_number}
+            </span>
+          ) : r.move_code ? (
             <Link
               href={`/admin/moves/${r.move_code}`}
               className="text-[12px] font-semibold text-[var(--yu3-ink)] hover:underline"
@@ -95,7 +117,32 @@ export default function TipsClient({
           ) : null,
       },
       {
+        id: "method",
+        shortLabel: "Method",
+        header: "Method",
+        accessor: (r) => r.method || "",
+        width: 100,
+        cell: (r) => (
+          <span className="text-[11px] text-[var(--yu3-ink-muted)] uppercase">
+            {r.method || "—"}
+          </span>
+        ),
+      },
+      {
+        id: "service_type",
+        shortLabel: "Service",
+        header: "Service",
+        accessor: (r) => r.service_type || "",
+        width: 120,
+        cell: (r) => (
+          <span className="text-[11px] text-[var(--yu3-ink-muted)]">
+            {r.service_type || "—"}
+          </span>
+        ),
+      },
+      {
         id: "crew_name",
+        shortLabel: "Crew",
         header: "Crew",
         accessor: (r) => r.crew_name ?? "",
         width: 160,
@@ -115,6 +162,7 @@ export default function TipsClient({
       },
       {
         id: "amount",
+        shortLabel: "Amount",
         header: "Amount",
         accessor: (r) => r.amount,
         sortable: true,
@@ -129,6 +177,7 @@ export default function TipsClient({
       },
       {
         id: "processing_fee",
+        shortLabel: "Fee",
         header: "Fee",
         accessor: (r) => (r.processing_fee != null ? Number(r.processing_fee) : 0),
         sortable: true,
@@ -149,7 +198,9 @@ export default function TipsClient({
   const onExport = React.useCallback(() => {
     const headers = [
       "Client",
-      "Move",
+      "Job",
+      "Method",
+      "Service",
       "Crew",
       "Create date",
       "Amount",
@@ -158,7 +209,11 @@ export default function TipsClient({
     const lines = tips.map((r) =>
       [
         r.client_name || "",
-        r.move_code || r.move_id || "",
+        r.job_type === "delivery"
+          ? r.delivery_number || r.delivery_id || ""
+          : r.move_code || r.move_id || "",
+        r.method || "",
+        r.service_type || "",
         r.crew_name || "",
         formatAdminCreatedAt(r.charged_at),
         formatCurrency(r.amount),
@@ -184,7 +239,7 @@ export default function TipsClient({
       <PageHeader
         eyebrow="Finance"
         title="Tips"
-        description="Crew gratuities collected via Square across completed moves."
+        description="Crew gratuities from Square and on-site reports across completed jobs."
       />
       <KpiStrip
         tiles={[
@@ -194,6 +249,30 @@ export default function TipsClient({
         ]}
         columns={3}
       />
+
+      {serviceTypeBreakdown.length > 0 && (
+        <>
+          <SectionDivider label="By service type" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+            {serviceTypeBreakdown.slice(0, 9).map((s) => (
+              <div
+                key={s.label}
+                className="rounded-[var(--yu3-r-lg,10px)] border border-[var(--yu3-line,var(--brd))] p-4 bg-[var(--yu3-bg-surface,var(--card))]"
+              >
+                <p className="text-[11px] font-semibold text-[var(--yu3-ink-strong,var(--tx))] truncate">
+                  {s.label}
+                </p>
+                <p className="text-[10px] text-[var(--yu3-ink-muted,var(--tx3))] mt-1">
+                  {s.count} tips · avg {formatCurrency(s.avg)}
+                </p>
+                <p className="text-[15px] font-semibold tabular-nums mt-2 text-[var(--yu3-ink-strong,var(--tx))]">
+                  {formatCurrency(s.total)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {crewAllocations.length > 0 && (
         <>

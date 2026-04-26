@@ -12,8 +12,10 @@ import {
   Palette,
   Bell,
   Lightning,
+  MapPin,
+  Flag,
+  Code,
 } from "@/design-system/admin/icons"
-import { PageHeader } from "@/design-system/admin/layout/PageHeader"
 import { cn } from "@/design-system/admin/lib/cn"
 
 type LinkCard = {
@@ -58,7 +60,7 @@ const baseLinks: LinkCard[] = [
   {
     href: "/admin/audit-log",
     title: "Change log",
-    description: "Audit trail of important actions (formerly audit log).",
+    description: "History of important account and operations actions.",
     Icon: Scroll,
     minRole: "admin",
   },
@@ -70,6 +72,27 @@ const ownerLinks: LinkCard[] = [
     title: "Platform",
     description: "Pricing, equipment, and global configuration.",
     Icon: Gear,
+    minRole: "owner",
+  },
+  {
+    href: "/admin/buildings",
+    title: "Buildings",
+    description: "Facility and address records for moves and storage.",
+    Icon: MapPin,
+    minRole: "owner",
+  },
+  {
+    href: "/admin/settings/platform/feature-flags",
+    title: "Feature flags",
+    description: "Product experiments and rollout switches.",
+    Icon: Flag,
+    minRole: "owner",
+  },
+  {
+    href: "/admin/settings/platform/developer",
+    title: "Developer",
+    description: "API keys, webhooks, and technical tools.",
+    Icon: Code,
     minRole: "owner",
   },
   {
@@ -119,13 +142,9 @@ export default function SettingsHub({
   ]
 
   return (
-    <div className="w-full p-4 md:p-6">
-      <PageHeader
-        eyebrow="Workspace"
-        title="Settings"
-        description="Account, team, and platform configuration. Pick a section below."
-      />
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="w-full">
+      <p className="yu3-t-eyebrow mb-4">Overview</p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {all.map((item) => {
           const Ic = item.Icon
           return (

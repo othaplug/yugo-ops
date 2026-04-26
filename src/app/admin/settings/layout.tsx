@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import SettingsHubNav from "./SettingsHubNav";
+import SettingsBackToHub from "./SettingsBackToHub";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import { PageHeader } from "@/design-system/admin/layout";
 
@@ -28,19 +29,22 @@ export default async function SettingsLayout({
   const showPlatform = isSuperAdmin || role === "owner";
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        eyebrow="Account"
-        title="Settings"
-        description="Personal preferences, notifications, team operations, and platform controls."
-      />
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-5 sm:items-start min-h-0">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <SettingsBackToHub />
+        <PageHeader
+          eyebrow="Workspace"
+          title="Settings"
+          description="Personal preferences, notifications, team and platform configuration. The overview lists every section; the sidebar appears on detail pages."
+        />
+      </div>
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 lg:gap-6 sm:items-start min-h-0">
         <SettingsHubNav
           isPartner={isPartner}
           showOperations={showOperations}
           showPlatform={showPlatform}
         />
-        <div className="flex-1 min-w-0 space-y-6 sm:pl-1">{children}</div>
+        <div className="flex-1 min-w-0 min-h-0">{children}</div>
       </div>
     </div>
   );

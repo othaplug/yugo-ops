@@ -33,22 +33,10 @@ import { cn } from "@/design-system/admin/lib/cn";
 import {
   CaretRight,
   Plus,
-  ArrowUpRight,
-  ArrowRight,
+  ArrowsClockwise,
   Warning,
   UsersThree,
-  CurrencyDollar,
   Funnel,
-  Star,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Eye,
-  Shield,
-  MapPin,
-  PencilSimple,
-  Bell,
-  Info,
 } from "@/design-system/admin/icons";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -436,7 +424,6 @@ export default function CommandCenterV3Client({
         action: e.event_type.replace(/_/g, " "),
         time: relativeTime(e.created_at),
         tone: eventTone(e.event_type),
-        icon: eventIcon(e.event_type),
         onClick: () => router.push(entityHref(e.entity_type, e.entity_id)),
       })),
     [activityEvents, router],
@@ -483,15 +470,16 @@ export default function CommandCenterV3Client({
           <>
             <Button
               variant="secondary"
-              size="md"
+              size="sm"
+              leadingIcon={<ArrowsClockwise size={14} />}
               onClick={() => router.refresh()}
             >
               Refresh
             </Button>
             <Button
               variant="primary"
-              size="md"
-              leadingIcon={<Plus size={16} />}
+              size="sm"
+              leadingIcon={<Plus size={14} />}
               onClick={() => router.push("/admin/moves/new")}
             >
               New move
@@ -754,7 +742,7 @@ export default function CommandCenterV3Client({
               Dispatch board
             </Button>
           </header>
-          <div className="grid grid-cols-7 gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-7 sm:overflow-visible sm:pb-0 [-webkit-overflow-scrolling:touch]">
             {crewCapacity.map((day) => {
               const hasCapacity = day.total > 0;
               const pct = hasCapacity ? day.booked / day.total : 0;
@@ -767,7 +755,7 @@ export default function CommandCenterV3Client({
               return (
                 <div
                   key={day.date}
-                  className="flex flex-col gap-2 p-3 bg-[var(--yu3-bg-surface-sunken)] rounded-[var(--yu3-r-md)] border border-[var(--yu3-line-subtle)]"
+                  className="flex min-w-[7.5rem] shrink-0 flex-col gap-2 p-3 sm:min-w-0 bg-[var(--yu3-bg-surface-sunken)] rounded-[var(--yu3-r-md)] border border-[var(--yu3-line-subtle)]"
                 >
                   <div className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">
                     {day.label}
@@ -949,27 +937,6 @@ function eventTone(
   )
     return "info";
   return "neutral";
-}
-
-function eventIcon(event: string): React.ReactNode {
-  const e = event.toLowerCase();
-  if (e.includes("payment") || e.includes("paid"))
-    return <CheckCircle size={14} />;
-  if (e.includes("cancel") || e.includes("reject") || e.includes("failed"))
-    return <XCircle size={14} />;
-  if (e.includes("skip") || e.includes("warn") || e.includes("overdue"))
-    return <Warning size={14} />;
-  if (e.includes("claim")) return <Shield size={14} />;
-  if (e.includes("arrived")) return <MapPin size={14} />;
-  if (e.includes("en_route") || e.includes("en route"))
-    return <ArrowRight size={14} />;
-  if (e.includes("tracking")) return <MapPin size={14} />;
-  if (e.includes("change")) return <PencilSimple size={14} />;
-  if (e.includes("notification")) return <Bell size={14} />;
-  if (e.includes("created")) return <Plus size={14} />;
-  if (e.includes("updated") || e.includes("status"))
-    return <PencilSimple size={14} />;
-  return <Info size={14} />;
 }
 
 function entityHref(entity: string, id: string) {

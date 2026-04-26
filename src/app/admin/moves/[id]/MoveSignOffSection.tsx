@@ -58,6 +58,13 @@ function NpsLabel({ score }: { score: number }) {
   return <span className="text-green-600 font-medium">Promoter ({score})</span>;
 }
 
+function formatSignOffDate(iso: string | null | undefined): string {
+  if (!iso || typeof iso !== "string") return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString();
+}
+
 const SKIP_REASON_LABELS: Record<string, string> = {
   client_not_home: "Client not home",
   client_refused: "Client refused to sign",
@@ -137,7 +144,7 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
           {/* Core info */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1.5 text-[11px]">
             <div><span className="text-[var(--tx3)]">Signed by:</span> {signOff.signed_by}</div>
-            <div><span className="text-[var(--tx3)]">Date:</span> {new Date(signOff.signed_at).toLocaleString()}</div>
+            <div><span className="text-[var(--tx3)]">Date:</span> <span className="tabular-nums">{formatSignOffDate(signOff.signed_at)}</span></div>
             <div><span className="text-[var(--tx3)]">Rating:</span> {signOff.satisfaction_rating ? `${signOff.satisfaction_rating}/5` : "-"}</div>
             <div><span className="text-[var(--tx3)]">NPS:</span> {signOff.nps_score != null ? <NpsLabel score={signOff.nps_score} /> : "-"}</div>
             <div><span className="text-[var(--tx3)]">Would recommend:</span> <YesNo value={signOff.would_recommend} /></div>

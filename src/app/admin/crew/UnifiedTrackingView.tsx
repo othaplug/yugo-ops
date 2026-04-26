@@ -1436,14 +1436,14 @@ export default function UnifiedTrackingView({
         </div>
 
         {/* Top-left: connection status */}
-        <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--brd)] shadow-sm max-w-[calc(100vw-96px)] sm:max-w-none overflow-hidden">
+        <div className="absolute top-3 left-3 z-10 flex flex-wrap items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--card)] border border-[var(--brd)] shadow-md max-w-[min(calc(100vw-24px),20rem)] sm:max-w-none overflow-hidden">
           <span
-            className={`w-2 h-2 rounded-full ${eventSourceConnected ? "bg-[var(--grn)]" : "bg-[var(--red)] animate-pulse"}`}
+            className={`w-2.5 h-2.5 rounded-full shrink-0 ${eventSourceConnected ? "bg-[var(--grn)]" : "bg-[var(--red)] animate-pulse"}`}
           />
-          <span className="text-[10px] font-semibold text-[var(--tx2)]">
+          <span className="text-[12px] font-semibold text-[var(--tx)] tabular-nums">
             {eventSourceConnected ? "Live" : "Reconnecting…"}
           </span>
-          <span className="text-[9px] text-[var(--tx3)]">
+          <span className="text-[11px] text-[var(--tx2)] tabular-nums">
             {crewsWithPosition.length} team
             {crewsWithPosition.length !== 1 ? "s" : ""} on map
           </span>
@@ -1483,7 +1483,7 @@ export default function UnifiedTrackingView({
             <button
               type="button"
               onClick={() => setActivePanel("jobs")}
-              className={`flex-1 px-3 py-1.5 sm:py-2.5 text-[10px] font-bold uppercase tracking-[0.06em] transition-colors ${activePanel === "jobs" ? "text-[var(--accent-text)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
+              className={`flex-1 px-3 py-1.5 sm:py-2.5 text-[10px] font-bold uppercase tracking-[0.06em] tabular-nums transition-colors ${activePanel === "jobs" ? "text-[var(--accent-text)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
             >
               {(() => {
                 const STALE_TAB_MS = 90 * 60 * 1000;
@@ -1504,7 +1504,7 @@ export default function UnifiedTrackingView({
             <button
               type="button"
               onClick={() => setActivePanel("teams")}
-              className={`flex-1 px-3 py-1.5 sm:py-2.5 text-[10px] font-bold uppercase tracking-[0.06em] transition-colors ${activePanel === "teams" ? "text-[var(--accent-text)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
+              className={`flex-1 px-3 py-1.5 sm:py-2.5 text-[10px] font-bold uppercase tracking-[0.06em] tabular-nums transition-colors ${activePanel === "teams" ? "text-[var(--accent-text)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
             >
               Teams ({crews.length})
             </button>

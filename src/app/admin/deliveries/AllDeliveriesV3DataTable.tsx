@@ -212,6 +212,7 @@ export function AllDeliveriesV3DataTable({
       },
       {
         id: "partner",
+        shortLabel: "Partner",
         header: "Partner",
         accessor: (d) => d.client_name || "",
         sortable: true,
@@ -225,6 +226,7 @@ export function AllDeliveriesV3DataTable({
       {
         id: "category",
         header: "Category",
+        shortLabel: "Category",
         accessor: (d) => d.category || "delivery",
         sortable: true,
         width: 120,
@@ -250,6 +252,7 @@ export function AllDeliveriesV3DataTable({
       {
         id: "price",
         header: "Price",
+        shortLabel: "Price",
         accessor: (d) => d.total_price ?? 0,
         sortable: true,
         width: 160,
@@ -262,6 +265,7 @@ export function AllDeliveriesV3DataTable({
       {
         id: "status",
         header: "Status",
+        shortLabel: "Status",
         accessor: (d) => d.status || "",
         sortable: true,
         width: 150,

@@ -475,263 +475,271 @@ export function DataTable<Row>({
       <div className="min-w-full w-max">
         {/* Header */}
         <div className="sticky top-0 z-20 w-full border-b border-[var(--yu3-line)] bg-[var(--yu3-bg-surface-sunken)]">
-        <div
-          className="grid items-center h-11"
-          style={{
-            gridTemplateColumns: buildGridTemplate(visibleColumns, {
-              hasSelection: bulkActions.length > 0,
-              hasRowActions: rowActions.length > 0,
-            }),
-          }}
-        >
-          {bulkActions.length > 0 ? (
-            <div className="flex items-center justify-center pl-3 pr-2">
-              <Checkbox
-                indeterminate={someSelected}
-                checked={allSelected}
-                onCheckedChange={toggleAll}
-                aria-label="Select all"
-              />
-            </div>
-          ) : null}
-          {visibleColumns.map((col) => {
-            const sortDir = sort?.columnId === col.id ? sort.direction : null;
-            const sortable = col.sortable !== false;
-            const align = col.align ?? "left";
-            const headerShell = (
-              <div className="inline-flex min-w-0 items-center gap-0.5 shrink-0">
-                {col.filterable ? (
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center h-5 w-5 rounded-[var(--yu3-r-xs)] text-[var(--yu3-ink-faint)] hover:bg-[var(--yu3-bg-surface-sunken)] hover:text-[var(--yu3-ink)]"
-                    aria-label="Filter"
-                  >
-                    <Funnel size={10} weight="bold" />
-                  </button>
-                ) : null}
-                <ColumnMenu
-                  column={col}
-                  sortDir={sortDir}
-                  onSort={(dir) =>
-                    onSortChange?.({ columnId: col.id, direction: dir })
-                  }
-                  onHide={() => setHidden([...Array.from(hidden), col.id])}
-                  onSearch={
-                    onSearchChange
-                      ? () => {
-                          /* focus global search; could focus a per-column input */
-                        }
-                      : undefined
-                  }
-                  onAnalyze={
-                    col.numeric
-                      ? () => {
-                          /* placeholder; wired up by parent in later phase */
-                        }
-                      : undefined
-                  }
+          <div
+            className="grid items-center h-11"
+            style={{
+              gridTemplateColumns: buildGridTemplate(visibleColumns, {
+                hasSelection: bulkActions.length > 0,
+                hasRowActions: rowActions.length > 0,
+              }),
+            }}
+          >
+            {bulkActions.length > 0 ? (
+              <div className="flex items-center justify-center pl-3 pr-2">
+                <Checkbox
+                  indeterminate={someSelected}
+                  checked={allSelected}
+                  onCheckedChange={toggleAll}
+                  aria-label="Select all"
                 />
               </div>
-            );
-            return (
-              <div
-                key={col.id}
-                className={cn(
-                  "group/col flex h-11 min-w-0 px-3",
-                  "relative z-[11] bg-[var(--yu3-bg-surface-sunken)]",
-                  "text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--yu3-ink-muted)]",
-                  align === "right" && "justify-end",
-                  align === "center" && "justify-center",
-                  align === "left" && "justify-start",
-                )}
-              >
-                {align === "right" ? (
-                  <div className="inline-flex min-w-0 max-w-full items-center gap-1">
+            ) : null}
+            {visibleColumns.map((col) => {
+              const sortDir = sort?.columnId === col.id ? sort.direction : null;
+              const sortable = col.sortable !== false;
+              const align = col.align ?? "left";
+              const headerShell = (
+                <div className="inline-flex min-w-0 items-center gap-0.5 shrink-0">
+                  {col.filterable ? (
                     <button
                       type="button"
-                      disabled={!sortable}
-                      onClick={() => handleSortClick(col)}
-                      className={cn(
-                        "inline-flex min-w-0 max-w-full items-center gap-1 select-none",
-                        sortable && "hover:text-[var(--yu3-ink-strong)]",
-                      )}
+                      className="inline-flex items-center justify-center h-5 w-5 rounded-[var(--yu3-r-xs)] text-[var(--yu3-ink-faint)] hover:bg-[var(--yu3-bg-surface-sunken)] hover:text-[var(--yu3-ink)]"
+                      aria-label="Filter"
                     >
-                      <span className="truncate">{col.header}</span>
-                      {sortDir === "asc" ? (
-                        <ArrowUp size={10} weight="bold" className="shrink-0" />
-                      ) : sortDir === "desc" ? (
-                        <ArrowDown
-                          size={10}
-                          weight="bold"
-                          className="shrink-0"
-                        />
-                      ) : null}
+                      <Funnel size={10} weight="bold" />
                     </button>
-                    <div className="opacity-0 group-hover/col:opacity-100 transition-opacity">
-                      {headerShell}
+                  ) : null}
+                  <ColumnMenu
+                    column={col}
+                    sortDir={sortDir}
+                    onSort={(dir) =>
+                      onSortChange?.({ columnId: col.id, direction: dir })
+                    }
+                    onHide={() => setHidden([...Array.from(hidden), col.id])}
+                    onSearch={
+                      onSearchChange
+                        ? () => {
+                            /* focus global search; could focus a per-column input */
+                          }
+                        : undefined
+                    }
+                    onAnalyze={
+                      col.numeric
+                        ? () => {
+                            /* placeholder; wired up by parent in later phase */
+                          }
+                        : undefined
+                    }
+                  />
+                </div>
+              );
+              return (
+                <div
+                  key={col.id}
+                  className={cn(
+                    "group/col flex h-11 min-w-0 px-3",
+                    "relative z-[11] bg-[var(--yu3-bg-surface-sunken)]",
+                    "text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--yu3-ink-muted)]",
+                    align === "right" && "justify-end",
+                    align === "center" && "justify-center",
+                    align === "left" && "justify-start",
+                  )}
+                >
+                  {align === "right" ? (
+                    <div className="inline-flex min-w-0 max-w-full items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={!sortable}
+                        onClick={() => handleSortClick(col)}
+                        className={cn(
+                          "inline-flex min-w-0 max-w-full items-center gap-1 select-none",
+                          sortable && "hover:text-[var(--yu3-ink-strong)]",
+                        )}
+                      >
+                        <span className="truncate">{col.header}</span>
+                        {sortDir === "asc" ? (
+                          <ArrowUp
+                            size={10}
+                            weight="bold"
+                            className="shrink-0"
+                          />
+                        ) : sortDir === "desc" ? (
+                          <ArrowDown
+                            size={10}
+                            weight="bold"
+                            className="shrink-0"
+                          />
+                        ) : null}
+                      </button>
+                      <div className="opacity-0 group-hover/col:opacity-100 transition-opacity">
+                        {headerShell}
+                      </div>
                     </div>
-                  </div>
-                ) : align === "center" ? (
-                  <div className="inline-flex min-w-0 max-w-full items-center justify-center gap-1">
-                    <button
-                      type="button"
-                      disabled={!sortable}
-                      onClick={() => handleSortClick(col)}
-                      className={cn(
-                        "inline-flex min-w-0 items-center justify-center gap-1 select-none",
-                        sortable && "hover:text-[var(--yu3-ink-strong)]",
-                      )}
-                    >
-                      <span className="truncate">{col.header}</span>
-                      {sortDir === "asc" ? (
-                        <ArrowUp size={10} weight="bold" />
-                      ) : sortDir === "desc" ? (
-                        <ArrowDown size={10} weight="bold" />
-                      ) : null}
-                    </button>
-                    <div className="opacity-0 group-hover/col:opacity-100 transition-opacity">
-                      {headerShell}
+                  ) : align === "center" ? (
+                    <div className="inline-flex min-w-0 max-w-full items-center justify-center gap-1">
+                      <button
+                        type="button"
+                        disabled={!sortable}
+                        onClick={() => handleSortClick(col)}
+                        className={cn(
+                          "inline-flex min-w-0 items-center justify-center gap-1 select-none",
+                          sortable && "hover:text-[var(--yu3-ink-strong)]",
+                        )}
+                      >
+                        <span className="truncate">{col.header}</span>
+                        {sortDir === "asc" ? (
+                          <ArrowUp size={10} weight="bold" />
+                        ) : sortDir === "desc" ? (
+                          <ArrowDown size={10} weight="bold" />
+                        ) : null}
+                      </button>
+                      <div className="opacity-0 group-hover/col:opacity-100 transition-opacity">
+                        {headerShell}
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="flex w-full min-w-0 items-center justify-between gap-1">
-                    <button
-                      type="button"
-                      disabled={!sortable}
-                      onClick={() => handleSortClick(col)}
-                      className={cn(
-                        "inline-flex min-w-0 flex-1 items-center gap-1 select-none text-left",
-                        sortable && "hover:text-[var(--yu3-ink-strong)]",
-                      )}
-                    >
-                      <span className="truncate">{col.header}</span>
-                      {sortDir === "asc" ? (
-                        <ArrowUp size={10} weight="bold" className="shrink-0" />
-                      ) : sortDir === "desc" ? (
-                        <ArrowDown
-                          size={10}
-                          weight="bold"
-                          className="shrink-0"
-                        />
-                      ) : null}
-                    </button>
-                    <div className="shrink-0 opacity-0 group-hover/col:opacity-100 transition-opacity">
-                      {headerShell}
+                  ) : (
+                    <div className="flex w-full min-w-0 items-center justify-between gap-1">
+                      <button
+                        type="button"
+                        disabled={!sortable}
+                        onClick={() => handleSortClick(col)}
+                        className={cn(
+                          "inline-flex min-w-0 flex-1 items-center gap-1 select-none text-left",
+                          sortable && "hover:text-[var(--yu3-ink-strong)]",
+                        )}
+                      >
+                        <span className="truncate">{col.header}</span>
+                        {sortDir === "asc" ? (
+                          <ArrowUp
+                            size={10}
+                            weight="bold"
+                            className="shrink-0"
+                          />
+                        ) : sortDir === "desc" ? (
+                          <ArrowDown
+                            size={10}
+                            weight="bold"
+                            className="shrink-0"
+                          />
+                        ) : null}
+                      </button>
+                      <div className="shrink-0 opacity-0 group-hover/col:opacity-100 transition-opacity">
+                        {headerShell}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {rowActions.length > 0 ? (
-            <div className="relative z-[11] w-9 shrink-0 self-stretch bg-[var(--yu3-bg-surface-sunken)]" />
-          ) : null}
+                  )}
+                </div>
+              );
+            })}
+            {rowActions.length > 0 ? (
+              <div className="relative z-[11] w-9 shrink-0 self-stretch bg-[var(--yu3-bg-surface-sunken)]" />
+            ) : null}
+          </div>
         </div>
-      </div>
 
-      {/* Body */}
-      {loading ? (
-        <div>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-2 h-12 px-3 border-b border-[var(--yu3-line-subtle)]"
-            >
-              <Skeleton className="h-3 w-1/4" />
-              <Skeleton className="h-3 w-1/5" />
-              <Skeleton className="h-3 w-1/6" />
-            </div>
-          ))}
-        </div>
-      ) : filteredRows.length === 0 ? (
-        <div className="p-6">
-          {emptyState ?? (
-            <EmptyState
-              title="No records"
-              description="Try adjusting filters, or search with a different keyword."
-            />
-          )}
-        </div>
-      ) : (
-        <div
-          style={{
-            height: totalSize,
-            position: "relative",
-            width: "100%",
-          }}
-        >
-          {virtualItems.map((vi) => {
-            const row = filteredRows[vi.index]!;
-            const id = rowId(row);
-            const selected = selection.has(id);
-            return (
+        {/* Body */}
+        {loading ? (
+          <div>
+            {Array.from({ length: 8 }).map((_, i) => (
               <div
-                key={id}
-                data-selected={selected ? "true" : undefined}
-                className={cn(
-                  "z-0 grid items-center border-b border-[var(--yu3-line-subtle)] last:border-b-0",
-                  "hover:bg-[var(--yu3-bg-surface-subtle)]",
-                  selected && "bg-[var(--yu3-wine-wash)]",
-                  "transition-colors",
-                )}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: rowHeight,
-                  transform: `translateY(${vi.start}px)`,
-                  gridTemplateColumns: buildGridTemplate(visibleColumns, {
-                    hasSelection: bulkActions.length > 0,
-                    hasRowActions: rowActions.length > 0,
-                  }),
-                }}
-                onClick={(e) => {
-                  if ((e.target as HTMLElement).closest("[data-yu3-noclick]"))
-                    return;
-                  onRowClick?.(row);
-                }}
-                role={onRowClick ? "button" : undefined}
+                key={i}
+                className="flex items-center gap-2 h-12 px-3 border-b border-[var(--yu3-line-subtle)]"
               >
-                {bulkActions.length > 0 ? (
-                  <div
-                    className="flex items-center justify-center pl-3 pr-2"
-                    data-yu3-noclick
-                  >
-                    <Checkbox
-                      checked={selected}
-                      onCheckedChange={() => toggleRow(row)}
-                      aria-label={`Select row ${id}`}
-                    />
-                  </div>
-                ) : null}
-                {visibleColumns.map((col) => (
-                  <div
-                    key={col.id}
-                    className={cn(
-                      "min-w-0 px-3 truncate text-[13px] text-[var(--yu3-ink)]",
-                      "flex items-center h-full",
-                      col.numeric && "[font-feature-settings:'tnum'_1]",
-                      col.align === "right" && "justify-end text-right",
-                      col.align === "center" && "justify-center text-center",
-                    )}
-                  >
-                    {col.cell(row)}
-                  </div>
-                ))}
-                {rowActions.length > 0 ? (
-                  <div
-                    className="flex items-center justify-center"
-                    data-yu3-noclick
-                  >
-                    <RowActionMenu actions={rowActions} row={row} />
-                  </div>
-                ) : null}
+                <Skeleton className="h-3 w-1/4" />
+                <Skeleton className="h-3 w-1/5" />
+                <Skeleton className="h-3 w-1/6" />
               </div>
-            );
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        ) : filteredRows.length === 0 ? (
+          <div className="p-6">
+            {emptyState ?? (
+              <EmptyState
+                title="No records"
+                description="Try adjusting filters, or search with a different keyword."
+              />
+            )}
+          </div>
+        ) : (
+          <div
+            style={{
+              height: totalSize,
+              position: "relative",
+              width: "100%",
+            }}
+          >
+            {virtualItems.map((vi) => {
+              const row = filteredRows[vi.index]!;
+              const id = rowId(row);
+              const selected = selection.has(id);
+              return (
+                <div
+                  key={id}
+                  data-selected={selected ? "true" : undefined}
+                  className={cn(
+                    "z-0 grid items-center border-b border-[var(--yu3-line-subtle)] last:border-b-0",
+                    "hover:bg-[var(--yu3-bg-surface-subtle)]",
+                    selected && "bg-[var(--yu3-wine-wash)]",
+                    "transition-colors",
+                  )}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: rowHeight,
+                    transform: `translateY(${vi.start}px)`,
+                    gridTemplateColumns: buildGridTemplate(visibleColumns, {
+                      hasSelection: bulkActions.length > 0,
+                      hasRowActions: rowActions.length > 0,
+                    }),
+                  }}
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest("[data-yu3-noclick]"))
+                      return;
+                    onRowClick?.(row);
+                  }}
+                  role={onRowClick ? "button" : undefined}
+                >
+                  {bulkActions.length > 0 ? (
+                    <div
+                      className="flex items-center justify-center pl-3 pr-2"
+                      data-yu3-noclick
+                    >
+                      <Checkbox
+                        checked={selected}
+                        onCheckedChange={() => toggleRow(row)}
+                        aria-label={`Select row ${id}`}
+                      />
+                    </div>
+                  ) : null}
+                  {visibleColumns.map((col) => (
+                    <div
+                      key={col.id}
+                      className={cn(
+                        "min-w-0 px-3 truncate text-[13px] text-[var(--yu3-ink)]",
+                        "flex items-center h-full",
+                        col.numeric && "[font-feature-settings:'tnum'_1]",
+                        col.align === "right" && "justify-end text-right",
+                        col.align === "center" && "justify-center text-center",
+                      )}
+                    >
+                      {col.cell(row)}
+                    </div>
+                  ))}
+                  {rowActions.length > 0 ? (
+                    <div
+                      className="flex items-center justify-center"
+                      data-yu3-noclick
+                    >
+                      <RowActionMenu actions={rowActions} row={row} />
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useRouter } from "next/navigation"
-import { formatAdminCreatedAt } from "@/lib/date-format"
-import { organizationTypeLabel } from "@/lib/partner-type"
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { formatAdminCreatedAt } from "@/lib/date-format";
+import { organizationTypeLabel } from "@/lib/partner-type";
 
-import { PageHeader } from "@/design-system/admin/layout"
+import { PageHeader } from "@/design-system/admin/layout";
 import {
   Button,
   StatusPill,
@@ -13,40 +13,40 @@ import {
   Tabs,
   TabsList,
   TabsTrigger,
-} from "@/design-system/admin/primitives"
+} from "@/design-system/admin/primitives";
 import {
   DataTable,
   type ColumnDef,
   type ColumnSort,
   type RowAction,
-} from "@/design-system/admin/table"
-import { KpiStrip } from "@/design-system/admin/dashboard"
-import { Sparkline } from "@/design-system/admin/primitives"
-import { Plus, Pulse } from "@phosphor-icons/react"
+} from "@/design-system/admin/table";
+import { KpiStrip } from "@/design-system/admin/dashboard";
+import { Sparkline } from "@/design-system/admin/primitives";
+import { Plus, Pulse } from "@phosphor-icons/react";
 
-const ACTIVITY_WEEKS = 12
-const emptyActivitySeries = () => new Array(ACTIVITY_WEEKS).fill(0)
+const ACTIVITY_WEEKS = 12;
+const emptyActivitySeries = () => new Array(ACTIVITY_WEEKS).fill(0);
 
 interface Partner {
-  id: string
-  name: string
-  type: string
-  contact_name: string | null
-  email: string | null
-  phone: string | null
-  status: string
-  created_at: string
+  id: string;
+  name: string;
+  type: string;
+  contact_name: string | null;
+  email: string | null;
+  phone: string | null;
+  status: string;
+  created_at: string;
   /** Last 12 weeks, oldest first: combined moves + deliveries per week. */
-  activity_weekly?: number[]
+  activity_weekly?: number[];
 }
 
 interface RealtorRow {
-  id: string
-  agent_name: string
-  email: string | null
-  brokerage: string | null
-  referral_count: number
-  created_at: string
+  id: string;
+  agent_name: string;
+  email: string | null;
+  brokerage: string | null;
+  referral_count: number;
+  created_at: string;
 }
 
 const TAB_KEYS = [
@@ -58,7 +58,7 @@ const TAB_KEYS = [
   "property_management",
   "developer_portfolio",
   "referral",
-] as const
+] as const;
 
 const TAB_LABELS: Record<string, string> = {
   all: "All",
@@ -69,7 +69,7 @@ const TAB_LABELS: Record<string, string> = {
   property_management: "Property Mgmt",
   developer_portfolio: "Developers",
   referral: "Referral",
-}
+};
 
 const TAB_TYPE_MAP: Record<string, string[]> = {
   furniture_retailer: [
@@ -88,87 +88,92 @@ const TAB_TYPE_MAP: Record<string, string[]> = {
   ],
   developer_portfolio: ["developer_builder"],
   referral: ["realtor", "property_manager", "developer"],
-}
+};
 
 function partnerStatusTone(
   s: string,
 ): React.ComponentProps<typeof StatusPill>["tone"] {
-  const k = (s || "active").toLowerCase()
-  if (k === "active") return "success"
-  if (k.includes("pending")) return "warning"
-  if (k === "suspended") return "danger"
-  return "neutral"
+  const k = (s || "active").toLowerCase();
+  if (k === "active") return "success";
+  if (k.includes("pending")) return "warning";
+  if (k === "suspended") return "danger";
+  return "neutral";
 }
 
 export default function PartnersV3Client() {
-  const router = useRouter()
-  const [partners, setPartners] = React.useState<Partner[]>([])
-  const [realtors, setRealtors] = React.useState<RealtorRow[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const [activeTab, setActiveTab] = React.useState<string>("all")
-  const [search, setSearch] = React.useState("")
+  const router = useRouter();
+  const [partners, setPartners] = React.useState<Partner[]>([]);
+  const [realtors, setRealtors] = React.useState<RealtorRow[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [activeTab, setActiveTab] = React.useState<string>("all");
+  const [search, setSearch] = React.useState("");
   const [sort, setSort] = React.useState<ColumnSort | null>({
     columnId: "created_at",
     direction: "desc",
-  })
-  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
+  });
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
   const [healthStats, setHealthStats] = React.useState<{
-    at_risk: number
-    cold: number
-  } | null>(null)
+    at_risk: number;
+    cold: number;
+  } | null>(null);
 
   React.useEffect(() => {
     fetch("/api/admin/partners/health")
       .then((r) => r.json())
       .then((d) => {
         if (d.stats)
-          setHealthStats({ at_risk: d.stats.at_risk, cold: d.stats.cold })
+          setHealthStats({ at_risk: d.stats.at_risk, cold: d.stats.cold });
       })
-      .catch(() => null)
-  }, [])
+      .catch(() => null);
+  }, []);
 
   React.useEffect(() => {
-    ;(async () => {
+    (async () => {
       try {
         const [pRes, rRes] = await Promise.all([
           fetch("/api/admin/partners/list"),
           fetch("/api/admin/realtors-list"),
-        ])
-        const pJson = await pRes.json().catch(() => ({}))
-        const rJson = await rRes.json().catch(() => ({}))
-        setPartners(Array.isArray(pJson.partners) ? pJson.partners : [])
-        setRealtors(Array.isArray(rJson.realtors) ? rJson.realtors : [])
+        ]);
+        const pJson = await pRes.json().catch(() => ({}));
+        const rJson = await rRes.json().catch(() => ({}));
+        setPartners(Array.isArray(pJson.partners) ? pJson.partners : []);
+        setRealtors(Array.isArray(rJson.realtors) ? rJson.realtors : []);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    })()
-  }, [])
+    })();
+  }, []);
 
   const filteredPartners = React.useMemo(() => {
-    if (activeTab === "all") return partners
-    const types = TAB_TYPE_MAP[activeTab]
-    if (!types) return partners.filter((p) => p.type === activeTab)
-    return partners.filter((p) => types.includes(p.type))
-  }, [partners, activeTab])
+    if (activeTab === "all") return partners;
+    const types = TAB_TYPE_MAP[activeTab];
+    if (!types) return partners.filter((p) => p.type === activeTab);
+    return partners.filter((p) => types.includes(p.type));
+  }, [partners, activeTab]);
 
   const counts = React.useMemo(() => {
-    const c: Record<string, number> = { all: partners.length, referral: realtors.length }
+    const c: Record<string, number> = {
+      all: partners.length,
+      referral: realtors.length,
+    };
     for (const k of TAB_KEYS) {
-      if (k === "all" || k === "referral") continue
-      const types = TAB_TYPE_MAP[k]
-      c[k] = types ? partners.filter((p) => types.includes(p.type)).length : 0
+      if (k === "all" || k === "referral") continue;
+      const types = TAB_TYPE_MAP[k];
+      c[k] = types ? partners.filter((p) => types.includes(p.type)).length : 0;
     }
-    return c
-  }, [partners, realtors.length])
+    return c;
+  }, [partners, realtors.length]);
 
   const kpis = React.useMemo(() => {
-    const active = partners.filter((p) => (p.status || "active") === "active").length
+    const active = partners.filter(
+      (p) => (p.status || "active") === "active",
+    ).length;
     const recent = partners.filter((p) => {
-      const d = new Date(p.created_at)
-      const cutoff = new Date()
-      cutoff.setDate(cutoff.getDate() - 90)
-      return d > cutoff
-    }).length
+      const d = new Date(p.created_at);
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 90);
+      return d > cutoff;
+    }).length;
     return [
       {
         id: "total",
@@ -195,13 +200,14 @@ export default function PartnersV3Client() {
           ? `${healthStats.at_risk} at risk · ${healthStats.cold} cold`
           : undefined,
       },
-    ]
-  }, [partners, healthStats])
+    ];
+  }, [partners, healthStats]);
 
   const partnerColumns = React.useMemo<ColumnDef<Partner>[]>(
     () => [
       {
         id: "name",
+        shortLabel: "Company",
         header: "Company",
         accessor: (p) => p.name,
         sortable: true,
@@ -223,6 +229,7 @@ export default function PartnersV3Client() {
       },
       {
         id: "contact",
+        shortLabel: "Contact",
         header: "Contact",
         accessor: (p) => p.contact_name ?? "",
         searchable: true,
@@ -250,16 +257,16 @@ export default function PartnersV3Client() {
         sortable: true,
         numeric: true,
         accessor: (p) => {
-          const s = p.activity_weekly
-          if (!s?.length) return 0
-          return s.reduce((a, b) => a + b, 0)
+          const s = p.activity_weekly;
+          if (!s?.length) return 0;
+          return s.reduce((a, b) => a + b, 0);
         },
         cell: (p) => {
           const series =
             p.activity_weekly && p.activity_weekly.length === ACTIVITY_WEEKS
               ? p.activity_weekly
-              : emptyActivitySeries()
-          const total = series.reduce((a, b) => a + b, 0)
+              : emptyActivitySeries();
+          const total = series.reduce((a, b) => a + b, 0);
           return (
             <div className="flex items-center justify-center py-0.5 min-w-0">
               <Sparkline
@@ -275,11 +282,12 @@ export default function PartnersV3Client() {
                 }
               />
             </div>
-          )
+          );
         },
       },
       {
         id: "status",
+        shortLabel: "Status",
         header: "Status",
         accessor: (p) => p.status,
         sortable: true,
@@ -292,6 +300,7 @@ export default function PartnersV3Client() {
       },
       {
         id: "created_at",
+        shortLabel: "Joined",
         header: "Joined",
         accessor: (p) => p.created_at,
         sortable: true,
@@ -304,12 +313,13 @@ export default function PartnersV3Client() {
       },
     ],
     [],
-  )
+  );
 
   const realtorColumns = React.useMemo<ColumnDef<RealtorRow>[]>(
     () => [
       {
         id: "agent",
+        shortLabel: "Agent",
         header: "Agent",
         accessor: (r) => r.agent_name,
         sortable: true,
@@ -333,6 +343,7 @@ export default function PartnersV3Client() {
       },
       {
         id: "email",
+        shortLabel: "Email",
         header: "Email",
         accessor: (r) => r.email ?? "",
         width: 200,
@@ -344,6 +355,7 @@ export default function PartnersV3Client() {
       },
       {
         id: "referrals",
+        shortLabel: "Referrals",
         header: "Referrals",
         accessor: (r) => r.referral_count,
         align: "right",
@@ -358,6 +370,7 @@ export default function PartnersV3Client() {
       },
       {
         id: "created_at",
+        shortLabel: "Joined",
         header: "Joined",
         accessor: (r) => r.created_at,
         sortable: true,
@@ -370,7 +383,7 @@ export default function PartnersV3Client() {
       },
     ],
     [],
-  )
+  );
 
   const partnerActions = React.useMemo<RowAction<Partner>[]>(
     () => [
@@ -381,7 +394,7 @@ export default function PartnersV3Client() {
       },
     ],
     [router],
-  )
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -411,7 +424,7 @@ export default function PartnersV3Client() {
       <KpiStrip tiles={kpis} columns={4} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="w-full max-w-full flex-wrap justify-start gap-1">
           {TAB_KEYS.map((k) => (
             <TabsTrigger key={k} value={k}>
               <span>{TAB_LABELS[k]}</span>
@@ -452,5 +465,5 @@ export default function PartnersV3Client() {
         />
       )}
     </div>
-  )
+  );
 }

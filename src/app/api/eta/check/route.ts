@@ -3,8 +3,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getFeatureConfig } from "@/lib/platform-settings";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { buildETAMessage } from "@/lib/sms/etaMessages";
-import { getEmailBaseUrl } from "@/lib/email-base-url";
-import { signTrackToken } from "@/lib/track-token";
+import {
+  buildPublicDeliveryTrackUrl,
+  buildPublicMoveTrackUrl,
+} from "@/lib/notifications/public-track-url";
 import { notifyAllAdmins, createPartnerNotification } from "@/lib/notifications";
 
 const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
@@ -71,13 +73,12 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
   const admin = createAdminClient();
   const cfg = await getFeatureConfig(["sms_eta_enabled"]);
   const smsEnabled = cfg.sms_eta_enabled === "true";
-  const baseUrl = getEmailBaseUrl();
   const results: unknown[] = [];
 
   const { data: activeMoves } = await admin
     .from("moves")
     .select(
-      "id, client_name, client_phone, from_address, to_address, to_lat, to_lng, tracking_code, tier_selected, dedicated_coordinator, crew_id, scheduled_date, scheduled_end, time_slot"
+      "id, move_code, client_name, client_phone, from_address, to_address, to_lat, to_lng, tier_selected, dedicated_coordinator, crew_id, scheduled_date, scheduled_end, time_slot"
     )
     .eq("eta_tracking_active", true)
     .in("status", ["in_progress", "en_route"]);
@@ -85,7 +86,7 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
   const { data: activeDeliveries } = await admin
     .from("deliveries")
     .select(
-      "id, end_customer_name, end_customer_phone, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, stage, tracking_code, organization_id, crew_id, scheduled_date, scheduled_end, delivery_window, time_slot"
+      "id, delivery_number, end_customer_name, end_customer_phone, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, stage, organization_id, crew_id, scheduled_date, scheduled_end, delivery_window, time_slot"
     )
     .eq("eta_tracking_active", true)
     .in("status", ["in_progress", "en_route"]);
@@ -123,7 +124,10 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
       })
       .eq("id", move.id);
 
-    const trackingLink = `${baseUrl}/track/move/${move.tracking_code ?? move.id}?token=${signTrackToken("move", move.id)}`;
+    const trackingLink = buildPublicMoveTrackUrl({
+      id: move.id,
+      move_code: (move as { move_code?: string | null }).move_code,
+    });
 
     if (smsEnabled && etaMinutes <= 15 && etaMinutes > 0) {
       const { data: existing15 } = await admin
@@ -210,7 +214,7 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
           title: "Crew running behind schedule",
           body: `${move.client_name} · ETA ${etaMinutes} min (10+ mins behind)`,
           icon: "alertTriangle",
-          link: `/admin/moves/${move.tracking_code ?? move.id}`,
+          link: `/admin/moves/${(move as { move_code?: string | null }).move_code ?? move.id}`,
           sourceType: "move",
           sourceId: move.id,
           eventSlug: "crew_running_late",
@@ -363,7 +367,11 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
       })
       .eq("id", delivery.id);
 
-    const trackingLink = `${baseUrl}/track/delivery/${encodeURIComponent(delivery.tracking_code || delivery.id)}?token=${signTrackToken("delivery", delivery.id)}`;
+    const trackingLink = buildPublicDeliveryTrackUrl({
+      id: delivery.id,
+      delivery_number: (delivery as { delivery_number?: string | null })
+        .delivery_number,
+    });
     const partnerName = org?.name || "";
 
     if (smsEnabled && etaMinutes <= 15 && etaMinutes > 0) {
@@ -440,7 +448,7 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
           title: "Crew running behind schedule",
           body: `${delivery.end_customer_name || org?.name || "Delivery"} · ETA ${etaMinutes} min (10+ mins behind)`,
           icon: "alertTriangle",
-          link: `/admin/deliveries/${delivery.tracking_code ?? delivery.id}`,
+          link: `/admin/deliveries/${(delivery as { delivery_number?: string | null }).delivery_number ?? delivery.id}`,
           sourceType: "delivery",
           sourceId: delivery.id,
           eventSlug: "crew_running_late",

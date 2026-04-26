@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Lock } from "@phosphor-icons/react";
+import { cn } from "@/design-system/admin/lib/cn";
 
 type NavItem = {
   href: string;
@@ -18,11 +19,8 @@ type Props = {
 };
 
 /**
- * PR 2 settings hub navigation. Renders three role-gated groups
- * (Workspace / Operations / Platform) plus an always-visible Audit log
- * link. The Operations and Platform items redirect to today's real pages
- * (legacy /admin/platform tabs and standalone admin routes); later PRs
- * will move the content onto the new route tree.
+ * Settings hub navigation: Workspace / Operations / Platform plus Change log.
+ * Styling uses Yu3 tokens to match the overview cards.
  */
 export default function SettingsHubNav({
   isPartner,
@@ -33,10 +31,16 @@ export default function SettingsHubNav({
   const searchParams = useSearchParams();
   const platformTab = searchParams?.get("tab") || "pricing";
 
+  const hubPath =
+    pathname === "/admin/settings" || pathname === "/admin/settings/";
+  if (hubPath) {
+    return null;
+  }
+
   const workspaceItems: NavItem[] = isPartner
-    ? [{ href: "/admin/settings/personal", label: "Profile" }]
+    ? [{ href: "/admin/settings/personal", label: "Personal & profile" }]
     : [
-        { href: "/admin/settings/personal", label: "Profile" },
+        { href: "/admin/settings/personal", label: "Personal & profile" },
         { href: "/admin/settings/security", label: "Security" },
         { href: "/admin/settings/appearance", label: "Appearance" },
         { href: "/admin/settings/notifications", label: "Notifications" },
@@ -52,21 +56,10 @@ export default function SettingsHubNav({
   ];
 
   const platformItems: NavItem[] = [
-    { href: "/admin/buildings", label: "Buildings" },
-    {
-      href: "/admin/settings/platform/feature-flags",
-      label: "Feature flags",
-      platformTab: "app",
-    },
     {
       href: "/admin/settings/platform/integrations",
       label: "Integrations",
       platformTab: "app",
-    },
-    {
-      href: "/admin/settings/platform/developer",
-      label: "Developer",
-      platformTab: "devices",
     },
   ];
 
@@ -80,9 +73,13 @@ export default function SettingsHubNav({
   };
 
   const linkClass = (active: boolean) =>
-    active
-      ? "bg-[var(--color-wine-subtle)] text-[var(--color-text-primary)] font-semibold"
-      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)]";
+    cn(
+      "rounded-[var(--yu3-r-md)] px-3 py-2 text-[13px] font-medium transition-colors outline-none",
+      "focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--yu3-bg-canvas)]",
+      active
+        ? "bg-[var(--yu3-wine-wash)] text-[var(--yu3-wine)] font-semibold"
+        : "text-[var(--yu3-ink-muted)] hover:bg-[var(--yu3-bg-surface-sunken)] hover:text-[var(--yu3-ink)]",
+    );
 
   const renderGroup = (
     label: string,
@@ -91,12 +88,16 @@ export default function SettingsHubNav({
   ) => (
     <div className="space-y-1">
       <div className="flex items-center gap-1 px-2 pb-1 pt-2 first:pt-0">
-        <span className="t-label text-[var(--color-text-tertiary)]">{label}</span>
+        <span
+          className="text-[10px] font-bold uppercase tracking-[var(--yu3-tracking-eyebrow)] text-[var(--yu3-ink-faint)] leading-none"
+        >
+          {label}
+        </span>
         {opts?.locked && (
           <Lock
             size={11}
             weight="bold"
-            className="text-[var(--color-text-tertiary)] shrink-0"
+            className="text-[var(--yu3-ink-faint)] shrink-0"
             aria-hidden
           />
         )}
@@ -108,7 +109,7 @@ export default function SettingsHubNav({
             <Link
               key={item.href}
               href={item.href}
-              className={`rounded-lg px-3 py-2 text-[13px] transition-colors ${linkClass(active)}`}
+              className={linkClass(active)}
             >
               {item.label}
             </Link>
@@ -122,21 +123,28 @@ export default function SettingsHubNav({
     pathname.startsWith("/admin/settings/audit-log") ||
     pathname.startsWith("/admin/audit-log");
 
+  const navStickyClass =
+    "hidden sm:flex flex-col w-[240px] shrink-0 self-start sticky z-[var(--yu3-z-rail)] pr-3 border-r border-[var(--yu3-line-subtle)] min-h-[16rem]";
+  const stickyTopStyle = {
+    top: "var(--yu3-sticky-subnav-offset)",
+  } as const;
+
   return (
     <>
       <nav
         aria-label="Settings sections"
-        className="hidden sm:flex flex-col w-[240px] shrink-0 sticky top-[4.5rem] pr-3 border-r border-[var(--brd)]/30 min-h-[16rem]"
+        className={navStickyClass}
+        style={stickyTopStyle}
       >
         {renderGroup("Workspace", workspaceItems)}
         {showOperations && renderGroup("Operations", operationsItems)}
         {showPlatform && renderGroup("Platform", platformItems, { locked: true })}
-        <div className="mt-auto pt-6 border-t border-[var(--brd)]/25">
+        <div className="mt-auto pt-6 border-t border-[var(--yu3-line-subtle)]">
           <Link
             href="/admin/settings/audit-log"
-            className={`block rounded-lg px-3 py-2 text-[13px] transition-colors ${linkClass(auditActive)}`}
+            className={linkClass(auditActive)}
           >
-            Audit log
+            Change log
           </Link>
         </div>
       </nav>
@@ -147,9 +155,12 @@ export default function SettingsHubNav({
         {showPlatform && renderGroup("Platform", platformItems, { locked: true })}
         <Link
           href="/admin/settings/audit-log"
-          className={`block rounded-lg px-3 py-2 text-[13px] border border-[var(--brd)]/40 ${linkClass(auditActive)}`}
+          className={cn(
+            linkClass(auditActive),
+            "border border-[var(--yu3-line-subtle)]",
+          )}
         >
-          Audit log
+          Change log
         </Link>
       </div>
     </>

@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getQuoteIdPrefix, quoteNumericSuffixForHubSpot } from "@/lib/quotes/quote-id";
 import { resolveHubSpotPipelineId } from "@/lib/hubspot/hubspot-pipeline";
 import { resolveHubSpotStageInternalId } from "@/lib/hubspot/resolve-hubspot-stage-id";
+import { findExistingOpenDealForContactEmail } from "@/lib/hubspot/find-existing-open-deal";
+import type { HubSpotAutoCreateDealResult } from "@/lib/hubspot/auto-create-deal-types";
 
 const HS_CONTACTS_SEARCH = "https://api.hubapi.com/crm/v3/objects/contacts/search";
 const HS_CONTACTS = "https://api.hubapi.com/crm/v3/objects/contacts";
@@ -94,6 +96,7 @@ export async function findOrCreateHubSpotContact(
 /**
  * After a quote is sent from Yugo+ without a linked HubSpot deal, create a deal
  * and associate the client contact. Best-effort — returns null on failure.
+ * When another open deal exists for the same email, flags the quote row and returns duplicate (no POST).
  */
 export async function autoCreateHubSpotDealForSentQuote(opts: {
   sb: SupabaseClient;
@@ -104,14 +107,50 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
   firstName: string;
   lastName: string;
   clientPhone?: string | null;
-}): Promise<{ dealId: string } | null> {
+  /** Skip open-deal check (e.g. coordinator chose "Create new deal anyway"). */
+  skipDuplicateCheck?: boolean;
+}): Promise<HubSpotAutoCreateDealResult> {
   const token = process.env.HUBSPOT_ACCESS_TOKEN;
   if (!token) {
     console.error("[HubSpot] HUBSPOT_ACCESS_TOKEN is not set. Cannot create deals.")
     return null
   }
 
-  const { sb, quote, quoteIdText, quoteUrl, clientEmail, firstName, lastName, clientPhone } = opts;
+  const {
+    sb,
+    quote,
+    quoteIdText,
+    quoteUrl,
+    clientEmail,
+    firstName,
+    lastName,
+    clientPhone,
+    skipDuplicateCheck,
+  } = opts;
+
+  if (!skipDuplicateCheck) {
+    const existing = await findExistingOpenDealForContactEmail(sb, token, clientEmail);
+    if (existing) {
+      const quotePk = String(quote.id ?? "").trim();
+      if (quotePk) {
+        await sb
+          .from("quotes")
+          .update({
+            hubspot_duplicate_detected: true,
+            hubspot_existing_deal_id: existing.dealId,
+            hubspot_existing_deal_name: existing.dealName,
+            hubspot_existing_deal_stage: existing.dealStageId,
+          })
+          .eq("id", quotePk);
+      }
+      return {
+        status: "duplicate",
+        existingDealId: existing.dealId,
+        existingDealName: existing.dealName,
+        existingDealStageId: existing.dealStageId,
+      };
+    }
+  }
 
   const pipelineId = await resolveHubSpotPipelineId(sb);
   if (!pipelineId) {
@@ -199,5 +238,18 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
   const dealId = dealData.id;
   if (!dealId) return null;
 
-  return { dealId };
+  const quotePk = String(quote.id ?? "").trim();
+  if (quotePk) {
+    await sb
+      .from("quotes")
+      .update({
+        hubspot_duplicate_detected: false,
+        hubspot_existing_deal_id: null,
+        hubspot_existing_deal_name: null,
+        hubspot_existing_deal_stage: null,
+      })
+      .eq("id", quotePk);
+  }
+
+  return { status: "created", dealId };
 }

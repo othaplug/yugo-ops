@@ -36,6 +36,7 @@ import {
 } from "@/lib/display-date-format";
 import { DEFAULT_GOOGLE_REVIEW_COUNT_LABEL } from "@/lib/google-review-url";
 import { QuotesFollowupAutomationHint } from "@/components/admin/AdminContextHints";
+import { cn } from "@/design-system/admin/lib/cn";
 
 const TABS = [
   { id: "pricing",        label: "Pricing",        desc: "Rates & service fees" },
@@ -1772,19 +1773,26 @@ export default function PlatformSettingsClient({
   });
 
   const platformSettingsLinkClass = (active: boolean) =>
-    active
-      ? "bg-[var(--color-wine-subtle)] text-[var(--color-text-primary)] font-semibold"
-      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)]"
+    cn(
+      "rounded-[var(--yu3-r-md)] px-3 py-2 text-[13px] font-medium transition-colors outline-none",
+      "focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--yu3-bg-canvas)]",
+      active
+        ? "bg-[var(--yu3-wine-wash)] text-[var(--yu3-wine)] font-semibold"
+        : "text-[var(--yu3-ink-muted)] hover:bg-[var(--yu3-bg-surface-sunken)] hover:text-[var(--yu3-ink)]",
+    );
 
   return (
     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-5 sm:items-start min-h-0">
       <nav
         aria-label="Platform settings sections"
-        className="hidden sm:flex flex-col w-[240px] shrink-0 sticky top-[4.5rem] pr-3 border-r border-[var(--brd)]/30 min-h-[16rem]"
+        className="hidden sm:flex flex-col w-[240px] shrink-0 self-start sticky z-[var(--yu3-z-rail)] pr-3 border-r border-[var(--yu3-line-subtle)] min-h-[16rem]"
+        style={{ top: "var(--yu3-sticky-subnav-offset)" }}
       >
         <div className="space-y-1">
           <div className="px-2 pb-1 pt-0">
-            <span className="t-label text-[var(--color-text-tertiary)]">Sections</span>
+            <span className="text-[10px] font-bold uppercase tracking-[var(--yu3-tracking-eyebrow)] text-[var(--yu3-ink-faint)] leading-none">
+              Sections
+            </span>
           </div>
           <div className="flex flex-col gap-0.5">
             {visibleTabs.map((t) => {
@@ -1794,7 +1802,7 @@ export default function PlatformSettingsClient({
                   key={t.id}
                   id={`tab-${t.id}`}
                   href={`/admin/platform?tab=${t.id}`}
-                  className={`rounded-lg px-3 py-2 text-[13px] transition-colors ${platformSettingsLinkClass(active)}`}
+                  className={platformSettingsLinkClass(active)}
                 >
                   {PLATFORM_SIDE_NAV_LABEL[t.id]}
                 </Link>
@@ -1811,7 +1819,10 @@ export default function PlatformSettingsClient({
             <Link
               key={t.id}
               href={`/admin/platform?tab=${t.id}`}
-              className={`whitespace-nowrap rounded-lg px-3 py-2 text-[13px] transition-colors shrink-0 ${platformSettingsLinkClass(active)}`}
+              className={cn(
+                platformSettingsLinkClass(active),
+                "whitespace-nowrap shrink-0",
+              )}
             >
               {PLATFORM_SIDE_NAV_LABEL[t.id]}
             </Link>

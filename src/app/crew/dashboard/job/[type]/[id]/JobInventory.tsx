@@ -7,13 +7,7 @@ import {
   Minus as PhMinus,
 } from "@phosphor-icons/react";
 import { useToast } from "@/app/admin/components/Toast";
-import { WINE } from "@/app/quote/[quoteId]/quote-shared";
-
-const MUTED = "#5A6B5E";
-const INK = "#1a1f1b";
-const CREAM_CARD = "#FFFBF7";
-const CREAM_BAND = "#FAF7F2";
-const FOREST = "#2C3E2D";
+import { cn } from "@/lib/utils";
 
 interface InventoryRoom {
   room: string;
@@ -345,10 +339,7 @@ export default function JobInventory({
   return (
     <div className="mt-6">
       <div className="flex items-start justify-between gap-3 mb-4">
-        <h2
-          className="inline-flex flex-wrap items-center gap-x-1.5 font-hero text-[20px] sm:text-[22px] font-normal leading-tight tracking-tight pr-2"
-          style={{ color: WINE }}
-        >
+        <h2 className="inline-flex flex-wrap items-center gap-x-1.5 pr-2 font-hero text-[20px] font-normal leading-tight tracking-tight text-[var(--yu3-wine)] sm:text-[22px]">
           {isCompleted ? (
             <>
               <span>Inventory Verified</span>
@@ -363,17 +354,11 @@ export default function JobInventory({
                 : "Inventory"}
         </h2>
         {isCompleted && verifiableCount > 0 ? (
-          <span
-            className="text-[11px] font-medium shrink-0 text-right leading-snug max-w-[140px] [font-family:var(--font-body)]"
-            style={{ color: MUTED }}
-          >
+          <span className="max-w-[140px] shrink-0 text-right text-[11px] font-medium leading-snug text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
             {completedFullyVerifiedCount} of {verifiableCount} verified at both
           </span>
         ) : isCompleted && isRoomBasedVerification ? (
-          <span
-            className="text-[11px] font-medium shrink-0 text-right [font-family:var(--font-body)]"
-            style={{ color: MUTED }}
-          >
+          <span className="shrink-0 text-right text-[11px] font-medium text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
             {
               roomsToConfirm.filter(
                 (r) =>
@@ -384,17 +369,11 @@ export default function JobInventory({
             of {roomsToConfirm.length} rooms
           </span>
         ) : isRoomBasedVerification ? (
-          <span
-            className="text-[11px] font-medium shrink-0 text-right [font-family:var(--font-body)]"
-            style={{ color: MUTED }}
-          >
+          <span className="shrink-0 text-right text-[11px] font-medium text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
             {verifiedRooms.size} of {roomsToConfirm.length} rooms
           </span>
         ) : allItemsWithId.length > 0 ? (
-          <span
-            className="text-[11px] font-medium shrink-0 text-right [font-family:var(--font-body)]"
-            style={{ color: MUTED }}
-          >
+          <span className="shrink-0 text-right text-[11px] font-medium text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
             {verifiedCount} of{" "}
             {Math.max(verifiableCount, allItemsWithId.length)} verified
           </span>
@@ -420,19 +399,20 @@ export default function JobInventory({
                     !readOnly && !isCompleted && toggleRoomVerify(room)
                   }
                   disabled={readOnly}
-                  className="rounded-sm border-[#5C1A33]/30 accent-[#5C1A33] focus:ring-[#5C1A33]/40"
+                  className="rounded-sm border-[var(--yu3-wine)]/30 accent-[var(--yu3-wine)] focus:ring-[var(--yu3-wine)]/40"
                 />
-                <span
-                  className="text-[13px] flex-1 [font-family:var(--font-body)]"
-                  style={{ color: INK }}
-                >
+                <span className="flex-1 text-[13px] text-[var(--yu3-ink)] [font-family:var(--font-body)]">
                   {room}
                 </span>
                 {isCompleted && (
                   <span className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-wide [font-family:var(--font-body)]">
                     <span
-                      className="inline-flex items-center gap-1"
-                      style={{ color: verifiedAtPickup ? FOREST : MUTED }}
+                      className={cn(
+                        "inline-flex items-center gap-1",
+                        verifiedAtPickup
+                          ? "text-[var(--yu3-forest)]"
+                          : "text-[var(--yu3-ink-muted)]",
+                      )}
                     >
                       Pickup
                       {verifiedAtPickup ? (
@@ -442,8 +422,12 @@ export default function JobInventory({
                       )}
                     </span>
                     <span
-                      className="inline-flex items-center gap-1"
-                      style={{ color: deliveryDone ? FOREST : MUTED }}
+                      className={cn(
+                        "inline-flex items-center gap-1",
+                        deliveryDone
+                          ? "text-[var(--yu3-forest)]"
+                          : "text-[var(--yu3-ink-muted)]",
+                      )}
                     >
                       Delivery
                       {deliveryDone ? (
@@ -465,8 +449,7 @@ export default function JobInventory({
                 if (r?.trim() && !customRooms.includes(r.trim()))
                   setCustomRooms((prev) => [...prev, r.trim()]);
               }}
-              className="w-full py-2 border border-dashed text-[11px] font-semibold uppercase tracking-wide transition-colors [font-family:var(--font-body)]"
-              style={{ borderColor: "rgba(92, 26, 51, 0.22)", color: MUTED }}
+              className="w-full border border-dashed border-[var(--yu3-wine)]/25 py-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--yu3-ink-muted)] transition-colors [font-family:var(--font-body)] hover:border-[var(--yu3-wine)]/40"
             >
               + Add room
             </button>
@@ -486,8 +469,7 @@ export default function JobInventory({
             return (
               <div
                 key={r.room}
-                className="mb-3 overflow-hidden"
-                style={{ backgroundColor: CREAM_CARD }}
+                className="mb-3 overflow-hidden rounded-[12px] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)]"
               >
                 <button
                   type="button"
@@ -499,25 +481,17 @@ export default function JobInventory({
                       return next;
                     })
                   }
-                  className="crew-job-flat w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors cursor-pointer group border-b border-[#2C3E2D]/8"
-                  style={{ backgroundColor: CREAM_BAND }}
+                  className="crew-job-flat group flex w-full cursor-pointer items-center justify-between gap-2 border-b border-[var(--yu3-forest)]/10 bg-[var(--yu3-bg-surface-sunken)]/60 px-3 py-2.5 text-left transition-colors"
                 >
-                  <span
-                    className="text-[9px] font-bold uppercase tracking-[0.14em] transition-colors group-hover:opacity-90 [font-family:var(--font-body)] leading-none"
-                    style={{ color: WINE }}
-                  >
+                  <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--yu3-wine)] transition-colors group-hover:opacity-90 [font-family:var(--font-body)] leading-none">
                     {r.room}
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span
-                      className="text-[10px] font-medium [font-family:var(--font-body)]"
-                      style={{ color: MUTED }}
-                    >
+                    <span className="text-[10px] font-medium text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
                       {items.length} item{items.length !== 1 ? "s" : ""}
                     </span>
                     <ChevronDown
-                      className={`w-[14px] h-[14px] transition-transform duration-200 ease-out shrink-0 ${expanded ? "rotate-0" : "-rotate-90"}`}
-                      style={{ color: MUTED }}
+                      className={`h-[14px] w-[14px] shrink-0 text-[var(--yu3-ink-muted)] transition-transform duration-200 ease-out ${expanded ? "rotate-0" : "-rotate-90"}`}
                       aria-hidden
                     />
                   </span>
@@ -567,27 +541,23 @@ export default function JobInventory({
                                   : void toggleLineItemVerify(r.room, rawName);
                               }}
                               disabled={readOnly}
-                              className="rounded-sm border-[#5C1A33]/30 accent-[#5C1A33] focus:ring-[#5C1A33]/40"
+                              className="rounded-sm border-[var(--yu3-wine)]/30 accent-[var(--yu3-wine)] focus:ring-[var(--yu3-wine)]/40"
                             />
-                            <span
-                              className="text-[13px] flex-1 [font-family:var(--font-body)]"
-                              style={{ color: INK }}
-                            >
+                            <span className="flex-1 text-[13px] text-[var(--yu3-ink)] [font-family:var(--font-body)]">
                               {rawName}
                             </span>
-                            <span
-                              className="text-[11px] tabular-nums [font-family:var(--font-body)]"
-                              style={{ color: MUTED }}
-                            >
+                            <span className="text-[11px] tabular-nums text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
                               {qty}
                             </span>
                             {isCompleted && (
                               <span className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-wide [font-family:var(--font-body)]">
                                 <span
-                                  className="inline-flex items-center gap-1"
-                                  style={{
-                                    color: verifiedAtPickup ? FOREST : MUTED,
-                                  }}
+                                  className={cn(
+                                    "inline-flex items-center gap-1",
+                                    verifiedAtPickup
+                                      ? "text-[var(--yu3-forest)]"
+                                      : "text-[var(--yu3-ink-muted)]",
+                                  )}
                                 >
                                   Pickup
                                   {verifiedAtPickup ? (
@@ -605,10 +575,12 @@ export default function JobInventory({
                                   )}
                                 </span>
                                 <span
-                                  className="inline-flex items-center gap-1"
-                                  style={{
-                                    color: deliveryDone ? FOREST : MUTED,
-                                  }}
+                                  className={cn(
+                                    "inline-flex items-center gap-1",
+                                    deliveryDone
+                                      ? "text-[var(--yu3-forest)]"
+                                      : "text-[var(--yu3-ink-muted)]",
+                                  )}
                                 >
                                   Delivery
                                   {deliveryDone ? (
@@ -638,17 +610,13 @@ export default function JobInventory({
           })}
           {extraItems.length > 0 && (
             <div className="mb-3">
-              <div
-                className="text-[9px] font-bold uppercase tracking-[0.14em] mb-2 [font-family:var(--font-body)] leading-none"
-                style={{ color: MUTED }}
-              >
+              <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.14em] leading-none text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
                 Added on-site
               </div>
               {extraItems.map((e) => (
                 <div
                   key={e.id}
-                  className="py-2 px-3 text-[12px] [font-family:var(--font-body)]"
-                  style={{ backgroundColor: CREAM_BAND, color: INK }}
+                  className="bg-[var(--yu3-bg-surface-sunken)]/80 px-3 py-2 text-[12px] text-[var(--yu3-ink)] [font-family:var(--font-body)]"
                 >
                   {e.description ?? "-"}{" "}
                   {(e.quantity ?? 1) > 1 && `×${e.quantity}`}{" "}
@@ -661,8 +629,7 @@ export default function JobInventory({
             <button
               type="button"
               onClick={() => setAddExtraOpen(true)}
-              className="w-full py-3 min-h-[48px] border border-[#5C1A33]/30 text-[10px] font-bold tracking-[0.12em] uppercase transition-colors [font-family:var(--font-body)] leading-none hover:bg-[#5C1A33]/[0.06] active:scale-[0.99]"
-              style={{ color: WINE, backgroundColor: CREAM_CARD }}
+              className="min-h-[48px] w-full border border-[var(--yu3-wine)]/30 bg-[var(--yu3-bg-surface)] py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-wine)] transition-colors [font-family:var(--font-body)] leading-none hover:bg-[var(--yu3-wine-tint)]/50 active:scale-[0.99]"
             >
               + Add extra item
             </button>
@@ -670,50 +637,30 @@ export default function JobInventory({
         </>
       )}
       {addExtraOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 animate-fade-in modal-overlay">
-          <div
-            className="p-5 max-w-[340px] w-full shadow-xl animate-fade-in border border-[#5C1A33]/15"
-            style={{ backgroundColor: CREAM_CARD }}
-          >
-            <h3
-              className="font-hero text-[22px] font-normal tracking-tight mb-2"
-              style={{ color: WINE }}
-            >
+        <div className="modal-overlay fixed inset-0 z-[99999] flex animate-fade-in items-center justify-center p-4">
+          <div className="max-h-[90dvh] w-full max-w-[340px] animate-fade-in overflow-y-auto border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-5 shadow-[var(--yu3-shadow-lg)]">
+            <h3 className="font-hero mb-2 text-[22px] font-normal tracking-tight text-[var(--yu3-wine)]">
               Add extra item
             </h3>
-            <p
-              className="text-[12px] mb-4 leading-relaxed [font-family:var(--font-body)]"
-              style={{ color: MUTED }}
-            >
+            <p className="mb-4 text-[12px] leading-relaxed text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
               Submitted items require admin approval before they appear in the
               list.
             </p>
             <form onSubmit={handleAddExtra} className="space-y-4">
               <div>
-                <label
-                  className="block text-[9px] font-bold uppercase tracking-[0.12em] mb-1.5 [font-family:var(--font-body)]"
-                  style={{ color: MUTED }}
-                >
+                <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
                   Description
                 </label>
                 <input
                   value={extraDesc}
                   onChange={(e) => setExtraDesc(e.target.value)}
                   placeholder="e.g. Extra boxes from garage"
-                  className="w-full px-3 py-2.5 border text-[13px] outline-none focus:border-[#5C1A33]/40 [font-family:var(--font-body)]"
-                  style={{
-                    backgroundColor: CREAM_BAND,
-                    color: INK,
-                    borderColor: "rgba(44, 62, 45, 0.12)",
-                  }}
+                  className="w-full border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] px-3 py-2.5 text-[13px] text-[var(--yu3-ink)] outline-none [font-family:var(--font-body)] focus:border-[var(--yu3-wine)]/50"
                   required
                 />
               </div>
               <div>
-                <label
-                  className="block text-[9px] font-bold uppercase tracking-[0.12em] mb-1.5 [font-family:var(--font-body)]"
-                  style={{ color: MUTED }}
-                >
+                <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
                   Quantity
                 </label>
                 <input
@@ -723,53 +670,34 @@ export default function JobInventory({
                   onChange={(e) =>
                     setExtraQty(Math.max(1, parseInt(e.target.value, 10) || 1))
                   }
-                  className="w-full px-3 py-2.5 border text-[13px] outline-none focus:border-[#5C1A33]/40 [font-family:var(--font-body)]"
-                  style={{
-                    backgroundColor: CREAM_BAND,
-                    color: INK,
-                    borderColor: "rgba(44, 62, 45, 0.12)",
-                  }}
+                  className="w-full border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] px-3 py-2.5 text-[13px] text-[var(--yu3-ink)] outline-none [font-family:var(--font-body)] focus:border-[var(--yu3-wine)]/50"
                 />
               </div>
               <div>
-                <label
-                  className="block text-[9px] font-bold uppercase tracking-[0.12em] mb-1.5 [font-family:var(--font-body)]"
-                  style={{ color: MUTED }}
-                >
+                <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
                   Room (optional)
                 </label>
                 <input
                   value={extraRoom}
                   onChange={(e) => setExtraRoom(e.target.value)}
                   placeholder="e.g. Garage"
-                  className="w-full px-3 py-2.5 border text-[13px] outline-none focus:border-[#5C1A33]/40 [font-family:var(--font-body)]"
-                  style={{
-                    backgroundColor: CREAM_BAND,
-                    color: INK,
-                    borderColor: "rgba(44, 62, 45, 0.12)",
-                  }}
+                  className="w-full border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] px-3 py-2.5 text-[13px] text-[var(--yu3-ink)] outline-none [font-family:var(--font-body)] focus:border-[var(--yu3-wine)]/50"
                 />
               </div>
               <div className="flex gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => setAddExtraOpen(false)}
-                  className="flex-1 py-2.5 border text-[11px] font-semibold transition-colors [font-family:var(--font-body)]"
-                  style={{
-                    borderColor: "rgba(92, 26, 51, 0.25)",
-                    color: WINE,
-                    backgroundColor: CREAM_CARD,
-                  }}
+                  className="flex-1 border border-[var(--yu3-wine)]/30 bg-[var(--yu3-bg-surface)] py-2.5 text-[11px] font-semibold text-[var(--yu3-wine)] transition-colors [font-family:var(--font-body)] hover:bg-[var(--yu3-wine-tint)]/40"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting || !extraDesc.trim()}
-                  className="flex-1 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] disabled:opacity-50 transition-colors [font-family:var(--font-body)] leading-none border border-[#3d1426]"
-                  style={{ backgroundColor: WINE, color: "#FFFBF7" }}
+                  className="crew-premium-cta flex-1 border border-[#3d1426] py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#FFFBF7] transition-colors [font-family:var(--font-body)] leading-none disabled:opacity-50"
                 >
-                  {submitting ? "Submitting…" : "Submit for approval"}
+                  {submitting ? "Submitting" : "Submit for approval"}
                 </button>
               </div>
             </form>

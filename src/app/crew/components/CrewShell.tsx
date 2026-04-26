@@ -9,10 +9,30 @@ import { CrewMobileFloatingNav } from "./CrewMobileFloatingNav";
 import { cn } from "@/design-system/admin/lib/cn";
 
 const NAV_CORE_LINKS = [
-  { href: "/crew/dashboard" as const, label: "Dashboard", shortLabel: "Dash", abbrev: "DB" },
-  { href: "/crew/stats" as const, label: "Stats", shortLabel: "Stats", abbrev: "ST" },
-  { href: "/crew/expense" as const, label: "Expenses", shortLabel: "Exp", abbrev: "EX" },
-  { href: "/crew/end-of-day" as const, label: "End of day", shortLabel: "EOD", abbrev: "ED" },
+  {
+    href: "/crew/dashboard" as const,
+    label: "Dashboard",
+    shortLabel: "Dash",
+    abbrev: "DB",
+  },
+  {
+    href: "/crew/stats" as const,
+    label: "Stats",
+    shortLabel: "Stats",
+    abbrev: "ST",
+  },
+  {
+    href: "/crew/expense" as const,
+    label: "Expenses",
+    shortLabel: "Exp",
+    abbrev: "EX",
+  },
+  {
+    href: "/crew/end-of-day" as const,
+    label: "End of day",
+    shortLabel: "EOD",
+    abbrev: "ED",
+  },
 ] as const;
 
 export type ShellNavItem =
@@ -41,7 +61,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
   }, []);
   const immersiveNavApi = useMemo(
     () => ({ immersiveNav, setImmersiveNav }),
-    [immersiveNav, setImmersiveNav]
+    [immersiveNav, setImmersiveNav],
   );
 
   const navItems: ShellNavItem[] = useMemo(() => {
@@ -52,7 +72,8 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
       abbrev: "NV",
       navigation: true,
     };
-    if (!hasActiveBinTasks) return [NAV_CORE_LINKS[0], navItem, ...NAV_CORE_LINKS.slice(1)];
+    if (!hasActiveBinTasks)
+      return [NAV_CORE_LINKS[0], navItem, ...NAV_CORE_LINKS.slice(1)];
     const bin: ShellNavItem = {
       href: "/crew/bin-orders",
       label: "Bin tasks",
@@ -63,7 +84,8 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
   }, [hasActiveBinTasks, navTargetPath]);
 
   const isDashboard =
-    pathname === "/crew/dashboard" || pathname.startsWith("/crew/dashboard/job/");
+    pathname === "/crew/dashboard" ||
+    pathname.startsWith("/crew/dashboard/job/");
   const navigationItem = useMemo(
     () => navItems.find((i) => "navigation" in i && i.navigation),
     [navItems],
@@ -79,9 +101,12 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
       };
     }
     const disabled =
-      "navigation" in navigationItem && navigationItem.navigation && !navigationItem.href;
+      "navigation" in navigationItem &&
+      navigationItem.navigation &&
+      !navigationItem.href;
     const navLinkActive = (() => {
-      if (!("navigation" in navigationItem) || !navigationItem.navigation) return false;
+      if (!("navigation" in navigationItem) || !navigationItem.navigation)
+        return false;
       if (!navigationItem.href) return false;
       return pathname === navigationItem.href.split("?")[0];
     })();
@@ -105,13 +130,18 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
           return r.json();
         })
         .then((d) => {
-          if (typeof d?.hasActiveBinTasks === "boolean") setHasActiveBinTasks(d.hasActiveBinTasks);
+          if (typeof d?.hasActiveBinTasks === "boolean")
+            setHasActiveBinTasks(d.hasActiveBinTasks);
         })
         .catch(() => {});
     };
     load();
     const id = setInterval(() => {
-      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState === "hidden"
+      )
+        return;
       load();
     }, 20_000);
     return () => clearInterval(id);
@@ -121,7 +151,8 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
     fetch("/api/crew/nav-target")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        const p = d && typeof d.path === "string" && d.path.length > 0 ? d.path : null;
+        const p =
+          d && typeof d.path === "string" && d.path.length > 0 ? d.path : null;
         setNavTargetPath(p);
       })
       .catch(() => setNavTargetPath(null));

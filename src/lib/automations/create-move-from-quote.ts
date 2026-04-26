@@ -5,6 +5,7 @@ import { createBinOrderFromBinRentalQuote } from "@/lib/automations/create-bin-o
 import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
 import { generateWelcomePackageToken } from "@/lib/welcome-package-token";
 import { estimateMoveDurationFromQuoteRow } from "@/lib/jobs/duration-estimate";
+import { convertedRecordCodeFromQuoteId } from "@/lib/quotes/quote-id";
 
 /* ═══════════════════════════════════════════════════════════
    createMoveFromQuote
@@ -561,6 +562,13 @@ export async function createMoveFromQuote(
       },
     ];
   }
+
+  /** Same numeric suffix as quote (YG-30245 → MV-30245). Event siblings get -E1, -E2 so each row stays unique. */
+  const baseMoveCode = convertedRecordCodeFromQuoteId(input.quoteId, "MV");
+  rowsToInsert = rowsToInsert.map((row, idx) => {
+    const code = idx === 0 ? baseMoveCode : `${baseMoveCode}-E${idx}`;
+    return { ...row, move_code: code, move_number: code };
+  });
 
   const grossForDuration = totalWithTax;
   const attachDurationFields = (row: RowInsert): RowInsert => {

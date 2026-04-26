@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "../lib/cn"
+import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "../lib/cn";
 
 const buttonStyles = cva(
   [
     "inline-flex items-center justify-center gap-[6px]",
-    "font-medium whitespace-nowrap select-none",
+    "font-medium leading-none whitespace-nowrap select-none",
     "transition-[background-color,color,border-color,box-shadow,transform]",
     "duration-[var(--yu3-dur-1)] ease-[var(--yu3-ease-out)]",
     "focus-visible:outline-none",
@@ -29,8 +29,7 @@ const buttonStyles = cva(
         destructive:
           "bg-[var(--yu3-bg-surface)] text-[var(--yu3-danger)] border border-[var(--yu3-line)] hover:bg-[var(--yu3-danger-tint)] hover:border-[var(--yu3-danger)]",
         link: "bg-transparent text-[var(--yu3-ink)] border-none p-0 h-auto underline-offset-4 hover:underline hover:text-[var(--yu3-ink-strong)]",
-        dark:
-          "bg-[var(--yu3-ink-strong)] text-[var(--yu3-ink-inverse)] border border-[var(--yu3-ink-strong)] hover:bg-[var(--yu3-ink)]",
+        dark: "bg-[var(--yu3-ink-strong)] text-[var(--yu3-ink-inverse)] border border-[var(--yu3-ink-strong)] hover:bg-[var(--yu3-ink)]",
       },
       size: {
         xs: "h-7 px-2.5 text-[12px] rounded-[var(--yu3-r-sm)]",
@@ -52,15 +51,16 @@ const buttonStyles = cva(
       uppercase: false,
     },
   },
-)
+);
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonStyles> {
-  asChild?: boolean
-  loading?: boolean
-  leadingIcon?: React.ReactNode
-  trailingIcon?: React.ReactNode
+  asChild?: boolean;
+  loading?: boolean;
+  leadingIcon?: React.ReactNode;
+  trailingIcon?: React.ReactNode;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -90,14 +90,14 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           className={cn(
             buttonStyles({ variant, size, uppercase }),
             (disabled || loading) && "pointer-events-none opacity-50",
-            className
+            className,
           )}
           aria-disabled={disabled || loading}
           {...rest}
         >
           {children}
         </Slot>
-      )
+      );
     }
     return (
       <button
@@ -116,10 +116,14 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ) : (
           leadingIcon
         )}
-        {children ? <span className="inline-flex items-center">{children}</span> : null}
+        {children ? (
+          <span className="inline-flex items-center leading-none">
+            {children}
+          </span>
+        ) : null}
         {trailingIcon}
       </button>
-    )
+    );
   },
-)
-Button.displayName = "Button"
+);
+Button.displayName = "Button";

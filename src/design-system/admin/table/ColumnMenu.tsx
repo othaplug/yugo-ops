@@ -1,12 +1,8 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "../primitives/Popover"
-import { SearchInput } from "../primitives/Input"
+import * as React from "react";
+import { Popover, PopoverTrigger, PopoverContent } from "../primitives/Popover";
+import { SearchInput } from "../primitives/Input";
 import {
   ArrowUp,
   ArrowDown,
@@ -15,19 +11,19 @@ import {
   Funnel,
   DotsThreeVertical,
   MagnifyingGlass,
-} from "../icons"
-import { cn } from "../lib/cn"
-import type { ColumnDef, SortDir } from "./types"
+} from "../icons";
+import { cn } from "../lib/cn";
+import type { ColumnDef, SortDir } from "./types";
 
 export interface ColumnMenuProps<Row> {
-  column: ColumnDef<Row>
-  sortDir?: SortDir | null
-  onSort: (dir: SortDir) => void
-  onHide: () => void
-  onFilter?: () => void
-  onSearch?: () => void
-  onAnalyze?: () => void
-  trigger?: React.ReactNode
+  column: ColumnDef<Row>;
+  sortDir?: SortDir | null;
+  onSort: (dir: SortDir) => void;
+  onHide: () => void;
+  onFilter?: () => void;
+  onSearch?: () => void;
+  onAnalyze?: () => void;
+  trigger?: React.ReactNode;
 }
 
 export function ColumnMenu<Row>({
@@ -40,7 +36,7 @@ export function ColumnMenu<Row>({
   onAnalyze,
   trigger,
 }: ColumnMenuProps<Row>) {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(false);
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -60,20 +56,18 @@ export function ColumnMenu<Row>({
             icon={<MagnifyingGlass size={13} />}
             label={`Search ${column.shortLabel || column.id}`}
             onClick={() => {
-              onSearch()
-              setOpen(false)
+              onSearch();
+              setOpen(false);
             }}
           />
         ) : null}
         {onAnalyze ? (
           <MenuItem
-            icon={
-              <Sparkle size={13} className="text-[var(--yu3-wine)]" />
-            }
+            icon={<Sparkle size={13} className="text-[var(--yu3-wine)]" />}
             label="AI analyze"
             onClick={() => {
-              onAnalyze()
-              setOpen(false)
+              onAnalyze();
+              setOpen(false);
             }}
           />
         ) : null}
@@ -84,8 +78,8 @@ export function ColumnMenu<Row>({
               label="Sort ascending"
               active={sortDir === "asc"}
               onClick={() => {
-                onSort("asc")
-                setOpen(false)
+                onSort("asc");
+                setOpen(false);
               }}
             />
             <MenuItem
@@ -93,8 +87,8 @@ export function ColumnMenu<Row>({
               label="Sort descending"
               active={sortDir === "desc"}
               onClick={() => {
-                onSort("desc")
-                setOpen(false)
+                onSort("desc");
+                setOpen(false);
               }}
             />
           </>
@@ -104,8 +98,8 @@ export function ColumnMenu<Row>({
             icon={<Funnel size={13} />}
             label="Filter…"
             onClick={() => {
-              onFilter()
-              setOpen(false)
+              onFilter();
+              setOpen(false);
             }}
           />
         ) : null}
@@ -114,14 +108,14 @@ export function ColumnMenu<Row>({
           icon={<EyeSlash size={13} />}
           label="Hide column"
           onClick={() => {
-            onHide()
-            setOpen(false)
+            onHide();
+            setOpen(false);
           }}
           disabled={!!column.required}
         />
       </PopoverContent>
     </Popover>
-  )
+  );
 }
 
 function MenuItem({
@@ -131,11 +125,11 @@ function MenuItem({
   disabled,
   onClick,
 }: {
-  icon?: React.ReactNode
-  label: string
-  active?: boolean
-  disabled?: boolean
-  onClick: () => void
+  icon?: React.ReactNode;
+  label: string;
+  active?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
 }) {
   return (
     <button
@@ -154,11 +148,11 @@ function MenuItem({
       </span>
       <span className="flex-1 text-left truncate">{label}</span>
     </button>
-  )
+  );
 }
 
 function Divider() {
-  return <div className="my-1 h-px bg-[var(--yu3-line-subtle)] -mx-1" />
+  return <div className="my-1 h-px bg-[var(--yu3-line-subtle)] -mx-1" />;
 }
 
 /**
@@ -169,11 +163,11 @@ export function HiddenColumnsMenu<Row>({
   hiddenIds,
   onShow,
 }: {
-  columns: ColumnDef<Row>[]
-  hiddenIds: Set<string>
-  onShow: (id: string) => void
+  columns: ColumnDef<Row>[];
+  hiddenIds: Set<string>;
+  onShow: (id: string) => void;
 }) {
-  const [query, setQuery] = React.useState("")
+  const [query, setQuery] = React.useState("");
   const hidden = columns
     .filter((c) => hiddenIds.has(c.id))
     .filter((c) =>
@@ -182,8 +176,8 @@ export function HiddenColumnsMenu<Row>({
             .toLowerCase()
             .includes(query.toLowerCase())
         : true,
-    )
-  if (columns.length === 0) return null
+    );
+  if (columns.length === 0) return null;
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -236,5 +230,5 @@ export function HiddenColumnsMenu<Row>({
         )}
       </PopoverContent>
     </Popover>
-  )
+  );
 }

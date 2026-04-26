@@ -87,6 +87,7 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
       },
       {
         id: "partner",
+        shortLabel: "Partner",
         header: "Partner",
         accessor: (p) => p.organizations?.name || "",
         width: 200,
@@ -103,6 +104,7 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
       },
       {
         id: "project_name",
+        shortLabel: "Project",
         header: "Project Name",
         accessor: (p) => p.project_name,
         width: 200,
@@ -117,6 +119,7 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
       },
       {
         id: "status",
+        shortLabel: "Status",
         header: "Status",
         accessor: (p) => p.status,
         sortable: true,
@@ -127,6 +130,7 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
       },
       {
         id: "phase",
+        shortLabel: "Phase",
         header: "Phase",
         accessor: (p) => p.active_phase || "",
         width: 100,
@@ -138,6 +142,7 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
       },
       {
         id: "budget",
+        shortLabel: "Budget",
         header: "Budget",
         accessor: (p) => p.estimated_budget ?? 0,
         sortable: true,
@@ -159,6 +164,7 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
       },
       {
         id: "dates",
+        shortLabel: "Dates",
         header: "Dates",
         accessor: (p) => p.start_date || "",
         width: 120,

@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import * as React from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import {
   LEAD_PRIORITY_LABELS,
   LEAD_SOURCE_LABELS,
   LEAD_STATUS_LABELS,
-} from "@/lib/leads/admin-labels"
+} from "@/lib/leads/admin-labels";
 import {
   PageHeader,
   PageMetaDivider,
-} from "@/design-system/admin/layout/PageHeader"
+} from "@/design-system/admin/layout/PageHeader";
 import {
   Button,
   Badge,
@@ -27,7 +27,7 @@ import {
   Avatar,
   EmptyState,
   Section,
-} from "@/design-system/admin/primitives"
+} from "@/design-system/admin/primitives";
 import {
   DataTable,
   type ColumnDef,
@@ -35,7 +35,7 @@ import {
   type ViewMode,
   type BulkAction,
   type RowAction,
-} from "@/design-system/admin/table"
+} from "@/design-system/admin/table";
 import {
   Plus,
   Phone,
@@ -49,145 +49,156 @@ import {
   Sparkle,
   FileText,
   User,
-} from "@/design-system/admin/icons"
-import { useToast } from "../components/Toast"
-import { LeadsNavTabs } from "./LeadsNavTabs"
+} from "@/design-system/admin/icons";
+import { useToast } from "../components/Toast";
+import { LeadsNavTabs } from "./LeadsNavTabs";
 
 export type LeadRow = {
-  id: string
-  lead_number: string
-  first_name: string | null
-  last_name: string | null
-  email: string | null
-  phone: string | null
-  source: string
-  source_detail: string | null
-  service_type: string | null
-  detected_service_type?: string | null
-  move_size: string | null
-  preferred_date: string | null
-  from_address: string | null
-  to_address: string | null
-  status: string
-  priority: string
-  created_at: string
-  first_response_at: string | null
-  response_sla_target_at?: string | null
-  quote_uuid: string | null
-  completeness_path?: string | null
-  completeness_score?: number | null
-  recommended_tier?: string | null
-  intelligence_summary?: string | null
-  parsed_inventory?: unknown
-  follow_up_sent_at?: string | null
-  fields_missing?: unknown
-  clarifications_needed?: unknown
-  detected_dates?: unknown
-  estimated_value?: number | null
-  requires_specialty_quote?: boolean | null
-  parsed_weight_lbs_max?: number | null
-}
+  id: string;
+  lead_number: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+  source: string;
+  source_detail: string | null;
+  service_type: string | null;
+  detected_service_type?: string | null;
+  move_size: string | null;
+  preferred_date: string | null;
+  from_address: string | null;
+  to_address: string | null;
+  status: string;
+  priority: string;
+  created_at: string;
+  first_response_at: string | null;
+  response_sla_target_at?: string | null;
+  quote_uuid: string | null;
+  completeness_path?: string | null;
+  completeness_score?: number | null;
+  recommended_tier?: string | null;
+  intelligence_summary?: string | null;
+  parsed_inventory?: unknown;
+  follow_up_sent_at?: string | null;
+  fields_missing?: unknown;
+  clarifications_needed?: unknown;
+  detected_dates?: unknown;
+  estimated_value?: number | null;
+  requires_specialty_quote?: boolean | null;
+  parsed_weight_lbs_max?: number | null;
+};
 
 type Metrics = {
-  todayByStatus: Record<string, number>
-  avgResponseMin: number | null
-  pctUnder5min: number | null
-  pctUnder15min: number | null
-  pctOver1hr: number | null
+  todayByStatus: Record<string, number>;
+  avgResponseMin: number | null;
+  pctUnder5min: number | null;
+  pctUnder15min: number | null;
+  pctOver1hr: number | null;
   funnel: {
-    received: number
-    contacted: number
-    quote_sent: number
-    converted: number
-    lost: number
-    stale: number
-  }
+    received: number;
+    contacted: number;
+    quote_sent: number;
+    converted: number;
+    lost: number;
+    stale: number;
+  };
   bySource: Record<
     string,
     { count: number; converted: number; valueSum: number }
-  >
+  >;
   speedVsConversion: {
-    label: string
-    leads: number
-    converted: number
-    rate: number
-  }[]
+    label: string;
+    leads: number;
+    converted: number;
+    rate: number;
+  }[];
   recentActivity: {
-    id: string
-    activity_type: string
-    notes: string | null
-    created_at: string
-    lead_id: string
-    lead_number: string | null
-    lead_name: string
-  }[]
-}
+    id: string;
+    activity_type: string;
+    notes: string | null;
+    created_at: string;
+    lead_id: string;
+    lead_number: string | null;
+    lead_name: string;
+  }[];
+};
 
 function fullName(lead: LeadRow) {
-  return [lead.first_name, lead.last_name].filter(Boolean).join(" ") || "Unknown"
+  return (
+    [lead.first_name, lead.last_name].filter(Boolean).join(" ") || "Unknown"
+  );
 }
 
 function sourceLabel(source: string, detail: string | null | undefined) {
-  const d = (detail || "").trim()
-  if (d) return d
-  return LEAD_SOURCE_LABELS[source] || source.replace(/_/g, " ")
+  const d = (detail || "").trim();
+  if (d) return d;
+  return LEAD_SOURCE_LABELS[source] || source.replace(/_/g, " ");
 }
 
 function elapsedLabel(createdAt: string, now: number) {
-  const sec = Math.max(0, Math.floor((now - new Date(createdAt).getTime()) / 1000))
-  const m = Math.floor(sec / 60)
-  const s = sec % 60
-  if (m >= 60) return `${Math.floor(m / 60)}h ${m % 60}m`
-  return `${m}:${String(s).padStart(2, "0")}`
+  const sec = Math.max(
+    0,
+    Math.floor((now - new Date(createdAt).getTime()) / 1000),
+  );
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  if (m >= 60) return `${Math.floor(m / 60)}h ${m % 60}m`;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-function elapsedTone(createdAt: string, now: number): "success" | "warning" | "danger" | "neutral" {
-  const sec = Math.max(0, Math.floor((now - new Date(createdAt).getTime()) / 1000))
-  if (sec <= 300) return "success"
-  if (sec <= 900) return "warning"
-  if (sec <= 3600) return "danger"
-  return "neutral"
+function elapsedTone(
+  createdAt: string,
+  now: number,
+): "success" | "warning" | "danger" | "neutral" {
+  const sec = Math.max(
+    0,
+    Math.floor((now - new Date(createdAt).getTime()) / 1000),
+  );
+  if (sec <= 300) return "success";
+  if (sec <= 900) return "warning";
+  if (sec <= 3600) return "danger";
+  return "neutral";
 }
 
 function statusTone(status: string): Parameters<typeof StatusPill>[0]["tone"] {
   switch (status) {
     case "new":
-      return "new"
+      return "new";
     case "assigned":
     case "follow_up_sent":
     case "awaiting_reply":
-      return "info"
+      return "info";
     case "contacted":
-      return "info"
+      return "info";
     case "quote_sent":
-      return "wine"
+      return "wine";
     case "converted":
-      return "success"
+      return "success";
     case "lost":
-      return "danger"
+      return "danger";
     case "stale":
-      return "warning"
+      return "warning";
     default:
-      return "neutral"
+      return "neutral";
   }
 }
 
 function priorityTone(
   priority: string,
 ): Parameters<typeof StatusPill>[0]["tone"] {
-  if (priority === "urgent") return "danger"
-  if (priority === "high") return "warning"
-  if (priority === "low") return "neutral"
-  return "info"
+  if (priority === "urgent") return "danger";
+  if (priority === "high") return "warning";
+  if (priority === "low") return "neutral";
+  return "info";
 }
 
 function ElapsedCell({ createdAt }: { createdAt: string }) {
-  const [now, setNow] = React.useState(() => Date.now())
+  const [now, setNow] = React.useState(() => Date.now());
   React.useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(t)
-  }, [])
-  const tone = elapsedTone(createdAt, now)
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const tone = elapsedTone(createdAt, now);
   return (
     <span
       className="yu3-num text-[12px] font-semibold inline-flex items-center gap-1"
@@ -205,26 +216,30 @@ function ElapsedCell({ createdAt }: { createdAt: string }) {
       <Clock size={11} />
       {elapsedLabel(createdAt, now)}
     </span>
-  )
+  );
 }
 
-const STAGES: { id: string; label: string; tone: "neutral" | "info" | "wine" | "success" | "danger" | "warning" }[] = [
+const STAGES: {
+  id: string;
+  label: string;
+  tone: "neutral" | "info" | "wine" | "success" | "danger" | "warning";
+}[] = [
   { id: "new", label: "New", tone: "info" },
   { id: "contacted", label: "Contacted", tone: "info" },
   { id: "quote_sent", label: "Quote sent", tone: "wine" },
   { id: "converted", label: "Converted", tone: "success" },
   { id: "lost", label: "Lost", tone: "danger" },
-]
+];
 
 function toStage(row: LeadRow): string {
-  const s = row.status
+  const s = row.status;
   if (["assigned", "follow_up_sent", "awaiting_reply", "new"].includes(s))
-    return "new"
-  if (["contacted"].includes(s)) return "contacted"
-  if (["quote_sent", "viewed"].includes(s)) return "quote_sent"
-  if (["converted"].includes(s)) return "converted"
-  if (["lost", "stale"].includes(s)) return "lost"
-  return "new"
+    return "new";
+  if (["contacted"].includes(s)) return "contacted";
+  if (["quote_sent", "viewed"].includes(s)) return "quote_sent";
+  if (["converted"].includes(s)) return "converted";
+  if (["lost", "stale"].includes(s)) return "lost";
+  return "new";
 }
 
 /* ══════════════════════════════════════════════════════════════════════ */
@@ -232,27 +247,27 @@ function toStage(row: LeadRow): string {
 export default function LeadsHubV3Client({
   mode,
 }: {
-  mode: "dashboard" | "all" | "mine"
+  mode: "dashboard" | "all" | "mine";
 }) {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [metrics, setMetrics] = React.useState<Metrics | null>(null)
-  const [attention, setAttention] = React.useState<LeadRow[]>([])
-  const [list, setList] = React.useState<LeadRow[]>([])
-  const [loadErr, setLoadErr] = React.useState<string | null>(null)
-  const [loading, setLoading] = React.useState(true)
+  const router = useRouter();
+  const { toast } = useToast();
+  const [metrics, setMetrics] = React.useState<Metrics | null>(null);
+  const [attention, setAttention] = React.useState<LeadRow[]>([]);
+  const [list, setList] = React.useState<LeadRow[]>([]);
+  const [loadErr, setLoadErr] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
-  const [search, setSearch] = React.useState("")
+  const [search, setSearch] = React.useState("");
   const [sort, setSort] = React.useState<ColumnSort | null>({
     columnId: "created_at",
     direction: "desc",
-  })
-  const [viewMode, setViewMode] = React.useState<ViewMode>("list")
-  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
+  });
+  const [viewMode, setViewMode] = React.useState<ViewMode>("list");
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
 
   const refresh = React.useCallback(async () => {
-    setLoadErr(null)
-    setLoading(true)
+    setLoadErr(null);
+    setLoading(true);
     try {
       const [mRes, aRes, lRes] = await Promise.all([
         mode === "dashboard"
@@ -268,49 +283,49 @@ export default function LeadsHubV3Client({
                 : "/api/admin/leads?limit=300",
             )
           : Promise.resolve(null as Response | null),
-      ])
+      ]);
       if (mRes) {
-        const mj = await mRes.json()
-        if (!mRes.ok) throw new Error(mj.error || "Metrics failed")
-        setMetrics(mj)
+        const mj = await mRes.json();
+        if (!mRes.ok) throw new Error(mj.error || "Metrics failed");
+        setMetrics(mj);
       }
       if (aRes) {
-        const aj = await aRes.json()
-        if (!aRes.ok) throw new Error(aj.error || "Leads failed")
-        setAttention((aj.leads || []) as LeadRow[])
+        const aj = await aRes.json();
+        if (!aRes.ok) throw new Error(aj.error || "Leads failed");
+        setAttention((aj.leads || []) as LeadRow[]);
       }
       if (lRes) {
-        const lj = await lRes.json()
-        if (!lRes.ok) throw new Error(lj.error || "Leads failed")
-        setList((lj.leads || []) as LeadRow[])
+        const lj = await lRes.json();
+        if (!lRes.ok) throw new Error(lj.error || "Leads failed");
+        setList((lj.leads || []) as LeadRow[]);
       }
     } catch (e) {
-      setLoadErr(e instanceof Error ? e.message : "Failed to load")
+      setLoadErr(e instanceof Error ? e.message : "Failed to load");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [mode])
+  }, [mode]);
 
   React.useEffect(() => {
-    refresh()
-  }, [refresh])
+    refresh();
+  }, [refresh]);
 
   React.useEffect(() => {
-    const supabase = createClient()
+    const supabase = createClient();
     const channel = supabase
       .channel("leads-realtime-v3")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "leads" },
         () => {
-          refresh()
+          refresh();
         },
       )
-      .subscribe()
+      .subscribe();
     return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [refresh])
+      supabase.removeChannel(channel);
+    };
+  }, [refresh]);
 
   /* ── Columns ──────────────────────────────────────────────────────── */
   const columns = React.useMemo<ColumnDef<LeadRow>[]>(
@@ -416,9 +431,7 @@ export default function LeadsHubV3Client({
         width: 120,
         sortable: true,
         accessor: (r) => r.move_size,
-        cell: (r) => (
-          <span className="text-[12px]">{r.move_size || ""}</span>
-        ),
+        cell: (r) => <span className="text-[12px]">{r.move_size || ""}</span>,
       },
       {
         id: "preferred_date",
@@ -494,7 +507,7 @@ export default function LeadsHubV3Client({
       },
     ],
     [],
-  )
+  );
 
   const bulkActions = React.useMemo<BulkAction<LeadRow>[]>(
     () => [
@@ -503,7 +516,7 @@ export default function LeadsHubV3Client({
         label: "Assign",
         icon: <User size={13} />,
         run: (rows) => {
-          toast(`Assign flow for ${rows.length} leads (coming soon)`, "check")
+          toast(`Assign flow for ${rows.length} leads (coming soon)`, "check");
         },
       },
       {
@@ -514,9 +527,9 @@ export default function LeadsHubV3Client({
           if (rows.length === 1 && rows[0]) {
             router.push(
               `/admin/quotes/new?lead_id=${encodeURIComponent(rows[0].id)}`,
-            )
+            );
           } else {
-            toast(`Batch quote not yet supported`, "x")
+            toast(`Batch quote not yet supported`, "x");
           }
         },
       },
@@ -534,11 +547,11 @@ export default function LeadsHubV3Client({
                   body: JSON.stringify({ status: "contacted" }),
                 }),
               ),
-            )
-            toast(`Marked ${rows.length} leads as contacted`, "check")
-            refresh()
+            );
+            toast(`Marked ${rows.length} leads as contacted`, "check");
+            refresh();
           } catch {
-            toast(`Failed to update`, "x")
+            toast(`Failed to update`, "x");
           }
         },
       },
@@ -557,17 +570,17 @@ export default function LeadsHubV3Client({
                   body: JSON.stringify({ status: "lost" }),
                 }),
               ),
-            )
-            toast(`Marked ${rows.length} leads as lost`, "check")
-            refresh()
+            );
+            toast(`Marked ${rows.length} leads as lost`, "check");
+            refresh();
           } catch {
-            toast(`Failed to update`, "x")
+            toast(`Failed to update`, "x");
           }
         },
       },
     ],
     [router, toast, refresh],
-  )
+  );
 
   const rowActions = React.useMemo<RowAction<LeadRow>[]>(
     () => [
@@ -582,16 +595,14 @@ export default function LeadsHubV3Client({
         label: "Create quote",
         icon: <FileText size={13} />,
         run: (r) =>
-          router.push(
-            `/admin/quotes/new?lead_id=${encodeURIComponent(r.id)}`,
-          ),
+          router.push(`/admin/quotes/new?lead_id=${encodeURIComponent(r.id)}`),
       },
     ],
     [router],
-  )
+  );
 
   /* ── Page tabs ────────────────────────────────────────────────────── */
-  const tabs = <LeadsNavTabs active={mode} />
+  const tabs = <LeadsNavTabs active={mode} />;
 
   /* ══════════════════════════════════════════════════════════════════ */
   /* Dashboard mode                                                      */
@@ -604,11 +615,11 @@ export default function LeadsHubV3Client({
       converted: 0,
       lost: 0,
       stale: 0,
-    }
+    };
     const convRate =
-      funnel.received > 0 ? (funnel.converted / funnel.received) * 100 : 0
-    const avgMin = metrics?.avgResponseMin ?? null
-    const pctSub5 = metrics?.pctUnder5min ?? null
+      funnel.received > 0 ? (funnel.converted / funnel.received) * 100 : 0;
+    const avgMin = metrics?.avgResponseMin ?? null;
+    const pctSub5 = metrics?.pctUnder5min ?? null;
 
     return (
       <div className="flex flex-col gap-6">
@@ -692,14 +703,16 @@ export default function LeadsHubV3Client({
             </CardHeader>
             <CardBody>
               <div className="grid grid-cols-5 gap-2">
-                {([
-                  { k: "received", label: "Received" },
-                  { k: "contacted", label: "Contacted" },
-                  { k: "quote_sent", label: "Quote sent" },
-                  { k: "converted", label: "Converted" },
-                  { k: "lost", label: "Lost" },
-                ] as const).map(({ k, label }, i) => {
-                  const v = funnel[k] as number
+                {(
+                  [
+                    { k: "received", label: "Received" },
+                    { k: "contacted", label: "Contacted" },
+                    { k: "quote_sent", label: "Quote sent" },
+                    { k: "converted", label: "Converted" },
+                    { k: "lost", label: "Lost" },
+                  ] as const
+                ).map(({ k, label }, i) => {
+                  const v = funnel[k] as number;
                   const max = Math.max(
                     funnel.received,
                     funnel.contacted,
@@ -707,8 +720,8 @@ export default function LeadsHubV3Client({
                     funnel.converted,
                     funnel.lost,
                     1,
-                  )
-                  const h = Math.max(6, (v / max) * 120)
+                  );
+                  const h = Math.max(6, (v / max) * 120);
                   return (
                     <div key={k} className="flex flex-col items-center gap-2">
                       <div className="flex items-end h-[130px]">
@@ -725,7 +738,7 @@ export default function LeadsHubV3Client({
                       </div>
                       <div className="yu3-t-eyebrow text-center">{label}</div>
                     </div>
-                  )
+                  );
                 })}
               </div>
             </CardBody>
@@ -810,7 +823,7 @@ export default function LeadsHubV3Client({
           )}
         </Section>
       </div>
-    )
+    );
   }
 
   /* ══════════════════════════════════════════════════════════════════ */
@@ -882,7 +895,7 @@ export default function LeadsHubV3Client({
         onNewRecord={() => router.push("/admin/leads/new")}
       />
     </div>
-  )
+  );
 }
 
 /* ─── KPI card used on dashboard mode ──────────────────────────────── */
@@ -893,11 +906,11 @@ function KpiCard({
   trend,
   spark,
 }: {
-  eyebrow: string
-  value: string
-  helper?: string
-  trend?: number
-  spark?: number[]
+  eyebrow: string;
+  value: string;
+  helper?: string;
+  trend?: number;
+  spark?: number[];
 }) {
   return (
     <Card>
@@ -919,7 +932,7 @@ function KpiCard({
         </div>
       </CardBody>
     </Card>
-  )
+  );
 }
 
 /* ─── Attention card ───────────────────────────────────────────────── */
@@ -927,23 +940,23 @@ function AttentionCard({
   lead,
   onOpen,
 }: {
-  lead: LeadRow
-  onOpen: () => void
+  lead: LeadRow;
+  onOpen: () => void;
 }) {
-  const name = fullName(lead)
-  const p = lead.completeness_path || "manual_review"
+  const name = fullName(lead);
+  const p = lead.completeness_path || "manual_review";
   const Icon =
     p === "auto_quote"
       ? CheckCircle
       : p === "needs_info"
         ? WarningCircle
-        : XCircle
+        : XCircle;
   const iconColor =
     p === "auto_quote"
       ? "var(--yu3-success)"
       : p === "needs_info"
         ? "var(--yu3-warning)"
-        : "var(--yu3-danger)"
+        : "var(--yu3-danger)";
   return (
     <button
       type="button"
@@ -985,12 +998,15 @@ function AttentionCard({
       </div>
       {lead.intelligence_summary ? (
         <p className="mt-3 text-[11px] text-[var(--yu3-ink-muted)] line-clamp-2 flex items-start gap-1">
-          <Sparkle size={11} className="text-[var(--yu3-wine)] mt-0.5 shrink-0" />
+          <Sparkle
+            size={11}
+            className="text-[var(--yu3-wine)] mt-0.5 shrink-0"
+          />
           {lead.intelligence_summary}
         </p>
       ) : null}
     </button>
-  )
+  );
 }
 
 /* ─── Lead mini card for pipeline view ─────────────────────────────── */
@@ -1022,5 +1038,5 @@ function LeadMiniCard({ lead }: { lead: LeadRow }) {
         ) : null}
       </div>
     </div>
-  )
+  );
 }

@@ -148,7 +148,7 @@ export default function CrewEndOfDayPage() {
             <h2 className="font-hero text-[20px] sm:text-[22px] font-bold text-[var(--tx)] tracking-tight mb-6">
               Summary
             </h2>
-            <div className="rounded-2xl bg-[#FAF7F2] px-5 py-1 shadow-[0_2px_28px_rgba(44,62,45,0.06)]">
+            <div className="rounded-2xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] px-5 py-1 shadow-[var(--yu3-shadow-sm)]">
               <dl className="divide-y divide-[var(--brd)]/35">
                 {summaryStats.map(({ label, value }) => (
                   <div key={label} className="flex items-baseline justify-between gap-6 py-3.5 first:pt-4 last:pb-4">

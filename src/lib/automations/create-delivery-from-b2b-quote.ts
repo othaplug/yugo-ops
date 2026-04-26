@@ -1,7 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generateDeliveryNumber } from "@/lib/delivery-number"
-
 import { getActiveRateCardLookup } from "@/lib/partners/calculateDeliveryPrice";
+import {
+  convertedRecordCodeFromQuoteId,
+  numericSuffixFromQuoteDisplayId,
+  quoteNumericSuffixForHubSpot,
+} from "@/lib/quotes/quote-id";
 import type { CreateMoveFromQuoteInput } from "@/lib/automations/create-move-from-quote";
 import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
 import { ensureB2bDeliverySchedule } from "@/lib/calendar/ensure-b2b-delivery-schedule";
@@ -87,9 +90,15 @@ export async function createDeliveryFromB2BQuote(
   const items = itemsFromFactors();
   const itemsFinal = items.length > 0 ? items : ["B2B delivery"];
 
-  const deliveryNumber = await generateDeliveryNumber(supabase);
+  const quoteIdText = String((quote as { quote_id?: string }).quote_id ?? "").trim();
+  const deliveryNumber = convertedRecordCodeFromQuoteId(quoteIdText, "DLV");
   const initials = (businessName || "YG").replace(/[^A-Za-z]/g, "").slice(0, 2).toUpperCase() || "YG";
-  const trackingCode = `${initials}-${deliveryNumber.split("-")[1]}`;
+  const suffix =
+    quoteNumericSuffixForHubSpot(quoteIdText.toUpperCase(), "YG-") ??
+    numericSuffixFromQuoteDisplayId(quoteIdText) ??
+    deliveryNumber.split("-")[1] ??
+    "";
+  const trackingCode = `${initials}-${suffix}`;
 
   const rateLookup = await getActiveRateCardLookup(partnerOrgId || "");
 

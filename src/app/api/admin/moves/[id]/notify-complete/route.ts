@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { sendEmail } from "@/lib/email/send";
-import { signTrackToken } from "@/lib/track-token";
-import { getEmailBaseUrl } from "@/lib/email-base-url";
+import { buildPublicMoveTrackUrl } from "@/lib/notifications/public-track-url";
 import { formatJobId } from "@/lib/move-code";
 import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
 import { createClientReferralIfNeeded } from "@/lib/client-referral";
@@ -46,7 +45,10 @@ export async function POST(
   }
 
   const clientEmail = (move.client_email || "").trim();
-  const trackUrl = `${getEmailBaseUrl()}/track/move/${move.move_code || move.id}?token=${signTrackToken("move", move.id)}`;
+  const trackUrl = buildPublicMoveTrackUrl({
+    id: move.id,
+    move_code: move.move_code ?? null,
+  });
 
   // 1. Send move-complete email to client (same as crew checkpoint path)
   if (clientEmail) {

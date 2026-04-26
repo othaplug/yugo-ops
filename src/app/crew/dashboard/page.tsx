@@ -13,6 +13,7 @@ import CrewAreaWeather from "@/components/crew/CrewAreaWeather";
 import JobConditionsInline from "@/components/crew/JobConditionsInline";
 import WineFadeRule from "@/components/crew/WineFadeRule";
 import { useCrewJobConditions } from "@/components/crew/useCrewJobConditions";
+import { isCrewSampleDashboardJobId } from "@/lib/crew/sample-dashboard-job";
 import type { MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 
 interface Job {
@@ -133,11 +134,14 @@ export default function CrewDashboardPage() {
   }, [fetchData]);
 
   const jobsForConditions =
-    data != null && Array.isArray(data.jobs) ? data.jobs : [];
+    data != null && Array.isArray(data.jobs)
+      ? data.jobs.filter((j) => !isCrewSampleDashboardJobId(j.id))
+      : [];
   const { weatherByJobId, trafficByJobId, trafficLoading } =
     useCrewJobConditions(jobsForConditions);
 
   const completedStatuses = ["delivered", "completed", "done", "cancelled"];
+  const isSampleJob = (j: Job) => isCrewSampleDashboardJobId(j.id);
   const isCompleted = (j: Job) =>
     completedStatuses.includes((j.status || "").toLowerCase());
   const isInProgress = (j: Job) =>
@@ -188,8 +192,18 @@ export default function CrewDashboardPage() {
     endOfDaySubmitted,
   } = data;
   const jobs = Array.isArray(data.jobs) ? data.jobs : [];
-  const firstIncompleteIndex = jobs.findIndex((j) => !isCompleted(j));
-  const canStartJob = (index: number) => index === firstIncompleteIndex;
+  const realJobs = jobs.filter((j) => !isSampleJob(j));
+  const realJobCount = realJobs.length;
+  const firstIncompleteRealIndex = realJobs.findIndex((j) => !isCompleted(j));
+  const firstIncompleteRealId =
+    firstIncompleteRealIndex >= 0 && firstIncompleteRealIndex < realJobs.length
+      ? realJobs[firstIncompleteRealIndex].id
+      : null;
+  const canStartJob = (index: number) => {
+    const j = jobs[index];
+    if (!j || isSampleJob(j) || !firstIncompleteRealId) return false;
+    return j.id === firstIncompleteRealId;
+  };
 
   if (readinessRequired && !readinessCompleted) {
     if (isCrewLead) {
@@ -212,11 +226,11 @@ export default function CrewDashboardPage() {
             The crew lead must complete the pre-trip readiness check before jobs
             are available.
           </p>
-          {jobs.length > 0 && (
+          {realJobCount > 0 && (
             <p className="text-[14px] text-[var(--yu3-ink-muted)] mt-4 font-medium">
-              {jobs.length === 1
+              {realJobCount === 1
                 ? "One job is scheduled for your team today. It will show here after the check."
-                : `${jobs.length} jobs are scheduled for your team today. They will show here after the check.`}
+                : `${realJobCount} jobs are scheduled for your team today. They will show here after the check.`}
             </p>
           )}
         </div>
@@ -226,8 +240,8 @@ export default function CrewDashboardPage() {
 
   const firstName = data.crewMember?.name?.split(/\s+/)[0] || "Crew";
 
-  const completedCount = jobs.filter(isCompleted).length;
-  const totalCount = jobs.length;
+  const completedCount = realJobs.filter(isCompleted).length;
+  const totalCount = realJobs.length;
   const progressPercent =
     totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const now = new Date();
@@ -329,6 +343,7 @@ export default function CrewDashboardPage() {
           ) : (
             <div className="space-y-3 w-full min-w-0">
             {jobs.map((job, index) => {
+              const isSample = isSampleJob(job);
               const completed = isCompleted(job);
               const statusKey = (job.status || "").toLowerCase();
               const forestCompleteBadge = [
@@ -344,7 +359,9 @@ export default function CrewDashboardPage() {
                   <article
                     key={job.id}
                     className={`min-w-0 rounded-[12px] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 sm:p-5 shadow-[0_2px_14px_rgba(15,15,20,0.08)] ${
-                      !completed && !inProgress && !canStart ? " opacity-[0.88]" : ""
+                      !completed && !inProgress && !canStart && !isSample
+                        ? " opacity-[0.88]"
+                        : ""
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3 mb-3">
@@ -389,6 +406,11 @@ export default function CrewDashboardPage() {
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        {isSample && (
+                          <span className="px-2.5 py-1 rounded-md bg-[var(--yu3-wine)]/10 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-wine)] [font-family:var(--font-body)] leading-none">
+                            Sample
+                          </span>
+                        )}
                         {statusInfo ? (
                           <span
                             className={
@@ -484,7 +506,11 @@ export default function CrewDashboardPage() {
 
                     {/* Action area */}
                     <div className="mt-3">
-                      {completed ? (
+                      {isSample ? (
+                        <p className="text-[11px] font-semibold text-[var(--yu3-ink-faint)] [font-family:var(--font-body)] py-2">
+                          Preview only. Not a live job.
+                        </p>
+                      ) : completed ? (
                         <Link
                           href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
                           className="inline-flex items-center justify-center gap-1.5 min-h-[44px] py-2.5 px-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-forest)] bg-[var(--yu3-forest-tint)]/60 hover:bg-[var(--yu3-forest-tint)] transition-colors [font-family:var(--font-body)] rounded-[var(--yu3-r-md)] w-full sm:w-auto"
@@ -549,7 +575,7 @@ export default function CrewDashboardPage() {
         </div>
 
         {/* End day button */}
-        {jobs.length > 0 &&
+        {realJobCount > 0 &&
           completedCount === totalCount &&
           (endOfDaySubmitted ? (
             <Link
@@ -580,7 +606,7 @@ export default function CrewDashboardPage() {
               />
             </Link>
           ))}
-        {jobs.length > 0 && completedCount < totalCount && (
+        {realJobCount > 0 && completedCount < totalCount && (
           <Link
             href="/crew/end-of-day"
             className="mt-8 flex items-center justify-center gap-1 min-h-[48px] py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] hover:text-[var(--yu3-forest)] transition-colors [font-family:var(--font-body)]"

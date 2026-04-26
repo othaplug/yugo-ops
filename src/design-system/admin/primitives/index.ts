@@ -1,17 +1,23 @@
-export { Button } from "./Button"
-export type { ButtonProps } from "./Button"
-export { Input, SearchInput, Textarea, Select } from "./Input"
-export type { InputProps, SearchInputProps } from "./Input"
-export { Badge, StatusPill, TrendPill } from "./Badge"
-export type { BadgeProps, StatusPillProps } from "./Badge"
-export { Avatar, AvatarStack } from "./Avatar"
-export type { AvatarProps, AvatarStackProps } from "./Avatar"
+export { Button } from "./Button";
+export type { ButtonProps } from "./Button";
+export { Input, SearchInput, Textarea, Select } from "./Input";
+export type { InputProps, SearchInputProps } from "./Input";
+export { Badge, StatusPill, TrendPill } from "./Badge";
+export type { BadgeProps, StatusPillProps } from "./Badge";
+export {
+  TierLetterBadge,
+  residentialTierKey,
+  residentialTierFullLabel,
+} from "./TierLetterBadge";
+export type { TierLetterBadgeProps } from "./TierLetterBadge";
+export { Avatar, AvatarStack } from "./Avatar";
+export type { AvatarProps, AvatarStackProps } from "./Avatar";
 export {
   Popover,
   PopoverTrigger,
   PopoverAnchor,
   PopoverContent,
-} from "./Popover"
+} from "./Popover";
 export {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -24,7 +30,7 @@ export {
   DropdownMenuPortal,
   DropdownMenuSub,
   DropdownMenuRadioGroup,
-} from "./DropdownMenu"
+} from "./DropdownMenu";
 export {
   Dialog,
   DialogTrigger,
@@ -37,21 +43,21 @@ export {
   DialogFooter,
   DialogTitle,
   DialogDescription,
-} from "./Dialog"
-export { Drawer, DrawerTrigger, DrawerClose, DrawerContent } from "./Drawer"
-export { Tabs, TabsList, TabsTrigger, TabsContent } from "./Tabs"
+} from "./Dialog";
+export { Drawer, DrawerTrigger, DrawerClose, DrawerContent } from "./Drawer";
+export { Tabs, TabsList, TabsTrigger, TabsContent } from "./Tabs";
 export {
   Tooltip,
   TooltipProvider,
   TooltipRoot,
   TooltipTrigger,
   TooltipContent,
-} from "./Tooltip"
-export { Checkbox } from "./Checkbox"
-export { Switch } from "./Switch"
-export { Skeleton } from "./Skeleton"
-export { EmptyState } from "./EmptyState"
-export { Sparkline, ProbabilityBar } from "./Sparkline"
+} from "./Tooltip";
+export { Checkbox } from "./Checkbox";
+export { Switch } from "./Switch";
+export { Skeleton } from "./Skeleton";
+export { EmptyState } from "./EmptyState";
+export { Sparkline, ProbabilityBar } from "./Sparkline";
 export {
   Card,
   CardHeader,
@@ -60,4 +66,4 @@ export {
   CardBody,
   CardFooter,
   Section,
-} from "./Card"
+} from "./Card";

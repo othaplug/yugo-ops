@@ -133,6 +133,7 @@ export default function ChangeRequestsClient({
     () => [
       {
         id: "client",
+        shortLabel: "Client",
         header: "Client",
         accessor: (r) => {
           const moveData = getMoveData(r);
@@ -185,6 +186,7 @@ export default function ChangeRequestsClient({
       },
       {
         id: "urgency",
+        shortLabel: "Urgency",
         header: "Urgency",
         accessor: (r) => String((r as { urgency: string }).urgency),
         sortable: true,
@@ -204,6 +206,7 @@ export default function ChangeRequestsClient({
       },
       {
         id: "status",
+        shortLabel: "Status",
         header: "Status",
         accessor: (r) => String((r as { status: string }).status),
         sortable: true,
@@ -224,6 +227,7 @@ export default function ChangeRequestsClient({
       },
       {
         id: "type",
+        shortLabel: "Type",
         header: "Type",
         accessor: (r) => String((r as { type: string }).type),
         sortable: true,
@@ -234,6 +238,7 @@ export default function ChangeRequestsClient({
       },
       {
         id: "description",
+        shortLabel: "Description",
         header: "Description",
         accessor: (r) => String((r as { description: string }).description ?? ""),
         sortable: true,
@@ -257,6 +262,7 @@ export default function ChangeRequestsClient({
       },
       {
         id: "actions",
+        shortLabel: "Actions",
         header: "Actions",
         accessor: () => "",
         sortable: false,

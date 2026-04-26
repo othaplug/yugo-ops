@@ -287,6 +287,7 @@ export async function runPostPaymentActions(
             },
             body: JSON.stringify({
               properties: {
+                dealname: `${(clientName || "Client").trim()} · ${input.moveCode}`.slice(0, 200),
                 amount: String(totalWithTax),
                 deposit_received_at: new Date().toISOString(),
                 square_invoice_id: input.paymentId,
@@ -907,6 +908,7 @@ export async function runPostPaymentActionsB2BDelivery(
             },
             body: JSON.stringify({
               properties: {
+                dealname: `${(clientName || "Client").trim()} · ${input.deliveryNumber}`.slice(0, 200),
                 amount: String(totalWithTax),
                 deposit_received_at: new Date().toISOString(),
                 square_invoice_id: input.paymentId,

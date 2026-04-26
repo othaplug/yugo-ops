@@ -179,6 +179,7 @@ export default function QuotesListV3Client({
     () => [
       {
         id: "quote_id",
+        shortLabel: "Quote",
         header: "Quote",
         accessor: (q) => q.quote_id,
         sortable: true,
@@ -192,6 +193,7 @@ export default function QuotesListV3Client({
       },
       {
         id: "client",
+        shortLabel: "Client",
         header: "Client",
         accessor: (q) => q.client_name,
         sortable: true,
@@ -213,6 +215,7 @@ export default function QuotesListV3Client({
       },
       {
         id: "service",
+        shortLabel: "Service",
         header: "Service",
         accessor: (q) => q.service_type,
         sortable: true,
@@ -226,6 +229,7 @@ export default function QuotesListV3Client({
       },
       {
         id: "status",
+        shortLabel: "Status",
         header: "Status",
         accessor: (q) => q.status,
         sortable: true,
@@ -246,6 +250,7 @@ export default function QuotesListV3Client({
       },
       {
         id: "sent",
+        shortLabel: "Sent",
         header: "Sent",
         accessor: (q) => q.sent_at || q.created_at,
         sortable: true,
@@ -258,6 +263,7 @@ export default function QuotesListV3Client({
       },
       {
         id: "amount",
+        shortLabel: "Amount",
         header: "Amount",
         accessor: (q) => quoteAmountRaw(q) ?? 0,
         align: "right",
@@ -271,6 +277,7 @@ export default function QuotesListV3Client({
       },
       {
         id: "created_at",
+        shortLabel: "Created",
         header: "Created",
         accessor: (q) => q.created_at,
         sortable: true,

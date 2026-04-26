@@ -220,13 +220,13 @@ export default function CrewBinOrdersPage() {
         )}
 
         {!loading && error && !tasks.length && !activeTask && (
-          <div className="rounded-2xl bg-[#FAF7F2] shadow-[0_2px_28px_rgba(44,62,45,0.06)] border border-[var(--brd)]/25 px-6 py-8 text-center">
+          <div className="rounded-2xl bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)] border border-[var(--brd)]/25 px-6 py-8 text-center">
             <p className="text-[14px] text-[var(--red)] font-medium">{error}</p>
           </div>
         )}
 
         {!loading && tasks.length === 0 && !activeTask && !done && !error && (
-          <div className="rounded-2xl bg-[#FAF7F2] shadow-[0_2px_28px_rgba(44,62,45,0.06)] border border-[var(--brd)]/25 px-6 py-12 text-center">
+          <div className="rounded-2xl bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)] border border-[var(--brd)]/25 px-6 py-12 text-center">
             <p className="text-[12px] font-bold uppercase tracking-[0.14em] leading-tight text-[var(--tx)] mb-3 [font-family:var(--font-body)]">
               No bin tasks right now
             </p>
@@ -252,7 +252,7 @@ export default function CrewBinOrdersPage() {
                   <button
                     type="button"
                     onClick={() => openTask(task)}
-                    className={`w-full text-left rounded-2xl border border-[var(--brd)]/25 bg-[#FAF7F2] shadow-[0_2px_28px_rgba(44,62,45,0.06)] pl-5 pr-4 py-5 sm:pl-6 sm:pr-5 sm:py-6 border-l-[5px] ${accent} transition-all hover:shadow-[0_8px_36px_rgba(44,62,45,0.12)] active:scale-[0.99]`}
+                    className={`w-full text-left rounded-2xl border border-[var(--brd)]/25 bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)] pl-5 pr-4 py-5 sm:pl-6 sm:pr-5 sm:py-6 border-l-[5px] ${accent} transition-all hover:shadow-[0_8px_36px_rgba(44,62,45,0.12)] active:scale-[0.99]`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                       <div className="min-w-0 flex-1 space-y-2">
@@ -307,7 +307,7 @@ export default function CrewBinOrdersPage() {
               Back to list
             </button>
 
-            <div className="rounded-2xl border border-[var(--brd)]/25 bg-[#FAF7F2] shadow-[0_2px_28px_rgba(44,62,45,0.06)] p-5 sm:p-7 space-y-5">
+            <div className="rounded-2xl border border-[var(--brd)]/25 bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)] p-5 sm:p-7 space-y-5">
               <div className="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-[var(--brd)]/30">
                 <div>
                   <span className="font-mono text-[14px] font-bold text-[var(--tx)]">{activeTask.order_number}</span>
@@ -392,7 +392,7 @@ export default function CrewBinOrdersPage() {
                 {activeTask.taskType === "dropoff" ? "Mark bins delivered" : "Mark pickup complete"}
               </button>
             ) : (
-              <div className="rounded-2xl border border-[var(--brd)]/25 bg-[#FAF7F2] p-5 sm:p-7 space-y-6 shadow-[0_2px_28px_rgba(44,62,45,0.06)]">
+              <div className="rounded-2xl border border-[var(--brd)]/25 bg-[var(--yu3-bg-surface)] p-5 sm:p-7 space-y-6 shadow-[var(--yu3-shadow-sm)]">
                 <h3 className="font-hero text-[22px] font-bold text-[#5C1A33]">
                   {activeTask.taskType === "dropoff" ? "Confirm delivery" : "Confirm pickup"}
                 </h3>
@@ -472,7 +472,7 @@ export default function CrewBinOrdersPage() {
 
         {done && (
           <div className="mt-10 text-center space-y-6 px-2">
-            <div className="mx-auto max-w-sm rounded-2xl border-2 border-[#2C3E2D]/20 bg-[#FAF7F2] px-6 py-8 shadow-[0_2px_28px_rgba(44,62,45,0.06)]">
+            <div className="mx-auto max-w-sm rounded-2xl border-2 border-[#2C3E2D]/20 bg-[var(--yu3-bg-surface)] px-6 py-8 shadow-[var(--yu3-shadow-sm)]">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#243524] [font-family:var(--font-body)] mb-3">
                 Recorded
               </p>

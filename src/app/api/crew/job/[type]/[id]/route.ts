@@ -17,6 +17,10 @@ import {
 } from "@/lib/jobs/duration-estimate";
 import { computeOperationalJobAlerts } from "@/lib/jobs/operational-alerts";
 import { maybeNotifyOperationalInJobAlerts } from "@/lib/jobs/operational-alert-notifications";
+import {
+  computeCrewTipReportNeeded,
+  type TipReportTipRow,
+} from "@/lib/crew/tip-report-eligibility";
 
 const COMPLEXITY_BADGE_LABELS: Record<string, string> = {
   specialty_transport: "Specialty transport",
@@ -162,9 +166,23 @@ export async function GET(
 
     let partnerVertical: string | null = null;
     const orgId = (d as { organization_id?: string | null }).organization_id;
+    let partnerName: string | null = null;
+    let partnerPhone: string | null = null;
+    let coordinatorNameOut = "Yugo Operations";
+    let coordinatorPhoneOut = (process.env.NEXT_PUBLIC_YUGO_PHONE || "").trim() || null;
     if (orgId) {
-      const { data: org } = await admin.from("organizations").select("type").eq("id", orgId).maybeSingle();
+      const { data: org } = await admin
+        .from("organizations")
+        .select("type, name, phone, partner_coordinator_name, partner_coordinator_phone")
+        .eq("id", orgId)
+        .maybeSingle();
       partnerVertical = (org?.type as string | null) ?? null;
+      partnerName = (org as { name?: string | null })?.name?.trim() || null;
+      partnerPhone = (org as { phone?: string | null })?.phone?.trim() || null;
+      const pcName = (org as { partner_coordinator_name?: string | null }).partner_coordinator_name?.trim();
+      const pcPhone = (org as { partner_coordinator_phone?: string | null }).partner_coordinator_phone?.trim();
+      if (pcName) coordinatorNameOut = pcName;
+      if (pcPhone) coordinatorPhoneOut = pcPhone;
     }
 
     const estDurD =
@@ -244,6 +262,17 @@ export async function GET(
       alerts: deliveryOperationalAlerts,
     });
 
+    let tipReportNeeded = false;
+    const dst = String(d.status || "").toLowerCase();
+    if (["delivered", "completed", "done"].includes(dst)) {
+      const { data: tipRow } = await admin
+        .from("tips")
+        .select("square_payment_id, amount, method, reported_by")
+        .eq("delivery_id", d.id)
+        .maybeSingle();
+      tipReportNeeded = computeCrewTipReportNeeded(tipRow as TipReportTipRow | null);
+    }
+
     return NextResponse.json({
       viewerCrewMemberId: payload.crewMemberId,
       viewerCrewMemberName: payload.name,
@@ -284,9 +313,16 @@ export async function GET(
       fuelPriceCadPerLitre,
       serviceType,
       partnerVertical,
+      partnerName,
+      partnerPhone,
+      clientPhone: d.customer_phone || d.contact_phone || null,
+      clientEmail: d.customer_email || d.contact_email || null,
+      coordinatorName: coordinatorNameOut,
+      coordinatorPhone: coordinatorPhoneOut,
       estimatedDurationMinutes: deliveryEstMin,
       marginAlertMinutes: deliveryMarginMin,
       operationalAlerts: deliveryOperationalAlerts,
+      tipReportNeeded,
     });
   }
 
@@ -423,6 +459,30 @@ export async function GET(
     alerts: operationalAlerts,
   });
 
+  let tipReportNeeded = false;
+  const mst = String(m.status || "").toLowerCase();
+  if (["completed", "done"].includes(mst)) {
+    const { data: tipRow } = await admin
+      .from("tips")
+      .select("square_payment_id, amount, method, reported_by")
+      .eq("move_id", m.id)
+      .maybeSingle();
+    tipReportNeeded = computeCrewTipReportNeeded(tipRow as TipReportTipRow | null);
+  }
+
+  const orgIdMove = (m as { organization_id?: string | null }).organization_id ?? null;
+  let partnerName: string | null = null;
+  let partnerPhone: string | null = null;
+  if (orgIdMove) {
+    const { data: orgM } = await admin
+      .from("organizations")
+      .select("name, phone")
+      .eq("id", orgIdMove)
+      .maybeSingle();
+    partnerName = (orgM as { name?: string | null } | null)?.name?.trim() || null;
+    partnerPhone = (orgM as { phone?: string | null } | null)?.phone?.trim() || null;
+  }
+
   return NextResponse.json({
     viewerCrewMemberId: payload.crewMemberId,
     viewerCrewMemberName: payload.name,
@@ -432,6 +492,12 @@ export async function GET(
     moveType: m.move_type || "residential",
     status: m.status || "scheduled",
     clientName: m.client_name || "-",
+    clientPhone: (m.client_phone as string | null | undefined)?.trim() || null,
+    clientEmail: (m.client_email as string | null | undefined)?.trim() || null,
+    partnerName,
+    partnerPhone,
+    coordinatorName: "Yugo Operations",
+    coordinatorPhone: (process.env.NEXT_PUBLIC_YUGO_PHONE || "").trim() || null,
     fromAddress: m.from_address || "-",
     toAddress: m.to_address || "-",
     fromAccess: m.from_access || null,
@@ -465,5 +531,6 @@ export async function GET(
     estimatedDurationMinutes: moveEstMin,
     marginAlertMinutes: moveMarginMin,
     operationalAlerts,
+    tipReportNeeded,
   });
 }

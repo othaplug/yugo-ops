@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { PageHeader } from "@/design-system/admin/layout"
-import { Button } from "@/design-system/admin/primitives"
-import { KpiStrip } from "@/design-system/admin/dashboard"
-import { ArrowClockwise, Plus } from "@phosphor-icons/react"
-import InvoicesPageClient from "./InvoicesPageClient"
+import * as React from "react";
+import { PageHeader } from "@/design-system/admin/layout";
+import { Button } from "@/design-system/admin/primitives";
+import { KpiStrip } from "@/design-system/admin/dashboard";
+import { ArrowClockwise, Plus } from "@phosphor-icons/react";
+import InvoicesPageClient from "./InvoicesPageClient";
 
 type Kpi = {
-  id: string
-  label: string
-  value: string
-  hint?: string
-}
+  id: string;
+  label: string;
+  value: string;
+  hint?: string;
+};
 
 export default function InvoicesV3Client({
   invoices,
@@ -20,10 +20,10 @@ export default function InvoicesV3Client({
   loadError,
   orgEmbedWarning,
 }: {
-  invoices: unknown[]
-  kpis: Kpi[]
-  loadError: string | null
-  orgEmbedWarning: string | null
+  invoices: unknown[];
+  kpis: Kpi[];
+  loadError: string | null;
+  orgEmbedWarning: string | null;
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -35,18 +35,18 @@ export default function InvoicesV3Client({
           <>
             <Button
               variant="secondary"
-              leadingIcon={<ArrowClockwise size={16} />}
+              leadingIcon={<ArrowClockwise size={15} />}
               onClick={() => {
-                window.location.reload()
+                window.location.reload();
               }}
             >
               Refresh
             </Button>
             <Button
               variant="primary"
-              leadingIcon={<Plus size={16} />}
+              leadingIcon={<Plus size={15} />}
               onClick={() => {
-                window.location.href = "/admin/finance/invoices/new"
+                window.location.href = "/admin/finance/invoices/new";
               }}
             >
               New invoice
@@ -77,5 +77,5 @@ export default function InvoicesV3Client({
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <InvoicesPageClient invoices={invoices as any[]} />
     </div>
-  )
+  );
 }

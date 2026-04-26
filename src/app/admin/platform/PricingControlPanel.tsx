@@ -3551,7 +3551,7 @@ const PRICING_QUICK_NAV_GROUPS: { title: string; ids: (typeof PRICING_SECTIONS)[
 ]
 
 export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
-  const [jumpNavOpen, setJumpNavOpen] = useState(true)
+  const [jumpNavOpen, setJumpNavOpen] = useState(false)
 
   return (
     <PricingAdminContext.Provider value={{ isSuperAdmin }}>

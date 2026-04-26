@@ -561,7 +561,7 @@ export default function WalkthroughModal({
           <button
             type="button"
             onClick={onClose}
-            className="crew-job-action-chip shrink-0 p-2 text-[#5C1A33]/45 hover:text-[#5C1A33] hover:bg-[#5C1A33]/[0.06] transition-colors rounded-lg"
+            className="crew-job-action-chip shrink-0 p-2 text-[var(--yu3-wine)]/45 hover:text-[var(--yu3-wine)] hover:bg-[var(--yu3-wine)]/[0.06] transition-colors rounded-lg"
             aria-label="Close"
           >
             <X size={18} weight="regular" aria-hidden />
@@ -573,8 +573,8 @@ export default function WalkthroughModal({
           {/* ── INTRO ── */}
           {step === "intro" && (
             <div className="text-center py-5 sm:py-6 space-y-6">
-              <div className="w-[76px] h-[76px] rounded-2xl border border-[#5C1A33]/12 bg-gradient-to-br from-[#FAF3F5] via-[#F7EEF1] to-[#F2E6EA] flex items-center justify-center mx-auto shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]">
-                <div className="w-[52px] h-[52px] rounded-full bg-[#5C1A33] flex items-center justify-center shadow-[0_4px_14px_rgba(92,26,51,0.35)]">
+              <div className="w-[76px] h-[76px] rounded-2xl border border-[var(--yu3-wine)]/12 bg-gradient-to-br from-[#FFFBF7] via-[var(--yu3-wine-tint)]/30 to-[var(--yu3-wine-tint)]/50 flex items-center justify-center mx-auto shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]">
+                <div className="w-[52px] h-[52px] rounded-full bg-[var(--yu3-wine)] flex items-center justify-center shadow-[0_4px_14px_rgba(92,26,51,0.35)]">
                   <CheckCircle
                     size={30}
                     color="#FFFBF7"
@@ -584,12 +584,12 @@ export default function WalkthroughModal({
                 </div>
               </div>
               <div className="px-1">
-                <h4 className="font-hero text-[24px] sm:text-[26px] font-semibold text-[#2b1810] mb-2 tracking-[-0.02em] leading-tight">
+                <h4 className="font-hero text-[24px] sm:text-[26px] font-semibold text-[var(--yu3-ink-strong)] mb-2 tracking-[-0.02em] leading-tight">
                   {logistics
                     ? "Step 1: Verify the job list"
                     : "Step 1: Inventory walkthrough"}
                 </h4>
-                <p className="text-[13px] sm:text-[14px] text-[#3d2a26]/90 leading-relaxed [font-family:var(--font-body)]">
+                <p className="text-[13px] sm:text-[14px] text-[var(--yu3-ink-muted)] leading-relaxed [font-family:var(--font-body)]">
                   {logistics ? (
                     <>
                       With the site contact or receiver, confirm the job list
@@ -604,17 +604,17 @@ export default function WalkthroughModal({
                     </>
                   )}
                 </p>
-                <p className="text-[12px] sm:text-[13px] font-semibold text-[#5C1A33]/85 mt-3 leading-snug [font-family:var(--font-body)]">
+                <p className="text-[12px] sm:text-[13px] font-semibold text-[var(--yu3-wine)]/85 mt-3 leading-snug [font-family:var(--font-body)]">
                   {logistics
                     ? "The line-by-line checklist opens on the next screen. Tap Start inventory check."
                     : "The room-by-room checklist opens on the next screen. Tap Start inventory check."}
                 </p>
               </div>
-              <div className="rounded-xl border border-[#5C1A33]/12 bg-gradient-to-br from-[#FAF3F5] via-[#F7EEF1] to-[#F2E6EA] px-4 py-3.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]">
-                <p className="text-[10px] font-bold text-[#5C1A33]/65 uppercase tracking-[0.12em] mb-1.5 [font-family:var(--font-body)] leading-none">
+              <div className="rounded-xl border border-[var(--yu3-wine)]/12 bg-gradient-to-br from-[#FFFBF7] via-[var(--yu3-wine-tint)]/30 to-[var(--yu3-wine-tint)]/50 px-4 py-3.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]">
+                <p className="text-[10px] font-bold text-[var(--yu3-wine)]/65 uppercase tracking-[0.12em] mb-1.5 [font-family:var(--font-body)] leading-none">
                   Remember
                 </p>
-                <p className="text-[12px] text-[#3d2a26] leading-relaxed [font-family:var(--font-body)]">
+                <p className="text-[12px] text-[var(--yu3-ink)] leading-relaxed [font-family:var(--font-body)]">
                   You cannot set or change prices. Just identify what&apos;s
                   here and what&apos;s missing. Your coordinator will handle
                   any price adjustments.
@@ -624,7 +624,7 @@ export default function WalkthroughModal({
                 <button
                   type="button"
                   onClick={() => setStep("checklist")}
-                  className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] [font-family:var(--font-body)] leading-none active:scale-[0.99] transition-transform"
+                  className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] text-[var(--yu3-on-wine)] [font-family:var(--font-body)] leading-none active:scale-[0.99] transition-transform"
                 >
                   Start inventory check
                   <CaretRight
@@ -637,7 +637,7 @@ export default function WalkthroughModal({
                 <button
                   type="button"
                   onClick={() => setStep("skip")}
-                  className="w-full py-2.5 text-[12px] font-medium text-[#5C1A33]/55 hover:text-[#5C1A33] underline-offset-[3px] hover:underline transition-colors [font-family:var(--font-body)]"
+                  className="w-full py-2.5 text-[12px] font-medium text-[var(--yu3-wine)]/55 hover:text-[var(--yu3-wine)] underline-offset-[3px] hover:underline transition-colors [font-family:var(--font-body)]"
                 >
                   Skip (with reason)
                 </button>
@@ -658,7 +658,7 @@ export default function WalkthroughModal({
                   key={r.value}
                   className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors ${
                     skipReason === r.value
-                      ? "border-[#5C1A33] bg-[#5C1A33]/8"
+                      ? "border-[var(--yu3-wine)] bg-[var(--yu3-wine)]/8"
                       : "border-[var(--brd)] hover:border-[var(--brd)]/80"
                   }`}
                 >
@@ -668,7 +668,7 @@ export default function WalkthroughModal({
                     value={r.value}
                     checked={skipReason === r.value}
                     onChange={() => setSkipReason(r.value)}
-                    className="accent-[#5C1A33]"
+                    className="accent-[var(--yu3-wine)]"
                   />
                   <span className="text-[13px] text-[var(--tx)]">
                     {r.label}
@@ -694,7 +694,7 @@ export default function WalkthroughModal({
                     className="rounded-xl border border-[var(--brd)]/60 overflow-hidden"
                   >
                     <div className="px-3 py-2 bg-[var(--bg)]/80 border-b border-[var(--brd)]/40">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#5C1A33]">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--yu3-wine)]">
                         {group.room}
                       </span>
                     </div>
@@ -706,7 +706,7 @@ export default function WalkthroughModal({
                         >
                           <div className="shrink-0">
                             {item.status === "here" ? (
-                              <div className="w-5 h-5 rounded-full bg-[#5C1A33]/12 border border-[#5C1A33]/45 flex items-center justify-center">
+                              <div className="w-5 h-5 rounded-full bg-[var(--yu3-wine)]/12 border border-[var(--yu3-wine)]/45 flex items-center justify-center">
                                 <Check
                                   size={10}
                                   color="#5C1A33"
@@ -724,7 +724,7 @@ export default function WalkthroughModal({
                                 />
                               </div>
                             ) : (
-                              <div className="w-5 h-5 rounded-full border border-[#5C1A33]/18 bg-[#FFFBF7]" />
+                              <div className="w-5 h-5 rounded-full border border-[var(--yu3-wine)]/18 bg-[#FFFBF7]" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -741,7 +741,7 @@ export default function WalkthroughModal({
                             <button
                               type="button"
                               onClick={() => setItemStatus(item.id, "here")}
-                              className="shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-[#5C1A33]/10 text-[#5C1A33] hover:bg-[#5C1A33]/18 border border-[#5C1A33]/20 transition-colors active:scale-[0.98] [font-family:var(--font-body)]"
+                              className="shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--yu3-wine)]/10 text-[var(--yu3-wine)] hover:bg-[var(--yu3-wine)]/18 border border-[var(--yu3-wine)]/20 transition-colors active:scale-[0.98] [font-family:var(--font-body)]"
                             >
                               Here
                             </button>
@@ -788,7 +788,7 @@ export default function WalkthroughModal({
                   {extraItems.map((e, i) => (
                     <div
                       key={i}
-                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-[#5C1A33]/25 bg-[#5C1A33]/5"
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-[var(--yu3-wine)]/25 bg-[var(--yu3-wine)]/5"
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] text-[var(--tx)] font-medium">
@@ -804,13 +804,13 @@ export default function WalkthroughModal({
                               : `Score ${e.weight_score}`}
                         </p>
                       </div>
-                      <span className="text-[13px] font-semibold text-[#5C1A33]">
+                      <span className="text-[13px] font-semibold text-[var(--yu3-wine)]">
                         {e.surcharge != null ? `+$${e.surcharge}` : "—"}
                       </span>
                       <button
                         type="button"
                         onClick={() => removeExtra(i)}
-                        className="p-1 rounded-lg text-[#5C1A33]/40 hover:text-red-600 transition-colors"
+                        className="p-1 rounded-lg text-[var(--yu3-wine)]/40 hover:text-red-600 transition-colors"
                       >
                         <X size={13} />
                       </button>
@@ -885,7 +885,7 @@ export default function WalkthroughModal({
                                 setCustomItemName(searchQuery);
                                 setSearchQuery("");
                               }}
-                              className="text-[#5C1A33] font-medium"
+                              className="text-[var(--yu3-wine)] font-medium"
                             >
                               add custom item
                             </button>
@@ -896,7 +896,7 @@ export default function WalkthroughModal({
 
                   {/* Selected item */}
                   {selectedItem && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#5C1A33]/8 border border-[#5C1A33]/20">
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--yu3-wine)]/8 border border-[var(--yu3-wine)]/20">
                       <span className="flex-1 text-[13px] font-medium text-[var(--tx)]">
                         {selectedItem.item_name}
                       </span>
@@ -913,7 +913,7 @@ export default function WalkthroughModal({
                       <button
                         type="button"
                         onClick={() => setSelectedItem(null)}
-                        className="text-[#5C1A33]/40 hover:text-red-600 transition-colors"
+                        className="text-[var(--yu3-wine)]/40 hover:text-red-600 transition-colors"
                       >
                         <X size={12} />
                       </button>
@@ -942,7 +942,7 @@ export default function WalkthroughModal({
                               onClick={() => setCustomWeightClass(k)}
                               className={`px-3 py-2 rounded-lg border text-[12px] font-medium transition-colors ${
                                 customWeightClass === k
-                                  ? "border-[#5C1A33] bg-[#5C1A33]/10 text-[#5C1A33]"
+                                  ? "border-[var(--yu3-wine)] bg-[var(--yu3-wine)]/10 text-[var(--yu3-wine)]"
                                   : "border-[var(--brd)] text-[var(--tx2)]"
                               }`}
                             >
@@ -990,7 +990,7 @@ export default function WalkthroughModal({
                         setSearchQuery("");
                         setExtraQty(1);
                       }}
-                      className="flex-1 py-2.5 rounded-lg border border-[#5C1A33]/20 text-[#3d2a26] text-[13px] font-medium hover:bg-[#5C1A33]/[0.05] transition-colors [font-family:var(--font-body)]"
+                      className="flex-1 py-2.5 rounded-lg border border-[var(--yu3-wine)]/20 text-[var(--yu3-ink)] text-[13px] font-medium hover:bg-[var(--yu3-wine)]/[0.05] transition-colors [font-family:var(--font-body)]"
                     >
                       Cancel
                     </button>
@@ -998,7 +998,7 @@ export default function WalkthroughModal({
                       type="button"
                       onClick={addExtraItem}
                       disabled={!selectedItem && !customItemName.trim()}
-                      className="crew-premium-cta flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-bold text-[11px] uppercase tracking-[0.08em] text-[#fffbf7] disabled:opacity-40 [font-family:var(--font-body)] leading-none"
+                      className="crew-premium-cta flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-bold text-[11px] uppercase tracking-[0.08em] text-[var(--yu3-on-wine)] disabled:opacity-40 [font-family:var(--font-body)] leading-none"
                     >
                       Add
                       <CaretRight
@@ -1014,7 +1014,7 @@ export default function WalkthroughModal({
                 <button
                   type="button"
                   onClick={() => setAddExtraOpen(true)}
-                  className="w-full py-2.5 rounded-xl border border-[#5C1A33]/30 bg-[#5C1A33]/6 text-[13px] font-medium text-[#5C1A33] hover:bg-[#5C1A33]/12 flex items-center justify-center gap-2 transition-colors"
+                  className="w-full py-2.5 rounded-xl border border-[var(--yu3-wine)]/30 bg-[var(--yu3-wine)]/6 text-[13px] font-medium text-[var(--yu3-wine)] hover:bg-[var(--yu3-wine)]/12 flex items-center justify-center gap-2 transition-colors"
                 >
                   <Plus size={14} /> Add Extra Item
                 </button>
@@ -1047,10 +1047,10 @@ export default function WalkthroughModal({
               {/* Stats */}
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div>
-                  <p className="text-[20px] font-bold text-[#5C1A33]">
+                  <p className="text-[20px] font-bold text-[var(--yu3-wine)]">
                     {matched}
                   </p>
-                  <p className="text-[10px] text-[#5C1A33]/60 uppercase tracking-[0.1em] mt-0.5 [font-family:var(--font-body)]">
+                  <p className="text-[10px] text-[var(--yu3-wine)]/60 uppercase tracking-[0.1em] mt-0.5 [font-family:var(--font-body)]">
                     Matched
                   </p>
                 </div>
@@ -1063,10 +1063,10 @@ export default function WalkthroughModal({
                   </p>
                 </div>
                 <div>
-                  <p className="text-[20px] font-bold text-[#5C1A33]">
+                  <p className="text-[20px] font-bold text-[var(--yu3-wine)]">
                     {extraItems.length}
                   </p>
-                  <p className="text-[10px] text-[#5C1A33]/60 uppercase tracking-[0.1em] mt-0.5 [font-family:var(--font-body)]">
+                  <p className="text-[10px] text-[var(--yu3-wine)]/60 uppercase tracking-[0.1em] mt-0.5 [font-family:var(--font-body)]">
                     Extra
                   </p>
                 </div>
@@ -1087,7 +1087,7 @@ export default function WalkthroughModal({
                         <span className="text-[13px] text-[var(--tx)]">
                           {e.item_name} {e.quantity > 1 && `×${e.quantity}`}
                         </span>
-                        <span className="text-[13px] font-semibold text-[#5C1A33]">
+                        <span className="text-[13px] font-semibold text-[var(--yu3-wine)]">
                           {e.surcharge != null ? `+$${e.surcharge}` : "—"}
                         </span>
                       </div>
@@ -1145,13 +1145,13 @@ export default function WalkthroughModal({
 
               {/* Net change */}
               {hasDiscrepancyForSubmit && (
-                <div className="rounded-xl border border-[#5C1A33]/12 bg-gradient-to-br from-[#FAF3F5]/80 to-[#F7EEF1]/50 px-4 py-3 space-y-1.5">
+                <div className="rounded-xl border border-[var(--yu3-wine)]/12 bg-gradient-to-br from-[#FFFBF7] to-[var(--yu3-wine-tint)]/40 px-4 py-3 space-y-1.5">
                   <div className="flex items-center justify-between text-[13px]">
-                    <span className="text-[#5C1A33]/55 [font-family:var(--font-body)]">
+                    <span className="text-[var(--yu3-wine)]/55 [font-family:var(--font-body)]">
                       Subtotal change
                     </span>
                     <span
-                      className={`font-semibold [font-family:var(--font-body)] ${netDelta >= 0 ? "text-[#3d2a26]" : "text-[#5C1A33]"}`}
+                      className={`font-semibold [font-family:var(--font-body)] ${netDelta >= 0 ? "text-[var(--yu3-ink)]" : "text-[var(--yu3-wine)]"}`}
                     >
                       {netDelta >= 0 ? "+" : ""}
                       {netDelta >= 0
@@ -1159,7 +1159,7 @@ export default function WalkthroughModal({
                         : `-$${Math.abs(netDelta)}`}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-[12px] text-[#5C1A33]/45 [font-family:var(--font-body)]">
+                  <div className="flex items-center justify-between text-[12px] text-[var(--yu3-wine)]/45 [font-family:var(--font-body)]">
                     <span>HST (13%)</span>
                     <span>
                       {hst >= 0 ? "+" : ""}
@@ -1168,11 +1168,11 @@ export default function WalkthroughModal({
                         : `-$${Math.abs(hst).toFixed(2)}`}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-[14px] font-bold border-t border-[#5C1A33]/10 pt-1.5 mt-1.5 [font-family:var(--font-body)]">
-                    <span className="text-[#2b1810]">Net change</span>
+                  <div className="flex items-center justify-between text-[14px] font-bold border-t border-[var(--yu3-wine)]/10 pt-1.5 mt-1.5 [font-family:var(--font-body)]">
+                    <span className="text-[var(--yu3-ink-strong)]">Net change</span>
                     <span
                       className={
-                        total >= 0 ? "text-[#2b1810]" : "text-[#5C1A33]"
+                        total >= 0 ? "text-[var(--yu3-ink-strong)]" : "text-[var(--yu3-wine)]"
                       }
                     >
                       {total >= 0
@@ -1185,7 +1185,7 @@ export default function WalkthroughModal({
 
               {/* No-change hint */}
               {!hasDiscrepancyForSubmit && (
-                <p className="text-center text-[13px] text-[#5C1A33]/80 font-medium [font-family:var(--font-body)] leading-relaxed">
+                <p className="text-center text-[13px] text-[var(--yu3-wine)]/80 font-medium [font-family:var(--font-body)] leading-relaxed">
                   Everything matches, no changes needed.
                 </p>
               )}
@@ -1214,7 +1214,7 @@ export default function WalkthroughModal({
               <button
                 type="button"
                 onClick={() => onSkip(skipReason)}
-                className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] [font-family:var(--font-body)] leading-none"
+                className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] text-[var(--yu3-on-wine)] [font-family:var(--font-body)] leading-none"
               >
                 {logistics ? "Skip verification" : "Skip walkthrough"}
                 <CaretRight
@@ -1227,7 +1227,7 @@ export default function WalkthroughModal({
               <button
                 type="button"
                 onClick={() => setStep("intro")}
-                className="w-full py-2.5 text-[12px] font-medium text-[#5C1A33]/55 hover:text-[#5C1A33] transition-colors [font-family:var(--font-body)]"
+                className="w-full py-2.5 text-[12px] font-medium text-[var(--yu3-wine)]/55 hover:text-[var(--yu3-wine)] transition-colors [font-family:var(--font-body)]"
               >
                 Go back
               </button>
@@ -1239,7 +1239,7 @@ export default function WalkthroughModal({
               <button
                 type="button"
                 onClick={() => setStep("extras")}
-                className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] [font-family:var(--font-body)] leading-none"
+                className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] text-[var(--yu3-on-wine)] [font-family:var(--font-body)] leading-none"
               >
                 Continue
                 <CaretRight
@@ -1249,7 +1249,7 @@ export default function WalkthroughModal({
                   aria-hidden
                 />
               </button>
-              <p className="text-center text-[11px] text-[#5C1A33]/45 [font-family:var(--font-body)]">
+              <p className="text-center text-[11px] text-[var(--yu3-wine)]/45 [font-family:var(--font-body)]">
                 {matched} here · {missing} missing · {unchecked} unchecked
               </p>
             </>
@@ -1260,7 +1260,7 @@ export default function WalkthroughModal({
               <button
                 type="button"
                 onClick={() => setStep("summary")}
-                className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] [font-family:var(--font-body)] leading-none"
+                className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] text-[var(--yu3-on-wine)] [font-family:var(--font-body)] leading-none"
               >
                 Review summary
                 <CaretRight
@@ -1273,7 +1273,7 @@ export default function WalkthroughModal({
               <button
                 type="button"
                 onClick={() => setStep("checklist")}
-                className="w-full py-2.5 text-[12px] font-medium text-[#5C1A33]/55 hover:text-[#5C1A33] transition-colors [font-family:var(--font-body)]"
+                className="w-full py-2.5 text-[12px] font-medium text-[var(--yu3-wine)]/55 hover:text-[var(--yu3-wine)] transition-colors [font-family:var(--font-body)]"
               >
                 Back to checklist
               </button>
@@ -1288,7 +1288,7 @@ export default function WalkthroughModal({
                     type="button"
                     onClick={submitChangeRequest}
                     disabled={submitting}
-                    className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.08em] text-[#fffbf7] disabled:opacity-100 disabled:bg-[var(--yu3-wine-press)] [font-family:var(--font-body)] leading-none"
+                    className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.08em] text-[var(--yu3-on-wine)] disabled:opacity-100 disabled:bg-[var(--yu3-wine-press)] [font-family:var(--font-body)] leading-none"
                   >
                     {submitting ? (
                       <>
@@ -1325,7 +1325,7 @@ export default function WalkthroughModal({
                     type="button"
                     onClick={() => setStep("extras")}
                     disabled={submitting}
-                    className="w-full py-2.5 text-[12px] font-medium text-[#5C1A33]/55 hover:text-[#5C1A33] disabled:opacity-40 transition-colors [font-family:var(--font-body)]"
+                    className="w-full py-2.5 text-[12px] font-medium text-[var(--yu3-wine)]/55 hover:text-[var(--yu3-wine)] disabled:opacity-40 transition-colors [font-family:var(--font-body)]"
                   >
                     Edit items
                   </button>
@@ -1335,7 +1335,7 @@ export default function WalkthroughModal({
                   type="button"
                   onClick={() => void submitNoChanges()}
                   disabled={submitting}
-                  className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.08em] text-[#fffbf7] disabled:opacity-100 disabled:bg-[var(--yu3-wine-press)] [font-family:var(--font-body)] leading-none"
+                  className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.08em] text-[var(--yu3-on-wine)] disabled:opacity-100 disabled:bg-[var(--yu3-wine-press)] [font-family:var(--font-body)] leading-none"
                 >
                   {submitting ? (
                     "Saving…"

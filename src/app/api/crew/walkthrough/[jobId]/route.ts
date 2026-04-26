@@ -8,7 +8,7 @@ import { normalizePhone } from "@/lib/phone";
 import { getResend } from "@/lib/resend";
 import { getEmailFrom } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
-import { signTrackToken } from "@/lib/track-token";
+import { buildPublicMoveTrackUrl } from "@/lib/notifications/public-track-url";
 import { getMoveCode, formatJobId } from "@/lib/move-code";
 import {
   buildTruckAssessment,
@@ -173,7 +173,10 @@ export async function POST(
   const moveCode = formatJobId(getMoveCode(move as Parameters<typeof getMoveCode>[0]), "move");
   const baseUrl = getEmailBaseUrl();
   const adminUrl = `${baseUrl}/admin/moves/${encodeURIComponent(moveCode)}`;
-  const trackUrl = `${baseUrl}/track/move/${moveId}?token=${signTrackToken("move", moveId)}`;
+  const trackUrl = buildPublicMoveTrackUrl({
+    id: moveId,
+    move_code: (move.move_code as string | null | undefined) ?? null,
+  });
 
   // ── Admin SMS (only when there are changes) ──
   if ((added.length > 0 || removed.length > 0) && insertedId) {

@@ -3,8 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { extraItemApprovalEmail } from "@/lib/email-templates";
 import { getResend } from "@/lib/resend";
-import { getEmailBaseUrl } from "@/lib/email-base-url";
-import { signTrackToken } from "@/lib/track-token";
+import { buildPublicMoveTrackUrl } from "@/lib/notifications/public-track-url";
 import { getEmailFrom } from "@/lib/email/send";
 
 /** PATCH: Approve or reject an extra item */
@@ -37,13 +36,16 @@ export async function PATCH(
   if (status === "approved" && process.env.RESEND_API_KEY) {
     const { data: move } = await admin
       .from("moves")
-      .select("client_email, client_name")
+      .select("id, client_email, client_name, move_code")
       .eq("id", id)
       .single();
     if (move?.client_email) {
       try {
         const resend = getResend();
-        const trackUrl = `${getEmailBaseUrl()}/track/move/${id}?token=${signTrackToken("move", id)}`;
+        const trackUrl = buildPublicMoveTrackUrl({
+          id: move.id,
+          move_code: move.move_code,
+        });
         const html = extraItemApprovalEmail({
           client_name: move.client_name || "Client",
           description: (data as { description?: string }).description || "Extra item",

@@ -10,26 +10,32 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import PageContent from "@/app/admin/components/PageContent";
 import YugoLogo from "@/components/YugoLogo";
 import { useCrewImmersiveNav } from "@/app/crew/components/CrewImmersiveNavContext";
 import { WINE } from "@/app/quote/[quoteId]/quote-shared";
+import { DELIVERY_STATUS_FLOW } from "@/lib/crew-tracking-status";
+import {
+  crewStatusRequiresFinalWalkPhotos,
+  getCrewStatusFlowForMove,
+} from "@/lib/crew/service-type-flow";
 
-/** Primary forest accent (CTAs, stars — not legacy gold). */
-const FOREST_PRIMARY = "#2C3E2D";
-const FOREST = "#2A3D2E";
-const INK = "#1A1A1A";
-const MUTED = "#5A6B5E";
-const BG = "#FAF7F2";
-const BORDER = "rgba(44, 62, 45, 0.12)";
-const NOTE_FILL = "#FFFBF7";
+/** yu3 tokens for inline `style` props; Phosphor icons still use WINE hex. */
+const FOREST_PRIMARY = "var(--yu3-forest)";
+const FOREST = "var(--yu3-forest)";
+const INK = "var(--yu3-ink)";
+const MUTED = "var(--yu3-ink-muted)";
+const BG = "var(--yu3-bg-canvas)";
+const BORDER = "var(--yu3-line-subtle)";
+const NOTE_FILL = "var(--yu3-bg-surface)";
 
-/** Solid wine + cream text — primary forward / submit actions on the sign-off flow. */
+/** Primary forward / submit actions — wine shell matches crew job flow. */
 const SIGNOFF_SOLID_WINE_CTA =
-  "w-full inline-flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 border border-[#3d1426] text-[10px] font-bold tracking-[0.12em] uppercase text-[#FFFBF7] bg-[#5C1A33] hover:bg-[#4a1529] transition-colors disabled:opacity-40 disabled:pointer-events-none [font-family:var(--font-body)] leading-none active:scale-[0.99]";
+  "crew-premium-cta w-full inline-flex min-h-[48px] items-center justify-center gap-2 border border-[#3d1426] px-4 py-3 text-[10px] font-bold uppercase leading-none tracking-[0.12em] text-[var(--yu3-on-wine)] transition-colors [font-family:var(--font-body)] disabled:pointer-events-none disabled:opacity-40 active:scale-[0.99]";
 
-/** Wine text — back navigation (thank-you + already-signed), no border. */
+/** Back navigation (thank-you + already-signed) */
 const SIGNOFF_BACK_LINK =
-  "inline-flex items-center justify-center gap-2 py-2 text-[11px] font-bold tracking-[0.1em] uppercase text-[#5C1A33] hover:text-[#4a1529] transition-colors [font-family:var(--font-body)] leading-none active:scale-[0.99]";
+  "inline-flex items-center justify-center gap-2 py-2 text-[11px] font-bold uppercase leading-none tracking-[0.1em] text-[var(--yu3-wine)] transition-colors [font-family:var(--font-body)] hover:text-[var(--yu3-wine)]/90 active:scale-[0.99]";
 
 const RATING_LABELS: Record<number, string> = {
   1: "Needs Improvement",
@@ -288,15 +294,15 @@ function ToggleCard({
       onClick={() => onChange(!checked)}
       className={`w-full flex items-start gap-3.5 p-4 border text-left transition-all duration-200 ${
         checked
-          ? "border-[#5C1A33] bg-[#FFFBF7]"
-          : "border-[#5C1A33]/15 bg-[#FFFBF7] hover:bg-[#5C1A33]/[0.03]"
+          ? "border-[var(--yu3-wine)] bg-[var(--yu3-bg-surface)]"
+          : "border-[var(--yu3-wine)]/15 bg-[var(--yu3-bg-surface)] hover:bg-[var(--yu3-wine)]/[0.03]"
       }`}
     >
       <div
         className={`mt-0.5 w-5 h-5 shrink-0 flex items-center justify-center border transition-all duration-200 ${
           checked
-            ? "border-[#5C1A33] bg-[#5C1A33] text-[#FFFBF7]"
-            : "border-[#5C1A33]/28 bg-transparent text-transparent"
+            ? "border-[var(--yu3-wine)] bg-[var(--yu3-wine)] text-[var(--yu3-on-wine)]"
+            : "border-[var(--yu3-wine)]/28 bg-transparent text-transparent"
         }`}
       >
         <CheckMark size={9} />
@@ -427,10 +433,11 @@ export default function ClientSignOffPage({
     let cancelled = false;
     const load = async () => {
       try {
-        const [signoffRes, photosRes, inventoryRes] = await Promise.all([
+        const [signoffRes, photosRes, inventoryRes, sessionRes] = await Promise.all([
           fetch(`/api/crew/signoff/${id}?jobType=${jobType}`),
           fetch(`/api/crew/photos/${id}?jobType=${jobType}`),
           fetch(`/api/crew/signoff/${id}/inventory?jobType=${jobType}`),
+          fetch(`/api/crew/session/${jobType}/${id}`),
         ]);
         if (cancelled) return;
         const signoffData = signoffRes.ok ? await signoffRes.json() : null;
@@ -440,12 +447,37 @@ export default function ClientSignOffPage({
         const invData = inventoryRes.ok
           ? await inventoryRes.json()
           : { items: [] };
+        const sessionJson = sessionRes.ok ? await sessionRes.json() : null;
         if (signoffData?.id) setExisting(signoffData);
         if (signoffData?.partnerVertical)
           setPartnerVertical(signoffData.partnerVertical);
         const photos = Array.isArray(photosData)
           ? photosData
           : photosData?.photos || [];
+        const finalWalkCount = photos.filter(
+          (p: { category?: string }) => p.category === "walkthrough_final",
+        ).length;
+        const sess = sessionJson?.session as
+          | { isActive?: boolean; status?: string }
+          | undefined;
+        const moveFlowForSignoff =
+          jobType === "move"
+            ? getCrewStatusFlowForMove(
+                (signoffData as { serviceType?: string | null } | null)
+                  ?.serviceType,
+              )
+            : DELIVERY_STATUS_FLOW;
+        const needsFinalWalkGate =
+          Boolean(sess?.isActive) &&
+          crewStatusRequiresFinalWalkPhotos(
+            jobType,
+            String(sess?.status || ""),
+            moveFlowForSignoff,
+          );
+        if (!signoffData?.id && needsFinalWalkGate && finalWalkCount < 1) {
+          router.replace(`/crew/dashboard/job/${jobType}/${id}`);
+          return;
+        }
         setJobPhotos(photos);
         const items: string[] = invData?.items || [];
         setInventoryItems(items);
@@ -647,43 +679,30 @@ export default function ClientSignOffPage({
 
   if (loading) {
     return (
-      <main
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: BG }}
-      >
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 rounded-full border-2 border-[#2C3E2D]/30 border-t-[#2C3E2D] animate-spin" />
-          <p className="text-[13px]" style={{ color: MUTED }}>
-            Loading…
-          </p>
+      <PageContent className="w-full min-w-0 max-w-full">
+        <div className="flex min-h-[40vh] items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--yu3-wine)]/25 border-t-[var(--yu3-wine)]" />
+            <p className="text-[14px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+              Loading
+            </p>
+          </div>
         </div>
-      </main>
+      </PageContent>
     );
   }
 
   if (existing) {
     return (
-      <main
-        className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: BG }}
-      >
-        <div className="text-center max-w-sm">
-          <div
-            className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
-            style={{ backgroundColor: "rgba(92, 26, 51, 0.12)" }}
-          >
+      <PageContent className="mx-auto w-full min-w-0 max-w-lg">
+        <div className="flex min-h-[50vh] flex-col items-center justify-center pt-4 text-center">
+          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--yu3-wine-tint)]">
             <Check size={24} color={WINE} weight="bold" />
           </div>
-          <h1
-            className="font-hero text-[26px] sm:text-[28px] font-normal mb-2 tracking-tight"
-            style={{ color: WINE }}
-          >
+          <h1 className="font-hero mb-2 text-[26px] font-normal tracking-tight text-[var(--yu3-wine)] sm:text-[28px]">
             Already signed
           </h1>
-          <p
-            className="text-[14px] mb-8 leading-relaxed max-w-[280px] mx-auto [font-family:var(--font-body)]"
-            style={{ color: MUTED }}
-          >
+          <p className="mx-auto mb-8 max-w-[280px] text-[14px] leading-relaxed text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
             This job has already been signed off.
           </p>
           <Link
@@ -700,7 +719,7 @@ export default function ClientSignOffPage({
             Back to job
           </Link>
         </div>
-      </main>
+      </PageContent>
     );
   }
 
@@ -745,10 +764,7 @@ export default function ClientSignOffPage({
   const STEP_LABELS = ["Condition", "Items", "Experience", "Sign"];
 
   return (
-    <main
-      className="min-h-screen"
-      style={{ background: BG, fontFamily: "'DM Sans', sans-serif" }}
-    >
+    <main className="min-h-[100dvh] bg-[var(--yu3-bg-canvas)] [font-family:var(--font-body)]">
       <style>{`
         @keyframes fadeSlideUp {
           from { opacity: 0; transform: translateY(14px); }
@@ -773,7 +789,7 @@ export default function ClientSignOffPage({
         <div className="flex items-center justify-between mb-6">
           <Link
             href={`/crew/dashboard/job/${jobType}/${id}`}
-            className="flex items-center gap-1.5 text-[12px] font-semibold py-1.5 pr-3 -ml-1 text-[#5C1A33] hover:text-[#4a1529] transition-colors [font-family:var(--font-body)]"
+            className="flex items-center gap-1.5 text-[12px] font-semibold py-1.5 pr-3 -ml-1 text-[var(--yu3-wine)] transition-colors [font-family:var(--font-body)] hover:opacity-90"
           >
             <ChevronLeft size={15} color={WINE} /> Back
           </Link>
@@ -797,17 +813,17 @@ export default function ClientSignOffPage({
                     <div
                       className={`w-6 h-6 flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
                         done
-                          ? "bg-[#5C1A33] text-[#FFFBF7]"
+                          ? "bg-[var(--yu3-wine)] text-[var(--yu3-on-wine)]"
                           : active
-                            ? "bg-[#5C1A33] text-[#FFFBF7] shadow-sm"
-                            : "bg-[#FFFBF7] text-[#5A6B5E] border border-[#5C1A33]/20"
+                            ? "bg-[var(--yu3-wine)] text-[var(--yu3-on-wine)] shadow-sm"
+                            : "border border-[var(--yu3-wine)]/20 bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink-muted)]"
                       }`}
                     >
                       {done ? <CheckMark size={9} /> : step}
                     </div>
                     <span
                       className="text-[9px] mt-1 font-bold tracking-wide uppercase"
-                      style={{ color: active ? WINE : "#BBB6AD" }}
+                      style={{ color: active ? WINE : "var(--yu3-ink-faint)" }}
                     >
                       {label}
                     </span>
@@ -871,7 +887,7 @@ export default function ClientSignOffPage({
                 {itemConditions.map((ic, idx) => (
                   <div
                     key={idx}
-                    className="p-4 border bg-[#FFFBF7]"
+                    className="p-4 border bg-[var(--yu3-bg-surface)]"
                     style={{
                       borderColor:
                         ic.condition === "new_damage" ? "#F87171" : BORDER,
@@ -904,8 +920,8 @@ export default function ClientSignOffPage({
                               selected
                                 ? isNewDamage
                                   ? "border-red-600 bg-red-50 text-red-800"
-                                  : "border-[#5C1A33] bg-[#5C1A33]/[0.07] text-[#5C1A33]"
-                                : "border-[#5C1A33]/22 bg-[#FFFBF7] text-[#5A6B5E] hover:border-[#5C1A33]/40"
+                                  : "border-[var(--yu3-wine)] bg-[var(--yu3-wine)]/[0.07] text-[var(--yu3-wine)]"
+                                : "border-[var(--yu3-wine)]/22 bg-[var(--yu3-bg-surface)] text-[var(--yu3-ink-muted)] hover:border-[var(--yu3-wine)]/40"
                             }`}
                           >
                             {selected ? (
@@ -920,7 +936,7 @@ export default function ClientSignOffPage({
                               />
                             ) : (
                               <span
-                                className="w-3.5 h-3.5 shrink-0 border border-[#5C1A33]/28"
+                                className="w-3.5 h-3.5 shrink-0 border border-[var(--yu3-wine)]/28"
                                 aria-hidden
                               />
                             )}
@@ -955,7 +971,7 @@ export default function ClientSignOffPage({
                           updateItemCondition(idx, "notes", e.target.value)
                         }
                         placeholder="Optional notes…"
-                        className="w-full px-3 py-2.5 border text-[12px] outline-none mt-1 [font-family:var(--font-body)] focus:border-[#5C1A33]/50"
+                        className="w-full px-3 py-2.5 border text-[12px] outline-none mt-1 [font-family:var(--font-body)] focus:border-[var(--yu3-wine)]/50"
                         style={{
                           color: INK,
                           backgroundColor: BG,
@@ -1033,7 +1049,7 @@ export default function ClientSignOffPage({
                   {jobPhotos.slice(0, 9).map((p) => (
                     <div
                       key={p.id}
-                      className="aspect-square overflow-hidden border border-[#5C1A33]/12"
+                      className="aspect-square overflow-hidden border border-[var(--yu3-wine)]/12"
                       style={{ background: NOTE_FILL }}
                     >
                       <img
@@ -1045,7 +1061,7 @@ export default function ClientSignOffPage({
                   ))}
                   {jobPhotos.length > 9 && (
                     <div
-                      className="aspect-square flex items-center justify-center text-[12px] font-semibold border border-[#5C1A33]/12"
+                      className="aspect-square flex items-center justify-center text-[12px] font-semibold border border-[var(--yu3-wine)]/12"
                       style={{ background: NOTE_FILL, color: MUTED }}
                     >
                       +{jobPhotos.length - 9}
@@ -1084,7 +1100,7 @@ export default function ClientSignOffPage({
                     value={itemsLeftBehind}
                     onChange={(e) => setItemsLeftBehind(e.target.value)}
                     placeholder="List any items not received or left behind…"
-                    className="w-full p-3.5 border bg-[#FFFBF7] text-[13px] outline-none transition-colors [font-family:var(--font-body)] focus:border-[#5C1A33]/40"
+                    className="w-full p-3.5 border bg-[var(--yu3-bg-surface)] text-[13px] outline-none transition-colors [font-family:var(--font-body)] focus:border-[var(--yu3-wine)]/40"
                     style={{ color: INK, borderColor: BORDER }}
                     rows={3}
                   />
@@ -1118,7 +1134,7 @@ export default function ClientSignOffPage({
                   value={exceptions}
                   onChange={(e) => setExceptions(e.target.value)}
                   placeholder="Describe any damage or condition issues…"
-                  className="w-full p-3.5 border bg-[#FFFBF7] text-[13px] outline-none transition-colors [font-family:var(--font-body)] focus:border-[#5C1A33]/40"
+                  className="w-full p-3.5 border bg-[var(--yu3-bg-surface)] text-[13px] outline-none transition-colors [font-family:var(--font-body)] focus:border-[var(--yu3-wine)]/40"
                   style={{ color: INK, borderColor: BORDER }}
                   rows={3}
                 />
@@ -1221,13 +1237,13 @@ export default function ClientSignOffPage({
                     bd = "1px solid transparent";
                     if (n <= 6) {
                       bg = "#EF4444";
-                      textC = "#FFFBF7";
+                      textC = "var(--yu3-on-wine)";
                     } else if (n <= 8) {
                       bg = "#B45309";
-                      textC = "#FFFBF7";
+                      textC = "var(--yu3-on-wine)";
                     } else {
                       bg = WINE;
-                      textC = "#FFFBF7";
+                      textC = "var(--yu3-on-wine)";
                     }
                   }
                   return (
@@ -1332,11 +1348,11 @@ export default function ClientSignOffPage({
                             name="furniture-reassembled"
                             checked={isSelected}
                             onChange={() => setFurnitureReassembled(value)}
-                            className="w-5 h-5 appearance-none outline-none cursor-pointer border border-[#5C1A33]/28"
+                            className="w-5 h-5 appearance-none outline-none cursor-pointer border border-[var(--yu3-wine)]/28"
                             style={{
                               backgroundColor: isSelected ? WINE : NOTE_FILL,
                               boxShadow: isSelected
-                                ? "inset 0 0 0 2px #FFFBF7"
+                                ? "inset 0 0 0 2px var(--yu3-on-wine)"
                                 : "none",
                             }}
                           />
@@ -1377,7 +1393,7 @@ export default function ClientSignOffPage({
                   value={feedbackNote}
                   onChange={(e) => setFeedbackNote(e.target.value)}
                   placeholder="Describe what happened so we can follow up (e.g. damage, missing items, walkthrough not done, property not left clean…)"
-                  className="w-full p-3.5 border bg-[#FFFBF7] text-[13px] outline-none transition-colors [font-family:var(--font-body)] focus:border-[#5C1A33]/40"
+                  className="w-full p-3.5 border bg-[var(--yu3-bg-surface)] text-[13px] outline-none transition-colors [font-family:var(--font-body)] focus:border-[var(--yu3-wine)]/40"
                   style={{ color: INK, borderColor: BORDER }}
                   rows={3}
                 />
@@ -1387,7 +1403,7 @@ export default function ClientSignOffPage({
                 value={feedbackNote}
                 onChange={(e) => setFeedbackNote(e.target.value)}
                 placeholder="Optional feedback or comments…"
-                className="w-full p-3.5 border bg-[#FFFBF7] text-[13px] outline-none transition-colors mb-5 [font-family:var(--font-body)] focus:border-[#5C1A33]/40"
+                className="w-full p-3.5 border bg-[var(--yu3-bg-surface)] text-[13px] outline-none transition-colors mb-5 [font-family:var(--font-body)] focus:border-[var(--yu3-wine)]/40"
                 style={{ color: INK, borderColor: BORDER }}
                 rows={2}
               />
@@ -1447,7 +1463,7 @@ export default function ClientSignOffPage({
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
                 placeholder="e.g. Jane Smith"
-                className="w-full px-0 py-2.5 bg-transparent border-0 border-b border-solid rounded-none text-[var(--text-base)] outline-none transition-[border-color] [font-family:var(--font-body)] border-b-[rgba(44,62,45,0.28)] focus:border-b-[#5C1A33]/70 placeholder:text-[rgba(90,107,94,0.75)]"
+                className="w-full px-0 py-2.5 bg-transparent border-0 border-b border-solid rounded-none text-[var(--text-base)] outline-none transition-[border-color] [font-family:var(--font-body)] border-b-[rgba(44,62,45,0.28)] focus:border-b-[var(--yu3-wine)]/70 placeholder:text-[rgba(90,107,94,0.75)]"
                 style={{ color: INK }}
               />
             </div>
@@ -1471,9 +1487,9 @@ export default function ClientSignOffPage({
                 </button>
               </div>
               <div
-                className="relative overflow-hidden border border-[#5C1A33]/15"
+                className="relative overflow-hidden border border-[var(--yu3-wine)]/15"
                 style={{
-                  backgroundColor: "#FFFBF7",
+                  backgroundColor: "var(--yu3-on-wine)",
                   boxShadow: "inset 0 1px 6px rgba(0,0,0,0.04)",
                 }}
               >
@@ -1510,7 +1526,7 @@ export default function ClientSignOffPage({
             </div>
 
             {/* Legal disclosure */}
-            <div className="p-4 mb-5 border border-[#5C1A33]/18 bg-[#FFFBF7]">
+            <div className="p-4 mb-5 border border-[var(--yu3-wine)]/18 bg-[var(--yu3-bg-surface)]">
               <p
                 className="text-[11px] leading-relaxed"
                 style={{ color: FOREST }}
@@ -1688,14 +1704,14 @@ export default function ClientSignOffPage({
                   className={`w-full flex items-center gap-3.5 p-4 border text-left transition-all [font-family:var(--font-body)] ${
                     skipReason === r.value
                       ? "border-red-300 bg-red-50"
-                      : "border-[#5C1A33]/12 bg-[#FFFBF7] hover:border-red-200/60"
+                      : "border-[var(--yu3-wine)]/12 bg-[var(--yu3-bg-surface)] hover:border-red-200/60"
                   }`}
                 >
                   <div
                     className={`w-[18px] h-[18px] shrink-0 flex items-center justify-center border ${
                       skipReason === r.value
                         ? "border-red-600 bg-red-600"
-                        : "border-[#5C1A33]/25 bg-[#FFFBF7]"
+                        : "border-[var(--yu3-wine)]/25 bg-[var(--yu3-bg-surface)]"
                     }`}
                   >
                     {skipReason === r.value && (
@@ -1721,7 +1737,7 @@ export default function ClientSignOffPage({
               value={skipNote}
               onChange={(e) => setSkipNote(e.target.value)}
               placeholder="Additional details (required for 'Other')…"
-              className="w-full p-3.5 border bg-[#FFFBF7] text-[13px] outline-none transition-colors mb-4 [font-family:var(--font-body)] focus:border-[#5C1A33]/40"
+              className="w-full p-3.5 border bg-[var(--yu3-bg-surface)] text-[13px] outline-none transition-colors mb-4 [font-family:var(--font-body)] focus:border-[var(--yu3-wine)]/40"
               style={{ color: INK, borderColor: BORDER }}
               rows={3}
             />
@@ -1743,7 +1759,7 @@ export default function ClientSignOffPage({
                 !skipReason ||
                 (skipReason === "other" && !skipNote.trim())
               }
-              className="w-full inline-flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 mb-3 border border-red-700/80 text-[10px] font-bold tracking-[0.12em] uppercase text-red-800 bg-[#FFFBF7] hover:bg-red-50 transition-colors disabled:opacity-40 disabled:pointer-events-none [font-family:var(--font-body)] leading-none active:scale-[0.99]"
+              className="w-full inline-flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 mb-3 border border-red-700/80 text-[10px] font-bold tracking-[0.12em] uppercase text-red-800 bg-[var(--yu3-bg-surface)] hover:bg-red-50 transition-colors disabled:opacity-40 disabled:pointer-events-none [font-family:var(--font-body)] leading-none active:scale-[0.99]"
             >
               {skipSubmitting ? (
                 "Submitting…"
@@ -1763,7 +1779,7 @@ export default function ClientSignOffPage({
             <button
               type="button"
               onClick={() => setPhase(1)}
-              className="w-full py-2.5 font-medium text-[13px] border border-[#5C1A33]/22 bg-[#FFFBF7] text-[#5A6B5E] hover:text-[#5C1A33] hover:bg-[#5C1A33]/[0.05] transition-colors [font-family:var(--font-body)]"
+              className="w-full border border-[var(--yu3-wine)]/22 bg-[var(--yu3-bg-surface)] py-2.5 text-[13px] font-medium text-[var(--yu3-ink-muted)] transition-colors [font-family:var(--font-body)] hover:bg-[var(--yu3-wine-tint)]/40 hover:text-[var(--yu3-wine)]"
             >
               Go back
             </button>
@@ -1776,7 +1792,7 @@ export default function ClientSignOffPage({
             <button
               type="button"
               onClick={() => setPhase(6)}
-              className="text-[11px] transition-colors hover:text-[#5C1A33] underline underline-offset-2"
+              className="text-[11px] transition-colors hover:text-[var(--yu3-wine)] underline underline-offset-2"
               style={{ color: MUTED }}
             >
               Client not around? Skip and do another route

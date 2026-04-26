@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
-import { signTrackToken } from "@/lib/track-token";
+import { buildPublicDeliveryTrackUrl, buildPublicMoveTrackUrl } from "@/lib/notifications/public-track-url";
 import { sendEmail } from "@/lib/email/send";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { issueDeliveryTrackingTokens } from "@/lib/delivery-tracking-tokens";
@@ -9,7 +9,9 @@ import { issueDeliveryTrackingTokens } from "@/lib/delivery-tracking-tokens";
 export type PartnerCheckpointStatus =
   | "en_route_to_pickup"
   | "arrived_at_pickup"
+  | "inventory_check"
   | "loading"
+  | "wrapping"
   | "en_route_to_destination"
   | "arrived_at_destination"
   | "unloading"
@@ -44,7 +46,7 @@ export function deliveryBusinessTrackUrl(d: {
   if (d.tracking_token) {
     return `${base}/delivery/track/${encodeURIComponent(d.tracking_token)}`;
   }
-  return `${base}/track/delivery/${encodeURIComponent(d.delivery_number)}?token=${signTrackToken("delivery", d.id)}`;
+  return buildPublicDeliveryTrackUrl(d);
 }
 
 export function deliveryRecipientTrackUrl(d: {
@@ -56,7 +58,7 @@ export function deliveryRecipientTrackUrl(d: {
   if (d.recipient_tracking_token) {
     return `${base}/delivery/track/${encodeURIComponent(d.recipient_tracking_token)}`;
   }
-  return `${base}/track/delivery/${encodeURIComponent(d.delivery_number)}?token=${signTrackToken("delivery", d.id)}`;
+  return buildPublicDeliveryTrackUrl(d);
 }
 
 /**
@@ -98,6 +100,10 @@ function checkpointSmsLine(
       return `${crew} has started the move. We will text you with updates at each step.`;
     case "arrived_at_pickup":
       return `${crew} arrived at pickup.`;
+    case "inventory_check":
+    case "loading":
+    case "wrapping":
+      return `${crew} is working on site.`;
     case "en_route_to_destination":
     case "en_route":
       return `${crew} is heading to the destination.`;
@@ -213,13 +219,12 @@ export async function sendPartnerMoveCheckpointSms(opts: {
     .select("move_code")
     .eq("id", row.id)
     .maybeSingle();
-  const { getTrackMoveSlug } = await import("@/lib/move-code");
-  const slug = getTrackMoveSlug({ move_code: m?.move_code, id: row.id });
-
   const orgPhone = (org.phone || "").trim();
   const clientPhone = (row.client_phone || "").trim();
-  const base = getEmailBaseUrl().replace(/\/$/, "");
-  const trackUrl = `${base}/track/move/${slug}?token=${signTrackToken("move", row.id)}`;
+  const trackUrl = buildPublicMoveTrackUrl({
+    id: row.id,
+    move_code: m?.move_code ?? null,
+  });
   const linePartner = checkpointSmsLine(status, "move", teamName, false);
   const lineClient = checkpointSmsLine(status, "move", teamName, true);
 
@@ -323,9 +328,10 @@ export async function notifyPartnerMoveBooked(opts: {
 
   if (!move) return;
 
-  const { getTrackMoveSlug } = await import("@/lib/move-code");
-  const base = getEmailBaseUrl().replace(/\/$/, "");
-  const trackUrl = `${base}/track/move/${getTrackMoveSlug({ move_code: move.move_code, id: moveId })}?token=${signTrackToken("move", moveId)}`;
+  const trackUrl = buildPublicMoveTrackUrl({
+    id: moveId,
+    move_code: move.move_code ?? null,
+  });
 
   const when = [move.scheduled_date, move.scheduled_time || move.arrival_window]
     .filter(Boolean)

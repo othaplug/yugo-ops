@@ -526,12 +526,12 @@ export default function RecurringSchedulesView({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or partner…"
-          className="w-full rounded-lg border border-[var(--brd)] bg-[var(--card)] py-2 pl-10 pr-3 text-[12px] text-[var(--tx)] outline-none placeholder:text-[var(--tx3)] focus:border-[var(--brd)]"
+          className="w-full rounded-xl border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] py-2 pl-10 pr-3 text-[12px] text-[var(--yu3-ink)] outline-none placeholder:text-[var(--yu3-ink-faint)] focus:border-[var(--yu3-wine)]/35"
         />
       </div>
 
       {/* Table */}
-      <div className="border border-[var(--brd)] rounded-xl overflow-hidden">
+      <div className="border border-[var(--yu3-line)] rounded-xl overflow-hidden bg-[var(--yu3-bg-surface)]">
         <div className="overflow-x-auto">
           <table className="w-full text-[12px]">
             <thead>

@@ -23,13 +23,13 @@ const CREW_LOGIN_CARD_DIVIDER = "rgba(255, 255, 255, 0.28)";
 const CREW_LOGIN_CARD_CHECKBOX_ACCENT = "#ddd9d3";
 
 const CREW_LOGIN_MAIN_STYLE: CSSProperties = {
-  minHeight: "100vh",
+  minHeight: "100dvh",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "var(--font-body), 'DM Sans', sans-serif",
   background:
-    "radial-gradient(ellipse 120% 85% at 50% -18%, rgba(92, 26, 51, 0.52) 0%, transparent 58%), linear-gradient(180deg, #141016 0%, #0a0909 50%, #050505 100%)",
+    "radial-gradient(ellipse 120% 85% at 50% -18%, color-mix(in srgb, var(--yu3-wine) 52%, transparent) 0%, transparent 58%), linear-gradient(180deg, #141016 0%, #0a0909 50%, #050505 100%)",
 };
 
 /** Horizontal inset on <main>; width constraint lives on the login panel <section>. */

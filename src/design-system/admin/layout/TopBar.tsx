@@ -14,7 +14,6 @@ import {
 import { Avatar } from "../primitives/Avatar";
 import {
   Bell,
-  List,
   CaretDown,
   Sun,
   Moon,
@@ -37,7 +36,6 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export interface TopBarProps {
-  onOpenMobileNav: () => void
   userEmail?: string | null;
   userName?: string | null;
   userRole?: string | null;
@@ -49,7 +47,6 @@ export interface TopBarProps {
 }
 
 export function TopBar({
-  onOpenMobileNav,
   userEmail,
   userName,
   userRole,
@@ -76,15 +73,6 @@ export function TopBar({
         )}
       >
       <div className="flex min-w-0 shrink-0 items-center gap-2 md:gap-3">
-        <button
-          type="button"
-          onClick={onOpenMobileNav}
-          className="lg:hidden inline-flex items-center justify-center h-9 w-9 rounded-full bg-[var(--yu3-topbar-search-bg)] text-[var(--yu3-ink-muted)] hover:bg-[var(--yu3-bg-surface-sunken)]"
-          aria-label="Open sidebar"
-        >
-          <List size={18} weight="regular" />
-        </button>
-
         <nav
           aria-label="Breadcrumb"
           className="hidden md:flex items-center gap-1 text-[13px] text-[var(--yu3-ink-muted)] min-w-0 max-w-[200px] lg:max-w-xs"

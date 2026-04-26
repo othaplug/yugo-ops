@@ -41,7 +41,7 @@ export function CommandPalette({
       <D.Portal container={portalContainer ?? undefined}>
         <D.Overlay
           className={cn(
-            "fixed inset-0 z-[var(--yu3-z-palette)] pointer-events-auto",
+            "fixed inset-0 z-[var(--yu3-z-modal-scrim)] pointer-events-auto",
             "bg-[var(--yu3-bg-overlay)] backdrop-blur-sm",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",

@@ -12,7 +12,7 @@ import { quoteRowEligibleForHubSpotDeal } from "@/lib/quotes/hubspot-quote-eligi
  * Manually create or link a HubSpot deal for a quote that was sent without a linked deal.
  * Staff only. Does not send email.
  */
-export async function POST(_req: NextRequest, ctx: { params: Promise<{ quoteId: string }> }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ quoteId: string }> }) {
   const { error: authErr } = await requireStaff()
   if (authErr) return authErr
 
@@ -116,6 +116,14 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ quoteId: 
   const baseUrl = getEmailBaseUrl()
   const quoteUrl = `${baseUrl}/quote/${quoteId}`
 
+  let forceCreate = false
+  try {
+    const body = (await req.json()) as { forceCreate?: boolean }
+    forceCreate = body?.forceCreate === true
+  } catch {
+    /* no body */
+  }
+
   const created = await autoCreateHubSpotDealForSentQuote({
     sb,
     quote: quote as Record<string, unknown>,
@@ -125,9 +133,25 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ quoteId: 
     firstName,
     lastName,
     clientPhone: contact?.phone ?? null,
+    skipDuplicateCheck: forceCreate,
   })
 
-  if (!created?.dealId) {
+  if (created?.status === "duplicate") {
+    return NextResponse.json(
+      {
+        success: false,
+        code: "DUPLICATE_OPEN_DEAL",
+        message:
+          "HubSpot already has an open deal for this contact. Link that deal from Generate Quote, or retry with forceCreate: true if you still want a new deal.",
+        existingDealId: created.existingDealId,
+        existingDealName: created.existingDealName,
+        existingDealStageId: created.existingDealStageId,
+      },
+      { status: 409 },
+    )
+  }
+
+  if (!created || created.status !== "created" || !created.dealId) {
     return NextResponse.json(
       {
         success: false,

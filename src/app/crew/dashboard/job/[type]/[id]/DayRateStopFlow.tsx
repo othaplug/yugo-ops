@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { Check, MapPin, Clock, SkipForward } from "@phosphor-icons/react";
+import { cn } from "@/lib/utils";
 
 interface Stop {
   id: string;
@@ -36,147 +37,234 @@ interface Props {
   onStopUpdated?: () => void;
 }
 
-const STOP_STATUS_CONFIG: Record<string, { label: string; icon: string; color: string; bg: string }> = {
-  pending:     { label: "Pending",     icon: "circle",    color: "#9CA3AF", bg: "rgba(156,163,175,0.1)" },
-  current:     { label: "Up Next",     icon: "clock",     color: "#B45309", bg: "rgba(180,83,9,0.12)" },
-  arrived:     { label: "Arrived",     icon: "map-pin",   color: "#2563EB", bg: "rgba(37,99,235,0.12)" },
-  in_progress: { label: "In Progress", icon: "dot-active",color: "#2C3E2D", bg: "rgba(44,62,45,0.12)" },
-  completed:   { label: "Done",        icon: "check",     color: "#243524", bg: "rgba(44,62,45,0.1)" },
-  skipped:     { label: "Skipped",     icon: "skip",      color: "#6B7280", bg: "rgba(107,114,128,0.1)" },
+const STOP_STATUS_CONFIG: Record<
+  string,
+  { label: string; icon: string; chipClass: string }
+> = {
+  pending: {
+    label: "Pending",
+    icon: "circle",
+    chipClass: "bg-zinc-500/15 text-zinc-600",
+  },
+  current: {
+    label: "Up next",
+    icon: "clock",
+    chipClass: "bg-amber-500/15 text-amber-800 [font-family:var(--font-body)]",
+  },
+  arrived: {
+    label: "Arrived",
+    icon: "map-pin",
+    chipClass: "bg-sky-500/12 text-sky-800 [font-family:var(--font-body)]",
+  },
+  in_progress: {
+    label: "In progress",
+    icon: "dot-active",
+    chipClass:
+      "bg-[var(--yu3-forest-tint)] text-[var(--yu3-forest)] [font-family:var(--font-body)]",
+  },
+  completed: {
+    label: "Done",
+    icon: "check",
+    chipClass:
+      "bg-[var(--yu3-forest)]/12 text-[var(--yu3-forest)] [font-family:var(--font-body)]",
+  },
+  skipped: {
+    label: "Skipped",
+    icon: "skip",
+    chipClass: "bg-zinc-500/12 text-zinc-600 [font-family:var(--font-body)]",
+  },
 };
 
 const STOP_TYPE_LABELS: Record<string, string> = { pickup: "Pickup", delivery: "Delivery" };
 
-export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleType, onStopUpdated }: Props) {
+export default function DayRateStopFlow({
+  stops,
+  delivery,
+  partnerName,
+  vehicleType,
+  onStopUpdated,
+}: Props) {
   const [advancing, setAdvancing] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(() => {
-    const current = stops.find((s) => s.stop_status === "current" || s.stop_status === "arrived" || s.stop_status === "in_progress");
+    const current = stops.find(
+      (s) =>
+        s.stop_status === "current" ||
+        s.stop_status === "arrived" ||
+        s.stop_status === "in_progress",
+    );
     return current?.id ?? null;
   });
 
   const completedCount = stops.filter((s) => s.stop_status === "completed").length;
   const totalCount = stops.length;
-  const currentStop = stops.find((s) => ["current", "arrived", "in_progress"].includes(s.stop_status));
+  const currentStop = stops.find((s) =>
+    ["current", "arrived", "in_progress"].includes(s.stop_status),
+  );
 
-  const advanceStop = useCallback(async (stopId: string, newStatus: string) => {
-    setAdvancing(stopId);
-    try {
-      const res = await fetch("/api/crew/stops", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stop_id: stopId, new_status: newStatus, delivery_id: delivery.id }),
-      });
-      if (!res.ok) throw new Error("Failed");
-      onStopUpdated?.();
-    } catch {
-      // ignore
-    } finally {
-      setAdvancing(null);
-    }
-  }, [delivery.id, onStopUpdated]);
+  const advanceStop = useCallback(
+    async (stopId: string, newStatus: string) => {
+      setAdvancing(stopId);
+      try {
+        const res = await fetch("/api/crew/stops", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            stop_id: stopId,
+            new_status: newStatus,
+            delivery_id: delivery.id,
+          }),
+        });
+        if (!res.ok) throw new Error("Failed");
+        onStopUpdated?.();
+      } catch {
+        // ignore
+      } finally {
+        setAdvancing(null);
+      }
+    },
+    [delivery.id, onStopUpdated],
+  );
+
+  const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="bg-[var(--card)] rounded-2xl p-4 border border-[var(--brd)]">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Day Rate</span>
-          <span className="text-[10px] font-semibold text-[#5C1A33] px-2 py-0.5 rounded-full bg-[#5C1A33]/10">
+      <div className="rounded-2xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 shadow-[var(--yu3-shadow-sm)]">
+        <div className="mb-1 flex items-center justify-between">
+          <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
+            Day rate
+          </span>
+          <span className="rounded-full bg-[var(--yu3-wine-tint)] px-2 py-0.5 text-[10px] font-semibold text-[var(--yu3-wine)] [font-family:var(--font-body)]">
             {completedCount}/{totalCount} stops
           </span>
         </div>
-        <h2 className="text-[18px] font-bold text-[var(--tx)] leading-tight">{partnerName}</h2>
+        <h2 className="text-[18px] font-bold leading-tight text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+          {partnerName}
+        </h2>
         {vehicleType && (
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">{vehicleType} · Full day</p>
+          <p className="mt-0.5 text-[11px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+            {vehicleType} · Full day
+          </p>
         )}
-        {/* Progress bar */}
-        <div className="mt-3 h-1.5 rounded-full bg-[var(--brd)]/50 overflow-hidden">
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--yu3-line)]/30">
           <div
-            className="h-full rounded-full transition-all duration-700"
-            style={{
-              width: `${totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0}%`,
-              background: completedCount === totalCount ? "linear-gradient(90deg,#2C3E2D,#243524)" : "linear-gradient(90deg,#2C3E2D,#3d5240)",
-            }}
+            className={cn(
+              "h-full rounded-full transition-all duration-700",
+              completedCount === totalCount
+                ? "bg-gradient-to-r from-[var(--yu3-forest)] to-[#243524]"
+                : "bg-gradient-to-r from-[var(--yu3-forest)] to-[#3d5240]",
+            )}
+            style={{ width: `${pct}%` }}
           />
         </div>
         {currentStop && (
-          <p className="text-[10px] text-[var(--tx3)] mt-2">
+          <p className="mt-2 text-[10px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
             Current: Stop {currentStop.stop_number}, {currentStop.address}
           </p>
         )}
       </div>
 
-      {/* Stop list */}
       <div className="space-y-2">
-        {stops.map((stop, idx) => {
+        {stops.map((stop) => {
           const cfg = STOP_STATUS_CONFIG[stop.stop_status] ?? STOP_STATUS_CONFIG.pending;
           const isExpanded = expandedId === stop.id;
-          const isCurrent = ["current", "arrived", "in_progress"].includes(stop.stop_status);
+          const isCurrent = ["current", "arrived", "in_progress"].includes(
+            stop.stop_status,
+          );
           const isDone = stop.stop_status === "completed";
           const isPending = stop.stop_status === "pending";
-          const isNext = idx === stops.findIndex((s) => s.stop_status === "current") - 0 + 1 && !currentStop?.id;
 
           return (
             <div
               key={stop.id}
-              className={`rounded-2xl border transition-all ${isCurrent ? "border-[#2C3E2D]/35 shadow-sm" : "border-[var(--brd)]"}`}
-              style={{ background: isCurrent ? "rgba(44,62,45,0.05)" : "var(--card)" }}
+              className={cn(
+                "rounded-2xl border transition-all",
+                isCurrent
+                  ? "border-[var(--yu3-forest)]/35 bg-[var(--yu3-forest-tint)]/50 shadow-sm"
+                  : "border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)]",
+              )}
             >
               <button
                 type="button"
-                className="w-full text-left px-4 py-3"
+                className="w-full px-4 py-3 text-left"
                 onClick={() => setExpandedId(isExpanded ? null : stop.id)}
               >
                 <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ background: cfg.bg }}>
-                    {cfg.icon === "check"      && <Check size={12} color={cfg.color} weight="bold" />}
-                    {cfg.icon === "map-pin"    && <MapPin size={12} color={cfg.color} />}
-                    {cfg.icon === "clock"      && <Clock size={12} color={cfg.color} />}
-                    {cfg.icon === "dot-active" && <span className="w-3 h-3 rounded-full" style={{ background: cfg.color }} />}
-                    {cfg.icon === "circle"     && <span className="w-3 h-3 rounded-full border-2" style={{ borderColor: cfg.color }} />}
-                    {cfg.icon === "skip"       && <SkipForward size={12} color={cfg.color} />}
+                  <span
+                    className={cn(
+                      "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
+                      cfg.icon === "circle" && "border-2",
+                    )}
+                    style={
+                      cfg.icon === "circle"
+                        ? { borderColor: "var(--yu3-ink-faint)" }
+                        : undefined
+                    }
+                  >
+                    {cfg.icon === "check" && (
+                      <Check size={12} className="text-[var(--yu3-forest)]" weight="bold" />
+                    )}
+                    {cfg.icon === "map-pin" && <MapPin size={12} className="text-sky-600" />}
+                    {cfg.icon === "clock" && <Clock size={12} className="text-amber-700" />}
+                    {cfg.icon === "dot-active" && (
+                      <span
+                        className="h-3 w-3 rounded-full bg-[var(--yu3-forest)]"
+                        aria-hidden
+                      />
+                    )}
+                    {cfg.icon === "circle" && <span className="h-2 w-2 rounded-full bg-zinc-300" />}
+                    {cfg.icon === "skip" && <SkipForward size={12} className="text-zinc-500" />}
                   </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-[12px] font-bold text-[var(--tx)]">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-0.5 flex flex-wrap items-center gap-2">
+                      <span className="text-[12px] font-bold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
                         Stop {stop.stop_number} of {totalCount}
                       </span>
                       <span
-                        className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full"
-                        style={{ background: cfg.bg, color: cfg.color }}
+                        className={cn(
+                          "rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase",
+                          cfg.chipClass,
+                        )}
                       >
                         {cfg.label}
                       </span>
-                      <span className="text-[9px] text-[var(--tx3)]/60 uppercase font-semibold">
+                      <span className="text-[9px] font-semibold uppercase text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
                         {STOP_TYPE_LABELS[stop.stop_type] || "Delivery"}
                       </span>
                     </div>
-                    <p className="text-[11px] text-[var(--tx2)] truncate">{stop.address}</p>
+                    <p className="truncate text-[11px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+                      {stop.address}
+                    </p>
                     {stop.items_description && (
-                      <p className="text-[10px] text-[var(--tx3)] truncate mt-0.5">{stop.items_description}</p>
+                      <p className="mt-0.5 truncate text-[10px] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
+                        {stop.items_description}
+                      </p>
                     )}
                   </div>
                   {isDone && stop.completed_at && (
-                    <span className="text-[9px] text-[#243524] shrink-0">
-                      {new Date(stop.completed_at).toLocaleTimeString("en-CA", { hour: "2-digit", minute: "2-digit" })}
+                    <span className="shrink-0 text-[9px] text-[var(--yu3-forest)] [font-family:var(--font-body)]">
+                      {new Date(stop.completed_at).toLocaleTimeString("en-CA", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </span>
                   )}
                 </div>
               </button>
 
-              {/* Expanded content */}
               {isExpanded && (
-                <div className="px-4 pb-4 pt-0 border-t border-[var(--brd)]/30 space-y-3">
-                  {/* Contact */}
+                <div className="space-y-3 border-t border-[var(--yu3-line-subtle)]/80 px-4 pb-4 pt-0">
                   {(stop.customer_name || stop.customer_phone || stop.client_phone) && (
                     <div className="space-y-1">
                       {stop.customer_name && (
-                        <p className="text-[11px] text-[var(--tx)]">Contact: <strong>{stop.customer_name}</strong></p>
+                        <p className="text-[11px] text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+                          Contact: <strong>{stop.customer_name}</strong>
+                        </p>
                       )}
                       {(stop.customer_phone || stop.client_phone) && (
                         <a
                           href={`tel:${stop.customer_phone || stop.client_phone}`}
-                          className="text-[11px] text-[#5C1A33] hover:underline"
+                          className="text-[11px] text-[var(--yu3-wine)] underline-offset-2 hover:underline [font-family:var(--font-body)]"
                         >
                           {stop.customer_phone || stop.client_phone}
                         </a>
@@ -184,14 +272,12 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                     </div>
                   )}
 
-                  {/* Notes */}
                   {(stop.special_instructions || stop.notes) && (
-                    <div className="bg-[var(--bg)] rounded-lg px-3 py-2 text-[11px] text-[var(--tx2)]">
+                    <div className="rounded-lg bg-[var(--yu3-bg-surface-sunken)]/90 px-3 py-2 text-[11px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
                       {stop.special_instructions || stop.notes}
                     </div>
                   )}
 
-                  {/* Action buttons */}
                   {!isDone && !isPending && (
                     <div className="flex flex-wrap gap-2 pt-1">
                       {stop.stop_status === "current" && (
@@ -199,7 +285,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                           type="button"
                           onClick={() => advanceStop(stop.id, "arrived")}
                           disabled={advancing === stop.id}
-                          className="px-3 py-1.5 text-[11px] font-semibold bg-[#2563EB] text-white disabled:opacity-50"
+                          className="min-h-[40px] rounded-[var(--yu3-r-md)] bg-sky-600 px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50 [font-family:var(--font-body)]"
                         >
                           {advancing === stop.id ? "…" : "Arrived"}
                         </button>
@@ -209,9 +295,13 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                           type="button"
                           onClick={() => advanceStop(stop.id, "in_progress")}
                           disabled={advancing === stop.id}
-                          className="px-3 py-1.5 text-[11px] font-semibold bg-[#B45309] text-white disabled:opacity-50"
+                          className="min-h-[40px] rounded-[var(--yu3-r-md)] bg-amber-600 px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50 [font-family:var(--font-body)]"
                         >
-                          {advancing === stop.id ? "…" : stop.stop_type === "pickup" ? "Loading" : "Unloading"}
+                          {advancing === stop.id
+                            ? "…"
+                            : stop.stop_type === "pickup"
+                              ? "Loading"
+                              : "Unloading"}
                         </button>
                       )}
                       {stop.stop_status === "in_progress" && (
@@ -219,31 +309,32 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                           type="button"
                           onClick={() => advanceStop(stop.id, "completed")}
                           disabled={advancing === stop.id}
-                          className="px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"
-                          style={{ background: "linear-gradient(135deg,#2C3E2D,#243524)" }}
+                          className="crew-premium-cta min-h-[40px] px-3 py-1.5 text-[11px] font-semibold text-[#FFFBF7] disabled:opacity-50 [font-family:var(--font-body)]"
                         >
-                          {advancing === stop.id ? "…" : "Complete stop →"}
+                          {advancing === stop.id ? "…" : "Complete stop"}
                         </button>
                       )}
                     </div>
                   )}
 
-                  {/* Start this stop */}
                   {stop.stop_status === "pending" && !currentStop && (
                     <button
                       type="button"
                       onClick={() => advanceStop(stop.id, "current")}
                       disabled={advancing === stop.id}
-                      className="crew-premium-cta px-3 py-1.5 text-[11px] font-semibold text-white border border-[#2C3E2D]/30 disabled:opacity-50"
+                      className="crew-premium-cta min-h-[44px] px-3 py-2 text-[11px] font-semibold text-[#FFFBF7] disabled:opacity-50 [font-family:var(--font-body)]"
                     >
-                      {advancing === stop.id ? "…" : "Start This Stop"}
+                      {advancing === stop.id ? "…" : "Start this stop"}
                     </button>
                   )}
 
                   {isDone && (
-                    <div className="flex items-center gap-2 text-[10px] text-[#243524]">
+                    <div className="flex items-center gap-2 text-[10px] text-[var(--yu3-forest)] [font-family:var(--font-body)]">
                       <Check size={14} weight="bold" />
-                      Completed {stop.completed_at ? `at ${new Date(stop.completed_at).toLocaleTimeString("en-CA", { hour: "2-digit", minute: "2-digit" })}` : ""}
+                      Completed{" "}
+                      {stop.completed_at
+                        ? `at ${new Date(stop.completed_at).toLocaleTimeString("en-CA", { hour: "2-digit", minute: "2-digit" })}`
+                        : ""}
                     </div>
                   )}
                 </div>
@@ -254,9 +345,13 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
       </div>
 
       {completedCount === totalCount && totalCount > 0 && (
-        <div className="rounded-2xl p-4 text-center border border-[#2C3E2D]/30" style={{ background: "rgba(44,62,45,0.06)" }}>
-          <p className="text-[#243524] font-bold text-[var(--text-base)]">All {totalCount} stops completed!</p>
-          <p className="text-[11px] text-[var(--tx3)] mt-1">Day rate job is done. Great work!</p>
+        <div className="rounded-2xl border border-[var(--yu3-forest)]/30 bg-[var(--yu3-forest-tint)]/50 p-4 text-center">
+          <p className="text-[15px] font-bold text-[var(--yu3-forest)] [font-family:var(--font-body)]">
+            All {totalCount} stops completed
+          </p>
+          <p className="mt-1 text-[11px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+            Day rate job is done. Great work.
+          </p>
         </div>
       )}
     </div>

@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as D from "@radix-ui/react-dialog"
-import { cn } from "../lib/cn"
-import { X } from "../icons"
-import { useYu3PortalContainer } from "../layout/Yu3PortalContext"
+import * as React from "react";
+import * as D from "@radix-ui/react-dialog";
+import { cn } from "../lib/cn";
+import { X } from "../icons";
+import { useYu3PortalContainer } from "../layout/Yu3PortalContext";
 
-export const Dialog = D.Root
-export const DialogTrigger = D.Trigger
-export const DialogPortal = D.Portal
-export const DialogClose = D.Close
+export const Dialog = D.Root;
+export const DialogTrigger = D.Trigger;
+export const DialogPortal = D.Portal;
+export const DialogClose = D.Close;
 
 export const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof D.Overlay>,
@@ -18,20 +18,20 @@ export const DialogOverlay = React.forwardRef<
   <D.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-[var(--yu3-z-modal)] bg-[var(--yu3-bg-overlay)] pointer-events-auto backdrop-blur-sm",
+      "fixed inset-0 z-[var(--yu3-z-modal-scrim)] bg-[var(--yu3-bg-overlay)] pointer-events-auto backdrop-blur-sm",
       "data-[state=open]:animate-in data-[state=closed]:animate-out",
       "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
       className,
     )}
     {...rest}
   />
-))
-DialogOverlay.displayName = "DialogOverlay"
+));
+DialogOverlay.displayName = "DialogOverlay";
 
 export const DialogContent = React.forwardRef<
   React.ElementRef<typeof D.Content>,
   React.ComponentPropsWithoutRef<typeof D.Content> & {
-    size?: "sm" | "md" | "lg" | "xl"
+    size?: "sm" | "md" | "lg" | "xl";
   }
 >(({ className, children, size = "md", ...rest }, ref) => {
   const maxW =
@@ -41,8 +41,8 @@ export const DialogContent = React.forwardRef<
         ? "max-w-[720px]"
         : size === "xl"
           ? "max-w-[960px]"
-          : "max-w-[520px]"
-  const portalContainer = useYu3PortalContainer()
+          : "max-w-[520px]";
+  const portalContainer = useYu3PortalContainer();
   return (
     <D.Portal container={portalContainer ?? undefined}>
       <DialogOverlay />
@@ -71,9 +71,9 @@ export const DialogContent = React.forwardRef<
         </D.Close>
       </D.Content>
     </D.Portal>
-  )
-})
-DialogContent.displayName = "DialogContent"
+  );
+});
+DialogContent.displayName = "DialogContent";
 
 export const DialogHeader = ({
   className,
@@ -86,16 +86,16 @@ export const DialogHeader = ({
     )}
     {...rest}
   />
-)
-DialogHeader.displayName = "DialogHeader"
+);
+DialogHeader.displayName = "DialogHeader";
 
 export const DialogBody = ({
   className,
   ...rest
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("px-5 py-4", className)} {...rest} />
-)
-DialogBody.displayName = "DialogBody"
+);
+DialogBody.displayName = "DialogBody";
 
 export const DialogFooter = ({
   className,
@@ -108,8 +108,8 @@ export const DialogFooter = ({
     )}
     {...rest}
   />
-)
-DialogFooter.displayName = "DialogFooter"
+);
+DialogFooter.displayName = "DialogFooter";
 
 export const DialogTitle = React.forwardRef<
   React.ElementRef<typeof D.Title>,
@@ -123,8 +123,8 @@ export const DialogTitle = React.forwardRef<
     )}
     {...rest}
   />
-))
-DialogTitle.displayName = "DialogTitle"
+));
+DialogTitle.displayName = "DialogTitle";
 
 export const DialogDescription = React.forwardRef<
   React.ElementRef<typeof D.Description>,
@@ -135,5 +135,5 @@ export const DialogDescription = React.forwardRef<
     className={cn("text-[13px] text-[var(--yu3-ink-muted)] mt-1", className)}
     {...rest}
   />
-))
-DialogDescription.displayName = "DialogDescription"
+));
+DialogDescription.displayName = "DialogDescription";

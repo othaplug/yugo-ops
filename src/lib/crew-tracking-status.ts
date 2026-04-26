@@ -4,7 +4,9 @@ export type TrackingStatus =
   | "not_started"
   | "en_route_to_pickup"
   | "arrived_at_pickup"
+  | "inventory_check"
   | "loading"
+  | "wrapping"
   | "en_route_to_destination"
   | "arrived_at_destination"
   | "unloading"
@@ -81,7 +83,9 @@ export const TRACKING_STATUS_LABELS: Record<TrackingStatus, string> = {
   not_started: "Not Started",
   en_route_to_pickup: "En Route to Pickup",
   arrived_at_pickup: "Arrived at Pickup",
+  inventory_check: "Inventory check",
   loading: "Loading",
+  wrapping: "Wrapping / prep",
   en_route_to_destination: "En Route to Destination",
   arrived_at_destination: "Arrived at Destination",
   unloading: "Unloading",
@@ -93,9 +97,15 @@ export const TRACKING_STATUS_LABELS: Record<TrackingStatus, string> = {
 
 export function getNextStatus(
   current: string,
-  jobType: "move" | "delivery"
+  jobType: "move" | "delivery",
+  options?: { moveFlow?: TrackingStatus[] },
 ): TrackingStatus | null {
-  const flow = jobType === "move" ? MOVE_STATUS_FLOW : DELIVERY_STATUS_FLOW;
+  const flow =
+    jobType === "move" && options?.moveFlow?.length
+      ? options.moveFlow
+      : jobType === "move"
+        ? MOVE_STATUS_FLOW
+        : DELIVERY_STATUS_FLOW;
   const idx = flow.indexOf(current as TrackingStatus);
   if (idx < 0 || idx >= flow.length - 1) return null;
   return flow[idx + 1];
@@ -105,9 +115,15 @@ export function getNextStatus(
 export function getUpcomingStatusLabels(
   current: string,
   jobType: "move" | "delivery",
-  count: number
+  count: number,
+  options?: { moveFlow?: TrackingStatus[] },
 ): string[] {
-  const flow = jobType === "move" ? MOVE_STATUS_FLOW : DELIVERY_STATUS_FLOW;
+  const flow =
+    jobType === "move" && options?.moveFlow?.length
+      ? options.moveFlow
+      : jobType === "move"
+        ? MOVE_STATUS_FLOW
+        : DELIVERY_STATUS_FLOW;
   const idx = flow.indexOf(current as TrackingStatus);
   if (idx < 0 || count <= 0) return [];
   const out: string[] = [];
@@ -117,8 +133,16 @@ export function getUpcomingStatusLabels(
   return out;
 }
 
-export function getFirstStatus(jobType: "move" | "delivery"): TrackingStatus {
-  const flow = jobType === "move" ? MOVE_STATUS_FLOW : DELIVERY_STATUS_FLOW;
+export function getFirstStatus(
+  jobType: "move" | "delivery",
+  moveFlow?: TrackingStatus[],
+): TrackingStatus {
+  const flow =
+    jobType === "move" && moveFlow?.length
+      ? moveFlow
+      : jobType === "move"
+        ? MOVE_STATUS_FLOW
+        : DELIVERY_STATUS_FLOW;
   return flow[0];
 }
 
@@ -130,6 +154,8 @@ export function getStatusLabel(s: string): string {
 const LOGISTICS_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
   en_route_to_pickup: "En Route to Origin",
   arrived_at_pickup: "Arrived at Origin",
+  inventory_check: "Inventory check",
+  wrapping: "Wrapping / prep",
   en_route_to_destination: "En Route to Drop-Off",
   arrived_at_destination: "Arrived at Drop-Off",
 };

@@ -3,8 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 import { changeRequestNotificationEmail } from "@/lib/email-templates";
 import { getResend } from "@/lib/resend";
-import { getEmailBaseUrl } from "@/lib/email-base-url";
-import { signTrackToken } from "@/lib/track-token";
+import { buildPublicMoveTrackUrl } from "@/lib/notifications/public-track-url";
 import { getEmailFrom } from "@/lib/email/send";
 
 /** Parse and apply approved change request to move data globally */
@@ -178,7 +177,7 @@ export async function PATCH(
 
     const { data: move } = await admin
       .from("moves")
-      .select("client_email, client_name")
+      .select("id, client_email, client_name, move_code")
       .eq("id", request.move_id)
       .single();
 
@@ -187,7 +186,10 @@ export async function PATCH(
     if (move?.client_email && process.env.RESEND_API_KEY) {
       try {
         const resend = getResend();
-        const trackUrl = `${getEmailBaseUrl()}/track/move/${request.move_id}?token=${signTrackToken("move", request.move_id)}`;
+        const trackUrl = buildPublicMoveTrackUrl({
+          id: move.id,
+          move_code: move.move_code,
+        });
         const html = changeRequestNotificationEmail({
           client_name: move.client_name || "Client",
           status,

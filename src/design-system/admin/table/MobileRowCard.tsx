@@ -73,10 +73,10 @@ export function MobileRowCard({
             </div>
           </div>
           {metrics && metrics.length > 0 ? (
-            <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
+            <dl className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
               {metrics.map((m, i) => (
                 <div key={i} className="flex flex-col min-w-0">
-                  <dt className="text-[10px] uppercase tracking-[0.08em] font-bold text-[var(--yu3-ink-faint)] truncate">
+                  <dt className="text-[10px] font-semibold text-[var(--yu3-ink-muted)] truncate">
                     {m.label}
                   </dt>
                   <dd className="text-[12px] text-[var(--yu3-ink)] font-medium truncate yu3-num">

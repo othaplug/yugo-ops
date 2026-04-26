@@ -201,6 +201,21 @@ export const ALL_NAV_HREFS = SIDEBAR_SECTIONS.flatMap((s) =>
   s.items.map((i) => i.href),
 )
 
+/** Same active rules as the sidebar, for mobile nav and other UIs. */
+export function isNavItemActive(pathname: string, item: NavItem): boolean {
+  if (item.activePath) return item.activePath(pathname)
+  const { href } = item
+  if (href === "/admin")
+    return pathname === "/admin" || pathname === "/admin/"
+  if (!pathname.startsWith(href)) return false
+  const more = ALL_NAV_HREFS.filter(
+    (h) => h !== href && h.startsWith(`${href}/`),
+  )
+  if (more.length === 0) return true
+  if (pathname === href || pathname === `${href}/`) return true
+  return !more.some((l) => pathname === l || pathname.startsWith(`${l}/`))
+}
+
 export type QuickAction = {
   label: string
   href: string

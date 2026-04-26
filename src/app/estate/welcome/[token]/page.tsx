@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { signTrackToken } from "@/lib/track-token";
-import { getEmailBaseUrl } from "@/lib/email-base-url";
+import { buildPublicMoveTrackUrl } from "@/lib/notifications/public-track-url";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
 import { formatMoveDate } from "@/lib/date-format";
 import EstateWelcomeGuideView from "../EstateWelcomeGuideView";
@@ -42,8 +41,10 @@ export default async function EstateWelcomePage({
   const st = String(move.status || "").toLowerCase();
   if (st === "cancelled") notFound();
 
-  const baseUrl = getEmailBaseUrl();
-  const trackUrl = `${baseUrl}/track/move/${move.move_code ?? move.id}?token=${signTrackToken("move", move.id)}`;
+  const trackUrl = buildPublicMoveTrackUrl({
+    id: move.id,
+    move_code: move.move_code ?? null,
+  });
 
   const moveDateLabel = move.scheduled_date
     ? formatMoveDate(move.scheduled_date)

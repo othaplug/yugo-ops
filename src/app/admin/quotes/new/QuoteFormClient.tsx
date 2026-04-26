@@ -2183,6 +2183,12 @@ export default function QuoteFormClient({
   const [dissolving, setDissolving] = useState(false);
   const [hubspotLoaded, setHubspotLoaded] = useState(false);
   const [hubspotBanner, setHubspotBanner] = useState("");
+  const [hubspotDuplicateBanner, setHubspotDuplicateBanner] = useState<{
+    dealId: string;
+    dealName: string;
+    dealStageId: string;
+  } | null>(null);
+  const [hubspotDuplicateBusy, setHubspotDuplicateBusy] = useState(false);
   const [leadQuoteBanner, setLeadQuoteBanner] = useState("");
   const [widgetQuoteBanner, setWidgetQuoteBanner] = useState("");
   const [leadRequiresSpecialtyQuote, setLeadRequiresSpecialtyQuote] =
@@ -4678,6 +4684,20 @@ export default function QuoteFormClient({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Send failed");
 
+      if (data.hubspotDuplicate) {
+        setHubspotDuplicateBanner({
+          dealId: data.hubspotDuplicate.dealId,
+          dealName: data.hubspotDuplicate.dealName,
+          dealStageId: data.hubspotDuplicate.dealStageId,
+        });
+        toast(
+          "Quote sent. HubSpot already has an open deal for this contact. Link it or create a new deal below.",
+          "alertTriangle",
+        );
+      } else {
+        setHubspotDuplicateBanner(null);
+      }
+
       // Push quote data back to HubSpot deal (price + deal fields for left column)
       if (hubspotDealId && quoteResult) {
         const essentialTier =
@@ -4727,6 +4747,52 @@ export default function QuoteFormClient({
       toast(err instanceof Error ? err.message : "Failed to send", "x");
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleHubspotDuplicateLink = async () => {
+    if (!quoteId || !hubspotDuplicateBanner) return;
+    setHubspotDuplicateBusy(true);
+    try {
+      const res = await fetch(
+        `/api/admin/quotes/${encodeURIComponent(quoteId)}/hubspot-duplicate-resolution`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "link" }),
+        },
+      );
+      const j = (await res.json()) as { message?: string };
+      if (!res.ok) throw new Error(j.message || "Could not link deal");
+      setHubspotDuplicateBanner(null);
+      toast("Linked this quote to the existing HubSpot deal.", "check");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed", "x");
+    } finally {
+      setHubspotDuplicateBusy(false);
+    }
+  };
+
+  const handleHubspotDuplicateCreateNew = async () => {
+    if (!quoteId) return;
+    setHubspotDuplicateBusy(true);
+    try {
+      const res = await fetch(
+        `/api/admin/quotes/${encodeURIComponent(quoteId)}/hubspot-duplicate-resolution`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "create_new" }),
+        },
+      );
+      const j = (await res.json()) as { message?: string };
+      if (!res.ok) throw new Error(j.message || "Could not create deal");
+      setHubspotDuplicateBanner(null);
+      toast("Created a new HubSpot deal for this quote.", "check");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "Failed", "x");
+    } finally {
+      setHubspotDuplicateBusy(false);
     }
   };
 
@@ -4825,6 +4891,45 @@ export default function QuoteFormClient({
         >
           <Check className="w-4 h-4 shrink-0" />
           {hubspotBanner}
+        </div>
+      )}
+
+      {hubspotDuplicateBanner && (
+        <div
+          className={
+            isV2
+              ? "mb-4 rounded-lg border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-[12px] text-fg"
+              : "mb-4 rounded-lg border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-[12px] text-[#EDE6DC]"
+          }
+          role="status"
+        >
+          <p className="font-semibold text-amber-200">Existing open deal in HubSpot</p>
+          <p className="mt-1 text-[11px] leading-snug text-amber-100/90">
+            {hubspotDuplicateBanner.dealName || "Unnamed deal"}{" "}
+            <span className="text-amber-200/80">(stage id: {hubspotDuplicateBanner.dealStageId})</span>
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={hubspotDuplicateBusy}
+              onClick={handleHubspotDuplicateLink}
+              className={
+                isV2
+                  ? "rounded-lg bg-amber-600 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white disabled:opacity-40"
+                  : "rounded-lg bg-amber-600 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white disabled:opacity-40"
+              }
+            >
+              Link to this deal
+            </button>
+            <button
+              type="button"
+              disabled={hubspotDuplicateBusy}
+              onClick={handleHubspotDuplicateCreateNew}
+              className="rounded-lg border border-amber-500/50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-amber-100 disabled:opacity-40"
+            >
+              Create new deal
+            </button>
+          </div>
         </div>
       )}
 

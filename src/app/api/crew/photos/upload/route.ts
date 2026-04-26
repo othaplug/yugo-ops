@@ -10,6 +10,7 @@ const VALID_CATEGORIES = [
   "in_transit",
   "delivery_placement",
   "post_move_condition",
+  "walkthrough_final",
   "damage_documentation",
   "other",
 ] as const;

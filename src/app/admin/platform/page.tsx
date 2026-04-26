@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import PlatformSettingsClient from "./PlatformSettingsClient";
+import { BackToSettingsOverview } from "../components/BackToSettingsOverview";
 import { PageHeader } from "@/design-system/admin/layout";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import { getPlatformToggles } from "@/lib/platform-settings";
@@ -146,11 +147,14 @@ export default async function PlatformPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader
-        eyebrow="Settings"
-        title="Platform settings"
-        description="Operational toggles, teams, rate templates, fleet, integrations, and more. Section-indexed with inline edit."
-      />
+      <div className="flex flex-col gap-2">
+        <BackToSettingsOverview />
+        <PageHeader
+          eyebrow="Settings"
+          title="Platform settings"
+          description="Operational toggles, teams, rate templates, fleet, integrations, and more. Section-indexed with inline edit."
+        />
+      </div>
       <PlatformSettingsClient
         initialTeams={initialTeams}
         initialToggles={initialToggles}

@@ -2,7 +2,9 @@
 export type TrackingStatus =
   | "en_route_to_pickup"
   | "arrived_at_pickup"
+  | "inventory_check"
   | "loading"
+  | "wrapping"
   | "en_route_to_destination"
   | "arrived_at_destination"
   | "unloading"

@@ -1,30 +1,30 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useRouter } from "next/navigation"
-import { formatMoveDate } from "@/lib/date-format"
-import { formatCurrency } from "@/lib/format-currency"
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { formatMoveDate } from "@/lib/date-format";
+import { formatCurrency } from "@/lib/format-currency";
 
-import { PageHeader } from "@/design-system/admin/layout"
-import { Button, StatusPill } from "@/design-system/admin/primitives"
+import { PageHeader } from "@/design-system/admin/layout";
+import { Button, StatusPill } from "@/design-system/admin/primitives";
 import {
   DataTable,
   type ColumnDef,
   type ColumnSort,
-} from "@/design-system/admin/table"
-import { KpiStrip } from "@/design-system/admin/dashboard"
-import { Plus, CalendarCheck } from "@phosphor-icons/react"
+} from "@/design-system/admin/table";
+import { KpiStrip } from "@/design-system/admin/dashboard";
+import { Plus, CalendarCheck } from "@phosphor-icons/react";
 
 export type MoveProjectRow = {
-  id: string
-  project_name: string
-  status: string
-  start_date: string | null
-  end_date: string | null
-  total_days: number | null
-  total_price: number | null
-  updated_at: string | null
-}
+  id: string;
+  project_name: string;
+  status: string;
+  start_date: string | null;
+  end_date: string | null;
+  total_days: number | null;
+  total_price: number | null;
+  updated_at: string | null;
+};
 
 function statusTone(
   s: string,
@@ -32,17 +32,17 @@ function statusTone(
   switch (s) {
     case "completed":
     case "confirmed":
-      return "success"
+      return "success";
     case "in_progress":
     case "scheduled":
-      return "info"
+      return "info";
     case "cancelled":
     case "expired":
-      return "danger"
+      return "danger";
     case "quoted":
     case "draft":
     default:
-      return "neutral"
+      return "neutral";
   }
 }
 
@@ -53,38 +53,42 @@ const STATUS_LABEL: Record<string, string> = {
   in_progress: "In progress",
   completed: "Completed",
   cancelled: "Cancelled",
-}
+};
 
 export default function MoveProjectsV3Client({
   rows,
 }: {
-  rows: MoveProjectRow[]
+  rows: MoveProjectRow[];
 }) {
-  const router = useRouter()
-  const [search, setSearch] = React.useState("")
+  const router = useRouter();
+  const [search, setSearch] = React.useState("");
   const [sort, setSort] = React.useState<ColumnSort | null>({
     columnId: "start_date",
     direction: "desc",
-  })
+  });
 
   const kpis = React.useMemo(() => {
-    const totalDays = rows.reduce((a, r) => a + (r.total_days ?? 0), 0)
-    const totalValue = rows.reduce((a, r) => a + (Number(r.total_price) || 0), 0)
+    const totalDays = rows.reduce((a, r) => a + (r.total_days ?? 0), 0);
+    const totalValue = rows.reduce(
+      (a, r) => a + (Number(r.total_price) || 0),
+      0,
+    );
     const active = rows.filter((r) =>
       ["in_progress", "confirmed", "quoted"].includes(r.status),
-    ).length
+    ).length;
     return [
       { id: "total", label: "Projects", value: rows.length.toString() },
       { id: "active", label: "Active", value: active.toString() },
       { id: "days", label: "Total days", value: totalDays.toString() },
       { id: "value", label: "Total value", value: formatCurrency(totalValue) },
-    ]
-  }, [rows])
+    ];
+  }, [rows]);
 
   const columns = React.useMemo<ColumnDef<MoveProjectRow>[]>(
     () => [
       {
         id: "project_name",
+        shortLabel: "Project",
         header: "Project",
         accessor: (r) => r.project_name,
         sortable: true,
@@ -104,6 +108,7 @@ export default function MoveProjectsV3Client({
       },
       {
         id: "status",
+        shortLabel: "Status",
         header: "Status",
         accessor: (r) => r.status,
         sortable: true,
@@ -116,6 +121,7 @@ export default function MoveProjectsV3Client({
       },
       {
         id: "timeline",
+        shortLabel: "Timeline",
         header: "Timeline",
         accessor: (r) => r.total_days ?? 0,
         sortable: true,
@@ -131,6 +137,7 @@ export default function MoveProjectsV3Client({
       },
       {
         id: "total_days",
+        shortLabel: "Days",
         header: "Days",
         accessor: (r) => r.total_days ?? 0,
         align: "right",
@@ -145,6 +152,7 @@ export default function MoveProjectsV3Client({
       },
       {
         id: "total_price",
+        shortLabel: "Value",
         header: "Value",
         accessor: (r) => Number(r.total_price || 0),
         align: "right",
@@ -162,6 +170,7 @@ export default function MoveProjectsV3Client({
       },
       {
         id: "start_date",
+        shortLabel: "Starts",
         header: "Starts",
         accessor: (r) => r.start_date ?? "",
         sortable: true,
@@ -174,7 +183,7 @@ export default function MoveProjectsV3Client({
       },
     ],
     [],
-  )
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -213,7 +222,7 @@ export default function MoveProjectsV3Client({
         onRowClick={(r) => router.push(`/admin/move-projects/${r.id}`)}
       />
     </div>
-  )
+  );
 }
 
 function TimelineBar({
@@ -222,27 +231,27 @@ function TimelineBar({
   days,
   status,
 }: {
-  startISO: string | null
-  endISO: string | null
-  days: number | null
-  status: string
+  startISO: string | null;
+  endISO: string | null;
+  days: number | null;
+  status: string;
 }) {
   if (!startISO || !endISO || !days || days <= 0) {
-    return <span className="text-[var(--yu3-ink-faint)] text-[12px]">—</span>
+    return <span className="text-[var(--yu3-ink-faint)] text-[12px]">—</span>;
   }
-  const start = new Date(startISO).getTime()
-  const end = new Date(endISO).getTime()
-  const now = Date.now()
-  const total = Math.max(1, end - start)
-  const rawPct = ((now - start) / total) * 100
-  const pct = Math.max(0, Math.min(100, rawPct))
-  const isDone = status === "completed"
-  const isActive = status === "in_progress"
+  const start = new Date(startISO).getTime();
+  const end = new Date(endISO).getTime();
+  const now = Date.now();
+  const total = Math.max(1, end - start);
+  const rawPct = ((now - start) / total) * 100;
+  const pct = Math.max(0, Math.min(100, rawPct));
+  const isDone = status === "completed";
+  const isActive = status === "in_progress";
   const fillColor = isDone
     ? "var(--yu3-success)"
     : isActive
       ? "var(--yu3-wine)"
-      : "var(--yu3-line-strong)"
+      : "var(--yu3-line-strong)";
   return (
     <div className="flex items-center gap-2 min-w-0">
       <div className="flex-1 h-1.5 rounded-full bg-[var(--yu3-line-subtle)] overflow-hidden">
@@ -258,5 +267,5 @@ function TimelineBar({
         {days}d
       </span>
     </div>
-  )
+  );
 }

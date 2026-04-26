@@ -27,6 +27,8 @@ export interface KpiStripProps extends React.HTMLAttributes<HTMLDivElement> {
    * `grid` — large metric cards (legacy / dense dashboards).
    */
   variant?: "grid" | "pills";
+  /** Merged into each grid card wrapper (`variant="grid"` only). e.g. `border-0` for borderless tiles. */
+  gridCardClassName?: string;
 }
 
 function formatLabelForPill(label: string) {
@@ -130,7 +132,7 @@ function KpiPill({ tile }: { tile: KpiTile }) {
 }
 
 export const KpiStrip = React.forwardRef<HTMLDivElement, KpiStripProps>(
-  ({ tiles, columns = 4, variant = "pills", className, ...rest }, ref) => {
+  ({ tiles, columns = 4, variant = "pills", className, gridCardClassName, ...rest }, ref) => {
     if (variant === "pills") {
       return (
         <div
@@ -164,7 +166,7 @@ export const KpiStrip = React.forwardRef<HTMLDivElement, KpiStripProps>(
     return (
       <div ref={ref} className={cn("grid gap-3", gridCls, className)} {...rest}>
         {tiles.map((tile) => (
-          <KpiTileCard key={tile.id} tile={tile} />
+          <KpiTileCard key={tile.id} tile={tile} className={gridCardClassName} />
         ))}
       </div>
     );
@@ -172,7 +174,7 @@ export const KpiStrip = React.forwardRef<HTMLDivElement, KpiStripProps>(
 );
 KpiStrip.displayName = "KpiStrip";
 
-function KpiTileCard({ tile }: { tile: KpiTile }) {
+function KpiTileCard({ tile, className }: { tile: KpiTile; className?: string }) {
   const interactive = !!tile.onClick;
   const Wrapper: React.ElementType = interactive ? "button" : "div";
   return (
@@ -183,6 +185,7 @@ function KpiTileCard({ tile }: { tile: KpiTile }) {
         "transition-colors",
         interactive &&
           "hover:border-[var(--yu3-line-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--yu3-bg-canvas)]",
+        className,
       )}
     >
       <div className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">

@@ -11,6 +11,7 @@ import {
   normalizeCrewJobId,
   selectDeliveryByJobId,
 } from "@/lib/resolve-delivery-by-job-id";
+import { getCrewStatusFlowForMove } from "@/lib/crew/service-type-flow";
 
 export async function POST(req: NextRequest) {
   // Job sessions always allowed for assigned crew; `crew_tracking` toggle only gates live GPS ingest (see /api/tracking/location).
@@ -54,14 +55,14 @@ export async function POST(req: NextRequest) {
       ? await admin
           .from("moves")
           .select(
-            "id, move_code, crew_id, assigned_members, assigned_crew_name",
+            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type",
           )
           .eq("id", rawJobId)
           .maybeSingle()
       : await admin
           .from("moves")
           .select(
-            "id, move_code, crew_id, assigned_members, assigned_crew_name",
+            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type",
           )
           .ilike("move_code", rawJobId.replace(/^#/, "").toUpperCase())
           .maybeSingle();
@@ -135,7 +136,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ sessionId: existing.id, alreadyActive: true });
   }
 
-  const firstStatus = getFirstStatus(jobType);
+  const moveFlow =
+    jobType === "move"
+      ? getCrewStatusFlowForMove(
+          (jobRow as { service_type?: string | null }).service_type,
+        )
+      : undefined;
+  const firstStatus = getFirstStatus(jobType, moveFlow);
   const now = new Date().toISOString();
   const checkpoint = {
     status: firstStatus,

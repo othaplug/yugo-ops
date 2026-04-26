@@ -88,7 +88,8 @@ export const ActivityCard = React.forwardRef<HTMLDivElement, ActivityCardProps>(
                 key={it.id}
                 onClick={it.onClick}
                 className={cn(
-                  "flex items-start gap-3 px-5 py-3",
+                  "flex items-start px-5 py-3",
+                  it.actor || it.icon ? "gap-3" : "gap-0",
                   it.onClick &&
                     "cursor-pointer hover:bg-[var(--yu3-bg-surface-sunken)]",
                 )}
@@ -109,9 +110,7 @@ export const ActivityCard = React.forwardRef<HTMLDivElement, ActivityCardProps>(
                   >
                     {it.icon}
                   </span>
-                ) : (
-                  <span className="h-7 w-7 rounded-full bg-[var(--yu3-bg-surface-sunken)] flex-none" />
-                )}
+                ) : null}
                 <div className="min-w-0 flex-1 flex flex-col leading-tight">
                   <div className="text-[13px] text-[var(--yu3-ink)]">
                     {it.actor?.name ? (

@@ -41,8 +41,8 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
+  TierLetterBadge,
 } from "@/design-system/admin/primitives";
-import { KpiStrip } from "@/design-system/admin/dashboard";
 import {
   isPreMoveChecklistComplete,
   preMoveChecklistCounts,
@@ -932,7 +932,24 @@ export default function MoveDetailClient({
         }
       />
 
-      <KpiStrip tiles={kpiTiles} columns={4} variant="pills" />
+      <div
+        className="flex flex-wrap items-start gap-2"
+        role="list"
+        aria-label="Move summary"
+      >
+        {kpiTiles.map((t) => (
+          <div
+            key={t.id}
+            role="listitem"
+            className="inline-flex min-w-[140px] max-w-full flex-nowrap items-baseline justify-center gap-1.5 whitespace-nowrap rounded-xl border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] px-4 py-2 text-sm font-medium shadow-[var(--yu3-shadow-sm)]"
+          >
+            <span className="shrink-0 text-[var(--yu3-ink-muted)]">{t.label}:</span>
+            <span className="min-w-0 shrink tabular-nums text-[var(--yu3-ink-strong)]">
+              {t.value}
+            </span>
+          </div>
+        ))}
+      </div>
 
       {isCompleted && (
         <div className="rounded-[var(--yu3-r-md)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-subtle)] px-4 py-2.5 text-[12px] text-[var(--yu3-ink-muted)]">
@@ -1260,7 +1277,7 @@ export default function MoveDetailClient({
       >
         <TabsList
           variant="underline"
-          className="mb-0 w-full min-h-[2.5rem] flex-wrap gap-y-1"
+          className="mb-0 w-full min-h-[2.5rem] flex-nowrap overflow-x-auto overscroll-x-contain gap-x-0.5 [-webkit-overflow-scrolling:touch]"
         >
           <TabsTrigger value="overview" variant="underline">
             Overview
@@ -1983,14 +2000,12 @@ export default function MoveDetailClient({
                     }
                   />
                 ) : null}
-                {(() => {
-                  const label = tierDisplayLabel(move.tier_selected);
-                  return label ? (
-                    <span className="dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">
-                      {label}
-                    </span>
-                  ) : null;
-                })()}
+                {tierDisplayLabel(move.tier_selected) ? (
+                  <TierLetterBadge
+                    tier={move.tier_selected}
+                    label={tierDisplayLabel(move.tier_selected) ?? undefined}
+                  />
+                ) : null}
                 {move.service_type && (
                   <span className="text-[9px] text-[var(--yu3-ink-muted)]">
                     {serviceTypeDisplayLabel(move.service_type)}

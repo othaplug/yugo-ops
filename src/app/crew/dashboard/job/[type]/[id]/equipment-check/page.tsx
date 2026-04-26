@@ -3,8 +3,9 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CaretLeft as PhCaretLeft, WarningCircle } from "@phosphor-icons/react";
+import { CaretLeft, WarningCircle } from "@phosphor-icons/react";
 import YugoLogo from "@/components/YugoLogo";
+import PageContent from "@/app/admin/components/PageContent";
 import { useCrewImmersiveNav } from "@/app/crew/components/CrewImmersiveNavContext";
 import {
   EQUIPMENT_TRACKING_UNAVAILABLE_CODE,
@@ -12,18 +13,32 @@ import {
   isEquipmentRelationUnavailable,
 } from "@/lib/supabase-equipment-errors";
 import { formatPhone, normalizePhone } from "@/lib/phone";
+import { cn } from "@/design-system/admin/lib/cn";
 
 const DISPATCH_PHONE = process.env.NEXT_PUBLIC_YUGO_PHONE || "(647) 370-4525";
 
-const FOREST_PRIMARY = "#2C3E2D";
-const INK = "#1A1A1A";
-const MUTED = "#6B7A6E";
-const BG = "#FAF8F4";
-const BORDER = "#E8E4DC";
-const NOTE_FILL = "#F0EDE8";
+const CAT_LABEL: Record<string, string> = {
+  protection: "Protection",
+  tools: "Tools",
+  moving: "Moving",
+  supplies: "Supplies",
+  tech: "Tech",
+};
 
-function ChevronLeft({ size = 16 }: { size?: number }) {
-  return <PhCaretLeft size={size} />;
+function ImmersiveHeader({ backHref }: { backHref: string }) {
+  return (
+    <div className="mb-5 flex min-h-[48px] items-center justify-between gap-2">
+      <Link
+        href={backHref}
+        className="inline-flex min-h-[44px] min-w-0 items-center gap-1.5 py-1.5 pr-2 text-[12px] font-medium text-[var(--yu3-ink-faint)] transition-colors [font-family:var(--font-body)] hover:text-[var(--yu3-wine)]"
+      >
+        <CaretLeft size={18} weight="bold" className="shrink-0" aria-hidden />
+        Back
+      </Link>
+      <YugoLogo size={24} variant="wine" onLightBackground />
+      <div className="w-12 shrink-0" aria-hidden />
+    </div>
+  );
 }
 
 export default function CrewEquipmentCheckPage({
@@ -248,432 +263,354 @@ export default function CrewEquipmentCheckPage({
 
   const backHref = `/crew/dashboard/job/${jobType}/${id}`;
 
+  const blockedNoList =
+    !eqLoading && (equipmentUnavailable || eqLines.length === 0);
+  const canSubmitList = !equipmentUnavailable && eqLines.length > 0;
+
   if (jobReady === null) {
     return (
-      <main
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: BG }}
-      >
-        <p className="text-[13px]" style={{ color: MUTED }}>
-          Loading…
-        </p>
-      </main>
+      <PageContent className="w-full min-w-0 max-w-full">
+        <div className="flex min-h-[40vh] items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--yu3-wine)]/25 border-t-[var(--yu3-wine)]" />
+            <p className="text-[14px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+              Loading
+            </p>
+          </div>
+        </div>
+      </PageContent>
     );
   }
 
   if (!jobReady) {
     return (
-      <main
-        className="min-h-screen"
-        style={{ background: BG, fontFamily: "'DM Sans', sans-serif" }}
-      >
-        <div className="max-w-[420px] mx-auto px-4 pb-16 pt-[max(1.5rem,env(safe-area-inset-top))]">
-          <div className="flex items-center justify-between mb-6">
-            <Link
-              href={backHref}
-              className="flex items-center gap-1 text-[13px] font-medium py-1.5 pr-3 -ml-1 rounded-lg transition-colors hover:opacity-70"
-              style={{ color: MUTED }}
-            >
-              <ChevronLeft size={15} /> Back
-            </Link>
-            <YugoLogo size={22} variant="wine" onLightBackground />
-            <div className="w-14" />
-          </div>
-          <h1
-            className="font-hero text-[26px] font-semibold leading-tight mb-2"
-            style={{ color: INK }}
-          >
-            Equipment check
-          </h1>
-          <p
-            className="text-[13px] leading-relaxed mb-6"
-            style={{ color: MUTED }}
-          >
-            Complete this job (including client sign-off) first. Then count
-            what&apos;s on the truck before you head to the next stop or end
-            your day.
-          </p>
-          <Link
-            href={backHref}
-            className="inline-flex w-full justify-center py-2.5 font-semibold rounded-xl transition-opacity hover:opacity-90"
-            style={{ backgroundColor: FOREST_PRIMARY, color: "#1A1A1A" }}
-          >
-            Back to job
-          </Link>
-        </div>
-      </main>
+      <PageContent className="mx-auto w-full min-w-0 max-w-lg">
+        <ImmersiveHeader backHref={backHref} />
+        <h1 className="font-hero text-[24px] font-semibold leading-tight text-[var(--yu3-wine)] sm:text-[26px]">
+          Equipment check
+        </h1>
+        <p className="mt-2 text-[14px] leading-relaxed text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+          Complete this job and client sign off first, then you can count what
+          is on the truck before the next stop or your end of day.
+        </p>
+        <Link
+          href={backHref}
+          className="crew-premium-cta mt-6 inline-flex w-full min-h-[48px] items-center justify-center text-[11px] font-bold uppercase tracking-[0.12em] [font-family:var(--font-body)]"
+        >
+          Back to job
+        </Link>
+      </PageContent>
     );
   }
 
   if (alreadyDone) {
     return (
-      <main
-        className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: BG }}
-      >
-        <div className="text-center max-w-sm">
-          <h1
-            className="font-hero text-[24px] font-semibold mb-2"
-            style={{ color: INK }}
-          >
-            Equipment check done
+      <PageContent className="mx-auto w-full min-w-0 max-w-lg">
+        <ImmersiveHeader backHref={backHref} />
+        <div className="text-center">
+          <h1 className="font-hero text-[24px] font-semibold text-[var(--yu3-wine)] sm:text-[26px]">
+            Already submitted
           </h1>
-          <p className="text-[13px] mb-6" style={{ color: MUTED }}>
+          <p className="mt-2 text-[14px] leading-relaxed text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
             This job already has a submitted or skipped equipment check.
           </p>
           <Link
             href={backHref}
-            className="text-[13px] font-medium underline underline-offset-2"
-            style={{ color: MUTED }}
+            className="mt-6 inline-flex min-h-[44px] items-center justify-center text-[13px] font-semibold text-[var(--yu3-wine)] underline-offset-2 hover:underline [font-family:var(--font-body)]"
           >
             Back to job
           </Link>
         </div>
-      </main>
+      </PageContent>
     );
   }
 
   return (
-    <main
-      className="min-h-screen"
-      style={{ background: BG, fontFamily: "'DM Sans', sans-serif" }}
-    >
-      <div className="max-w-[420px] mx-auto px-4 pb-16 pt-[max(1.5rem,env(safe-area-inset-top))]">
-        <div className="flex items-center justify-between mb-6">
-          <Link
-            href={backHref}
-            className="flex items-center gap-1 text-[13px] font-medium py-1.5 pr-3 -ml-1 rounded-lg transition-colors hover:opacity-70"
-            style={{ color: MUTED }}
-          >
-            <ChevronLeft size={15} /> Back
-          </Link>
-          <YugoLogo size={22} variant="wine" onLightBackground />
-          <div className="w-14" />
-        </div>
+    <PageContent className="mx-auto w-full min-w-0 max-w-lg">
+      <ImmersiveHeader backHref={backHref} />
 
-        <div className="mb-6">
-          <p
-            className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5"
-            style={{ color: `${FOREST_PRIMARY}AA` }}
-          >
-            After sign-off
-          </p>
-          <h1
-            className="font-hero text-[26px] font-semibold leading-tight"
-            style={{ color: INK }}
-          >
-            Truck equipment check
-          </h1>
-          <p className="text-[12px] mt-1.5" style={{ color: MUTED }}>
-            Count what&apos;s on the truck before the next job or your
-            end-of-day report. Dispatch is notified if anything is missing.
+      <p className="yu3-t-eyebrow mb-1.5 text-[10px] text-[var(--yu3-wine)]/80 [font-family:var(--font-body)]">
+        After sign off
+      </p>
+      <h1 className="font-hero text-[24px] font-semibold leading-tight text-[var(--yu3-wine)] sm:text-[26px]">
+        Truck equipment check
+      </h1>
+      <p className="mt-2 text-[14px] leading-relaxed text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+        Count what is on the truck. Dispatch is notified if counts do not
+        match.
+      </p>
+
+      {canSubmitList && eqMsg && !blockedNoList && (
+        <div className="mt-4 rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-forest-tint)]/30 px-3 py-2.5">
+          <p className="text-[14px] leading-snug text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+            {eqMsg}
           </p>
         </div>
+      )}
 
-        {eqMsg && (
-          <div
-            className="mb-4 p-3 rounded-xl flex gap-2 items-start"
-            style={{
-              backgroundColor: equipmentUnavailable
-                ? "#FEF2F2"
-                : `${FOREST_PRIMARY}12`,
-              border: `1px solid ${equipmentUnavailable ? "#FECACA" : `${FOREST_PRIMARY}35`}`,
-            }}
-          >
+      {eqLoading && (
+        <p className="mt-6 text-center text-[14px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+          Loading equipment
+        </p>
+      )}
+
+      {!eqLoading && blockedNoList && (
+        <div
+          className={cn(
+            "mt-5 rounded-[var(--yu3-r-xl)] border p-4 sm:p-5",
+            equipmentUnavailable
+              ? "border-red-200/80 bg-red-50/80"
+              : "border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)]",
+          )}
+        >
+          <div className="flex gap-3">
             <WarningCircle
-              size={18}
-              className="shrink-0 mt-0.5"
-              color={equipmentUnavailable ? "#B91C1C" : FOREST_PRIMARY}
+              className={cn(
+                "mt-0.5 h-5 w-5 shrink-0",
+                equipmentUnavailable
+                  ? "text-red-600"
+                  : "text-[var(--yu3-wine)]",
+              )}
+              weight="duotone"
               aria-hidden
             />
-            <p
-              className="text-[11px] leading-relaxed"
-              style={{ color: equipmentUnavailable ? "#991B1B" : INK }}
-            >
-              {eqMsg}
-            </p>
+            <div className="min-w-0 flex-1 space-y-3">
+              <p className="text-[14px] leading-relaxed text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+                {eqMsg?.trim() ||
+                  "No equipment list is available for this truck yet."}
+              </p>
+              <a
+                href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
+                className="crew-premium-cta flex w-full min-h-[48px] items-center justify-center text-[11px] font-bold uppercase tracking-[0.12em] [font-family:var(--font-body)]"
+              >
+                Call dispatch {formatPhone(DISPATCH_PHONE)}
+              </a>
+            </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {eqLoading ? (
-          <p className="text-[13px] text-center py-8" style={{ color: MUTED }}>
-            Loading equipment…
-          </p>
-        ) : equipmentUnavailable ? null : eqLines.length === 0 ? (
-          <div className="text-center py-6 px-2">
-            <p
-              className="text-[14px] leading-relaxed mb-4"
-              style={{ color: MUTED }}
-            >
-              No equipment list for this truck yet. If your truck should have
-              gear assigned, ask dispatch to set up truck equipment in the admin
-              dashboard.
-            </p>
-            <a
-              href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
-              className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 text-[11px] font-bold uppercase tracking-[0.1em] transition-opacity hover:opacity-92 active:opacity-88 [font-family:var(--font-body)]"
-              style={{ backgroundColor: FOREST_PRIMARY, color: "#1A1A1A" }}
-            >
-              Call dispatch {formatPhone(DISPATCH_PHONE)}
-            </a>
-          </div>
-        ) : (
-          <div className="space-y-3 mb-5">
-            {["protection", "tools", "moving", "supplies", "tech"].map(
-              (cat) => {
-                const inCat = eqLines.filter((l) => l.category === cat);
-                if (!inCat.length) return null;
-                return (
-                  <div
-                    key={cat}
-                    className="rounded-2xl border bg-white overflow-hidden"
-                    style={{ borderColor: BORDER }}
-                  >
-                    <div
-                      className="px-3 py-2 text-[9px] font-bold uppercase tracking-widest"
-                      style={{ backgroundColor: NOTE_FILL, color: MUTED }}
-                    >
-                      {cat}
-                    </div>
-                    <div className="divide-y" style={{ borderColor: BORDER }}>
-                      {inCat.map((L) => {
-                        const actual =
-                          eqCounts[L.equipment_id] ?? L.current_quantity;
-                        const short = L.current_quantity - actual;
-                        const warn =
-                          short > 0 && (!L.is_consumable || actual <= 0);
-                        return (
-                          <div
-                            key={L.equipment_id}
-                            className="px-3 py-2.5 flex items-center justify-between gap-2"
-                          >
-                            <span
-                              className="text-[12px] font-medium flex-1 min-w-0"
-                              style={{ color: INK }}
-                            >
-                              {L.name}
-                            </span>
-                            <div className="flex items-center gap-1 shrink-0">
-                              <input
-                                type="number"
-                                min={0}
-                                className="admin-premium-input admin-premium-input--compact w-14 text-center tabular-nums text-[12px]"
-                                style={{
-                                  borderBottomColor: warn ? "#fca5a5" : BORDER,
-                                  color: INK,
-                                }}
-                                value={actual}
-                                onChange={(e) => {
-                                  const v = Math.max(
-                                    0,
-                                    parseInt(e.target.value, 10) || 0,
-                                  );
-                                  setEqCounts((prev) => ({
-                                    ...prev,
-                                    [L.equipment_id]: v,
-                                  }));
-                                }}
-                                aria-label={`Actual count for ${L.name}`}
-                              />
-                              <span
-                                className="text-[10px] tabular-nums whitespace-nowrap"
-                                style={{ color: MUTED }}
-                              >
-                                of {L.current_quantity}
-                              </span>
-                              {warn ? (
-                                <WarningCircle
-                                  size={16}
-                                  className="text-amber-600 shrink-0"
-                                  aria-label="Shortage"
-                                />
-                              ) : null}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              },
-            )}
-          </div>
-        )}
-
-        {eqLines.length > 0 &&
-          (() => {
-            let needsBatch = false;
-            for (const L of eqLines) {
-              const actual = eqCounts[L.equipment_id] ?? L.current_quantity;
-              const short = L.current_quantity - actual;
-              if (short <= 0) continue;
-              if (!L.is_consumable || actual <= 0) needsBatch = true;
-            }
-            return needsBatch ? (
-              <div className="mb-4 space-y-3">
-                <p className="text-[11px] font-semibold" style={{ color: INK }}>
-                  What happened to missing items?
-                </p>
-                {(
-                  [
-                    {
-                      v: "left_at_client",
-                      label: "Left at client (retrieve later)",
-                    },
-                    { v: "damaged", label: "Damaged during job" },
-                    { v: "lost", label: "Lost / cannot locate" },
-                    { v: "consumed", label: "Used (consumables)" },
-                  ] as const
-                ).map((o) => (
-                  <label
-                    key={o.v}
-                    className="flex items-center gap-2 text-[12px] cursor-pointer"
-                    style={{ color: INK }}
-                  >
-                    <input
-                      type="radio"
-                      name="eq-batch"
-                      checked={eqBatchReason === o.v}
-                      onChange={() => setEqBatchReason(o.v)}
-                      className="accent-[#2C3E2D]"
-                    />
-                    <span style={{ color: INK }}>{o.label}</span>
-                  </label>
-                ))}
-                {eqBatchReason === "left_at_client" && (
-                  <div
-                    className="mt-2 rounded-xl border p-3 space-y-2"
-                    style={{ borderColor: BORDER, backgroundColor: NOTE_FILL }}
-                  >
-                    <p
-                      className="text-[11px] font-semibold"
-                      style={{ color: INK }}
-                    >
-                      Go back now to retrieve?
-                    </p>
-                    <label
-                      className="flex items-center gap-2 text-[11px] cursor-pointer"
-                      style={{ color: INK }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={eqLeftRetrieve}
-                        onChange={(e) => setEqLeftRetrieve(e.target.checked)}
-                        className="accent-[#2C3E2D]"
-                      />
-                      <span style={{ color: INK }}>
-                        Yes — returning to the client now
-                      </span>
-                    </label>
-                    <p className="text-[10px]" style={{ color: MUTED }}>
-                      If unchecked, dispatch is notified to coordinate pickup
-                      with the client.
-                    </p>
-                  </div>
-                )}
+      {!eqLoading && !blockedNoList && (
+        <div className="mt-5 space-y-3">
+          {["protection", "tools", "moving", "supplies", "tech"].map((cat) => {
+            const inCat = eqLines.filter((l) => l.category === cat);
+            if (!inCat.length) return null;
+            return (
+              <div
+                key={cat}
+                className="overflow-hidden rounded-[12px] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)]"
+              >
+                <div className="border-b border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/80 px-3 py-2">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
+                    {CAT_LABEL[cat] || cat}
+                  </p>
+                </div>
+                <div className="divide-y divide-[var(--yu3-line-subtle)]">
+                  {inCat.map((L) => {
+                    const actual =
+                      eqCounts[L.equipment_id] ?? L.current_quantity;
+                    const short = L.current_quantity - actual;
+                    const warn = short > 0 && (!L.is_consumable || actual <= 0);
+                    return (
+                      <div
+                        key={L.equipment_id}
+                        className="flex items-center justify-between gap-2 px-3 py-2.5"
+                      >
+                        <span className="min-w-0 flex-1 text-[14px] font-medium text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+                          {L.name}
+                        </span>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <input
+                            type="number"
+                            min={0}
+                            className="admin-premium-input admin-premium-input--compact w-14 text-center text-[14px] tabular-nums"
+                            style={{
+                              borderBottomColor: warn
+                                ? "rgb(248 113 113)"
+                                : undefined,
+                            }}
+                            value={actual}
+                            onChange={(e) => {
+                              const v = Math.max(
+                                0,
+                                parseInt(e.target.value, 10) || 0,
+                              );
+                              setEqCounts((prev) => ({
+                                ...prev,
+                                [L.equipment_id]: v,
+                              }));
+                            }}
+                            aria-label={`Actual count for ${L.name}`}
+                          />
+                          <span className="whitespace-nowrap text-[12px] tabular-nums text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+                            of {L.current_quantity}
+                          </span>
+                          {warn ? (
+                            <WarningCircle
+                              size={18}
+                              className="shrink-0 text-amber-600"
+                              aria-label="Shortage"
+                            />
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            ) : null;
-          })()}
+            );
+          })}
+        </div>
+      )}
 
-        {error ? (
-          <div className="mb-3 p-3 rounded-xl bg-red-50 border border-red-200">
-            <p className="text-[11px] text-red-700 font-semibold">{error}</p>
-          </div>
-        ) : null}
+      {!eqLoading &&
+        canSubmitList &&
+        (() => {
+          let needsBatch = false;
+          for (const L of eqLines) {
+            const actual = eqCounts[L.equipment_id] ?? L.current_quantity;
+            const short = L.current_quantity - actual;
+            if (short <= 0) continue;
+            if (!L.is_consumable || actual <= 0) needsBatch = true;
+          }
+          return needsBatch ? (
+            <div className="mt-4 space-y-3">
+              <p className="text-[14px] font-semibold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+                What happened to missing items?
+              </p>
+              {(
+                [
+                  {
+                    v: "left_at_client",
+                    label: "Left at client (retrieve later)",
+                  },
+                  { v: "damaged", label: "Damaged during job" },
+                  { v: "lost", label: "Lost or cannot locate" },
+                  { v: "consumed", label: "Used (consumables)" },
+                ] as const
+              ).map((o) => (
+                <label
+                  key={o.v}
+                  className="flex cursor-pointer items-center gap-2.5 text-[14px] text-[var(--yu3-ink)] [font-family:var(--font-body)]"
+                >
+                  <input
+                    type="radio"
+                    name="eq-batch"
+                    checked={eqBatchReason === o.v}
+                    onChange={() => setEqBatchReason(o.v)}
+                    className="h-4 w-4 accent-[var(--yu3-forest)]"
+                  />
+                  {o.label}
+                </label>
+              ))}
+              {eqBatchReason === "left_at_client" && (
+                <div className="mt-1 space-y-2 rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] p-3">
+                  <p className="text-[14px] font-semibold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+                    Go back now to retrieve?
+                  </p>
+                  <label className="flex cursor-pointer items-center gap-2.5 text-[14px] text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+                    <input
+                      type="checkbox"
+                      checked={eqLeftRetrieve}
+                      onChange={(e) => setEqLeftRetrieve(e.target.checked)}
+                      className="h-4 w-4 accent-[var(--yu3-forest)]"
+                    />
+                    Yes, returning to the client now
+                  </label>
+                  <p className="text-[12px] leading-relaxed text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+                    If unchecked, dispatch is notified to coordinate pickup with
+                    the client.
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : null;
+        })()}
 
-        {!equipmentUnavailable ? (
-          <>
+      {error ? (
+        <div className="mb-3 mt-4 rounded-[var(--yu3-r-lg)] border border-red-200 bg-red-50/90 p-3">
+          <p className="text-[14px] font-semibold text-red-800 [font-family:var(--font-body)]">
+            {error}
+          </p>
+        </div>
+      ) : null}
+
+      {!equipmentUnavailable && !eqLoading && (
+        <div className="mt-6 space-y-3">
+          {canSubmitList && (
             <button
               type="button"
               onClick={submitEquipmentCheck}
-              disabled={eqEquipSubmitting || eqLines.length === 0}
-              className="w-full py-2 font-semibold transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 mb-2"
-              style={{
-                backgroundColor: FOREST_PRIMARY,
-                color: "#1A1A1A",
-                fontSize: 16,
-              }}
+              disabled={eqEquipSubmitting}
+              className="crew-premium-cta w-full min-h-[48px] text-[11px] font-bold uppercase tracking-[0.12em] disabled:cursor-not-allowed disabled:opacity-40 [font-family:var(--font-body)]"
             >
-              {eqEquipSubmitting ? "Saving…" : "Submit equipment check"}
+              {eqEquipSubmitting ? "Saving" : "Submit equipment check"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setEqSkipOpen(true);
+              setError("");
+            }}
+            className="w-full min-h-[44px] rounded-[var(--yu3-r-md)] border-2 border-[var(--yu3-line-subtle)] bg-transparent px-4 text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-ink)] transition-colors [font-family:var(--font-body)] hover:border-[var(--yu3-wine)]/35 hover:bg-[var(--yu3-wine-tint)]/40"
+          >
+            Skip check (reason required)
+          </button>
+        </div>
+      )}
+
+      {eqSkipOpen && !equipmentUnavailable ? (
+        <div className="mt-4 space-y-3 rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 shadow-[var(--yu3-shadow-sm)]">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-wine)]/80 [font-family:var(--font-body)]">
+            Skip reason
+          </p>
+          <label className="flex cursor-pointer items-center gap-2.5 text-[14px] text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+            <input
+              type="radio"
+              name="eqskip"
+              checked={eqSkipChoice === "labour_only"}
+              onChange={() => setEqSkipChoice("labour_only")}
+              className="h-4 w-4 accent-[var(--yu3-forest)]"
+            />
+            No equipment used (labour only job)
+          </label>
+          <label className="flex cursor-pointer items-center gap-2.5 text-[14px] text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+            <input
+              type="radio"
+              name="eqskip"
+              checked={eqSkipChoice === "emergency_later"}
+              onChange={() => setEqSkipChoice("emergency_later")}
+              className="h-4 w-4 accent-[var(--yu3-forest)]"
+            />
+            Emergency, complete later
+          </label>
+          <textarea
+            value={eqSkipNote}
+            onChange={(e) => setEqSkipNote(e.target.value)}
+            placeholder="Notes for coordinator"
+            className="admin-premium-textarea w-full text-[14px] text-[var(--yu3-ink)] [font-family:var(--font-body)]"
+            rows={2}
+          />
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setEqSkipOpen(false)}
+              className="min-h-[44px] flex-1 rounded-[var(--yu3-r-md)] border-2 border-[var(--yu3-line-subtle)] text-[12px] font-semibold text-[var(--yu3-ink)] [font-family:var(--font-body)] transition-colors hover:bg-[var(--yu3-bg-surface-sunken)]"
+            >
+              Cancel
             </button>
             <button
               type="button"
-              onClick={() => {
-                setEqSkipOpen(true);
-                setError("");
-              }}
-              className="w-full py-2 text-[11px] font-semibold border rounded-xl transition-colors"
-              style={{ borderColor: BORDER, color: INK }}
+              onClick={submitEquipmentSkip}
+              disabled={!eqSkipChoice || eqEquipSubmitting}
+              className="min-h-[44px] flex-1 rounded-[var(--yu3-r-md)] bg-red-600 text-[12px] font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40 [font-family:var(--font-body)]"
             >
-              Skip equipment check (reason required)
+              Confirm skip
             </button>
-          </>
-        ) : null}
-
-        {eqSkipOpen && !equipmentUnavailable ? (
-          <div
-            className="mt-4 p-4 rounded-2xl border space-y-3"
-            style={{ borderColor: BORDER, backgroundColor: NOTE_FILL }}
-          >
-            <p
-              className="text-[11px] font-bold uppercase tracking-widest"
-              style={{ color: INK }}
-            >
-              Skip reason
-            </p>
-            <label className="flex items-center gap-2 text-[12px] cursor-pointer">
-              <input
-                type="radio"
-                name="eqskip"
-                checked={eqSkipChoice === "labour_only"}
-                onChange={() => setEqSkipChoice("labour_only")}
-                className="accent-[#2C3E2D]"
-              />
-              <span style={{ color: INK }}>
-                No equipment used (labour-only job)
-              </span>
-            </label>
-            <label className="flex items-center gap-2 text-[12px] cursor-pointer">
-              <input
-                type="radio"
-                name="eqskip"
-                checked={eqSkipChoice === "emergency_later"}
-                onChange={() => setEqSkipChoice("emergency_later")}
-                className="accent-[#2C3E2D]"
-              />
-              <span style={{ color: INK }}>
-                Emergency, complete later
-              </span>
-            </label>
-            <textarea
-              value={eqSkipNote}
-              onChange={(e) => setEqSkipNote(e.target.value)}
-              placeholder="Notes for coordinator…"
-              className="admin-premium-textarea w-full text-[12px]"
-              style={{ color: INK }}
-              rows={2}
-            />
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setEqSkipOpen(false)}
-                className="flex-1 py-2 text-[11px] font-semibold border rounded-lg transition-colors"
-                style={{ borderColor: BORDER, color: INK }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={submitEquipmentSkip}
-                disabled={!eqSkipChoice || eqEquipSubmitting}
-                className="flex-1 py-2 text-[11px] font-semibold rounded-lg bg-red-600 text-white disabled:opacity-40"
-              >
-                Confirm skip
-              </button>
-            </div>
           </div>
-        ) : null}
-      </div>
-    </main>
+        </div>
+      ) : null}
+    </PageContent>
   );
 }

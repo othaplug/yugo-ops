@@ -1,74 +1,86 @@
 import type { TrackingStatus } from "@/lib/tracking-status-types";
 import { sendSMS } from "@/lib/sms/sendSMS";
-import { formatJobId } from "@/lib/move-code";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 function digitsOnly(phone: string): string {
   return (phone || "").replace(/\D/g, "");
 }
 
+function trackingSmsFirstName(clientName: string | null | undefined): string {
+  const s = (clientName || "").trim().split(/\s+/)[0];
+  return s || "there";
+}
+
 function clientSmsBody(
   status: TrackingStatus,
   jobType: "move" | "delivery",
-  jobCode: string,
+  clientName: string | null | undefined,
   trackUrl: string | undefined,
   estateMove: boolean,
 ): string {
-  const id = formatJobId(jobCode, jobType);
-  const tail = trackUrl ? ` ${trackUrl}` : "";
+  const hi = trackingSmsFirstName(clientName);
+  const link = trackUrl ? `\n${trackUrl}` : "";
   if (jobType === "move") {
     if (estateMove) {
       switch (status) {
         case "en_route_to_pickup":
         case "en_route":
-          return `Your Estate crew is on the way | ${id}${tail}`;
+          return `Hi ${hi}, your Estate crew is on the way. We will keep you posted.${link}`;
         case "arrived_at_pickup":
-          return `Your crew has arrived and is ready to begin your Estate move | ${id}${tail}`;
+          return `Hi ${hi}, your crew has arrived and is ready to begin your Estate move.${link}`;
+        case "inventory_check":
+        case "loading":
+        case "wrapping":
+          return `Hi ${hi}, your crew is working on site. We will update you at the next step.${link}`;
         case "en_route_to_destination":
-          return `Your load is on the way to your new home | ${id}${tail}`;
+          return `Hi ${hi}, your load is on the way to your new home.${link}`;
         case "arrived_at_destination":
-          return `Your crew has arrived and is ready to unload | ${id}${tail}`;
+          return `Hi ${hi}, your crew has arrived and is ready to unload.${link}`;
         case "completed":
-          return `Your Estate move is complete. Thank you for choosing Yugo | ${id}`;
+          return `Hi ${hi}, your Estate move is complete. Thank you for choosing Yugo.`;
         case "arrived":
-          return `Your crew has arrived | ${id}${tail}`;
+          return `Hi ${hi}, your crew has arrived.${link}`;
         default:
-          return `Estate move update | ${id}${tail}`;
+          return `Hi ${hi}, here is a quick update on your Estate move.${link}`;
       }
     }
     switch (status) {
       case "en_route_to_pickup":
       case "en_route":
-        return `Your moving team is on the way | ${id}${tail}`;
+        return `Hi ${hi}, your moving team is on the way. We will keep you posted.${link}`;
       case "arrived_at_pickup":
-        return `Your crew has arrived at pickup | ${id}${tail}`;
+        return `Hi ${hi}, your crew has arrived at pickup.${link}`;
+      case "inventory_check":
+      case "loading":
+      case "wrapping":
+        return `Hi ${hi}, your crew is working on site. We will update you at the next step.${link}`;
       case "en_route_to_destination":
-        return `Your belongings are on the way to your new home | ${id}${tail}`;
+        return `Hi ${hi}, your belongings are on the way to your new home.${link}`;
       case "arrived_at_destination":
-        return `Your crew has arrived at your new home | ${id}${tail}`;
+        return `Hi ${hi}, your crew has arrived at your new home.${link}`;
       case "completed":
-        return `Your move is complete. Thank you for choosing Yugo | ${id}`;
+        return `Hi ${hi}, your move is complete. Thank you for choosing Yugo.`;
       case "arrived":
-        return `Your crew has arrived | ${id}${tail}`;
+        return `Hi ${hi}, your crew has arrived.${link}`;
       default:
-        return `Move update from Yugo | ${id}${tail}`;
+        return `Hi ${hi}, here is a quick update from Yugo.${link}`;
     }
   }
   switch (status) {
     case "en_route_to_pickup":
     case "en_route":
-      return `Your delivery crew is on the way | ${id}${tail}`;
+      return `Hi ${hi}, your delivery crew is on the way. We will keep you posted.${link}`;
     case "arrived_at_pickup":
-      return `Your crew has arrived at pickup | ${id}${tail}`;
+      return `Hi ${hi}, your crew has arrived at pickup.${link}`;
     case "en_route_to_destination":
-      return `Your delivery is on the way to you | ${id}${tail}`;
+      return `Hi ${hi}, your delivery is on the way to you.${link}`;
     case "arrived_at_destination":
     case "arrived":
-      return `Your crew has arrived with your delivery | ${id}${tail}`;
+      return `Hi ${hi}, your crew has arrived with your delivery.${link}`;
     case "completed":
-      return `Your delivery is complete. Thank you for choosing Yugo | ${id}`;
+      return `Hi ${hi}, your delivery is complete. Thank you for choosing Yugo.`;
     default:
-      return `Delivery update from Yugo | ${id}${tail}`;
+      return `Hi ${hi}, here is a quick delivery update from Yugo.${link}`;
   }
 }
 
@@ -77,7 +89,7 @@ export async function sendClientTrackingCheckpointSms(opts: {
   status: TrackingStatus;
   jobType: "move" | "delivery";
   phone: string | null | undefined;
-  jobCode: string;
+  clientName: string | null | undefined;
   trackUrl: string | undefined;
   estateMove: boolean;
   jobUuid: string;
@@ -88,7 +100,7 @@ export async function sendClientTrackingCheckpointSms(opts: {
   const body = clientSmsBody(
     opts.status,
     opts.jobType,
-    opts.jobCode,
+    opts.clientName,
     opts.trackUrl,
     opts.estateMove,
   ).slice(0, 1500);

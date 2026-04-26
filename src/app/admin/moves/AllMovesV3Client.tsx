@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { formatMoveDate, formatAdminCreatedAt } from "@/lib/date-format"
-import { formatCurrency } from "@/lib/format-currency"
-import { serviceTypeDisplayLabel } from "@/lib/displayLabels"
-import { getMoveDetailPath } from "@/lib/move-code"
-import { getStatusLabel } from "@/lib/move-status"
-import { toTitleCase } from "@/lib/format-text"
+import * as React from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { formatMoveDate, formatAdminCreatedAt } from "@/lib/date-format";
+import { formatCurrency } from "@/lib/format-currency";
+import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
+import { getMoveDetailPath } from "@/lib/move-code";
+import { getStatusLabel } from "@/lib/move-status";
+import { toTitleCase } from "@/lib/format-text";
 
-import { PageHeader } from "@/design-system/admin/layout"
-import { Button, StatusPill } from "@/design-system/admin/primitives"
+import { PageHeader } from "@/design-system/admin/layout";
+import { Button, StatusPill } from "@/design-system/admin/primitives";
 import {
   DataTable,
   type ColumnDef,
@@ -18,81 +18,107 @@ import {
   type BulkAction,
   type RowAction,
   type ViewMode,
-} from "@/design-system/admin/table"
-import { KpiStrip } from "@/design-system/admin/dashboard"
-import { Plus, Trash } from "@phosphor-icons/react"
+} from "@/design-system/admin/table";
+import { KpiStrip } from "@/design-system/admin/dashboard";
+import { Plus, Trash } from "@phosphor-icons/react";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 
 interface Move {
-  id: string
-  move_code?: string
-  client_name?: string
-  client_email?: string
-  from_address?: string
-  to_address?: string
-  scheduled_date?: string
-  estimate?: number
-  status?: string
-  move_type?: string
-  service_type?: string
-  tier_selected?: string
-  crew_id?: string
-  created_at?: string
-  margin_percent?: number | null
-  margin_flag?: string | null
-  est_margin_percent?: number | null
-  display_status?: string | null
+  id: string;
+  move_code?: string;
+  client_name?: string;
+  client_email?: string;
+  from_address?: string;
+  to_address?: string;
+  scheduled_date?: string;
+  estimate?: number;
+  status?: string;
+  move_type?: string;
+  service_type?: string;
+  tier_selected?: string;
+  crew_id?: string;
+  created_at?: string;
+  margin_percent?: number | null;
+  margin_flag?: string | null;
+  est_margin_percent?: number | null;
+  display_status?: string | null;
 }
 
 interface Quote {
-  id: string
-  quote_id: string
-  contact_id: string
-  client_name: string
-  service_type: string
-  status: string
-  tiers: unknown
-  custom_price: number | null
-  sent_at: string | null
-  created_at: string
-  from_address?: string
-  to_address?: string
+  id: string;
+  quote_id: string;
+  contact_id: string;
+  client_name: string;
+  service_type: string;
+  status: string;
+  tiers: unknown;
+  custom_price: number | null;
+  sent_at: string | null;
+  created_at: string;
+  from_address?: string;
+  to_address?: string;
 }
 
 /* ── Helpers ───────────────────────────────────────────────────────────── */
 
 function effective(m: Move) {
-  return (m.display_status ?? m.status ?? "").trim()
+  return (m.display_status ?? m.status ?? "").trim();
 }
 
 function normalizeType(m: Move): string {
-  const mt = (m.move_type || m.service_type || "").toLowerCase()
-  if (mt.includes("office") || mt.includes("commercial")) return "office"
-  if (mt.includes("single")) return "single_item"
-  if (mt.includes("white")) return "white_glove"
-  if (mt.includes("event")) return "event"
-  if (mt.includes("specialty")) return "specialty"
-  if (mt.includes("b2b")) return "b2b"
-  if (mt.includes("labour")) return "labour_only"
-  if (mt.includes("residential") || mt.includes("local")) return "residential"
-  return mt || "residential"
+  const mt = (m.move_type || m.service_type || "").toLowerCase();
+  if (mt.includes("office") || mt.includes("commercial")) return "office";
+  if (mt.includes("single")) return "single_item";
+  if (mt.includes("white")) return "white_glove";
+  if (mt.includes("event")) return "event";
+  if (mt.includes("specialty")) return "specialty";
+  if (mt.includes("b2b")) return "b2b";
+  if (mt.includes("labour")) return "labour_only";
+  if (mt.includes("residential") || mt.includes("local")) return "residential";
+  return mt || "residential";
 }
 
-function statusTone(s: string): React.ComponentProps<typeof StatusPill>["tone"] {
-  const k = s.toLowerCase()
-  if (["completed", "delivered", "paid", "accepted", "active", "confirmed"].includes(k)) return "success"
-  if (["cancelled", "canceled", "refunded", "expired", "failed"].includes(k)) return "danger"
-  if (["in_progress", "scheduled", "en_route", "loading", "unloading", "in_transit"].includes(k)) return "info"
-  if (["pending", "quoted", "draft", "cold", "new", "lost"].includes(k)) return "neutral"
-  return "neutral"
+function statusTone(
+  s: string,
+): React.ComponentProps<typeof StatusPill>["tone"] {
+  const k = s.toLowerCase();
+  if (
+    [
+      "completed",
+      "delivered",
+      "paid",
+      "accepted",
+      "active",
+      "confirmed",
+    ].includes(k)
+  )
+    return "success";
+  if (["cancelled", "canceled", "refunded", "expired", "failed"].includes(k))
+    return "danger";
+  if (
+    [
+      "in_progress",
+      "scheduled",
+      "en_route",
+      "loading",
+      "unloading",
+      "in_transit",
+    ].includes(k)
+  )
+    return "info";
+  if (["pending", "quoted", "draft", "cold", "new", "lost"].includes(k))
+    return "neutral";
+  return "neutral";
 }
 
-function marginTone(flag: string | null | undefined): "success" | "warning" | "danger" | "neutral" {
-  if (flag === "green") return "success"
-  if (flag === "yellow") return "warning"
-  if (flag === "red") return "danger"
-  return "neutral"
+function marginTone(
+  flag: string | null | undefined,
+): "success" | "warning" | "danger" | "neutral" {
+  if (flag === "green") return "success";
+  if (flag === "yellow") return "warning";
+  if (flag === "red") return "danger";
+  return "neutral";
 }
 
 /* ── Component ─────────────────────────────────────────────────────────── */
@@ -101,48 +127,48 @@ export default function AllMovesV3Client({
   moves,
   crewMap,
 }: {
-  moves: Move[]
-  recentQuotes?: Quote[]
-  crewMap: Record<string, string>
+  moves: Move[];
+  recentQuotes?: Quote[];
+  crewMap: Record<string, string>;
 }) {
-  const router = useRouter()
-  const params = useSearchParams()
+  const router = useRouter();
+  const params = useSearchParams();
 
-  const urlType = params.get("type") || ""
-  const urlStatus = params.get("status") || ""
+  const urlType = params.get("type") || "";
+  const urlStatus = params.get("status") || "";
 
-  const [search, setSearch] = React.useState(params.get("q") || "")
+  const [search, setSearch] = React.useState(params.get("q") || "");
   const [sort, setSort] = React.useState<ColumnSort | null>({
     columnId: "created_at",
     direction: "desc",
-  })
-  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
-  const [viewMode, setViewMode] = React.useState<ViewMode>("list")
+  });
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = React.useState<ViewMode>("list");
 
   const filtered = React.useMemo(() => {
     return moves.filter((m) => {
-      if (urlType && normalizeType(m) !== urlType) return false
+      if (urlType && normalizeType(m) !== urlType) return false;
       if (urlStatus && effective(m).toLowerCase() !== urlStatus.toLowerCase())
-        return false
-      return true
-    })
-  }, [moves, urlStatus, urlType])
+        return false;
+      return true;
+    });
+  }, [moves, urlStatus, urlType]);
 
   const kpis = React.useMemo(() => {
-    const totalEstimate = moves.reduce((a, m) => a + (m.estimate || 0), 0)
+    const totalEstimate = moves.reduce((a, m) => a + (m.estimate || 0), 0);
     const confirmed = moves.filter((m) =>
       ["confirmed", "scheduled", "in_progress"].includes(
         effective(m).toLowerCase(),
       ),
-    ).length
+    ).length;
     const completed = moves.filter((m) =>
       ["completed", "delivered", "paid"].includes(effective(m).toLowerCase()),
-    ).length
+    ).length;
     const avgMargin =
       moves
         .map((m) => Number(m.margin_percent ?? m.est_margin_percent ?? 0))
         .filter((n) => n > 0)
-        .reduce((a, b, _, arr) => a + b / arr.length, 0) || 0
+        .reduce((a, b, _, arr) => a + b / arr.length, 0) || 0;
     return [
       {
         id: "total",
@@ -170,13 +196,14 @@ export default function AllMovesV3Client({
         label: "Booked estimate",
         value: formatCurrency(totalEstimate),
       },
-    ]
-  }, [moves])
+    ];
+  }, [moves]);
 
   const columns = React.useMemo<ColumnDef<Move>[]>(
     () => [
       {
         id: "move_code",
+        shortLabel: "Move",
         header: "Move",
         accessor: (m) => m.move_code ?? "",
         sortable: true,
@@ -190,6 +217,7 @@ export default function AllMovesV3Client({
       },
       {
         id: "client",
+        shortLabel: "Client",
         header: "Client",
         accessor: (m) => m.client_name ?? "",
         sortable: true,
@@ -209,33 +237,37 @@ export default function AllMovesV3Client({
       },
       {
         id: "type",
+        shortLabel: "Type",
         header: "Type",
         accessor: (m) => normalizeType(m),
         sortable: true,
         width: 130,
         cell: (m) => (
           <span className="text-[12px] text-[var(--yu3-ink)]">
-            {serviceTypeDisplayLabel(normalizeType(m)) || toTitleCase(normalizeType(m))}
+            {serviceTypeDisplayLabel(normalizeType(m)) ||
+              toTitleCase(normalizeType(m))}
           </span>
         ),
       },
       {
         id: "status",
+        shortLabel: "Status",
         header: "Status",
         accessor: (m) => effective(m),
         sortable: true,
         width: 150,
         cell: (m) => {
-          const s = effective(m)
+          const s = effective(m);
           return (
             <StatusPill tone={statusTone(s)}>
               {getStatusLabel(s) || toTitleCase(s)}
             </StatusPill>
-          )
+          );
         },
       },
       {
         id: "scheduled_date",
+        shortLabel: "Date",
         header: "Date",
         accessor: (m) => m.scheduled_date ?? "",
         sortable: true,
@@ -248,8 +280,9 @@ export default function AllMovesV3Client({
       },
       {
         id: "crew",
+        shortLabel: "Crew",
         header: "Crew",
-        accessor: (m) => (m.crew_id ? crewMap[m.crew_id] ?? "" : ""),
+        accessor: (m) => (m.crew_id ? (crewMap[m.crew_id] ?? "") : ""),
         sortable: true,
         width: 140,
         cell: (m) =>
@@ -258,11 +291,14 @@ export default function AllMovesV3Client({
               {crewMap[m.crew_id]}
             </span>
           ) : (
-            <span className="text-[12px] text-[var(--yu3-ink-faint)]">Unassigned</span>
+            <span className="text-[12px] text-[var(--yu3-ink-faint)]">
+              Unassigned
+            </span>
           ),
       },
       {
         id: "estimate",
+        shortLabel: "Estimate",
         header: "Estimate",
         accessor: (m) => Number(m.estimate || 0),
         align: "right",
@@ -277,6 +313,7 @@ export default function AllMovesV3Client({
       },
       {
         id: "margin",
+        shortLabel: "Margin",
         header: "Margin",
         accessor: (m) => Number(m.margin_percent ?? m.est_margin_percent ?? 0),
         align: "right",
@@ -284,17 +321,18 @@ export default function AllMovesV3Client({
         numeric: true,
         width: 110,
         cell: (m) => {
-          const pct = m.margin_percent ?? m.est_margin_percent
-          if (pct == null) return null
+          const pct = m.margin_percent ?? m.est_margin_percent;
+          if (pct == null) return null;
           return (
             <StatusPill tone={marginTone(m.margin_flag)}>
               {Math.round(Number(pct))}%
             </StatusPill>
-          )
+          );
         },
       },
       {
         id: "created_at",
+        shortLabel: "Created",
         header: "Created",
         accessor: (m) => m.created_at ?? "",
         sortable: true,
@@ -308,7 +346,7 @@ export default function AllMovesV3Client({
       },
     ],
     [crewMap],
-  )
+  );
 
   const bulkActions = React.useMemo<BulkAction<Move>[]>(
     () => [
@@ -329,25 +367,30 @@ export default function AllMovesV3Client({
                 .map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`)
                 .join(","),
             ),
-          ].join("\n")
-          const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }))
-          const a = document.createElement("a")
-          a.href = url
-          a.download = "moves.csv"
-          a.click()
-          URL.revokeObjectURL(url)
+          ].join("\n");
+          const url = URL.createObjectURL(
+            new Blob([csv], { type: "text/csv" }),
+          );
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "moves.csv";
+          a.click();
+          URL.revokeObjectURL(url);
         },
       },
     ],
     [],
-  )
+  );
 
   const rowActions = React.useMemo<RowAction<Move>[]>(
     () => [
       {
         id: "open",
         label: "Open move",
-        run: (m) => router.push(getMoveDetailPath(m as { id: string; move_code?: string | null })),
+        run: (m) =>
+          router.push(
+            getMoveDetailPath(m as { id: string; move_code?: string | null }),
+          ),
       },
       {
         id: "cancel",
@@ -355,16 +398,16 @@ export default function AllMovesV3Client({
         icon: <Trash size={14} />,
         danger: true,
         run: async (m) => {
-          if (!window.confirm(`Cancel move ${m.move_code}?`)) return
+          if (!window.confirm(`Cancel move ${m.move_code}?`)) return;
           const res = await fetch(`/api/admin/moves/${m.id}/cancel`, {
             method: "POST",
-          })
-          if (res.ok) router.refresh()
+          });
+          if (res.ok) router.refresh();
         },
       },
     ],
     [router],
-  )
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -396,12 +439,14 @@ export default function AllMovesV3Client({
         bulkActions={bulkActions}
         rowActions={rowActions}
         onRowClick={(m) =>
-          router.push(getMoveDetailPath(m as { id: string; move_code?: string | null }))
+          router.push(
+            getMoveDetailPath(m as { id: string; move_code?: string | null }),
+          )
         }
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         availableViews={["list"]}
       />
     </div>
-  )
+  );
 }

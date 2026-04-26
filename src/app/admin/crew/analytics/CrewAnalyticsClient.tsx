@@ -172,7 +172,9 @@ export default function CrewAnalyticsClient({
   const fetchData = useCallback(async (f: string, t: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/crew-analytics?from=${f}&to=${t}`);
+      const res = await fetch(`/api/admin/crew-analytics?from=${f}&to=${t}`, {
+        cache: "no-store",
+      });
       if (res.ok) {
         const data = await res.json();
         setAnalytics(data.analytics);
@@ -192,6 +194,7 @@ export default function CrewAnalyticsClient({
       try {
         const res = await fetch(
           `/api/admin/crew-analytics/crew?id=${crewId}&from=${f}&to=${t}`,
+          { cache: "no-store" },
         );
         if (res.ok) {
           const data = await res.json();
@@ -782,6 +785,7 @@ function CrewDetailView({
             columns={4}
             tiles={kpiTiles}
             className="mb-8 sm:grid-cols-4 md:grid-cols-4"
+            gridCardClassName="border-0"
           />
 
           {/* Performance Charts */}
