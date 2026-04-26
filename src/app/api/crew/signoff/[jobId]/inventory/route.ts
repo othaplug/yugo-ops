@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { normalizeDeliveryItem } from "@/lib/delivery-items";
+import { parseItemNameAndQty } from "@/lib/inventory-parse";
 
 export async function GET(
   req: NextRequest,
@@ -22,18 +23,37 @@ export async function GET(
   if (jobType === "move") {
     let moveId = jobId;
     if (!isUuid) {
-      const { data: move } = await admin.from("moves").select("id").ilike("move_code", jobId.replace(/^#/, "").toUpperCase()).maybeSingle();
+      const { data: move } = await admin
+        .from("moves")
+        .select("id")
+        .ilike("move_code", jobId.replace(/^#/, "").toUpperCase())
+        .maybeSingle();
       moveId = move?.id || jobId;
+    }
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(moveId)) {
+      return NextResponse.json({ items: [] });
+    }
+    const { data: moveForCrew } = await admin
+      .from("moves")
+      .select("id")
+      .eq("id", moveId)
+      .eq("crew_id", payload.teamId)
+      .maybeSingle();
+    if (!moveForCrew) {
+      return NextResponse.json({ items: [] });
     }
     const { data: inventory } = await admin
       .from("move_inventory")
-      .select("name, room, quantity")
-      .eq("move_id", moveId);
+      .select("room, item_name")
+      .eq("move_id", moveId)
+      .order("room");
 
-    const items = (inventory || []).map((i) => {
-      const qty = i.quantity > 1 ? ` (×${i.quantity})` : "";
-      const room = i.room ? `, ${i.room}` : "";
-      return `${i.name}${qty}${room}`;
+    const items = (inventory || []).map((row) => {
+      const { baseName, qty } = parseItemNameAndQty(row.item_name || "");
+      const name = (baseName || row.item_name || "").trim() || "Item";
+      const qtySuffix = qty > 1 ? ` (×${qty})` : "";
+      const room = row.room ? `, ${row.room}` : "";
+      return `${name}${qtySuffix}${room}`;
     });
 
     return NextResponse.json({ items });

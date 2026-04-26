@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { computeAvgDrivingSpeedKmhFromHistoryRows } from "@/lib/crew/avg-driving-speed";
+import { getCrewEodPrerequisites } from "@/lib/crew/eod-prerequisites";
 import { formatJobId } from "@/lib/move-code";
+import { sessionJobDurationMinutes } from "@/lib/crew/session-job-duration-minutes";
 
 type AdminClient = SupabaseClient;
 
@@ -23,6 +25,27 @@ export async function upsertEndOfDayReportForTeam(
   },
 ): Promise<EndOfDayUpsertResult> {
   const { teamId, crewLeadId, today, crewNote } = opts;
+
+  const gate = await getCrewEodPrerequisites(admin, teamId, today);
+  if (!gate.canSubmit) {
+    const parts: string[] = [];
+    if (gate.missingEquipment.length > 0) {
+      parts.push(
+        `post-job truck equipment check is required for: ${gate.missingEquipment.map((j) => j.displayId).join(", ")}`,
+      );
+    }
+    if (gate.missingTipReport.length > 0) {
+      parts.push(
+        `tip report is still needed for: ${gate.missingTipReport.map((j) => j.displayId).join(", ")}`,
+      );
+    }
+    return {
+      ok: false,
+      error:
+        `Cannot submit end of day until ${parts.join(" and ")}. Open each job from the dashboard to finish those steps.`,
+    };
+  }
+
   const jobNotes: Record<string, string> =
     opts.jobNotes && typeof opts.jobNotes === "object"
       ? Object.fromEntries(
@@ -49,7 +72,7 @@ export async function upsertEndOfDayReportForTeam(
       .lte("submitted_at", today + "T23:59:59.999Z"),
     admin
       .from("tracking_sessions")
-      .select("id, job_id, job_type, started_at, status, checkpoints")
+      .select("id, job_id, job_type, started_at, status, completed_at, updated_at, checkpoints")
       .eq("team_id", teamId)
       .gte("started_at", today),
   ]);
@@ -81,11 +104,7 @@ export async function upsertEndOfDayReportForTeam(
   const completedSessions = sessions.filter((s) => s.status === "completed");
   const jobsSummary = completedSessions.map((s) => {
     const so = (signOffs || []).find((x) => x.job_id === s.job_id && x.job_type === s.job_type);
-    const start = s.started_at ? new Date(s.started_at).getTime() : 0;
-    const end = (s.checkpoints as { timestamp?: string }[])?.[(s.checkpoints as unknown[]).length - 1];
-    const endTime =
-      end && typeof end === "object" && "timestamp" in end ? new Date((end as { timestamp: string }).timestamp).getTime() : Date.now();
-    const duration = Math.round((endTime - start) / 60000);
+    const duration = sessionJobDurationMinutes(s);
     const displayId = jobDisplayMap.get(s.job_id) || s.job_id;
     const note = jobNotes[s.job_id] || null;
     return {

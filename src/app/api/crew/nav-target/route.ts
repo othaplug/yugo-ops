@@ -4,7 +4,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { normalizeDeliveryStatus } from "@/lib/crew-tracking-status";
 
-const NAV_STATUSES = new Set(["en_route_to_pickup", "en_route_to_destination"]);
+const NAV_STATUSES = new Set([
+  "en_route_to_pickup",
+  "en_route_to_destination",
+  "en_route_venue",
+  "en_route_return",
+  "en_route",
+]);
 
 function normalizeStatus(raw: string, jobType: "move" | "delivery"): string {
   return jobType === "delivery" ? normalizeDeliveryStatus(raw) : raw;

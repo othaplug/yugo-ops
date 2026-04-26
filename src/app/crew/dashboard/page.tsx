@@ -36,6 +36,8 @@ interface Job {
   weatherAlert?: string | null;
   fromAccessLine?: string | null;
   toAccessLine?: string | null;
+  postJobEquipmentComplete?: boolean;
+  tipReportPending?: boolean;
 }
 
 interface DashboardData {
@@ -56,6 +58,11 @@ interface DashboardData {
   isCrewLead?: boolean;
   endOfDaySubmitted?: boolean;
   hasActiveBinTasks?: boolean;
+  eodPrerequisites?: {
+    canSubmit: boolean;
+    missingEquipment: { jobId: string; jobType: string; displayId: string }[];
+    missingTipReport: { jobId: string; jobType: string; displayId: string }[];
+  };
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
@@ -192,6 +199,7 @@ export default function CrewDashboardPage() {
     readinessCompleted,
     isCrewLead,
     endOfDaySubmitted,
+    eodPrerequisites,
   } = data;
   const jobs = Array.isArray(data.jobs) ? data.jobs : [];
   const realJobs = jobs.filter((j) => !isSampleJob(j));
@@ -204,7 +212,31 @@ export default function CrewDashboardPage() {
   const canStartJob = (index: number) => {
     const j = jobs[index];
     if (!j || isSampleJob(j) || !firstIncompleteRealId) return false;
+    for (let i = 0; i < index; i += 1) {
+      const prior = jobs[i];
+      if (isSampleJob(prior)) continue;
+      if (isCompleted(prior) && prior.postJobEquipmentComplete === false) {
+        return false;
+      }
+    }
     return j.id === firstIncompleteRealId;
+  };
+
+  const startJobBlockReason = (index: number): "order" | "equipment" | null => {
+    const j = jobs[index];
+    if (!j || isSampleJob(j)) return null;
+    if (isCompleted(j) || isInProgress(j)) return null;
+    for (let i = 0; i < index; i += 1) {
+      const prior = jobs[i];
+      if (isSampleJob(prior)) continue;
+      if (isCompleted(prior) && prior.postJobEquipmentComplete === false) {
+        return "equipment";
+      }
+    }
+    if (firstIncompleteRealId && j.id !== firstIncompleteRealId) {
+      return "order";
+    }
+    return null;
   };
 
   if (readinessRequired && !readinessCompleted) {
@@ -355,6 +387,7 @@ export default function CrewDashboardPage() {
               ].includes(statusKey);
               const inProgress = isInProgress(job);
               const canStart = canStartJob(index);
+              const startBlockedReason = startJobBlockReason(index);
               const statusInfo = STATUS_MAP[statusKey];
 
               return (
@@ -533,18 +566,38 @@ export default function CrewDashboardPage() {
                           Preview only. Not a live job.
                         </p>
                       ) : completed ? (
-                        <Link
-                          href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
-                          className="inline-flex items-center justify-center gap-1.5 min-h-[44px] py-2.5 px-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-forest)] bg-[var(--yu3-forest-tint)]/60 hover:bg-[var(--yu3-forest-tint)] transition-colors [font-family:var(--font-body)] rounded-[var(--yu3-r-md)] w-full sm:w-auto"
-                        >
-                          View summary
-                          <CaretRight
-                            size={14}
-                            weight="bold"
-                            className="shrink-0"
-                            aria-hidden
-                          />
-                        </Link>
+                        <div className="flex flex-col gap-2 w-full">
+                          {job.tipReportPending ? (
+                            <Link
+                              href={`/crew/dashboard/job/${job.jobType}/${job.id}/tip-report`}
+                              className="inline-flex items-center justify-center gap-1.5 min-h-[48px] py-2.5 px-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#FFFBF7] bg-[var(--yu3-wine)] border border-[#3d1426] hover:opacity-95 transition-opacity [font-family:var(--font-body)] rounded-[var(--yu3-r-md)] w-full sm:w-auto"
+                            >
+                              Tip report required
+                              <CaretRight size={14} weight="bold" className="shrink-0" aria-hidden />
+                            </Link>
+                          ) : null}
+                          {job.postJobEquipmentComplete === false ? (
+                            <Link
+                              href={`/crew/dashboard/job/${job.jobType}/${job.id}/equipment-check`}
+                              className="inline-flex items-center justify-center gap-1.5 min-h-[48px] py-2.5 px-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-wine)] bg-[var(--yu3-wine-tint)]/80 border border-[var(--yu3-wine)]/25 hover:bg-[var(--yu3-wine-wash)] transition-colors [font-family:var(--font-body)] rounded-[var(--yu3-r-md)] w-full sm:w-auto"
+                            >
+                              Equipment check required
+                              <CaretRight size={14} weight="bold" className="shrink-0" aria-hidden />
+                            </Link>
+                          ) : null}
+                          <Link
+                            href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
+                            className="inline-flex items-center justify-center gap-1.5 min-h-[44px] py-2.5 px-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-forest)] bg-[var(--yu3-forest-tint)]/60 hover:bg-[var(--yu3-forest-tint)] transition-colors [font-family:var(--font-body)] rounded-[var(--yu3-r-md)] w-full sm:w-auto"
+                          >
+                            View summary
+                            <CaretRight
+                              size={14}
+                              weight="bold"
+                              className="shrink-0"
+                              aria-hidden
+                            />
+                          </Link>
+                        </div>
                       ) : canStart ? (
                         <Link
                           href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
@@ -575,9 +628,13 @@ export default function CrewDashboardPage() {
                           )}
                         </Link>
                       ) : (
-                        <div className="flex items-center gap-2 py-2 text-[11px] text-[var(--yu3-ink-faint)]">
-                          <Lock size={12} />
-                          Complete previous job first
+                        <div className="flex items-start gap-2 py-2 text-[11px] text-[var(--yu3-ink-faint)] leading-snug">
+                          <Lock size={12} className="shrink-0 mt-0.5" aria-hidden />
+                          <span>
+                            {startBlockedReason === "equipment"
+                              ? "Finish the post-job truck equipment check on an earlier job before starting this one."
+                              : "Complete the previous job on the schedule first."}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -606,19 +663,28 @@ export default function CrewDashboardPage() {
               />
             </Link>
           ) : (
-            <Link
-              href="/crew/end-of-day"
-              className="crew-premium-cta mt-8 flex items-center justify-center gap-1.5 min-h-[52px] py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-white transition-colors shadow-[0_4px_20px_rgba(44,62,45,0.18)] [font-family:var(--font-body)]"
-            >
-              <Check size={16} weight="bold" aria-hidden />
-              Complete your day
-              <CaretRight
-                size={16}
-                weight="bold"
-                className="shrink-0"
-                aria-hidden
-              />
-            </Link>
+            <div className="mt-8 w-full max-w-md mx-auto">
+              {eodPrerequisites && !eodPrerequisites.canSubmit ? (
+                <p className="text-[12px] text-center text-[var(--yu3-ink-muted)] leading-relaxed mb-3 [font-family:var(--font-body)]">
+                  Finish the tip report and post-job truck equipment check for each job before you can submit the end
+                  of day report. Use the job cards above or open end of day to see the list.
+                </p>
+              ) : null}
+              <Link
+                href="/crew/end-of-day"
+                className={
+                  eodPrerequisites && !eodPrerequisites.canSubmit
+                    ? "flex items-center justify-center gap-1.5 min-h-[52px] py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] border-2 border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] rounded-[var(--yu3-r-md)] w-full [font-family:var(--font-body)]"
+                    : "crew-premium-cta flex items-center justify-center gap-1.5 min-h-[52px] py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-white transition-colors shadow-[0_4px_20px_rgba(44,62,45,0.18)] [font-family:var(--font-body)] w-full"
+                }
+              >
+                <Check size={16} weight="bold" aria-hidden />
+                {eodPrerequisites && !eodPrerequisites.canSubmit
+                  ? "Review end of day"
+                  : "Complete your day"}
+                <CaretRight size={16} weight="bold" className="shrink-0" aria-hidden />
+              </Link>
+            </div>
           ))}
         {realJobCount > 0 && completedCount < totalCount && (
           <Link

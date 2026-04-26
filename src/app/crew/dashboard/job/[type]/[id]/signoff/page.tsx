@@ -331,7 +331,7 @@ export default function ClientSignOffPage({
   const { type, id } = use(params);
   const jobType = type === "delivery" ? "delivery" : "move";
 
-  // Phase: 1=item conditions, 2=items confirmation, 3=experience+NPS, 4=signature, 5=thank you, 6=skip form
+  // Phase: 1–4 client sign-off, 5=crew tip report, 6=thank you, 7=skip form
   const [phase, setPhase] = useState(1);
   const [loading, setLoading] = useState(true);
   const [existing, setExisting] = useState<{ id: string } | null>(null);
@@ -398,6 +398,14 @@ export default function ClientSignOffPage({
   const [skipReason, setSkipReason] = useState("");
   const [skipNote, setSkipNote] = useState("");
   const [skipSubmitting, setSkipSubmitting] = useState(false);
+
+  const [tipMethod, setTipMethod] = useState<"none" | "cash" | "interac">(
+    "none",
+  );
+  const [tipAmount, setTipAmount] = useState("");
+  const [tipNeighbourhood, setTipNeighbourhood] = useState("");
+  const [tipSubmitting, setTipSubmitting] = useState(false);
+  const [tipError, setTipError] = useState("");
 
   const router = useRouter();
   const { setImmersiveNav } = useCrewImmersiveNav();
@@ -668,6 +676,61 @@ export default function ClientSignOffPage({
     } catch {
       setSkipSubmitting(false);
     }
+  };
+
+  useEffect(() => {
+    if (phase !== 5) return;
+    let cancelled = false;
+    fetch(
+      `/api/crew/tips/report?jobId=${encodeURIComponent(id)}&jobType=${encodeURIComponent(jobType)}`,
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { needsReport?: boolean } | null) => {
+        if (cancelled || !d || d.needsReport !== false) return;
+        setPhase(6);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [phase, id, jobType]);
+
+  const handleTipSubmit = async () => {
+    const amountDollars =
+      tipMethod === "none"
+        ? 0
+        : Number.parseFloat(tipAmount.replace(/,/g, "")) || 0;
+    if (tipMethod !== "none" && amountDollars <= 0) {
+      setTipError("Enter the tip amount or choose no tip");
+      return;
+    }
+    setTipSubmitting(true);
+    setTipError("");
+    try {
+      const res = await fetch("/api/crew/tips/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId: id,
+          jobType,
+          method: tipMethod,
+          amountDollars,
+          neighbourhood: tipNeighbourhood.trim() || undefined,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setTipError(
+          typeof data.error === "string" ? data.error : "Could not save",
+        );
+        setTipSubmitting(false);
+        return;
+      }
+      setPhase(6);
+    } catch {
+      setTipError("Connection error");
+    }
+    setTipSubmitting(false);
   };
 
   const updateItemCondition = (
@@ -1640,8 +1703,127 @@ export default function ClientSignOffPage({
           </div>
         )}
 
-        {/* ── Phase 5: Thank You ── */}
+        {/* ── Phase 5: Crew tip (after sign-off saved, before client thank-you) ── */}
         {phase === 5 && (
+          <div className="phase-enter space-y-4">
+            <div>
+              <p
+                className="text-[9px] font-bold uppercase tracking-[0.12em] mb-2 [font-family:var(--font-body)] leading-none"
+                style={{ color: MUTED }}
+              >
+                Crew
+              </p>
+              <h1
+                className="font-hero text-[24px] sm:text-[26px] font-semibold tracking-tight text-[var(--yu3-wine)] mb-2"
+              >
+                Tip report
+              </h1>
+              <p className="text-[12px] text-[var(--yu3-ink-muted)] leading-relaxed [font-family:var(--font-body)]">
+                Did the client tip the crew? This is for tracking only. Report
+                the total amount the team received.
+              </p>
+            </div>
+
+            <fieldset className="space-y-2">
+              <legend className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)] mb-2 block">
+                Method
+              </legend>
+              <div className="flex flex-col gap-2">
+                {(
+                  [
+                    { value: "none" as const, label: "No tip" },
+                    { value: "cash" as const, label: "Cash" },
+                    { value: "interac" as const, label: "Interac e-Transfer" },
+                  ] as const
+                ).map((m) => (
+                  <label
+                    key={m.value}
+                    className="flex items-center gap-2.5 rounded-xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] px-3 py-2.5 cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="signoff-tip-method"
+                      checked={tipMethod === m.value}
+                      onChange={() => {
+                        setTipMethod(m.value);
+                        if (m.value === "none") setTipAmount("");
+                        setTipError("");
+                      }}
+                      className="h-4 w-4 accent-[var(--yu3-wine)]"
+                    />
+                    <span className="text-[13px] text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+                      {m.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            {tipMethod !== "none" && (
+              <div>
+                <label
+                  htmlFor="signoff-tip-amount"
+                  className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)] block mb-1.5"
+                >
+                  Amount (CAD)
+                </label>
+                <input
+                  id="signoff-tip-amount"
+                  type="text"
+                  inputMode="decimal"
+                  value={tipAmount}
+                  onChange={(e) => setTipAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full px-3.5 py-2.5 rounded-[var(--yu3-r-md)] bg-[var(--yu3-bg-surface-sunken)] border border-[var(--yu3-line-subtle)] text-[var(--yu3-ink)] text-[15px] outline-none focus:ring-2 focus:ring-[var(--yu3-wine)]/25 [font-family:var(--font-body)]"
+                  autoComplete="off"
+                />
+              </div>
+            )}
+
+            <div>
+              <label
+                htmlFor="signoff-tip-neighbourhood"
+                className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)] block mb-1.5"
+              >
+                Neighbourhood (optional)
+              </label>
+              <input
+                id="signoff-tip-neighbourhood"
+                type="text"
+                value={tipNeighbourhood}
+                onChange={(e) => setTipNeighbourhood(e.target.value)}
+                placeholder="e.g. Leslieville"
+                className="w-full px-3.5 py-2.5 rounded-[var(--yu3-r-md)] bg-[var(--yu3-bg-surface-sunken)] border border-[var(--yu3-line-subtle)] text-[var(--yu3-ink)] text-[15px] outline-none focus:ring-2 focus:ring-[var(--yu3-wine)]/25 [font-family:var(--font-body)]"
+                autoComplete="off"
+              />
+            </div>
+
+            {tipError && (
+              <p className="text-[12px] text-red-700 [font-family:var(--font-body)]">
+                {tipError}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={() => void handleTipSubmit()}
+              disabled={tipSubmitting}
+              className="crew-premium-cta w-full inline-flex min-h-[52px] items-center justify-center gap-2 py-3 font-bold text-[11px] uppercase tracking-[0.12em] text-[#fffbf7] disabled:opacity-50 [font-family:var(--font-body)] leading-none active:scale-[0.99]"
+            >
+              {tipSubmitting ? (
+                "Saving…"
+              ) : (
+                <>
+                  {tipMethod === "none" ? "Continue (no tip)" : "Save and continue"}
+                  <PhCaretRight size={18} weight="bold" className="shrink-0 opacity-95" aria-hidden />
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* ── Phase 6: Thank You (client) ── */}
+        {phase === 6 && (
           <div className="phase-enter text-center py-12">
             {/* Animated success ring */}
             <div className="relative inline-flex items-center justify-center mb-7">
@@ -1728,8 +1910,8 @@ export default function ClientSignOffPage({
           </div>
         )}
 
-        {/* ── Phase 6: Skip Form ── */}
-        {phase === 6 && (
+        {/* ── Phase 7: Skip Form ── */}
+        {phase === 7 && (
           <div className="phase-enter">
             <div className="mb-7">
               <h1
@@ -1848,7 +2030,7 @@ export default function ClientSignOffPage({
           <p className="text-center mt-8">
             <button
               type="button"
-              onClick={() => setPhase(6)}
+              onClick={() => setPhase(7)}
               className="text-[11px] transition-colors hover:text-[var(--yu3-wine)] underline underline-offset-2"
               style={{ color: MUTED }}
             >

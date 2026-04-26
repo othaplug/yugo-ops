@@ -4,7 +4,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { formatJobId } from "@/lib/move-code";
 import { getTodayString } from "@/lib/business-timezone";
+import { getCrewEodPrerequisites } from "@/lib/crew/eod-prerequisites";
 import { upsertEndOfDayReportForTeam } from "@/lib/crew/end-of-day-report";
+import { sessionJobDurationMinutes } from "@/lib/crew/session-job-duration-minutes";
 
 /** GET preview of end-of-day report data (before submit). */
 export async function GET(req: NextRequest) {
@@ -16,10 +18,15 @@ export async function GET(req: NextRequest) {
   const today = getTodayString();
   const admin = createAdminClient();
 
-  const [readinessRes, expensesRes, sessionsRes] = await Promise.all([
+  const [readinessRes, expensesRes, sessionsRes, prerequisites] = await Promise.all([
     admin.from("readiness_checks").select("passed, flagged_items").eq("team_id", payload.teamId).eq("check_date", today).maybeSingle(),
     admin.from("crew_expenses").select("category, amount_cents, description").eq("team_id", payload.teamId).gte("submitted_at", today).lte("submitted_at", today + "T23:59:59.999Z"),
-    admin.from("tracking_sessions").select("id, job_id, job_type, started_at, status, checkpoints").eq("team_id", payload.teamId).gte("started_at", today),
+    admin
+      .from("tracking_sessions")
+      .select("id, job_id, job_type, started_at, status, completed_at, updated_at, checkpoints")
+      .eq("team_id", payload.teamId)
+      .gte("started_at", today),
+    getCrewEodPrerequisites(admin, payload.teamId, today),
   ]);
 
   const readiness = readinessRes.data;
@@ -38,19 +45,19 @@ export async function GET(req: NextRequest) {
   (movesRes.data || []).forEach((m) => jobDisplayMap.set(m.id, formatJobId(m.move_code || m.id, "move")));
   (deliveriesRes.data || []).forEach((d) => jobDisplayMap.set(d.id, formatJobId(d.delivery_number || d.id, "delivery")));
 
-  let signOffs: { job_id: string; satisfaction_rating: number | null; signed_by: string }[] = [];
+  let signOffs: { job_id: string; job_type: string; satisfaction_rating: number | null; signed_by: string }[] = [];
   if (jobIds.length > 0) {
-    const { data: so } = await admin.from("client_sign_offs").select("job_id, satisfaction_rating, signed_by").in("job_id", jobIds);
+    const { data: so } = await admin
+      .from("client_sign_offs")
+      .select("job_id, job_type, satisfaction_rating, signed_by")
+      .in("job_id", jobIds);
     signOffs = so || [];
   }
 
   const completedSessions = sessions.filter((s) => s.status === "completed");
   const jobsSummary = completedSessions.map((s) => {
-    const so = signOffs.find((x) => x.job_id === s.job_id);
-    const start = s.started_at ? new Date(s.started_at).getTime() : 0;
-    const end = (s.checkpoints as { timestamp?: string }[])?.[(s.checkpoints as unknown[]).length - 1];
-    const endTime = end && typeof end === "object" && "timestamp" in end ? new Date((end as { timestamp: string }).timestamp).getTime() : Date.now();
-    const duration = Math.round((endTime - start) / 60000);
+    const so = signOffs.find((x) => x.job_id === s.job_id && x.job_type === s.job_type);
+    const duration = sessionJobDurationMinutes(s);
     const displayId = jobDisplayMap.get(s.job_id) || s.job_id;
     return { jobId: s.job_id, displayId, type: s.job_type, duration, status: s.status, signOff: !!so, rating: so?.satisfaction_rating ?? null };
   });
@@ -84,6 +91,11 @@ export async function GET(req: NextRequest) {
     readiness: readiness ? { passed: readiness.passed, flaggedItems: readiness.flagged_items || [] } : null,
     expenses: expenses.map((e) => ({ category: e.category, amount: e.amount_cents, description: e.description })),
     alreadySubmitted: !!existingReport,
+    prerequisites: {
+      canSubmit: prerequisites.canSubmit,
+      missingEquipment: prerequisites.missingEquipment,
+      missingTipReport: prerequisites.missingTipReport,
+    },
   });
 }
 

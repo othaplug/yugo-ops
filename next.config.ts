@@ -27,6 +27,10 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: false,
   experimental: {
     viewTransition: true,
+    // Allow larger request bodies for server features; crew photo uploads are kept small client-side.
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
     // Do not use `optimizePackageImports` for `@phosphor-icons/react`: Next can elide or
     // mis-resolve barrel exports so some icons become `undefined` at runtime (React 185:
     // "Element type is invalid"). Subpath imports (see AppIcons) are the per-icon alternative.

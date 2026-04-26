@@ -14,9 +14,9 @@ import {
   persistDeliveryArrivedLateIfNeeded,
   persistMoveArrivalOnTimeIfNeeded,
 } from "@/lib/crew/persist-arrival-punctuality";
-import { DELIVERY_STATUS_FLOW } from "@/lib/crew-tracking-status";
 import {
   getCrewStatusFlowForMove,
+  getCrewStatusFlowForDelivery,
   isAllowedTrackingCheckpointStatus,
 } from "@/lib/crew/service-type-flow";
 
@@ -60,18 +60,38 @@ export async function POST(req: NextRequest) {
   }
 
   let moveServiceType: string | null | undefined;
+  let moveMoveType: string | null | undefined;
   if (session.job_type === "move") {
     const { data: moveRow } = await admin
       .from("moves")
-      .select("service_type")
+      .select("service_type, move_type")
       .eq("id", session.job_id)
       .maybeSingle();
     moveServiceType = moveRow?.service_type as string | null | undefined;
+    moveMoveType = moveRow?.move_type as string | null | undefined;
+  }
+  let deliveryServiceType: string | null | undefined;
+  let deliveryBookingType: string | null | undefined;
+  if (session.job_type === "delivery") {
+    const { data: dRow } = await admin
+      .from("deliveries")
+      .select("source_quote_id, booking_type")
+      .eq("id", session.job_id)
+      .maybeSingle();
+    deliveryBookingType = dRow?.booking_type as string | null | undefined;
+    if (dRow?.source_quote_id) {
+      const { data: q } = await admin
+        .from("quotes")
+        .select("service_type")
+        .eq("id", dRow.source_quote_id)
+        .maybeSingle();
+      deliveryServiceType = (q?.service_type as string | null) ?? null;
+    }
   }
   const flowForJob =
     session.job_type === "move"
-      ? getCrewStatusFlowForMove(moveServiceType)
-      : [...DELIVERY_STATUS_FLOW];
+      ? getCrewStatusFlowForMove(moveServiceType, moveMoveType)
+      : getCrewStatusFlowForDelivery(deliveryServiceType, deliveryBookingType);
   const allowed = new Set<string>([...flowForJob, "completed"]);
   if (session.job_type === "delivery") {
     allowed.add("en_route");
@@ -167,8 +187,23 @@ export async function POST(req: NextRequest) {
       loading: "loading",
       wrapping: "loading",
       en_route_to_destination: "en_route_delivery",
+      en_route_venue: "en_route_delivery",
+      en_route_return: "returning",
       arrived_at_destination: "at_delivery",
+      arrived_venue: "at_delivery",
       unloading: "unloading",
+      unloading_setup: "unloading",
+      event_active: "at_delivery",
+      teardown: "loading",
+      loading_return: "loading",
+      unloading_return: "unloading",
+      unwrapping_placement: "unloading",
+      walkthrough_photos: "at_delivery",
+      working: "at_pickup",
+      delivering_bins: "at_delivery",
+      collecting_bins: "at_pickup",
+      en_route: "en_route_pickup",
+      arrived: "at_pickup",
     };
     await Promise.all([
       admin
@@ -197,6 +232,8 @@ export async function POST(req: NextRequest) {
   const enRouteStatuses = [
     "en_route_to_pickup",
     "en_route_to_destination",
+    "en_route_venue",
+    "en_route_return",
     "on_route",
     "en_route",
   ];

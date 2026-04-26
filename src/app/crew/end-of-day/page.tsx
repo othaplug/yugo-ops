@@ -32,6 +32,11 @@ export default function CrewEndOfDayPage() {
     jobs?: { jobId: string; displayId?: string; type: string; duration: number }[];
     expenses?: { category: string; amount: number; description: string }[];
     alreadySubmitted?: boolean;
+    prerequisites?: {
+      canSubmit: boolean;
+      missingEquipment: { jobId: string; jobType: string; displayId: string }[];
+      missingTipReport: { jobId: string; jobType: string; displayId: string }[];
+    };
   } | null>(null);
   const router = useRouter();
 
@@ -83,6 +88,8 @@ export default function CrewEndOfDayPage() {
   };
 
   const totalMin = preview?.summary?.totalJobTime ?? 0;
+  const eodPrereqOk =
+    !preview?.prerequisites || preview.prerequisites.canSubmit !== false;
   const summaryStats: { label: string; value: string }[] = preview?.summary
     ? [
         { label: "Jobs completed", value: String(preview.summary.jobsCompleted ?? 0) },
@@ -141,6 +148,49 @@ export default function CrewEndOfDayPage() {
             completed job on the dashboard and finish the truck equipment check if it&apos;s still showing there.
           </p>
         )}
+
+        {preview?.prerequisites && !preview.prerequisites.canSubmit ? (
+          <div
+            className="mt-6 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3.5 text-[13px] text-amber-950 leading-relaxed"
+            role="status"
+          >
+            <p className="font-semibold text-amber-950 mb-2">Before you can submit</p>
+            <ul className="list-disc pl-4 space-y-1.5">
+              {preview.prerequisites.missingEquipment.length > 0 ? (
+                <li>
+                  Post-job truck equipment check:{" "}
+                  {preview.prerequisites.missingEquipment.map((j, i) => (
+                    <span key={j.jobId}>
+                      {i > 0 ? ", " : null}
+                      <Link
+                        href={`/crew/dashboard/job/${j.jobType}/${j.jobId}/equipment-check`}
+                        className="font-semibold text-[var(--tx)] underline underline-offset-2"
+                      >
+                        {j.displayId}
+                      </Link>
+                    </span>
+                  ))}
+                </li>
+              ) : null}
+              {preview.prerequisites.missingTipReport.length > 0 ? (
+                <li>
+                  Tip report (cash, Interac, or none):{" "}
+                  {preview.prerequisites.missingTipReport.map((j, i) => (
+                    <span key={j.jobId}>
+                      {i > 0 ? ", " : null}
+                      <Link
+                        href={`/crew/dashboard/job/${j.jobType}/${j.jobId}/tip-report`}
+                        className="font-semibold text-[var(--tx)] underline underline-offset-2"
+                      >
+                        {j.displayId}
+                      </Link>
+                    </span>
+                  ))}
+                </li>
+              ) : null}
+            </ul>
+          </div>
+        ) : null}
 
         {preview?.summary ? (
           <div className="mt-10">
@@ -211,7 +261,7 @@ export default function CrewEndOfDayPage() {
           {preview?.alreadySubmitted ? (
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !eodPrereqOk}
               className="w-full min-h-[52px] inline-flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] leading-none border-2 border-[#2C3E2D] text-[var(--tx)] bg-transparent hover:bg-[#2C3E2D]/[0.05] disabled:opacity-45 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5C1A33]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] [font-family:var(--font-body)]"
             >
               {submitting ? (
@@ -226,7 +276,7 @@ export default function CrewEndOfDayPage() {
           ) : (
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !eodPrereqOk}
               className="crew-premium-cta w-full min-h-[52px] inline-flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] leading-none text-white disabled:opacity-45 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5C1A33]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] [font-family:var(--font-body)]"
             >
               {submitting ? (

@@ -11,7 +11,10 @@ import {
   normalizeCrewJobId,
   selectDeliveryByJobId,
 } from "@/lib/resolve-delivery-by-job-id";
-import { getCrewStatusFlowForMove } from "@/lib/crew/service-type-flow";
+import {
+  getCrewStatusFlowForMove,
+  getCrewStatusFlowForDelivery,
+} from "@/lib/crew/service-type-flow";
 
 export async function POST(req: NextRequest) {
   // Job sessions always allowed for assigned crew; `crew_tracking` toggle only gates live GPS ingest (see /api/tracking/location).
@@ -51,18 +54,18 @@ export async function POST(req: NextRequest) {
   let jobRow: JobSnapRow;
 
   if (jobType === "move") {
-    const { data: move } = isUuid
+      const { data: move } = isUuid
       ? await admin
           .from("moves")
           .select(
-            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type",
+            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type, move_type",
           )
           .eq("id", rawJobId)
           .maybeSingle()
       : await admin
           .from("moves")
           .select(
-            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type",
+            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type, move_type",
           )
           .ilike("move_code", rawJobId.replace(/^#/, "").toUpperCase())
           .maybeSingle();
@@ -77,7 +80,7 @@ export async function POST(req: NextRequest) {
     entityId = move.id;
   } else {
     // Do not select assigned_* — older DBs may not have those columns (see migration job_crew_assignment_snapshot).
-    const selectCols = "id, delivery_number, crew_id";
+    const selectCols = "id, delivery_number, crew_id, source_quote_id, booking_type";
     const { data: deliveryData } = await selectDeliveryByJobId(
       admin,
       rawJobId,
@@ -140,9 +143,30 @@ export async function POST(req: NextRequest) {
     jobType === "move"
       ? getCrewStatusFlowForMove(
           (jobRow as { service_type?: string | null }).service_type,
+          (jobRow as { move_type?: string | null }).move_type,
         )
       : undefined;
-  const firstStatus = getFirstStatus(jobType, moveFlow);
+  let deliveryFlow: ReturnType<typeof getCrewStatusFlowForDelivery> | undefined;
+  if (jobType === "delivery") {
+    const dr = jobRow as {
+      source_quote_id?: string | null;
+      booking_type?: string | null;
+    };
+    let st: string | null | undefined;
+    if (dr.source_quote_id) {
+      const { data: q } = await admin
+        .from("quotes")
+        .select("service_type")
+        .eq("id", dr.source_quote_id)
+        .maybeSingle();
+      st = (q?.service_type as string | null) ?? null;
+    }
+    deliveryFlow = getCrewStatusFlowForDelivery(st, dr.booking_type);
+  }
+  const firstStatus = getFirstStatus(
+    jobType,
+    jobType === "move" ? moveFlow : deliveryFlow,
+  );
   const now = new Date().toISOString();
   const checkpoint = {
     status: firstStatus,

@@ -1,22 +1,10 @@
 /** Crew tracking status progression. Used by crew portal and notifications. */
 
-export type TrackingStatus =
-  | "not_started"
-  | "en_route_to_pickup"
-  | "arrived_at_pickup"
-  | "inventory_check"
-  | "loading"
-  | "wrapping"
-  | "en_route_to_destination"
-  | "arrived_at_destination"
-  | "unloading"
-  | "completed"
-  // Delivery-specific (shorter flow)
-  | "en_route"
-  | "arrived"
-  | "delivering";
+import type { TrackingStatus } from "./tracking-status-types";
 
-/** Move status progression */
+export type { TrackingStatus } from "./tracking-status-types";
+
+/** Move status progression (default when no service-specific flow is supplied). */
 export const MOVE_STATUS_FLOW: TrackingStatus[] = [
   "en_route_to_pickup",
   "arrived_at_pickup",
@@ -81,16 +69,29 @@ export function normalizeDeliveryStatus(status: string): string {
 
 export const TRACKING_STATUS_LABELS: Record<TrackingStatus, string> = {
   not_started: "Not Started",
-  en_route_to_pickup: "En Route to Pickup",
-  arrived_at_pickup: "Arrived at Pickup",
-  inventory_check: "Inventory check",
+  en_route_to_pickup: "En route to pickup",
+  arrived_at_pickup: "Arrived at pickup",
+  inventory_check: "Inventory walkthrough",
   loading: "Loading",
-  wrapping: "Wrapping / prep",
-  en_route_to_destination: "En Route to Destination",
-  arrived_at_destination: "Arrived at Destination",
+  wrapping: "Wrapping",
+  en_route_to_destination: "En route to destination",
+  en_route_venue: "En route to venue",
+  arrived_at_destination: "Arrived at destination",
+  arrived_venue: "Arrived at venue",
   unloading: "Unloading",
+  unloading_setup: "Setup at venue",
+  event_active: "Event active",
+  teardown: "Teardown",
+  loading_return: "Loading for return",
+  en_route_return: "En route (return)",
+  unloading_return: "Unloading at origin",
+  unwrapping_placement: "Placement and unwrapping",
+  walkthrough_photos: "Final photos",
+  working: "Working",
+  delivering_bins: "Delivering bins",
+  collecting_bins: "Collecting bins",
   completed: "Complete",
-  en_route: "En Route",
+  en_route: "En route",
   arrived: "Arrived",
   delivering: "Delivering / Installing",
 };
@@ -98,14 +99,16 @@ export const TRACKING_STATUS_LABELS: Record<TrackingStatus, string> = {
 export function getNextStatus(
   current: string,
   jobType: "move" | "delivery",
-  options?: { moveFlow?: TrackingStatus[] },
+  options?: { moveFlow?: TrackingStatus[]; deliveryFlow?: TrackingStatus[] },
 ): TrackingStatus | null {
   const flow =
     jobType === "move" && options?.moveFlow?.length
       ? options.moveFlow
-      : jobType === "move"
-        ? MOVE_STATUS_FLOW
-        : DELIVERY_STATUS_FLOW;
+      : jobType === "delivery" && options?.deliveryFlow?.length
+        ? options.deliveryFlow
+        : jobType === "move"
+          ? MOVE_STATUS_FLOW
+          : DELIVERY_STATUS_FLOW;
   const idx = flow.indexOf(current as TrackingStatus);
   if (idx < 0 || idx >= flow.length - 1) return null;
   return flow[idx + 1];
@@ -116,14 +119,16 @@ export function getUpcomingStatusLabels(
   current: string,
   jobType: "move" | "delivery",
   count: number,
-  options?: { moveFlow?: TrackingStatus[] },
+  options?: { moveFlow?: TrackingStatus[]; deliveryFlow?: TrackingStatus[] },
 ): string[] {
   const flow =
     jobType === "move" && options?.moveFlow?.length
       ? options.moveFlow
-      : jobType === "move"
-        ? MOVE_STATUS_FLOW
-        : DELIVERY_STATUS_FLOW;
+      : jobType === "delivery" && options?.deliveryFlow?.length
+        ? options.deliveryFlow
+        : jobType === "move"
+          ? MOVE_STATUS_FLOW
+          : DELIVERY_STATUS_FLOW;
   const idx = flow.indexOf(current as TrackingStatus);
   if (idx < 0 || count <= 0) return [];
   const out: string[] = [];
@@ -135,15 +140,11 @@ export function getUpcomingStatusLabels(
 
 export function getFirstStatus(
   jobType: "move" | "delivery",
-  moveFlow?: TrackingStatus[],
+  customFlow?: TrackingStatus[],
 ): TrackingStatus {
-  const flow =
-    jobType === "move" && moveFlow?.length
-      ? moveFlow
-      : jobType === "move"
-        ? MOVE_STATUS_FLOW
-        : DELIVERY_STATUS_FLOW;
-  return flow[0];
+  if (customFlow?.length) return customFlow[0];
+  if (jobType === "move") return MOVE_STATUS_FLOW[0];
+  return DELIVERY_STATUS_FLOW[0];
 }
 
 export function getStatusLabel(s: string): string {
@@ -154,13 +155,20 @@ export function getStatusLabel(s: string): string {
 const LOGISTICS_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
   en_route_to_pickup: "En Route to Origin",
   arrived_at_pickup: "Arrived at Origin",
-  inventory_check: "Inventory check",
+  inventory_check: "Inventory walkthrough",
   wrapping: "Wrapping / prep",
   en_route_to_destination: "En Route to Drop-Off",
+  en_route_venue: "En Route to Venue",
+  arrived_venue: "Arrived at Venue",
   arrived_at_destination: "Arrived at Drop-Off",
+  en_route_return: "En Route (return)",
+  unloading_return: "Unloading at Origin",
 };
 
-export function getCrewCheckpointDisplayLabel(status: string, useLogisticsCopy: boolean): string {
+export function getCrewCheckpointDisplayLabel(
+  status: string,
+  useLogisticsCopy: boolean,
+): string {
   if (useLogisticsCopy) {
     const mapped = LOGISTICS_CHECKPOINT_LABELS[status as TrackingStatus];
     if (mapped) return mapped;

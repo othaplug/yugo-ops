@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 
 const BUCKET = "job-photos";
+/** Reject huge files with JSON so the client never parses HTML/plaintext 413 bodies. */
+const MAX_FILE_BYTES = 12 * 1024 * 1024;
 const VALID_CATEGORIES = [
   "pre_move_condition",
   "loading",
@@ -32,6 +34,15 @@ export async function POST(req: NextRequest) {
     const note = (formData.get("note") as string)?.trim() || null;
 
     if (!file || !file.size) return NextResponse.json({ error: "No file" }, { status: 400 });
+    if (file.size > MAX_FILE_BYTES) {
+      return NextResponse.json(
+        {
+          error:
+            "Photo is too large (max 12 MB). Try a lower camera quality or retake the photo.",
+        },
+        { status: 413 },
+      );
+    }
     if (!jobId || !jobType || !["move", "delivery"].includes(jobType)) {
       return NextResponse.json({ error: "jobId and jobType (move|delivery) required" }, { status: 400 });
     }

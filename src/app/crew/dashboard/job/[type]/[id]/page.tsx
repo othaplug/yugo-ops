@@ -27,11 +27,13 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { formatTime } from "@/lib/client-timezone";
 import { formatPlatformDisplay } from "@/lib/date-format";
 import {
-  DELIVERY_STATUS_FLOW,
   getNextStatus,
   getCrewCheckpointDisplayLabel,
 } from "@/lib/crew-tracking-status";
-import { getCrewStatusFlowForMove } from "@/lib/crew/service-type-flow";
+import {
+  getCrewStatusFlowForMove,
+  getCrewStatusFlowForDelivery,
+} from "@/lib/crew/service-type-flow";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import {
   accessLineText,
@@ -299,20 +301,29 @@ export default function CrewJobPage({
   const { setImmersiveNav } = useCrewImmersiveNav();
 
   const moveStatusFlow = useMemo(
-    () => getCrewStatusFlowForMove(job?.serviceType),
-    [job?.serviceType],
+    () => getCrewStatusFlowForMove(job?.serviceType, job?.moveType),
+    [job?.serviceType, job?.moveType],
+  );
+  const deliveryStatusFlow = useMemo(
+    () => getCrewStatusFlowForDelivery(job?.serviceType, job?.bookingType),
+    [job?.serviceType, job?.bookingType],
   );
   const statusFlow =
-    jobType === "move" ? moveStatusFlow : DELIVERY_STATUS_FLOW;
+    jobType === "move" ? moveStatusFlow : deliveryStatusFlow;
   const currentStatus = session?.status || "not_started";
   const nextStatus = getNextStatus(currentStatus, jobType, {
     moveFlow: jobType === "move" ? moveStatusFlow : undefined,
+    deliveryFlow: jobType === "delivery" ? deliveryStatusFlow : undefined,
   });
   const isCompleted = currentStatus === "completed";
 
-  const isNavigatingLeg =
-    currentStatus === "en_route_to_pickup" ||
-    currentStatus === "en_route_to_destination";
+  const isNavigatingLeg = [
+    "en_route_to_pickup",
+    "en_route_to_destination",
+    "en_route_venue",
+    "en_route_return",
+    "en_route",
+  ].includes(currentStatus);
 
   const navDestination: CrewNavDestination | null = useMemo(() => {
     if (!job || !session?.isActive || isCompleted) return null;
@@ -323,10 +334,25 @@ export default function CrewJobPage({
       return { lat: job.fromLat!, lng: job.fromLng!, address: job.fromAddress };
     }
     if (
-      currentStatus === "en_route_to_destination" &&
+      (currentStatus === "en_route_to_destination" ||
+        currentStatus === "en_route_venue") &&
       isValidNavCoord(job.toLat, job.toLng)
     ) {
       return { lat: job.toLat!, lng: job.toLng!, address: job.toAddress };
+    }
+    if (
+      currentStatus === "en_route_return" &&
+      isValidNavCoord(job.fromLat, job.fromLng)
+    ) {
+      return { lat: job.fromLat!, lng: job.fromLng!, address: job.fromAddress };
+    }
+    if (currentStatus === "en_route") {
+      if (isValidNavCoord(job.toLat, job.toLng)) {
+        return { lat: job.toLat!, lng: job.toLng!, address: job.toAddress };
+      }
+      if (isValidNavCoord(job.fromLat, job.fromLng)) {
+        return { lat: job.fromLat!, lng: job.fromLng!, address: job.fromAddress };
+      }
     }
     return null;
   }, [job, session?.isActive, isCompleted, currentStatus]);
@@ -598,6 +624,47 @@ export default function CrewJobPage({
       } else {
         void doAdvance("arrived_at_destination");
       }
+    } else if (currentStatus === "en_route_venue") {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (p) =>
+            void doAdvance(
+              "arrived_venue",
+              p.coords.latitude,
+              p.coords.longitude,
+            ),
+          () => void doAdvance("arrived_venue"),
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+        );
+      } else {
+        void doAdvance("arrived_venue");
+      }
+    } else if (currentStatus === "en_route_return") {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (p) =>
+            void doAdvance(
+              "unloading_return",
+              p.coords.latitude,
+              p.coords.longitude,
+            ),
+          () => void doAdvance("unloading_return"),
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+        );
+      } else {
+        void doAdvance("unloading_return");
+      }
+    } else if (currentStatus === "en_route") {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (p) =>
+            void doAdvance("arrived", p.coords.latitude, p.coords.longitude),
+          () => void doAdvance("arrived"),
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+        );
+      } else {
+        void doAdvance("arrived");
+      }
     }
   };
 
@@ -610,21 +677,6 @@ export default function CrewJobPage({
     setImmersiveNav(immersive);
     return () => setImmersiveNav(false);
   }, [navOpen, session, navDestination, setImmersiveNav]);
-
-  useEffect(() => {
-    let lock: WakeLockSentinel | null = null;
-    const requestLock = async () => {
-      try {
-        if ("wakeLock" in navigator) {
-          lock = await (navigator as any).wakeLock.request("screen");
-        }
-      } catch {}
-    };
-    requestLock();
-    return () => {
-      lock?.release?.();
-    };
-  }, []);
 
   /** Must run every render: hooks that depend on `job` / `useLogisticsCopy` cannot sit after `loading` / `!job` / day-rate early returns (React #310). */
   const useLogisticsCopy =
@@ -1489,10 +1541,10 @@ export default function CrewJobPage({
             </div>
           </div>
 
-          {/* Risk waiver + report: matched outline chips (same visual system) */}
+          {/* Risk waiver (outlined) + subtle text link for report */}
           {!isCompleted && (
             <div className="pt-2 pb-1">
-              <div className="flex flex-wrap items-center justify-center gap-2.5">
+              <div className="flex flex-col items-center justify-center gap-1">
                 {session?.isActive && jobType === "move" && (
                   <button
                     type="button"
@@ -1506,7 +1558,7 @@ export default function CrewJobPage({
                 <button
                   type="button"
                   onClick={() => setReportModalOpen(true)}
-                  className="inline-flex min-h-[36px] items-center justify-center rounded-[var(--yu3-r-md)] border border-[var(--yu3-wine)] bg-transparent px-3.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-wine)] [font-family:var(--font-body)] leading-none transition-colors hover:bg-[var(--yu3-wine)]/6 active:brightness-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)]/35 touch-manipulation"
+                  className="min-h-[36px] border-0 bg-transparent px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)] leading-none transition-colors hover:text-[var(--yu3-wine)] active:text-[var(--yu3-wine)] focus-visible:rounded-[var(--yu3-r-sm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)]/35 touch-manipulation"
                   aria-label="Report an issue to dispatch"
                 >
                   Report issue

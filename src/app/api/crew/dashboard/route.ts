@@ -24,6 +24,11 @@ import {
   accessLineText,
   resolveMoveAccessLines,
 } from "@/lib/crew-move-access";
+import {
+  computeCrewTipReportNeeded,
+  type TipReportTipRow,
+} from "@/lib/crew/tip-report-eligibility";
+import { getCrewEodPrerequisites } from "@/lib/crew/eod-prerequisites";
 
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
@@ -172,6 +177,15 @@ export async function GET(req: NextRequest) {
     /** Single-line access label under pickup (resolved on server). */
     fromAccessLine?: string | null;
     toAccessLine?: string | null;
+    /** false = finished job still needs post-job truck equipment check on crew flow */
+    postJobEquipmentComplete?: boolean;
+    /** true = finished job still needs cash/interac/none tip report */
+    tipReportPending?: boolean;
+  };
+
+  const isCrewWorkDoneStatus = (status: string | undefined) => {
+    const s = (status || "").toLowerCase();
+    return s === "completed" || s === "delivered" || s === "done";
   };
 
   const jobs: Job[] = [];
@@ -279,13 +293,93 @@ export async function GET(req: NextRequest) {
     return tA - tB;
   });
 
+  const realPreSample = jobs.filter((j) => !isCrewSampleDashboardJobId(j.id));
+  const moveIdsDone = realPreSample
+    .filter((j) => j.jobType === "move" && isCrewWorkDoneStatus(j.status))
+    .map((j) => j.id);
+  const delIdsDone = realPreSample
+    .filter((j) => j.jobType === "delivery" && isCrewWorkDoneStatus(j.status))
+    .map((j) => j.id);
+
+  const [eqMRes, eqDRes, tipsMRes, tipsDRes] = await Promise.all([
+    moveIdsDone.length
+      ? supabase.from("equipment_checks").select("job_id").eq("job_type", "move").in("job_id", moveIdsDone)
+      : { data: [] as { job_id: string }[] },
+    delIdsDone.length
+      ? supabase
+          .from("equipment_checks")
+          .select("job_id")
+          .eq("job_type", "delivery")
+          .in("job_id", delIdsDone)
+      : { data: [] as { job_id: string }[] },
+    moveIdsDone.length
+      ? supabase
+          .from("tips")
+          .select("move_id, square_payment_id, amount, method, reported_by, delivery_id")
+          .in("move_id", moveIdsDone)
+      : { data: [] as Record<string, unknown>[] },
+    delIdsDone.length
+      ? supabase
+          .from("tips")
+          .select("move_id, square_payment_id, amount, method, reported_by, delivery_id")
+          .in("delivery_id", delIdsDone)
+      : { data: [] as Record<string, unknown>[] },
+  ]);
+
+  const eqOk = new Set<string>();
+  for (const r of eqMRes.data || []) eqOk.add(`move:${r.job_id}`);
+  for (const r of eqDRes.data || []) eqOk.add(`delivery:${r.job_id}`);
+
+  const tipPendingMove = new Map<string, boolean>(
+    moveIdsDone.map((id) => [id, true] as [string, boolean]),
+  );
+  for (const t of tipsMRes.data || []) {
+    const id = t.move_id as string | undefined;
+    if (id) {
+      tipPendingMove.set(
+        id,
+        computeCrewTipReportNeeded(t as TipReportTipRow),
+      );
+    }
+  }
+  const tipPendingDel = new Map<string, boolean>(
+    delIdsDone.map((id) => [id, true] as [string, boolean]),
+  );
+  for (const t of tipsDRes.data || []) {
+    const id = t.delivery_id as string | undefined;
+    if (id) {
+      tipPendingDel.set(
+        id,
+        computeCrewTipReportNeeded(t as TipReportTipRow),
+      );
+    }
+  }
+
+  for (const j of jobs) {
+    if (isCrewSampleDashboardJobId(j.id)) continue;
+    if (!isCrewWorkDoneStatus(j.status)) {
+      j.postJobEquipmentComplete = true;
+      j.tipReportPending = false;
+      continue;
+    }
+    j.postJobEquipmentComplete = eqOk.has(`${j.jobType}:${j.id}`);
+    j.tipReportPending =
+      (j.jobType === "move" ? tipPendingMove.get(j.id) : tipPendingDel.get(j.id)) ?? true;
+  }
+
   if (shouldIncludeCrewDashboardSampleMove()) {
     jobs.push(buildCrewSampleDashboardMoveJob());
   }
 
   const realJobCount = jobs.filter((j) => !isCrewSampleDashboardJobId(j.id)).length;
 
-  const [{ data: readinessCheck }, { data: crewRow }, { data: endOfDayReport }, { data: binOrdersRaw }] = await Promise.all([
+  const [
+    { data: readinessCheck },
+    { data: crewRow },
+    { data: endOfDayReport },
+    { data: binOrdersRaw },
+    eodPrerequisites,
+  ] = await Promise.all([
     supabase.from("readiness_checks").select("id").eq("team_id", payload.teamId).eq("check_date", today).maybeSingle(),
     supabase.from("crews").select("name").eq("id", payload.teamId).single(),
     supabase.from("end_of_day_reports").select("id").eq("team_id", payload.teamId).eq("report_date", today).maybeSingle(),
@@ -297,6 +391,7 @@ export async function GET(req: NextRequest) {
       .or(
         `drop_off_date.eq.${today},drop_off_date.eq.${tomorrowStr},pickup_date.eq.${today},pickup_date.eq.${tomorrowStr},status.eq.overdue`,
       ),
+    getCrewEodPrerequisites(supabase, payload.teamId, today),
   ]);
 
   const readinessCompleted = !!readinessCheck?.id;
@@ -327,6 +422,7 @@ export async function GET(req: NextRequest) {
     isCrewLead,
     endOfDaySubmitted,
     hasActiveBinTasks,
+    eodPrerequisites,
   });
 }
 

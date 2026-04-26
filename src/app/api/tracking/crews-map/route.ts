@@ -48,6 +48,38 @@ function jobCodeFromStartedSession(
   return d.delivery_number ?? null;
 }
 
+type JobRowWithAssigned = {
+  id: string;
+  assigned_members?: unknown;
+};
+
+/**
+ * For operator map, show only movers assigned to the active session job (snapshot on
+ * moves / deliveries), not the full team roster. When the job has no assignment snapshot
+ * (null/undefined), keep full team for legacy rows. Empty array means explicitly no one
+ * listed, show team name only in the client.
+ */
+function displayMembersForCrew(
+  fullMembers: string[],
+  session: { job_id: string; job_type: string } | undefined,
+  moves: JobRowWithAssigned[],
+  deliveries: JobRowWithAssigned[],
+): string[] {
+  if (!session?.job_id) return fullMembers;
+  const job =
+    session.job_type === "move"
+      ? moves.find((m) => m.id === session.job_id)
+      : deliveries.find((d) => d.id === session.job_id);
+  if (!job) return fullMembers;
+  const raw = job.assigned_members;
+  if (raw == null) return fullMembers;
+  if (!Array.isArray(raw)) return fullMembers;
+  const snap = raw.filter(
+    (n): n is string => typeof n === "string" && n.trim().length > 0,
+  );
+  return snap;
+}
+
 /** GET all crews with live positions for unified tracking map. Staff only. */
 export async function GET(req: NextRequest) {
   const { error: authErr } = await requireStaff();
@@ -66,8 +98,16 @@ export async function GET(req: NextRequest) {
     admin.from("crews").select("id, name, members, current_lat, current_lng, status, updated_at, delay_minutes").order("name"),
     admin.from("tracking_sessions").select("id, team_id, job_id, job_type, status, last_location, updated_at, started_at").eq("is_active", true),
     admin.from("crew_members").select("id, name, team_id").eq("is_active", true),
-    admin.from("deliveries").select("id, delivery_number, crew_id, scheduled_date, status, delivery_address, pickup_address"),
-    admin.from("moves").select("id, move_code, crew_id, stage, status, from_address, to_address"),
+    admin
+      .from("deliveries")
+      .select(
+        "id, delivery_number, crew_id, scheduled_date, status, delivery_address, pickup_address, assigned_members",
+      ),
+    admin
+      .from("moves")
+      .select(
+        "id, move_code, crew_id, stage, status, from_address, to_address, assigned_members",
+      ),
     admin
       .from("crew_locations")
       .select(
@@ -145,8 +185,16 @@ export async function GET(req: NextRequest) {
       session && !["completed", "not_started"].includes(session.status || "") ? "en-route" :
       "standby";
 
-    const members = (c.members as string[] | null) || membersByTeam.get(c.id) || [];
-    const displayName = (c.name && c.name.trim()) || members[0] || `Team ${(c.id || "").slice(0, 8)}`;
+    const fullMembers = (c.members as string[] | null) || membersByTeam.get(c.id) || [];
+    const members = displayMembersForCrew(
+      fullMembers,
+      session
+        ? { job_id: session.job_id, job_type: session.job_type }
+        : undefined,
+      (moves || []) as JobRowWithAssigned[],
+      (deliveries || []) as JobRowWithAssigned[],
+    );
+    const displayName = (c.name && c.name.trim()) || fullMembers[0] || `Team ${(c.id || "").slice(0, 8)}`;
 
     return {
       id: c.id,
@@ -178,8 +226,14 @@ export async function GET(req: NextRequest) {
       lng = lng ?? FALLBACK_LNG;
     }
     if (lat == null || lng == null) continue; // no position and not active, skip
-    const members = membersByTeam.get(teamId) || [];
-    const displayName = members[0] || `Team ${teamId.slice(0, 8)}`;
+    const fullMembers = membersByTeam.get(teamId) || [];
+    const members = displayMembersForCrew(
+      fullMembers,
+      { job_id: session.job_id, job_type: session.job_type },
+      (moves || []) as JobRowWithAssigned[],
+      (deliveries || []) as JobRowWithAssigned[],
+    );
+    const displayName = fullMembers[0] || `Team ${teamId.slice(0, 8)}`;
     const currentJob = jobCodeFromStartedSession(session, deliveries || [], moves || []);
     const sessionStatus = (session.status || "").toLowerCase();
     const doneStatuses = ["completed", "delivered", "done", "not_started", "cancelled"];

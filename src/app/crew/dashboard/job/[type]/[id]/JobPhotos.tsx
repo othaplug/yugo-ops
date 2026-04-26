@@ -2,6 +2,38 @@
 
 import { useState, useEffect, useRef, useId } from "react";
 import { Plus, Image } from "@phosphor-icons/react";
+import { compressImageFileForCrewUpload } from "@/lib/crew/compress-image-for-upload";
+
+const parseCrewPhotoUploadResponse = async (res: Response) => {
+  const text = await res.text();
+  if (!text) {
+    if (res.ok) return {};
+    if (res.status === 413) {
+      throw new Error(
+        "This photo is too large to upload. Try a lower camera quality or a smaller image.",
+      );
+    }
+    throw new Error("Upload failed. Try a smaller photo or check your connection.");
+  }
+  try {
+    return JSON.parse(text) as { error?: string; photo?: unknown };
+  } catch {
+    const low = text.toLowerCase();
+    if (
+      res.status === 413 ||
+      low.includes("request entity too large") ||
+      low.includes("entity too large")
+    ) {
+      throw new Error(
+        "This photo is too large to upload. Try a lower camera quality or a smaller image.",
+      );
+    }
+    if (!res.ok) {
+      throw new Error("Upload failed. Try a smaller photo or check your connection.");
+    }
+    throw new Error("Upload failed. Invalid response from server.");
+  }
+};
 
 const CHECKPOINT_TO_CATEGORY: Record<string, string> = {
   arrived_at_pickup: "pre_move_condition",
@@ -143,15 +175,16 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
     setUploading(true);
     setUploadError(null);
     try {
+      const toSend = await compressImageFileForCrewUpload(file);
       const form = new FormData();
-      form.append("file", file);
+      form.append("file", toSend);
       form.append("jobId", jobId);
       form.append("jobType", jobType);
       if (sessionId) form.append("sessionId", sessionId);
       form.append("checkpoint", uploadCheckpoint);
       form.append("category", category);
       const res = await fetch("/api/crew/photos/upload", { method: "POST", body: form });
-      const data = await res.json();
+      const data = await parseCrewPhotoUploadResponse(res);
       if (!res.ok) throw new Error(data.error || "Upload failed");
       fetchPhotos();
       onPhotoTaken?.();

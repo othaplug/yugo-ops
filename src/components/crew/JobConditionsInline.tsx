@@ -1,13 +1,16 @@
 "use client";
 
+import { useId, useState } from "react";
 import {
   Car,
+  CaretDown,
   CloudRain,
   Drop,
   Thermometer,
   TrafficCone,
   Wind,
 } from "@phosphor-icons/react";
+import { cn } from "@/lib/utils";
 import type { MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 import type { DrivingTrafficBrief } from "@/lib/mapbox/driving-traffic-brief";
 import type { JobConditionsJob } from "./useCrewJobConditions";
@@ -40,20 +43,47 @@ export default function JobConditionsInline({
   const traffic = trafficByJobId[job.id];
   const canRoute = routablePair(job.fromAddress, job.toAddress);
 
+  const [expanded, setExpanded] = useState(false);
+  const panelId = useId();
+  const handleToggleExpanded = () => setExpanded((v) => !v);
+
   return (
     <div
-      className={`rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/90 px-2.5 py-2.5 sm:px-3 sm:py-2.5 space-y-2 [font-family:var(--font-body)] ${className}`}
+      className={`rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/90 px-2.5 py-2.5 sm:px-3 sm:py-2.5 [font-family:var(--font-body)] ${className}`}
     >
-      <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)] flex items-center gap-1.5 [font-family:var(--font-body)] leading-none">
-        <Car
-          size={12}
-          className="text-[var(--yu3-wine)]/85 shrink-0"
-          weight="duotone"
+      <button
+        type="button"
+        onClick={handleToggleExpanded}
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        className="w-full flex items-center justify-between gap-2 rounded-md -mx-0.5 px-0.5 py-0.5 text-left hover:bg-[var(--yu3-wine)]/5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)]/35"
+      >
+        <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)] flex items-center gap-1.5 [font-family:var(--font-body)] leading-none min-w-0">
+          <Car
+            size={12}
+            className="text-[var(--yu3-wine)]/85 shrink-0"
+            weight="duotone"
+            aria-hidden
+          />
+          Route &amp; weather
+        </span>
+        <CaretDown
+          size={14}
+          className={cn(
+            "shrink-0 text-[var(--yu3-wine)]/75 transition-transform duration-200",
+            expanded ? "rotate-0" : "-rotate-90",
+          )}
+          weight="bold"
           aria-hidden
         />
-        Route &amp; weather
-      </p>
+      </button>
 
+      <div
+        id={panelId}
+        role="region"
+        hidden={!expanded}
+        className={cn("space-y-2", expanded ? "pt-2" : undefined)}
+      >
       {wxAlert && (
         <div className="flex gap-2 rounded-[var(--yu3-r-md)] bg-sky-500/8 border border-sky-500/15 px-2 py-1.5">
           <CloudRain
@@ -139,6 +169,7 @@ export default function JobConditionsInline({
           Live traffic isn&apos;t available for this route yet.
         </p>
       )}
+      </div>
     </div>
   );
 }

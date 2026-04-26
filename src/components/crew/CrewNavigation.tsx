@@ -83,7 +83,7 @@ const EMPTY_TRAFFIC_ROUTE: TrafficRouteFeatureCollection = { type: "FeatureColle
 
 /** Viewport-sized shell; portaled to document.body so fixed positioning is not clipped by PageContent / tab-content transforms. */
 const CREW_NAV_OVERLAY_CLASS =
-  "fixed top-0 left-0 right-0 z-[var(--z-modal)] flex min-h-0 w-full flex-col overflow-hidden overscroll-contain bg-black h-dvh max-h-[100dvh]";
+  "crew-nav-active fixed top-0 left-0 right-0 z-[var(--z-modal)] flex min-h-0 w-full flex-col overflow-hidden overscroll-contain bg-black h-dvh max-h-[100dvh] [-webkit-overflow-scrolling:touch]";
 
 export type CrewNavDestination = { lat: number; lng: number; address: string };
 
@@ -888,6 +888,8 @@ export function CrewNavigation({
 
   const geolocateRef = useRef<GeolocateControlInstance | null>(null);
   const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
+  /** While turn-by-turn is open, keep the device screen on (driving / map safety). */
+  const screenWakeLockRef = useRef<WakeLockSentinel | null>(null);
   /** Throttle: at most ~2 distance-based prompts per maneuver (250 m and 80 m) plus pickup mid-route. */
   const navVoiceBucketRef = useRef<{ maneuverKey: string; spoken250: boolean; spoken80: boolean } | null>(null);
   const lastSpokenArrivalRef = useRef(false);
@@ -1044,6 +1046,54 @@ export function CrewNavigation({
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!HAS_MAPBOX || typeof document === "undefined") return;
+
+    let cancelled = false;
+    let requestSeq = 0;
+
+    const releaseLock = () => {
+      const w = screenWakeLockRef.current;
+      screenWakeLockRef.current = null;
+      if (w) void w.release();
+    };
+
+    const acquireWakeLock = async () => {
+      if (cancelled) return;
+      const seq = ++requestSeq;
+      try {
+        if (!("wakeLock" in navigator)) return;
+        const prev = screenWakeLockRef.current;
+        screenWakeLockRef.current = null;
+        if (prev) void prev.release();
+        if (cancelled) return;
+        const sentinel = await navigator.wakeLock.request("screen");
+        if (cancelled || seq !== requestSeq) {
+          void sentinel.release();
+          return;
+        }
+        screenWakeLockRef.current = sentinel;
+      } catch (err) {
+        console.warn("[WakeLock] Failed to acquire:", err);
+      }
+    };
+
+    void acquireWakeLock();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !cancelled) {
+        void acquireWakeLock();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      releaseLock();
     };
   }, []);
 

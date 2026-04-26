@@ -5,16 +5,30 @@ import { sendEmail } from "@/lib/email/send";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { issueDeliveryTrackingTokens } from "@/lib/delivery-tracking-tokens";
 
-/** Aligns with `TrackingStatus` in tracking-notifications (avoid circular import). */
+/** Aligns with `TrackingStatus` in tracking-notifications and crew checkpoints. */
 export type PartnerCheckpointStatus =
+  | "not_started"
   | "en_route_to_pickup"
   | "arrived_at_pickup"
   | "inventory_check"
   | "loading"
   | "wrapping"
   | "en_route_to_destination"
+  | "en_route_venue"
   | "arrived_at_destination"
+  | "arrived_venue"
   | "unloading"
+  | "unloading_setup"
+  | "event_active"
+  | "teardown"
+  | "loading_return"
+  | "en_route_return"
+  | "unloading_return"
+  | "unwrapping_placement"
+  | "walkthrough_photos"
+  | "working"
+  | "delivering_bins"
+  | "collecting_bins"
   | "completed"
   | "en_route"
   | "arrived"
