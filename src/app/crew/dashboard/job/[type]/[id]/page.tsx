@@ -18,7 +18,6 @@ import {
   CaretLeft,
   CaretRight,
   CheckCircle,
-  Clock,
   Check,
   Toolbox,
   ListChecks,
@@ -851,17 +850,14 @@ export default function CrewJobPage({
         </Link>
         <div className="flex items-center gap-1.5 flex-wrap justify-end">
           {(session?.isActive || isCompleted) && (
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-[var(--yu3-r-md)] bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line-subtle)] shadow-[var(--yu3-shadow-sm)]">
-              <Clock size={11} className="text-[var(--yu3-wine)]/60" aria-hidden />
-              <span className="text-[11px] font-bold text-[var(--yu3-ink)] tabular-nums [font-family:var(--font-body)]">
-                {formatElapsed(
-                  isCompleted && session?.completedAt && session?.startedAt
-                    ? new Date(session.completedAt).getTime() -
-                        new Date(session.startedAt).getTime()
-                    : elapsedMs,
-                )}
-              </span>
-            </div>
+            <span className="text-[11px] font-bold text-[var(--yu3-ink)] tabular-nums [font-family:var(--font-body)]">
+              {formatElapsed(
+                isCompleted && session?.completedAt && session?.startedAt
+                  ? new Date(session.completedAt).getTime() -
+                      new Date(session.startedAt).getTime()
+                  : elapsedMs,
+              )}
+            </span>
           )}
           {session && !isCompleted && (
             <span
@@ -1526,13 +1522,11 @@ export default function CrewJobPage({
                           </div>
                         </div>
                         {stepTs ? (
-                          <p className="mt-1.5">
-                            <span className="inline-flex items-center rounded-full bg-[var(--yu3-forest)]/10 px-2 py-0.5 text-[9px] font-bold uppercase leading-none tracking-[0.1em] text-[var(--yu3-forest)] [font-family:var(--font-body)] tabular-nums">
-                              {formatTime(stepTs, {
-                                hour: "numeric",
-                                minute: "2-digit",
-                              })}
-                            </span>
+                          <p className="mt-1.5 text-[9px] font-bold uppercase leading-none tracking-[0.1em] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)] tabular-nums">
+                            {formatTime(stepTs, {
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
                           </p>
                         ) : null}
                         <h3

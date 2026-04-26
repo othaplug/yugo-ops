@@ -7,8 +7,45 @@ import {
   computeCrewTipReportNeeded,
   type TipReportTipRow,
 } from "@/lib/crew/tip-report-eligibility";
+import { isMoveStatusCompleted } from "@/lib/move-status";
 
 const METHODS = ["none", "cash", "interac"] as const;
+
+/**
+ * Move/delivery row can lag `tracking_sessions` (session completed, job still in_progress).
+ * Allow tips when the job row is clearly done, or a completed session exists for this job.
+ */
+async function jobIsCompleteForCrewTipReport(
+  admin: ReturnType<typeof createAdminClient>,
+  jobType: "move" | "delivery",
+  entityId: string,
+  row: {
+    status?: string | null;
+    stage?: string | null;
+    completed_at?: string | null;
+  },
+): Promise<boolean> {
+  const status = String(row.status || "").toLowerCase();
+  const stage = String(row.stage || "").toLowerCase();
+  if (row.completed_at) return true;
+  if (jobType === "move") {
+    if (isMoveStatusCompleted(row.status) || status === "done") return true;
+    if (stage === "completed") return true;
+  } else {
+    if (["delivered", "completed", "done"].includes(status)) return true;
+    if (stage === "completed") return true;
+  }
+  const { data: sess } = await admin
+    .from("tracking_sessions")
+    .select("id")
+    .eq("job_id", entityId)
+    .eq("job_type", jobType)
+    .eq("status", "completed")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return !!sess;
+}
 
 function isPlaceholderTip(r: TipReportTipRow & { id?: string }): boolean {
   const amt = Number(r.amount ?? 0);
@@ -107,23 +144,31 @@ export async function POST(req: NextRequest) {
       ? await admin
           .from("moves")
           .select(
-            "id, crew_id, client_name, service_type, tier_selected, status, stage",
+            "id, crew_id, client_name, service_type, tier_selected, status, stage, completed_at",
           )
           .eq("id", rawId)
           .maybeSingle()
       : await admin
           .from("moves")
           .select(
-            "id, crew_id, client_name, service_type, tier_selected, status, stage",
+            "id, crew_id, client_name, service_type, tier_selected, status, stage, completed_at",
           )
           .ilike("move_code", rawId.replace(/^#/, "").toUpperCase())
           .maybeSingle();
     if (!m || m.crew_id !== payload.teamId) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    const st = String(m.status || "").toLowerCase();
-    if (!["completed", "done"].includes(st)) {
-      return NextResponse.json({ error: "Job must be completed before tip report" }, { status: 400 });
+    const complete = await jobIsCompleteForCrewTipReport(
+      admin,
+      "move",
+      m.id as string,
+      m as { status?: string | null; stage?: string | null; completed_at?: string | null },
+    );
+    if (!complete) {
+      return NextResponse.json(
+        { error: "Job must be completed before tip report" },
+        { status: 400 },
+      );
     }
     entityId = m.id;
     crewId = m.crew_id;
@@ -134,7 +179,7 @@ export async function POST(req: NextRequest) {
     const { data: d } = await selectDeliveryByJobId(
       admin,
       rawId,
-      "id, crew_id, customer_name, client_name, status",
+      "id, crew_id, customer_name, client_name, status, stage, completed_at",
     );
     const row = d as {
       id: string;
@@ -142,13 +187,23 @@ export async function POST(req: NextRequest) {
       customer_name?: string | null;
       client_name?: string | null;
       status?: string | null;
+      stage?: string | null;
+      completed_at?: string | null;
     } | null;
     if (!row || row.crew_id !== payload.teamId) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    const st = String(row.status || "").toLowerCase();
-    if (!["delivered", "completed", "done"].includes(st)) {
-      return NextResponse.json({ error: "Job must be completed before tip report" }, { status: 400 });
+    const delComplete = await jobIsCompleteForCrewTipReport(
+      admin,
+      "delivery",
+      row.id,
+      row,
+    );
+    if (!delComplete) {
+      return NextResponse.json(
+        { error: "Job must be completed before tip report" },
+        { status: 400 },
+      );
     }
     entityId = row.id;
     crewId = row.crew_id;

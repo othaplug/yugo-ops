@@ -49,28 +49,37 @@ export default function JobConditionsInline({
 
   return (
     <div
-      className={`rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/90 px-2.5 py-2.5 sm:px-3 sm:py-2.5 [font-family:var(--font-body)] ${className}`}
+      className={cn(
+        "rounded-[var(--yu3-r-md)] border border-[var(--yu3-line-subtle)]/45 bg-[var(--yu3-bg-surface)]/40 px-2 py-1.5 [font-family:var(--font-body)] transition-[width,max-width]",
+        expanded ? "w-full min-w-0" : "inline-block w-fit max-w-full self-start",
+        className,
+      )}
     >
       <button
         type="button"
         onClick={handleToggleExpanded}
         aria-expanded={expanded}
         aria-controls={panelId}
-        className="w-full flex items-center justify-between gap-2 rounded-md -mx-0.5 px-0.5 py-0.5 text-left hover:bg-[var(--yu3-wine)]/5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)]/35"
+        className={cn(
+          "flex items-center gap-1.5 rounded-sm text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)]/35",
+          expanded
+            ? "w-full justify-between py-0.5 -mx-0.5 px-0.5 hover:bg-[var(--yu3-wine)]/5"
+            : "min-h-[32px] -my-0.5 -mx-0.5 px-0.5 py-0.5 hover:bg-[var(--yu3-wine)]/6",
+        )}
       >
-        <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)] flex items-center gap-1.5 [font-family:var(--font-body)] leading-none min-w-0">
+        <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)] flex items-center gap-1 [font-family:var(--font-body)] leading-none min-w-0">
           <Car
-            size={12}
-            className="text-[var(--yu3-wine)]/85 shrink-0"
+            size={11}
+            className="text-[var(--yu3-wine)]/70 shrink-0 opacity-90"
             weight="duotone"
             aria-hidden
           />
           Route &amp; weather
         </span>
         <CaretDown
-          size={14}
+          size={12}
           className={cn(
-            "shrink-0 text-[var(--yu3-wine)]/75 transition-transform duration-200",
+            "shrink-0 text-[var(--yu3-wine)]/65 transition-transform duration-200",
             expanded ? "rotate-0" : "-rotate-90",
           )}
           weight="bold"
