@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Trophy,
@@ -20,6 +20,7 @@ import {
 } from "@phosphor-icons/react";
 import PageContent from "@/app/admin/components/PageContent";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const CREW_EYEBROW =
   "block pl-0.5 text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx2)] mb-1 [font-family:var(--font-body)]";
@@ -81,6 +82,28 @@ interface Stats {
   }[];
 }
 
+type TipsRange = "day" | "week" | "month" | "year"
+
+function inTipsRange(d: Date, now: Date, range: TipsRange): boolean {
+  const t = d.getTime()
+  const start = new Date(now)
+  start.setHours(0, 0, 0, 0)
+  if (range === "day") {
+    return t >= start.getTime() && t <= now.getTime()
+  }
+  if (range === "week") {
+    const w = new Date(start)
+    w.setDate(w.getDate() - 6)
+    return t >= w.getTime() && t <= now.getTime()
+  }
+  if (range === "month") {
+    return (
+      d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+    )
+  }
+  return d.getFullYear() === now.getFullYear()
+}
+
 export default function CrewStatsPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [tipData, setTipData] = useState<{
@@ -88,6 +111,7 @@ export default function CrewStatsPage() {
     summary: TipSummary;
     monthlyBreakdown: { label: string; amount: number; count: number }[];
   } | null>(null);
+  const [tipsRange, setTipsRange] = useState<TipsRange>("month");
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -138,6 +162,30 @@ export default function CrewStatsPage() {
     const pct = rate > 1 ? Math.round(rate) : Math.round(rate * 100);
     return `${pct}%`;
   };
+
+  const tipsInRange = useMemo(() => {
+    if (!tipData?.tips?.length) return [] as TipRecord[];
+    const now = new Date();
+    return tipData.tips.filter((tip) => inTipsRange(new Date(tip.charged_at), now, tipsRange));
+  }, [tipData, tipsRange]);
+
+  const rangeSummary = useMemo(() => {
+    if (tipsInRange.length === 0) {
+      return { totalEarned: 0, avgTip: 0, highestTip: 0, count: 0 };
+    }
+    const totalEarned = tipsInRange.reduce(
+      (s, t) => s + Number(t.net_amount ?? t.amount ?? 0),
+      0,
+    );
+    return {
+      totalEarned,
+      avgTip: totalEarned / tipsInRange.length,
+      highestTip: Math.max(
+        ...tipsInRange.map((t) => Number(t.net_amount ?? t.amount ?? 0)),
+      ),
+      count: tipsInRange.length,
+    };
+  }, [tipsInRange]);
 
   if (loading) {
     return (
@@ -361,15 +409,36 @@ export default function CrewStatsPage() {
         {tipData && tipData.summary.count > 0 && (
           <div className="mt-12">
             <p className={SECTION_EYEBROW}>Earnings</p>
-            <h2 className="font-hero text-[20px] sm:text-[22px] font-bold text-[var(--tx)] tracking-tight mb-6">My tips</h2>
+            <h2 className="font-hero text-[20px] sm:text-[22px] font-bold text-[var(--tx)] tracking-tight mb-4">My tips</h2>
+
+            <Tabs
+              value={tipsRange}
+              onValueChange={(v) => setTipsRange(v as TipsRange)}
+              className="mb-6 w-full"
+            >
+              <TabsList variant="yu3Pill" shape="pill" size="sm" className="grid w-full grid-cols-4 gap-0 p-1">
+                <TabsTrigger value="day" className="flex-1">
+                  Day
+                </TabsTrigger>
+                <TabsTrigger value="week" className="flex-1">
+                  Week
+                </TabsTrigger>
+                <TabsTrigger value="month" className="flex-1">
+                  Month
+                </TabsTrigger>
+                <TabsTrigger value="year" className="flex-1">
+                  Year
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
 
             <div className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-5">
               <div className={`${STAT_TILE} p-3 text-center`}>
                 <div className="flex items-center justify-center mb-1">
                   <Coins size={14} className="text-[var(--tx)]" weight="duotone" aria-hidden />
                 </div>
-                <div className="text-[17px] font-bold leading-none tabular-nums text-[var(--yu3-forest)]">
-                  ${Math.round(tipData.summary.totalEarned)}
+                <div className="text-[17px] font-bold leading-none tabular-nums text-[var(--yu3-wine)]">
+                  ${Math.round(rangeSummary.totalEarned)}
                 </div>
                 <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)] mt-2 [font-family:var(--font-body)]">
                   Total
@@ -377,7 +446,7 @@ export default function CrewStatsPage() {
               </div>
               <div className={`${STAT_TILE} p-3 text-center`}>
                 <div className="text-[17px] font-bold text-[var(--tx)] tabular-nums leading-none">
-                  ${Math.round(tipData.summary.avgTip)}
+                  ${rangeSummary.count > 0 ? Math.round(rangeSummary.avgTip) : 0}
                 </div>
                 <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)] mt-2 [font-family:var(--font-body)]">
                   Avg / job
@@ -385,7 +454,7 @@ export default function CrewStatsPage() {
               </div>
               <div className={`${STAT_TILE} p-3 text-center`}>
                 <div className="text-[17px] font-bold leading-none tabular-nums text-[var(--yu3-wine)]">
-                  ${Math.round(tipData.summary.highestTip)}
+                  ${rangeSummary.count > 0 ? Math.round(rangeSummary.highestTip) : 0}
                 </div>
                 <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)] mt-2 [font-family:var(--font-body)]">
                   Best
@@ -431,10 +500,15 @@ export default function CrewStatsPage() {
             <div className={`${PANEL_SOFT} overflow-hidden divide-y divide-[var(--brd)]/30`}>
               <div className="px-4 py-3">
                 <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx2)] [font-family:var(--font-body)]">
-                  Recent gratuities
+                  Gratuities in this range
                 </p>
               </div>
-              {tipData.tips.slice(0, 10).map((tip) => (
+              {tipsInRange.length === 0 ? (
+                <div className="px-4 py-8 text-center text-[12px] text-[var(--tx2)] [font-family:var(--font-body)]">
+                  No tips in this period.
+                </div>
+              ) : null}
+              {tipsInRange.slice(0, 10).map((tip) => (
                 <div key={tip.id} className="flex items-center justify-between px-4 py-3.5 gap-3">
                   <div className="min-w-0">
                     <p className="text-[12px] font-semibold text-[var(--tx)] truncate">{tip.client_name || "Client"}</p>
@@ -446,7 +520,7 @@ export default function CrewStatsPage() {
                       })}
                     </p>
                   </div>
-                  <span className="shrink-0 text-[14px] font-bold tabular-nums text-[var(--yu3-forest)]">
+                  <span className="shrink-0 text-[14px] font-bold tabular-nums text-[var(--yu3-wine)]">
                     +${Math.round(Number(tip.net_amount ?? tip.amount))}
                   </span>
                 </div>

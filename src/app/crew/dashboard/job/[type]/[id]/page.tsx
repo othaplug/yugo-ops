@@ -16,19 +16,12 @@ import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme";
 import dynamic from "next/dynamic";
 import {
   CaretLeft,
-  CaretRight,
   CheckCircle,
-  FileText,
-  ClipboardText,
-  Image,
   Clock,
-  Phone,
-  ChatCircle,
   Lock,
   Check,
   Toolbox,
   ListChecks,
-  Warning,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -813,11 +806,11 @@ export default function CrewJobPage({
     itemsTotal > 0
       ? `Items (${itemsVerified}/${itemsTotal})`
       : `Items (${totalItems})`;
-  const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: "status", label: "Status", icon: <CheckCircle size={14} /> },
-    { id: "details", label: "Details", icon: <FileText size={14} /> },
-    { id: "items", label: itemsLabel, icon: <ClipboardText size={14} /> },
-    { id: "photos", label: "Photos", icon: <Image size={14} /> },
+  const tabs: { id: TabId; label: string }[] = [
+    { id: "status", label: "Status" },
+    { id: "details", label: "Details" },
+    { id: "items", label: itemsLabel },
+    { id: "photos", label: "Photos" },
   ];
 
   const hasInventory =
@@ -964,82 +957,6 @@ export default function CrewJobPage({
                 })}
               </p>
             )}
-            <div className="mt-4 space-y-3 border-t border-[var(--yu3-line-subtle)] pt-4 text-left">
-                {(job.clientPhone || job.clientEmail) && (
-                  <div className="rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/90 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] mb-1 [font-family:var(--font-body)] leading-none">
-                      Client
-                    </p>
-                    <p className="text-[13px] font-semibold text-[var(--yu3-ink-strong)] [font-family:var(--font-body)]">
-                      {job.clientName}
-                    </p>
-                    {job.clientPhone ? (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <a
-                          href={`tel:${normalizePhone(job.clientPhone)}`}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--yu3-forest)] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-white [font-family:var(--font-body)]"
-                          aria-label={`Call client at ${job.clientPhone}`}
-                        >
-                          <Phone className="h-4 w-4" weight="bold" aria-hidden />
-                          Call
-                        </a>
-                        <a
-                          href={`sms:${normalizePhone(job.clientPhone)}`}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--yu3-ink-strong)] [font-family:var(--font-body)]"
-                          aria-label={`Text client at ${job.clientPhone}`}
-                        >
-                          <ChatCircle className="h-4 w-4" weight="bold" aria-hidden />
-                          Text
-                        </a>
-                      </div>
-                    ) : null}
-                    {job.clientEmail ? (
-                      <a
-                        href={`mailto:${encodeURIComponent(job.clientEmail)}`}
-                        className="mt-2 block text-[12px] font-medium text-[var(--yu3-wine)] underline-offset-2 hover:underline [font-family:var(--font-body)]"
-                      >
-                        {job.clientEmail}
-                      </a>
-                    ) : null}
-                  </div>
-                )}
-                {job.partnerName ? (
-                  <div className="rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/90 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] mb-1 [font-family:var(--font-body)] leading-none">
-                      Partner
-                    </p>
-                    <p className="text-[13px] font-semibold text-[var(--yu3-ink-strong)] [font-family:var(--font-body)]">
-                      {job.partnerName}
-                    </p>
-                    {job.partnerPhone ? (
-                      <a
-                        href={`tel:${normalizePhone(job.partnerPhone)}`}
-                        className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--yu3-ink-strong)] [font-family:var(--font-body)]"
-                        aria-label={`Call partner at ${job.partnerPhone}`}
-                      >
-                        <Phone className="h-4 w-4" weight="bold" aria-hidden />
-                        Call partner
-                      </a>
-                    ) : null}
-                  </div>
-                ) : null}
-                <div className="rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/90 p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] mb-1 [font-family:var(--font-body)] leading-none">
-                    Coordinator
-                  </p>
-                  <p className="text-[13px] font-semibold text-[var(--yu3-ink-strong)] [font-family:var(--font-body)]">
-                    {job.coordinatorName || "Yugo Operations"}
-                  </p>
-                  <a
-                    href={`tel:${normalizePhone(job.coordinatorPhone || DISPATCH_PHONE)}`}
-                    className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--yu3-ink-strong)] [font-family:var(--font-body)]"
-                    aria-label="Call coordinator"
-                  >
-                    <Phone className="h-4 w-4" weight="bold" aria-hidden />
-                    Call coordinator
-                  </a>
-                </div>
-            </div>
             {(() => {
               const n =
                 job.estCrewSize != null && Number.isFinite(job.estCrewSize)
@@ -1176,10 +1093,9 @@ export default function CrewJobPage({
               </p>
               <Link
                 href={`/crew/dashboard/job/${jobType}/${id}/tip-report`}
-                className="mt-3 inline-flex items-center justify-center gap-2 w-full min-h-[48px] rounded-xl border border-[#3d1426] bg-[var(--yu3-wine)] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-on-wine)] [font-family:var(--font-body)] leading-none active:scale-[0.99]"
+                className="mt-3 inline-flex w-full min-h-[48px] items-center justify-center rounded-xl border border-[#3d1426] bg-[var(--yu3-wine)] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-on-wine)] [font-family:var(--font-body)] leading-none active:scale-[0.99]"
               >
                 Open tip report
-                <CaretRight size={16} weight="bold" className="shrink-0 opacity-95" aria-hidden />
               </Link>
             </div>
           )}
@@ -1323,21 +1239,9 @@ export default function CrewJobPage({
                 type="button"
                 onClick={() => void startJob()}
                 disabled={advancing || blockedByLocation}
-                className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.12em] text-[#fffbf7] active:scale-[0.99] [font-family:var(--font-body)] leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--yu3-bg-canvas)]"
+                className="crew-premium-cta inline-flex w-full items-center justify-center py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.12em] text-[#fffbf7] active:scale-[0.99] [font-family:var(--font-body)] leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--yu3-bg-canvas)]"
               >
-                {advancing ? (
-                  "Starting…"
-                ) : (
-                  <>
-                    Start job
-                    <CaretRight
-                      size={18}
-                      weight="bold"
-                      className="shrink-0 opacity-95"
-                      aria-hidden
-                    />
-                  </>
-                )}
+                {advancing ? "Starting…" : "Start job"}
               </button>
               {blockedByLocation && (
                 <p className="text-[10px] text-[var(--yu3-ink-faint)] text-center leading-snug px-1 [font-family:var(--font-body)]">
@@ -1431,15 +1335,9 @@ export default function CrewJobPage({
               <button
                 type="button"
                 onClick={() => setWalkthroughModalOpen(true)}
-                className="crew-premium-cta inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[48px] font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] [font-family:var(--font-body)] leading-none"
+                className="crew-premium-cta inline-flex min-h-[48px] items-center justify-center px-4 py-2.5 font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] [font-family:var(--font-body)] leading-none"
               >
                 Start inventory check
-                <CaretRight
-                  size={16}
-                  weight="bold"
-                  className="shrink-0 opacity-95"
-                  aria-hidden
-                />
               </button>
             </div>
           )}
@@ -1489,45 +1387,23 @@ export default function CrewJobPage({
             (nextStatus === "completed" ? (
               <Link
                 href={`/crew/dashboard/job/${jobType}/${id}/signoff`}
-                className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] active:scale-[0.99] [font-family:var(--font-body)] leading-none"
+                className="crew-premium-cta w-full inline-flex min-h-[52px] items-center justify-center py-3 font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] active:scale-[0.99] [font-family:var(--font-body)] leading-none"
               >
-                <CheckCircle
-                  size={16}
-                  weight="bold"
-                  className="shrink-0 opacity-95"
-                  aria-hidden
-                />
                 {useLogisticsCopy ? "Receiver sign-off" : "Client sign-off"}
-                <CaretRight
-                  size={18}
-                  weight="bold"
-                  className="shrink-0 opacity-95"
-                  aria-hidden
-                />
               </Link>
             ) : canUseLocationActions ? (
               <button
                 type="button"
                 onClick={advanceStatus}
                 disabled={advancing}
-                className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-semibold text-[11px] uppercase tracking-[0.08em] text-[#fffbf7] disabled:opacity-100 disabled:bg-[var(--yu3-wine-press)] active:scale-[0.99] [font-family:var(--font-body)] leading-none"
+                className="crew-premium-cta inline-flex w-full min-h-[52px] items-center justify-center py-3 font-semibold text-[11px] uppercase tracking-[0.08em] text-[#fffbf7] disabled:opacity-100 disabled:bg-[var(--yu3-wine-press)] active:scale-[0.99] [font-family:var(--font-body)] leading-none"
               >
-                {advancing ? (
-                  "Updating…"
-                ) : (
-                  <>
-                    {getCrewCheckpointDisplayLabel(
+                {advancing
+                  ? "Updating…"
+                  : getCrewCheckpointDisplayLabel(
                       nextStatus!,
                       useLogisticsCopy,
                     )}
-                    <CaretRight
-                      size={18}
-                      weight="bold"
-                      className="shrink-0 opacity-95"
-                      aria-hidden
-                    />
-                  </>
-                )}
               </button>
             ) : null)}
           {showAdvanceButton && canUseLocationActions && blockedByPhotos && (
@@ -1766,15 +1642,9 @@ export default function CrewJobPage({
             </div>
           )}
 
-          {/* Quick actions: primary dispatch, secondary note + waiver, report issue outlined */}
+          {/* Note + waiver only; dispatch and coordinator are under Support in the crew menu */}
           {!isCompleted && (
             <div className="space-y-2.5 pt-2 pb-1">
-              <a
-                href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
-                className="crew-premium-cta flex w-full min-h-[44px] items-center justify-center gap-2 px-4 text-[11px] font-bold uppercase tracking-[0.12em] text-[#FFFBF7] [font-family:var(--font-body)] no-underline touch-manipulation"
-              >
-                Dispatch
-              </a>
               {session?.isActive && (
                 <div
                   className={
@@ -1795,7 +1665,7 @@ export default function CrewJobPage({
                         el.focus();
                       }
                     }}
-                    className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--yu3-r-md)] border-2 border-[#2C3E2D] bg-[#2C3E2D] px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#FFFBF7] [font-family:var(--font-body)] leading-none transition-[filter,opacity] hover:brightness-[0.97] active:brightness-[0.93] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C3E2D] touch-manipulation"
+                    className="inline-flex min-h-[40px] items-center justify-center rounded-[var(--yu3-r-md)] border-2 border-[var(--yu3-wine)]/35 bg-[var(--yu3-wine)]/10 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-wine)] [font-family:var(--font-body)] leading-none transition-[filter,opacity] hover:bg-[var(--yu3-wine)]/16 active:brightness-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)]/30 touch-manipulation"
                   >
                     Note
                   </button>
@@ -1803,7 +1673,7 @@ export default function CrewJobPage({
                     <button
                       type="button"
                       onClick={() => setWaiverFlowOpen(true)}
-                      className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--yu3-r-md)] border-2 border-[var(--yu3-wine)] bg-[var(--yu3-wine)] px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-on-wine)] [font-family:var(--font-body)] leading-none transition-[filter,opacity] hover:brightness-[0.97] active:brightness-[0.93] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)] touch-manipulation"
+                      className="inline-flex min-h-[40px] items-center justify-center rounded-[var(--yu3-r-md)] border-2 border-[var(--yu3-wine)] bg-[var(--yu3-wine)] px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-on-wine)] [font-family:var(--font-body)] leading-none transition-[filter,opacity] hover:brightness-[0.97] active:brightness-[0.93] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)] touch-manipulation"
                       aria-label="Open on-site risk waiver"
                     >
                       Risk waiver
@@ -1811,14 +1681,15 @@ export default function CrewJobPage({
                   )}
                 </div>
               )}
-              <button
-                type="button"
-                onClick={() => setReportModalOpen(true)}
-                className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-[var(--yu3-r-md)] border-2 border-[#B91C1C]/45 bg-white px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#B91C1C] [font-family:var(--font-body)] leading-none shadow-none transition-[background-color,opacity] hover:bg-red-50 active:bg-red-100/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B91C1C]/50 touch-manipulation"
-              >
-                <Warning size={20} weight="bold" className="shrink-0" aria-hidden />
-                Report issue
-              </button>
+              <div className="flex justify-center pt-1">
+                <button
+                  type="button"
+                  onClick={() => setReportModalOpen(true)}
+                  className="text-[10px] font-semibold text-[var(--yu3-ink-faint)] underline-offset-2 hover:text-[#B91C1C] hover:underline [font-family:var(--font-body)] py-1 px-1 touch-manipulation"
+                >
+                  Report issue
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -1844,6 +1715,83 @@ export default function CrewJobPage({
               )}
             </div>
           )}
+          <div className="mx-0 mb-4 rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 shadow-[var(--yu3-shadow-sm)]">
+              <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-faint)] mb-3 [font-family:var(--font-body)]">
+                Contacts
+              </p>
+              <div className="space-y-4">
+                {(job.clientPhone || job.clientEmail) && (
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)] leading-none">
+                      Client
+                    </p>
+                    <p className="text-[13px] font-semibold text-[var(--yu3-ink)] mt-1 [font-family:var(--font-body)]">
+                      {job.clientName}
+                    </p>
+                    {job.clientPhone ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <a
+                          href={`tel:${normalizePhone(job.clientPhone)}`}
+                          className="inline-flex min-h-[40px] items-center justify-center rounded-lg bg-[var(--yu3-wine)] px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-on-wine)] [font-family:var(--font-body)]"
+                          aria-label={`Call client at ${job.clientPhone}`}
+                        >
+                          Call
+                        </a>
+                        <a
+                          href={`sms:${normalizePhone(job.clientPhone)}`}
+                          className="inline-flex min-h-[40px] items-center justify-center rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-ink)] [font-family:var(--font-body)]"
+                          aria-label={`Text client at ${job.clientPhone}`}
+                        >
+                          Text
+                        </a>
+                      </div>
+                    ) : null}
+                    {job.clientEmail ? (
+                      <a
+                        href={`mailto:${encodeURIComponent(job.clientEmail)}`}
+                        className="mt-2 inline-block text-[12px] font-medium text-[var(--yu3-wine)] underline-offset-2 hover:underline [font-family:var(--font-body)]"
+                      >
+                        {job.clientEmail}
+                      </a>
+                    ) : null}
+                  </div>
+                )}
+                {job.partnerName ? (
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)] leading-none">
+                      Partner
+                    </p>
+                    <p className="text-[13px] font-semibold text-[var(--yu3-ink)] mt-1 [font-family:var(--font-body)]">
+                      {job.partnerName}
+                    </p>
+                    {job.partnerPhone ? (
+                      <a
+                        href={`tel:${normalizePhone(job.partnerPhone)}`}
+                        className="mt-2 inline-flex min-h-[40px] items-center justify-center rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-ink)] [font-family:var(--font-body)]"
+                        aria-label={`Call partner at ${job.partnerPhone}`}
+                      >
+                        Call partner
+                      </a>
+                    ) : null}
+                  </div>
+                ) : null}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)] leading-none">
+                    Coordinator
+                  </p>
+                  <p className="text-[13px] font-semibold text-[var(--yu3-ink)] mt-1 [font-family:var(--font-body)]">
+                    {job.coordinatorName || "Yugo Operations"}
+                  </p>
+                  <a
+                    href={`tel:${normalizePhone(job.coordinatorPhone || DISPATCH_PHONE)}`}
+                    className="mt-2 inline-flex min-h-[40px] items-center justify-center rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-ink)] [font-family:var(--font-body)]"
+                    aria-label="Call coordinator"
+                  >
+                    Call coordinator
+                  </a>
+                </div>
+              </div>
+            </div>
           {(job.scheduledDate || job.arrivalWindow) && (
             <div className="p-4">
               <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-2 [font-family:var(--font-body)]">
@@ -2093,21 +2041,11 @@ export default function CrewJobPage({
                   disabled={pickupPhotosCount < 1 && totalItems > 0}
                   className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.08em] text-[#fffbf7] disabled:opacity-50 [font-family:var(--font-body)] leading-none"
                 >
-                  {pickupPhotosCount < 1 && totalItems > 0 ? (
-                    "Take at least 1 photo to continue"
-                  ) : (
-                    <>
-                      {useLogisticsCopy
-                        ? "Complete, continue"
-                        : "Complete, start loading"}
-                      <CaretRight
-                        size={18}
-                        weight="bold"
-                        className="shrink-0 opacity-95"
-                        aria-hidden
-                      />
-                    </>
-                  )}
+                  {pickupPhotosCount < 1 && totalItems > 0
+                    ? "Take at least 1 photo to continue"
+                    : useLogisticsCopy
+                      ? "Complete, continue"
+                      : "Complete, start loading"}
                 </button>
                 <button
                   type="button"
@@ -2179,15 +2117,9 @@ export default function CrewJobPage({
                       setReportDesc("");
                       setReportUrgency(defaultUrgencyForIssue(reportType));
                     }}
-                    className="crew-premium-cta inline-flex w-full items-center justify-center gap-2 py-3 min-h-[48px] font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] [font-family:var(--font-body)] leading-none"
+                    className="crew-premium-cta inline-flex w-full min-h-[48px] items-center justify-center py-3 font-bold text-[11px] uppercase tracking-[0.1em] text-[#fffbf7] [font-family:var(--font-body)] leading-none"
                   >
                     Done
-                    <CaretRight
-                      size={16}
-                      weight="bold"
-                      className="shrink-0 opacity-95"
-                      aria-hidden
-                    />
                   </button>
                 </div>
               ) : (
@@ -2203,7 +2135,7 @@ export default function CrewJobPage({
                         setReportType(v);
                         setReportUrgency(defaultUrgencyForIssue(v));
                       }}
-                      className="admin-premium-input w-full text-[var(--tx)]"
+                      className="admin-premium-input w-full text-[var(--yu3-ink)]"
                     >
                       {MOVE_DAY_ISSUE_OPTIONS.map((o) => (
                         <option key={o.code} value={o.code}>
@@ -2223,7 +2155,7 @@ export default function CrewJobPage({
                           e.target.value as "high" | "medium" | "low",
                         )
                       }
-                      className="admin-premium-input w-full text-[var(--tx)]"
+                      className="admin-premium-input w-full text-[var(--yu3-ink)]"
                     >
                       <option value="high">High</option>
                       <option value="medium">Medium</option>
@@ -2239,7 +2171,7 @@ export default function CrewJobPage({
                       onChange={(e) => setReportDesc(e.target.value)}
                       placeholder="Describe what happened..."
                       rows={3}
-                      className="admin-premium-textarea w-full resize-none text-[var(--tx)]"
+                      className="admin-premium-textarea w-full resize-none text-[var(--yu3-ink)]"
                     />
                   </div>
                   <div className="flex gap-3">

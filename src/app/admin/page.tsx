@@ -3,6 +3,7 @@ export const revalidate = 0
 
 export const metadata = { title: "Overview" }
 
+/** Admin home (`/admin`): Command Center. `AdminPageClient.tsx` is an unused legacy shell. */
 import CommandCenterV3Client from "./CommandCenterV3Client"
 import { loadCommandCenterData } from "@/lib/admin/command-center-data"
 

@@ -10,6 +10,11 @@ import { toTitleCase } from "@/lib/format-text";
 import { CaretRight, House, MapPin, X, Warning } from "@phosphor-icons/react";
 import { TrackingFreshness } from "@/components/tracking/TrackingFreshness";
 import { useTheme } from "../components/ThemeContext";
+import { formatJobId, getMoveCode } from "@/lib/move-code";
+import {
+  TierLetterBadge,
+  residentialTierFullLabel,
+} from "@/design-system/admin/primitives";
 
 const MAPBOX_TOKEN =
   process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
@@ -83,6 +88,7 @@ interface Move {
   status: string;
   from_address?: string;
   to_address?: string;
+  tier_selected?: string | null;
   /** Present when server sends full row (crews-map / page). */
   from_lat?: number | null;
   from_lng?: number | null;
@@ -1698,10 +1704,17 @@ export default function UnifiedTrackingView({
                       </div>
                       {todayMoves.map((m) => {
                         const crew = crews.find((c) => c.id === m.crew_id);
+                        const moveSlug =
+                          (m.move_code && String(m.move_code).replace(/^#/, "").trim()) ||
+                          getMoveCode(m);
+                        const moveHref = m.move_code
+                          ? String(m.move_code).replace(/^#/, "").trim().toUpperCase()
+                          : m.id;
+                        const moveIdLabel = formatJobId(moveSlug, "move");
                         return (
                           <Link
                             key={m.id}
-                            href={`/admin/moves/${m.move_code || m.id}`}
+                            href={`/admin/moves/${moveHref}`}
                             className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--brd)]/30 last:border-0 hover:bg-[var(--bg)]/40 transition-colors"
                           >
                             <div className="w-6 h-6 rounded-full bg-[#3B82F6]/10 flex items-center justify-center shrink-0">
@@ -1710,10 +1723,25 @@ export default function UnifiedTrackingView({
                               </span>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-[11px] font-semibold text-[var(--tx)] truncate">
-                                {m.client_name || m.move_code}
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <div className="text-[11px] font-semibold text-[var(--tx)] truncate">
+                                  {m.client_name || moveIdLabel}
+                                </div>
+                                {m.tier_selected ? (
+                                  <TierLetterBadge
+                                    tier={m.tier_selected}
+                                    label={residentialTierFullLabel(m.tier_selected)}
+                                    className="shrink-0"
+                                  />
+                                ) : null}
                               </div>
-                              <div className="text-[9px] text-[var(--tx3)] truncate">
+                              <div className="text-[9px] text-[var(--tx3)] truncate tabular-nums">
+                                {m.client_name ? (
+                                  <>
+                                    {moveIdLabel}
+                                    <span className="mx-1 opacity-50">·</span>
+                                  </>
+                                ) : null}
                                 {m.from_address ?? "-"} → {m.to_address ?? "-"}
                               </div>
                             </div>
@@ -1727,6 +1755,9 @@ export default function UnifiedTrackingView({
                       })}
                       {todayDeliveries.map((d) => {
                         const crew = crews.find((c) => c.id === d.crew_id);
+                        const dlvLabel = d.delivery_number
+                          ? formatJobId(String(d.delivery_number), "delivery")
+                          : "";
                         return (
                           <Link
                             key={d.id}
@@ -1739,8 +1770,8 @@ export default function UnifiedTrackingView({
                               </span>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-[11px] font-semibold text-[var(--tx)] truncate">
-                                {d.delivery_number}
+                              <div className="text-[11px] font-semibold text-[var(--tx)] truncate tabular-nums">
+                                {dlvLabel || d.delivery_number || "Delivery"}
                               </div>
                               <div className="text-[9px] text-[var(--tx3)] truncate">
                                 {d.pickup_address} → {d.delivery_address}

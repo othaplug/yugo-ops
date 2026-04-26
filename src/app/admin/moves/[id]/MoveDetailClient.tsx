@@ -41,7 +41,6 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-  TierLetterBadge,
 } from "@/design-system/admin/primitives";
 import {
   isPreMoveChecklistComplete,
@@ -2000,12 +1999,14 @@ export default function MoveDetailClient({
                     }
                   />
                 ) : null}
-                {tierDisplayLabel(move.tier_selected) ? (
-                  <TierLetterBadge
-                    tier={move.tier_selected}
-                    label={tierDisplayLabel(move.tier_selected) ?? undefined}
-                  />
-                ) : null}
+                {(() => {
+                  const label = tierDisplayLabel(move.tier_selected);
+                  return label ? (
+                    <span className="dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">
+                      {label}
+                    </span>
+                  ) : null;
+                })()}
                 {move.service_type && (
                   <span className="text-[9px] text-[var(--yu3-ink-muted)]">
                     {serviceTypeDisplayLabel(move.service_type)}

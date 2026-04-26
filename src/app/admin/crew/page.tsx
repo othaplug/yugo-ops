@@ -21,7 +21,7 @@ export default async function CrewPage() {
     db
       .from("moves")
       .select(
-        "id, move_code, crew_id, client_name, scheduled_date, status, from_address, to_address, from_lat, from_lng, to_lat, to_lng",
+        "id, move_code, crew_id, client_name, scheduled_date, status, from_address, to_address, from_lat, from_lng, to_lat, to_lng, tier_selected",
       )
       .order("created_at", { ascending: false }),
     getOfficeLocation(),

@@ -209,8 +209,8 @@ const TIME_OPTIONS = (() => {
 
 const CREATE_MOVE_FLOW_STEP_LABELS = [
   "Service & client",
-  "Locations & job details",
-  "Team, schedule & files",
+  "Locations & access",
+  "Job, team, schedule & files",
   "Notes & create",
 ] as const;
 
@@ -337,7 +337,6 @@ export default function CreateMoveForm({
   const [packingService, setPackingService] = useState("");
   const [specialtyItems, setSpecialtyItems] = useState<string[]>([]);
   const [customSpecialtyInput, setCustomSpecialtyInput] = useState("");
-  const [boxesBins, setBoxesBins] = useState("");
   const [boxCount, setBoxCount] = useState(0);
   const [addOns, setAddOns] = useState<Set<string>>(new Set());
   const [serviceTier, setServiceTier] = useState<
@@ -690,14 +689,14 @@ export default function CreateMoveForm({
         toast("Delivery (to) address is required", "x");
         return;
       }
-      if (moveType === "residential" && !moveSize) {
-        toast("Move size is required for residential moves", "x");
-        return;
-      }
       setFlowStep(2);
       return;
     }
     if (flowStep === 2) {
+      if (moveType === "residential" && !moveSize) {
+        toast("Move size is required for residential moves", "x");
+        return;
+      }
       if (!estCrewSize || Number(estCrewSize) < 1) {
         toast("Estimated crew size is required", "x");
         return;
@@ -864,7 +863,6 @@ export default function CreateMoveForm({
         formData.append("move_size", moveSize);
         formData.append("packing_service", packingService);
         formData.append("specialty_items", JSON.stringify(specialtyItems));
-        formData.append("boxes_bins", boxesBins);
         formData.append("addons", JSON.stringify(Array.from(addOns)));
       }
       // Office fields
@@ -946,6 +944,12 @@ export default function CreateMoveForm({
         error?: string;
         emailSent?: boolean;
         emailError?: string;
+        hubspotAutoCreateFailed?: boolean;
+        hubspotDuplicate?: {
+          dealId: string;
+          dealName: string;
+          dealStageId: string;
+        };
       };
       if (!res.ok) {
         toast(data.error || `Failed to create move (${res.status})`, "x");
@@ -958,6 +962,17 @@ export default function CreateMoveForm({
         toast(`Move created. Email not sent: ${data.emailError}`, "x");
       } else {
         toast("Move created.", "check");
+      }
+      if (data.hubspotDuplicate) {
+        toast(
+          "HubSpot already has an open deal for this client email. Link that deal on the move page if this job should use it.",
+          "alertTriangle",
+        );
+      } else if (data.hubspotAutoCreateFailed) {
+        toast(
+          "HubSpot did not create a deal automatically. Check App Settings for HubSpot pipeline, booked stage, access token, and server logs.",
+          "alertTriangle",
+        );
       }
       router.push(
         data.move_code
@@ -1689,10 +1704,8 @@ export default function CreateMoveForm({
             )}
             {flowStep === 1 && (
               <>
-                <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
-
                 {/* Addresses */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
                     Addresses
                   </h3>
@@ -2006,14 +2019,16 @@ export default function CreateMoveForm({
                   )}
                 </div>
 
-                <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
-
-                {/* Residential-only fields */}
+              </>
+            )}
+            {flowStep === 2 && (
+              <>
+                <div className="space-y-5">
+                  <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                    Job and service details
+                  </p>
                 <AnimatedSection show={moveType === "residential"}>
                   <div className="space-y-2">
-                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                      Residential Details
-                    </h3>
                     <div className="grid sm:grid-cols-2 gap-2">
                       <Field label="Move Size *">
                         <select
@@ -2144,19 +2159,6 @@ export default function CreateMoveForm({
                       )}
                     </Field>
 
-                    <div className="grid sm:grid-cols-2 gap-2">
-                      <Field label="Boxes / Bins Needed">
-                        <input
-                          type="number"
-                          min={0}
-                          value={boxesBins}
-                          onChange={(e) => setBoxesBins(e.target.value)}
-                          placeholder="0"
-                          className={fieldInput}
-                        />
-                      </Field>
-                    </div>
-
                     <Field label="Add-Ons">
                       <div className="space-y-2">
                         {ADDON_OPTIONS.map((addon) => (
@@ -2176,7 +2178,7 @@ export default function CreateMoveForm({
                                   return next;
                                 })
                               }
-                              className="accent-[var(--gold)] w-3.5 h-3.5"
+                              className="accent-[#2C3E2D] w-3.5 h-3.5"
                             />
                             <span className="text-[12px] text-[var(--tx)]">
                               {addon.label}
@@ -2185,6 +2187,10 @@ export default function CreateMoveForm({
                         ))}
                       </div>
                     </Field>
+                    <p className="text-[9px] text-[var(--tx3)] max-w-xl leading-relaxed">
+                      Set line items and box count for volume in Client Inventory
+                      below.
+                    </p>
                   </div>
                 </AnimatedSection>
 
@@ -2701,13 +2707,13 @@ export default function CreateMoveForm({
                     </Field>
                   </div>
                 </AnimatedSection>
-              </>
-            )}
-            {flowStep === 2 && (
-              <>
-                <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+                </div>
 
+                <div className="mt-6 pt-5 border-t border-[var(--brd)]/30">
                 {/* Schedule & estimate */}
+                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
+                  Schedule and estimate
+                </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
                   <Field label="Scheduled Date">
                     <input
@@ -2764,9 +2770,9 @@ export default function CreateMoveForm({
                     />
                   </Field>
                 </div>
+                </div>
 
-                <div className="border-t border-[var(--brd)]/30 pt-3 pb-3" />
-
+                <div className="mt-6 space-y-2">
                 {/* Crew / team */}
                 <div className="space-y-2">
                   <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
@@ -2859,12 +2865,13 @@ export default function CreateMoveForm({
                     )}
                   </Field>
                 </div>
+                </div>
 
                 {moveType !== "specialty" &&
                   moveType !== "event" &&
                   moveType !== "labour_only" && (
                     <>
-                      <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+                      <div className="mt-5">
                       {/* Inventory */}
                       {itemWeights.length > 0 ? (
                         <InventoryInput
@@ -2891,12 +2898,11 @@ export default function CreateMoveForm({
                           </p>
                         </div>
                       )}
-                      <div className="border-t border-[var(--brd)]/30 pt-3 pb-3" />
+                      </div>
                     </>
                   )}
 
-                {/* Documents */}
-                <div className="space-y-2">
+                <div className="mt-5 space-y-2">
                   <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
                     Documents & Invoices (optional)
                   </h3>

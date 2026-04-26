@@ -14,6 +14,9 @@ import { estimateLabourFromScore } from "@/lib/inventory-labour";
 import { calcEstimatedCost, calcEstimatedMarginPct, getMarginFlag } from "@/lib/pricing/engine";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 import { ontarioHstBreakdownFromPreTax } from "@/lib/format-currency";
+import { autoCreateHubSpotDealForNewMove } from "@/lib/hubspot/auto-create-deal-for-move";
+import { getEmailBaseUrl } from "@/lib/email-base-url";
+import { getMoveDetailPath } from "@/lib/move-code";
 
 /** DB `service_type` CHECK — align with `move_type` from Create Move. */
 const MOVE_TYPE_TO_SERVICE_TYPE: Record<string, string> = {
@@ -559,12 +562,62 @@ export async function POST(req: NextRequest) {
       }).catch(() => {});
     }
 
+    /* HubSpot: standalone moves (no quote) never hit /api/quotes/send — create a deal in the OPS+ pipeline. */
+    let hubspotDuplicate:
+      | { dealId: string; dealName: string; dealStageId: string }
+      | undefined;
+    let hubspotAutoCreateFailed = false;
+    const hubSpotToken = process.env.HUBSPOT_ACCESS_TOKEN;
+    if (clientEmail?.trim() && hubSpotToken) {
+      const nameParts = clientName.trim().split(/\s+/);
+      const fName = nameParts[0]?.trim() || "";
+      const lName = nameParts.slice(1).join(" ").trim();
+      const base = getEmailBaseUrl();
+      const path = getMoveDetailPath({ move_code: move.move_code, id: moveId });
+      const moveAdminUrl = `${base}${path}`;
+
+      const created = await autoCreateHubSpotDealForNewMove({
+        sb: db,
+        move: {
+          id: moveId,
+          service_type: serviceType,
+          move_size: moveSize,
+          scheduled_date: (body.scheduled_date as string)?.trim() || null,
+          from_address: fromAddress,
+          to_address: toAddress,
+          from_access: fromAccess,
+          to_access: toAccess,
+          estimate: estimate > 0 ? estimate : null,
+          tier_selected: tierSelected,
+        },
+        moveCode: (move.move_code as string) || "",
+        clientEmail: clientEmail.trim(),
+        firstName: fName,
+        lastName: lName,
+        clientPhone: clientPhone,
+        moveAdminUrl,
+      });
+      if (created?.status === "created" && created.dealId) {
+        await db.from("moves").update({ hubspot_deal_id: created.dealId }).eq("id", moveId);
+      } else if (created?.status === "duplicate") {
+        hubspotDuplicate = {
+          dealId: created.existingDealId,
+          dealName: created.existingDealName,
+          dealStageId: created.existingDealStageId,
+        };
+      } else if (created == null) {
+        hubspotAutoCreateFailed = true;
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       id: moveId,
       move_code: move.move_code || undefined,
       emailSent,
       emailError: emailError || undefined,
+      ...(hubspotDuplicate ? { hubspotDuplicate } : {}),
+      ...(hubspotAutoCreateFailed ? { hubspotAutoCreateFailed: true } : {}),
     });
   } catch (err: unknown) {
     return NextResponse.json(

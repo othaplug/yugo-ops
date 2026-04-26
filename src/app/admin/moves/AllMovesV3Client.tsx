@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { formatMoveDate, formatAdminCreatedAt } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
 import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
-import { getMoveDetailPath } from "@/lib/move-code";
+import { formatJobId, getMoveCode, getMoveDetailPath } from "@/lib/move-code";
 import { getStatusLabel } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
 
@@ -209,11 +209,16 @@ export default function AllMovesV3Client({
         sortable: true,
         searchable: true,
         width: 130,
-        cell: (m) => (
-          <span className="yu3-num text-[13px] font-medium text-[var(--yu3-ink-strong)]">
-            {m.move_code || ""}
-          </span>
-        ),
+        cell: (m) => {
+          const slug = m.move_code?.replace(/^#/, "").trim()
+            ? m.move_code.replace(/^#/, "").trim()
+            : getMoveCode(m);
+          return (
+            <span className="yu3-num text-[13px] font-medium text-[var(--yu3-ink-strong)]">
+              {formatJobId(slug, "move")}
+            </span>
+          );
+        },
       },
       {
         id: "client",

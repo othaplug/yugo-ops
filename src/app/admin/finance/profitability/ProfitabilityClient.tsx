@@ -35,6 +35,7 @@ import {
   residentialTierFullLabel,
 } from "@/design-system/admin/primitives";
 import type { CustomOverheadItem } from "@/lib/finance/calculateProfit";
+import { formatJobId } from "@/lib/move-code";
 
 /* ════════════ types ════════════ */
 interface ProfitRow {
@@ -1984,16 +1985,23 @@ export default function ProfitabilityClient() {
                   {filteredRows.slice(0, visibleCount).map((r) => {
                     const href =
                       r.jobKind === "move"
-                        ? `/admin/moves/${r.move_code || r.id}`
-                        : `/admin/deliveries/${r.move_code || r.id}`;
+                        ? `/admin/moves/${(r.move_code || r.id).replace(/^#/, "").trim() || r.id}`
+                        : `/admin/deliveries/${encodeURIComponent(r.move_code || r.id)}`;
+                    const jobIdDisplay =
+                      r.move_code && String(r.move_code).trim()
+                        ? formatJobId(
+                            String(r.move_code).replace(/^#/, "").trim(),
+                            r.jobKind === "move" ? "move" : "delivery",
+                          )
+                        : "";
                     return (
                       <tr
                         key={r.id}
                         onClick={() => router.push(href)}
                         className={`border-t border-[var(--brd)]/40 cursor-pointer hover:bg-[var(--bg)] transition-colors ${r.grossMargin < 25 ? "border-l-2 border-l-red-500/50" : r.grossMargin > 60 ? "border-l-2 border-l-emerald-500/50" : ""}`}
                       >
-                        <td className="py-1.5 px-2 font-mono text-[10px] text-[var(--tx2)] overflow-hidden text-ellipsis whitespace-nowrap">
-                          {r.move_code || ""}
+                        <td className="py-1.5 px-2 font-mono text-[10px] text-[var(--tx2)] overflow-hidden text-ellipsis whitespace-nowrap tabular-nums">
+                          {jobIdDisplay || r.move_code || ""}
                         </td>
                         <td className="py-1.5 px-2 text-[var(--tx3)] overflow-hidden text-ellipsis whitespace-nowrap">
                           {formatTableDate(r.date)}

@@ -12,6 +12,12 @@ import {
   SunHorizon,
 } from "@phosphor-icons/react";
 import { FloatingActionMenu } from "@/components/ui/floating-action-menu";
+import { normalizePhone } from "@/lib/phone";
+
+const CREW_DISPATCH_PHONE =
+  process.env.NEXT_PUBLIC_YUGO_PHONE || "(647) 370-4525";
+const CREW_COORDINATOR_PHONE =
+  process.env.NEXT_PUBLIC_YUGO_COORDINATOR_PHONE || CREW_DISPATCH_PHONE;
 
 type NavSlot = {
   href: string | null;
@@ -55,6 +61,10 @@ export function CrewMobileFloatingNav({
         href: "/crew/dashboard",
         active: isDashboard,
         Icon: <House size={16} weight={isDashboard ? "fill" : "regular"} aria-hidden />,
+      },
+      {
+        label: "Support",
+        opensSubMenu: true,
       },
       {
         label: "Nav",
@@ -135,6 +145,16 @@ export function CrewMobileFloatingNav({
         triggerLabelOpen="Close crew navigation"
         triggerIcon={<House size={24} weight="regular" className="text-current" aria-hidden />}
         options={options}
+        subMenuOptions={[
+          {
+            label: "Call dispatch",
+            href: `tel:${normalizePhone(CREW_DISPATCH_PHONE)}`,
+          },
+          {
+            label: "Call coordinator",
+            href: `tel:${normalizePhone(CREW_COORDINATOR_PHONE)}`,
+          },
+        ]}
       />
     </>,
     portalEl,

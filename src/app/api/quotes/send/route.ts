@@ -390,6 +390,7 @@ export async function POST(req: NextRequest) {
       | undefined;
 
     const hsToken = process.env.HUBSPOT_ACCESS_TOKEN;
+    let hubspotAutoCreateFailed = false;
     if (
       !effectiveDealId &&
       hsToken &&
@@ -415,6 +416,9 @@ export async function POST(req: NextRequest) {
           dealName: created.existingDealName,
           dealStageId: created.existingDealStageId,
         };
+      } else {
+        /* null: missing pipeline or stage in platform config, token scope, or HubSpot create error */
+        hubspotAutoCreateFailed = true;
       }
     }
 
@@ -487,6 +491,7 @@ export async function POST(req: NextRequest) {
       success: true,
       emailId: result.id,
       ...(hubspotDuplicate ? { hubspotDuplicate } : {}),
+      ...(hubspotAutoCreateFailed ? { hubspotAutoCreateFailed: true } : {}),
     });
   } catch (err) {
     console.error("[quotes/send]", err);

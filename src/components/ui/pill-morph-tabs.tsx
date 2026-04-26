@@ -153,7 +153,11 @@ const PillMorphTabs = ({
             />
           ) : null}
 
-          <TabsList className="relative z-10 flex gap-1 bg-transparent p-1 shadow-none">
+          <TabsList
+            variant="button"
+            shape="pill"
+            className="relative z-10 flex gap-1 bg-transparent p-1 shadow-none"
+          >
             {items.map((it) => {
               const isActive = it.value === value
               return (

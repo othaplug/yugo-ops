@@ -426,10 +426,6 @@ html[data-theme="light"] [data-yugo-admin-v3] .admin-eyebrow {
 [data-yugo-admin-v3][data-theme="dark"] .yu3-main table tbody tr {
   border-bottom: 1px solid var(--yu-border);
 }
-[data-theme="dark"] .admin-app main table tbody tr:hover,
-[data-yugo-admin-v3][data-theme="dark"] .yu3-main table tbody tr:hover {
-  background: rgba(255, 248, 240, 0.03);
-}
 
 html {
   overflow-x: clip;
@@ -1165,6 +1161,20 @@ html[data-theme="light"] .admin-app .admin-row-hover:hover {
   background-color: var(--yu3-bg-surface-subtle, #f7f7f7) !important;
 }
 
+/* Default <table> body row hover — v3 shell, legacy admin, partner, crew (spacer rows: data-table-vpad) */
+[data-yugo-admin-v3] table tbody tr:not([data-table-vpad]):hover {
+  background-color: var(--yu3-bg-surface-subtle);
+}
+html[data-theme="light"] .admin-app main table tbody tr:not([data-table-vpad]):hover {
+  background-color: var(--hover);
+}
+:is(html[data-theme="dark"], html.dark) .admin-app main table tbody tr:not([data-table-vpad]):hover {
+  background-color: var(--hover);
+}
+:is(.partner-app, .crew-app:not([data-yugo-admin-v3])) table tbody tr:not([data-table-vpad]):hover {
+  background-color: var(--hover);
+}
+
 /* Canonical admin form fields.
  * Apply `.admin-input` / `.admin-select` / `.admin-textarea` to bring legacy
  * form fields into the v3 visual system: 36px line height, surface bg,
@@ -1382,6 +1392,7 @@ html[data-theme="light"] .admin-app .admin-row-hover:hover {
   /* Bridge shared admin DataTable (yu3 classes) when not under [data-yugo-admin-v3] */
   --yu3-bg-surface: var(--card);
   --yu3-bg-surface-sunken: var(--hover);
+  --yu3-bg-surface-subtle: var(--hover);
   --yu3-line: var(--brd);
   --yu3-line-subtle: var(--surface-border, var(--brd));
   --yu3-ink: var(--tx);

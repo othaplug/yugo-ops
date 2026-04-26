@@ -55,6 +55,15 @@ import {
 import { getLocalHourInAppTimezone } from "@/lib/business-timezone";
 import { formatDate, formatTime } from "@/lib/client-timezone";
 import type { DrivingTrafficBrief } from "@/lib/mapbox/driving-traffic-brief";
+import {
+  TierLetterBadge,
+  residentialTierFullLabel,
+} from "@/design-system/admin/primitives";
+
+/**
+ * Legacy mobile-first dashboard. Not mounted from app routes: `/admin` uses
+ * `CommandCenterV3Client` (`page.tsx`). Kept for reference or if re-wired later.
+ */
 
 /* ── Types ── */
 
@@ -67,6 +76,8 @@ type Job = {
   status: string;
   date: string;
   tag: string;
+  /** Residential tier when present (for compact letter badge). */
+  tier_selected?: string | null;
   delivery_number?: string | null;
   move_code?: string | null;
   /** Rain/snow alerts from `moves.weather_alert` (daily cron) */
@@ -978,14 +989,20 @@ export default function AdminPageClient({
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
+                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                           <span
                             className={`dt-badge tracking-[0.04em] ${statusStyle}`}
                           >
                             {statusLabel}
                           </span>
+                          {job.type === "move" && job.tier_selected ? (
+                            <TierLetterBadge
+                              tier={job.tier_selected}
+                              label={residentialTierFullLabel(job.tier_selected)}
+                            />
+                          ) : null}
                           <span
-                            className={`dt-badge tracking-[0.04em] ${tagColor}`}
+                            className={`text-[10px] font-semibold uppercase tracking-wide ${tagColor}`}
                           >
                             {job.tag}
                           </span>
@@ -1081,6 +1098,13 @@ export default function AdminPageClient({
                         <span className="text-[12px] font-medium text-[var(--tx)] truncate flex-1">
                           {job.name}
                         </span>
+                        {job.type === "move" && job.tier_selected ? (
+                          <TierLetterBadge
+                            tier={job.tier_selected}
+                            label={residentialTierFullLabel(job.tier_selected)}
+                            className="shrink-0"
+                          />
+                        ) : null}
                         <span
                           className={`text-[9px] font-semibold capitalize ${upTagColor}`}
                         >

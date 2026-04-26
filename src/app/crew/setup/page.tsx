@@ -117,7 +117,7 @@ export default function CrewSetupPage() {
               </p>
 
               <div
-                className="mb-8 h-px w-12 bg-gradient-to-r from-transparent via-[var(--yu3-forest)] to-transparent"
+                className="mb-8 h-px w-12 bg-gradient-to-r from-transparent via-[var(--yu3-wine)]/50 to-transparent"
                 aria-hidden
               />
 

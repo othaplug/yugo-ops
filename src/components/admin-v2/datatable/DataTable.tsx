@@ -387,7 +387,7 @@ export const DataTable = <T,>({
           />
           <tbody>
             {paddingTop > 0 ? (
-              <tr style={{ height: `${paddingTop}px` }}>
+              <tr data-table-vpad="" style={{ height: `${paddingTop}px` }}>
                 <td colSpan={tableCols.length + (selectable ? 1 : 0)} />
               </tr>
             ) : null}
@@ -408,7 +408,7 @@ export const DataTable = <T,>({
               )
             })}
             {paddingBottom > 0 ? (
-              <tr style={{ height: `${paddingBottom}px` }}>
+              <tr data-table-vpad="" style={{ height: `${paddingBottom}px` }}>
                 <td colSpan={tableCols.length + (selectable ? 1 : 0)} />
               </tr>
             ) : null}

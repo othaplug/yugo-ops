@@ -410,7 +410,7 @@ export default function JobInventory({
                       className={cn(
                         "inline-flex items-center gap-1",
                         verifiedAtPickup
-                          ? "text-[var(--yu3-forest)]"
+                          ? "text-[var(--yu3-wine)]"
                           : "text-[var(--yu3-ink-muted)]",
                       )}
                     >
@@ -425,7 +425,7 @@ export default function JobInventory({
                       className={cn(
                         "inline-flex items-center gap-1",
                         deliveryDone
-                          ? "text-[var(--yu3-forest)]"
+                          ? "text-[var(--yu3-wine)]"
                           : "text-[var(--yu3-ink-muted)]",
                       )}
                     >
@@ -481,7 +481,7 @@ export default function JobInventory({
                       return next;
                     })
                   }
-                  className="crew-job-flat group flex w-full cursor-pointer items-center justify-between gap-2 border-b border-[var(--yu3-forest)]/10 bg-[var(--yu3-bg-surface-sunken)]/60 px-3 py-2.5 text-left transition-colors"
+                  className="crew-job-flat group flex w-full cursor-pointer items-center justify-between gap-2 border-b border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/60 px-3 py-2.5 text-left transition-colors"
                 >
                   <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--yu3-wine)] transition-colors group-hover:opacity-90 [font-family:var(--font-body)] leading-none">
                     {r.room}
@@ -555,7 +555,7 @@ export default function JobInventory({
                                   className={cn(
                                     "inline-flex items-center gap-1",
                                     verifiedAtPickup
-                                      ? "text-[var(--yu3-forest)]"
+                                      ? "text-[var(--yu3-wine)]"
                                       : "text-[var(--yu3-ink-muted)]",
                                   )}
                                 >
@@ -578,7 +578,7 @@ export default function JobInventory({
                                   className={cn(
                                     "inline-flex items-center gap-1",
                                     deliveryDone
-                                      ? "text-[var(--yu3-forest)]"
+                                      ? "text-[var(--yu3-wine)]"
                                       : "text-[var(--yu3-ink-muted)]",
                                   )}
                                 >

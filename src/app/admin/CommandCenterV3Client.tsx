@@ -16,7 +16,11 @@ import { getLocalHourInAppTimezone } from "@/lib/business-timezone";
 import { formatDate } from "@/lib/client-timezone";
 
 import { PageHeader } from "@/design-system/admin/layout";
-import { Button } from "@/design-system/admin/primitives";
+import {
+  Button,
+  TierLetterBadge,
+  residentialTierFullLabel,
+} from "@/design-system/admin/primitives";
 import { StatusPill, TrendPill } from "@/design-system/admin/primitives/Badge";
 import { Avatar, AvatarStack } from "@/design-system/admin/primitives";
 import {
@@ -52,6 +56,7 @@ type Job = {
   status: string;
   date: string;
   tag: string;
+  tier_selected?: string | null;
   delivery_number?: string | null;
   move_code?: string | null;
 };
@@ -540,13 +545,19 @@ export default function CommandCenterV3Client({
                     aria-hidden
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
                       <div className="text-[14px] font-medium text-[var(--yu3-ink-strong)] truncate">
                         {job.name}
                       </div>
                       <StatusPill tone={jobStatusTone(job)}>
                         {jobStatusLabel(job)}
                       </StatusPill>
+                      {job.type === "move" && job.tier_selected ? (
+                        <TierLetterBadge
+                          tier={job.tier_selected}
+                          label={residentialTierFullLabel(job.tier_selected)}
+                        />
+                      ) : null}
                     </div>
                     <div className="text-[12px] text-[var(--yu3-ink-muted)] truncate mt-0.5">
                       {job.subtitle}

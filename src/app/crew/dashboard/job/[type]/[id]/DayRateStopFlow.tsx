@@ -60,13 +60,13 @@ const STOP_STATUS_CONFIG: Record<
     label: "In progress",
     icon: "dot-active",
     chipClass:
-      "bg-[var(--yu3-forest-tint)] text-[var(--yu3-forest)] [font-family:var(--font-body)]",
+      "bg-[var(--yu3-wine-tint)] text-[var(--yu3-wine)] [font-family:var(--font-body)]",
   },
   completed: {
     label: "Done",
     icon: "check",
     chipClass:
-      "bg-[var(--yu3-forest)]/12 text-[var(--yu3-forest)] [font-family:var(--font-body)]",
+      "bg-[var(--yu3-wine)]/12 text-[var(--yu3-wine)] [font-family:var(--font-body)]",
   },
   skipped: {
     label: "Skipped",
@@ -151,8 +151,8 @@ export default function DayRateStopFlow({
             className={cn(
               "h-full rounded-full transition-all duration-700",
               completedCount === totalCount
-                ? "bg-gradient-to-r from-[var(--yu3-forest)] to-[#243524]"
-                : "bg-gradient-to-r from-[var(--yu3-forest)] to-[#3d5240]",
+                ? "bg-gradient-to-r from-[var(--yu3-wine)] to-[#3d1426]"
+                : "bg-gradient-to-r from-[var(--yu3-wine)] to-[#5C1A33]",
             )}
             style={{ width: `${pct}%` }}
           />
@@ -180,7 +180,7 @@ export default function DayRateStopFlow({
               className={cn(
                 "rounded-2xl border transition-all",
                 isCurrent
-                  ? "border-[var(--yu3-forest)]/35 bg-[var(--yu3-forest-tint)]/50 shadow-sm"
+                  ? "border-[var(--yu3-wine)]/35 bg-[var(--yu3-wine-tint)]/50 shadow-sm"
                   : "border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)]",
               )}
             >
@@ -202,13 +202,13 @@ export default function DayRateStopFlow({
                     }
                   >
                     {cfg.icon === "check" && (
-                      <Check size={12} className="text-[var(--yu3-forest)]" weight="bold" />
+                      <Check size={12} className="text-[var(--yu3-wine)]" weight="bold" />
                     )}
                     {cfg.icon === "map-pin" && <MapPin size={12} className="text-sky-600" />}
                     {cfg.icon === "clock" && <Clock size={12} className="text-amber-700" />}
                     {cfg.icon === "dot-active" && (
                       <span
-                        className="h-3 w-3 rounded-full bg-[var(--yu3-forest)]"
+                        className="h-3 w-3 rounded-full bg-[var(--yu3-wine)]"
                         aria-hidden
                       />
                     )}
@@ -242,7 +242,7 @@ export default function DayRateStopFlow({
                     )}
                   </div>
                   {isDone && stop.completed_at && (
-                    <span className="shrink-0 text-[9px] text-[var(--yu3-forest)] [font-family:var(--font-body)]">
+                    <span className="shrink-0 text-[9px] text-[var(--yu3-wine)] [font-family:var(--font-body)]">
                       {new Date(stop.completed_at).toLocaleTimeString("en-CA", {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -329,7 +329,7 @@ export default function DayRateStopFlow({
                   )}
 
                   {isDone && (
-                    <div className="flex items-center gap-2 text-[10px] text-[var(--yu3-forest)] [font-family:var(--font-body)]">
+                    <div className="flex items-center gap-2 text-[10px] text-[var(--yu3-wine)] [font-family:var(--font-body)]">
                       <Check size={14} weight="bold" />
                       Completed{" "}
                       {stop.completed_at
@@ -345,8 +345,8 @@ export default function DayRateStopFlow({
       </div>
 
       {completedCount === totalCount && totalCount > 0 && (
-        <div className="rounded-2xl border border-[var(--yu3-forest)]/30 bg-[var(--yu3-forest-tint)]/50 p-4 text-center">
-          <p className="text-[15px] font-bold text-[var(--yu3-forest)] [font-family:var(--font-body)]">
+        <div className="rounded-2xl border border-[var(--yu3-wine)]/30 bg-[var(--yu3-wine-tint)]/50 p-4 text-center">
+          <p className="text-[15px] font-bold text-[var(--yu3-wine)] [font-family:var(--font-body)]">
             All {totalCount} stops completed
           </p>
           <p className="mt-1 text-[11px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">

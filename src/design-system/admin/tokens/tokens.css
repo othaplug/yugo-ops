@@ -27,6 +27,12 @@
   --yu3-ink-muted: #605750;
   --yu3-ink-faint: #857b6f;
   --yu3-ink-inverse: #faf7f2;
+  /* Row hover / list wash: slightly lift from base surface */
+  --yu3-bg-surface-subtle: color-mix(
+    in srgb,
+    var(--yu3-ink) 3.2%,
+    var(--yu3-bg-surface)
+  );
 
   /* ── Brand: Wine (primary) ── */
   --yu3-wine: #5c1a33;
@@ -242,6 +248,11 @@
   --yu3-ink-muted: #cfccc2;
   --yu3-ink-faint: #b8b0a3;
   --yu3-ink-inverse: #1a1410;
+  --yu3-bg-surface-subtle: color-mix(
+    in srgb,
+    var(--yu3-ink) 7%,
+    var(--yu3-bg-surface)
+  );
 
   /* Primary chrome: warm cream / off-white (no saturated wine in dark) */
   --yu3-wine: #d9cfbf;

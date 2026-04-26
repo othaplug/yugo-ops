@@ -61,6 +61,22 @@ export function formatJobId(
   return `#${normalized}`;
 }
 
+/**
+ * Digits from move_code (MV-30201, MV30245) for HubSpot job_no; null if not parseable.
+ */
+export function moveNumericJobNoForHubSpot(moveCode: string | null | undefined): string | null {
+  if (!moveCode) return null;
+  const t = String(moveCode)
+    .trim()
+    .toUpperCase()
+    .replace(/^#/, "");
+  const hyphen = t.match(/^MV-(\d+)$/);
+  if (hyphen) return hyphen[1] ?? null;
+  const compact = t.match(/^MV(\d+)$/);
+  if (compact) return compact[1] ?? null;
+  return null;
+}
+
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

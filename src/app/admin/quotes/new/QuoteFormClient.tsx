@@ -4698,6 +4698,13 @@ export default function QuoteFormClient({
         setHubspotDuplicateBanner(null);
       }
 
+      if (data.hubspotAutoCreateFailed) {
+        toast(
+          "Quote sent, but HubSpot did not create a deal automatically. Check App Settings for HubSpot pipeline and stage IDs, the access token, and server logs.",
+          "alertTriangle",
+        );
+      }
+
       // Push quote data back to HubSpot deal (price + deal fields for left column)
       if (hubspotDealId && quoteResult) {
         const essentialTier =

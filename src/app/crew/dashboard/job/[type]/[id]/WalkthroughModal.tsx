@@ -648,7 +648,7 @@ export default function WalkthroughModal({
           {/* ── SKIP ── */}
           {step === "skip" && (
             <div className="space-y-4">
-              <p className="text-[12px] text-[var(--tx3)]">
+              <p className="text-[12px] text-[var(--yu3-ink-faint)]">
                 {logistics
                   ? "Why skip verification?"
                   : "Why is the walkthrough being skipped?"}
@@ -659,7 +659,7 @@ export default function WalkthroughModal({
                   className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors ${
                     skipReason === r.value
                       ? "border-[var(--yu3-wine)] bg-[var(--yu3-wine)]/8"
-                      : "border-[var(--brd)] hover:border-[var(--brd)]/80"
+                      : "border-[var(--yu3-line-subtle)] hover:border-[var(--yu3-line-subtle)]/80"
                   }`}
                 >
                   <input
@@ -670,7 +670,7 @@ export default function WalkthroughModal({
                     onChange={() => setSkipReason(r.value)}
                     className="accent-[var(--yu3-wine)]"
                   />
-                  <span className="text-[13px] text-[var(--tx)]">
+                  <span className="text-[13px] text-[var(--yu3-ink)]">
                     {r.label}
                   </span>
                 </label>
@@ -682,7 +682,7 @@ export default function WalkthroughModal({
           {step === "checklist" && (
             <div className="space-y-4">
               {items.length === 0 ? (
-                <div className="text-center py-8 text-[13px] text-[var(--tx3)]">
+                <div className="text-center py-8 text-[13px] text-[var(--yu3-ink-faint)]">
                   {logistics
                     ? "No items on this job list."
                     : "No inventory items on this quote."}
@@ -691,14 +691,14 @@ export default function WalkthroughModal({
                 roomGroups.map((group) => (
                   <div
                     key={group.room}
-                    className="rounded-xl border border-[var(--brd)]/60 overflow-hidden"
+                    className="rounded-xl border border-[var(--yu3-line-subtle)]/60 overflow-hidden"
                   >
-                    <div className="px-3 py-2 bg-[var(--bg)]/80 border-b border-[var(--brd)]/40">
+                    <div className="px-3 py-2 bg-[var(--yu3-bg-canvas)]/80 border-b border-[var(--yu3-line-subtle)]/40">
                       <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--yu3-wine)]">
                         {group.room}
                       </span>
                     </div>
-                    <div className="divide-y divide-[var(--brd)]/30">
+                    <div className="divide-y divide-[var(--yu3-line-subtle)]/30">
                       {group.items.map((item) => (
                         <div
                           key={item.id}
@@ -728,11 +728,11 @@ export default function WalkthroughModal({
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <span className="text-[13px] text-[var(--tx)]">
+                            <span className="text-[13px] text-[var(--yu3-ink)]">
                               {item.item_name}
                             </span>
                             {(item.quantity ?? 1) > 1 && (
-                              <span className="ml-1.5 text-[10px] text-[var(--tx3)]">
+                              <span className="ml-1.5 text-[10px] text-[var(--yu3-ink-faint)]">
                                 ×{item.quantity}
                               </span>
                             )}
@@ -763,7 +763,7 @@ export default function WalkthroughModal({
               )}
 
               {unchecked > 0 && (
-                <p className="text-center text-[11px] text-[var(--tx3)]">
+                <p className="text-center text-[11px] text-[var(--yu3-ink-faint)]">
                   {unchecked} item{unchecked !== 1 ? "s" : ""} not yet checked
                 </p>
               )}
@@ -773,9 +773,9 @@ export default function WalkthroughModal({
           {/* ── EXTRAS ── */}
           {step === "extras" && (
             <div className="space-y-3">
-              <p className="text-[12px] text-[var(--tx3)]">
+              <p className="text-[12px] text-[var(--yu3-ink-faint)]">
                 Add any items found that were{" "}
-                <strong className="text-[var(--tx)]">
+                <strong className="text-[var(--yu3-ink)]">
                   {logistics
                     ? "not on the original job list"
                     : "not on the original quote"}
@@ -791,10 +791,10 @@ export default function WalkthroughModal({
                       className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-[var(--yu3-wine)]/25 bg-[var(--yu3-wine)]/5"
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] text-[var(--tx)] font-medium">
+                        <p className="text-[13px] text-[var(--yu3-ink)] font-medium">
                           {e.item_name} {e.quantity > 1 && `×${e.quantity}`}
                         </p>
-                        <p className="text-[11px] text-[var(--tx3)]">
+                        <p className="text-[11px] text-[var(--yu3-ink-faint)]">
                           {e.pendingCoordinatorPricing
                             ? "Coordinator will set price"
                             : e.is_custom
@@ -821,7 +821,7 @@ export default function WalkthroughModal({
 
               {/* Add extra item form */}
               {addExtraOpen ? (
-                <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4 space-y-3">
+                <div className="rounded-xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-canvas)] p-4 space-y-3">
                   {/* Search */}
                   {!selectedItem && (
                     <div>
@@ -831,24 +831,24 @@ export default function WalkthroughModal({
                       <div className="relative">
                         <MagnifyingGlass
                           size={14}
-                          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx2)]"
+                          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--yu3-ink-muted)]"
                           aria-hidden
                         />
                         <input
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           placeholder="e.g. dining table, boxes…"
-                          className="admin-premium-input w-full pl-10 pr-3 py-2 text-[13px] text-[var(--tx)]"
+                          className="admin-premium-input w-full pl-10 pr-3 py-2 text-[13px] text-[var(--yu3-ink)]"
                         />
                         {searching && (
                           <CircleNotch
                             size={13}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--tx3)] animate-spin"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--yu3-ink-faint)] animate-spin"
                           />
                         )}
                       </div>
                       {searchResults.length > 0 && (
-                        <div className="mt-1.5 rounded-lg border border-[var(--brd)] bg-[var(--card)] shadow-lg overflow-hidden">
+                        <div className="mt-1.5 rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--card)] shadow-lg overflow-hidden">
                           {searchResults.map((r) => (
                             <button
                               key={r.id}
@@ -857,12 +857,12 @@ export default function WalkthroughModal({
                                 setSearchQuery("");
                                 setSearchResults([]);
                               }}
-                              className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-[var(--bg)] border-b border-[var(--brd)]/50 last:border-0 transition-colors"
+                              className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-[var(--yu3-bg-canvas)] border-b border-[var(--yu3-line-subtle)]/50 last:border-0 transition-colors"
                             >
-                              <span className="text-[13px] text-[var(--tx)]">
+                              <span className="text-[13px] text-[var(--yu3-ink)]">
                                 {r.item_name}
                               </span>
-                              <span className="text-[11px] text-[var(--tx3)]">
+                              <span className="text-[11px] text-[var(--yu3-ink-faint)]">
                                 +
                                 {calculateExtraItemPrice(
                                   r.item_name,
@@ -878,7 +878,7 @@ export default function WalkthroughModal({
                       {searchQuery &&
                         !searching &&
                         searchResults.length === 0 && (
-                          <p className="mt-1.5 text-[11px] text-[var(--tx3)]">
+                          <p className="mt-1.5 text-[11px] text-[var(--yu3-ink-faint)]">
                             Not found -{" "}
                             <button
                               onClick={() => {
@@ -897,10 +897,10 @@ export default function WalkthroughModal({
                   {/* Selected item */}
                   {selectedItem && (
                     <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--yu3-wine)]/8 border border-[var(--yu3-wine)]/20">
-                      <span className="flex-1 text-[13px] font-medium text-[var(--tx)]">
+                      <span className="flex-1 text-[13px] font-medium text-[var(--yu3-ink)]">
                         {selectedItem.item_name}
                       </span>
-                      <span className="text-[11px] text-[var(--tx3)]">
+                      <span className="text-[11px] text-[var(--yu3-ink-faint)]">
                         +
                         {calculateExtraItemPrice(
                           selectedItem.item_name,
@@ -929,9 +929,9 @@ export default function WalkthroughModal({
                       <input
                         value={customItemName}
                         onChange={(e) => setCustomItemName(e.target.value)}
-                        className="admin-premium-input w-full text-[var(--tx)] text-[13px]"
+                        className="admin-premium-input w-full text-[var(--yu3-ink)] text-[13px]"
                       />
-                      <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mt-3 mb-1">
+                      <label className="block text-[10px] font-semibold text-[var(--yu3-ink-faint)] uppercase tracking-wider mt-3 mb-1">
                         Weight
                       </label>
                       <div className="grid grid-cols-2 gap-1.5">
@@ -943,7 +943,7 @@ export default function WalkthroughModal({
                               className={`px-3 py-2 rounded-lg border text-[12px] font-medium transition-colors ${
                                 customWeightClass === k
                                   ? "border-[var(--yu3-wine)] bg-[var(--yu3-wine)]/10 text-[var(--yu3-wine)]"
-                                  : "border-[var(--brd)] text-[var(--tx2)]"
+                                  : "border-[var(--yu3-line-subtle)] text-[var(--yu3-ink-muted)]"
                               }`}
                             >
                               {label}
@@ -957,22 +957,22 @@ export default function WalkthroughModal({
                   {/* Quantity */}
                   {(selectedItem || customItemName) && (
                     <div>
-                      <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">
+                      <label className="block text-[10px] font-semibold text-[var(--yu3-ink-faint)] uppercase tracking-wider mb-1">
                         Quantity
                       </label>
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => setExtraQty((q) => Math.max(1, q - 1))}
-                          className="w-8 h-8 border border-[var(--brd)] flex items-center justify-center text-[var(--tx)] hover:bg-[var(--bg)] text-lg font-medium"
+                          className="w-8 h-8 border border-[var(--yu3-line-subtle)] flex items-center justify-center text-[var(--yu3-ink)] hover:bg-[var(--yu3-bg-canvas)] text-lg font-medium"
                         >
                           −
                         </button>
-                        <span className="text-[16px] font-bold text-[var(--tx)] w-8 text-center">
+                        <span className="text-[16px] font-bold text-[var(--yu3-ink)] w-8 text-center">
                           {extraQty}
                         </span>
                         <button
                           onClick={() => setExtraQty((q) => q + 1)}
-                          className="w-8 h-8 border border-[var(--brd)] flex items-center justify-center text-[var(--tx)] hover:bg-[var(--bg)] text-lg font-medium"
+                          className="w-8 h-8 border border-[var(--yu3-line-subtle)] flex items-center justify-center text-[var(--yu3-ink)] hover:bg-[var(--yu3-bg-canvas)] text-lg font-medium"
                         >
                           +
                         </button>
@@ -1021,7 +1021,7 @@ export default function WalkthroughModal({
               )}
               {b2bExtraItemHints && !addExtraOpen && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-[var(--tx3)] uppercase tracking-wider">
+                  <p className="text-[10px] font-bold text-[var(--yu3-ink-faint)] uppercase tracking-wider">
                     Common B2B items
                   </p>
                   <div className="flex flex-wrap gap-1.5">
@@ -1030,7 +1030,7 @@ export default function WalkthroughModal({
                         key={p.label}
                         type="button"
                         onClick={() => addB2BQuickPick(p.label, p.tier)}
-                        className="px-2 py-1 rounded-lg border border-[var(--brd)] text-[10px] leading-tight text-[var(--tx2)] hover:bg-[var(--bg)] text-left"
+                        className="px-2 py-1 rounded-lg border border-[var(--yu3-line-subtle)] text-[10px] leading-tight text-[var(--yu3-ink-muted)] hover:bg-[var(--yu3-bg-canvas)] text-left"
                       >
                         {p.label}
                       </button>
@@ -1075,16 +1075,16 @@ export default function WalkthroughModal({
               {/* Extra items */}
               {extraItems.length > 0 && (
                 <div>
-                  <p className="text-[10px] font-bold text-[var(--tx3)] uppercase tracking-wider mb-2">
+                  <p className="text-[10px] font-bold text-[var(--yu3-ink-faint)] uppercase tracking-wider mb-2">
                     Extra Items
                   </p>
                   <div className="space-y-1.5">
                     {extraItems.map((e, i) => (
                       <div
                         key={i}
-                        className="flex items-center justify-between px-3 py-2 rounded-lg border border-[var(--brd)]/50"
+                        className="flex items-center justify-between px-3 py-2 rounded-lg border border-[var(--yu3-line-subtle)]/50"
                       >
-                        <span className="text-[13px] text-[var(--tx)]">
+                        <span className="text-[13px] text-[var(--yu3-ink)]">
                           {e.item_name} {e.quantity > 1 && `×${e.quantity}`}
                         </span>
                         <span className="text-[13px] font-semibold text-[var(--yu3-wine)]">
@@ -1099,7 +1099,7 @@ export default function WalkthroughModal({
               {/* Missing items (all flagged missing; move rows may show estimated credit) */}
               {items.filter((i) => i.status === "missing").length > 0 && (
                 <div>
-                  <p className="text-[10px] font-bold text-[var(--tx3)] uppercase tracking-wider mb-2">
+                  <p className="text-[10px] font-bold text-[var(--yu3-ink-faint)] uppercase tracking-wider mb-2">
                     {jobType === "move"
                       ? "Missing Items (credit)"
                       : "Missing Items"}
@@ -1121,9 +1121,9 @@ export default function WalkthroughModal({
                         return (
                           <div
                             key={m.id}
-                            className="flex items-center justify-between px-3 py-2 rounded-lg border border-[var(--brd)]/50"
+                            className="flex items-center justify-between px-3 py-2 rounded-lg border border-[var(--yu3-line-subtle)]/50"
                           >
-                            <span className="text-[13px] text-[var(--tx)]">
+                            <span className="text-[13px] text-[var(--yu3-ink)]">
                               {m.item_name}{" "}
                               {(m.quantity ?? 1) > 1 && `×${m.quantity}`}
                             </span>
@@ -1132,7 +1132,7 @@ export default function WalkthroughModal({
                                 -${credit}
                               </span>
                             ) : (
-                              <span className="text-[11px] text-[var(--tx3)]">
+                              <span className="text-[11px] text-[var(--yu3-ink-faint)]">
                                 Flagged
                               </span>
                             )}

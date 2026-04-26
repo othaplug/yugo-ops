@@ -2,7 +2,8 @@ import "server-only"
 
 import { loadRevenueForecastData } from "@/lib/admin/revenue-forecast-data"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { getMoveCode } from "@/lib/move-code"
+import { formatJobId, getMoveCode } from "@/lib/move-code"
+import { serviceTypeDisplayLabel } from "@/lib/displayLabels"
 import {
   addCalendarDaysYmd,
   getAppTimezone,
@@ -63,6 +64,8 @@ export type CommandCenterJob = {
   status: string
   date: string
   tag: string
+  /** Residential tier when present (Essential / Signature / Estate). */
+  tier_selected?: string | null
   delivery_number?: string | null
   move_code?: string | null
   fromAddress?: string | null
@@ -470,7 +473,9 @@ export const loadCommandCenterData = async () => {
 
   const mapDelivery = (d: Record<string, unknown>): CommandCenterJob => {
     const num = d.delivery_number ? String(d.delivery_number) : ""
-    const subtitle = num || `Delivery ${String(d.id).slice(0, 8)}`
+    const subtitle = num
+      ? formatJobId(num, "delivery")
+      : `Delivery ${String(d.id).slice(0, 8)}`
     return {
       id: String(d.id),
       type: "delivery",
@@ -480,6 +485,7 @@ export const loadCommandCenterData = async () => {
       status: String(d.status || "pending").toLowerCase(),
       date: scheduleDateYmd(d),
       tag: String(d.category || "Delivery"),
+      tier_selected: null,
       delivery_number: d.delivery_number ? String(d.delivery_number) : null,
       fromAddress: d.pickup_address != null ? String(d.pickup_address) : null,
       toAddress: d.delivery_address != null ? String(d.delivery_address) : null,
@@ -492,9 +498,10 @@ export const loadCommandCenterData = async () => {
     const codeRaw = m.move_code
       ? String(m.move_code).replace(/^#/, "").trim()
       : ""
-    const subtitle = codeRaw
-      ? codeRaw.toUpperCase()
-      : getMoveCode(m as { move_code?: string | null; id?: string | null })
+    const codeSlug =
+      codeRaw ||
+      getMoveCode(m as { move_code?: string | null; id?: string | null })
+    const subtitle = formatJobId(codeSlug, "move")
     const alert =
       m.weather_alert != null && String(m.weather_alert).trim() !== ""
         ? String(m.weather_alert)
@@ -518,12 +525,17 @@ export const loadCommandCenterData = async () => {
       time: moveTime,
       status: effectiveMoveListStatus(m) || String(m.status || "confirmed").toLowerCase(),
       date: scheduleDateYmd(m),
-      tag:
-        m.service_type === "office_move"
-          ? "Office"
-          : m.service_type === "single_item"
-            ? "Single Item"
-            : "Move",
+      tag: (() => {
+        const stRaw =
+          m.service_type != null ? String(m.service_type).trim() : ""
+        if (!stRaw) return "Move"
+        const lbl = serviceTypeDisplayLabel(stRaw)
+        return lbl === "—" ? "Move" : lbl
+      })(),
+      tier_selected:
+        m.tier_selected != null && String(m.tier_selected).trim() !== ""
+          ? String(m.tier_selected)
+          : null,
       move_code: m.move_code ? String(m.move_code) : null,
       fromAddress: m.from_address != null ? String(m.from_address) : null,
       toAddress:
@@ -808,29 +820,31 @@ export const loadCommandCenterData = async () => {
   for (const m of activeMoves) {
     const sd = scheduleDateYmd(m)
     if (!m.crew_id && sd >= today && sd <= cutoff72h) {
-      const code = m.move_code
-        ? String(m.move_code).replace(/^#/, "").trim().toUpperCase()
-        : String(m.id).slice(0, 8)
+      const raw = m.move_code
+        ? String(m.move_code).replace(/^#/, "").trim()
+        : ""
+      const slug = raw || getMoveCode(m as { move_code?: string | null; id?: string | null })
+      const hrefSlug = raw ? raw.toUpperCase() : String(m.id)
       unassignedJobs.push({
         id: String(m.id),
         name: String(m.client_name || "Move"),
         date: sd,
         type: "move",
-        code,
-        href: `/admin/moves/${m.move_code ? code : m.id}`,
+        code: formatJobId(slug, "move"),
+        href: `/admin/moves/${hrefSlug}`,
       })
     }
   }
   for (const d of activeDeliveries) {
     const sd = scheduleDateYmd(d)
     if (!d.crew_id && sd >= today && sd <= cutoff72h) {
-      const code = d.delivery_number ? String(d.delivery_number) : "Delivery"
+      const num = d.delivery_number ? String(d.delivery_number) : ""
       unassignedJobs.push({
         id: String(d.id),
         name: String(d.customer_name || d.client_name || "Delivery"),
         date: sd,
         type: "delivery",
-        code,
+        code: num ? formatJobId(num, "delivery") : "Delivery",
         href: `/admin/deliveries/${d.delivery_number || d.id}`,
       })
     }

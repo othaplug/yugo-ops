@@ -96,7 +96,7 @@ const CREW_LOGIN_PRIMARY_LINK_BTN: CSSProperties = {
   lineHeight: 1,
   textDecoration: "none",
   color: "rgba(255,255,255,0.92)",
-  border: "1px solid rgba(44, 62, 45, 0.35)",
+  border: "1px solid color-mix(in srgb, var(--yu3-wine) 45%, transparent)",
   fontFamily: "'DM Sans', sans-serif",
 };
 
