@@ -16,7 +16,7 @@
  *   />
  */
 
-import { useCallback } from "react";
+import { useCallback, type ReactNode } from "react";
 import { Plus, X } from "@phosphor-icons/react";
 import AddressAutocomplete, { type AddressResult } from "./AddressAutocomplete";
 
@@ -36,6 +36,13 @@ interface Props {
   inputClassName?: string;
   /** Overrides default “Add another …” link text */
   addStopButtonText?: string;
+  /** Hide the visible "FROM" / "TO" caption (use placeholder + screen reader only) */
+  labelVisibility?: "visible" | "sr-only";
+  /**
+   * Renders beside the first address only (e.g. access select), aligned on one row so
+   * underlines match the first input.
+   */
+  trailingOnFirstRow?: ReactNode;
 }
 
 export default function MultiStopAddressField({
@@ -47,6 +54,8 @@ export default function MultiStopAddressField({
   disabled = false,
   inputClassName,
   addStopButtonText,
+  labelVisibility = "visible",
+  trailingOnFirstRow,
 }: Props) {
   const updateStop = useCallback(
     (index: number, result: AddressResult) => {
@@ -84,44 +93,72 @@ export default function MultiStopAddressField({
 
   return (
     <div className="space-y-1.5">
-      <label className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide">
-        {label}
-      </label>
+      {labelVisibility === "sr-only" ? (
+        <span className="sr-only">
+          {label} address{label === "From" || label === "To" ? "" : ""}
+        </span>
+      ) : (
+        <span className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide">
+          {label}
+        </span>
+      )}
 
-      {stops.map((stop, index) => (
-        <div key={index} className="flex items-center gap-1.5">
-          <div className="flex-1 relative">
-            {index > 0 && (
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
-                <span className="text-[10px] font-bold text-[#492A1D]">+{index}</span>
-              </div>
-            )}
-            <AddressAutocomplete
-              value={stop.address}
-              onChange={(result) => updateStop(index, result)}
-              onRawChange={(raw) => updateStopRaw(index, raw)}
-              placeholder={index === 0 ? (placeholder ?? label) : `Additional ${label.toLowerCase()} address`}
-              disabled={disabled}
-              className={
-                index > 0
-                  ? `field-input--leading ${inputClassName ?? ""}`.trim()
-                  : inputClassName
-              }
-            />
-          </div>
-          {index > 0 && (
-            <button
-              type="button"
-              onClick={() => removeStop(index)}
-              disabled={disabled}
-              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-[#5C5853] hover:text-[#DC2626] hover:bg-red-50 transition-colors"
-              title="Remove this stop"
+      {stops.map((stop, index) => {
+        if (index === 0 && trailingOnFirstRow) {
+          return (
+            <div
+              key={index}
+              className="flex w-full flex-col gap-2 sm:flex-row sm:items-end sm:gap-3"
             >
-              <X size={13} />
-            </button>
-          )}
-        </div>
-      ))}
+              <div className="relative min-w-0 flex-1">
+                <AddressAutocomplete
+                  value={stop.address}
+                  onChange={(result) => updateStop(index, result)}
+                  onRawChange={(raw) => updateStopRaw(index, raw)}
+                  placeholder={placeholder ?? label}
+                  disabled={disabled}
+                  className={inputClassName}
+                />
+              </div>
+              <div className="w-full shrink-0 sm:w-[9.5rem]">{trailingOnFirstRow}</div>
+            </div>
+          );
+        }
+        return (
+          <div key={index} className="flex items-center gap-1.5">
+            <div className="relative flex-1">
+              {index > 0 && (
+                <div className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2">
+                  <span className="text-[10px] font-bold text-[#492A1D]">+{index}</span>
+                </div>
+              )}
+              <AddressAutocomplete
+                value={stop.address}
+                onChange={(result) => updateStop(index, result)}
+                onRawChange={(raw) => updateStopRaw(index, raw)}
+                placeholder={index === 0 ? (placeholder ?? label) : `Additional ${label.toLowerCase()} address`}
+                disabled={disabled}
+                className={
+                  index > 0
+                    ? `field-input--leading ${inputClassName ?? ""}`.trim()
+                    : inputClassName
+                }
+              />
+            </div>
+            {index > 0 && (
+              <button
+                type="button"
+                onClick={() => removeStop(index)}
+                disabled={disabled}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[#5C5853] transition-colors hover:bg-red-50 hover:text-[#DC2626]"
+                title="Remove this stop"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+        );
+      })}
 
       {stops.length < maxStops && !disabled && (
         <button

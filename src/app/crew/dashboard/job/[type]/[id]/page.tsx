@@ -18,7 +18,6 @@ import {
   CaretLeft,
   CheckCircle,
   Clock,
-  Lock,
   Check,
   Toolbox,
   ListChecks,
@@ -40,7 +39,7 @@ import {
   getCrewStatusFlowForMove,
   crewStatusRequiresFinalWalkPhotos,
 } from "@/lib/crew/service-type-flow";
-import { normalizePhone } from "@/lib/phone";
+import { formatPhone, normalizePhone } from "@/lib/phone";
 import { formatAccessForDisplay } from "@/lib/format-text";
 import PageContent from "@/app/admin/components/PageContent";
 import { useCrewImmersiveNav } from "@/app/crew/components/CrewImmersiveNavContext";
@@ -76,8 +75,6 @@ const WaiverFlow = dynamic(
     import("@/components/crew/WaiverFlow").then((m) => m.WaiverFlow),
   { ssr: false, loading: () => null },
 );
-
-const DISPATCH_PHONE = process.env.NEXT_PUBLIC_YUGO_PHONE || "(647) 370-4525";
 
 function isValidNavCoord(lat: unknown, lng: unknown): lat is number {
   return (
@@ -708,7 +705,7 @@ export default function CrewJobPage({
 
   if (loading) {
     return (
-      <PageContent className="crew-job-premium">
+      <PageContent className="crew-job-premium w-full min-w-0 max-w-[520px] mx-auto">
         <div className="flex items-center justify-center min-h-[40vh]">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-[var(--yu3-wine)]/25 border-t-[var(--yu3-wine)] rounded-full animate-spin" />
@@ -721,7 +718,7 @@ export default function CrewJobPage({
 
   if (!job) {
     return (
-      <PageContent className="crew-job-premium">
+      <PageContent className="crew-job-premium w-full min-w-0 max-w-[520px] mx-auto">
         <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
           <p className="text-[var(--text-base)] text-[var(--red)] mb-4">
             {error || "Job not found"}
@@ -742,7 +739,7 @@ export default function CrewJobPage({
     job.bookingType === "day_rate" && job.stops && job.stops.length > 0;
   if (isDayRate) {
     return (
-      <PageContent className="crew-job-premium max-w-[520px]">
+      <PageContent className="crew-job-premium w-full min-w-0 max-w-[520px] mx-auto">
         <div className="flex items-center gap-2 mb-5">
           <Link
             href="/crew/dashboard"
@@ -825,7 +822,7 @@ export default function CrewJobPage({
   const destinationLabel = useLogisticsCopy ? "Destination" : "Drop-off";
 
   return (
-    <PageContent className="crew-job-premium max-w-[520px]">
+    <PageContent className="crew-job-premium w-full min-w-0 max-w-[520px] mx-auto">
       <Suspense fallback={null}>
         <OpenNavFromQuery setNavOpen={setNavOpen} />
       </Suspense>
@@ -935,8 +932,8 @@ export default function CrewJobPage({
         </p>
       )}
 
-      {/* Job header (Yugo v3 surface card) */}
-      <div className="mb-6 rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 sm:p-5 shadow-[var(--yu3-shadow-sm)]">
+      {/* Job header: flat strip (no card) — route + title stay visible on all tabs */}
+      <div className="mb-5 pb-4 border-b border-[var(--yu3-line-subtle)]">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="min-w-0">
             <p className="yu3-t-eyebrow text-[10px] text-[var(--yu3-wine)]/80 mb-1 [font-family:var(--font-body)] leading-none">
@@ -1026,13 +1023,8 @@ export default function CrewJobPage({
                   {job.fromAddress}
                 </p>
                 {fromAccessDisplay && (
-                  <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1 flex items-center gap-1.5 leading-snug">
-                    <Lock
-                      size={11}
-                      className="shrink-0 text-[var(--yu3-wine)]/50"
-                      aria-hidden
-                    />
-                    {fromAccessDisplay}
+                  <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1 leading-snug [font-family:var(--font-body)]">
+                    Access: {fromAccessDisplay}
                   </p>
                 )}
               </div>
@@ -1044,13 +1036,8 @@ export default function CrewJobPage({
                   {job.toAddress}
                 </p>
                 {toAccessDisplay && (
-                  <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1 flex items-center gap-1.5 leading-snug">
-                    <Lock
-                      size={11}
-                      className="shrink-0 text-[var(--yu3-wine)]/50"
-                      aria-hidden
-                    />
-                    {toAccessDisplay}
+                  <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1 leading-snug [font-family:var(--font-body)]">
+                    Access: {toAccessDisplay}
                   </p>
                 )}
               </div>
@@ -1630,18 +1617,6 @@ export default function CrewJobPage({
             </div>
           </div>
 
-          {/* Dispatch notes */}
-          {job.internalNotes && (
-            <div className="rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-gradient-to-br from-[var(--yu3-wine-wash)] via-[var(--yu3-bg-surface-sunken)] to-[var(--yu3-wine-tint)] p-4 sm:p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
-              <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-wine)]/70 mb-2 [font-family:var(--font-body)] leading-none">
-                Dispatch notes
-              </p>
-              <p className="text-[13px] text-[var(--yu3-ink)] whitespace-pre-wrap leading-relaxed">
-                {job.internalNotes}
-              </p>
-            </div>
-          )}
-
           {/* Note + waiver only; dispatch and coordinator are under Support in the crew menu */}
           {!isCompleted && (
             <div className="space-y-2.5 pt-2 pb-1">
@@ -1700,7 +1675,7 @@ export default function CrewJobPage({
         <>
           {/* Project context banner */}
           {job.projectContext && (
-            <div className="mx-0 mb-4 px-4 py-3 rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-wine-tint)]/60">
+            <div className="mb-5 rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-wine-tint)]/60 px-3 py-3 sm:px-4">
               <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-wine)]/75 mb-0.5 [font-family:var(--font-body)]">
                 Part of Project
               </p>
@@ -1715,85 +1690,8 @@ export default function CrewJobPage({
               )}
             </div>
           )}
-          <div className="mx-0 mb-4 rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 shadow-[var(--yu3-shadow-sm)]">
-              <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-faint)] mb-3 [font-family:var(--font-body)]">
-                Contacts
-              </p>
-              <div className="space-y-4">
-                {(job.clientPhone || job.clientEmail) && (
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)] leading-none">
-                      Client
-                    </p>
-                    <p className="text-[13px] font-semibold text-[var(--yu3-ink)] mt-1 [font-family:var(--font-body)]">
-                      {job.clientName}
-                    </p>
-                    {job.clientPhone ? (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <a
-                          href={`tel:${normalizePhone(job.clientPhone)}`}
-                          className="inline-flex min-h-[40px] items-center justify-center rounded-lg bg-[var(--yu3-wine)] px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-on-wine)] [font-family:var(--font-body)]"
-                          aria-label={`Call client at ${job.clientPhone}`}
-                        >
-                          Call
-                        </a>
-                        <a
-                          href={`sms:${normalizePhone(job.clientPhone)}`}
-                          className="inline-flex min-h-[40px] items-center justify-center rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-ink)] [font-family:var(--font-body)]"
-                          aria-label={`Text client at ${job.clientPhone}`}
-                        >
-                          Text
-                        </a>
-                      </div>
-                    ) : null}
-                    {job.clientEmail ? (
-                      <a
-                        href={`mailto:${encodeURIComponent(job.clientEmail)}`}
-                        className="mt-2 inline-block text-[12px] font-medium text-[var(--yu3-wine)] underline-offset-2 hover:underline [font-family:var(--font-body)]"
-                      >
-                        {job.clientEmail}
-                      </a>
-                    ) : null}
-                  </div>
-                )}
-                {job.partnerName ? (
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)] leading-none">
-                      Partner
-                    </p>
-                    <p className="text-[13px] font-semibold text-[var(--yu3-ink)] mt-1 [font-family:var(--font-body)]">
-                      {job.partnerName}
-                    </p>
-                    {job.partnerPhone ? (
-                      <a
-                        href={`tel:${normalizePhone(job.partnerPhone)}`}
-                        className="mt-2 inline-flex min-h-[40px] items-center justify-center rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-ink)] [font-family:var(--font-body)]"
-                        aria-label={`Call partner at ${job.partnerPhone}`}
-                      >
-                        Call partner
-                      </a>
-                    ) : null}
-                  </div>
-                ) : null}
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)] leading-none">
-                    Coordinator
-                  </p>
-                  <p className="text-[13px] font-semibold text-[var(--yu3-ink)] mt-1 [font-family:var(--font-body)]">
-                    {job.coordinatorName || "Yugo Operations"}
-                  </p>
-                  <a
-                    href={`tel:${normalizePhone(job.coordinatorPhone || DISPATCH_PHONE)}`}
-                    className="mt-2 inline-flex min-h-[40px] items-center justify-center rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-ink)] [font-family:var(--font-body)]"
-                    aria-label="Call coordinator"
-                  >
-                    Call coordinator
-                  </a>
-                </div>
-              </div>
-            </div>
           {(job.scheduledDate || job.arrivalWindow) && (
-            <div className="p-4">
+            <div className="mb-5">
               <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-2 [font-family:var(--font-body)]">
                 Schedule
               </p>
@@ -1818,64 +1716,84 @@ export default function CrewJobPage({
               )}
             </div>
           )}
-          <div className="p-4">
+          <div className="mb-5">
             <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-1.5 [font-family:var(--font-body)]">
               {originLabel}
             </p>
-            <p className="text-[13px] font-semibold text-[var(--yu3-ink)]">
+            <p className="text-[13px] font-semibold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
               {job.fromAddress}
             </p>
             {fromAccessDisplay && (
-              <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1">
+              <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1.5 leading-relaxed [font-family:var(--font-body)]">
                 Access: {fromAccessDisplay}
               </p>
             )}
           </div>
-          <div className="p-4">
+          <div className="mb-5">
             <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-1.5 [font-family:var(--font-body)]">
               {destinationLabel}
             </p>
-            <p className="text-[13px] font-semibold text-[var(--yu3-ink)]">
+            <p className="text-[13px] font-semibold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
               {job.toAddress}
             </p>
             {toAccessDisplay && (
-              <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1">
+              <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1.5 leading-relaxed [font-family:var(--font-body)]">
                 Access: {toAccessDisplay}
               </p>
             )}
           </div>
-          {job.accessNotes && (
-            <div className="p-4">
-              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-1.5 [font-family:var(--font-body)]">
-                Access Notes
-              </p>
-              <p className="text-[12px] text-[var(--yu3-ink-muted)] whitespace-pre-wrap leading-relaxed">
-                {job.accessNotes}
-              </p>
-            </div>
-          )}
           {job.crewMembers && job.crewMembers.length > 0 && (
-            <div className="p-4">
-              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-3 [font-family:var(--font-body)]">
+            <div className="mb-5">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-2 [font-family:var(--font-body)]">
                 Crew ({job.crewMembers.length})
               </p>
-              <div className="space-y-2.5">
+              <div className="space-y-1.5">
                 {job.crewMembers.map((m, i) => (
-                  <div key={i} className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold bg-[var(--yu3-wine)]/12 text-[var(--yu3-wine)] shrink-0 [font-family:var(--font-body)]">
-                      {m.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <span className="text-[12px] font-semibold text-[var(--yu3-ink)]">
-                        {m.name}
-                      </span>
-                      <span className="text-[10px] text-[var(--yu3-ink-faint)] ml-2">
+                  <p
+                    key={i}
+                    className="text-[12px] text-[var(--yu3-ink)] [font-family:var(--font-body)]"
+                  >
+                    <span className="font-semibold">{m.name}</span>
+                    {m.role ? (
+                      <span className="text-[11px] font-normal text-[var(--yu3-ink-faint)]">
+                        {" "}
                         {m.role}
                       </span>
-                    </div>
-                  </div>
+                    ) : null}
+                  </p>
                 ))}
               </div>
+            </div>
+          )}
+          {(job.clientName || job.clientPhone) && (
+            <div className="mb-5">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-1.5 [font-family:var(--font-body)]">
+                Client
+              </p>
+              {job.clientName ? (
+                <p className="text-[13px] font-semibold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+                  {job.clientName}
+                </p>
+              ) : null}
+              {job.clientPhone ? (
+                <a
+                  href={`tel:${normalizePhone(job.clientPhone)}`}
+                  className={`block w-fit text-[13px] font-medium text-[var(--yu3-ink)] [font-family:var(--font-body)] hover:underline underline-offset-2 decoration-[var(--yu3-ink)]/30 hover:decoration-[var(--yu3-wine)] ${job.clientName ? "mt-1" : "mt-0"}`}
+                  aria-label={`Call ${formatPhone(job.clientPhone) || job.clientPhone}`}
+                >
+                  {formatPhone(job.clientPhone) || job.clientPhone}
+                </a>
+              ) : null}
+            </div>
+          )}
+          {job.internalNotes && (
+            <div className="mb-0">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-1.5 [font-family:var(--font-body)]">
+                Notes
+              </p>
+              <p className="text-[12px] text-[var(--yu3-ink-muted)] whitespace-pre-wrap leading-relaxed [font-family:var(--font-body)]">
+                {job.internalNotes}
+              </p>
             </div>
           )}
         </>

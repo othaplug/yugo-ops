@@ -631,25 +631,28 @@ export default function InventoryInput({
       <div className="pt-4 space-y-4">
         <p className="text-[10px] text-[var(--tx2)]">Can&apos;t find an item?</p>
         <div className="space-y-3">
-          <div>
-            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--tx2)]">
+          <div className="max-w-xl">
+            <label htmlFor="inv-custom-name" className="sr-only">
               Item name
             </label>
             <input
+              id="inv-custom-name"
               type="text"
               value={customName}
               onChange={(e) => setCustomName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomItem(); } }}
-              placeholder={isCommercial ? "e.g. Standing desk, Server rack" : "e.g. Patio Set (wicker)"}
+              placeholder={isCommercial ? "Item name* (e.g. standing desk, rack)" : "Item name* (e.g. patio set)"}
               className={fieldInput}
+              aria-label="Custom item name"
             />
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-3">
-            <div className="min-w-0 flex-1 sm:max-w-md">
-              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--tx2)]">
+            <div className="min-w-0 flex-1 sm:max-w-xs">
+              <label htmlFor="inv-custom-weight" className="sr-only">
                 Weight range
               </label>
               <select
+                id="inv-custom-weight"
                 value={normalizeB2bWeightCategory(customTier)}
                 onChange={(e) => setCustomTier(e.target.value)}
                 className={fieldInput}
@@ -676,15 +679,16 @@ export default function InventoryInput({
           </div>
         </div>
         {onBoxCountChange !== undefined && (
-          <div className="pt-1 border-t border-[var(--brd)]/25">
-            <label className="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-[var(--tx2)]">
-              Box estimate (volume)
-            </label>
-            <p className="text-[9px] text-[var(--tx3)] leading-snug mb-2 max-w-lg">
+          <div className="pt-3 space-y-1.5">
+            <p className="text-[9px] text-[var(--tx3)] leading-snug max-w-lg">
               Rough count for planning and scoring, separate from the item lines above.
             </p>
             <div className="flex flex-wrap items-center gap-1.5">
+              <label htmlFor="inv-box-estimate" className="sr-only">
+                Box estimate for volume
+              </label>
               <select
+                id="inv-box-estimate"
                 value={showCustomBox ? -1 : internalBoxCount}
                 onChange={(e) => {
                   const v = Number(e.target.value);
@@ -697,8 +701,8 @@ export default function InventoryInput({
                     onBoxCountChange(v);
                   }
                 }}
-                className={`${fieldInput} min-w-[8rem] flex-1 sm:flex-initial sm:min-w-[9rem]`}
-                aria-label="Estimated number of boxes for volume"
+                className={`${fieldInput} min-w-[8rem] flex-1 sm:flex-initial sm:min-w-[9rem] sm:max-w-xs`}
+                aria-label="Box estimate for move volume"
               >
                 {BOX_RANGES.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -911,7 +915,7 @@ export default function InventoryInput({
           })}
 
           {/* Score summary */}
-          <div className="pt-2 border-t border-[var(--brd)]/50 space-y-1">
+          <div className="pt-2 space-y-1">
             <div className="flex items-center justify-between text-[10px]">
               <span className="text-[var(--tx3)]">
                 Item score: {inventoryScore.toFixed(1)}

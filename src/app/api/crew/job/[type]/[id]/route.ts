@@ -4,9 +4,17 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { parseItemNameAndQty } from "@/lib/inventory-parse";
 import { normalizeDeliveryItem } from "@/lib/delivery-items";
-import { buildFuelConfigMap, resolveNavigationFuelPriceCadPerLitre, NAV_FUEL_KEYS } from "@/lib/routing/fuel-config";
+import {
+  buildFuelConfigMap,
+  resolveNavigationFuelPriceCadPerLitre,
+  NAV_FUEL_KEYS,
+} from "@/lib/routing/fuel-config";
 import { normalizeCrewTruckType } from "@/lib/routing/truck-profile";
-import { CREW_JOB_UUID_RE, normalizeCrewJobId, selectDeliveryByJobId } from "@/lib/resolve-delivery-by-job-id";
+import {
+  CREW_JOB_UUID_RE,
+  normalizeCrewJobId,
+  selectDeliveryByJobId,
+} from "@/lib/resolve-delivery-by-job-id";
 import {
   isPreMoveChecklistComplete,
   preMoveChecklistCounts,
@@ -47,7 +55,7 @@ const MAPBOX_TOKEN =
   "";
 
 async function geocodeAddressServer(
-  address: string | null | undefined
+  address: string | null | undefined,
 ): Promise<{ lat: number; lng: number } | null> {
   if (!MAPBOX_TOKEN || !address?.trim()) return null;
   try {
@@ -55,7 +63,11 @@ async function geocodeAddressServer(
     const res = await fetch(url);
     const data = await res.json();
     const c = data?.features?.[0]?.center;
-    if (Array.isArray(c) && typeof c[0] === "number" && typeof c[1] === "number") {
+    if (
+      Array.isArray(c) &&
+      typeof c[0] === "number" &&
+      typeof c[1] === "number"
+    ) {
       return { lng: c[0], lat: c[1] };
     }
   } catch {
@@ -67,26 +79,36 @@ async function geocodeAddressServer(
 /** GET job detail for crew portal. */
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ type: string; id: string }> }
+  { params }: { params: Promise<{ type: string; id: string }> },
 ) {
   const cookieStore = await cookies();
   const token = cookieStore.get(CREW_COOKIE_NAME)?.value;
   const payload = token ? verifyCrewToken(token) : null;
-  if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!payload)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { type, id } = await params;
   const jobType = type === "delivery" ? "delivery" : "move";
   const jobId = id;
 
   const admin = createAdminClient();
-  const { data: fuelCfgRows } = await admin.from("platform_config").select("key, value").in("key", [...NAV_FUEL_KEYS]);
-  const fuelPriceCadPerLitre = resolveNavigationFuelPriceCadPerLitre(buildFuelConfigMap(fuelCfgRows));
+  const { data: fuelCfgRows } = await admin
+    .from("platform_config")
+    .select("key, value")
+    .in("key", [...NAV_FUEL_KEYS]);
+  const fuelPriceCadPerLitre = resolveNavigationFuelPriceCadPerLitre(
+    buildFuelConfigMap(fuelCfgRows),
+  );
 
   const normalizedJobId = normalizeCrewJobId(jobId);
   const isUuid = CREW_JOB_UUID_RE.test(normalizedJobId);
 
   if (jobType === "delivery") {
-    const { data: raw } = await selectDeliveryByJobId(admin, normalizedJobId, "*");
+    const { data: raw } = await selectDeliveryByJobId(
+      admin,
+      normalizedJobId,
+      "*",
+    );
 
     if (!raw) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
@@ -101,36 +123,72 @@ export async function GET(
       const { name, qty } = normalizeDeliveryItem(raw);
       return { id: `noid-${i}`, item_name: name, quantity: qty };
     });
-    const { data: extra } = await admin.from("extra_items").select("id, description, room, quantity, added_at").eq("job_id", d.id).eq("status", "approved").order("added_at");
-    const { data: crewRow } = await admin.from("crews").select("id, name, members").eq("id", d.crew_id).single();
-    const snapMembers = Array.isArray((d as { assigned_members?: unknown }).assigned_members)
-      ? ((d as { assigned_members: string[] }).assigned_members || []).filter((n) => typeof n === "string" && n.trim())
+    const { data: extra } = await admin
+      .from("extra_items")
+      .select("id, description, room, quantity, added_at")
+      .eq("job_id", d.id)
+      .eq("status", "approved")
+      .order("added_at");
+    const { data: crewRow } = await admin
+      .from("crews")
+      .select("id, name, members")
+      .eq("id", d.crew_id)
+      .single();
+    const snapMembers = Array.isArray(
+      (d as { assigned_members?: unknown }).assigned_members,
+    )
+      ? ((d as { assigned_members: string[] }).assigned_members || []).filter(
+          (n) => typeof n === "string" && n.trim(),
+        )
       : [];
     const membersFromCrew = (crewRow?.members as string[] | null) || [];
     const members = snapMembers.length > 0 ? snapMembers : membersFromCrew;
-    const crewWithRoles = members.map((name: string, i: number) => ({ name, role: i === 0 ? "Lead" : "Specialist" }));
-    const fromAccess = (d as any).pickup_access || (d as any).from_access || null;
+    const crewWithRoles = members.map((name: string, i: number) => ({
+      name,
+      role: i === 0 ? "Lead" : "Specialist",
+    }));
+    const fromAccess =
+      (d as any).pickup_access || (d as any).from_access || null;
     const toAccess = (d as any).delivery_access || (d as any).to_access || null;
     const accessParts = [fromAccess, toAccess].filter(Boolean);
     const access = accessParts.length ? accessParts.join(" -> ") : null;
 
     // Fetch project context if linked
-    let projectContext: { projectName: string; projectNumber: string; phaseName: string | null } | null = null;
+    let projectContext: {
+      projectName: string;
+      projectNumber: string;
+      phaseName: string | null;
+    } | null = null;
     if ((d as any).project_id) {
-      const { data: proj } = await admin.from("projects").select("project_number, project_name").eq("id", (d as any).project_id).maybeSingle();
+      const { data: proj } = await admin
+        .from("projects")
+        .select("project_number, project_name")
+        .eq("id", (d as any).project_id)
+        .maybeSingle();
       let phaseName: string | null = null;
       if ((d as any).phase_id) {
-        const { data: ph } = await admin.from("project_phases").select("phase_name").eq("id", (d as any).phase_id).maybeSingle();
+        const { data: ph } = await admin
+          .from("project_phases")
+          .select("phase_name")
+          .eq("id", (d as any).phase_id)
+          .maybeSingle();
         phaseName = ph?.phase_name ?? null;
       }
-      if (proj) projectContext = { projectNumber: proj.project_number, projectName: proj.project_name, phaseName };
+      if (proj)
+        projectContext = {
+          projectNumber: proj.project_number,
+          projectName: proj.project_name,
+          phaseName,
+        };
     }
 
     // Fetch delivery stops for day_rate bookings
     const bookingType = (d as any).booking_type as string | null;
     const { data: stops } = await admin
       .from("delivery_stops")
-      .select("id, stop_number, address, customer_name, customer_phone, client_phone, items_description, special_instructions, notes, status, stop_status, stop_type, arrived_at, completed_at")
+      .select(
+        "id, stop_number, address, customer_name, customer_phone, client_phone, items_description, special_instructions, notes, status, stop_status, stop_type, arrived_at, completed_at",
+      )
       .eq("delivery_id", d.id)
       .order("stop_number");
 
@@ -154,7 +212,8 @@ export async function GET(
     }
 
     let serviceType: string | null = null;
-    const sourceQuoteId = (d as { source_quote_id?: string | null }).source_quote_id;
+    const sourceQuoteId = (d as { source_quote_id?: string | null })
+      .source_quote_id;
     if (sourceQuoteId) {
       const { data: quoteRow } = await admin
         .from("quotes")
@@ -169,25 +228,33 @@ export async function GET(
     let partnerName: string | null = null;
     let partnerPhone: string | null = null;
     let coordinatorNameOut = "Yugo Operations";
-    let coordinatorPhoneOut = (process.env.NEXT_PUBLIC_YUGO_PHONE || "").trim() || null;
+    let coordinatorPhoneOut =
+      (process.env.NEXT_PUBLIC_YUGO_PHONE || "").trim() || null;
     if (orgId) {
       const { data: org } = await admin
         .from("organizations")
-        .select("type, name, phone, partner_coordinator_name, partner_coordinator_phone")
+        .select(
+          "type, name, phone, partner_coordinator_name, partner_coordinator_phone",
+        )
         .eq("id", orgId)
         .maybeSingle();
       partnerVertical = (org?.type as string | null) ?? null;
       partnerName = (org as { name?: string | null })?.name?.trim() || null;
       partnerPhone = (org as { phone?: string | null })?.phone?.trim() || null;
-      const pcName = (org as { partner_coordinator_name?: string | null }).partner_coordinator_name?.trim();
-      const pcPhone = (org as { partner_coordinator_phone?: string | null }).partner_coordinator_phone?.trim();
+      const pcName = (
+        org as { partner_coordinator_name?: string | null }
+      ).partner_coordinator_name?.trim();
+      const pcPhone = (
+        org as { partner_coordinator_phone?: string | null }
+      ).partner_coordinator_phone?.trim();
       if (pcName) coordinatorNameOut = pcName;
       if (pcPhone) coordinatorPhoneOut = pcPhone;
     }
 
-    const estDurD =
-      (d as { estimated_duration_minutes?: number | null }).estimated_duration_minutes;
-    const marginD = (d as { margin_alert_minutes?: number | null }).margin_alert_minutes;
+    const estDurD = (d as { estimated_duration_minutes?: number | null })
+      .estimated_duration_minutes;
+    const marginD = (d as { margin_alert_minutes?: number | null })
+      .margin_alert_minutes;
 
     let deliveryEstMin =
       estDurD != null && Number.isFinite(Number(estDurD)) && Number(estDurD) > 0
@@ -228,9 +295,7 @@ export async function GET(
     let delElapsedMin: number | null = null;
     if (delTrack?.started_at) {
       delElapsedMin =
-        (Date.now() -
-          new Date(String(delTrack.started_at)).getTime()) /
-        60000;
+        (Date.now() - new Date(String(delTrack.started_at)).getTime()) / 60000;
     }
     const delGross = Number(
       (d as { total_price?: number; quoted_price?: number }).total_price ??
@@ -254,7 +319,8 @@ export async function GET(
     });
 
     const deliveryClientLabel =
-      `${d.customer_name || ""}${d.client_name ? ` (${d.client_name})` : ""}`.trim() || "Customer";
+      `${d.customer_name || ""}${d.client_name ? ` (${d.client_name})` : ""}`.trim() ||
+      "Customer";
     void maybeNotifyOperationalInJobAlerts({
       jobType: "delivery",
       jobId: d.id,
@@ -270,7 +336,9 @@ export async function GET(
         .select("square_payment_id, amount, method, reported_by")
         .eq("delivery_id", d.id)
         .maybeSingle();
-      tipReportNeeded = computeCrewTipReportNeeded(tipRow as TipReportTipRow | null);
+      tipReportNeeded = computeCrewTipReportNeeded(
+        tipRow as TipReportTipRow | null,
+      );
     }
 
     return NextResponse.json({
@@ -282,7 +350,9 @@ export async function GET(
       bookingType,
       status: d.status || "scheduled",
       stopsCompleted: (d as any).stops_completed || 0,
-      clientName: `${d.customer_name || ""}${d.client_name ? ` (${d.client_name})` : ""}`.trim() || "-",
+      clientName:
+        `${d.customer_name || ""}${d.client_name ? ` (${d.client_name})` : ""}`.trim() ||
+        "-",
       fromAddress: d.pickup_address || "Warehouse",
       toAddress: d.delivery_address || "-",
       fromAccess,
@@ -292,7 +362,10 @@ export async function GET(
       scheduledDate: (d as any).scheduled_date || null,
       access,
       crewMembers: crewWithRoles,
-      jobTypeLabel: bookingType === "day_rate" ? `Day Rate · ${(stops || []).length} stops` : `Delivery · ${rawItems.length} items`,
+      jobTypeLabel:
+        bookingType === "day_rate"
+          ? `Day Rate · ${(stops || []).length} stops`
+          : `Delivery · ${rawItems.length} items`,
       itemCount: rawItems.length,
       stops: (stops || []).map((s) => ({
         ...s,
@@ -309,7 +382,9 @@ export async function GET(
       fromLng,
       toLat,
       toLng,
-      truckType: normalizeCrewTruckType((d as { vehicle_type?: string | null }).vehicle_type),
+      truckType: normalizeCrewTruckType(
+        (d as { vehicle_type?: string | null }).vehicle_type,
+      ),
       fuelPriceCadPerLitre,
       serviceType,
       partnerVertical,
@@ -328,7 +403,11 @@ export async function GET(
 
   const { data: m } = isUuid
     ? await admin.from("moves").select("*").eq("id", normalizedJobId).single()
-    : await admin.from("moves").select("*").ilike("move_code", normalizedJobId.replace(/^#/, "").toUpperCase()).single();
+    : await admin
+        .from("moves")
+        .select("*")
+        .ilike("move_code", normalizedJobId.replace(/^#/, "").toUpperCase())
+        .single();
 
   if (!m || m.crew_id !== payload.teamId) {
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
@@ -337,22 +416,45 @@ export async function GET(
   const accessParts = [m.from_access, m.to_access].filter(Boolean);
   const access = accessParts.length ? accessParts.join(" -> ") : null;
 
-  const { data: crewRow } = await admin.from("crews").select("id, name, members").eq("id", m.crew_id).single();
+  const { data: crewRow } = await admin
+    .from("crews")
+    .select("id, name, members")
+    .eq("id", m.crew_id)
+    .single();
   const members = (crewRow?.members as string[] | null) || [];
-  const assignedRaw = Array.isArray(m.assigned_members) ? m.assigned_members : [];
+  const assignedRaw = Array.isArray(m.assigned_members)
+    ? m.assigned_members
+    : [];
   const assigned =
     assignedRaw.length > 0
-      ? assignedRaw.filter((name: unknown): name is string => typeof name === "string" && name.trim().length > 0)
+      ? assignedRaw.filter(
+          (name: unknown): name is string =>
+            typeof name === "string" && name.trim().length > 0,
+        )
       : members;
-  const crewWithRoles = assigned.map((name: string, i: number) => ({ name, role: i === 0 ? "Lead" : "Specialist" }));
+  const crewWithRoles = assigned.map((name: string, i: number) => ({
+    name,
+    role: i === 0 ? "Lead" : "Specialist",
+  }));
 
-  const { data: inv } = await admin.from("move_inventory").select("id, room, item_name").eq("move_id", m.id).order("room");
-  const byRoom: Record<string, { id: string; item_name: string; quantity: number }[]> = {};
+  const { data: inv } = await admin
+    .from("move_inventory")
+    .select("id, room, item_name")
+    .eq("move_id", m.id)
+    .order("room");
+  const byRoom: Record<
+    string,
+    { id: string; item_name: string; quantity: number }[]
+  > = {};
   for (const row of inv || []) {
     const room = row.room || "Other";
     if (!byRoom[room]) byRoom[room] = [];
     const { baseName, qty } = parseItemNameAndQty(row.item_name || "");
-    byRoom[room].push({ id: row.id, item_name: baseName || row.item_name || "", quantity: qty });
+    byRoom[room].push({
+      id: row.id,
+      item_name: baseName || row.item_name || "",
+      quantity: qty,
+    });
   }
   const inventory = Object.entries(byRoom).map(([room, items]) => ({
     room,
@@ -360,7 +462,12 @@ export async function GET(
     itemsWithId: items,
   }));
 
-  const { data: extra } = await admin.from("extra_items").select("id, description, room, quantity, added_at").eq("job_id", m.id).eq("status", "approved").order("added_at");
+  const { data: extra } = await admin
+    .from("extra_items")
+    .select("id, description, room, quantity, added_at")
+    .eq("job_id", m.id)
+    .eq("status", "approved")
+    .order("added_at");
 
   let fromLat = m.from_lat != null ? Number(m.from_lat) : null;
   let fromLng = m.from_lng != null ? Number(m.from_lng) : null;
@@ -381,13 +488,16 @@ export async function GET(
     }
   }
 
-  const checklistRaw = (m.pre_move_checklist as Record<string, boolean> | null) || {};
+  const checklistRaw =
+    (m.pre_move_checklist as Record<string, boolean> | null) || {};
   const { done: preMoveChecklistDone, total: preMoveChecklistTotal } =
     preMoveChecklistCounts(checklistRaw);
   const preMoveChecklistAllComplete = isPreMoveChecklistComplete(checklistRaw);
 
-  const estDurM = (m as { estimated_duration_minutes?: number | null }).estimated_duration_minutes;
-  const marginM = (m as { margin_alert_minutes?: number | null }).margin_alert_minutes;
+  const estDurM = (m as { estimated_duration_minutes?: number | null })
+    .estimated_duration_minutes;
+  const marginM = (m as { margin_alert_minutes?: number | null })
+    .margin_alert_minutes;
 
   let moveEstMin =
     estDurM != null && Number.isFinite(Number(estDurM)) && Number(estDurM) > 0
@@ -404,7 +514,11 @@ export async function GET(
       moveEstMin = Math.round(ehN * 60);
     }
   }
-  if (moveEstMin != null && moveEstMin > 0 && (moveMarginMin == null || moveMarginMin <= 0)) {
+  if (
+    moveEstMin != null &&
+    moveEstMin > 0 &&
+    (moveMarginMin == null || moveMarginMin <= 0)
+  ) {
     moveMarginMin = moveEstMin;
   }
   if (moveEstMin != null && moveEstMin > 0 && moveMarginMin != null) {
@@ -424,8 +538,7 @@ export async function GET(
   let moveElapsedMin: number | null = null;
   if (moveTrack?.started_at) {
     moveElapsedMin =
-      (Date.now() - new Date(String(moveTrack.started_at)).getTime()) /
-      60000;
+      (Date.now() - new Date(String(moveTrack.started_at)).getTime()) / 60000;
   }
   const moveGross = Number(
     (m as { estimate?: number; amount?: number }).estimate ??
@@ -467,10 +580,13 @@ export async function GET(
       .select("square_payment_id, amount, method, reported_by")
       .eq("move_id", m.id)
       .maybeSingle();
-    tipReportNeeded = computeCrewTipReportNeeded(tipRow as TipReportTipRow | null);
+    tipReportNeeded = computeCrewTipReportNeeded(
+      tipRow as TipReportTipRow | null,
+    );
   }
 
-  const orgIdMove = (m as { organization_id?: string | null }).organization_id ?? null;
+  const orgIdMove =
+    (m as { organization_id?: string | null }).organization_id ?? null;
   let partnerName: string | null = null;
   let partnerPhone: string | null = null;
   if (orgIdMove) {
@@ -479,8 +595,10 @@ export async function GET(
       .select("name, phone")
       .eq("id", orgIdMove)
       .maybeSingle();
-    partnerName = (orgM as { name?: string | null } | null)?.name?.trim() || null;
-    partnerPhone = (orgM as { phone?: string | null } | null)?.phone?.trim() || null;
+    partnerName =
+      (orgM as { name?: string | null } | null)?.name?.trim() || null;
+    partnerPhone =
+      (orgM as { phone?: string | null } | null)?.phone?.trim() || null;
   }
 
   return NextResponse.json({
@@ -507,7 +625,8 @@ export async function GET(
     scheduledDate: (m as any).scheduled_date || null,
     access,
     crewMembers: crewWithRoles,
-    jobTypeLabel: m.move_type === "office" ? "Office · Commercial" : "Residential",
+    jobTypeLabel:
+      m.move_type === "office" ? "Office · Commercial" : "Residential",
     inventory,
     extraItems: extra || [],
     internalNotes: m.internal_notes || m.next_action || null,
@@ -520,14 +639,17 @@ export async function GET(
     truckType: normalizeCrewTruckType(m.truck_primary as string | null),
     fuelPriceCadPerLitre,
     estCrewSize: m.est_crew_size != null ? Number(m.est_crew_size) : null,
-    serviceType: (m.service_type as string | null) || (m.move_type as string | null) || null,
+    serviceType:
+      (m.service_type as string | null) ||
+      (m.move_type as string | null) ||
+      null,
     complexityBadges: complexityBadgeLabels(m.complexity_indicators),
     preMoveChecklistDone,
     preMoveChecklistTotal,
     preMoveChecklistAllComplete,
     preMoveChecklistNotifiedAt:
-      (m as { pre_move_checklist_notified_at?: string | null }).pre_move_checklist_notified_at ??
-      null,
+      (m as { pre_move_checklist_notified_at?: string | null })
+        .pre_move_checklist_notified_at ?? null,
     estimatedDurationMinutes: moveEstMin,
     marginAlertMinutes: moveMarginMin,
     operationalAlerts,

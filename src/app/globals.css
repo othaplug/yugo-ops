@@ -1817,6 +1817,32 @@ textarea.field-input-compact.field-input-compact--multiline-underline:focus {
   outline: none;
 }
 
+/* Native selects: same bottom line as .field-input-compact, custom chevron (admin v2/v3, crew) */
+:is(.admin-app, .crew-app, .premium-field-host) select.field-input-compact,
+[data-yugo-admin-v3] select.field-input-compact {
+  appearance: none;
+  padding-right: 1.75rem;
+  cursor: pointer;
+  background-color: transparent;
+  border-radius: 0;
+  background-repeat: no-repeat;
+  background-position: right 0.1rem center;
+  background-size: 1rem 1rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%238a8782' viewBox='0 0 256 256'%3E%3Cpath d='M213.66 101.66l-80 80a8 8 0 0 1-11.32 0l-80-80A8 8 0 0 1 53.66 90.34L128 164.69l74.34-74.35a8 8 0 0 1 11.32 11.32z'/%3E%3C/svg%3E");
+}
+html[data-theme="light"]
+  :is(.admin-app, .crew-app, .premium-field-host)
+  select.field-input-compact,
+html[data-theme="light"] [data-yugo-admin-v3] select.field-input-compact,
+[data-yugo-admin-v3][data-theme="light"] select.field-input-compact {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23675648' viewBox='0 0 256 256'%3E%3Cpath d='M213.66 101.66l-80 80a8 8 0 0 1-11.32 0l-80-80A8 8 0 0 1 53.66 90.34L128 164.69l74.34-74.35a8 8 0 0 1 11.32 11.32z'/%3E%3C/svg%3E");
+}
+:is(.admin-app, .crew-app, .premium-field-host) select.field-input-compact:focus,
+[data-yugo-admin-v3] select.field-input-compact:focus {
+  border-bottom-color: rgba(201, 169, 98, 0.65);
+  box-shadow: none;
+}
+
 /* Partner portal (light theme) form inputs */
 .field-input-partner {
   width: 100%;

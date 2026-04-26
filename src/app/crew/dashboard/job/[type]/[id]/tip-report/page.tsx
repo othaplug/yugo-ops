@@ -64,7 +64,7 @@ export default function CrewTipReportPage({
   };
 
   return (
-    <PageContent className="crew-job-premium max-w-[520px]">
+    <PageContent className="crew-job-premium w-full min-w-0 max-w-[520px] mx-auto">
       <div className="mb-6">
         <Link
           href={`/crew/dashboard/job/${jobType}/${id}`}

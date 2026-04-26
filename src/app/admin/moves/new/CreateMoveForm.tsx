@@ -232,6 +232,10 @@ function Field({
 }
 
 const fieldInput = "field-input-compact w-full";
+/** From/access selects: underline + chevron via globals (matches text fields, not boxed pills) */
+const accessSelectClass = `${fieldInput} min-h-[2.5rem] text-left text-[12px] text-[var(--tx)]`;
+/** Elevator / loading dock: unit field only (no floor). Gate / buzz: unit + floor. */
+const ACCESS_UNIT_ONLY = new Set<string>(["Elevator", "Loading dock"]);
 
 interface ItemWeightRow {
   slug: string;
@@ -1070,7 +1074,7 @@ export default function CreateMoveForm({
             {flowStep === 0 && (
               <>
                 {/* Move type selector */}
-                <div>
+                <div className="pb-1 sm:pb-2">
                   <label className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
                     Service Type
                   </label>
@@ -1152,17 +1156,28 @@ export default function CreateMoveForm({
                   </div>
                 </div>
 
-                <div className="border-t border-[var(--brd)]/30 pt-3 pb-3" />
-
-                {/* Client section */}
-                <div ref={moveHs.containerRef}>
-                  <div className="space-y-2">
-                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                {/* Client section: use field-input-compact underlines (boxed class used !important reset and hid borders) */}
+                <div
+                  ref={moveHs.containerRef}
+                  className="mt-12 scroll-mt-8 sm:mt-16 sm:scroll-mt-10"
+                >
+                  <div className="space-y-4 sm:space-y-5">
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] pt-1">
                       Client
                     </h3>
-                    <Field label="Select to auto fill">
-                      <div ref={contactDropdownRef} className="relative">
+                    <div>
+                      <label
+                        className="sr-only"
+                        htmlFor="create-move-client-autofill"
+                      >
+                        Search to auto-fill client
+                      </label>
+                      <div
+                        ref={contactDropdownRef}
+                        className="relative max-w-2xl"
+                      >
                         <input
+                          id="create-move-client-autofill"
                           type="text"
                           value={
                             organizationId
@@ -1182,7 +1197,7 @@ export default function CreateMoveForm({
                             setShowContactDropdown(true);
                           }}
                           onFocus={() => setShowContactDropdown(true)}
-                          placeholder="Search by name, email, or phone…"
+                          placeholder="Search to auto-fill by name, email, or phone"
                           className={`${fieldInput} ${organizationId ? "pr-8" : ""}`}
                         />
                         {organizationId && (
@@ -1276,97 +1291,120 @@ export default function CreateMoveForm({
                           </div>
                         )}
                       </div>
-                    </Field>
-                    <div className="grid sm:grid-cols-3 gap-2">
-                      <Field label="Client Name *">
-                        <div className="relative">
-                          <input
-                            {...moveHs.bindField("contact")}
-                            name="client_name"
-                            value={clientName}
-                            onChange={(e) => {
-                              setClientName(e.target.value);
-                              setClientSelectedFromSearch(false);
-                            }}
-                            placeholder="Full name"
-                            required
-                            className={fieldInput}
-                            autoComplete="name"
-                          />
-                          {moveHs.renderDropdown("contact")}
-                        </div>
-                      </Field>
-                      <Field label="Email">
-                        <div className="relative">
-                          <input
-                            type="email"
-                            {...moveHs.bindField("email")}
-                            name="client_email"
-                            value={clientEmail}
-                            onChange={(e) => {
-                              setClientEmail(e.target.value);
-                              setClientSelectedFromSearch(false);
-                            }}
-                            placeholder="client@example.com"
-                            className={fieldInput}
-                            autoComplete="email"
-                          />
-                          {moveHs.renderDropdown("email")}
-                        </div>
-                      </Field>
-                      <Field label="Phone">
-                        <div className="relative">
-                          <input
-                            ref={clientPhoneInput.ref}
-                            type="tel"
-                            {...moveHs.bindField("phone")}
-                            name="client_phone"
-                            value={clientPhone}
-                            onChange={clientPhoneInput.onChange}
-                            placeholder={PHONE_PLACEHOLDER}
-                            className={fieldInput}
-                            autoComplete="tel"
-                          />
-                          {moveHs.renderDropdown("phone")}
-                        </div>
-                      </Field>
+                    </div>
+                    <div className="grid sm:grid-cols-3 gap-3 sm:gap-2 max-w-4xl">
+                      <div className="relative min-w-0">
+                        <label
+                          className="sr-only"
+                          htmlFor="create-move-client-name"
+                        >
+                          Client name, required
+                        </label>
+                        <input
+                          id="create-move-client-name"
+                          {...moveHs.bindField("contact")}
+                          name="client_name"
+                          value={clientName}
+                          onChange={(e) => {
+                            setClientName(e.target.value);
+                            setClientSelectedFromSearch(false);
+                          }}
+                          placeholder="Client name*"
+                          required
+                          className={fieldInput}
+                          autoComplete="name"
+                        />
+                        {moveHs.renderDropdown("contact")}
+                      </div>
+                      <div className="relative min-w-0">
+                        <label
+                          className="sr-only"
+                          htmlFor="create-move-client-email"
+                        >
+                          Client email
+                        </label>
+                        <input
+                          id="create-move-client-email"
+                          type="email"
+                          {...moveHs.bindField("email")}
+                          name="client_email"
+                          value={clientEmail}
+                          onChange={(e) => {
+                            setClientEmail(e.target.value);
+                            setClientSelectedFromSearch(false);
+                          }}
+                          placeholder="Email"
+                          className={fieldInput}
+                          autoComplete="email"
+                        />
+                        {moveHs.renderDropdown("email")}
+                      </div>
+                      <div className="relative min-w-0">
+                        <label
+                          className="sr-only"
+                          htmlFor="create-move-client-phone"
+                        >
+                          Client phone
+                        </label>
+                        <input
+                          id="create-move-client-phone"
+                          ref={clientPhoneInput.ref}
+                          type="tel"
+                          {...moveHs.bindField("phone")}
+                          name="client_phone"
+                          value={clientPhone}
+                          onChange={clientPhoneInput.onChange}
+                          placeholder="Phone"
+                          className={fieldInput}
+                          autoComplete="tel"
+                        />
+                        {moveHs.renderDropdown("phone")}
+                      </div>
                     </div>
                     {duplicateEmailMatch && (
                       <div className="px-3 py-2 rounded-lg bg-[var(--org)]/15 border border-[var(--org)]/40 text-[11px] font-medium text-[var(--org)]">
                         A contact with this email already exists
                       </div>
                     )}
-                    <Field label="Move Coordinator (optional)">
-                      <input
-                        type="text"
-                        name="coordinator_name"
-                        value={coordinatorName}
-                        onChange={(e) => setCoordinatorName(e.target.value)}
-                        placeholder="Coordinator name"
-                        className={fieldInput}
-                      />
-                    </Field>
-                    <Field label="Preferred Contact">
-                      <select
-                        value={preferredContact}
-                        onChange={(e) => setPreferredContact(e.target.value)}
-                        className={fieldInput}
-                      >
-                        <option value="email">Email</option>
-                        <option value="phone">Phone</option>
-                        <option value="both">Both</option>
-                      </select>
-                    </Field>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-3 max-w-3xl">
+                      <div className="w-full min-w-0 sm:max-w-sm">
+                        <label
+                          className="sr-only"
+                          htmlFor="create-move-coordinator"
+                        >
+                          Move coordinator, optional
+                        </label>
+                        <input
+                          id="create-move-coordinator"
+                          type="text"
+                          name="coordinator_name"
+                          value={coordinatorName}
+                          onChange={(e) => setCoordinatorName(e.target.value)}
+                          placeholder="Move coordinator (optional)"
+                          className={fieldInput}
+                        />
+                      </div>
+                      <div className="w-full min-w-0 sm:w-[11rem] sm:shrink-0">
+                        <label
+                          className="sr-only"
+                          htmlFor="create-move-preferred-contact"
+                        >
+                          Preferred contact
+                        </label>
+                        <select
+                          id="create-move-preferred-contact"
+                          value={preferredContact}
+                          onChange={(e) => setPreferredContact(e.target.value)}
+                          className={accessSelectClass}
+                          aria-label="Preferred contact: email, phone, or both"
+                        >
+                          <option value="email">Email</option>
+                          <option value="phone">Phone</option>
+                          <option value="both">Both</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
-
-                  {(moveType === "office" ||
-                    moveType === "single_item" ||
-                    moveType === "white_glove" ||
-                    moveType === "specialty" ||
-                    moveType === "event" ||
-                    moveType === "labour_only") && (
-                    <div className="border-t border-[var(--brd)]/30 pt-3 pb-3" />
-                  )}
 
                   {/* Office: Company info */}
                   <AnimatedSection show={moveType === "office"}>
@@ -1691,15 +1729,6 @@ export default function CreateMoveForm({
                     </Field>
                   </div>
                 </AnimatedSection>
-
-                {(moveType === "office" ||
-                  moveType === "single_item" ||
-                  moveType === "white_glove" ||
-                  moveType === "specialty" ||
-                  moveType === "event" ||
-                  moveType === "labour_only") && (
-                  <div className="border-t border-[var(--brd)]/30 pt-3 pb-3" />
-                )}
               </>
             )}
             {flowStep === 1 && (
@@ -1717,8 +1746,8 @@ export default function CreateMoveForm({
                   )}
                   {moveType === "labour_only" ? (
                     <div className="space-y-1.5">
-                      <div className="flex flex-col sm:flex-row gap-2 items-start">
-                        <div className="flex-1 min-w-0 w-full">
+                      <div className="flex flex-col sm:flex-row gap-2 sm:items-start sm:gap-3">
+                        <div className="flex-1 min-w-0 w-full sm:max-w-lg">
                           <AddressAutocomplete
                             value={fromAddress}
                             onRawChange={setFromAddress}
@@ -1727,64 +1756,76 @@ export default function CreateMoveForm({
                               setFromLat(r.lat);
                               setFromLng(r.lng);
                             }}
-                            placeholder="Origin address"
-                            label="From"
+                            placeholder="From address*"
                             required
                             className={fieldInput}
+                            name="from_address"
                           />
                         </div>
-                        <div className="w-full sm:w-[140px] shrink-0">
-                          <Field label="From Access">
-                            <select
-                              name="from_access"
-                              value={fromAccess}
-                              onChange={(e) => setFromAccess(e.target.value)}
-                              className={fieldInput}
-                            >
-                              <option value="">Select…</option>
-                              <option value="Elevator">Elevator</option>
-                              <option value="Stairs">Stairs</option>
-                              <option value="Loading dock">Loading dock</option>
-                              <option value="Parking">Parking</option>
-                              <option value="Gate / Buzz code">
-                                Gate / Buzz code
-                              </option>
-                              <option value="Ground floor">Ground floor</option>
-                              <option value="Building access required">
-                                Building access required
-                              </option>
-                            </select>
-                          </Field>
+                        <div className="w-full sm:w-[9.5rem] shrink-0 sm:pt-0.5">
+                          <label
+                            htmlFor="labour-from-access"
+                            className="sr-only"
+                          >
+                            From access
+                          </label>
+                          <select
+                            id="labour-from-access"
+                            name="from_access"
+                            value={fromAccess}
+                            onChange={(e) => setFromAccess(e.target.value)}
+                            className={accessSelectClass}
+                            aria-label="From access"
+                          >
+                            <option value="">From access*</option>
+                            <option value="Elevator">Elevator</option>
+                            <option value="Stairs">Stairs</option>
+                            <option value="Loading dock">Loading dock</option>
+                            <option value="Parking">Parking</option>
+                            <option value="Gate / Buzz code">
+                              Gate / Buzz code
+                            </option>
+                            <option value="Ground floor">Ground floor</option>
+                            <option value="Building access required">
+                              Building access required
+                            </option>
+                          </select>
                         </div>
                       </div>
-                      {[
-                        "Elevator",
-                        "Loading dock",
-                        "Gate / Buzz code",
-                      ].includes(fromAccess) && (
-                        <div className="grid grid-cols-2 gap-2">
-                          <Field label="Unit / Suite">
-                            <input
-                              type="text"
-                              value={fromUnit}
-                              onChange={(e) => setFromUnit(e.target.value)}
-                              placeholder="e.g. 1204"
-                              className={fieldInput}
-                            />
-                          </Field>
-                          <Field label="Floor">
-                            <input
-                              type="text"
-                              value={fromFloor}
-                              onChange={(e) => setFromFloor(e.target.value)}
-                              placeholder="e.g. 12"
-                              className={fieldInput}
-                            />
-                          </Field>
+                      {ACCESS_UNIT_ONLY.has(fromAccess) && (
+                        <div className="w-full sm:max-w-md">
+                          <input
+                            type="text"
+                            value={fromUnit}
+                            onChange={(e) => setFromUnit(e.target.value)}
+                            placeholder="Unit / suite (e.g. 1204)"
+                            className={fieldInput}
+                            aria-label="Unit or suite, from address"
+                          />
                         </div>
                       )}
-                      <div className="flex flex-col sm:flex-row gap-2 items-start">
-                        <div className="flex-1 min-w-0 w-full">
+                      {fromAccess === "Gate / Buzz code" && (
+                        <div className="grid grid-cols-2 gap-2 sm:max-w-md">
+                          <input
+                            type="text"
+                            value={fromUnit}
+                            onChange={(e) => setFromUnit(e.target.value)}
+                            placeholder="Unit / suite (e.g. 1204)"
+                            className={fieldInput}
+                            aria-label="Unit or suite, from address"
+                          />
+                          <input
+                            type="text"
+                            value={fromFloor}
+                            onChange={(e) => setFromFloor(e.target.value)}
+                            placeholder="Floor (e.g. 12)"
+                            className={fieldInput}
+                            aria-label="Floor, from address"
+                          />
+                        </div>
+                      )}
+                      <div className="flex flex-col sm:flex-row gap-2 sm:items-start sm:gap-3">
+                        <div className="flex-1 min-w-0 w-full sm:max-w-lg">
                           <AddressAutocomplete
                             value={toAddress}
                             onRawChange={setToAddress}
@@ -1793,70 +1834,80 @@ export default function CreateMoveForm({
                               setToLat(r.lat);
                               setToLng(r.lng);
                             }}
-                            placeholder="Destination address"
-                            label="To"
+                            placeholder="To address*"
                             required
                             className={fieldInput}
+                            name="to_address"
                           />
                         </div>
-                        <div className="w-full sm:w-[140px] shrink-0">
-                          <Field label="To Access">
-                            <select
-                              name="to_access"
-                              value={toAccess}
-                              onChange={(e) => setToAccess(e.target.value)}
-                              className={fieldInput}
-                            >
-                              <option value="">Select…</option>
-                              <option value="Elevator">Elevator</option>
-                              <option value="Stairs">Stairs</option>
-                              <option value="Loading dock">Loading dock</option>
-                              <option value="Parking">Parking</option>
-                              <option value="Gate / Buzz code">
-                                Gate / Buzz code
-                              </option>
-                              <option value="Ground floor">Ground floor</option>
-                              <option value="Building access required">
-                                Building access required
-                              </option>
-                            </select>
-                          </Field>
+                        <div className="w-full sm:w-[9.5rem] shrink-0 sm:pt-0.5">
+                          <label htmlFor="labour-to-access" className="sr-only">
+                            To access
+                          </label>
+                          <select
+                            id="labour-to-access"
+                            name="to_access"
+                            value={toAccess}
+                            onChange={(e) => setToAccess(e.target.value)}
+                            className={accessSelectClass}
+                            aria-label="To access"
+                          >
+                            <option value="">To access*</option>
+                            <option value="Elevator">Elevator</option>
+                            <option value="Stairs">Stairs</option>
+                            <option value="Loading dock">Loading dock</option>
+                            <option value="Parking">Parking</option>
+                            <option value="Gate / Buzz code">
+                              Gate / Buzz code
+                            </option>
+                            <option value="Ground floor">Ground floor</option>
+                            <option value="Building access required">
+                              Building access required
+                            </option>
+                          </select>
                         </div>
                       </div>
-                      {[
-                        "Elevator",
-                        "Loading dock",
-                        "Gate / Buzz code",
-                      ].includes(toAccess) && (
-                        <div className="grid grid-cols-2 gap-2">
-                          <Field label="Unit / Suite">
-                            <input
-                              type="text"
-                              value={toUnit}
-                              onChange={(e) => setToUnit(e.target.value)}
-                              placeholder="e.g. 804"
-                              className={fieldInput}
-                            />
-                          </Field>
-                          <Field label="Floor">
-                            <input
-                              type="text"
-                              value={toFloor}
-                              onChange={(e) => setToFloor(e.target.value)}
-                              placeholder="e.g. 8"
-                              className={fieldInput}
-                            />
-                          </Field>
+                      {ACCESS_UNIT_ONLY.has(toAccess) && (
+                        <div className="w-full sm:max-w-md">
+                          <input
+                            type="text"
+                            value={toUnit}
+                            onChange={(e) => setToUnit(e.target.value)}
+                            placeholder="Unit / suite (e.g. 804)"
+                            className={fieldInput}
+                            aria-label="Unit or suite, to address"
+                          />
+                        </div>
+                      )}
+                      {toAccess === "Gate / Buzz code" && (
+                        <div className="grid grid-cols-2 gap-2 sm:max-w-md">
+                          <input
+                            type="text"
+                            value={toUnit}
+                            onChange={(e) => setToUnit(e.target.value)}
+                            placeholder="Unit / suite (e.g. 804)"
+                            className={fieldInput}
+                            aria-label="Unit or suite, to address"
+                          />
+                          <input
+                            type="text"
+                            value={toFloor}
+                            onChange={(e) => setToFloor(e.target.value)}
+                            placeholder="Floor (e.g. 8)"
+                            className={fieldInput}
+                            aria-label="Floor, to address"
+                          />
                         </div>
                       )}
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <div className="flex flex-col sm:flex-row gap-3 items-start">
-                        <div className="flex-1 min-w-0 w-full max-w-2xl">
+                      <div className="flex flex-col sm:flex-row gap-3 sm:items-start sm:gap-3">
+                        <div className="flex-1 min-w-0 w-full sm:max-w-lg">
                           <MultiStopAddressField
                             label="From"
-                            placeholder="Origin address"
+                            labelVisibility="sr-only"
+                            placeholder="From address*"
                             stops={[
                               {
                                 address: fromAddress,
@@ -1875,61 +1926,71 @@ export default function CreateMoveForm({
                             inputClassName={fieldInput}
                           />
                         </div>
-                        <div className="w-full sm:w-[140px] shrink-0">
-                          <Field label="From Access">
-                            <select
-                              name="from_access"
-                              value={fromAccess}
-                              onChange={(e) => setFromAccess(e.target.value)}
-                              className={fieldInput}
-                            >
-                              <option value="">Select…</option>
-                              <option value="Elevator">Elevator</option>
-                              <option value="Stairs">Stairs</option>
-                              <option value="Loading dock">Loading dock</option>
-                              <option value="Parking">Parking</option>
-                              <option value="Gate / Buzz code">
-                                Gate / Buzz code
-                              </option>
-                              <option value="Ground floor">Ground floor</option>
-                              <option value="Building access required">
-                                Building access required
-                              </option>
-                            </select>
-                          </Field>
+                        <div className="w-full sm:w-[9.5rem] shrink-0 sm:pt-0.5">
+                          <label htmlFor="ms-from-access" className="sr-only">
+                            From access
+                          </label>
+                          <select
+                            id="ms-from-access"
+                            name="from_access"
+                            value={fromAccess}
+                            onChange={(e) => setFromAccess(e.target.value)}
+                            className={accessSelectClass}
+                            aria-label="From access"
+                          >
+                            <option value="">From access*</option>
+                            <option value="Elevator">Elevator</option>
+                            <option value="Stairs">Stairs</option>
+                            <option value="Loading dock">Loading dock</option>
+                            <option value="Parking">Parking</option>
+                            <option value="Gate / Buzz code">
+                              Gate / Buzz code
+                            </option>
+                            <option value="Ground floor">Ground floor</option>
+                            <option value="Building access required">
+                              Building access required
+                            </option>
+                          </select>
                         </div>
                       </div>
-                      {[
-                        "Elevator",
-                        "Loading dock",
-                        "Gate / Buzz code",
-                      ].includes(fromAccess) && (
-                        <div className="grid grid-cols-2 gap-2">
-                          <Field label="Unit / Suite">
-                            <input
-                              type="text"
-                              value={fromUnit}
-                              onChange={(e) => setFromUnit(e.target.value)}
-                              placeholder="e.g. 1204"
-                              className={fieldInput}
-                            />
-                          </Field>
-                          <Field label="Floor">
-                            <input
-                              type="text"
-                              value={fromFloor}
-                              onChange={(e) => setFromFloor(e.target.value)}
-                              placeholder="e.g. 12"
-                              className={fieldInput}
-                            />
-                          </Field>
+                      {ACCESS_UNIT_ONLY.has(fromAccess) && (
+                        <div className="w-full sm:max-w-md">
+                          <input
+                            type="text"
+                            value={fromUnit}
+                            onChange={(e) => setFromUnit(e.target.value)}
+                            placeholder="Unit / suite (e.g. 1204)"
+                            className={fieldInput}
+                            aria-label="Unit or suite, from address"
+                          />
                         </div>
                       )}
-                      <div className="flex flex-col sm:flex-row gap-3 items-start">
-                        <div className="flex-1 min-w-0 w-full max-w-2xl">
+                      {fromAccess === "Gate / Buzz code" && (
+                        <div className="grid grid-cols-2 gap-2 sm:max-w-md">
+                          <input
+                            type="text"
+                            value={fromUnit}
+                            onChange={(e) => setFromUnit(e.target.value)}
+                            placeholder="Unit / suite (e.g. 1204)"
+                            className={fieldInput}
+                            aria-label="Unit or suite, from address"
+                          />
+                          <input
+                            type="text"
+                            value={fromFloor}
+                            onChange={(e) => setFromFloor(e.target.value)}
+                            placeholder="Floor (e.g. 12)"
+                            className={fieldInput}
+                            aria-label="Floor, from address"
+                          />
+                        </div>
+                      )}
+                      <div className="flex flex-col sm:flex-row gap-3 sm:items-start sm:gap-3">
+                        <div className="flex-1 min-w-0 w-full sm:max-w-lg">
                           <MultiStopAddressField
                             label="To"
-                            placeholder="Destination address"
+                            labelVisibility="sr-only"
+                            placeholder="To address*"
                             stops={[
                               { address: toAddress, lat: toLat, lng: toLng },
                               ...extraToStops,
@@ -1944,54 +2005,63 @@ export default function CreateMoveForm({
                             inputClassName={fieldInput}
                           />
                         </div>
-                        <div className="w-full sm:w-[140px] shrink-0">
-                          <Field label="To Access">
-                            <select
-                              name="to_access"
-                              value={toAccess}
-                              onChange={(e) => setToAccess(e.target.value)}
-                              className={fieldInput}
-                            >
-                              <option value="">Select…</option>
-                              <option value="Elevator">Elevator</option>
-                              <option value="Stairs">Stairs</option>
-                              <option value="Loading dock">Loading dock</option>
-                              <option value="Parking">Parking</option>
-                              <option value="Gate / Buzz code">
-                                Gate / Buzz code
-                              </option>
-                              <option value="Ground floor">Ground floor</option>
-                              <option value="Building access required">
-                                Building access required
-                              </option>
-                            </select>
-                          </Field>
+                        <div className="w-full sm:w-[9.5rem] shrink-0 sm:pt-0.5">
+                          <label htmlFor="ms-to-access" className="sr-only">
+                            To access
+                          </label>
+                          <select
+                            id="ms-to-access"
+                            name="to_access"
+                            value={toAccess}
+                            onChange={(e) => setToAccess(e.target.value)}
+                            className={accessSelectClass}
+                            aria-label="To access"
+                          >
+                            <option value="">To access*</option>
+                            <option value="Elevator">Elevator</option>
+                            <option value="Stairs">Stairs</option>
+                            <option value="Loading dock">Loading dock</option>
+                            <option value="Parking">Parking</option>
+                            <option value="Gate / Buzz code">
+                              Gate / Buzz code
+                            </option>
+                            <option value="Ground floor">Ground floor</option>
+                            <option value="Building access required">
+                              Building access required
+                            </option>
+                          </select>
                         </div>
                       </div>
-                      {[
-                        "Elevator",
-                        "Loading dock",
-                        "Gate / Buzz code",
-                      ].includes(toAccess) && (
-                        <div className="grid grid-cols-2 gap-2">
-                          <Field label="Unit / Suite">
-                            <input
-                              type="text"
-                              value={toUnit}
-                              onChange={(e) => setToUnit(e.target.value)}
-                              placeholder="e.g. 804"
-                              className={fieldInput}
-                            />
-                          </Field>
-                          <Field label="Floor">
-                            <input
-                              type="text"
-                              value={toFloor}
-                              onChange={(e) => setToFloor(e.target.value)}
-                              placeholder="e.g. 8"
-                              className={fieldInput}
-                            />
-                          </Field>
+                      {ACCESS_UNIT_ONLY.has(toAccess) && (
+                        <div className="w-full sm:max-w-md">
+                          <input
+                            type="text"
+                            value={toUnit}
+                            onChange={(e) => setToUnit(e.target.value)}
+                            placeholder="Unit / suite (e.g. 804)"
+                            className={fieldInput}
+                            aria-label="Unit or suite, to address"
+                          />
+                        </div>
+                      )}
+                      {toAccess === "Gate / Buzz code" && (
+                        <div className="grid grid-cols-2 gap-2 sm:max-w-md">
+                          <input
+                            type="text"
+                            value={toUnit}
+                            onChange={(e) => setToUnit(e.target.value)}
+                            placeholder="Unit / suite (e.g. 804)"
+                            className={fieldInput}
+                            aria-label="Unit or suite, to address"
+                          />
+                          <input
+                            type="text"
+                            value={toFloor}
+                            onChange={(e) => setToFloor(e.target.value)}
+                            placeholder="Floor (e.g. 8)"
+                            className={fieldInput}
+                            aria-label="Floor, to address"
+                          />
                         </div>
                       )}
                       {(extraFromStops.some((s) => s.address.trim()) ||
@@ -2018,7 +2088,6 @@ export default function CreateMoveForm({
                     </div>
                   )}
                 </div>
-
               </>
             )}
             {flowStep === 2 && (
@@ -2027,140 +2096,186 @@ export default function CreateMoveForm({
                   <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
                     Job and service details
                   </p>
-                <AnimatedSection show={moveType === "residential"}>
-                  <div className="space-y-2">
-                    <div className="grid sm:grid-cols-2 gap-2">
-                      <Field label="Move Size *">
+                  <AnimatedSection show={moveType === "residential"}>
+                    <div className="space-y-4">
+                      <div className="max-w-[11rem]">
+                        <label htmlFor="res-move-size" className="sr-only">
+                          Move size
+                        </label>
                         <select
+                          id="res-move-size"
                           value={moveSize}
                           onChange={(e) => setMoveSize(e.target.value)}
                           className={`${fieldInput} ${moveType === "residential" && !moveSize ? "border-amber-400/60" : ""}`}
                           required={moveType === "residential"}
+                          aria-label="Move size"
                         >
-                          <option value="">Select size…</option>
+                          <option value="">Move size*</option>
                           {MOVE_SIZES.map((s) => (
                             <option key={s} value={s}>
                               {s}
                             </option>
                           ))}
                         </select>
-                      </Field>
-                      <Field label="Service Tier *">
-                        <select
-                          value={serviceTier}
-                          onChange={(e) =>
-                            setServiceTier(
-                              e.target.value as
-                                | "essential"
-                                | "signature"
-                                | "estate",
-                            )
-                          }
-                          className={fieldInput}
-                          required={moveType === "residential"}
-                        >
-                          <option value="essential">Essential</option>
-                          <option value="signature">Signature</option>
-                          <option value="estate">Estate</option>
-                        </select>
-                      </Field>
-                      <Field label="Packing Service">
-                        <select
-                          value={packingService}
-                          onChange={(e) => setPackingService(e.target.value)}
-                          className={fieldInput}
-                        >
-                          <option value="">Select…</option>
-                          {PACKING_OPTIONS.map((p) => (
-                            <option key={p} value={p}>
-                              {p}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                    </div>
+                      </div>
 
-                    <Field label="Specialty Items">
-                      <div className="flex flex-wrap gap-1.5 mb-2">
-                        {SPECIALTY_ITEM_PRESETS.map((item) => (
-                          <button
-                            key={item}
-                            type="button"
-                            onClick={() =>
-                              setSpecialtyItems((prev) =>
-                                prev.includes(item)
-                                  ? prev.filter((i) => i !== item)
-                                  : [...prev, item],
+                      {itemWeights.length > 0 ? (
+                        <div className="max-w-3xl">
+                          <InventoryInput
+                            itemWeights={itemWeights}
+                            value={inventoryItems}
+                            onChange={setInventoryItems}
+                            moveSize={moveSize}
+                            fromAccess={fromAccess}
+                            toAccess={toAccess}
+                            showLabourEstimate={!!moveSize}
+                            boxCount={boxCount}
+                            onBoxCountChange={setBoxCount}
+                            mode="residential"
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-[var(--tx3)]">
+                          Inventory list is unavailable. Add items from the move
+                          page after you create the move.
+                        </p>
+                      )}
+
+                      <div className="grid sm:grid-cols-2 gap-2 max-w-xl">
+                        <div className="max-w-[12rem]">
+                          <label htmlFor="res-tier" className="sr-only">
+                            Service tier
+                          </label>
+                          <select
+                            id="res-tier"
+                            value={serviceTier}
+                            onChange={(e) =>
+                              setServiceTier(
+                                e.target.value as
+                                  | "essential"
+                                  | "signature"
+                                  | "estate",
                               )
                             }
-                            className={`max-w-full whitespace-normal text-left leading-snug px-2.5 py-1.5 rounded-md text-[10px] font-semibold border transition-colors ${
-                              specialtyItems.includes(item)
-                                ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
-                                : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
-                            }`}
-                            title={item}
+                            className={fieldInput}
+                            required={moveType === "residential"}
+                            aria-label="Service tier"
                           >
-                            {item}
-                          </button>
-                        ))}
+                            <option value="essential">Essential</option>
+                            <option value="signature">Signature</option>
+                            <option value="estate">Estate</option>
+                          </select>
+                        </div>
+                        <div className="max-w-[14rem]">
+                          <label htmlFor="res-packing" className="sr-only">
+                            Packing service
+                          </label>
+                          <select
+                            id="res-packing"
+                            value={packingService}
+                            onChange={(e) => setPackingService(e.target.value)}
+                            className={fieldInput}
+                            aria-label="Packing service"
+                          >
+                            <option value="">
+                              Packing (optional, choose a level)
+                            </option>
+                            {PACKING_OPTIONS.map((p) => (
+                              <option key={p} value={p}>
+                                {p}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={customSpecialtyInput}
-                          onChange={(e) =>
-                            setCustomSpecialtyInput(e.target.value)
-                          }
-                          onKeyDown={(e) => {
-                            if (
-                              e.key === "Enter" &&
-                              customSpecialtyInput.trim()
-                            ) {
-                              e.preventDefault();
-                              if (
-                                !specialtyItems.includes(
-                                  customSpecialtyInput.trim(),
-                                )
-                              ) {
-                                setSpecialtyItems((prev) => [
-                                  ...prev,
-                                  customSpecialtyInput.trim(),
-                                ]);
-                              }
-                              setCustomSpecialtyInput("");
-                            }
-                          }}
-                          placeholder="Add custom item (press Enter)"
-                          className={`flex-1 ${fieldInput}`}
-                        />
-                      </div>
-                      {specialtyItems.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {specialtyItems.map((item) => (
-                            <span
+
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">
+                          Specialty items (optional)
+                        </p>
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {SPECIALTY_ITEM_PRESETS.map((item) => (
+                            <button
                               key={item}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-semibold border border-[var(--brd)] text-[var(--tx2)]"
+                              type="button"
+                              onClick={() =>
+                                setSpecialtyItems((prev) =>
+                                  prev.includes(item)
+                                    ? prev.filter((i) => i !== item)
+                                    : [...prev, item],
+                                )
+                              }
+                              className={`max-w-full whitespace-normal text-left leading-snug px-2.5 py-1.5 rounded-md text-[10px] font-semibold border transition-colors ${
+                                specialtyItems.includes(item)
+                                  ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                                  : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
+                              }`}
+                              title={item}
                             >
                               {item}
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setSpecialtyItems((prev) =>
-                                    prev.filter((i) => i !== item),
-                                  )
-                                }
-                                className="hover:text-[var(--red)]"
-                              >
-                                ×
-                              </button>
-                            </span>
+                            </button>
                           ))}
                         </div>
-                      )}
-                    </Field>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={customSpecialtyInput}
+                            onChange={(e) =>
+                              setCustomSpecialtyInput(e.target.value)
+                            }
+                            onKeyDown={(e) => {
+                              if (
+                                e.key === "Enter" &&
+                                customSpecialtyInput.trim()
+                              ) {
+                                e.preventDefault();
+                                if (
+                                  !specialtyItems.includes(
+                                    customSpecialtyInput.trim(),
+                                  )
+                                ) {
+                                  setSpecialtyItems((prev) => [
+                                    ...prev,
+                                    customSpecialtyInput.trim(),
+                                  ]);
+                                }
+                                setCustomSpecialtyInput("");
+                              }
+                            }}
+                            placeholder="Add custom item (press Enter)"
+                            className={`flex-1 ${fieldInput}`}
+                          />
+                        </div>
+                        {specialtyItems.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {specialtyItems.map((item) => (
+                              <span
+                                key={item}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-semibold border border-[var(--brd)] text-[var(--tx2)]"
+                              >
+                                {item}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setSpecialtyItems((prev) =>
+                                      prev.filter((i) => i !== item),
+                                    )
+                                  }
+                                  className="hover:text-[var(--red)]"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
 
-                    <Field label="Add-Ons">
-                      <div className="space-y-2">
+                      <div
+                        className="space-y-2"
+                        role="group"
+                        aria-label="Add-ons (optional)"
+                      >
                         {ADDON_OPTIONS.map((addon) => (
                           <label
                             key={addon.value}
@@ -2186,718 +2301,733 @@ export default function CreateMoveForm({
                           </label>
                         ))}
                       </div>
-                    </Field>
-                    <p className="text-[9px] text-[var(--tx3)] max-w-xl leading-relaxed">
-                      Set line items and box count for volume in Client Inventory
-                      below.
-                    </p>
-                  </div>
-                </AnimatedSection>
-
-                {/* Office-only detail fields */}
-                <AnimatedSection show={moveType === "office"}>
-                  <div className="space-y-2">
-                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                      Office / Commercial Details
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <Field label="Square Footage">
-                        <input
-                          type="number"
-                          min={0}
-                          value={squareFootage}
-                          onChange={(e) => setSquareFootage(e.target.value)}
-                          placeholder="e.g. 2500"
-                          className={`${fieldInput} min-w-0`}
-                        />
-                      </Field>
-                      <Field label="Workstations">
-                        <input
-                          type="number"
-                          min={0}
-                          value={workstationCount}
-                          onChange={(e) => setWorkstationCount(e.target.value)}
-                          placeholder="e.g. 20"
-                          className={`${fieldInput} min-w-0`}
-                        />
-                      </Field>
-                      <Field label="Timing Preference">
-                        <select
-                          value={timingPreference}
-                          onChange={(e) => setTimingPreference(e.target.value)}
-                          className={`${fieldInput} min-w-0`}
-                        >
-                          <option value="">Select…</option>
-                          {TIMING_PREFERENCES.map((t) => (
-                            <option key={t} value={t}>
-                              {t}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
                     </div>
+                  </AnimatedSection>
 
+                  {/* Office-only detail fields */}
+                  <AnimatedSection show={moveType === "office"}>
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-medium text-[var(--tx)]">
-                          IT Equipment
-                        </span>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={hasItEquipment}
-                          onClick={() => setHasItEquipment(!hasItEquipment)}
-                          className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${hasItEquipment ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${hasItEquipment ? "translate-x-4" : ""}`}
+                      <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                        Office / Commercial Details
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <Field label="Square Footage">
+                          <input
+                            type="number"
+                            min={0}
+                            value={squareFootage}
+                            onChange={(e) => setSquareFootage(e.target.value)}
+                            placeholder="e.g. 2500"
+                            className={`${fieldInput} min-w-0`}
                           />
-                        </button>
-                      </div>
-                      <AnimatedSection show={hasItEquipment}>
-                        <div className="space-y-2 pt-1">
-                          <Field label="IT Detail">
-                            <textarea
-                              value={itDetail}
-                              onChange={(e) => setItDetail(e.target.value)}
-                              rows={3}
-                              placeholder="Describe server racks, networking, printers…"
-                              className={`${fieldInput} resize-none`}
-                            />
-                          </Field>
-                          <Field label="IT Disconnect / Reconnect">
-                            <select
-                              value={itDisconnect}
-                              onChange={(e) => setItDisconnect(e.target.value)}
-                              className={fieldInput}
-                            >
-                              <option value="">Select…</option>
-                              {IT_DISCONNECT_OPTIONS.map((o) => (
-                                <option key={o} value={o}>
-                                  {o}
-                                </option>
-                              ))}
-                            </select>
-                          </Field>
-                        </div>
-                      </AnimatedSection>
-                    </div>
-
-                    <div className="flex flex-wrap gap-x-4 gap-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-medium text-[var(--tx)]">
-                          Conference Room
-                        </span>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={hasConferenceRoom}
-                          onClick={() =>
-                            setHasConferenceRoom(!hasConferenceRoom)
-                          }
-                          className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${hasConferenceRoom ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${hasConferenceRoom ? "translate-x-4" : ""}`}
+                        </Field>
+                        <Field label="Workstations">
+                          <input
+                            type="number"
+                            min={0}
+                            value={workstationCount}
+                            onChange={(e) =>
+                              setWorkstationCount(e.target.value)
+                            }
+                            placeholder="e.g. 20"
+                            className={`${fieldInput} min-w-0`}
                           />
-                        </button>
+                        </Field>
+                        <Field label="Timing Preference">
+                          <select
+                            value={timingPreference}
+                            onChange={(e) =>
+                              setTimingPreference(e.target.value)
+                            }
+                            className={`${fieldInput} min-w-0`}
+                          >
+                            <option value="">Select…</option>
+                            {TIMING_PREFERENCES.map((t) => (
+                              <option key={t} value={t}>
+                                {t}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-medium text-[var(--tx)]">
-                          Reception Area
-                        </span>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={hasReceptionArea}
-                          onClick={() => setHasReceptionArea(!hasReceptionArea)}
-                          className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${hasReceptionArea ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${hasReceptionArea ? "translate-x-4" : ""}`}
-                          />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-medium text-[var(--tx)]">
-                          Building COI Required
-                        </span>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={buildingCoiRequired}
-                          onClick={() =>
-                            setBuildingCoiRequired(!buildingCoiRequired)
-                          }
-                          className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${buildingCoiRequired ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${buildingCoiRequired ? "translate-x-4" : ""}`}
-                          />
-                        </button>
-                      </div>
-                    </div>
 
-                    <div className="grid sm:grid-cols-2 gap-2">
-                      <Field label="Site Assessment">
-                        <select
-                          value={siteAssessment}
-                          onChange={(e) => setSiteAssessment(e.target.value)}
-                          className={fieldInput}
-                        >
-                          <option value="">Select…</option>
-                          {SITE_ASSESSMENT_OPTIONS.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                    </div>
-
-                    <Field label="Phasing Notes">
-                      <textarea
-                        value={phasingNotes}
-                        onChange={(e) => setPhasingNotes(e.target.value)}
-                        rows={3}
-                        placeholder="Multi-day phasing plan, after-hours notes…"
-                        className={`${fieldInput} resize-none`}
-                      />
-                    </Field>
-                  </div>
-                </AnimatedSection>
-
-                {/* Single Item: after-address fields */}
-                <AnimatedSection show={moveType === "single_item"}>
-                  <div className="space-y-3">
-                    <h3 className="text-[11px] font-bold tracking-[0.08em] uppercase text-[var(--tx2)]">
-                      Handling & Assembly
-                    </h3>
-                    <div className="flex flex-wrap items-end gap-3">
-                      <Field label="Assembly">
-                        <select
-                          value={siAssemblyNeeded}
-                          onChange={(e) => setSiAssemblyNeeded(e.target.value)}
-                          className={`${fieldInput} min-w-0`}
-                        >
-                          <option value="">Select…</option>
-                          {ASSEMBLY_OPTIONS.map((a) => (
-                            <option key={a} value={a}>
-                              {a}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                      <div className="flex items-center gap-2">
+                      <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-semibold text-[var(--tx2)]">
-                            Stair Carry
+                          <span className="text-[11px] font-medium text-[var(--tx)]">
+                            IT Equipment
                           </span>
                           <button
                             type="button"
                             role="switch"
-                            aria-checked={siStairCarry}
-                            onClick={() => setSiStairCarry(!siStairCarry)}
-                            className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${siStairCarry ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
+                            aria-checked={hasItEquipment}
+                            onClick={() => setHasItEquipment(!hasItEquipment)}
+                            className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${hasItEquipment ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
                           >
                             <span
-                              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${siStairCarry ? "translate-x-4" : ""}`}
+                              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${hasItEquipment ? "translate-x-4" : ""}`}
                             />
                           </button>
                         </div>
-                        {siStairCarry && (
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] font-bold uppercase text-[var(--tx3)]">
-                              Flights
-                            </span>
-                            <input
-                              type="number"
-                              min={1}
-                              max={10}
-                              value={siStairFlights}
-                              onChange={(e) =>
-                                setSiStairFlights(e.target.value)
-                              }
-                              className={`${fieldInput} w-14 py-1`}
-                            />
+                        <AnimatedSection show={hasItEquipment}>
+                          <div className="space-y-2 pt-1">
+                            <Field label="IT Detail">
+                              <textarea
+                                value={itDetail}
+                                onChange={(e) => setItDetail(e.target.value)}
+                                rows={3}
+                                placeholder="Describe server racks, networking, printers…"
+                                className={`${fieldInput} resize-none`}
+                              />
+                            </Field>
+                            <Field label="IT Disconnect / Reconnect">
+                              <select
+                                value={itDisconnect}
+                                onChange={(e) =>
+                                  setItDisconnect(e.target.value)
+                                }
+                                className={fieldInput}
+                              >
+                                <option value="">Select…</option>
+                                {IT_DISCONNECT_OPTIONS.map((o) => (
+                                  <option key={o} value={o}>
+                                    {o}
+                                  </option>
+                                ))}
+                              </select>
+                            </Field>
                           </div>
-                        )}
+                        </AnimatedSection>
                       </div>
-                    </div>
-                  </div>
-                </AnimatedSection>
 
-                {/* White Glove: after-address fields */}
-                <AnimatedSection show={moveType === "white_glove"}>
-                  <div className="space-y-2">
-                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                      White Glove, Service Details
-                    </h3>
-                    <div className="grid sm:grid-cols-2 gap-2">
-                      <Field label="Assembly Required">
-                        <select
-                          value={wgAssemblyRequired}
-                          onChange={(e) =>
-                            setWgAssemblyRequired(e.target.value)
-                          }
-                          className={fieldInput}
-                        >
-                          <option value="">Select…</option>
-                          {WG_ASSEMBLY_OPTIONS.map((a) => (
-                            <option key={a} value={a}>
-                              {a}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                    </div>
-                    <Field label="Placement Specification">
-                      <textarea
-                        value={wgPlacementSpec}
-                        onChange={(e) => setWgPlacementSpec(e.target.value)}
-                        rows={3}
-                        placeholder="Exact room, wall, position…"
-                        className={`${fieldInput} resize-none`}
-                      />
-                    </Field>
-                    <div className="grid sm:grid-cols-2 gap-x-3 gap-y-2">
-                      <div className="flex items-center justify-between">
-                        <div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-2">
+                        <div className="flex items-center gap-2">
                           <span className="text-[11px] font-medium text-[var(--tx)]">
-                            Packaging Removal
+                            Conference Room
                           </span>
-                          <p className="text-[9px] text-[var(--tx3)]">
-                            Remove all packaging on-site
-                          </p>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={hasConferenceRoom}
+                            onClick={() =>
+                              setHasConferenceRoom(!hasConferenceRoom)
+                            }
+                            className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${hasConferenceRoom ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
+                          >
+                            <span
+                              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${hasConferenceRoom ? "translate-x-4" : ""}`}
+                            />
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={wgPackagingRemoval}
-                          onClick={() =>
-                            setWgPackagingRemoval(!wgPackagingRemoval)
-                          }
-                          className={`relative w-9 h-5 rounded-full transition-colors ${wgPackagingRemoval ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${wgPackagingRemoval ? "translate-x-4" : ""}`}
-                          />
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
+                        <div className="flex items-center gap-2">
                           <span className="text-[11px] font-medium text-[var(--tx)]">
-                            Photo Documentation
+                            Reception Area
                           </span>
-                          <p className="text-[9px] text-[var(--tx3)]">
-                            Before, during, after photos
-                          </p>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={hasReceptionArea}
+                            onClick={() =>
+                              setHasReceptionArea(!hasReceptionArea)
+                            }
+                            className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${hasReceptionArea ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
+                          >
+                            <span
+                              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${hasReceptionArea ? "translate-x-4" : ""}`}
+                            />
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={wgPhotoDocumentation}
-                          onClick={() =>
-                            setWgPhotoDocumentation(!wgPhotoDocumentation)
-                          }
-                          className={`relative w-9 h-5 rounded-full transition-colors ${wgPhotoDocumentation ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${wgPhotoDocumentation ? "translate-x-4" : ""}`}
-                          />
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-between sm:col-span-2">
-                        <div>
+                        <div className="flex items-center gap-2">
                           <span className="text-[11px] font-medium text-[var(--tx)]">
-                            Enhanced Insurance
+                            Building COI Required
                           </span>
-                          <p className="text-[9px] text-[var(--tx3)]">
-                            Full replacement value, recommended for items
-                            &gt;$5K
-                          </p>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={buildingCoiRequired}
+                            onClick={() =>
+                              setBuildingCoiRequired(!buildingCoiRequired)
+                            }
+                            className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${buildingCoiRequired ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
+                          >
+                            <span
+                              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${buildingCoiRequired ? "translate-x-4" : ""}`}
+                            />
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={wgEnhancedInsurance}
-                          onClick={() =>
-                            setWgEnhancedInsurance(!wgEnhancedInsurance)
-                          }
-                          className={`relative w-9 h-5 rounded-full transition-colors ${wgEnhancedInsurance ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${wgEnhancedInsurance ? "translate-x-4" : ""}`}
-                          />
-                        </button>
                       </div>
-                    </div>
-                  </div>
-                </AnimatedSection>
 
-                {/* Specialty: after-address fields */}
-                <AnimatedSection show={moveType === "specialty"}>
-                  <div className="space-y-2">
-                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                      Specialty, Logistics
-                    </h3>
-                    <div className="grid sm:grid-cols-2 gap-2">
-                      <Field label="Timeline">
-                        <select
-                          value={spTimeline}
-                          onChange={(e) => setSpTimeline(e.target.value)}
-                          className={fieldInput}
-                        >
-                          <option value="">Select…</option>
-                          {TIMELINE_OPTIONS.map((t) => (
-                            <option key={t} value={t}>
-                              {t}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                      <Field label="Site Assessment">
-                        <select
-                          value={spSiteAssessment}
-                          onChange={(e) => setSpSiteAssessment(e.target.value)}
-                          className={fieldInput}
-                        >
-                          <option value="">Select…</option>
-                          {SITE_ASSESSMENT_OPTIONS.concat(["Required"]).map(
-                            (s) => (
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        <Field label="Site Assessment">
+                          <select
+                            value={siteAssessment}
+                            onChange={(e) => setSiteAssessment(e.target.value)}
+                            className={fieldInput}
+                          >
+                            <option value="">Select…</option>
+                            {SITE_ASSESSMENT_OPTIONS.map((s) => (
                               <option key={s} value={s}>
                                 {s}
                               </option>
-                            ),
-                          )}
-                        </select>
+                            ))}
+                          </select>
+                        </Field>
+                      </div>
+
+                      <Field label="Phasing Notes">
+                        <textarea
+                          value={phasingNotes}
+                          onChange={(e) => setPhasingNotes(e.target.value)}
+                          rows={3}
+                          placeholder="Multi-day phasing plan, after-hours notes…"
+                          className={`${fieldInput} resize-none`}
+                        />
                       </Field>
                     </div>
-                    <div className="grid sm:grid-cols-2 gap-x-3 gap-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-medium text-[var(--tx)]">
-                          Custom Crating Needed
-                        </span>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={spCustomCrating}
-                          onClick={() => setSpCustomCrating(!spCustomCrating)}
-                          className={`relative w-9 h-5 rounded-full transition-colors ${spCustomCrating ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${spCustomCrating ? "translate-x-4" : ""}`}
-                          />
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-medium text-[var(--tx)]">
-                          Climate Control Required
-                        </span>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={spClimateControl}
-                          onClick={() => setSpClimateControl(!spClimateControl)}
-                          className={`relative w-9 h-5 rounded-full transition-colors ${spClimateControl ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${spClimateControl ? "translate-x-4" : ""}`}
-                          />
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-between sm:col-span-2">
-                        <div>
-                          <span className="text-[11px] font-medium text-[var(--tx)]">
-                            Insurance Rider
-                          </span>
-                          <p className="text-[9px] text-[var(--tx3)]">
-                            Fine art or high-value rider
-                          </p>
+                  </AnimatedSection>
+
+                  {/* Single Item: after-address fields */}
+                  <AnimatedSection show={moveType === "single_item"}>
+                    <div className="space-y-3">
+                      <h3 className="text-[11px] font-bold tracking-[0.08em] uppercase text-[var(--tx2)]">
+                        Handling & Assembly
+                      </h3>
+                      <div className="flex flex-wrap items-end gap-3">
+                        <Field label="Assembly">
+                          <select
+                            value={siAssemblyNeeded}
+                            onChange={(e) =>
+                              setSiAssemblyNeeded(e.target.value)
+                            }
+                            className={`${fieldInput} min-w-0`}
+                          >
+                            <option value="">Select…</option>
+                            {ASSEMBLY_OPTIONS.map((a) => (
+                              <option key={a} value={a}>
+                                {a}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-semibold text-[var(--tx2)]">
+                              Stair Carry
+                            </span>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={siStairCarry}
+                              onClick={() => setSiStairCarry(!siStairCarry)}
+                              className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${siStairCarry ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
+                            >
+                              <span
+                                className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${siStairCarry ? "translate-x-4" : ""}`}
+                              />
+                            </button>
+                          </div>
+                          {siStairCarry && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[9px] font-bold uppercase text-[var(--tx3)]">
+                                Flights
+                              </span>
+                              <input
+                                type="number"
+                                min={1}
+                                max={10}
+                                value={siStairFlights}
+                                onChange={(e) =>
+                                  setSiStairFlights(e.target.value)
+                                }
+                                className={`${fieldInput} w-14 py-1`}
+                              />
+                            </div>
+                          )}
                         </div>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={spInsuranceRider}
-                          onClick={() => setSpInsuranceRider(!spInsuranceRider)}
-                          className={`relative w-9 h-5 rounded-full transition-colors ${spInsuranceRider ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${spInsuranceRider ? "translate-x-4" : ""}`}
-                          />
-                        </button>
                       </div>
                     </div>
-                    <Field label="Special Equipment">
-                      <div className="flex flex-wrap gap-1.5 mb-2">
-                        {SPECIAL_EQUIPMENT_PRESETS.map((item) => (
-                          <button
-                            key={item}
-                            type="button"
-                            onClick={() =>
-                              setSpSpecialEquipment((prev) =>
-                                prev.includes(item)
-                                  ? prev.filter((i) => i !== item)
-                                  : [...prev, item],
-                              )
+                  </AnimatedSection>
+
+                  {/* White Glove: after-address fields */}
+                  <AnimatedSection show={moveType === "white_glove"}>
+                    <div className="space-y-2">
+                      <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                        White Glove, Service Details
+                      </h3>
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        <Field label="Assembly Required">
+                          <select
+                            value={wgAssemblyRequired}
+                            onChange={(e) =>
+                              setWgAssemblyRequired(e.target.value)
                             }
-                            className={`px-2.5 py-1 rounded-md text-[9px] font-semibold border transition-colors ${
-                              spSpecialEquipment.includes(item)
-                                ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
-                                : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
-                            }`}
+                            className={fieldInput}
                           >
-                            {item}
-                          </button>
-                        ))}
+                            <option value="">Select…</option>
+                            {WG_ASSEMBLY_OPTIONS.map((a) => (
+                              <option key={a} value={a}>
+                                {a}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
                       </div>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={spCustomEquipmentInput}
-                          onChange={(e) =>
-                            setSpCustomEquipmentInput(e.target.value)
-                          }
-                          onKeyDown={(e) => {
-                            if (
-                              e.key === "Enter" &&
-                              spCustomEquipmentInput.trim()
-                            ) {
-                              e.preventDefault();
-                              if (
-                                !spSpecialEquipment.includes(
-                                  spCustomEquipmentInput.trim(),
-                                )
-                              ) {
-                                setSpSpecialEquipment((prev) => [
-                                  ...prev,
-                                  spCustomEquipmentInput.trim(),
-                                ]);
-                              }
-                              setSpCustomEquipmentInput("");
-                            }
-                          }}
-                          placeholder="Add custom equipment (press Enter)"
-                          className={`flex-1 ${fieldInput}`}
+                      <Field label="Placement Specification">
+                        <textarea
+                          value={wgPlacementSpec}
+                          onChange={(e) => setWgPlacementSpec(e.target.value)}
+                          rows={3}
+                          placeholder="Exact room, wall, position…"
+                          className={`${fieldInput} resize-none`}
                         />
-                      </div>
-                      {spSpecialEquipment.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {spSpecialEquipment.map((item) => (
+                      </Field>
+                      <div className="grid sm:grid-cols-2 gap-x-3 gap-y-2">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-[11px] font-medium text-[var(--tx)]">
+                              Packaging Removal
+                            </span>
+                            <p className="text-[9px] text-[var(--tx3)]">
+                              Remove all packaging on-site
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={wgPackagingRemoval}
+                            onClick={() =>
+                              setWgPackagingRemoval(!wgPackagingRemoval)
+                            }
+                            className={`relative w-9 h-5 rounded-full transition-colors ${wgPackagingRemoval ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
+                          >
                             <span
+                              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${wgPackagingRemoval ? "translate-x-4" : ""}`}
+                            />
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-[11px] font-medium text-[var(--tx)]">
+                              Photo Documentation
+                            </span>
+                            <p className="text-[9px] text-[var(--tx3)]">
+                              Before, during, after photos
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={wgPhotoDocumentation}
+                            onClick={() =>
+                              setWgPhotoDocumentation(!wgPhotoDocumentation)
+                            }
+                            className={`relative w-9 h-5 rounded-full transition-colors ${wgPhotoDocumentation ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
+                          >
+                            <span
+                              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${wgPhotoDocumentation ? "translate-x-4" : ""}`}
+                            />
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between sm:col-span-2">
+                          <div>
+                            <span className="text-[11px] font-medium text-[var(--tx)]">
+                              Enhanced Insurance
+                            </span>
+                            <p className="text-[9px] text-[var(--tx3)]">
+                              Full replacement value, recommended for items
+                              &gt;$5K
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={wgEnhancedInsurance}
+                            onClick={() =>
+                              setWgEnhancedInsurance(!wgEnhancedInsurance)
+                            }
+                            className={`relative w-9 h-5 rounded-full transition-colors ${wgEnhancedInsurance ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
+                          >
+                            <span
+                              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${wgEnhancedInsurance ? "translate-x-4" : ""}`}
+                            />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </AnimatedSection>
+
+                  {/* Specialty: after-address fields */}
+                  <AnimatedSection show={moveType === "specialty"}>
+                    <div className="space-y-2">
+                      <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                        Specialty, Logistics
+                      </h3>
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        <Field label="Timeline">
+                          <select
+                            value={spTimeline}
+                            onChange={(e) => setSpTimeline(e.target.value)}
+                            className={fieldInput}
+                          >
+                            <option value="">Select…</option>
+                            {TIMELINE_OPTIONS.map((t) => (
+                              <option key={t} value={t}>
+                                {t}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                        <Field label="Site Assessment">
+                          <select
+                            value={spSiteAssessment}
+                            onChange={(e) =>
+                              setSpSiteAssessment(e.target.value)
+                            }
+                            className={fieldInput}
+                          >
+                            <option value="">Select…</option>
+                            {SITE_ASSESSMENT_OPTIONS.concat(["Required"]).map(
+                              (s) => (
+                                <option key={s} value={s}>
+                                  {s}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                        </Field>
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-x-3 gap-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-medium text-[var(--tx)]">
+                            Custom Crating Needed
+                          </span>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={spCustomCrating}
+                            onClick={() => setSpCustomCrating(!spCustomCrating)}
+                            className={`relative w-9 h-5 rounded-full transition-colors ${spCustomCrating ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
+                          >
+                            <span
+                              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${spCustomCrating ? "translate-x-4" : ""}`}
+                            />
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-medium text-[var(--tx)]">
+                            Climate Control Required
+                          </span>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={spClimateControl}
+                            onClick={() =>
+                              setSpClimateControl(!spClimateControl)
+                            }
+                            className={`relative w-9 h-5 rounded-full transition-colors ${spClimateControl ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
+                          >
+                            <span
+                              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${spClimateControl ? "translate-x-4" : ""}`}
+                            />
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between sm:col-span-2">
+                          <div>
+                            <span className="text-[11px] font-medium text-[var(--tx)]">
+                              Insurance Rider
+                            </span>
+                            <p className="text-[9px] text-[var(--tx3)]">
+                              Fine art or high-value rider
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={spInsuranceRider}
+                            onClick={() =>
+                              setSpInsuranceRider(!spInsuranceRider)
+                            }
+                            className={`relative w-9 h-5 rounded-full transition-colors ${spInsuranceRider ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
+                          >
+                            <span
+                              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${spInsuranceRider ? "translate-x-4" : ""}`}
+                            />
+                          </button>
+                        </div>
+                      </div>
+                      <Field label="Special Equipment">
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {SPECIAL_EQUIPMENT_PRESETS.map((item) => (
+                            <button
                               key={item}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-semibold border border-[var(--brd)] text-[var(--tx2)]"
+                              type="button"
+                              onClick={() =>
+                                setSpSpecialEquipment((prev) =>
+                                  prev.includes(item)
+                                    ? prev.filter((i) => i !== item)
+                                    : [...prev, item],
+                                )
+                              }
+                              className={`px-2.5 py-1 rounded-md text-[9px] font-semibold border transition-colors ${
+                                spSpecialEquipment.includes(item)
+                                  ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                                  : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
+                              }`}
                             >
                               {item}
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setSpSpecialEquipment((prev) =>
-                                    prev.filter((i) => i !== item),
-                                  )
-                                }
-                                className="hover:text-[var(--red)]"
-                              >
-                                ×
-                              </button>
-                            </span>
+                            </button>
                           ))}
                         </div>
-                      )}
-                    </Field>
-                  </div>
-                </AnimatedSection>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={spCustomEquipmentInput}
+                            onChange={(e) =>
+                              setSpCustomEquipmentInput(e.target.value)
+                            }
+                            onKeyDown={(e) => {
+                              if (
+                                e.key === "Enter" &&
+                                spCustomEquipmentInput.trim()
+                              ) {
+                                e.preventDefault();
+                                if (
+                                  !spSpecialEquipment.includes(
+                                    spCustomEquipmentInput.trim(),
+                                  )
+                                ) {
+                                  setSpSpecialEquipment((prev) => [
+                                    ...prev,
+                                    spCustomEquipmentInput.trim(),
+                                  ]);
+                                }
+                                setSpCustomEquipmentInput("");
+                              }
+                            }}
+                            placeholder="Add custom equipment (press Enter)"
+                            className={`flex-1 ${fieldInput}`}
+                          />
+                        </div>
+                        {spSpecialEquipment.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {spSpecialEquipment.map((item) => (
+                              <span
+                                key={item}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-semibold border border-[var(--brd)] text-[var(--tx2)]"
+                              >
+                                {item}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setSpSpecialEquipment((prev) =>
+                                      prev.filter((i) => i !== item),
+                                    )
+                                  }
+                                  className="hover:text-[var(--red)]"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </Field>
+                    </div>
+                  </AnimatedSection>
                 </div>
 
-                <div className="mt-6 pt-5 border-t border-[var(--brd)]/30">
-                {/* Schedule & estimate */}
-                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
-                  Schedule and estimate
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                  <Field label="Scheduled Date">
-                    <input
-                      type="date"
-                      name="scheduled_date"
-                      value={scheduledDate}
-                      onChange={(e) => setScheduledDate(e.target.value)}
-                      className={fieldInput}
-                    />
-                  </Field>
-                  <Field label="Scheduled Time">
-                    <select
-                      name="scheduled_time"
-                      value={scheduledTime}
-                      onChange={(e) => setScheduledTime(e.target.value)}
-                      className={fieldInput}
-                    >
-                      <option value="">Select time…</option>
-                      {TIME_OPTIONS.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Arrival Window">
-                    <select
-                      name="arrival_window"
-                      value={arrivalWindow}
-                      onChange={(e) => setArrivalWindow(e.target.value)}
-                      className={fieldInput}
-                    >
-                      <option value="">Select window…</option>
-                      {TIME_WINDOW_OPTIONS.map((w) => (
-                        <option key={w} value={w}>
-                          {w}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Estimate ($)">
-                    <input
-                      type="text"
-                      name="estimate"
-                      value={estimate}
-                      onChange={(e) => setEstimate(e.target.value)}
-                      onBlur={() => {
-                        const n = parseNumberInput(estimate);
-                        if (n > 0) setEstimate(formatNumberInput(n));
-                      }}
-                      placeholder="1,234.00"
-                      inputMode="decimal"
-                      className={fieldInput}
-                    />
-                  </Field>
-                </div>
+                <div className="mt-6 pt-2">
+                  {/* Schedule & estimate */}
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
+                    Schedule and estimate
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                    <Field label="Scheduled Date">
+                      <input
+                        type="date"
+                        name="scheduled_date"
+                        value={scheduledDate}
+                        onChange={(e) => setScheduledDate(e.target.value)}
+                        className={fieldInput}
+                      />
+                    </Field>
+                    <Field label="Scheduled Time">
+                      <select
+                        name="scheduled_time"
+                        value={scheduledTime}
+                        onChange={(e) => setScheduledTime(e.target.value)}
+                        className={fieldInput}
+                      >
+                        <option value="">Select time…</option>
+                        {TIME_OPTIONS.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Arrival Window">
+                      <select
+                        name="arrival_window"
+                        value={arrivalWindow}
+                        onChange={(e) => setArrivalWindow(e.target.value)}
+                        className={fieldInput}
+                      >
+                        <option value="">Select window…</option>
+                        {TIME_WINDOW_OPTIONS.map((w) => (
+                          <option key={w} value={w}>
+                            {w}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Estimate ($)">
+                      <input
+                        type="text"
+                        name="estimate"
+                        value={estimate}
+                        onChange={(e) => setEstimate(e.target.value)}
+                        onBlur={() => {
+                          const n = parseNumberInput(estimate);
+                          if (n > 0) setEstimate(formatNumberInput(n));
+                        }}
+                        placeholder="1,234.00"
+                        inputMode="decimal"
+                        className={fieldInput}
+                      />
+                    </Field>
+                  </div>
                 </div>
 
                 <div className="mt-6 space-y-2">
-                {/* Crew / team */}
-                <div className="space-y-2">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                    Move Team
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <Field label="Crew">
-                      <select
-                        name="crew_id"
-                        value={crewId}
-                        onChange={(e) => setCrewId(e.target.value)}
-                        className={fieldInput}
-                      >
-                        <option value="">Select crew…</option>
-                        {crews.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Vehicle">
-                      <select
-                        name="truck_primary"
-                        value={truckPrimary}
-                        onChange={(e) => setTruckPrimary(e.target.value)}
-                        className={fieldInput}
-                      >
-                        <option value="">Auto-assign by size…</option>
-                        <option value="sprinter">Sprinter Van</option>
-                        <option value="16ft">16ft Box Truck</option>
-                        <option value="20ft">20ft Box Truck</option>
-                        <option value="24ft">24ft Box Truck</option>
-                        <option value="26ft">26ft Box Truck</option>
-                      </select>
-                    </Field>
-                    <Field label="Est. Crew Size *">
-                      <select
-                        value={estCrewSize}
-                        onChange={(e) => setEstCrewSize(e.target.value)}
-                        className={fieldInput}
-                        required
-                      >
-                        {[2, 3, 4, 5, 6].map((n) => (
-                          <option key={n} value={n}>
-                            {n} crew members
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Est. Hours *">
-                      <select
-                        value={estHours}
-                        onChange={(e) => setEstHours(e.target.value)}
-                        className={fieldInput}
-                        required
-                      >
-                        {[
-                          2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10, 12,
-                        ].map((h) => (
-                          <option key={h} value={h}>
-                            {h} hrs
-                          </option>
-                        ))}
-                      </select>
+                  {/* Crew / team */}
+                  <div className="space-y-2">
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                      Move Team
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <Field label="Crew">
+                        <select
+                          name="crew_id"
+                          value={crewId}
+                          onChange={(e) => setCrewId(e.target.value)}
+                          className={fieldInput}
+                        >
+                          <option value="">Select crew…</option>
+                          {crews.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Vehicle">
+                        <select
+                          name="truck_primary"
+                          value={truckPrimary}
+                          onChange={(e) => setTruckPrimary(e.target.value)}
+                          className={fieldInput}
+                        >
+                          <option value="">Auto-assign by size…</option>
+                          <option value="sprinter">Sprinter Van</option>
+                          <option value="16ft">16ft Box Truck</option>
+                          <option value="20ft">20ft Box Truck</option>
+                          <option value="24ft">24ft Box Truck</option>
+                          <option value="26ft">26ft Box Truck</option>
+                        </select>
+                      </Field>
+                      <Field label="Est. Crew Size *">
+                        <select
+                          value={estCrewSize}
+                          onChange={(e) => setEstCrewSize(e.target.value)}
+                          className={fieldInput}
+                          required
+                        >
+                          {[2, 3, 4, 5, 6].map((n) => (
+                            <option key={n} value={n}>
+                              {n} crew members
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Est. Hours *">
+                        <select
+                          value={estHours}
+                          onChange={(e) => setEstHours(e.target.value)}
+                          className={fieldInput}
+                          required
+                        >
+                          {[
+                            2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10, 12,
+                          ].map((h) => (
+                            <option key={h} value={h}>
+                              {h} hrs
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                    </div>
+                    <Field label="Team Members">
+                      {selectedCrewMembers.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedCrewMembers.map((m) => (
+                            <label
+                              key={m}
+                              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--brd)] cursor-pointer hover:border-[#2C3E2D]/40 transition-colors"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={teamMembers.has(m)}
+                                onChange={() => toggleTeamMember(m)}
+                                className="accent-[#2C3E2D]"
+                              />
+                              <span className="text-[11px]">{m}</span>
+                            </label>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-[var(--tx3)]">
+                          Select a crew above to see and assign members.
+                        </p>
+                      )}
                     </Field>
                   </div>
-                  <Field label="Team Members">
-                    {selectedCrewMembers.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {selectedCrewMembers.map((m) => (
-                          <label
-                            key={m}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--brd)] cursor-pointer hover:border-[#2C3E2D]/40 transition-colors"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={teamMembers.has(m)}
-                              onChange={() => toggleTeamMember(m)}
-                              className="accent-[#2C3E2D]"
-                            />
-                            <span className="text-[11px]">{m}</span>
-                          </label>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-[10px] text-[var(--tx3)]">
-                        Select a crew above to see and assign members.
-                      </p>
-                    )}
-                  </Field>
-                </div>
                 </div>
 
-                {moveType !== "specialty" &&
+                {moveType !== "residential" &&
+                  moveType !== "specialty" &&
                   moveType !== "event" &&
                   moveType !== "labour_only" && (
                     <>
                       <div className="mt-5">
-                      {/* Inventory */}
-                      {itemWeights.length > 0 ? (
-                        <InventoryInput
-                          itemWeights={itemWeights}
-                          value={inventoryItems}
-                          onChange={setInventoryItems}
-                          moveSize={moveSize}
-                          fromAccess={fromAccess}
-                          toAccess={toAccess}
-                          showLabourEstimate={!!moveSize}
-                          boxCount={boxCount}
-                          onBoxCountChange={setBoxCount}
-                          mode={
-                            moveType === "office" ? "commercial" : "residential"
-                          }
-                        />
-                      ) : (
-                        <div className="space-y-2">
-                          <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                            Client Inventory (optional)
-                          </h3>
-                          <p className="text-[10px] text-[var(--tx3)]">
-                            Add items from the move detail page after creating.
-                          </p>
-                        </div>
-                      )}
+                        {/* Inventory */}
+                        {itemWeights.length > 0 ? (
+                          <InventoryInput
+                            itemWeights={itemWeights}
+                            value={inventoryItems}
+                            onChange={setInventoryItems}
+                            moveSize={moveSize}
+                            fromAccess={fromAccess}
+                            toAccess={toAccess}
+                            showLabourEstimate={!!moveSize}
+                            boxCount={boxCount}
+                            onBoxCountChange={setBoxCount}
+                            mode={
+                              moveType === "office"
+                                ? "commercial"
+                                : "residential"
+                            }
+                          />
+                        ) : (
+                          <div className="space-y-2">
+                            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                              Client Inventory (optional)
+                            </h3>
+                            <p className="text-[10px] text-[var(--tx3)]">
+                              Add items from the move detail page after
+                              creating.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
@@ -2956,8 +3086,6 @@ export default function CreateMoveForm({
             )}
             {flowStep === 3 && (
               <>
-                <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
-
                 {/* Complexity indicators */}
                 <div className="space-y-2">
                   <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
@@ -3047,8 +3175,6 @@ export default function CreateMoveForm({
                   )}
                 </div>
 
-                <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
-
                 {/* Notes */}
                 <div className="grid sm:grid-cols-2 gap-2">
                   <Field label="Access Notes">
@@ -3076,7 +3202,7 @@ export default function CreateMoveForm({
             )}
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row gap-2 pt-6 mt-6 border-t border-[var(--brd)]/50">
+          <div className="flex flex-col-reverse sm:flex-row gap-2 pt-8 mt-8 sm:pt-10 sm:mt-10">
             {flowStep > 0 ? (
               <button
                 type="button"

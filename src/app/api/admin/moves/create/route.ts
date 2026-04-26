@@ -11,7 +11,11 @@ import { getDistance } from "@/lib/maps/distance";
 
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import { estimateLabourFromScore } from "@/lib/inventory-labour";
-import { calcEstimatedCost, calcEstimatedMarginPct, getMarginFlag } from "@/lib/pricing/engine";
+import {
+  calcEstimatedCost,
+  calcEstimatedMarginPct,
+  getMarginFlag,
+} from "@/lib/pricing/engine";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 import { ontarioHstBreakdownFromPreTax } from "@/lib/format-currency";
 import { autoCreateHubSpotDealForNewMove } from "@/lib/hubspot/auto-create-deal-for-move";
@@ -86,7 +90,8 @@ export async function POST(req: NextRequest) {
       .single();
 
     const isSuperAdmin = isSuperAdminEmail(user!.email);
-    if (!platformUser && !isSuperAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!platformUser && !isSuperAdmin)
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const contentType = req.headers.get("content-type") ?? "";
     let body: Record<string, unknown> = {};
@@ -97,14 +102,15 @@ export async function POST(req: NextRequest) {
       body = Object.fromEntries(
         [...formData.entries()]
           .filter(([, v]) => typeof v === "string")
-          .map(([k, v]) => [k, v])
+          .map(([k, v]) => [k, v]),
       ) as Record<string, unknown>;
       const inventoryRaw = formData.get("inventory") as string;
       if (inventoryRaw) body.inventory = JSON.parse(inventoryRaw);
       const itemsRaw = formData.get("items") as string;
       if (itemsRaw) body.items = JSON.parse(itemsRaw);
       const inventoryScoreRaw = formData.get("inventory_score") as string;
-      if (inventoryScoreRaw) body.inventory_score = parseFloat(inventoryScoreRaw) || null;
+      if (inventoryScoreRaw)
+        body.inventory_score = parseFloat(inventoryScoreRaw) || null;
       const boxCountRaw = formData.get("box_count") as string;
       if (boxCountRaw) body.box_count = parseInt(boxCountRaw, 10) || 0;
       const assignedRaw = formData.get("assigned_members") as string;
@@ -140,10 +146,14 @@ export async function POST(req: NextRequest) {
       "event",
       "labour_only",
     ] as const;
-    const moveType = allowedTypes.includes(rawMoveType as (typeof allowedTypes)[number])
+    const moveType = allowedTypes.includes(
+      rawMoveType as (typeof allowedTypes)[number],
+    )
       ? rawMoveType
       : "residential";
-    const tierRaw = String(body.tier_selected || "").trim().toLowerCase();
+    const tierRaw = String(body.tier_selected || "")
+      .trim()
+      .toLowerCase();
     const tierSelected =
       tierRaw === "essential" || tierRaw === "signature" || tierRaw === "estate"
         ? tierRaw
@@ -165,7 +175,13 @@ export async function POST(req: NextRequest) {
     const toAccess = (body.to_access as string)?.trim() || null;
     const accessNotesRaw = (body.access_notes as string)?.trim() || null;
     const accessNotesWithAccess =
-      [fromAccess && `From: ${fromAccess}`, toAccess && `To: ${toAccess}`, accessNotesRaw].filter(Boolean).join("\n") || null;
+      [
+        fromAccess && `From: ${fromAccess}`,
+        toAccess && `To: ${toAccess}`,
+        accessNotesRaw,
+      ]
+        .filter(Boolean)
+        .join("\n") || null;
 
     const labourDescription = (body.labour_description as string)?.trim() || "";
     const internalNotesBase = (body.internal_notes as string)?.trim() || null;
@@ -192,28 +208,49 @@ export async function POST(req: NextRequest) {
 
     let internalNotesMerged =
       moveType === "labour_only" && labourDescription
-        ? [internalNotesBase, `Labour scope: ${labourDescription}`].filter(Boolean).join("\n\n") || null
+        ? [internalNotesBase, `Labour scope: ${labourDescription}`]
+            .filter(Boolean)
+            .join("\n\n") || null
         : internalNotesBase;
     if (additionalStopsNote) {
       internalNotesMerged =
-        [internalNotesMerged, additionalStopsNote].filter(Boolean).join("\n\n") || null;
+        [internalNotesMerged, additionalStopsNote]
+          .filter(Boolean)
+          .join("\n\n") || null;
     }
 
-    if (!clientName) return NextResponse.json({ error: "Client name is required" }, { status: 400 });
-    if (!fromAddress) return NextResponse.json({ error: "From address is required" }, { status: 400 });
-    if (!toAddress) return NextResponse.json({ error: "To address is required" }, { status: 400 });
+    if (!clientName)
+      return NextResponse.json(
+        { error: "Client name is required" },
+        { status: 400 },
+      );
+    if (!fromAddress)
+      return NextResponse.json(
+        { error: "From address is required" },
+        { status: 400 },
+      );
+    if (!toAddress)
+      return NextResponse.json(
+        { error: "To address is required" },
+        { status: 400 },
+      );
 
     // Auto-calculate driving distance via Mapbox (cached in distance_cache table)
     let distanceKm: number | null = null;
     let driveTimeMin: number | null = null;
     try {
       const dist = await getDistance(fromAddress, toAddress);
-      if (dist) { distanceKm = dist.distance_km; driveTimeMin = dist.drive_time_min; }
-    } catch { /* non-blocking, move still creates without distance */ }
+      if (dist) {
+        distanceKm = dist.distance_km;
+        driveTimeMin = dist.drive_time_min;
+      }
+    } catch {
+      /* non-blocking, move still creates without distance */
+    }
 
     const moveSize =
       moveType === "residential"
-        ? ((body.move_size as string)?.trim() || "2br")
+        ? (body.move_size as string)?.trim() || "2br"
         : moveType === "single_item"
           ? "single_item"
           : moveType === "white_glove"
@@ -240,35 +277,61 @@ export async function POST(req: NextRequest) {
         const oEmail = (o.email || "").trim().toLowerCase();
         const oPhone = normalizedPhone((o.phone || "").trim());
         const oName = (o.contact_name || o.name || "").trim().toLowerCase();
-        if (clientEmail && oEmail && oEmail === clientEmail.trim().toLowerCase()) return true;
-        if (clientPhone && normalizedPhone(clientPhone) && oPhone && oPhone === normalizedPhone(clientPhone)) return true;
-        if (clientName && oName && oName === clientName.trim().toLowerCase()) return true;
+        if (
+          clientEmail &&
+          oEmail &&
+          oEmail === clientEmail.trim().toLowerCase()
+        )
+          return true;
+        if (
+          clientPhone &&
+          normalizedPhone(clientPhone) &&
+          oPhone &&
+          oPhone === normalizedPhone(clientPhone)
+        )
+          return true;
+        if (clientName && oName && oName === clientName.trim().toLowerCase())
+          return true;
         return false;
       });
       if (match) {
         return NextResponse.json(
-          { error: "Client already exists", existingClient: { id: match.id, name: match.contact_name || match.name } },
-          { status: 400 }
+          {
+            error: "Client already exists",
+            existingClient: {
+              id: match.id,
+              name: match.contact_name || match.name,
+            },
+          },
+          { status: 400 },
         );
       }
     }
 
-    const serviceType =
-      MOVE_TYPE_TO_SERVICE_TYPE[moveType] ?? "local_move";
+    const serviceType = MOVE_TYPE_TO_SERVICE_TYPE[moveType] ?? "local_move";
 
     // Compute estimated margin at creation time
     let estMarginPercent: number | null = null;
     let estCostTotal: number | null = null;
     if (estimate > 0) {
       try {
-        const { data: cfgRows } = await db.from("platform_config").select("key, value");
+        const { data: cfgRows } = await db
+          .from("platform_config")
+          .select("key, value");
         const cfg: Record<string, string> = {};
         for (const r of cfgRows ?? []) cfg[r.key] = r.value;
 
-        let labourHours: number | null = body.est_hours ? Number(body.est_hours) : null;
-        let labourCrew: number | null = body.est_crew_size ? Number(body.est_crew_size) : null;
+        let labourHours: number | null = body.est_hours
+          ? Number(body.est_hours)
+          : null;
+        let labourCrew: number | null = body.est_crew_size
+          ? Number(body.est_crew_size)
+          : null;
 
-        if (typeof body.inventory_score === "number" && body.inventory_score > 0) {
+        if (
+          typeof body.inventory_score === "number" &&
+          body.inventory_score > 0
+        ) {
           const labour = estimateLabourFromScore(
             body.inventory_score as number,
             0,
@@ -284,7 +347,9 @@ export async function POST(req: NextRequest) {
           {
             actualEstimatedHours: labourHours ?? 4,
             crew: labourCrew ?? 2,
-            recommendedTruck: (truckPrimary || "sprinter").toLowerCase().replace(/[^a-z0-9]/g, ""),
+            recommendedTruck: (truckPrimary || "sprinter")
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, ""),
             distanceKm: distanceKm ?? 20,
             tier: tierSelected,
             moveSize: moveSize || "2br",
@@ -293,7 +358,9 @@ export async function POST(req: NextRequest) {
         );
         estMarginPercent = calcEstimatedMarginPct(estimate, cost);
         estCostTotal = cost.total;
-      } catch { /* non-blocking, move still creates without margin */ }
+      } catch {
+        /* non-blocking, move still creates without margin */
+      }
     }
 
     const setupReqRaw = body.setup_required;
@@ -315,11 +382,14 @@ export async function POST(req: NextRequest) {
         : null;
 
     const moveCrewId = (body.crew_id as string)?.trim() || null;
-    let moveAssignedMembers = Array.isArray(body.assigned_members) ? body.assigned_members : [];
+    let moveAssignedMembers = Array.isArray(body.assigned_members)
+      ? body.assigned_members
+      : [];
     let moveAssignedCrewName: string | null = null;
     if (moveCrewId) {
       const snap = await fetchCrewAssignmentSnapshot(db, moveCrewId);
-      if (moveAssignedMembers.length === 0) moveAssignedMembers = snap.assigned_members;
+      if (moveAssignedMembers.length === 0)
+        moveAssignedMembers = snap.assigned_members;
       moveAssignedCrewName = snap.assigned_crew_name;
     }
 
@@ -340,9 +410,7 @@ export async function POST(req: NextRequest) {
         to_lat: toLat,
         to_lng: toLng,
         amount:
-          estimate > 0
-            ? ontarioHstBreakdownFromPreTax(estimate).inclusive
-            : 0,
+          estimate > 0 ? ontarioHstBreakdownFromPreTax(estimate).inclusive : 0,
         estimate,
         status: "confirmed",
         stage: "quote",
@@ -357,10 +425,18 @@ export async function POST(req: NextRequest) {
         tier_selected: tierSelected,
         assigned_members: moveAssignedMembers,
         assigned_crew_name: moveAssignedCrewName,
-        complexity_indicators: Array.isArray(body.complexity_indicators) ? body.complexity_indicators : [],
+        complexity_indicators: Array.isArray(body.complexity_indicators)
+          ? body.complexity_indicators
+          : [],
         items: Array.isArray(body.items) ? body.items : [],
-        inventory_score: typeof body.inventory_score === "number" ? body.inventory_score : null,
-        client_box_count: typeof body.box_count === "number" && body.box_count > 0 ? body.box_count : null,
+        inventory_score:
+          typeof body.inventory_score === "number"
+            ? body.inventory_score
+            : null,
+        client_box_count:
+          typeof body.box_count === "number" && body.box_count > 0
+            ? body.box_count
+            : null,
         move_size: moveSize ?? null,
         truck_primary: truckPrimary ?? null,
         distance_km: distanceKm,
@@ -378,17 +454,18 @@ export async function POST(req: NextRequest) {
         ...(moveType === "event"
           ? {
               event_name: (body.event_name as string)?.trim() || null,
-              venue_address: (body.venue_address as string)?.trim() || toAddress || null,
+              venue_address:
+                (body.venue_address as string)?.trim() || toAddress || null,
               setup_required: setupRequired,
-              setup_instructions: (body.setup_instructions as string)?.trim() || null,
+              setup_instructions:
+                (body.setup_instructions as string)?.trim() || null,
             }
           : {}),
-        ...(labourResult
-          ? { est_truck_size: labourResult.truckSize }
-          : {}),
+        ...(labourResult ? { est_truck_size: labourResult.truckSize } : {}),
         est_margin_percent: estMarginPercent,
         est_cost_total: estCostTotal,
-        margin_flag: estMarginPercent != null ? getMarginFlag(estMarginPercent) : null,
+        margin_flag:
+          estMarginPercent != null ? getMarginFlag(estMarginPercent) : null,
         updated_at: new Date().toISOString(),
       })
       .select("id, move_code")
@@ -396,9 +473,16 @@ export async function POST(req: NextRequest) {
 
     if (insertError) {
       console.error("Move insert error:", insertError);
-      return NextResponse.json({ error: insertError.message || "Failed to create move" }, { status: 400 });
+      return NextResponse.json(
+        { error: insertError.message || "Failed to create move" },
+        { status: 400 },
+      );
     }
-    if (!move?.id) return NextResponse.json({ error: "Failed to create move" }, { status: 500 });
+    if (!move?.id)
+      return NextResponse.json(
+        { error: "Failed to create move" },
+        { status: 500 },
+      );
 
     const moveId = move.id;
 
@@ -420,13 +504,18 @@ export async function POST(req: NextRequest) {
           .single();
         if (!orgError && newOrg?.id) {
           organizationId = newOrg.id;
-          await db.from("moves").update({ organization_id: organizationId }).eq("id", moveId);
+          await db
+            .from("moves")
+            .update({ organization_id: organizationId })
+            .eq("id", moveId);
         }
       }
 
       // Populate move_inventory from items (new format) or inventory (legacy)
       const roomDisplay = (r: string) =>
-        (r || "other").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+        (r || "other")
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
       const items = Array.isArray(body.items) ? body.items : [];
       if (items.length > 0) {
         for (const item of items) {
@@ -464,7 +553,10 @@ export async function POST(req: NextRequest) {
           const buf = await file.arrayBuffer();
           const { error: uploadErr } = await db.storage
             .from(bucket)
-            .upload(storagePath, buf, { contentType: file.type, upsert: false });
+            .upload(storagePath, buf, {
+              contentType: file.type,
+              upsert: false,
+            });
           if (!uploadErr) {
             await db.from("move_documents").insert({
               move_id: moveId,
@@ -476,7 +568,10 @@ export async function POST(req: NextRequest) {
         }
       }
     } catch (postErr) {
-      console.error("Create move post-insert step failed (move was created):", postErr);
+      console.error(
+        "Create move post-insert step failed (move was created):",
+        postErr,
+      );
     }
 
     // Send client email (if email provided and Resend configured). Return emailSent + emailError so UI can show feedback.
@@ -484,13 +579,15 @@ export async function POST(req: NextRequest) {
     let emailError: string | null = null;
 
     if (!clientEmail || !clientEmail.trim()) {
-      emailError = 'No client email was provided. Add email on the move and use "Resend tracking link" to send.';
+      emailError =
+        'No client email was provided. Add email on the move and use "Resend tracking link" to send.';
     } else {
       try {
         const resend = getResend();
         const emailTrimmed = clientEmail.trim().toLowerCase();
         const { getEmailBaseUrl } = await import("@/lib/email-base-url");
-        const { getMoveCode, formatJobId, getTrackMoveSlug } = await import("@/lib/move-code");
+        const { getMoveCode, formatJobId, getTrackMoveSlug } =
+          await import("@/lib/move-code");
         const moveCode = move.move_code || getMoveCode({ id: moveId });
         const jobIdDisplay = formatJobId(moveCode, "move");
         const depositPaid = Math.round(estimate * 0.25);
@@ -522,14 +619,22 @@ export async function POST(req: NextRequest) {
         });
 
         if (sendResult?.error) {
-          const msg = (sendResult.error as { message?: string }).message ?? String(sendResult.error);
-          emailError = msg.includes("domain") || msg.includes("verified") ? `${msg} Verify the sending domain for your notification address in Resend.` : msg;
+          const msg =
+            (sendResult.error as { message?: string }).message ??
+            String(sendResult.error);
+          emailError =
+            msg.includes("domain") || msg.includes("verified")
+              ? `${msg} Verify the sending domain for your notification address in Resend.`
+              : msg;
         } else {
           emailSent = true;
         }
       } catch (emailErr) {
-        const msg = emailErr instanceof Error ? emailErr.message : String(emailErr);
-        emailError = msg.includes("RESEND") ? "Email not configured. Add RESEND_API_KEY to your environment (e.g. Vercel)." : msg;
+        const msg =
+          emailErr instanceof Error ? emailErr.message : String(emailErr);
+        emailError = msg.includes("RESEND")
+          ? "Email not configured. Add RESEND_API_KEY to your environment (e.g. Vercel)."
+          : msg;
         console.error("Failed to send move-created email:", emailErr);
       }
     }
@@ -544,7 +649,10 @@ export async function POST(req: NextRequest) {
     });
 
     const { getMoveCode, formatJobId } = await import("@/lib/move-code");
-    const moveCodeDisplay = formatJobId(move.move_code || getMoveCode({ id: moveId }), "move");
+    const moveCodeDisplay = formatJobId(
+      move.move_code || getMoveCode({ id: moveId }),
+      "move",
+    );
     await logActivity({
       entity_type: "move",
       entity_id: moveId,
@@ -554,7 +662,8 @@ export async function POST(req: NextRequest) {
     });
 
     if (partnerOrganizationIdFromRequest) {
-      const { notifyPartnerMoveBooked } = await import("@/lib/partner-job-comms");
+      const { notifyPartnerMoveBooked } =
+        await import("@/lib/partner-job-comms");
       notifyPartnerMoveBooked({
         moveId,
         organizationId: partnerOrganizationIdFromRequest,
@@ -598,7 +707,10 @@ export async function POST(req: NextRequest) {
         moveAdminUrl,
       });
       if (created?.status === "created" && created.dealId) {
-        await db.from("moves").update({ hubspot_deal_id: created.dealId }).eq("id", moveId);
+        await db
+          .from("moves")
+          .update({ hubspot_deal_id: created.dealId })
+          .eq("id", moveId);
       } else if (created?.status === "duplicate") {
         hubspotDuplicate = {
           dealId: created.existingDealId,
@@ -622,7 +734,7 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to create move" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
