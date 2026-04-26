@@ -50,8 +50,10 @@ export default function JobConditionsInline({
   return (
     <div
       className={cn(
-        "rounded-[var(--yu3-r-md)] border border-[var(--yu3-line-subtle)]/45 bg-[var(--yu3-bg-surface)]/40 px-2 py-1.5 [font-family:var(--font-body)] transition-[width,max-width]",
-        expanded ? "w-full min-w-0" : "inline-block w-fit max-w-full self-start",
+        "rounded border border-[var(--yu3-line-subtle)]/40 bg-[var(--yu3-bg-surface)]/35 [font-family:var(--font-body)] transition-[width,max-width,padding]",
+        expanded
+          ? "w-full min-w-0 px-2 py-1.5 rounded-[var(--yu3-r-md)]"
+          : "inline-block w-fit max-w-full self-start rounded-sm px-1.5 py-px",
         className,
       )}
     >
@@ -61,25 +63,25 @@ export default function JobConditionsInline({
         aria-expanded={expanded}
         aria-controls={panelId}
         className={cn(
-          "flex items-center gap-1.5 rounded-sm text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)]/35",
+          "flex min-h-0 items-center gap-1 rounded-sm text-left leading-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)]/35",
           expanded
-            ? "w-full justify-between py-0.5 -mx-0.5 px-0.5 hover:bg-[var(--yu3-wine)]/5"
-            : "min-h-[32px] -my-0.5 -mx-0.5 px-0.5 py-0.5 hover:bg-[var(--yu3-wine)]/6",
+            ? "w-full justify-between px-0.5 py-0.5 -mx-0.5 hover:bg-[var(--yu3-wine)]/5"
+            : "h-6 px-0.5 -mx-0.5 hover:bg-[var(--yu3-wine)]/5",
         )}
       >
-        <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)] flex items-center gap-1 [font-family:var(--font-body)] leading-none min-w-0">
+        <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)] flex items-center gap-0.5 [font-family:var(--font-body)] leading-none min-w-0">
           <Car
-            size={11}
-            className="text-[var(--yu3-wine)]/70 shrink-0 opacity-90"
+            size={10}
+            className="text-[var(--yu3-wine)]/65 shrink-0"
             weight="duotone"
             aria-hidden
           />
           Route &amp; weather
         </span>
         <CaretDown
-          size={12}
+          size={10}
           className={cn(
-            "shrink-0 text-[var(--yu3-wine)]/65 transition-transform duration-200",
+            "shrink-0 text-[var(--yu3-wine)]/60 transition-transform duration-200",
             expanded ? "rotate-0" : "-rotate-90",
           )}
           weight="bold"
