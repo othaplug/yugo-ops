@@ -21,6 +21,8 @@ export const LEAD_STATUS_LABELS: Record<string, string> = {
   awaiting_reply: "Awaiting reply",
   contacted: "Contacted",
   qualified: "Qualified",
+  photos_requested: "Photos requested",
+  photos_received: "Photos received",
   quote_sent: "Quote sent",
   follow_up: "Follow up",
   converted: "Converted",

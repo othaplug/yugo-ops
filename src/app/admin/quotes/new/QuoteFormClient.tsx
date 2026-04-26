@@ -1235,6 +1235,7 @@ export default function QuoteFormClient({
   const specialtyBuilderQs = searchParams.get("specialty_builder") === "1";
   /** Deep link from admin (e.g. Bin Rentals → Generate quote uses `?service=bin_rental`). */
   const serviceTypeFromUrl = searchParams.get("service")?.trim() || "";
+  const fromPhotoReview = searchParams.get("from_photo_review") === "1";
 
   // ── Form state ────────────────────────────
   const [serviceType, setServiceType] = useState("local_move");
@@ -2726,7 +2727,7 @@ export default function QuoteFormClient({
           Array.isArray(rawInv) && rawInv.length > 0
             ? `${leadIdParam}:${itemWeights.length}:${JSON.stringify(rawInv)}`
             : `empty:${leadIdParam}`;
-        if (invSig !== leadInventoryPrefillSigRef.current) {
+        if (!fromPhotoReview && invSig !== leadInventoryPrefillSigRef.current) {
           if (!Array.isArray(rawInv) || rawInv.length === 0) {
             setInventoryItems([]);
             setLeadInventoryReview([]);
@@ -2764,6 +2765,8 @@ export default function QuoteFormClient({
             setLeadInventoryReview(review);
           }
           leadInventoryPrefillSigRef.current = invSig;
+        } else if (fromPhotoReview) {
+          leadInventoryPrefillSigRef.current = invSig;
         }
 
         const specRaw = L.specialty_items_detected;
@@ -2791,7 +2794,45 @@ export default function QuoteFormClient({
     return () => {
       cancelled = true;
     };
-  }, [leadIdParam, itemWeights]);
+  }, [leadIdParam, itemWeights, fromPhotoReview]);
+
+  // Photo review: session handoff overwrites lead parsed inventory.
+  useEffect(() => {
+    if (!fromPhotoReview || !leadIdParam) return;
+    if (typeof window === "undefined") return;
+    const k = `quote_inv_prefill_v1_${leadIdParam}`;
+    const raw = window.sessionStorage.getItem(k);
+    if (!raw) {
+      const u = new URL(window.location.href);
+      u.searchParams.delete("from_photo_review");
+      if (u.searchParams.toString() !== (new URLSearchParams(window.location.search).toString())) {
+        window.history.replaceState({}, "", `${u.pathname}${u.search ? `?${u.searchParams.toString()}` : ""}${u.hash}`);
+      }
+      return;
+    }
+    try {
+      const items = JSON.parse(raw) as InventoryItemEntry[];
+      if (Array.isArray(items) && items.length > 0) {
+        setInventoryItems(items);
+        setLeadInventoryReview([]);
+        setLeadQuoteBanner(
+          (prev) => (prev ? `${prev} · From photo review` : "From photo review"),
+        );
+      }
+    } catch {
+      /* ignore */
+    }
+    try {
+      window.sessionStorage.removeItem(k);
+    } catch {
+      /* ignore */
+    }
+    const u = new URL(window.location.href);
+    u.searchParams.delete("from_photo_review");
+    const qs = u.searchParams.toString();
+    const next = `${u.pathname}${qs ? `?${qs}` : ""}${u.hash}`;
+    window.history.replaceState({}, "", next);
+  }, [fromPhotoReview, leadIdParam]);
 
   useEffect(() => {
     if (specialtyBuilderQs) setSpecialtyBuilderOpen(true);

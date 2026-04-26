@@ -15,6 +15,7 @@ import {
 } from "@/lib/leads/admin-labels";
 import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
 import { CaretRight, Phone } from "@phosphor-icons/react";
+import { formatTimeAgo } from "@/lib/format-time-ago";
 import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
 import LeadResponseSlaCountdown from "../LeadResponseSlaCountdown";
 
@@ -140,6 +141,79 @@ export default function LeadDetailClient({
     }
   };
 
+  const patchLeadJson = useCallback(
+    async (body: Record<string, unknown>) => {
+      const res = await fetch(`/api/admin/leads/${leadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error((data as { error?: string }).error || "Update failed");
+      if (data.lead) setLead(data.lead);
+      await refresh();
+    },
+    [leadId, refresh],
+  );
+
+  const handleRequestPhotos = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/admin/leads/${leadId}/photo-request`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error((data as { error?: string }).error || "Request failed");
+      if (data.lead) setLead(data.lead);
+      await refresh();
+      toast("Photo link sent to client", "check");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed", "x");
+    }
+  }, [leadId, refresh, toast]);
+
+  const handleResendPhotoRequest = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/admin/leads/${leadId}/photo-resend`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error((data as { error?: string }).error || "Resend failed");
+      if (data.lead) setLead(data.lead);
+      await refresh();
+      toast("Link resent", "check");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed", "x");
+    }
+  }, [leadId, refresh, toast]);
+
+  const handleScheduleWalkthrough = useCallback(async () => {
+    try {
+      await patchLeadJson({
+        note: "Coordinator: virtual walkthrough or call scheduled to complete inventory (intake).",
+        status: "contacted",
+      });
+      toast("Logged. Contact the client to walk through the home and capture inventory on the call.", "check");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed", "x");
+    }
+  }, [patchLeadJson, toast]);
+
+  const handleBuildManually = useCallback(() => {
+    router.push(`/admin/quotes/new?lead_id=${encodeURIComponent(leadId)}`);
+  }, [leadId, router]);
+
+  const handleSkipPhotoIntake = useCallback(async () => {
+    try {
+      await patchLeadJson({
+        clear_photo_intake: true,
+        status: "qualified",
+      });
+      toast("You can build from the description. Photo request cleared.", "check");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed", "x");
+    }
+  }, [patchLeadJson, toast]);
+
   const ln = String(lead.lead_number || "");
   const fn = String(lead.first_name || "");
   const lnName = String(lead.last_name || "");
@@ -155,6 +229,19 @@ export default function LeadDetailClient({
   const heavyParsed =
     lead.parsed_weight_lbs_max != null &&
     Number(lead.parsed_weight_lbs_max) > 300;
+
+  const leadStatus = String(lead.status || "new");
+  const showIntakeChoice = ["new", "assigned", "contacted", "qualified"].includes(leadStatus);
+  const isPhotosRequested = leadStatus === "photos_requested";
+  const isPhotosReceived = leadStatus === "photos_received";
+  const photosRequestedAt =
+    lead.photos_requested_at != null ? String(lead.photos_requested_at) : "";
+  const photosUploadedAt =
+    lead.photos_uploaded_at != null ? String(lead.photos_uploaded_at) : "";
+  const leadPhotoCount =
+    lead.photo_count != null && Number(lead.photo_count) > 0
+      ? Number(lead.photo_count)
+      : 0;
 
   return (
     <div className="w-full min-w-0 py-5 md:py-6">
@@ -289,7 +376,7 @@ export default function LeadDetailClient({
           ) : null}
           {lead.external_platform ? (
             <p>
-              <span className="text-[var(--tx3)]">External platform:</span>{" "}
+              <span className="text-[var(--tx3)]">Referrer:</span>{" "}
               {String(lead.external_platform)}
               {lead.external_reference
                 ? ` · Ref ${String(lead.external_reference)}`
@@ -306,6 +393,99 @@ export default function LeadDetailClient({
           ) : null}
         </section>
       )}
+
+      <section className="mt-2 mb-6" aria-label="Intake next step">
+        <p className="text-[10px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)] mb-3">
+          Next step
+        </p>
+        {showIntakeChoice && !isPhotosRequested && !isPhotosReceived ? (
+          <div className="grid md:grid-cols-3 gap-3">
+            <button
+              type="button"
+              onClick={() => void handleRequestPhotos()}
+              className="p-4 bg-[var(--card)] rounded-lg border border-[var(--brd)] hover:border-[#5C1A33]/35 transition text-left"
+            >
+              <p className="text-sm font-semibold text-[var(--tx)]">Request photos</p>
+              <p className="text-[11px] text-[var(--tx2)] mt-1 leading-relaxed">
+                Send a link so the client can upload room photos. About five minutes on their phone.
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleScheduleWalkthrough()}
+              className="p-4 bg-[var(--card)] rounded-lg border border-[var(--brd)] hover:border-[#5C1A33]/35 transition text-left"
+            >
+              <p className="text-sm font-semibold text-[var(--tx)]">Virtual walkthrough</p>
+              <p className="text-[11px] text-[var(--tx2)] mt-1 leading-relaxed">
+                Schedule a video or phone call to walk the home and build inventory live.
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={handleBuildManually}
+              className="p-4 bg-[var(--card)] rounded-lg border border-[var(--brd)] hover:border-[#5C1A33]/35 transition text-left"
+            >
+              <p className="text-sm font-semibold text-[var(--tx)]">Build manually</p>
+              <p className="text-[11px] text-[var(--tx2)] mt-1 leading-relaxed">
+                Create the inventory from the lead notes and go straight to quoting.
+              </p>
+            </button>
+          </div>
+        ) : null}
+
+        {isPhotosRequested ? (
+          <div className="p-4 bg-[rgba(245,220,150,0.12)] border border-amber-200/80 rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-amber-950">Photos requested</p>
+                <p className="text-[11px] text-amber-900/90 mt-0.5">
+                  Sent {formatTimeAgo(photosRequestedAt)}. Waiting for uploads.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleResendPhotoRequest()}
+                  className="text-[10px] font-bold tracking-[0.1em] uppercase px-3 py-1.5 border border-amber-300/90 text-amber-950 rounded-lg hover:bg-amber-100/50"
+                >
+                  Resend link
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleSkipPhotoIntake()}
+                  className="text-[10px] font-bold tracking-[0.1em] uppercase px-3 py-1.5 text-[var(--tx2)]"
+                >
+                  Skip, build manually
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {isPhotosReceived ? (
+          <div className="p-4 bg-[rgba(220,250,230,0.2)] border border-[#2C3E2D]/25 rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-[#1a2f1b]">
+                  {leadPhotoCount} photos received
+                </p>
+                <p className="text-[11px] text-[#2C3E2D] mt-0.5">
+                  {photosUploadedAt
+                    ? `Uploaded ${formatTimeAgo(photosUploadedAt)}. Ready for review.`
+                    : "Ready for review."}
+                </p>
+              </div>
+              <Link
+                href={`/admin/leads/${leadId}/photos`}
+                className="inline-flex items-center justify-center gap-1 px-4 py-2.5 bg-[#2C3E2D] text-white rounded-lg text-[10px] font-bold tracking-[0.12em] uppercase"
+              >
+                Review photos and build inventory
+                <CaretRight size={14} weight="bold" className="opacity-90" aria-hidden />
+              </Link>
+            </div>
+          </div>
+        ) : null}
+      </section>
 
       <div className="flex flex-wrap gap-2 mb-6">
         <Link

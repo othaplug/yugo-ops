@@ -10,7 +10,7 @@ import ReadinessCheck from "./components/ReadinessCheck";
 import { formatDate, formatDateYmd } from "@/lib/client-timezone";
 import { getLocalHourInAppTimezone } from "@/lib/business-timezone";
 import CrewAreaWeather from "@/components/crew/CrewAreaWeather";
-import JobConditionsInline from "@/components/crew/JobConditionsInline";
+import CrewDashboardConditionsBanner from "@/components/crew/CrewDashboardConditionsBanner";
 import WineFadeRule from "@/components/crew/WineFadeRule";
 import { useCrewJobConditions } from "@/components/crew/useCrewJobConditions";
 import { isCrewSampleDashboardJobId } from "@/lib/crew/sample-dashboard-job";
@@ -358,6 +358,15 @@ export default function CrewDashboardPage() {
           </div>
         </header>
 
+        {realJobCount > 0 && (
+          <CrewDashboardConditionsBanner
+            jobs={jobsForConditions}
+            weatherByJobId={weatherByJobId}
+            trafficByJobId={trafficByJobId}
+            trafficLoading={trafficLoading}
+          />
+        )}
+
         {jobs.length === 0 && (
           <div className="mb-6">
             <CrewAreaWeather />
@@ -431,13 +440,6 @@ export default function CrewDashboardPage() {
                           <span className="text-[12px] font-semibold text-[var(--yu3-ink-muted)] font-mono tracking-tight block mt-0.5">
                             {job.jobId}
                           </span>
-                          <JobConditionsInline
-                            job={job}
-                            weatherByJobId={weatherByJobId}
-                            trafficByJobId={trafficByJobId}
-                            trafficLoading={trafficLoading}
-                            className="mt-2.5"
-                          />
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1.5 shrink-0">

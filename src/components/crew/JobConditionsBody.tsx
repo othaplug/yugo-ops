@@ -1,20 +1,16 @@
 "use client";
 
-import { useId, useState } from "react";
 import {
-  Car,
-  CaretDown,
   CloudRain,
   Drop,
   Thermometer,
   TrafficCone,
   Wind,
 } from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
 import type { MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 import type { DrivingTrafficBrief } from "@/lib/mapbox/driving-traffic-brief";
 import type { JobConditionsJob } from "./useCrewJobConditions";
-import { jobShowsConditionsRow, routablePair } from "./useCrewJobConditions";
+import { routablePair } from "./useCrewJobConditions";
 import WineFadeRule from "./WineFadeRule";
 
 type Props = {
@@ -25,76 +21,25 @@ type Props = {
   >;
   trafficByJobId: Record<string, DrivingTrafficBrief>;
   trafficLoading: boolean;
-  className?: string;
 };
 
-export default function JobConditionsInline({
+/**
+ * Route + weather + traffic details for a single job (no outer chrome).
+ */
+export default function JobConditionsBody({
   job,
   weatherByJobId,
   trafficByJobId,
   trafficLoading,
-  className = "",
 }: Props) {
-  if (!jobShowsConditionsRow(job, weatherByJobId)) return null;
-
   const clientWx = weatherByJobId[job.id];
   const brief = job.weatherBrief || clientWx?.brief || null;
   const wxAlert = job.weatherAlert || clientWx?.alert || null;
   const traffic = trafficByJobId[job.id];
   const canRoute = routablePair(job.fromAddress, job.toAddress);
 
-  const [expanded, setExpanded] = useState(false);
-  const panelId = useId();
-  const handleToggleExpanded = () => setExpanded((v) => !v);
-
   return (
-    <div
-      className={cn(
-        "rounded border border-[var(--yu3-line-subtle)]/40 bg-[var(--yu3-bg-surface)]/35 [font-family:var(--font-body)] transition-[width,max-width,padding]",
-        expanded
-          ? "w-full min-w-0 px-2 py-1.5 rounded-[var(--yu3-r-md)]"
-          : "inline-block w-fit max-w-full self-start rounded-sm px-1.5 py-px",
-        className,
-      )}
-    >
-      <button
-        type="button"
-        onClick={handleToggleExpanded}
-        aria-expanded={expanded}
-        aria-controls={panelId}
-        className={cn(
-          "flex min-h-0 items-center gap-1 rounded-sm text-left leading-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)]/35",
-          expanded
-            ? "w-full justify-between px-0.5 py-0.5 -mx-0.5 hover:bg-[var(--yu3-wine)]/5"
-            : "h-6 px-0.5 -mx-0.5 hover:bg-[var(--yu3-wine)]/5",
-        )}
-      >
-        <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)] flex items-center gap-0.5 [font-family:var(--font-body)] leading-none min-w-0">
-          <Car
-            size={10}
-            className="text-[var(--yu3-wine)]/65 shrink-0"
-            weight="duotone"
-            aria-hidden
-          />
-          Route &amp; weather
-        </span>
-        <CaretDown
-          size={10}
-          className={cn(
-            "shrink-0 text-[var(--yu3-wine)]/60 transition-transform duration-200",
-            expanded ? "rotate-0" : "-rotate-90",
-          )}
-          weight="bold"
-          aria-hidden
-        />
-      </button>
-
-      <div
-        id={panelId}
-        role="region"
-        hidden={!expanded}
-        className={cn("space-y-2", expanded ? "pt-2" : undefined)}
-      >
+    <div className="space-y-2 [font-family:var(--font-body)]">
       {wxAlert && (
         <div className="flex gap-2 rounded-[var(--yu3-r-md)] bg-sky-500/8 border border-sky-500/15 px-2 py-1.5">
           <CloudRain
@@ -180,7 +125,6 @@ export default function JobConditionsInline({
           Live traffic isn&apos;t available for this route yet.
         </p>
       )}
-      </div>
     </div>
   );
 }

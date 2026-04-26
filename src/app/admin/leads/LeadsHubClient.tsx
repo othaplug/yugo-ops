@@ -29,6 +29,11 @@ import {
   XCircle,
 } from "@phosphor-icons/react";
 import { SpeedToLeadHint } from "@/components/admin/AdminContextHints";
+import {
+  MANUAL_LEAD_FIELD_CLASS,
+  MANUAL_LEAD_TEXTAREA_CLASS,
+  REFERRER_OR_SITE_LABEL,
+} from "@/lib/leads/manual-lead-ui";
 
 export type LeadRow = {
   id: string;
@@ -198,7 +203,7 @@ export default function LeadsHubClient({
   const [manualOpen, setManualOpen] = useState(false);
   const [manualBusy, setManualBusy] = useState(false);
   const [mSource, setMSource] = useState("email");
-  const [mPlatform, setMPlatform] = useState("");
+  const [mReferrerOrSite, setMReferrerOrSite] = useState("");
   const [mRef, setMRef] = useState("");
   const [mFirst, setMFirst] = useState("");
   const [mLast, setMLast] = useState("");
@@ -333,10 +338,10 @@ export default function LeadsHubClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           source: mSource,
-          source_detail: mPlatform.trim()
-            ? `Platform: ${mPlatform.trim()}`
+          source_detail: mReferrerOrSite.trim()
+            ? `Referrer: ${mReferrerOrSite.trim()}`
             : "Manual entry",
-          external_platform: mPlatform.trim() || undefined,
+          external_platform: mReferrerOrSite.trim() || undefined,
           external_reference: mRef.trim() || undefined,
           first_name: mFirst.trim() || undefined,
           last_name: mLast.trim() || undefined,
@@ -351,7 +356,7 @@ export default function LeadsHubClient({
       toast("Lead created", "check");
       setManualOpen(false);
       setMPaste("");
-      setMPlatform("");
+      setMReferrerOrSite("");
       setMRef("");
       refresh();
       router.push(`/admin/leads/${(data.lead as { id: string }).id}`);
@@ -1032,7 +1037,7 @@ export default function LeadsHubClient({
               <select
                 value={mSource}
                 onChange={(e) => setMSource(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2 text-[var(--tx)]"
+                className={MANUAL_LEAD_FIELD_CLASS}
               >
                 {MANUAL_SOURCE_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -1043,13 +1048,13 @@ export default function LeadsHubClient({
             </label>
             <label className="block">
               <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">
-                Platform (optional)
+                {REFERRER_OR_SITE_LABEL}
               </span>
               <input
-                value={mPlatform}
-                onChange={(e) => setMPlatform(e.target.value)}
-                placeholder="MoveBuddy, realtor name…"
-                className="mt-1 w-full rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2 text-[var(--tx)]"
+                value={mReferrerOrSite}
+                onChange={(e) => setMReferrerOrSite(e.target.value)}
+                placeholder="e.g. MoveBuddy, realtor name"
+                className={MANUAL_LEAD_FIELD_CLASS}
               />
             </label>
             <label className="block">
@@ -1059,7 +1064,7 @@ export default function LeadsHubClient({
               <input
                 value={mRef}
                 onChange={(e) => setMRef(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2 text-[var(--tx)]"
+                className={MANUAL_LEAD_FIELD_CLASS}
               />
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -1070,7 +1075,7 @@ export default function LeadsHubClient({
                 <input
                   value={mFirst}
                   onChange={(e) => setMFirst(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2 text-[var(--tx)]"
+                  className={MANUAL_LEAD_FIELD_CLASS}
                 />
               </label>
               <label className="block">
@@ -1080,7 +1085,7 @@ export default function LeadsHubClient({
                 <input
                   value={mLast}
                   onChange={(e) => setMLast(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2 text-[var(--tx)]"
+                  className={MANUAL_LEAD_FIELD_CLASS}
                 />
               </label>
             </div>
@@ -1092,7 +1097,7 @@ export default function LeadsHubClient({
                 type="email"
                 value={mEmail}
                 onChange={(e) => setMEmail(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2 text-[var(--tx)]"
+                className={MANUAL_LEAD_FIELD_CLASS}
               />
             </label>
             <label className="block">
@@ -1102,7 +1107,7 @@ export default function LeadsHubClient({
               <input
                 value={mPhone}
                 onChange={(e) => setMPhone(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2 text-[var(--tx)]"
+                className={MANUAL_LEAD_FIELD_CLASS}
               />
             </label>
             <label className="block">
@@ -1114,7 +1119,7 @@ export default function LeadsHubClient({
                 onChange={(e) => setMPaste(e.target.value)}
                 rows={4}
                 placeholder="Paste email or notes…"
-                className="mt-1 w-full min-h-[4.5rem] max-h-32 resize-y rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2 text-[var(--tx)] font-mono text-[11px]"
+                className={MANUAL_LEAD_TEXTAREA_CLASS}
               />
             </label>
           </div>
@@ -1122,7 +1127,7 @@ export default function LeadsHubClient({
             <button
               type="button"
               onClick={() => setManualOpen(false)}
-              className="px-3 py-1.5 rounded-lg text-[12px] text-[var(--tx2)] hover:bg-[var(--gdim)]"
+              className="px-3 py-1.5 rounded-lg text-[12px] text-[var(--tx2)] hover:bg-[var(--gdim)] outline-none focus:outline-none focus:ring-0"
             >
               Cancel
             </button>
@@ -1130,7 +1135,7 @@ export default function LeadsHubClient({
               type="button"
               disabled={manualBusy}
               onClick={() => void submitManualLead()}
-              className="px-3 py-1.5 rounded-lg bg-[var(--tx)] text-[var(--bg)] text-[12px] font-semibold disabled:opacity-50 hover:opacity-90"
+              className="px-3 py-1.5 rounded-lg bg-[var(--tx)] text-[var(--bg)] text-[12px] font-semibold disabled:opacity-50 hover:opacity-90 outline-none focus:outline-none focus:ring-0"
             >
               {manualBusy ? "Creating…" : "Create lead"}
             </button>

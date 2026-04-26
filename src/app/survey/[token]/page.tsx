@@ -1,32 +1,25 @@
-import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
-import SurveyClient from "./SurveyClient";
+import { createAdminClient } from "@/lib/supabase/admin";
+import PhotoSurveyClient from "./PhotoSurveyClient";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Room photos" };
 
-export default async function SurveyTokenPage({
+export default async function PhotoSurveyPage({
   params,
 }: {
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const t = String(token || "").trim();
-  if (!t) notFound();
+  if (!token || token.length < 8) notFound();
 
   const sb = createAdminClient();
-  const { data: move } = await sb
-    .from("moves")
-    .select("id, client_name, survey_completed")
-    .eq("survey_token", t)
+  const { data: survey, error } = await sb
+    .from("photo_surveys")
+    .select("status, client_name, coordinator_name, coordinator_phone, lead_id")
+    .eq("token", token)
     .maybeSingle();
+  if (error || !survey) notFound();
 
-  if (!move) notFound();
-
-  return (
-    <SurveyClient
-      token={t}
-      clientName={move.client_name || ""}
-      alreadyCompleted={!!move.survey_completed}
-    />
-  );
+  return <PhotoSurveyClient token={token} initialSurvey={survey} />;
 }

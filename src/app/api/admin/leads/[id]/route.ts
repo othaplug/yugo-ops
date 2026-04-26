@@ -81,6 +81,9 @@ export async function PATCH(
   const prevStatus = existing.status as string;
 
   if (typeof body.status === "string") patch.status = body.status;
+  if (typeof body.move_size === "string" || body.move_size === null) {
+    patch.move_size = body.move_size;
+  }
   if (typeof body.lost_reason === "string") patch.lost_reason = body.lost_reason;
   if (typeof body.assigned_to === "string" || body.assigned_to === null) {
     patch.assigned_to = body.assigned_to;
@@ -121,6 +124,23 @@ export async function PATCH(
 
   if (body.status === "disqualified" && !patch.response_method) {
     touchResponse(patch, existing as { created_at: string; first_response_at: string | null }, "email");
+  }
+
+  if (body.clear_photo_intake === true) {
+    await sb
+      .from("photo_surveys")
+      .delete()
+      .eq("lead_id", id)
+      .eq("status", "pending");
+    const clearPatch: Record<string, unknown> = {
+      photo_survey_token: null,
+      photos_requested_at: null,
+      photos_uploaded_at: null,
+      photo_count: 0,
+    };
+    for (const [k, v] of Object.entries(clearPatch)) {
+      patch[k] = v;
+    }
   }
 
   if (Object.keys(patch).length === 0) {
