@@ -16,6 +16,7 @@ import { Yu3PortaledTokenRoot } from "@/hooks/useAdminShellTheme";
 import dynamic from "next/dynamic";
 import {
   CaretLeft,
+  CaretRight,
   CheckCircle,
   Clock,
   Check,
@@ -316,6 +317,27 @@ export default function CrewJobPage({
     deliveryFlow: jobType === "delivery" ? deliveryStatusFlow : undefined,
   });
   const isCompleted = currentStatus === "completed";
+
+  /** Pre-move client checklist is only relevant before the crew is on site at origin. */
+  const showClientPreMovePrepBanner = useMemo(() => {
+    if (jobType !== "move" || !job) return false;
+    if (
+      typeof job.preMoveChecklistTotal !== "number" ||
+      job.preMoveChecklistTotal <= 0
+    ) {
+      return false;
+    }
+    if (currentStatus === "completed") return false;
+    const flow = moveStatusFlow;
+    const atPickupIdx = flow.indexOf("arrived_at_pickup");
+    const atArrivedIdx = flow.indexOf("arrived");
+    const originArrivedIdx =
+      atPickupIdx >= 0 ? atPickupIdx : atArrivedIdx >= 0 ? atArrivedIdx : -1;
+    if (originArrivedIdx < 0) return true;
+    const idx = flow.indexOf(currentStatus as (typeof flow)[number]);
+    if (idx < 0) return true;
+    return idx < originArrivedIdx;
+  }, [jobType, job, moveStatusFlow, currentStatus]);
 
   const isNavigatingLeg = [
     "en_route_to_pickup",
@@ -1062,18 +1084,24 @@ export default function CrewJobPage({
       {activeTab === "status" && (
         <div className="space-y-5">
           {jobCompleted && job.tipReportNeeded && (
-            <div className="rounded-2xl border border-[var(--yu3-wine)]/25 bg-[var(--yu3-wine-tint)] px-4 py-3.5">
+            <div className="space-y-1.5">
               <p className="text-[12px] font-bold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
                 Tip report
               </p>
-              <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1 leading-snug [font-family:var(--font-body)]">
+              <p className="text-[11px] text-[var(--yu3-ink-muted)] leading-snug [font-family:var(--font-body)]">
                 Log cash or Interac tips, or confirm no tip, for this completed job.
               </p>
               <Link
                 href={`/crew/dashboard/job/${jobType}/${id}/tip-report`}
-                className="mt-3 inline-flex w-full min-h-[48px] items-center justify-center rounded-xl border border-[#3d1426] bg-[var(--yu3-wine)] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-on-wine)] [font-family:var(--font-body)] leading-none active:scale-[0.99]"
+                className="group inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] transition-colors [font-family:var(--font-body)] leading-none hover:text-[var(--yu3-wine)]"
               >
                 Open tip report
+                <CaretRight
+                  size={14}
+                  weight="bold"
+                  className="shrink-0 text-[var(--yu3-ink-faint)] transition-colors group-hover:text-[var(--yu3-wine)]"
+                  aria-hidden
+                />
               </Link>
             </div>
           )}
@@ -1085,10 +1113,7 @@ export default function CrewJobPage({
             </div>
           )}
 
-          {jobType === "move" &&
-            job &&
-            typeof job.preMoveChecklistTotal === "number" &&
-            job.preMoveChecklistTotal > 0 && (
+          {showClientPreMovePrepBanner && job && (
               <div
                 className={`mx-2 flex items-start gap-3 rounded-[var(--yu3-r-xl)] border px-4 py-3 ${
                   job.preMoveChecklistAllComplete

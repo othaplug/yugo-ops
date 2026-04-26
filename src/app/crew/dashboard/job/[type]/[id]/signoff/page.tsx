@@ -403,7 +403,6 @@ export default function ClientSignOffPage({
     "none",
   );
   const [tipAmount, setTipAmount] = useState("");
-  const [tipNeighbourhood, setTipNeighbourhood] = useState("");
   const [tipSubmitting, setTipSubmitting] = useState(false);
   const [tipError, setTipError] = useState("");
 
@@ -715,7 +714,6 @@ export default function ClientSignOffPage({
           jobType,
           method: tipMethod,
           amountDollars,
-          neighbourhood: tipNeighbourhood.trim() || undefined,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -1780,24 +1778,6 @@ export default function ClientSignOffPage({
               </div>
             )}
 
-            <div>
-              <label
-                htmlFor="signoff-tip-neighbourhood"
-                className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)] block mb-1.5"
-              >
-                Neighbourhood (optional)
-              </label>
-              <input
-                id="signoff-tip-neighbourhood"
-                type="text"
-                value={tipNeighbourhood}
-                onChange={(e) => setTipNeighbourhood(e.target.value)}
-                placeholder="e.g. Leslieville"
-                className="w-full px-3.5 py-2.5 rounded-[var(--yu3-r-md)] bg-[var(--yu3-bg-surface-sunken)] border border-[var(--yu3-line-subtle)] text-[var(--yu3-ink)] text-[15px] outline-none focus:ring-2 focus:ring-[var(--yu3-wine)]/25 [font-family:var(--font-body)]"
-                autoComplete="off"
-              />
-            </div>
-
             {tipError && (
               <p className="text-[12px] text-red-700 [font-family:var(--font-body)]">
                 {tipError}
@@ -1808,14 +1788,19 @@ export default function ClientSignOffPage({
               type="button"
               onClick={() => void handleTipSubmit()}
               disabled={tipSubmitting}
-              className="crew-premium-cta w-full inline-flex min-h-[52px] items-center justify-center gap-2 py-3 font-bold text-[11px] uppercase tracking-[0.12em] text-[#fffbf7] disabled:opacity-50 [font-family:var(--font-body)] leading-none active:scale-[0.99]"
+              className="group inline-flex w-full min-h-[44px] items-center justify-center gap-1.5 border-0 bg-transparent py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] transition-colors [font-family:var(--font-body)] leading-none hover:text-[var(--yu3-wine)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)] disabled:opacity-50"
             >
               {tipSubmitting ? (
                 "Saving…"
               ) : (
                 <>
                   {tipMethod === "none" ? "Continue (no tip)" : "Save and continue"}
-                  <PhCaretRight size={18} weight="bold" className="shrink-0 opacity-95" aria-hidden />
+                  <PhCaretRight
+                    size={18}
+                    weight="bold"
+                    className="shrink-0 text-[var(--yu3-ink-faint)] transition-colors group-hover:text-[var(--yu3-wine)]"
+                    aria-hidden
+                  />
                 </>
               )}
             </button>

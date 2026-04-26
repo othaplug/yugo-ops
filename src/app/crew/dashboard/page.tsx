@@ -570,10 +570,15 @@ export default function CrewDashboardPage() {
                           {job.tipReportPending ? (
                             <Link
                               href={`/crew/dashboard/job/${job.jobType}/${job.id}/tip-report`}
-                              className="inline-flex items-center justify-center gap-1.5 min-h-[48px] py-2.5 px-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#FFFBF7] bg-[var(--yu3-wine)] border border-[#3d1426] hover:opacity-95 transition-opacity [font-family:var(--font-body)] rounded-[var(--yu3-r-md)] w-full sm:w-auto"
+                              className="group inline-flex items-center gap-1.5 min-h-[44px] py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] hover:text-[var(--yu3-wine)] transition-colors [font-family:var(--font-body)] w-full sm:w-auto"
                             >
                               Tip report required
-                              <CaretRight size={14} weight="bold" className="shrink-0" aria-hidden />
+                              <CaretRight
+                                size={14}
+                                weight="bold"
+                                className="shrink-0 text-[var(--yu3-ink-faint)] transition-colors group-hover:text-[var(--yu3-wine)]"
+                                aria-hidden
+                              />
                             </Link>
                           ) : null}
                           {job.postJobEquipmentComplete === false ? (

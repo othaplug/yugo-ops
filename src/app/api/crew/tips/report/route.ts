@@ -80,9 +80,6 @@ export async function POST(req: NextRequest) {
     typeof amountRaw === "number" && Number.isFinite(amountRaw)
       ? Math.max(0, amountRaw)
       : Number.parseFloat(String(amountRaw || "0")) || 0;
-  const neighbourhood = String(body.neighbourhood || "").trim() || null;
-  const reportNote = String(body.reportNote || "").trim() || null;
-
   if (!rawId || !["move", "delivery"].includes(jobType)) {
     return NextResponse.json({ error: "jobId and jobType required" }, { status: 400 });
   }
@@ -195,8 +192,8 @@ export async function POST(req: NextRequest) {
     reported_by: payload.crewMemberId,
     service_type: serviceType,
     tier,
-    neighbourhood,
-    report_note: reportNote,
+    neighbourhood: null,
+    report_note: null,
   };
   if (jobType === "move") {
     insertPayload.move_id = entityId;

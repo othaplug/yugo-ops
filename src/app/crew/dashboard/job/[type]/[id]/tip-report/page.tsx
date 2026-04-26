@@ -22,8 +22,6 @@ export default function CrewTipReportPage({
   const router = useRouter();
   const [method, setMethod] = useState<(typeof METHODS)[number]["value"]>("none");
   const [amount, setAmount] = useState("");
-  const [neighbourhood, setNeighbourhood] = useState("");
-  const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -45,8 +43,6 @@ export default function CrewTipReportPage({
           jobType,
           method,
           amountDollars,
-          neighbourhood: neighbourhood.trim() || undefined,
-          reportNote: note.trim() || undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -130,40 +126,6 @@ export default function CrewTipReportPage({
           </div>
         )}
 
-        <div>
-          <label
-            htmlFor="tip-neighbourhood"
-            className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)] block mb-1.5"
-          >
-            Neighbourhood (optional)
-          </label>
-          <input
-            id="tip-neighbourhood"
-            type="text"
-            value={neighbourhood}
-            onChange={(e) => setNeighbourhood(e.target.value)}
-            placeholder="e.g. Leslieville"
-            className="w-full px-3.5 py-2.5 rounded-[var(--yu3-r-md)] bg-[var(--yu3-bg-surface-sunken)] border border-[var(--yu3-line-subtle)] text-[var(--yu3-ink)] text-[15px] outline-none focus:ring-2 focus:ring-[var(--yu3-wine)]/25 [font-family:var(--font-body)]"
-            autoComplete="off"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="tip-note"
-            className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)] block mb-1.5"
-          >
-            Note (optional)
-          </label>
-          <textarea
-            id="tip-note"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={2}
-            className="w-full px-3.5 py-2.5 rounded-[var(--yu3-r-md)] bg-[var(--yu3-bg-surface-sunken)] border border-[var(--yu3-line-subtle)] text-[var(--yu3-ink)] text-[13px] outline-none focus:ring-2 focus:ring-[var(--yu3-wine)]/25 [font-family:var(--font-body)] resize-none"
-          />
-        </div>
-
         {error && (
           <p className="text-[12px] text-red-700 [font-family:var(--font-body)]">{error}</p>
         )}
@@ -172,14 +134,19 @@ export default function CrewTipReportPage({
           type="button"
           onClick={() => void handleSubmit()}
           disabled={submitting}
-          className="crew-premium-cta w-full inline-flex items-center justify-center gap-2 py-3 min-h-[52px] font-bold text-[11px] uppercase tracking-[0.12em] text-[#fffbf7] disabled:opacity-50 [font-family:var(--font-body)] leading-none active:scale-[0.99]"
+          className="group inline-flex w-full min-h-[44px] items-center justify-center gap-1.5 border-0 bg-transparent py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] transition-colors [font-family:var(--font-body)] leading-none hover:text-[var(--yu3-wine)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)] disabled:opacity-50"
         >
           {submitting ? (
             "Saving…"
           ) : (
             <>
               Submit report
-              <CaretRight size={18} weight="bold" className="shrink-0 opacity-95" aria-hidden />
+              <CaretRight
+                size={18}
+                weight="bold"
+                className="shrink-0 text-[var(--yu3-ink-faint)] transition-colors group-hover:text-[var(--yu3-wine)]"
+                aria-hidden
+              />
             </>
           )}
         </button>
