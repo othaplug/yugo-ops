@@ -677,6 +677,42 @@ export default function CrewJobPage({
     };
   }, []);
 
+  /** Must run every render: progress bar memos are hooks and cannot sit after `loading` / `!job` / day-rate early returns (React #310). */
+  const useLogisticsCopy =
+    jobType === "delivery" ||
+    (() => {
+      const st = (job?.serviceType || "").toLowerCase();
+      return st === "b2b_delivery" || st === "b2b_oneoff";
+    })();
+  const isDefaultMoveBar =
+    jobType === "move" &&
+    moveStatusFlow.length === MOVE_STATUS_FLOW.length &&
+    moveStatusFlow.every((s, i) => s === MOVE_STATUS_FLOW[i]);
+  const progressBarStages = useMemo(() => {
+    if (jobType === "delivery") {
+      return CREW_DELIVERY_PROGRESS_BAR_LABELS.map((label) => ({ label }));
+    }
+    if (isDefaultMoveBar) {
+      return CREW_MOVE_PROGRESS_BAR_LABELS.map((label) => ({ label }));
+    }
+    return moveStatusFlow.map((s) => ({
+      label: getCrewCheckpointDisplayLabel(s, useLogisticsCopy),
+    }));
+  }, [jobType, isDefaultMoveBar, moveStatusFlow, useLogisticsCopy]);
+  const progressBarCurrentIndex = useMemo(() => {
+    if (progressIdx < 0) return -1;
+    if (jobType === "delivery") return progressIdx;
+    if (isDefaultMoveBar) return mapMoveProgressIdxToBarIndex(progressIdx);
+    if (isCompleted) return moveStatusFlow.length - 1;
+    return progressIdx;
+  }, [
+    progressIdx,
+    jobType,
+    isDefaultMoveBar,
+    isCompleted,
+    moveStatusFlow.length,
+  ]);
+
   if (loading) {
     return (
       <PageContent className="crew-job-premium">
@@ -792,40 +828,6 @@ export default function CrewJobPage({
       (job.inventory?.length ?? 0) === 0);
   const fromAccessDisplay = formatAccessForDisplay(job.fromAccess);
   const toAccessDisplay = formatAccessForDisplay(job.toAccess);
-  const useLogisticsCopy =
-    jobType === "delivery" ||
-    (() => {
-      const st = (job.serviceType || "").toLowerCase();
-      return st === "b2b_delivery" || st === "b2b_oneoff";
-    })();
-  const isDefaultMoveBar =
-    jobType === "move" &&
-    moveStatusFlow.length === MOVE_STATUS_FLOW.length &&
-    moveStatusFlow.every((s, i) => s === MOVE_STATUS_FLOW[i]);
-  const progressBarStages = useMemo(() => {
-    if (jobType === "delivery") {
-      return CREW_DELIVERY_PROGRESS_BAR_LABELS.map((label) => ({ label }));
-    }
-    if (isDefaultMoveBar) {
-      return CREW_MOVE_PROGRESS_BAR_LABELS.map((label) => ({ label }));
-    }
-    return moveStatusFlow.map((s) => ({
-      label: getCrewCheckpointDisplayLabel(s, useLogisticsCopy),
-    }));
-  }, [jobType, isDefaultMoveBar, moveStatusFlow, useLogisticsCopy]);
-  const progressBarCurrentIndex = useMemo(() => {
-    if (progressIdx < 0) return -1;
-    if (jobType === "delivery") return progressIdx;
-    if (isDefaultMoveBar) return mapMoveProgressIdxToBarIndex(progressIdx);
-    if (isCompleted) return moveStatusFlow.length - 1;
-    return progressIdx;
-  }, [
-    progressIdx,
-    jobType,
-    isDefaultMoveBar,
-    isCompleted,
-    moveStatusFlow.length,
-  ]);
   const originLabel = useLogisticsCopy ? "Origin" : "Pickup";
   const destinationLabel = useLogisticsCopy ? "Destination" : "Drop-off";
 

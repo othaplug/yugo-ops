@@ -100,16 +100,23 @@ function itemKey(item: InventoryItemEntry): string {
   return `custom-${item.name}`;
 }
 
+/** Shorter quick-add text; keeps "Dresser (large)" distinct from "Dresser (small)". */
+function quickAddButtonLabel(itemName: string) {
+  const t = itemName.trim();
+  if (t.includes(" / ")) return t.split(" / ")[0].trim();
+  return t;
+}
+
 const BOX_RANGES = [
   { label: "No boxes", value: 0 },
-  { label: "1–5 boxes", value: 5 },
-  { label: "5–10 boxes", value: 10 },
-  { label: "10–20 boxes", value: 20 },
-  { label: "20–30 boxes", value: 30 },
-  { label: "30–40 boxes", value: 40 },
-  { label: "40–50 boxes", value: 50 },
-  { label: "50–100 boxes", value: 75 },
-  { label: "Custom amount…", value: -1 },
+  { label: "1-5 boxes", value: 5 },
+  { label: "5-10 boxes", value: 10 },
+  { label: "10-20 boxes", value: 20 },
+  { label: "20-30 boxes", value: 30 },
+  { label: "30-40 boxes", value: 40 },
+  { label: "40-50 boxes", value: 50 },
+  { label: "50-100 boxes", value: 75 },
+  { label: "Custom amount", value: -1 },
 ] as const;
 
 interface InventoryInputProps {
@@ -418,14 +425,15 @@ export default function InventoryInput({
                     key={w.slug}
                     type="button"
                     onClick={() => addItem(w)}
+                    title={w.item_name}
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-colors ${
                       existing
                         ? "bg-[var(--gold)]/20 text-[var(--accent-text)] border-[var(--gold)]"
                         : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--gold)]/40"
                     }`}
                   >
-                    <Plus className="w-2.5 h-2.5" />
-                    {w.item_name.split(" / ")[0].split(" (")[0]}
+                    <Plus className="w-2.5 h-2.5 shrink-0" />
+                    {quickAddButtonLabel(w.item_name)}
                     {existing && (
                       <span className="ml-0.5 tabular-nums">×{existing.quantity}</span>
                     )}
@@ -462,8 +470,18 @@ export default function InventoryInput({
               setShowDropdown(true);
             }}
             onFocus={() => setShowDropdown(true)}
-            placeholder={isCommercial ? "Search items (desk, filing cabinet, server rack…)" : "Search items (sofa, bed, TV, fridge…)"}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                if (filteredSearch[0] && !e.nativeEvent.isComposing) {
+                  const { qty } = parseQuantityFromLine(search);
+                  addItem(filteredSearch[0], Math.max(1, qty));
+                }
+              }
+            }}
+            placeholder={isCommercial ? "Search items (desk, filing cabinet, server rack...)" : "Search items (sofa, bed, TV, fridge...)"}
             className={`${fieldInput} field-input--leading`}
+            aria-label={isCommercial ? "Search inventory items" : "Search inventory items"}
           />
         </div>
         {showDropdown && filteredSearch.length > 0 && (
@@ -920,7 +938,7 @@ export default function InventoryInput({
       {/* Empty state */}
       {!addOnlyMode && value.length === 0 && internalBoxCount === 0 && (
         <p className="text-[11px] leading-snug text-[var(--tx2)]">
-          No inventory added yet — standard volume is assumed for pricing.
+          No inventory added yet. Standard volume is used for pricing until you add lines.
         </p>
       )}
       {!addOnlyMode && value.length === 0 && internalBoxCount > 0 && (

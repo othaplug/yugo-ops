@@ -91,9 +91,9 @@ const SPECIALTY_ITEM_PRESETS = [
   "Motorcycle",
 ];
 const ADDON_OPTIONS = [
-  { value: "extra_truck", label: "Extra truck (+$TBD)" },
-  { value: "storage", label: "Storage (+$TBD/day)" },
-  { value: "junk_removal", label: "Junk removal (+$TBD)" },
+  { value: "extra_truck", label: "Extra truck (quote when booking)" },
+  { value: "storage", label: "Storage (daily rate, quote when booking)" },
+  { value: "junk_removal", label: "Junk removal (quote when booking)" },
 ];
 const BUSINESS_TYPES = [
   "Office",
@@ -257,6 +257,8 @@ export default function CreateMoveForm({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [flowStep, setFlowStep] = useState(0);
+  /** Prevents a double click on "Continue" from activating "Create Move" in the same spot right after the last step mounts. */
+  const [createMoveUnlocked, setCreateMoveUnlocked] = useState(false);
   const flowContentRef = useRef<HTMLDivElement>(null);
   const [moveType, setMoveType] = useState<
     | "residential"
@@ -624,6 +626,16 @@ export default function CreateMoveForm({
     });
   }, [flowStep]);
 
+  useEffect(() => {
+    if (flowStep !== 3) {
+      setCreateMoveUnlocked(false);
+      return;
+    }
+    setCreateMoveUnlocked(false);
+    const t = setTimeout(() => setCreateMoveUnlocked(true), 550);
+    return () => clearTimeout(t);
+  }, [flowStep]);
+
   const handleFlowBack = () => {
     setFlowStep((s) => Math.max(0, s - 1));
   };
@@ -695,6 +707,7 @@ export default function CreateMoveForm({
         return;
       }
       setFlowStep(3);
+      return;
     }
   };
 
@@ -708,13 +721,19 @@ export default function CreateMoveForm({
     setDocFiles((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const blockFormNativeSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+  };
+
+  const submitCreateMove = async () => {
     if (flowStep !== 3) {
       toast(
         "Use Continue to reach the last step before creating the move",
         "x",
       );
+      return;
+    }
+    if (!createMoveUnlocked) {
       return;
     }
     if (!clientName.trim()) {
@@ -1020,7 +1039,7 @@ export default function CreateMoveForm({
             })}
           </nav>
         </div>
-        <form noValidate onSubmit={handleSubmit} className="space-y-0">
+        <form noValidate onSubmit={blockFormNativeSubmit} className="space-y-0">
           {hasDraft && (
             <div className="mb-4">
               <DraftBanner
@@ -1040,7 +1059,7 @@ export default function CreateMoveForm({
                   <label className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
                     Service Type
                   </label>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                  <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                     {(
                       [
                         "residential",
@@ -1078,7 +1097,7 @@ export default function CreateMoveForm({
                         },
                         event: {
                           label: "Event logistics",
-                          desc: "Venue delivery, setup, return, matches Event quotes",
+                          desc: "Venue delivery, setup, and return for events",
                         },
                         labour_only: {
                           label: "Labour only",
@@ -1092,10 +1111,10 @@ export default function CreateMoveForm({
                           key={val}
                           type="button"
                           onClick={() => setMoveType(val)}
-                          className={`relative text-left px-3 py-2 rounded-lg border transition-all duration-200 ${
+                          className={`relative min-w-[min(100%,9.5rem)] flex-1 sm:max-w-[calc(50%-0.25rem)] lg:max-w-[calc(25%-0.375rem)] text-left px-3 py-2 rounded-lg border transition-all duration-200 ${
                             sel
                               ? "bg-gradient-to-br from-[#2C3E2D] to-[#5C1A33] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
-                              : "bg-[var(--card)] border-[var(--brd)] hover:border-[var(--gold)]/40 hover:bg-[var(--bg)]"
+                              : "bg-[var(--card)] border-[var(--brd)] hover:border-[#2C3E2D]/40 hover:bg-[var(--bg)]"
                           }`}
                         >
                           <div className="flex items-start gap-2">
@@ -2059,11 +2078,12 @@ export default function CreateMoveForm({
                                   : [...prev, item],
                               )
                             }
-                            className={`px-2.5 py-1 rounded-md text-[9px] font-semibold border transition-colors ${
+                            className={`max-w-full whitespace-normal text-left leading-snug px-2.5 py-1.5 rounded-md text-[10px] font-semibold border transition-colors ${
                               specialtyItems.includes(item)
                                 ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
                                 : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
                             }`}
+                            title={item}
                           >
                             {item}
                           </button>
@@ -2820,13 +2840,13 @@ export default function CreateMoveForm({
                         {selectedCrewMembers.map((m) => (
                           <label
                             key={m}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--brd)] cursor-pointer hover:border-[var(--gold)] transition-colors"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--brd)] cursor-pointer hover:border-[#2C3E2D]/40 transition-colors"
                           >
                             <input
                               type="checkbox"
                               checked={teamMembers.has(m)}
                               onChange={() => toggleTeamMember(m)}
-                              className="accent-[var(--gold)]"
+                              className="accent-[#2C3E2D]"
                             />
                             <span className="text-[11px]">{m}</span>
                           </label>
@@ -2990,7 +3010,7 @@ export default function CreateMoveForm({
                           setCustomComplexity("");
                         }
                       }}
-                      className="px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]"
+                      className="px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[#2C3E2D]/45"
                     >
                       Add
                     </button>
@@ -3031,7 +3051,7 @@ export default function CreateMoveForm({
                       value={accessNotes}
                       onChange={(e) => setAccessNotes(e.target.value)}
                       rows={4}
-                      placeholder="Elevator, parking, building access…"
+                      placeholder="Elevator, parking, building access, loading"
                       className={`${fieldInput} resize-none min-h-[88px]`}
                     />
                   </Field>
@@ -3041,7 +3061,7 @@ export default function CreateMoveForm({
                       value={internalNotes}
                       onChange={(e) => setInternalNotes(e.target.value)}
                       rows={4}
-                      placeholder="Internal notes…"
+                      placeholder="Internal notes for coordinators"
                       className={`${fieldInput} resize-none min-h-[88px]`}
                     />
                   </Field>
@@ -3079,9 +3099,12 @@ export default function CreateMoveForm({
               </button>
             ) : (
               <button
-                type="submit"
-                disabled={loading}
-                className="admin-btn admin-btn-primary flex-1"
+                type="button"
+                onClick={() => {
+                  void submitCreateMove();
+                }}
+                disabled={loading || !createMoveUnlocked}
+                className="admin-btn admin-btn-primary flex-1 disabled:pointer-events-none disabled:opacity-50"
               >
                 {loading ? "Creating…" : "Create Move"}
               </button>

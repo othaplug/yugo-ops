@@ -43,7 +43,7 @@ export const WEIGHT_TIERS: readonly WeightTierDefinition[] = [
   {
     code: "standard",
     label: "Standard",
-    range: "50–150 lbs",
+    range: "50-150 lbs",
     minLbs: 50,
     maxLbs: 150,
     crewImpact: 0,
@@ -53,7 +53,7 @@ export const WEIGHT_TIERS: readonly WeightTierDefinition[] = [
   {
     code: "heavy",
     label: "Heavy",
-    range: "150–300 lbs",
+    range: "150-300 lbs",
     minLbs: 150,
     maxLbs: 300,
     crewImpact: 0,
@@ -63,7 +63,7 @@ export const WEIGHT_TIERS: readonly WeightTierDefinition[] = [
   {
     code: "very_heavy",
     label: "Very Heavy",
-    range: "300–500 lbs",
+    range: "300-500 lbs",
     minLbs: 300,
     maxLbs: 500,
     crewImpact: 1,
@@ -74,7 +74,7 @@ export const WEIGHT_TIERS: readonly WeightTierDefinition[] = [
   {
     code: "super_heavy",
     label: "Super Heavy",
-    range: "500–800 lbs",
+    range: "500-800 lbs",
     minLbs: 500,
     maxLbs: 800,
     crewImpact: 2,
@@ -311,7 +311,7 @@ export function weightTierSelectOptions(): Array<{
 }> {
   return WEIGHT_TIERS.map((t) => ({
     value: t.code,
-    label: `${t.label} — ${t.range}`,
+    label: `${t.label} (${t.range})`,
     shortHint:
       t.priceFactor > 1
         ? `+${Math.round((t.priceFactor - 1) * 100)}%`
