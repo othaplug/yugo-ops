@@ -18,6 +18,8 @@ interface DraftEntry extends DraftMeta {
 
 const LS_KEY = "yugo_form_drafts";
 const DEBOUNCE_MS = 1500;
+/** Drafts older than this are removed so restore banners do not persist indefinitely */
+const DRAFT_TTL_MS = 24 * 60 * 60 * 1000;
 
 const FORM_LABELS: Record<DraftFormType, string> = {
   delivery: "Delivery",
@@ -60,11 +62,18 @@ function normalizeDraftPath(path: string): string {
   return path;
 }
 
+function isDraftFresh(entry: DraftEntry, now: number): boolean {
+  const t = Date.parse(entry.updatedAt);
+  if (!Number.isFinite(t)) return false;
+  return now - t <= DRAFT_TTL_MS;
+}
+
 function readDrafts(): DraftEntry[] {
   try {
     const raw = localStorage.getItem(LS_KEY);
     const parsed: DraftEntry[] = raw ? JSON.parse(raw) : [];
     let changed = false;
+    const now = Date.now();
     const fixed = parsed.map((e) => {
       const p = normalizeDraftPath(e.path);
       if (p !== e.path) {
@@ -73,8 +82,13 @@ function readDrafts(): DraftEntry[] {
       }
       return e;
     });
-    if (changed) writeDrafts(fixed);
-    return fixed;
+    const pruned = fixed.filter((e) => {
+      const keep = isDraftFresh(e, now);
+      if (!keep) changed = true;
+      return keep;
+    });
+    if (changed) writeDrafts(pruned);
+    return pruned;
   } catch {
     return [];
   }

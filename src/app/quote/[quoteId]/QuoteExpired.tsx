@@ -148,7 +148,6 @@ export default function QuoteExpired({
             logoSize={12}
             mutedColor={TEXT_MUTED_ON_LIGHT}
             linkColor={FOREST}
-            showTagline={false}
           />
         </div>
       </div>

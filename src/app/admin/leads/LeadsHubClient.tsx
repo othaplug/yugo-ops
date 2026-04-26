@@ -312,7 +312,7 @@ export default function LeadsHubClient({
         <ChartBar size={14} aria-hidden className="opacity-80" />
         Dashboard
       </Link>
-      <Link href="/admin/leads/all" className={subNavLinkClass(mode === "all")}>
+      <Link href="/admin/leads" className={subNavLinkClass(mode === "all")}>
         <List size={14} aria-hidden className="opacity-80" />
         All leads
       </Link>

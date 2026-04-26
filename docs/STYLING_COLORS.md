@@ -63,7 +63,7 @@ All app styling colors are defined in **`src/app/globals.css`** as CSS variables
 All PDFs (contracts, move summary, invoice, receipt, snapshots) use the same premium branding via **`src/lib/pdf-brand.ts`**:
 
 - **Wine** `#5C1A33` — hero wordmark (YUGO), section accents, top/bottom bars where used
-- **Gold** `#C9A962` — “The Art of Moving” subtitle, dividers, table accents
+- **Gold** `#C9A962` — dividers, table accents
 - **Cream** `#FAF7F2` — table header backgrounds
 - **Hero font** — Times (serif) in PDFs to approximate Instrument Serif
 - **Body** — Helvetica

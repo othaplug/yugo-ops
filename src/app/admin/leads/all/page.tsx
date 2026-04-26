@@ -1,9 +1,8 @@
-export const metadata = { title: "All Leads" };
+import { redirect } from "next/navigation";
+
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
-import LeadsHubV3Client from "../LeadsHubV3Client";
-
-export default function AllLeadsPage() {
-  return <LeadsHubV3Client mode="all" />;
+/** Canonical list URL is /admin/leads (this path kept for old bookmarks). */
+export default function AllLeadsRedirect() {
+  redirect("/admin/leads");
 }

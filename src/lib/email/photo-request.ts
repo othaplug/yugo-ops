@@ -74,12 +74,12 @@ export function buildPhotoRequestEmail(
 
   const html = `<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="max-width:560px;margin:0 auto;border-collapse:collapse;">
     <tr>
-      <td style="padding:28px 0 8px;">
+      <td style="padding:28px 0 0;">
         <img src="${getEmailLogoWineUrl()}" width="120" height="32" alt="Yugo" style="display:block;border:0;height:auto;max-width:120px;" />
       </td>
     </tr>
     <tr>
-      <td style="padding:8px 0 16px;">
+      <td style="padding:48px 0 16px;">
         <p style="font-size:24px;color:${EMAIL_WINE};margin:0;font-family:Georgia,serif;line-height:1.3;">
           Hi ${safeName},
         </p>

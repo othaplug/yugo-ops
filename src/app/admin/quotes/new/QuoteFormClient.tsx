@@ -44,7 +44,6 @@ import {
   XCircle,
   CheckCircle,
   X,
-  Wrench,
 } from "@phosphor-icons/react";
 import {
   B2B_ACCESS_PILLS,
@@ -2192,18 +2191,11 @@ export default function QuoteFormClient({
   const [hubspotDuplicateBusy, setHubspotDuplicateBusy] = useState(false);
   const [leadQuoteBanner, setLeadQuoteBanner] = useState("");
   const [widgetQuoteBanner, setWidgetQuoteBanner] = useState("");
-  const [leadRequiresSpecialtyQuote, setLeadRequiresSpecialtyQuote] =
-    useState(false);
   const [leadParsedWeightMax, setLeadParsedWeightMax] = useState<number | null>(
     null,
   );
   const [leadParsedDimensions, setLeadParsedDimensions] = useState("");
-  const [leadCompletenessPath, setLeadCompletenessPath] = useState<
-    string | null
-  >(null);
   const [specialtyBuilderOpen, setSpecialtyBuilderOpen] = useState(false);
-  const [specialtyBannerDismissed, setSpecialtyBannerDismissed] =
-    useState(false);
   const [previewOpen, setPreviewOpen] = useState(true);
   const prefillDone = useRef(false);
 
@@ -2646,10 +2638,8 @@ export default function QuoteFormClient({
       setLeadQuoteBanner("");
       setLeadIntelSummary(null);
       setLeadInventoryReview([]);
-      setLeadRequiresSpecialtyQuote(false);
       setLeadParsedWeightMax(null);
       setLeadParsedDimensions("");
-      setLeadCompletenessPath(null);
       leadInventoryPrefillSigRef.current = "";
       leadSpecialtyPrefillSigRef.current = "";
       return;
@@ -2686,8 +2676,6 @@ export default function QuoteFormClient({
         } else if (st && SERVICE_TYPES.some((x) => x.value === st)) {
           setServiceType(st);
         }
-        setLeadRequiresSpecialtyQuote(!!L.requires_specialty_quote);
-        setLeadCompletenessPath(str(L.completeness_path) || null);
         const pwm =
           L.parsed_weight_lbs_max != null
             ? Number(L.parsed_weight_lbs_max)
@@ -2887,31 +2875,6 @@ export default function QuoteFormClient({
       cancelled = true;
     };
   }, [widgetRequestIdParam]);
-
-  const singleItemLbs = useMemo(() => {
-    const n = parseFloat(String(itemWeight).replace(/[^\d.]/g, ""));
-    return Number.isFinite(n) ? n : 0;
-  }, [itemWeight]);
-
-  const showSpecialtyQuoteBanner = useMemo(() => {
-    if (userRole === "viewer") return false;
-    if (specialtyBannerDismissed) return false;
-    return (
-      leadRequiresSpecialtyQuote ||
-      (leadCompletenessPath === "manual_review" && !!leadIdParam) ||
-      serviceType === "specialty" ||
-      serviceType === "b2b_delivery" ||
-      (serviceType === "single_item" && singleItemLbs > 300)
-    );
-  }, [
-    userRole,
-    specialtyBannerDismissed,
-    leadRequiresSpecialtyQuote,
-    leadCompletenessPath,
-    leadIdParam,
-    serviceType,
-    singleItemLbs,
-  ]);
 
   const specialtyBuilderItemDescription = useMemo(() => {
     if (serviceType === "single_item" && itemDescription.trim())
@@ -4981,138 +4944,6 @@ export default function QuoteFormClient({
         </div>
       )}
 
-      {leadQuoteBanner && (
-        <div
-          className={
-            isV2
-              ? "mb-4 flex items-center gap-2 rounded-lg border border-accent/25 bg-accent-subtle/50 px-4 py-2.5 text-[12px] font-medium text-fg"
-              : "mb-4 px-4 py-2.5 rounded-lg bg-[var(--gold)]/12 border border-[var(--gold)]/35 text-[12px] font-medium text-[var(--tx)] flex items-center gap-2"
-          }
-        >
-          <Users
-            className={
-              isV2 ? "h-4 w-4 shrink-0 text-accent" : "w-4 h-4 shrink-0 text-[var(--gold)]"
-            }
-            aria-hidden
-          />
-          {leadQuoteBanner}
-        </div>
-      )}
-
-      {widgetQuoteBanner && (
-        <div
-          className={
-            isV2
-              ? "mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-line bg-surface-subtle px-4 py-2.5 text-[12px] font-medium text-fg"
-              : "mb-4 px-4 py-2.5 rounded-lg bg-[var(--gold)]/12 border border-[var(--gold)]/35 text-[12px] font-medium text-[var(--tx)] flex items-center gap-2"
-          }
-        >
-          <Check className="h-4 w-4 shrink-0" aria-hidden />
-          {widgetQuoteBanner}
-          <span
-            className={
-              isV2 ? "text-[11px] font-normal text-fg-muted" : "text-[11px] text-[var(--tx3)] font-normal"
-            }
-          >
-            Review details before generating the quote.
-          </span>
-        </div>
-      )}
-
-      {showSpecialtyQuoteBanner && (
-        <div
-          className={
-            isV2
-              ? "mb-4 flex flex-col gap-3 rounded-lg border border-line bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-              : "mb-4 px-4 py-3 rounded-lg border border-[var(--brd)] bg-[var(--card)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-          }
-        >
-          <div className="flex min-w-0 items-start gap-2">
-            <Wrench
-              className={
-                isV2
-                  ? "mt-0.5 h-4 w-4 shrink-0 text-accent"
-                  : "w-4 h-4 shrink-0 text-[var(--gold)] mt-0.5"
-              }
-              weight="duotone"
-              aria-hidden
-            />
-            <div
-              className={
-                isV2
-                  ? "min-w-0 text-[12px] text-fg-muted"
-                  : "min-w-0 text-[12px] text-[var(--tx2)]"
-              }
-            >
-              <p className={isV2 ? "font-bold text-fg" : "font-bold text-[var(--tx)]"}>
-                Specialty Quote Builder
-              </p>
-              <p className="mt-0.5 text-[11px] leading-snug">
-                One-off B2B or heavy transport: use the cost builder, then send
-                the quote from the quote page. Full payment at confirmation on
-                the client quote.
-              </p>
-            </div>
-          </div>
-          <div className="flex shrink-0 flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setSpecialtyBuilderOpen(true)}
-              className={
-                isV2
-                  ? "rounded-md bg-accent px-3 py-2 text-[11px] font-bold text-white"
-                  : "admin-btn admin-btn-sm admin-btn-primary"
-              }
-            >
-              Open builder
-            </button>
-            <button
-              type="button"
-              onClick={() => setSpecialtyBannerDismissed(true)}
-              className={
-                isV2
-                  ? "rounded-md border border-line px-3 py-2 text-[11px] font-semibold text-fg-subtle"
-                  : "px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]"
-              }
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      )}
-
-      {leadIntelSummary && (
-        <div
-          className={
-            isV2
-              ? "mb-4 flex gap-3 rounded-lg border border-line bg-surface-subtle px-4 py-3 text-[12px] text-fg"
-              : "mb-4 px-4 py-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] flex gap-3"
-          }
-        >
-          <Lightbulb
-            className={
-              isV2
-                ? "mt-0.5 h-4 w-4 shrink-0 text-accent"
-                : "w-4 h-4 shrink-0 text-[var(--gold)] mt-0.5"
-            }
-            weight="fill"
-            aria-hidden
-          />
-          <div className="min-w-0 space-y-1">
-            <p
-              className={
-                isV2
-                  ? "text-[10px] font-bold uppercase tracking-[0.14em] text-fg-subtle"
-                  : "text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]"
-              }
-            >
-              Lead intelligence
-            </p>
-            <p className="leading-snug">{leadIntelSummary}</p>
-          </div>
-        </div>
-      )}
-
       {leadInventoryReview.length > 0 && (
         <div className="mb-4 rounded-lg border border-amber-500/35 bg-amber-500/5 overflow-hidden">
           <div className="px-4 py-2.5 border-b border-amber-500/20 flex items-center gap-2 bg-amber-500/10">
@@ -5232,6 +5063,91 @@ export default function QuoteFormClient({
             >
               Move through each step in order. The live preview updates as you type.
             </p>
+            {(leadQuoteBanner ||
+              widgetQuoteBanner ||
+              leadIntelSummary) && (
+              <div
+                className={
+                  isV2
+                    ? "mt-4 space-y-2.5 rounded-lg border border-line/50 bg-surface-subtle/50 px-3 py-2.5"
+                    : "mt-4 space-y-2.5 rounded-lg border border-[var(--brd)]/70 bg-[var(--bg)]/50 px-3 py-2.5"
+                }
+                role="region"
+                aria-label="Context for this quote"
+              >
+                {leadQuoteBanner ? (
+                  <div
+                    className={
+                      isV2
+                        ? "flex items-start gap-2 text-[12px] font-medium text-fg"
+                        : "flex items-start gap-2 text-[12px] font-medium text-[var(--tx)]"
+                    }
+                  >
+                    <Users
+                      className={
+                        isV2
+                          ? "mt-0.5 h-4 w-4 shrink-0 text-accent"
+                          : "mt-0.5 h-4 w-4 shrink-0 text-[var(--gold)]"
+                      }
+                      aria-hidden
+                    />
+                    <span>{leadQuoteBanner}</span>
+                  </div>
+                ) : null}
+                {widgetQuoteBanner ? (
+                  <div
+                    className={
+                      isV2
+                        ? "flex flex-wrap items-start gap-x-2 gap-y-1 text-[12px] font-medium text-fg"
+                        : "flex flex-wrap items-start gap-x-2 gap-y-1 text-[12px] font-medium text-[var(--tx)]"
+                    }
+                  >
+                    <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                    <span>{widgetQuoteBanner}</span>
+                    <span
+                      className={
+                        isV2
+                          ? "w-full text-[11px] font-normal text-fg-muted sm:w-auto"
+                          : "w-full text-[11px] font-normal text-[var(--tx3)] sm:w-auto"
+                      }
+                    >
+                      Review details before generating the quote.
+                    </span>
+                  </div>
+                ) : null}
+                {leadIntelSummary ? (
+                  <div
+                    className={
+                      isV2
+                        ? "flex gap-2 text-[12px] text-fg"
+                        : "flex gap-2 text-[12px] text-[var(--tx)]"
+                    }
+                  >
+                    <Lightbulb
+                      className={
+                        isV2
+                          ? "mt-0.5 h-4 w-4 shrink-0 text-accent"
+                          : "mt-0.5 h-4 w-4 shrink-0 text-[var(--gold)]"
+                      }
+                      weight="fill"
+                      aria-hidden
+                    />
+                    <div className="min-w-0 space-y-0.5">
+                      <p
+                        className={
+                          isV2
+                            ? "text-[10px] font-bold uppercase tracking-[0.14em] text-fg-subtle"
+                            : "text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]"
+                        }
+                      >
+                        Lead intelligence
+                      </p>
+                      <p className="leading-snug">{leadIntelSummary}</p>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
             <nav className="mt-5 w-full" aria-label="Quote form steps">
               <div className="flex w-full min-w-0 items-start gap-0">
                 {quoteFlowNavLabels.map((label, i) => {
@@ -5353,7 +5269,12 @@ export default function QuoteFormClient({
                       <button
                         key={card.value}
                         type="button"
-                        onClick={() => setServiceType(card.value)}
+                        onClick={() => {
+                          setServiceType(card.value);
+                          if (card.value === "specialty") {
+                            setSpecialtyBuilderOpen(true);
+                          }
+                        }}
                         className={`relative rounded-lg border px-3 py-2 text-left transition-all duration-200 ${
                           isV2 ? cardV2 : cardV1
                         }`}

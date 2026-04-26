@@ -70,3 +70,30 @@ export const DISMISS_REASONS: { value: string; label: string }[] = [
   { value: "not_a_real_inquiry", label: "Not a real inquiry" },
   { value: "duplicate", label: "Duplicate" },
 ];
+
+/**
+ * Labels for `fields_present` / `fields_missing` keys in lead completeness (never show raw slugs in UI).
+ */
+export const LEAD_INVENTORY_FIELD_LABELS: Record<string, string> = {
+  from_address: "From address",
+  to_address: "To address",
+  preferred_date: "Preferred date",
+  inventory: "Inventory",
+  name: "Name",
+  contact: "Contact",
+  email: "Email",
+  phone: "Phone",
+  service_type: "Service",
+  move_size: "Move size",
+  message: "Message",
+  how_heard: "How they heard",
+};
+
+export const humanizeLeadFieldKey = (key: string): string => {
+  const k = key.trim()
+  if (!k) return key
+  return (
+    LEAD_INVENTORY_FIELD_LABELS[k] ??
+    k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  );
+};

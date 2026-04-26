@@ -1971,8 +1971,6 @@ export default function QuoteWidgetClient() {
             logoSize={10}
             mutedColor={`${WINE}99`}
             linkColor={WINE}
-            showTagline={false}
-            taglineClassName="text-[9px] font-medium tracking-wide"
             navClassName="text-[9px]"
           />
         </div>

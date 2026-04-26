@@ -14,7 +14,7 @@ const QUICK_NAV: { group: string; items: { name: string; href: string; Icon: () 
     group: "Leads",
     items: [
       { name: "Leads Dashboard", href: "/admin/leads", Icon: Icons.funnel },
-      { name: "All Leads", href: "/admin/leads/all", Icon: Icons.clipboardList },
+      { name: "All Leads", href: "/admin/leads", Icon: Icons.clipboardList },
       { name: "My Leads", href: "/admin/leads/mine", Icon: Icons.userCheck },
     ],
   },

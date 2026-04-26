@@ -16,10 +16,20 @@ export default async function PhotoSurveyPage({
   const sb = createAdminClient();
   const { data: survey, error } = await sb
     .from("photo_surveys")
-    .select("status, client_name, coordinator_name, coordinator_phone, lead_id")
+    .select("status, client_name, coordinator_name, coordinator_phone, lead_id, move_size")
     .eq("token", token)
     .maybeSingle();
   if (error || !survey) notFound();
 
-  return <PhotoSurveyClient token={token} initialSurvey={survey} />;
+  let moveSize = (survey.move_size as string | null) ?? null;
+  if (moveSize == null && survey.lead_id) {
+    const { data: lead } = await sb
+      .from("leads")
+      .select("move_size")
+      .eq("id", survey.lead_id)
+      .maybeSingle();
+    moveSize = (lead?.move_size as string | null) ?? null;
+  }
+
+  return <PhotoSurveyClient token={token} initialSurvey={survey} moveSize={moveSize} />;
 }

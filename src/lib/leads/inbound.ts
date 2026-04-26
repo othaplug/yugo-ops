@@ -1,5 +1,32 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateLeadNumber } from "./lead-number";
+
+/**
+ * `parsed_dimensions_text` / `parsed_weight_lbs_max` / `requires_specialty_quote` may be absent in
+ * databases that have not run the specialty migration. Inserts that include them then fail with
+ * PostgREST "could not find column … in the schema cache". We insert without them, then best-effort update.
+ */
+async function applyLeadsSpecialtyColumnsBestEffort(
+  sb: SupabaseClient,
+  leadId: string,
+  patch: {
+    parsed_weight_lbs_max: number | null;
+    parsed_dimensions_text: string | null;
+    requires_specialty_quote: boolean;
+  },
+) {
+  const { error } = await sb.from("leads").update(patch).eq("id", leadId);
+  if (!error) return;
+  const m = (error.message || "").toLowerCase();
+  if (
+    m.includes("schema cache") ||
+    (m.includes("column") && m.includes("leads") && m.includes("could not find")) ||
+    m.includes("does not exist")
+  ) {
+    return;
+  }
+  throw new Error(error.message);
+}
 import { determinePriority, estimateValue, type LeadSource } from "./priority";
 import { autoAssignLead } from "./assign";
 import { notifyLeadArrived } from "./notify";
@@ -142,10 +169,27 @@ export async function createLeadPipeline(sb: SupabaseClient, input: InboundLeadI
     requires_specialty_quote: input.requires_specialty_quote ?? false,
   };
 
-  const { data: inserted, error } = await sb.from("leads").insert(row).select("*").single();
+  const {
+    parsed_weight_lbs_max,
+    parsed_dimensions_text,
+    requires_specialty_quote,
+    ...insertRow
+  } = row;
+
+  const { data: inserted, error } = await sb
+    .from("leads")
+    .insert(insertRow)
+    .select("*")
+    .single();
   if (error) throw new Error(error.message);
 
   const lead = inserted as Record<string, unknown>;
+
+  await applyLeadsSpecialtyColumnsBestEffort(sb, lead.id as string, {
+    parsed_weight_lbs_max,
+    parsed_dimensions_text,
+    requires_specialty_quote,
+  });
 
   await sb.from("lead_activities").insert({
     lead_id: lead.id,

@@ -4332,8 +4332,6 @@ export default function TrackMoveClient({
             logoSize={10}
             mutedColor={FOREST}
             linkColor={FOREST}
-            showTagline={false}
-            taglineClassName="text-[12px] leading-normal opacity-55 font-medium tracking-wide"
           />
         </footer>
         </div>

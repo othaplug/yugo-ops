@@ -13,13 +13,13 @@ export function LeadsNavTabs({
     <Tabs value={active}>
       <TabsList variant="pill">
         <TabsTrigger value="dashboard" variant="pill" asChild>
-          <Link href="/admin/leads">
+          <Link href="/admin/leads/dashboard">
             <ChartBar size={12} />
             Dashboard
           </Link>
         </TabsTrigger>
         <TabsTrigger value="all" variant="pill" asChild>
-          <Link href="/admin/leads/all">All leads</Link>
+          <Link href="/admin/leads">All leads</Link>
         </TabsTrigger>
         <TabsTrigger value="mine" variant="pill" asChild>
           <Link href="/admin/leads/mine">My leads</Link>

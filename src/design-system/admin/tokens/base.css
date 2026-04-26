@@ -40,11 +40,14 @@
   background: var(--yu3-line-strong);
 }
 
-/* Focus — one ring, wine, offset */
+/* Focus: wine ring for links, buttons, and custom controls. Native fields use component border
+   only, otherwise every input/textarea gets a second wine “ring” (see yu3-topbar-search). */
 [data-yugo-admin-v3] :focus-visible {
   outline: none;
-  box-shadow: var(--yu3-ring-focus);
   border-radius: var(--yu3-r-sm);
+}
+[data-yugo-admin-v3] :focus-visible:not(input):not(textarea):not(select) {
+  box-shadow: var(--yu3-ring-focus);
 }
 
 /* Tabular numbers everywhere money/metrics go */

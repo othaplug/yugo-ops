@@ -647,7 +647,7 @@ export default function LeadsHubV3Client({
                 variant="primary"
                 size="sm"
                 leadingIcon={<Plus size={13} />}
-                onClick={() => router.push("/admin/leads/all")}
+                onClick={() => router.push("/admin/leads")}
               >
                 New lead
               </Button>
@@ -801,7 +801,7 @@ export default function LeadsHubV3Client({
               asChild
               trailingIcon={<ArrowRight size={12} />}
             >
-              <Link href="/admin/leads/all">View all</Link>
+              <Link href="/admin/leads">View all</Link>
             </Button>
           }
         >

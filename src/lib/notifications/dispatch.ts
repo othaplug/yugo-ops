@@ -247,6 +247,9 @@ export function buildNotificationTitle(
     move_tomorrow: "Move tomorrow",
     move_started: "Move started",
     move_completed: "Move completed",
+    move_scheduled: "Move scheduled",
+    scheduling_conflict: "Scheduling conflict",
+    no_availability: "No availability",
     move_issue: "Move issue reported",
     move_waiver_signed: "On-site waiver signed",
     move_waiver_declined: "On-site waiver declined",
@@ -330,6 +333,9 @@ export function getNotificationIcon(slug: string): string {
     move_tomorrow: "calendar",
     move_started: "flag",
     move_completed: "check",
+    move_scheduled: "calendar",
+    scheduling_conflict: "alertTriangle",
+    no_availability: "alertTriangle",
     move_issue: "alertTriangle",
     move_waiver_signed: "file",
     move_waiver_declined: "file",
@@ -361,6 +367,8 @@ export function buildNotificationLink(
     return `/admin/deliveries/${data.deliveryId}`;
   if (
     (slug.startsWith("move_") ||
+      slug === "scheduling_conflict" ||
+      slug === "no_availability" ||
       slug === "crew_checkin" ||
       slug === "crew_no_checkin" ||
       slug === "checklist_incomplete" ||
@@ -389,6 +397,8 @@ export function getSourceType(slug: string, data?: NotificationData): string {
   if (slug.startsWith("quote_") || slug === "quote_comparison_signal") return "quote";
   if (
     slug.startsWith("move_") ||
+    slug === "scheduling_conflict" ||
+    slug === "no_availability" ||
     slug === "crew_checkin" ||
     slug === "crew_no_checkin" ||
     slug === "checklist_incomplete" ||

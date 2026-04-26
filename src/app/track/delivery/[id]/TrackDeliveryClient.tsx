@@ -1428,7 +1428,6 @@ export default function TrackDeliveryClient({
             logoSize={14}
             mutedColor={FOREST_MUTED}
             linkColor={FOREST}
-            showTagline={false}
           />
         </footer>
       </div>

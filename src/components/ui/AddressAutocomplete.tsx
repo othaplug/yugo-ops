@@ -31,7 +31,9 @@ export interface AddressAutocompleteProps {
   country?: string;
   disabled?: boolean;
   /** Match design-system admin v3 field chrome */
-  variant?: "default" | "yu3";
+  variant?: "yu3" | "default";
+  /** Fired when the text input blurs, with the current input value (e.g. save draft address). */
+  onInputBlur?: (value: string) => void;
 }
 
 interface MapboxFeature {
@@ -140,6 +142,7 @@ export default function AddressAutocomplete({
   country: countryBias = "",
   disabled,
   variant = "default",
+  onInputBlur,
 }: AddressAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [suggestions, setSuggestions] = useState<MapboxFeature[]>([]);
@@ -269,6 +272,8 @@ export default function AddressAutocomplete({
 
   const handleBlur = () => {
     setTimeout(() => setOpen(false), 180);
+    const v = inputRef.current?.value ?? "";
+    onInputBlur?.(v);
   };
 
   useEffect(() => {
@@ -313,9 +318,9 @@ export default function AddressAutocomplete({
   };
 
   const boxedFallback =
-    "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
+    "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-0 outline-none transition-all";
   const yu3FieldClass =
-    "w-full h-9 rounded-[var(--yu3-r-md)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] px-3 text-[13px] text-[var(--yu3-ink-strong)] placeholder:text-[var(--yu3-ink-faint)] transition-colors duration-[var(--yu3-dur-1)] hover:border-[var(--yu3-line-strong)] focus:outline-none focus:border-[var(--yu3-wine)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--yu3-wine)_22%,transparent)] disabled:cursor-not-allowed disabled:opacity-50";
+    "w-full h-9 rounded-[var(--yu3-r-md)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] px-3 text-[13px] text-[var(--yu3-ink-strong)] placeholder:text-[var(--yu3-ink-faint)] transition-colors duration-[var(--yu3-dur-1)] hover:border-[var(--yu3-line-strong)] focus:outline-none focus:ring-0 focus:border-[var(--yu3-line)] disabled:cursor-not-allowed disabled:opacity-50";
   const inputClass = className.trim()
     ? className.trim()
     : variant === "yu3"

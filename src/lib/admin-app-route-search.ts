@@ -63,7 +63,7 @@ const ENTRIES: AppSearchEntry[] = [
   },
   {
     name: "All leads",
-    href: "/admin/leads/all",
+    href: "/admin/leads",
     type: "Page",
     k: ["leads", "all", "everyone", "list"],
   },
