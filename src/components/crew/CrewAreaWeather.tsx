@@ -50,9 +50,9 @@ export default function CrewAreaWeather() {
 
   if (loading) {
     return (
-      <div className={`${shellClass} px-4 py-4 animate-pulse`}>
-        <div className="h-3 w-28 rounded bg-[var(--brd)]/40 mb-3" />
-        <div className="h-4 w-full rounded bg-[var(--brd)]/25" />
+      <div className={`${shellClass} px-4 py-3 animate-pulse`}>
+        <div className="h-3 w-28 rounded bg-[var(--brd)]/40 mb-2" />
+        <div className="h-4 w-full max-w-xs rounded bg-[var(--brd)]/25" />
       </div>
     );
   }
@@ -63,18 +63,26 @@ export default function CrewAreaWeather() {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className={`w-full px-4 py-3.5 flex items-center justify-between gap-2 text-left hover:bg-[#2C3E2D]/4 transition-colors ${open ? "rounded-t-2xl" : "rounded-2xl"}`}
+          className="w-full min-h-[44px] px-3 sm:px-4 py-2 flex flex-nowrap items-center justify-between gap-2 text-left hover:bg-[#2C3E2D]/4 transition-colors touch-manipulation"
           aria-expanded={open}
           aria-controls="crew-area-weather-empty"
         >
-          <div className="flex items-center gap-2 min-w-0">
-            <CloudSun size={18} className="text-[#5C1A33] shrink-0" weight="duotone" aria-hidden />
-            <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx2)] [font-family:var(--font-body)]">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <CloudSun
+              size={20}
+              className="shrink-0 text-[#5C1A33]"
+              weight="duotone"
+              aria-hidden
+            />
+            <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-[var(--tx2)] [font-family:var(--font-body)] leading-none">
               Today&apos;s outlook
+            </span>
+            <span className="min-w-0 flex-1 truncate text-[14px] text-[var(--tx3)] [font-family:var(--font-body)]">
+              Unavailable
             </span>
           </div>
           <CaretDown
-            size={16}
+            size={18}
             weight="bold"
             className={`shrink-0 text-[var(--tx3)] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
             aria-hidden
@@ -85,7 +93,7 @@ export default function CrewAreaWeather() {
             <div className="px-0 pb-3">
               <WineFadeRule />
             </div>
-            <p className="text-[12px] text-[var(--tx2)] leading-relaxed">
+            <p className="text-[14px] text-[var(--tx2)] leading-relaxed">
               Forecast isn&apos;t available right now. When you have jobs on the
               schedule, you&apos;ll see conditions for each stop here too.
             </p>
@@ -96,36 +104,40 @@ export default function CrewAreaWeather() {
   }
 
   const { brief, alert, label } = data;
+  const oneLine = `${label} · ${brief.tempLowC}° to ${brief.tempHighC}°C`;
 
   return (
     <div className={shellClass}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`w-full px-4 py-3.5 flex items-center justify-between gap-2 text-left hover:bg-[#2C3E2D]/4 transition-colors ${open ? "rounded-t-2xl" : "rounded-2xl"}`}
+        className="w-full min-h-[44px] px-3 sm:px-4 py-2 flex flex-nowrap items-center justify-between gap-2 text-left hover:bg-[#2C3E2D]/4 transition-colors touch-manipulation"
         aria-expanded={open}
         aria-controls="crew-area-weather-body"
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <CloudSun size={18} className="text-[#5C1A33] shrink-0" weight="duotone" aria-hidden />
-          <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx2)] truncate [font-family:var(--font-body)]">
-            Today&apos;s outlook
-          </span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0 min-w-0">
-          <span
-            className="text-[10px] font-medium text-[var(--tx3)] truncate max-w-[120px] sm:max-w-[140px]"
-            title={label}
-          >
-            {label}
-          </span>
-          <CaretDown
-            size={16}
-            weight="bold"
-            className={`shrink-0 text-[var(--tx3)] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <CloudSun
+            size={20}
+            className="shrink-0 text-[#5C1A33]"
+            weight="duotone"
             aria-hidden
           />
+          <span className="shrink-0 text-[11px] font-bold tracking-[0.12em] uppercase text-[var(--tx2)] [font-family:var(--font-body)] leading-none">
+            Outlook
+          </span>
+          <span
+            className="min-w-0 flex-1 truncate text-[14px] font-medium text-[var(--tx)] [font-family:var(--font-body)]"
+            title={oneLine}
+          >
+            {oneLine}
+          </span>
         </div>
+        <CaretDown
+          size={18}
+          weight="bold"
+          className={`shrink-0 text-[var(--tx3)] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          aria-hidden
+        />
       </button>
       {open && (
         <>
@@ -136,23 +148,23 @@ export default function CrewAreaWeather() {
             {alert && (
               <div className="mb-3 flex gap-2 rounded-lg bg-sky-500/10 px-2.5 py-1.5">
                 <CloudRain
-                  size={14}
+                  size={16}
                   className="text-sky-400 shrink-0 mt-0.5"
                   weight="duotone"
                   aria-hidden
                 />
-                <p className="text-[10px] text-[var(--tx2)] leading-snug">
+                <p className="text-[14px] text-[var(--tx2)] leading-snug">
                   {alert}
                 </p>
               </div>
             )}
-            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--tx)] mb-2 [font-family:var(--font-body)]">
+            <p className="text-[14px] font-semibold text-[var(--tx)] mb-2 [font-family:var(--font-body)]">
               {brief.conditionsSummary}
             </p>
-            <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-[10px] text-[var(--tx2)]">
+            <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-[14px] text-[var(--tx2)]">
               <span className="inline-flex items-center gap-1">
-                <Thermometer size={12} className="text-[var(--tx2)]" aria-hidden />
-                {brief.tempLowC}°–{brief.tempHighC}°C
+                <Thermometer size={14} className="text-[var(--tx2)]" aria-hidden />
+                {brief.tempLowC}° to {brief.tempHighC}°C
                 {brief.feelsLikeAvgC != null && (
                   <span className="text-[var(--tx3)]">
                     ~{brief.feelsLikeAvgC}° feels
@@ -161,7 +173,7 @@ export default function CrewAreaWeather() {
               </span>
               {brief.windMaxKmh != null && (
                 <span className="inline-flex items-center gap-1">
-                  <Wind size={12} className="text-[var(--tx2)]" aria-hidden />
+                  <Wind size={14} className="text-[var(--tx2)]" aria-hidden />
                   {brief.windMaxKmh} km/h
                   {brief.windGustMaxKmh != null &&
                   brief.windGustMaxKmh > brief.windMaxKmh
@@ -171,7 +183,7 @@ export default function CrewAreaWeather() {
               )}
               {brief.precipProbabilityMax != null && (
                 <span className="inline-flex items-center gap-1 text-[var(--tx3)]">
-                  <Drop size={12} className="text-[#5C1A33]/55" aria-hidden />
+                  <Drop size={14} className="text-[#5C1A33]/55" aria-hidden />
                   {Math.round(brief.precipProbabilityMax * 100)}% rain chance
                 </span>
               )}
@@ -179,7 +191,7 @@ export default function CrewAreaWeather() {
             {brief.roadConditionsNote && (
               <div className="mt-3 pt-3 space-y-2">
                 <WineFadeRule />
-                <p className="text-[10px] leading-snug text-[var(--tx2)]">
+                <p className="text-[14px] leading-relaxed text-[var(--tx2)]">
                   {brief.roadConditionsNote}
                 </p>
               </div>

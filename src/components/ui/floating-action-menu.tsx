@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "@phosphor-icons/react"
@@ -54,7 +55,12 @@ export function FloatingActionMenu({
   zIndexClass = "z-[var(--yu3-z-sidebar)]",
 }: FloatingActionMenuProps) {
   const [isOpen, setIsOpen] = React.useState(false)
+  const [mounted, setMounted] = React.useState(false)
   const ref = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   React.useEffect(() => {
     if (!isOpen) return
@@ -89,16 +95,28 @@ export function FloatingActionMenu({
   const itemSlideX = align === "right" ? 20 : -20
 
   return (
-    <div
-      ref={ref}
-      className={cn(
-        "pointer-events-auto fixed bottom-[max(2rem,env(safe-area-inset-bottom,0px)+0.5rem)]",
-        positionClass,
-        zIndexClass,
-        className,
-      )}
-      style={{ zIndex: "var(--z-top)" }}
-    >
+    <>
+      {mounted &&
+        isOpen &&
+        createPortal(
+          <div
+            role="presentation"
+            className="fixed inset-0 z-[99990] bg-black/45 backdrop-blur-[10px] touch-manipulation"
+            onClick={close}
+            aria-hidden
+          />,
+          document.body,
+        )}
+      <div
+        ref={ref}
+        className={cn(
+          "pointer-events-auto fixed bottom-[max(2rem,env(safe-area-inset-bottom,0px)+0.5rem)]",
+          positionClass,
+          zIndexClass,
+          className,
+        )}
+        style={{ zIndex: "var(--z-top)" }}
+      >
       <button
         type="button"
         onClick={handleToggle}
@@ -243,6 +261,7 @@ export function FloatingActionMenu({
         ) : null}
       </AnimatePresence>
     </div>
+    </>
   )
 }
 

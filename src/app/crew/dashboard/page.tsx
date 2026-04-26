@@ -151,7 +151,7 @@ export default function CrewDashboardPage() {
         <div className="flex items-center justify-center min-h-[40vh]">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-[var(--yu3-wine)]/25 border-t-[var(--yu3-wine)] rounded-full animate-spin" />
-            <p className="text-[13px] text-[var(--yu3-ink-faint)]">
+            <p className="text-[14px] text-[var(--yu3-ink-faint)]">
               Loading your jobs...
             </p>
           </div>
@@ -172,7 +172,7 @@ export default function CrewDashboardPage() {
           </p>
           <Link
             href="/crew/login"
-            className="text-[13px] font-semibold text-[var(--yu3-wine)] hover:underline [font-family:var(--font-body)]"
+            className="text-[14px] font-semibold text-[var(--yu3-wine)] hover:underline [font-family:var(--font-body)]"
           >
             Back to login
           </Link>
@@ -213,7 +213,7 @@ export default function CrewDashboardPage() {
             are available.
           </p>
           {jobs.length > 0 && (
-            <p className="text-[13px] text-[var(--yu3-ink-muted)] mt-4 font-medium">
+            <p className="text-[14px] text-[var(--yu3-ink-muted)] mt-4 font-medium">
               {jobs.length === 1
                 ? "One job is scheduled for your team today. It will show here after the check."
                 : `${jobs.length} jobs are scheduled for your team today. They will show here after the check.`}
@@ -322,12 +322,12 @@ export default function CrewDashboardPage() {
               <p className="yu3-t-eyebrow text-[12px] text-[var(--yu3-ink)] mb-3 [font-family:var(--font-body)]">
                 No jobs on the schedule
               </p>
-              <p className="text-[13px] text-[var(--yu3-ink-muted)] leading-relaxed max-w-[32ch] mx-auto">
+              <p className="text-[14px] text-[var(--yu3-ink-muted)] leading-relaxed max-w-[32ch] mx-auto">
                 Check back tomorrow or contact dispatch if this looks wrong.
               </p>
             </div>
           ) : (
-            <div className="rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)] overflow-hidden divide-y divide-[var(--yu3-line-subtle)]">
+            <div className="space-y-3 w-full min-w-0">
             {jobs.map((job, index) => {
               const completed = isCompleted(job);
               const statusKey = (job.status || "").toLowerCase();
@@ -343,7 +343,9 @@ export default function CrewDashboardPage() {
               return (
                   <article
                     key={job.id}
-                    className={`min-w-0 p-4 sm:p-5${!completed && !inProgress && !canStart ? " opacity-[0.85]" : ""}`}
+                    className={`min-w-0 rounded-[12px] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 sm:p-5 shadow-[0_2px_14px_rgba(15,15,20,0.08)] ${
+                      !completed && !inProgress && !canStart ? " opacity-[0.88]" : ""
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="min-w-0 flex-1 flex items-start gap-2.5">
@@ -374,7 +376,7 @@ export default function CrewDashboardPage() {
                           <span className="text-[15px] font-semibold text-[var(--yu3-ink)] truncate block leading-snug">
                             {job.clientName}
                           </span>
-                          <span className="text-[10px] text-[var(--yu3-ink-faint)] font-mono tracking-tight block mt-0.5">
+                          <span className="text-[12px] font-semibold text-[var(--yu3-ink-muted)] font-mono tracking-tight block mt-0.5">
                             {job.jobId}
                           </span>
                           <JobConditionsInline
@@ -416,7 +418,7 @@ export default function CrewDashboardPage() {
                             {getDisplayLabel(job.status, "status")}
                           </span>
                         ) : null}
-                        <span className="text-[11px] font-medium text-[var(--yu3-ink-faint)] tabular-nums">
+                        <span className="text-[12px] font-semibold text-[var(--yu3-ink-muted)] tabular-nums">
                           {job.scheduledTime}
                         </span>
                       </div>
@@ -439,10 +441,10 @@ export default function CrewDashboardPage() {
                       </div>
                       {/* Address text column */}
                       <div className="flex flex-col justify-between min-w-0 flex-1 gap-2">
-                        <span className="text-[12px] text-[var(--yu3-ink-muted)] truncate pt-0.5">
+                        <span className="text-[14px] text-[var(--yu3-ink-muted)] truncate pt-0.5 leading-snug">
                           {job.fromAddress}
                         </span>
-                        <span className="text-[12px] text-[var(--yu3-ink-muted)] truncate pb-0.5">
+                        <span className="text-[14px] text-[var(--yu3-ink-muted)] truncate pb-0.5 leading-snug">
                           {job.toAddress}
                         </span>
                       </div>

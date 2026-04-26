@@ -26,6 +26,7 @@ import {
   Check,
   Toolbox,
   ListChecks,
+  Warning,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -864,7 +865,7 @@ export default function CrewJobPage({
             <h1 className="font-hero text-[28px] font-semibold text-[var(--yu3-ink-strong)] leading-[1.12] truncate tracking-[-0.02em]">
               {job.clientName}
             </h1>
-            <p className="text-[10px] text-[var(--yu3-ink-faint)] mt-1 font-mono tracking-wide">
+            <p className="text-[12px] font-semibold text-[var(--yu3-ink-muted)] mt-1 font-mono tracking-wide">
               {job.jobId}
             </p>
             {job.scheduledDate && (
@@ -985,7 +986,7 @@ export default function CrewJobPage({
             key={t.id}
             onClick={() => setActiveTab(t.id)}
             type="button"
-            className={`relative flex-1 px-3 py-3 text-[11px] font-bold tracking-[0.12em] uppercase transition-colors duration-150 whitespace-nowrap touch-manipulation [font-family:var(--font-body)] leading-none ${
+            className={`relative flex-1 min-h-[44px] px-3 py-3 text-[11px] font-bold tracking-[0.12em] uppercase transition-colors duration-150 whitespace-nowrap touch-manipulation [font-family:var(--font-body)] leading-none ${
               activeTab === t.id
                 ? "text-[var(--yu3-wine)]"
                 : "text-[var(--yu3-ink-faint)] hover:text-[var(--yu3-wine)]/70"
@@ -1440,10 +1441,10 @@ export default function CrewJobPage({
 
                 const connectorColor =
                   state === "done"
-                    ? "color-mix(in srgb, var(--yu3-forest) 35%, transparent)"
+                    ? "color-mix(in srgb, var(--yu3-forest) 70%, var(--yu3-line) 30%)"
                     : state === "act"
-                      ? "color-mix(in srgb, var(--yu3-wine) 35%, transparent)"
-                      : "color-mix(in srgb, var(--yu3-wine) 10%, transparent)";
+                      ? "var(--yu3-wine)"
+                      : "color-mix(in srgb, var(--yu3-ink) 32%, var(--yu3-line) 68%)";
 
                 return (
                   <div key={s} className="flex gap-3.5">
@@ -1503,7 +1504,7 @@ export default function CrewJobPage({
                       {!isLast && (
                         <div
                           style={{
-                            width: 2,
+                            width: 3,
                             flex: 1,
                             marginTop: 3,
                             marginBottom: 3,
@@ -1522,12 +1523,12 @@ export default function CrewJobPage({
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <span
-                            className={`text-[12px] font-semibold leading-tight block ${
+                            className={`text-[14px] leading-tight block ${
                               state === "done"
-                                ? "text-[var(--yu3-ink)]"
+                                ? "text-[var(--yu3-ink)] font-semibold"
                                 : state === "act"
-                                  ? "text-[var(--yu3-wine)]"
-                                  : "text-[var(--yu3-ink-faint)]/90"
+                                  ? "text-[var(--yu3-wine)] font-bold"
+                                  : "text-[var(--yu3-ink-faint)] font-normal"
                             }`}
                           >
                             {getCrewCheckpointDisplayLabel(s, useLogisticsCopy)}
@@ -1591,53 +1592,59 @@ export default function CrewJobPage({
             </div>
           )}
 
-          {/* Quick actions — forest / red / wine / leather (brand fills) */}
+          {/* Quick actions: primary dispatch, secondary note + waiver, report issue outlined */}
           {!isCompleted && (
-            <div className="flex items-center justify-center gap-2 pt-2 pb-1 flex-wrap">
-              {session?.isActive && (
-                <button
-                  type="button"
-                  data-no-min-height
-                  onClick={() => {
-                    const el = noteInputRef.current;
-                    if (el) {
-                      el.scrollIntoView({
-                        block: "center",
-                        behavior: "smooth",
-                      });
-                      el.focus();
-                    }
-                  }}
-                  className="crew-job-flat inline-flex items-center justify-center min-h-[24px] px-3 py-0.5 !rounded-none border border-solid border-[rgba(28,58,43,0.95)] !bg-[#2C3E2D] !text-[#FFFBF7] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] leading-none [font-family:var(--font-body)] shadow-none transition-[filter,opacity] hover:!brightness-[0.96] active:!brightness-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C3E2D] touch-manipulation"
-                >
-                  Note
-                </button>
-              )}
-              <button
-                type="button"
-                data-no-min-height
-                onClick={() => setReportModalOpen(true)}
-                className="crew-job-flat inline-flex items-center justify-center min-h-[24px] px-3 py-0.5 !rounded-none border border-solid border-[rgba(120,35,35,0.95)] !bg-[#B83030] !text-[#FFFBF7] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] leading-none [font-family:var(--font-body)] shadow-none transition-[filter,opacity] hover:!brightness-[0.96] active:!brightness-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B83030] touch-manipulation"
-              >
-                Report issue
-              </button>
-              {jobType === "move" && session?.isActive && (
-                <button
-                  type="button"
-                  data-no-min-height
-                  onClick={() => setWaiverFlowOpen(true)}
-                  className="crew-job-flat inline-flex items-center justify-center min-h-[24px] px-3 py-0.5 !rounded-md border border-solid border-[var(--yu3-wine)] !bg-[var(--yu3-wine)] !text-[var(--yu3-on-wine)] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] leading-none [font-family:var(--font-body)] shadow-none transition-[filter,opacity] hover:!brightness-[0.96] active:!brightness-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)] touch-manipulation"
-                  aria-label="Open on-site risk waiver"
-                >
-                  Risk waiver
-                </button>
-              )}
+            <div className="space-y-2.5 pt-2 pb-1">
               <a
                 href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
-                className="crew-job-flat inline-flex items-center justify-center min-h-[24px] px-3 py-0.5 !rounded-none border border-solid border-[rgba(55,32,22,0.95)] !bg-[#492A1D] !text-[#FFFBF7] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.12em] leading-none [font-family:var(--font-body)] shadow-none transition-[filter,opacity] hover:!brightness-[0.96] active:!brightness-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#492A1D] touch-manipulation no-underline"
+                className="crew-premium-cta flex w-full min-h-[44px] items-center justify-center gap-2 px-4 text-[11px] font-bold uppercase tracking-[0.12em] text-[#FFFBF7] [font-family:var(--font-body)] no-underline touch-manipulation"
               >
                 Dispatch
               </a>
+              {session?.isActive && (
+                <div
+                  className={
+                    jobType === "move"
+                      ? "grid w-full grid-cols-2 gap-2"
+                      : "grid w-full grid-cols-1 gap-2"
+                  }
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = noteInputRef.current;
+                      if (el) {
+                        el.scrollIntoView({
+                          block: "center",
+                          behavior: "smooth",
+                        });
+                        el.focus();
+                      }
+                    }}
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--yu3-r-md)] border-2 border-[#2C3E2D] bg-[#2C3E2D] px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#FFFBF7] [font-family:var(--font-body)] leading-none transition-[filter,opacity] hover:brightness-[0.97] active:brightness-[0.93] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C3E2D] touch-manipulation"
+                  >
+                    Note
+                  </button>
+                  {jobType === "move" && (
+                    <button
+                      type="button"
+                      onClick={() => setWaiverFlowOpen(true)}
+                      className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--yu3-r-md)] border-2 border-[var(--yu3-wine)] bg-[var(--yu3-wine)] px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-on-wine)] [font-family:var(--font-body)] leading-none transition-[filter,opacity] hover:brightness-[0.97] active:brightness-[0.93] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)] touch-manipulation"
+                      aria-label="Open on-site risk waiver"
+                    >
+                      Risk waiver
+                    </button>
+                  )}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setReportModalOpen(true)}
+                className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-[var(--yu3-r-md)] border-2 border-[#B91C1C]/45 bg-white px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#B91C1C] [font-family:var(--font-body)] leading-none shadow-none transition-[background-color,opacity] hover:bg-red-50 active:bg-red-100/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B91C1C]/50 touch-manipulation"
+              >
+                <Warning size={20} weight="bold" className="shrink-0" aria-hidden />
+                Report issue
+              </button>
             </div>
           )}
         </div>

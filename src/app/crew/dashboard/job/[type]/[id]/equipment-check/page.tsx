@@ -11,6 +11,9 @@ import {
   EQUIPMENT_TRACKING_UNAVAILABLE_MESSAGE,
   isEquipmentRelationUnavailable,
 } from "@/lib/supabase-equipment-errors";
+import { formatPhone, normalizePhone } from "@/lib/phone";
+
+const DISPATCH_PHONE = process.env.NEXT_PUBLIC_YUGO_PHONE || "(647) 370-4525";
 
 const FOREST_PRIMARY = "#2C3E2D";
 const INK = "#1A1A1A";
@@ -398,11 +401,21 @@ export default function CrewEquipmentCheckPage({
           </p>
         ) : equipmentUnavailable ? null : eqLines.length === 0 ? (
           <div className="text-center py-6 px-2">
-            <p className="text-[12px] leading-relaxed" style={{ color: MUTED }}>
+            <p
+              className="text-[14px] leading-relaxed mb-4"
+              style={{ color: MUTED }}
+            >
               No equipment list for this truck yet. If your truck should have
               gear assigned, ask dispatch to set up truck equipment in the admin
               dashboard.
             </p>
+            <a
+              href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
+              className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 text-[11px] font-bold uppercase tracking-[0.1em] transition-opacity hover:opacity-92 active:opacity-88 [font-family:var(--font-body)]"
+              style={{ backgroundColor: FOREST_PRIMARY, color: "#1A1A1A" }}
+            >
+              Call dispatch {formatPhone(DISPATCH_PHONE)}
+            </a>
           </div>
         ) : (
           <div className="space-y-3 mb-5">
@@ -629,7 +642,7 @@ export default function CrewEquipmentCheckPage({
                 className="accent-[#2C3E2D]"
               />
               <span style={{ color: INK }}>
-                Emergency — will complete later
+                Emergency, complete later
               </span>
             </label>
             <textarea

@@ -139,17 +139,17 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
               Skip to main content
             </a>
 
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
               <main
                 id="crew-main"
                 key={pathname}
                 className={cn(
                   "relative min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y tab-content",
                   "bg-[var(--yu3-bg-canvas)]",
-                  "px-4 sm:px-5",
+                  "px-4",
                   immersiveNav
                     ? "pt-0 pb-0"
-                    : "pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px))]",
+                    : "pt-4 pb-[var(--admin-mobile-nav-bar)]",
                 )}
               >
                 {children}
