@@ -98,7 +98,7 @@ export async function POST(
       const { error: sendError } = await resend.emails.send({
         from: emailFrom,
         to: email,
-        subject: `Track your move ${jobIdDisplay}`,
+        subject: `Your move is scheduled ${jobIdDisplay}`,
         html: trackingLinkEmail({ clientName: name.trim() || "there", trackUrl, moveNumber: jobIdDisplay }),
         headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
       });

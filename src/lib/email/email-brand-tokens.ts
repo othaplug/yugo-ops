@@ -27,9 +27,9 @@ export const EMAIL_PREMIUM_MUTED_FILL = "rgba(44,62,45,0.06)";
 /** Section header row background inside summary tables on cream. */
 export const EMAIL_PREMIUM_TABLE_HEAD = "#FFFBF7";
 
-/** Body / UI sans stack — DM Sans first (quote page parity), then system fallbacks. */
-export const EMAIL_DM_SANS_STACK =
-  "'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif";
+/** Body / UI sans stack — Brown first (self-hosted on web; mail clients fall back), then system UI. */
+export const EMAIL_SANS_STACK =
+  "'Brown',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif";
 
 /**
  * Label column in key:value tables (move details parity): uppercase, tracked, muted ink.

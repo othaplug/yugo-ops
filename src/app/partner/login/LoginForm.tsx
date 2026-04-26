@@ -142,7 +142,7 @@ export default function PartnerLoginForm({
     <main className="ptr-login">
       <style>{`
         .ptr-login {
-          min-height: 100vh; display: flex; font-family: 'DM Sans', sans-serif;
+          min-height: 100vh; display: flex; font-family: 'Brown', system-ui, sans-serif;
           background: #FDFCFA;
         }
         .ptr-left {
@@ -165,7 +165,7 @@ export default function PartnerLoginForm({
         }
         .ptr-input {
           width: 100%; padding: 13px 16px; background: #FFF; border: 1.5px solid #E8E4DF;
-          border-radius: 12px; color: #1A1714; font-size: 14px; font-family: 'DM Sans', sans-serif;
+          border-radius: 12px; color: #1A1714; font-size: 14px; font-family: 'Brown', system-ui, sans-serif;
           outline: none; transition: all 0.2s;
         }
         .ptr-input:focus { border-color: #2C3E2D; box-shadow: 0 0 0 3px rgba(201,169,98,0.08); }
@@ -173,13 +173,13 @@ export default function PartnerLoginForm({
         .ptr-btn {
           width: 100%; padding: 14px; background: #2D6A4F; color: #FFF;
           border: none; border-radius: 12px; font-size: 14px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
+          font-family: 'Brown', system-ui, sans-serif; cursor: pointer; transition: all 0.2s;
         }
         .ptr-btn:hover:not(:disabled) { background: #245840; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(45,106,79,0.25); }
         .ptr-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .ptr-link { background: none; border: none; color: #2C3E2D; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; transition: color 0.2s; }
+        .ptr-link { background: none; border: none; color: #2C3E2D; font-size: 12px; cursor: pointer; font-family: 'Brown', system-ui, sans-serif; padding: 0; transition: color 0.2s; }
         .ptr-link:hover { color: #B89A52; text-decoration: underline; }
-        .ptr-back { background: none; border: none; color: #6B6B6B; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; width: 100%; text-align: center; transition: color 0.2s; }
+        .ptr-back { background: none; border: none; color: #6B6B6B; font-size: 12px; cursor: pointer; font-family: 'Brown', system-ui, sans-serif; padding: 0; width: 100%; text-align: center; transition: color 0.2s; }
         .ptr-back:hover { color: #1A1714; }
         @keyframes ptrFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes ptrFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }

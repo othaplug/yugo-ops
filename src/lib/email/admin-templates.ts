@@ -5,7 +5,7 @@
  */
 import { getEmailFooterStandaloneFragment } from "@/lib/email/client-email-footer";
 import {
-  EMAIL_DM_SANS_STACK,
+  EMAIL_SANS_STACK,
   EMAIL_FOREST,
   EMAIL_PREMIUM_MUTED_FILL,
   EMAIL_PREMIUM_PAGE,
@@ -25,7 +25,7 @@ const SHELL_BG = EMAIL_PREMIUM_PAGE;
 const DETAIL_BAND_BG = EMAIL_PREMIUM_MUTED_FILL;
 const TEXT = "#1a1a1a";
 const TEXT_MUTED = "#555";
-const BTN_FONT = EMAIL_DM_SANS_STACK;
+const BTN_FONT = EMAIL_SANS_STACK;
 /** Structured row labels (quote parity). */
 const ADMIN_LABEL_TD = `color:#6B635C;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;padding:5px 12px 5px 0;vertical-align:top;width:38%;font-family:${BTN_FONT}`;
 const ADMIN_KICKER = `font-size:12px;font-weight:700;color:${ACCENT_ROSE};letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;font-family:${BTN_FONT}`;

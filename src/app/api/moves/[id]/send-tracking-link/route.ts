@@ -43,7 +43,7 @@ export async function POST(
     const { error: sendError } = await resend.emails.send({
       from: emailFrom,
       to: email,
-      subject: `Track your move ${jobIdDisplay}`,
+      subject: `Your move is scheduled ${jobIdDisplay}`,
       html: trackingLinkEmail({
         clientName: name || "there",
         trackUrl,

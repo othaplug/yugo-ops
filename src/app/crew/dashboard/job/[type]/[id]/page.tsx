@@ -27,23 +27,18 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { formatTime } from "@/lib/client-timezone";
 import { formatPlatformDisplay } from "@/lib/date-format";
 import {
-  MOVE_STATUS_FLOW,
   DELIVERY_STATUS_FLOW,
-  CREW_MOVE_PROGRESS_BAR_LABELS,
-  CREW_DELIVERY_PROGRESS_BAR_LABELS,
-  mapMoveProgressIdxToBarIndex,
   getNextStatus,
   getCrewCheckpointDisplayLabel,
 } from "@/lib/crew-tracking-status";
-import {
-  getCrewStatusFlowForMove,
-  crewStatusRequiresFinalWalkPhotos,
-} from "@/lib/crew/service-type-flow";
+import { getCrewStatusFlowForMove } from "@/lib/crew/service-type-flow";
 import { formatPhone, normalizePhone } from "@/lib/phone";
-import { formatAccessForDisplay } from "@/lib/format-text";
+import {
+  accessLineText,
+  resolveMoveAccessLines,
+} from "@/lib/crew-move-access";
 import PageContent from "@/app/admin/components/PageContent";
 import { useCrewImmersiveNav } from "@/app/crew/components/CrewImmersiveNavContext";
-import StageProgressBar from "@/components/StageProgressBar";
 import { InfoHint } from "@/components/ui/InfoHint";
 import JobPhotos from "./JobPhotos";
 import JobInventory from "./JobInventory";
@@ -63,6 +58,7 @@ import {
   MOVE_DAY_ISSUE_OPTIONS,
   defaultUrgencyForIssue,
 } from "@/lib/crew/move-day-issues";
+import { cn } from "@/lib/utils";
 
 const CrewNavigation = dynamic(
   () =>
@@ -289,7 +285,6 @@ export default function CrewJobPage({
   const [walkthroughModalOpen, setWalkthroughModalOpen] = useState(false);
   const [walkthroughDone, setWalkthroughDone] = useState(false);
   const [walkthroughSkipped, setWalkthroughSkipped] = useState(false);
-  const [finalWalkPhotoCount, setFinalWalkPhotoCount] = useState(0);
   const [walkthroughResult, setWalkthroughResult] = useState<{
     itemsMatched: number;
     itemsMissing: number;
@@ -314,12 +309,6 @@ export default function CrewJobPage({
     moveFlow: jobType === "move" ? moveStatusFlow : undefined,
   });
   const isCompleted = currentStatus === "completed";
-  const progressIdx = statusFlow.indexOf(currentStatus as any);
-  const progressPercent = isCompleted
-    ? 100
-    : progressIdx >= 0
-      ? ((progressIdx + 1) / statusFlow.length) * 100
-      : 0;
 
   const isNavigatingLeg =
     currentStatus === "en_route_to_pickup" ||
@@ -385,25 +374,6 @@ export default function CrewJobPage({
       setSession(null);
     }
   }, [id, jobType]);
-
-  const refreshFinalWalkPhotos = useCallback(async () => {
-    try {
-      const r = await fetch(
-        `/api/crew/photos/${encodeURIComponent(id)}?jobType=${encodeURIComponent(jobType)}`,
-      );
-      const d = await r.json();
-      const list = (d.photos || []) as { category?: string }[];
-      setFinalWalkPhotoCount(
-        list.filter((p) => p.category === "walkthrough_final").length,
-      );
-    } catch {
-      setFinalWalkPhotoCount(0);
-    }
-  }, [id, jobType]);
-
-  useEffect(() => {
-    void refreshFinalWalkPhotos();
-  }, [refreshFinalWalkPhotos, session?.status, session?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -546,17 +516,6 @@ export default function CrewJobPage({
   const advanceStatus = async () => {
     if (!session || !nextStatus) return;
     if (nextStatus === "completed") {
-      const needsFinalWalk = crewStatusRequiresFinalWalkPhotos(
-        jobType,
-        currentStatus,
-        jobType === "move" ? moveStatusFlow : DELIVERY_STATUS_FLOW,
-      );
-      if (needsFinalWalk && finalWalkPhotoCount < 1) {
-        setActionError(
-          "Add at least one final walkthrough photo in the Photos tab before sign-off.",
-        );
-        return;
-      }
       router.push(`/crew/dashboard/job/${jobType}/${id}/signoff`);
       return;
     }
@@ -667,41 +626,13 @@ export default function CrewJobPage({
     };
   }, []);
 
-  /** Must run every render: progress bar memos are hooks and cannot sit after `loading` / `!job` / day-rate early returns (React #310). */
+  /** Must run every render: hooks that depend on `job` / `useLogisticsCopy` cannot sit after `loading` / `!job` / day-rate early returns (React #310). */
   const useLogisticsCopy =
     jobType === "delivery" ||
     (() => {
       const st = (job?.serviceType || "").toLowerCase();
       return st === "b2b_delivery" || st === "b2b_oneoff";
     })();
-  const isDefaultMoveBar =
-    jobType === "move" &&
-    moveStatusFlow.length === MOVE_STATUS_FLOW.length &&
-    moveStatusFlow.every((s, i) => s === MOVE_STATUS_FLOW[i]);
-  const progressBarStages = useMemo(() => {
-    if (jobType === "delivery") {
-      return CREW_DELIVERY_PROGRESS_BAR_LABELS.map((label) => ({ label }));
-    }
-    if (isDefaultMoveBar) {
-      return CREW_MOVE_PROGRESS_BAR_LABELS.map((label) => ({ label }));
-    }
-    return moveStatusFlow.map((s) => ({
-      label: getCrewCheckpointDisplayLabel(s, useLogisticsCopy),
-    }));
-  }, [jobType, isDefaultMoveBar, moveStatusFlow, useLogisticsCopy]);
-  const progressBarCurrentIndex = useMemo(() => {
-    if (progressIdx < 0) return -1;
-    if (jobType === "delivery") return progressIdx;
-    if (isDefaultMoveBar) return mapMoveProgressIdxToBarIndex(progressIdx);
-    if (isCompleted) return moveStatusFlow.length - 1;
-    return progressIdx;
-  }, [
-    progressIdx,
-    jobType,
-    isDefaultMoveBar,
-    isCompleted,
-    moveStatusFlow.length,
-  ]);
 
   if (loading) {
     return (
@@ -782,13 +713,6 @@ export default function CrewJobPage({
     "arrived",
   ].includes(currentStatus);
   const blockedByPhotos = atArrivedRequiringPhotos && !canAdvanceFromArrived;
-  const needsFinalWalkPhotos = crewStatusRequiresFinalWalkPhotos(
-    jobType,
-    currentStatus,
-    jobType === "move" ? moveStatusFlow : DELIVERY_STATUS_FLOW,
-  );
-  const blockedByFinalWalkPhotos =
-    needsFinalWalkPhotos && finalWalkPhotoCount < 1;
   const finalWalkPhotoAtLoading =
     jobType === "move" && !moveStatusFlow.includes("unloading");
   // Walkthrough must be done (or skipped) before loading can start
@@ -816,8 +740,23 @@ export default function CrewJobPage({
     (jobType === "move" &&
       job.moveType === "residential" &&
       (job.inventory?.length ?? 0) === 0);
-  const fromAccessDisplay = formatAccessForDisplay(job.fromAccess);
-  const toAccessDisplay = formatAccessForDisplay(job.toAccess);
+  let { from: fromAccessRaw, to: toAccessRaw } = resolveMoveAccessLines({
+    fromAccess: job.fromAccess,
+    toAccess: job.toAccess,
+    accessNotes: job.accessNotes,
+  });
+  if (!fromAccessRaw?.trim() && !toAccessRaw?.trim() && job.access?.trim()) {
+    const combined = job.access.trim();
+    if (combined.includes("->")) {
+      const parts = combined.split("->").map((x) => x.trim());
+      if (parts[0]) fromAccessRaw = fromAccessRaw || parts[0];
+      if (parts[1]) toAccessRaw = toAccessRaw || parts[1];
+    } else {
+      fromAccessRaw = fromAccessRaw || combined;
+    }
+  }
+  const fromAccessLine = accessLineText(fromAccessRaw);
+  const toAccessLine = accessLineText(toAccessRaw);
   const originLabel = useLogisticsCopy ? "Origin" : "Pickup";
   const destinationLabel = useLogisticsCopy ? "Destination" : "Drop-off";
 
@@ -1016,28 +955,28 @@ export default function CrewJobPage({
 
             <div className="flex flex-col justify-between min-w-0 flex-1 gap-4">
               <div className="min-w-0">
-                <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-faint)] mb-1 [font-family:var(--font-body)] leading-none">
+                <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)] mb-1 [font-family:var(--font-body)] leading-none">
                   {originLabel}
                 </p>
                 <p className="text-[15px] text-[var(--yu3-ink)] leading-snug font-medium tracking-[-0.01em]">
                   {job.fromAddress}
                 </p>
-                {fromAccessDisplay && (
-                  <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1 leading-snug [font-family:var(--font-body)]">
-                    Access: {fromAccessDisplay}
+                {fromAccessLine && (
+                  <p className="text-[13px] font-medium text-[var(--yu3-ink)] mt-1.5 leading-snug [font-family:var(--font-body)]">
+                    {fromAccessLine}
                   </p>
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-faint)] mb-1 [font-family:var(--font-body)] leading-none">
+                <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)] mb-1 [font-family:var(--font-body)] leading-none">
                   {destinationLabel}
                 </p>
                 <p className="text-[15px] text-[var(--yu3-ink)] leading-snug font-medium tracking-[-0.01em]">
                   {job.toAddress}
                 </p>
-                {toAccessDisplay && (
-                  <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1 leading-snug [font-family:var(--font-body)]">
-                    Access: {toAccessDisplay}
+                {toAccessLine && (
+                  <p className="text-[13px] font-medium text-[var(--yu3-ink)] mt-1.5 leading-snug [font-family:var(--font-body)]">
+                    {toAccessLine}
                   </p>
                 )}
               </div>
@@ -1056,7 +995,7 @@ export default function CrewJobPage({
             className={`relative flex-1 min-h-[44px] px-3 py-3 text-[11px] font-bold tracking-[0.12em] uppercase transition-colors duration-150 whitespace-nowrap touch-manipulation [font-family:var(--font-body)] leading-none ${
               activeTab === t.id
                 ? "text-[var(--yu3-wine)]"
-                : "text-[var(--yu3-ink-faint)] hover:text-[var(--yu3-wine)]/70"
+                : "text-[var(--yu3-ink-muted)] hover:text-[var(--yu3-wine)]"
             }`}
           >
             {t.label}
@@ -1109,7 +1048,7 @@ export default function CrewJobPage({
                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--yu3-r-lg)] ${
                     job.preMoveChecklistAllComplete
                       ? "bg-[var(--yu3-forest)]/20 text-[var(--yu3-forest)]"
-                      : "bg-[var(--yu3-wine-tint)] text-[var(--yu3-ink-faint)]"
+                      : "bg-[var(--yu3-wine-tint)] text-[var(--yu3-ink-muted)]"
                   }`}
                 >
                   <ListChecks size={22} weight="bold" aria-hidden />
@@ -1176,7 +1115,7 @@ export default function CrewJobPage({
           {/* Live tracking tips: compact label + InfoHint so the main column stays clear */}
           {(showStartButton || (session?.isActive && !isCompleted)) && (
             <div className="px-2 flex justify-center items-center gap-2 py-0.5 min-h-0">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)] select-none">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)] select-none">
                 Tracking tips
               </span>
               <InfoHint
@@ -1231,7 +1170,7 @@ export default function CrewJobPage({
                 {advancing ? "Starting…" : "Start job"}
               </button>
               {blockedByLocation && (
-                <p className="text-[10px] text-[var(--yu3-ink-faint)] text-center leading-snug px-1 [font-family:var(--font-body)]">
+                <p className="text-[10px] text-[var(--yu3-ink-muted)] text-center leading-snug px-1 [font-family:var(--font-body)]">
                   Location is off or unavailable. Enable it for this site in
                   your settings, then tap Start job again.
                 </p>
@@ -1252,22 +1191,12 @@ export default function CrewJobPage({
             </div>
           )}
 
-          {/* Progress */}
-          <div className="px-2">
-            <StageProgressBar
-              stages={progressBarStages}
-              currentIndex={progressBarCurrentIndex}
-              variant="light"
-              lightAccent="wine"
-            />
-          </div>
-
           {/* Optional note — attached to noteInputRef; sent with the next checkpoint API call */}
           {session?.isActive && !isCompleted && (
             <div className="px-2 space-y-1.5">
               <label
                 htmlFor="crew-checkpoint-note"
-                className="block text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]"
+                className="block text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]"
               >
                 Note for next update (optional)
               </label>
@@ -1282,7 +1211,7 @@ export default function CrewJobPage({
                     ? "e.g. Delayed at dock, site contact at loading bay…"
                     : "e.g. Delayed at gate, client at side entrance…"
                 }
-                className="w-full px-3.5 py-2.5 rounded-[var(--yu3-r-md)] bg-[var(--yu3-bg-surface-sunken)] border border-[var(--yu3-line-subtle)] text-[var(--yu3-ink)] placeholder:text-[var(--yu3-ink-faint)] text-[13px] outline-none focus:ring-2 focus:ring-[var(--yu3-wine)]/25 focus:ring-offset-0 [font-family:var(--font-body)]"
+                className="w-full px-3.5 py-2.5 rounded-[var(--yu3-r-md)] bg-[var(--yu3-bg-surface-sunken)] border border-[var(--yu3-line-subtle)] text-[var(--yu3-ink)] placeholder:text-[var(--yu3-ink-muted)] text-[13px] outline-none focus:ring-2 focus:ring-[var(--yu3-wine)]/25 focus:ring-offset-0 [font-family:var(--font-body)]"
                 autoComplete="off"
               />
             </div>
@@ -1370,7 +1299,6 @@ export default function CrewJobPage({
           {showAdvanceButton &&
             !blockedByPhotos &&
             !blockedByWalkthrough &&
-            !blockedByFinalWalkPhotos &&
             (nextStatus === "completed" ? (
               <Link
                 href={`/crew/dashboard/job/${jobType}/${id}/signoff`}
@@ -1394,25 +1322,19 @@ export default function CrewJobPage({
               </button>
             ) : null)}
           {showAdvanceButton && canUseLocationActions && blockedByPhotos && (
-            <p className="text-center text-[11px] text-[var(--yu3-ink-faint)] py-2 [font-family:var(--font-body)]">
+            <p className="text-center text-[11px] text-[var(--yu3-ink-muted)] py-2 [font-family:var(--font-body)]">
               Take photos in the Photos tab to advance
             </p>
           )}
-          {showAdvanceButton && blockedByFinalWalkPhotos && (
-            <p className="text-center text-[11px] text-[var(--yu3-ink-faint)] py-2 [font-family:var(--font-body)]">
-              Add final walkthrough photos in the Photos tab before client sign-off
-            </p>
-          )}
 
-          {/* Timeline */}
+          {/* Timeline — vertical track, Yugo type, checks for completed steps */}
           <div>
-            {/* Header — wine serif title + forest meta (premium crew delivery / move) */}
-            <div className="flex items-center justify-between pb-3 border-b border-[var(--yu3-line-subtle)]">
-              <h2 className="font-hero text-[22px] sm:text-[24px] font-semibold text-[var(--yu3-wine)] leading-tight tracking-tight">
+            <div className="flex items-center justify-between border-b border-[var(--yu3-line-subtle)] pb-3">
+              <h2 className="font-hero text-[22px] font-semibold leading-tight tracking-tight text-[var(--yu3-wine)] sm:text-[24px]">
                 Timeline
               </h2>
               {session?.startedAt && (
-                <span className="text-[10px] font-medium tabular-nums [font-family:var(--font-body)] text-[var(--yu3-ink-faint)]">
+                <span className="text-[10px] font-medium tabular-nums text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
                   Started{" "}
                   {formatTime(session.startedAt, {
                     hour: "numeric",
@@ -1421,246 +1343,171 @@ export default function CrewJobPage({
                 </span>
               )}
             </div>
-            {/* Steps */}
-            <div className="space-y-0 pt-3">
-              {statusFlow.map((s, i) => {
-                const cp = session?.checkpoints?.find((c) => c.status === s);
-                const idx = statusFlow.indexOf(currentStatus as any);
-                const isPast = idx > i || (idx === i && isCompleted);
-                const isCurrent = currentStatus === s && !isCompleted;
-                const isLast = i === statusFlow.length - 1;
-                const state = isPast ? "done" : isCurrent ? "act" : "wait";
+            <div className="relative pt-3">
+              <div
+                className="pointer-events-none absolute bottom-5 left-[14px] top-5 w-px -translate-x-1/2 bg-[var(--yu3-line-subtle)]"
+                aria-hidden
+              />
+              <ol
+                className="m-0 list-none space-y-0 p-0"
+                aria-label="Job timeline"
+              >
+                {statusFlow.map((s, i) => {
+                  const cp = session?.checkpoints?.find((c) => c.status === s);
+                  const idx = statusFlow.indexOf(currentStatus as any);
+                  const isPast = idx > i || (idx === i && isCompleted);
+                  const isCurrent = currentStatus === s && !isCompleted;
+                  const isLast = i === statusFlow.length - 1;
+                  const state = isPast ? "done" : isCurrent ? "act" : "wait";
 
-                const prevCp =
-                  i > 0
-                    ? session?.checkpoints?.find(
-                        (c) => c.status === statusFlow[i - 1],
-                      )
-                    : null;
-                const stepTs =
-                  cp?.timestamp ??
-                  (isLast && isCompleted
-                    ? (session?.completedAt ?? null)
-                    : null);
-                const elapsed =
-                  stepTs && prevCp?.timestamp
-                    ? Math.round(
-                        (new Date(stepTs).getTime() -
-                          new Date(prevCp.timestamp).getTime()) /
-                          60000,
-                      )
-                    : null;
+                  const prevCp =
+                    i > 0
+                      ? session?.checkpoints?.find(
+                          (c) => c.status === statusFlow[i - 1],
+                        )
+                      : null;
+                  const stepTs =
+                    cp?.timestamp ??
+                    (isLast && isCompleted
+                      ? (session?.completedAt ?? null)
+                      : null);
+                  const elapsed =
+                    stepTs && prevCp?.timestamp
+                      ? Math.round(
+                          (new Date(stepTs).getTime() -
+                            new Date(prevCp.timestamp).getTime()) /
+                            60000,
+                        )
+                      : null;
 
-                // Dot styles (yu3 wine active, forest complete): inline SVGs need resolvable colors
-                const DOT = 20;
-                const dotBg =
-                  state === "done"
-                    ? isLast && isCompleted
-                      ? "var(--yu3-forest)"
-                      : "color-mix(in srgb, var(--yu3-forest) 20%, transparent)"
-                    : state === "act"
-                      ? "var(--yu3-wine)"
-                      : "transparent";
-                const dotBorder =
-                  state === "done"
-                    ? isLast && isCompleted
-                      ? "var(--yu3-forest)"
-                      : "color-mix(in srgb, var(--yu3-forest) 50%, transparent)"
-                    : state === "act"
-                      ? "var(--yu3-wine)"
-                      : "color-mix(in srgb, var(--yu3-wine) 16%, transparent)";
-                const dotShadow =
-                  state === "act"
-                    ? "0 0 0 5px color-mix(in srgb, var(--yu3-wine) 20%, transparent)"
-                    : isLast && isCompleted
-                      ? "0 0 0 4px color-mix(in srgb, var(--yu3-forest) 12%, transparent)"
-                      : "none";
+                  const stepLabel = getCrewCheckpointDisplayLabel(
+                    s,
+                    useLogisticsCopy,
+                  );
 
-                const connectorColor =
-                  state === "done"
-                    ? "color-mix(in srgb, var(--yu3-forest) 70%, var(--yu3-line) 30%)"
-                    : state === "act"
-                      ? "var(--yu3-wine)"
-                      : "color-mix(in srgb, var(--yu3-ink) 32%, var(--yu3-line) 68%)";
-
-                return (
-                  <div key={s} className="flex gap-3.5">
-                    {/* Dot + connector column */}
-                    <div
-                      className="flex flex-col items-center shrink-0"
-                      style={{ width: DOT }}
+                  return (
+                    <li
+                      key={s}
+                      className={cn(
+                        "flex gap-3.5",
+                        !isLast && "pb-5",
+                        isLast && "pb-0",
+                      )}
+                      aria-current={state === "act" ? "step" : undefined}
                     >
-                      {/* Dot */}
-                      <div
-                        className="shrink-0 rounded-full z-10 flex items-center justify-center"
-                        style={{
-                          width: DOT,
-                          height: DOT,
-                          background: dotBg,
-                          border: `2px solid ${dotBorder}`,
-                          boxShadow: dotShadow,
-                        }}
-                      >
+                      <div className="relative z-[1] flex w-7 shrink-0 justify-center pt-0.5">
                         {state === "done" && (
-                          <span
-                            className="rounded-full"
-                            style={{
-                              width: isLast && isCompleted ? 8 : 7,
-                              height: isLast && isCompleted ? 8 : 7,
-                              background:
+                          <div
+                            className={cn(
+                              "flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border-2",
+                              isLast && isCompleted
+                                ? "border-[var(--yu3-forest)] bg-[var(--yu3-forest)] shadow-[0_0_0_4px_color-mix(in_srgb,var(--yu3-forest)_12%,transparent)]"
+                                : "border-[color-mix(in_srgb,var(--yu3-forest)_50%,var(--yu3-line))] bg-[color-mix(in_srgb,var(--yu3-forest)_14%,var(--yu3-bg-surface))]",
+                            )}
+                          >
+                            <Check
+                              aria-hidden
+                              className={
                                 isLast && isCompleted
-                                  ? "rgba(255,255,255,0.9)"
-                                  : "var(--yu3-forest)",
-                              opacity: isLast && isCompleted ? 1 : 0.9,
-                            }}
-                          />
+                                  ? "text-[#fffbf7]"
+                                  : "text-[var(--yu3-forest)]"
+                              }
+                              size={12}
+                              weight="bold"
+                            />
+                          </div>
                         )}
                         {state === "act" && (
-                          <span
-                            className="rounded-full animate-pulse"
-                            style={{
-                              width: 7,
-                              height: 7,
-                              background: "rgba(255,255,255,0.85)",
-                            }}
-                          />
+                          <div
+                            className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border-2 border-[var(--yu3-wine)] bg-[var(--yu3-wine)] shadow-[0_0_0_5px_color-mix(in_srgb,var(--yu3-wine)_20%,transparent)]"
+                            aria-hidden
+                          >
+                            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[rgba(255,251,247,0.9)]" />
+                          </div>
                         )}
                         {state === "wait" && (
-                          <span
-                            className="rounded-full"
-                            style={{
-                              width: 6,
-                              height: 6,
-                              background:
-                                "color-mix(in srgb, var(--yu3-wine) 12%, transparent)",
-                            }}
-                          />
+                          <div
+                            className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border-2 border-[color-mix(in_srgb,var(--yu3-wine)_18%,var(--yu3-line))] bg-[var(--yu3-bg-surface)]"
+                            aria-hidden
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full bg-[color-mix(in_srgb,var(--yu3-wine)_15%,transparent)]" />
+                          </div>
                         )}
                       </div>
-                      {/* Connector */}
-                      {!isLast && (
-                        <div
-                          style={{
-                            width: 3,
-                            flex: 1,
-                            marginTop: 3,
-                            marginBottom: 3,
-                            minHeight: 18,
-                            background: connectorColor,
-                            borderRadius: 1,
-                          }}
-                        />
-                      )}
-                    </div>
 
-                    {/* Content */}
-                    <div
-                      className={`flex-1 min-w-0 ${isLast ? "pb-0" : "pb-4"}`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="min-w-0">
-                          <span
-                            className={`text-[14px] leading-tight block ${
-                              state === "done"
-                                ? "text-[var(--yu3-ink)] font-semibold"
-                                : state === "act"
-                                  ? "text-[var(--yu3-wine)] font-bold"
-                                  : "text-[var(--yu3-ink-faint)] font-normal"
-                            }`}
-                          >
-                            {getCrewCheckpointDisplayLabel(s, useLogisticsCopy)}
-                          </span>
-                          {state === "act" && (
-                            <span className="text-[9px] font-bold text-[var(--yu3-wine)]/80 uppercase tracking-widest block mt-0.5 [font-family:var(--font-body)]">
-                              Now
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {elapsed !== null && elapsed > 0 && (
-                            <span className="text-[10px] tabular-nums font-semibold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
-                              {elapsed}m
-                            </span>
-                          )}
-                          {(() => {
-                            const ts =
-                              cp?.timestamp ??
-                              (isLast && isCompleted
-                                ? (session?.completedAt ?? null)
-                                : null);
-                            return ts ? (
-                              <span
-                                className={`text-[10px] tabular-nums font-medium [font-family:var(--font-body)] ${
-                                  state === "done"
-                                    ? "text-[var(--yu3-ink-muted)]"
-                                    : "text-[var(--yu3-ink-faint)]"
-                                }`}
-                              >
-                                {formatTime(ts, {
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                })}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
+                          <p className="text-[9px] font-bold uppercase leading-none tracking-[0.12em] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+                            Step {i + 1} of {statusFlow.length}
+                          </p>
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                            {elapsed !== null && elapsed > 0 && (
+                              <span className="text-[10px] font-semibold tabular-nums text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+                                {elapsed}m
                               </span>
-                            ) : null;
-                          })()}
+                            )}
+                          </div>
                         </div>
+                        {stepTs ? (
+                          <p className="mt-1.5">
+                            <span className="inline-flex items-center rounded-full bg-[var(--yu3-forest)]/10 px-2 py-0.5 text-[9px] font-bold uppercase leading-none tracking-[0.1em] text-[var(--yu3-forest)] [font-family:var(--font-body)] tabular-nums">
+                              {formatTime(stepTs, {
+                                hour: "numeric",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </p>
+                        ) : null}
+                        <h3
+                          className={cn(
+                            "mt-1.5 text-[15px] leading-snug tracking-tight",
+                            state === "done" &&
+                              "font-semibold text-[var(--yu3-ink-strong)]",
+                            state === "act" &&
+                              "font-bold text-[var(--yu3-wine)]",
+                            state === "wait" &&
+                              "font-medium text-[var(--yu3-ink-muted)]",
+                          )}
+                        >
+                          {stepLabel}
+                        </h3>
+                        {state === "act" && (
+                          <p className="mt-1 text-[9px] font-bold uppercase leading-none tracking-[0.12em] text-[var(--yu3-wine)] [font-family:var(--font-body)]">
+                            Now
+                          </p>
+                        )}
+                        {cp?.note ? (
+                          <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--yu3-ink-muted)]">
+                            {cp.note}
+                          </p>
+                        ) : null}
                       </div>
-                      {cp?.note && (
-                        <p className="mt-0.5 text-[10px] text-[var(--yu3-ink-faint)] italic leading-snug">
-                          {cp.note}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                    </li>
+                  );
+                })}
+              </ol>
             </div>
           </div>
 
-          {/* Note + waiver only; dispatch and coordinator are under Support in the crew menu */}
+          {/* Risk waiver + report: matched outline chips (same visual system) */}
           {!isCompleted && (
-            <div className="space-y-2.5 pt-2 pb-1">
-              {session?.isActive && (
-                <div
-                  className={
-                    jobType === "move"
-                      ? "grid w-full grid-cols-2 gap-2"
-                      : "grid w-full grid-cols-1 gap-2"
-                  }
-                >
+            <div className="pt-2 pb-1">
+              <div className="flex flex-wrap items-center justify-center gap-2.5">
+                {session?.isActive && jobType === "move" && (
                   <button
                     type="button"
-                    onClick={() => {
-                      const el = noteInputRef.current;
-                      if (el) {
-                        el.scrollIntoView({
-                          block: "center",
-                          behavior: "smooth",
-                        });
-                        el.focus();
-                      }
-                    }}
-                    className="inline-flex min-h-[40px] items-center justify-center rounded-[var(--yu3-r-md)] border-2 border-[var(--yu3-wine)]/35 bg-[var(--yu3-wine)]/10 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-wine)] [font-family:var(--font-body)] leading-none transition-[filter,opacity] hover:bg-[var(--yu3-wine)]/16 active:brightness-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)]/30 touch-manipulation"
+                    onClick={() => setWaiverFlowOpen(true)}
+                    className="inline-flex min-h-[36px] items-center justify-center rounded-[var(--yu3-r-md)] border border-[var(--yu3-wine)] bg-transparent px-3.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-wine)] [font-family:var(--font-body)] leading-none transition-colors hover:bg-[var(--yu3-wine)]/6 active:brightness-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)]/35 touch-manipulation"
+                    aria-label="Open on-site risk waiver"
                   >
-                    Note
+                    Risk waiver
                   </button>
-                  {jobType === "move" && (
-                    <button
-                      type="button"
-                      onClick={() => setWaiverFlowOpen(true)}
-                      className="inline-flex min-h-[40px] items-center justify-center rounded-[var(--yu3-r-md)] border-2 border-[var(--yu3-wine)] bg-[var(--yu3-wine)] px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-on-wine)] [font-family:var(--font-body)] leading-none transition-[filter,opacity] hover:brightness-[0.97] active:brightness-[0.93] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)] touch-manipulation"
-                      aria-label="Open on-site risk waiver"
-                    >
-                      Risk waiver
-                    </button>
-                  )}
-                </div>
-              )}
-              <div className="flex justify-center pt-1">
+                )}
                 <button
                   type="button"
                   onClick={() => setReportModalOpen(true)}
-                  className="text-[10px] font-semibold text-[var(--yu3-ink-faint)] underline-offset-2 hover:text-[#B91C1C] hover:underline [font-family:var(--font-body)] py-1 px-1 touch-manipulation"
+                  className="inline-flex min-h-[36px] items-center justify-center rounded-[var(--yu3-r-md)] border border-[var(--yu3-wine)] bg-transparent px-3.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-wine)] [font-family:var(--font-body)] leading-none transition-colors hover:bg-[var(--yu3-wine)]/6 active:brightness-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yu3-wine)]/35 touch-manipulation"
+                  aria-label="Report an issue to dispatch"
                 >
                   Report issue
                 </button>
@@ -1692,7 +1539,7 @@ export default function CrewJobPage({
           )}
           {(job.scheduledDate || job.arrivalWindow) && (
             <div className="mb-5">
-              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-2 [font-family:var(--font-body)]">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-muted)] mb-2 [font-family:var(--font-body)]">
                 Schedule
               </p>
               {job.scheduledDate && (
@@ -1717,34 +1564,34 @@ export default function CrewJobPage({
             </div>
           )}
           <div className="mb-5">
-            <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-1.5 [font-family:var(--font-body)]">
+            <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-muted)] mb-1.5 [font-family:var(--font-body)]">
               {originLabel}
             </p>
             <p className="text-[13px] font-semibold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
               {job.fromAddress}
             </p>
-            {fromAccessDisplay && (
-              <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1.5 leading-relaxed [font-family:var(--font-body)]">
-                Access: {fromAccessDisplay}
+            {fromAccessLine && (
+              <p className="text-[13px] font-medium text-[var(--yu3-ink)] mt-1.5 leading-snug [font-family:var(--font-body)]">
+                {fromAccessLine}
               </p>
             )}
           </div>
           <div className="mb-5">
-            <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-1.5 [font-family:var(--font-body)]">
+            <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-muted)] mb-1.5 [font-family:var(--font-body)]">
               {destinationLabel}
             </p>
             <p className="text-[13px] font-semibold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
               {job.toAddress}
             </p>
-            {toAccessDisplay && (
-              <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1.5 leading-relaxed [font-family:var(--font-body)]">
-                Access: {toAccessDisplay}
+            {toAccessLine && (
+              <p className="text-[13px] font-medium text-[var(--yu3-ink)] mt-1.5 leading-snug [font-family:var(--font-body)]">
+                {toAccessLine}
               </p>
             )}
           </div>
           {job.crewMembers && job.crewMembers.length > 0 && (
             <div className="mb-5">
-              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-2 [font-family:var(--font-body)]">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-muted)] mb-2 [font-family:var(--font-body)]">
                 Crew ({job.crewMembers.length})
               </p>
               <div className="space-y-1.5">
@@ -1755,7 +1602,7 @@ export default function CrewJobPage({
                   >
                     <span className="font-semibold">{m.name}</span>
                     {m.role ? (
-                      <span className="text-[11px] font-normal text-[var(--yu3-ink-faint)]">
+                      <span className="text-[11px] font-normal text-[var(--yu3-ink-muted)]">
                         {" "}
                         {m.role}
                       </span>
@@ -1767,7 +1614,7 @@ export default function CrewJobPage({
           )}
           {(job.clientName || job.clientPhone) && (
             <div className="mb-5">
-              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-1.5 [font-family:var(--font-body)]">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-muted)] mb-1.5 [font-family:var(--font-body)]">
                 Client
               </p>
               {job.clientName ? (
@@ -1788,7 +1635,7 @@ export default function CrewJobPage({
           )}
           {job.internalNotes && (
             <div className="mb-0">
-              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-faint)] mb-1.5 [font-family:var(--font-body)]">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-muted)] mb-1.5 [font-family:var(--font-body)]">
                 Notes
               </p>
               <p className="text-[12px] text-[var(--yu3-ink-muted)] whitespace-pre-wrap leading-relaxed [font-family:var(--font-body)]">
@@ -1837,7 +1684,6 @@ export default function CrewJobPage({
               sessionId={session?.id ?? null}
               currentStatus={currentStatus}
               onCanAdvanceFromArrivedChange={setCanAdvanceFromArrived}
-              onPhotoTaken={() => void refreshFinalWalkPhotos()}
               finalWalkPhotoAtLoading={finalWalkPhotoAtLoading}
               readOnly={isCompleted}
             />
@@ -1932,7 +1778,6 @@ export default function CrewJobPage({
                     currentStatus={currentStatus}
                     onPhotoCountChange={(count) => setPickupPhotosCount(count)}
                     onCanAdvanceFromArrivedChange={setCanAdvanceFromArrived}
-                    onPhotoTaken={() => void refreshFinalWalkPhotos()}
                     finalWalkPhotoAtLoading={finalWalkPhotoAtLoading}
                   />
                 )}

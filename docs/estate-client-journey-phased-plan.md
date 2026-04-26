@@ -27,7 +27,7 @@ This document breaks the full “Estate touchpoint chain” into **ordered phase
 
 | # | Task | Notes |
 |---|------|--------|
-| 1.1 | **Hero summary band** | Optional two-column strip above the bordered move table: move date \| “Estate” (or plan label), same card, Instrument Serif + DM Sans. |
+| 1.1 | **Hero summary band** | Optional two-column strip above the bordered move table: move date \| “Estate” (or plan label), same card, Instrument Serif + Brown. |
 | 1.2 | **Opening copy variant** | Optional line in “reserved / in our hands” tone; keep escape/brand voice review. |
 | 1.3 | **Numbered “What happens next”** | Estate-only variant: 1–4 with wine or forest numerals (no emoji), or keep diamonds — pick one system per email. |
 | 1.4 | **Coordinator block** | Single tight line: single point of contact, channels, horizon (e.g. through 30-day concierge), if not already implied. |

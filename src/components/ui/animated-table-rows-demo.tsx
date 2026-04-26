@@ -13,7 +13,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/animated-table-rows"
+  tableRowInteractiveClassName,
+} from "@/components/ui/table"
 
 const productsData = [
   {
@@ -95,7 +96,7 @@ const TableRowDeleteDemo = () => {
               <motion.tr
                 key={product.id}
                 animate={rowAnimate}
-                className="hover:bg-muted/50 border-b transition-colors"
+                className={tableRowInteractiveClassName}
                 exit={rowExit}
                 initial={rowInitial}
                 layout={!shouldReduceMotion}

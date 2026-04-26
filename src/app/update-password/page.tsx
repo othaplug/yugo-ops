@@ -108,7 +108,7 @@ export default function UpdatePasswordPage() {
         alignItems: "center",
         justifyContent: "center",
         background: bg,
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "'Brown', system-ui, sans-serif",
         position: "relative",
         overflow: "hidden",
       }}
@@ -267,7 +267,7 @@ export default function UpdatePasswordPage() {
                         borderRadius: 0,
                         color: text,
                         fontSize: 14,
-                        fontFamily: "'DM Sans', sans-serif",
+                        fontFamily: "'Brown', system-ui, sans-serif",
                         outline: "none",
                         transition: "border-color 0.2s",
                       }}
@@ -338,7 +338,7 @@ export default function UpdatePasswordPage() {
                       borderRadius: 0,
                       color: text,
                       fontSize: 14,
-                      fontFamily: "'DM Sans', sans-serif",
+                      fontFamily: "'Brown', system-ui, sans-serif",
                       outline: "none",
                       transition: "border-color 0.2s",
                     }}
@@ -410,7 +410,7 @@ export default function UpdatePasswordPage() {
                     borderRadius: 10,
                     fontSize: 14,
                     fontWeight: 600,
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "'Brown', system-ui, sans-serif",
                     cursor: loading ? "not-allowed" : "pointer",
                     transition: "all 0.2s",
                     opacity: loading ? 0.5 : 1,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
 import { requireAdmin } from "@/lib/api-auth";
 import { getEmailFrom } from "@/lib/email/send";
+import { getResend } from "@/lib/resend";
 
 /**
  * Test endpoint to verify Resend is working.
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const resend = new Resend(apiKey);
+    const resend = getResend();
     const emailFrom = await getEmailFrom();
     const { data, error } = await resend.emails.send({
       from: emailFrom,

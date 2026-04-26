@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, use } from "react";
+import { useState, useEffect, useRef, use, useCallback } from "react";
 import {
   Star as PhStar,
   CaretLeft as PhCaretLeft,
@@ -14,11 +14,7 @@ import PageContent from "@/app/admin/components/PageContent";
 import YugoLogo from "@/components/YugoLogo";
 import { useCrewImmersiveNav } from "@/app/crew/components/CrewImmersiveNavContext";
 import { WINE } from "@/app/quote/[quoteId]/quote-shared";
-import { DELIVERY_STATUS_FLOW } from "@/lib/crew-tracking-status";
-import {
-  crewStatusRequiresFinalWalkPhotos,
-  getCrewStatusFlowForMove,
-} from "@/lib/crew/service-type-flow";
+import JobPhotos from "../JobPhotos";
 
 /** yu3 tokens for inline `style` props; Phosphor icons still use WINE hex. */
 const FOREST_PRIMARY = "var(--yu3-forest)";
@@ -345,6 +341,11 @@ export default function ClientSignOffPage({
 
   const [jobPhotos, setJobPhotos] = useState<PhotoItem[]>([]);
   const [photosLoading, setPhotosLoading] = useState(true);
+  /** Live tracking session for photo uploads on this screen */
+  const [crewSession, setCrewSession] = useState<{
+    id: string | null;
+    status: string;
+  } | null>(null);
 
   // Item conditions (Prompt 75)
   const [itemConditions, setItemConditions] = useState<ItemCondition[]>([]);
@@ -406,6 +407,18 @@ export default function ClientSignOffPage({
     return () => setImmersiveNav(false);
   }, [setImmersiveNav]);
 
+  const refetchJobPhotos = useCallback(async () => {
+    try {
+      const r = await fetch(`/api/crew/photos/${id}?jobType=${jobType}`);
+      const d = (await r.json().catch(() => ({}))) as {
+        photos?: PhotoItem[];
+      };
+      if (d.photos) setJobPhotos(d.photos);
+    } catch {
+      // keep existing list
+    }
+  }, [id, jobType]);
+
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -447,37 +460,12 @@ export default function ClientSignOffPage({
         const invData = inventoryRes.ok
           ? await inventoryRes.json()
           : { items: [] };
-        const sessionJson = sessionRes.ok ? await sessionRes.json() : null;
         if (signoffData?.id) setExisting(signoffData);
         if (signoffData?.partnerVertical)
           setPartnerVertical(signoffData.partnerVertical);
         const photos = Array.isArray(photosData)
           ? photosData
           : photosData?.photos || [];
-        const finalWalkCount = photos.filter(
-          (p: { category?: string }) => p.category === "walkthrough_final",
-        ).length;
-        const sess = sessionJson?.session as
-          | { isActive?: boolean; status?: string }
-          | undefined;
-        const moveFlowForSignoff =
-          jobType === "move"
-            ? getCrewStatusFlowForMove(
-                (signoffData as { serviceType?: string | null } | null)
-                  ?.serviceType,
-              )
-            : DELIVERY_STATUS_FLOW;
-        const needsFinalWalkGate =
-          Boolean(sess?.isActive) &&
-          crewStatusRequiresFinalWalkPhotos(
-            jobType,
-            String(sess?.status || ""),
-            moveFlowForSignoff,
-          );
-        if (!signoffData?.id && needsFinalWalkGate && finalWalkCount < 1) {
-          router.replace(`/crew/dashboard/job/${jobType}/${id}`);
-          return;
-        }
         setJobPhotos(photos);
         const items: string[] = invData?.items || [];
         setInventoryItems(items);
@@ -490,8 +478,34 @@ export default function ClientSignOffPage({
             })),
           );
         }
+
+        const sessionJson = sessionRes.ok
+          ? await sessionRes.json().catch(() => null)
+          : null;
+        const sess = sessionJson?.session as
+          | { id?: string; status?: string }
+          | null
+          | undefined;
+        const defaultStatus =
+          jobType === "move" ? "unloading" : "arrived_at_destination";
+        if (sess && typeof sess.id === "string") {
+          setCrewSession({
+            id: sess.id,
+            status:
+              typeof sess.status === "string" && sess.status.trim()
+                ? sess.status
+                : defaultStatus,
+          });
+        } else {
+          setCrewSession({ id: null, status: defaultStatus });
+        }
       } catch {
-        // continue with empty state
+        if (!cancelled) {
+          setCrewSession({
+            id: null,
+            status: jobType === "move" ? "unloading" : "arrived_at_destination",
+          });
+        }
       } finally {
         if (!cancelled) {
           setPhotosLoading(false);
@@ -1034,6 +1048,49 @@ export default function ClientSignOffPage({
                 {copy?.itemsConfirmSubtitle ??
                   "Review and confirm all belongings were received in good condition."}
               </p>
+            </div>
+
+            {/* Crew: final walkthrough uploads (tags walkthrough_final; shows in gallery below) */}
+            <div className="mb-6 rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 shadow-[var(--yu3-shadow-sm)]">
+              <p
+                className="text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-faint)] mb-2 [font-family:var(--font-body)]"
+              >
+                Final walkthrough
+              </p>
+              <p
+                className="text-[12px] text-[var(--yu3-ink-muted)] mb-4 leading-relaxed [font-family:var(--font-body)]"
+              >
+                Add final placement photos here. They appear in the gallery below for the
+                client to review.
+              </p>
+              <div
+                data-theme="light"
+                className="crew-signoff-photos [font-family:var(--font-body)] text-[var(--yu3-ink)]"
+              >
+                <JobPhotos
+                  jobId={id}
+                  jobType={jobType}
+                  sessionId={crewSession?.id ?? null}
+                  currentStatus={
+                    crewSession?.status ??
+                    (jobType === "move" ? "unloading" : "arrived_at_destination")
+                  }
+                  uploadOverride={
+                    jobType === "move"
+                      ? {
+                          category: "walkthrough_final",
+                          checkpoint: "unloading",
+                        }
+                      : {
+                          category: "walkthrough_final",
+                          checkpoint: "arrived_at_destination",
+                        }
+                  }
+                  onPhotoTaken={refetchJobPhotos}
+                  finalWalkPhotoAtLoading={false}
+                  readOnly={false}
+                />
+              </div>
             </div>
 
             {/* Photo gallery */}

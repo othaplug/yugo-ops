@@ -42,21 +42,6 @@ export const getCrewStatusFlowForMove = (
   return [...MOVE_STATUS_FLOW];
 };
 
-/** True when this job type and session status require final walkthrough photos before client sign-off. */
-export const crewStatusRequiresFinalWalkPhotos = (
-  jobType: "move" | "delivery",
-  currentStatus: string,
-  moveFlow: TrackingStatus[],
-): boolean => {
-  if (jobType === "delivery") {
-    return currentStatus === "arrived_at_destination";
-  }
-  if (currentStatus === "unloading") return true;
-  const idx = moveFlow.indexOf(currentStatus as TrackingStatus);
-  if (idx < 0) return false;
-  return moveFlow[idx + 1] === "completed" && currentStatus === "loading";
-};
-
 /** Allowed tracking statuses for checkpoint API (move + delivery unions). */
 export const ALL_KNOWN_TRACKING_STATUSES: readonly string[] = [
   "not_started",

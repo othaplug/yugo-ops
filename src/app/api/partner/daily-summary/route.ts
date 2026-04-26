@@ -146,7 +146,7 @@ export async function POST() {
     .join("");
 
   const html = `
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0A;min-height:100vh;font-family:'DM Sans',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0A;min-height:100vh;font-family:'Brown',Arial,sans-serif;">
   <tr><td align="center" style="padding:40px 16px;">
     <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
 

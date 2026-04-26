@@ -130,7 +130,7 @@
   --yu-text-3: #d4c4cf;
 
   /* ── Fonts ── */
-  --font-heading: "Brown", "Instrument Sans", system-ui, sans-serif;
+  --font-heading: "Brown", system-ui, sans-serif;
   --font-hero: "Instrument Serif", serif;
   --font-body: "Brown", system-ui, sans-serif;
   /* App-wide system UI stack (Apple-adjacent); pair with var(--font-body) for brand Brown */
@@ -446,7 +446,7 @@ html {
  */
 
 body {
-  font-family: var(--app-font-ui), var(--font-body);
+  font-family: var(--font-body), var(--app-font-ui);
   font-size: 16px;
   line-height: 1.5;
   background: var(--bg);
@@ -1383,10 +1383,10 @@ html[data-theme="light"] .admin-app main table tbody tr:not([data-table-vpad]):h
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Partner + crew shells: same system typography as root (explicit for nested resets) */
+/* Partner + crew shells: Brown first, then system UI (explicit for nested resets) */
 .partner-app,
 .crew-app:not([data-yugo-admin-v3]) {
-  font-family: var(--app-font-ui), var(--font-body);
+  font-family: var(--font-body), var(--app-font-ui);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* Bridge shared admin DataTable (yu3 classes) when not under [data-yugo-admin-v3] */
@@ -1404,7 +1404,7 @@ html[data-theme="light"] .admin-app main table tbody tr:not([data-table-vpad]):h
   --yu3-success-tint: color-mix(in srgb, var(--grn, #2f6f3c) 12%, var(--card));
 }
 .crew-app[data-yugo-admin-v3] {
-  font-family: var(--yu3-font-base, var(--app-font-ui)), var(--font-body);
+  font-family: var(--font-body), var(--yu3-font-base, var(--app-font-ui));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

@@ -27,7 +27,7 @@ const CREW_LOGIN_MAIN_STYLE: CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontFamily: "var(--font-body), 'DM Sans', sans-serif",
+  fontFamily: "var(--font-body)",
   background:
     "radial-gradient(ellipse 120% 85% at 50% -18%, color-mix(in srgb, var(--yu3-wine) 52%, transparent) 0%, transparent 58%), linear-gradient(180deg, #141016 0%, #0a0909 50%, #050505 100%)",
 };
@@ -56,7 +56,7 @@ const CREW_LOGIN_GATE_CARD: CSSProperties = {
 };
 
 const CREW_LOGIN_EYEBROW: CSSProperties = {
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'Brown', system-ui, sans-serif",
   fontSize: 10,
   fontWeight: 700,
   letterSpacing: "0.12em",
@@ -69,7 +69,7 @@ const CREW_LOGIN_EYEBROW: CSSProperties = {
 /** Uppercase micro-labels above fields (matches quote / portal label rhythm). */
 const CREW_LOGIN_FIELD_LABEL: CSSProperties = {
   display: "block",
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'Brown', system-ui, sans-serif",
   fontSize: 11,
   fontWeight: 700,
   letterSpacing: "0.12em",
@@ -97,7 +97,7 @@ const CREW_LOGIN_PRIMARY_LINK_BTN: CSSProperties = {
   textDecoration: "none",
   color: "rgba(255,255,255,0.92)",
   border: "1px solid color-mix(in srgb, var(--yu3-wine) 45%, transparent)",
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'Brown', system-ui, sans-serif",
 };
 
 /**
@@ -121,7 +121,7 @@ const CREW_LOGIN_GATE_SECONDARY: CSSProperties = {
   textTransform: "uppercase",
   lineHeight: 1.35,
   cursor: "pointer",
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'Brown', system-ui, sans-serif",
   textAlign: "center",
   color: "rgba(255, 255, 255, 0.92)",
 };
@@ -754,7 +754,7 @@ export default function CrewLoginPage() {
                       fontSize: 24,
                       fontWeight: 600,
                       color: CREW_LOGIN_CARD_LINK,
-                      fontFamily: "'DM Sans', sans-serif",
+                      fontFamily: "'Brown', system-ui, sans-serif",
                     }}
                   >
                     {selectedMember?.initials ?? "?"}
@@ -810,7 +810,7 @@ export default function CrewLoginPage() {
                           fontSize: 14,
                           fontWeight: 600,
                           color: selectedMember?.id === m.id ? CREW_LOGIN_CARD_LINK : "rgba(255,255,255,0.42)",
-                          fontFamily: "'DM Sans', sans-serif",
+                          fontFamily: "'Brown', system-ui, sans-serif",
                           cursor: "pointer",
                           transition: "all 0.2s",
                         }}
@@ -908,7 +908,7 @@ export default function CrewLoginPage() {
                         fontSize: 20,
                         fontWeight: 600,
                         color: "#F5F5F3",
-                        fontFamily: "'DM Sans', sans-serif",
+                        fontFamily: "'Brown', system-ui, sans-serif",
                       }}
                     >
                       {pin[i] ? "•" : ""}
@@ -1049,7 +1049,7 @@ function CrewPhoneLoginFields({
           fontSize: 16,
           marginBottom: 20,
           boxSizing: "border-box",
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Brown', system-ui, sans-serif",
         }}
       />
       <div style={{ marginBottom: 18, position: "relative" }}>
@@ -1084,7 +1084,7 @@ function CrewPhoneLoginFields({
                 fontSize: 20,
                 fontWeight: 600,
                 color: "#F5F5F3",
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Brown', system-ui, sans-serif",
               }}
             >
               {phonePin[i] ? "•" : ""}

@@ -127,22 +127,22 @@ export default function CrewJobTimer({
 
       <div className="grid grid-cols-2 gap-4 px-5 pb-1 pt-4">
         <div className="min-w-0 text-left">
-          <p className="mb-1.5 text-[10px] font-medium uppercase leading-none tracking-[0.22em] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
+          <p className="mb-1.5 text-[10px] font-medium uppercase leading-none tracking-[0.22em] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
             Start
           </p>
           <p className="text-[15px] font-semibold leading-tight tracking-[-0.02em] text-[var(--yu3-ink)] tabular-nums [font-family:var(--font-body)]">
             {startFinish.startLabel ?? (
-              <span className="font-medium text-[var(--yu3-ink-faint)]">Not started</span>
+              <span className="font-medium text-[var(--yu3-ink-muted)]">Not started</span>
             )}
           </p>
         </div>
         <div className="min-w-0 text-right">
-          <p className="mb-1.5 text-[10px] font-medium uppercase leading-none tracking-[0.22em] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
+          <p className="mb-1.5 text-[10px] font-medium uppercase leading-none tracking-[0.22em] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
             Est. finish
           </p>
           <p className="text-[15px] font-semibold leading-tight tracking-[-0.02em] text-[var(--yu3-ink)] tabular-nums [font-family:var(--font-body)]">
             {startFinish.finishLabel ?? (
-              <span className="font-medium text-[var(--yu3-ink-faint)]">Not started</span>
+              <span className="font-medium text-[var(--yu3-ink-muted)]">Not started</span>
             )}
           </p>
         </div>
@@ -160,14 +160,14 @@ export default function CrewJobTimer({
         >
           {primaryHhMm}
         </span>
-        <span className="pb-0.5 text-[11px] font-medium text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+        <span className="pb-0.5 text-[11px] font-medium text-[var(--yu3-ink)] [font-family:var(--font-body)]">
           {primarySuffix}
         </span>
       </div>
 
       <div className="mx-5 h-px bg-[var(--yu3-line-subtle)]" aria-hidden />
 
-      <p className="px-5 py-2.5 text-center text-[10px] font-medium leading-relaxed text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+      <p className="px-5 py-2.5 text-center text-[11px] font-medium leading-relaxed text-[var(--yu3-ink)] [font-family:var(--font-body)]">
         {showMarginBanner ? (
           <span className="text-red-700/95">
             Internal model projects less than half of planned margin dollars at this pace.
@@ -185,7 +185,7 @@ export default function CrewJobTimer({
             Only {formatMinutesAsHhMm(remainMin)} left at planned pace
           </span>
         ) : (
-          <span className="text-[var(--yu3-ink-muted)]">
+          <span className="text-[var(--yu3-ink)]">
             {percentUsed}% of allocated window used ·{" "}
             {formatMinutesAsHhMm(Math.round(target))} allocated
           </span>

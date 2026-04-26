@@ -54,6 +54,7 @@ import {
 import { getNotificationsFromEmail } from "@/lib/config";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
 import { finalizeClientEmailHtml } from "@/lib/email/finalize-client-html";
+import { normalizeEmailSubject } from "@/lib/email/normalize-email-subject";
 import {
   estate30DayCheckinEmailHtml,
   type Estate30DayCheckinEmailParams,
@@ -300,6 +301,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult
 
   const resend = getResend();
   const fromAddr = opts.from ?? await getEmailFrom();
+  const subject = normalizeEmailSubject(opts.subject);
 
   const tags = [...(opts.tags ?? [])];
   if (opts.template) {
@@ -312,7 +314,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult
   const { data: result, error } = await resend.emails.send({
     from: fromAddr,
     to: [opts.to],
-    subject: opts.subject,
+    subject,
     html,
     text: plainText,
     attachments: opts.attachments?.map((a) => ({
@@ -331,7 +333,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult
   Promise.resolve(
     supabase.from("email_log").insert({
       recipient: opts.to,
-      subject: opts.subject,
+      subject,
       template: opts.template ?? null,
       resend_id: result?.id ?? null,
       status: error ? "failed" : "sent",

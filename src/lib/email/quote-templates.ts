@@ -1,6 +1,6 @@
 import { getClientEmailFooterTrs } from "@/lib/email/client-email-footer";
 import {
-  EMAIL_DM_SANS_STACK,
+  EMAIL_SANS_STACK,
   EMAIL_FOREST,
   EMAIL_FOREST_RULE,
   EMAIL_PREMIUM_ISLAND,
@@ -56,7 +56,7 @@ const SHELL_TX = "#2A2523";
 const SHELL_TX2 = "#3E4D40";
 const SHELL_TX3 = "#5A6B5E";
 /** Wine kicker on cream (was illegible light grey on white / inverted clients). */
-const SHELL_EYEBROW = `font-family:${EMAIL_DM_SANS_STACK};font-size:12px;font-weight:700;color:${EMAIL_WINE};letter-spacing:0.08em;text-transform:uppercase;`;
+const SHELL_EYEBROW = `font-family:${EMAIL_SANS_STACK};font-size:12px;font-weight:700;color:${EMAIL_WINE};letter-spacing:0.08em;text-transform:uppercase;`;
 
 /* ─── Wine inset cards (labour/bin/price blocks on cream page) ─── */
 const CARD = EMAIL_WINE;
@@ -71,7 +71,7 @@ const DARK_TX3 = "#8A8580";
 const PAGE_INK = "#0A0A0A";
 
 /** Kicker on dark inset cards only. */
-const DARK_CARD_EYEBROW = `font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:700;color:${ACCENT_CREAM};letter-spacing:0px;text-transform:uppercase;`;
+const DARK_CARD_EYEBROW = `font-family:${EMAIL_SANS_STACK};font-size:12px;font-weight:700;color:${ACCENT_CREAM};letter-spacing:0px;text-transform:uppercase;`;
 
 const EMAIL_TIER_LABELS: Record<string, string> = { ...DISPLAY_TIER_LABELS };
 
@@ -177,7 +177,7 @@ ${wrapOutlookFluidHybridInner(
     <td class="email-outer-gutter" align="center" bgcolor="${SHELL_PAGE}" style="padding:24px 16px 0;background-color:${SHELL_PAGE};color-scheme:only light;">
       <table class="yugo-quote-card email-fluid-inner" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${SHELL_INNER}" style="max-width:600px;width:100%;background-color:${SHELL_INNER};border:1px solid ${SHELL_BORDER};color-scheme:only light;">
         <tr>
-          <td class="eq-inner email-content-pad" bgcolor="${SHELL_INNER}" style="padding:32px 36px 40px;background-color:${SHELL_INNER};color:${SHELL_TX};-webkit-text-fill-color:${SHELL_TX};font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color-scheme:only light;">
+          <td class="eq-inner email-content-pad" bgcolor="${SHELL_INNER}" style="padding:32px 36px 40px;background-color:${SHELL_INNER};color:${SHELL_TX};-webkit-text-fill-color:${SHELL_TX};font-family:${EMAIL_SANS_STACK};color-scheme:only light;">
             <div class="eq-hdr" align="center" style="margin:0 0 20px;">
               <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:block;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;border:0;margin:0 auto;-webkit-filter:none !important;filter:none !important;" />
             </div>
@@ -326,8 +326,7 @@ function expiryNote(expiresAt: string | null | undefined): string {
 }
 
 function ctaButton(url: string, label: string, sub?: string): string {
-  const font =
-    "'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+  const font = EMAIL_SANS_STACK;
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:28px 0 8px;">
       <tr>
@@ -456,7 +455,7 @@ function tierCards(
     estate: { essential: "", signature: "", estate: "RECOMMENDED FOR YOU" },
   };
 
-  const titleBase = `font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px;`;
+  const titleBase = `font-family:${EMAIL_SANS_STACK};font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px;`;
 
   return order
     .filter((k) => tiers[k])
@@ -965,8 +964,8 @@ function eventTemplate(d: QuoteTemplateData): string {
 
   const legs = d.eventLegBlocks;
   const evLegRule = `1px solid ${SHELL_BORDER}`;
-  const evLegLbl = `padding:12px 14px 12px 0;font-size:11px;font-weight:700;color:${SHELL_TX2};text-transform:uppercase;letter-spacing:0.07em;width:38%;vertical-align:top;line-height:1.45;font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif`;
-  const evLegVal = `padding:12px 0;font-size:13px;font-weight:600;color:${SHELL_TX};vertical-align:top;line-height:1.5;text-align:right;font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif`;
+  const evLegLbl = `padding:12px 14px 12px 0;font-size:11px;font-weight:700;color:${SHELL_TX2};text-transform:uppercase;letter-spacing:0.07em;width:38%;vertical-align:top;line-height:1.45;font-family:${EMAIL_SANS_STACK}`;
+  const evLegVal = `padding:12px 0;font-size:13px;font-weight:600;color:${SHELL_TX};vertical-align:top;line-height:1.5;text-align:right;font-family:${EMAIL_SANS_STACK}`;
   const evMoneyLbl = `padding:11px 14px 11px 0;font-size:11px;font-weight:700;color:${SHELL_TX};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top`;
   const evMoneyVal = `padding:11px 0;font-size:14px;font-weight:600;color:${SHELL_TX};vertical-align:top;text-align:right`;
   const legsHtml =

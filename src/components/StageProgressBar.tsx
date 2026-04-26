@@ -86,7 +86,7 @@ export default function StageProgressBar({
                         background: isDark
                           ? "rgba(237,230,220,0.22)"
                           : lightAccent === "wine"
-                            ? "rgba(92,26,51,0.14)"
+                            ? "rgba(92,26,51,0.2)"
                             : "rgba(44,62,45,0.12)",
                       }}
                     />
@@ -149,7 +149,7 @@ export default function StageProgressBar({
                         ? isDark
                           ? "0 0 0 4px rgba(237,230,220,0.2), 0 2px 8px rgba(0,0,0,0.12)"
                           : lightAccent === "wine"
-                            ? "0 0 0 4px rgba(92,26,51,0.14), 0 2px 10px rgba(92,26,51,0.12)"
+                            ? "0 0 0 5px rgba(92,26,51,0.2), 0 2px 10px rgba(92,26,51,0.12)"
                             : "0 0 0 4px rgba(44,62,45,0.12), 0 2px 8px rgba(44,62,45,0.15)"
                         : "none",
                     }}
@@ -201,7 +201,7 @@ export default function StageProgressBar({
                       ? "mt-2 text-[8px] sm:text-[9px] font-semibold text-center leading-tight tracking-wide transition-colors duration-300 px-px"
                       : "mt-2.5 text-[11px] font-semibold text-center leading-tight tracking-wide transition-colors duration-300"
                   }
-                  style={{
+                    style={{
                     color: isDone
                       ? isComplete
                         ? isDark
@@ -215,8 +215,12 @@ export default function StageProgressBar({
                       : isDark
                       ? "rgba(255,255,255,0.22)"
                       : lightAccent === "wine"
-                        ? "rgba(92,26,51,0.42)"
-                        : `${FOREST}55`,
+                        ? isLast
+                          ? "rgba(92,26,51,0.9)"
+                          : "rgba(92,26,51,0.72)"
+                        : isLast
+                          ? "rgba(44,62,45,0.88)"
+                          : "rgba(44,62,45,0.7)",
                   }}
                 >
                   {s.label}

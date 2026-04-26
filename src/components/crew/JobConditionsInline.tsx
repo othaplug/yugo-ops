@@ -42,12 +42,12 @@ export default function JobConditionsInline({
 
   return (
     <div
-      className={`rounded-xl bg-[var(--bg)]/25 px-2 py-2 sm:px-2.5 sm:py-2.5 space-y-2 ${className}`}
+      className={`rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/90 px-2.5 py-2.5 sm:px-3 sm:py-2.5 space-y-2 [font-family:var(--font-body)] ${className}`}
     >
-      <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/55 flex items-center gap-1.5">
+      <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)] flex items-center gap-1.5 [font-family:var(--font-body)] leading-none">
         <Car
           size={12}
-          className="text-[var(--accent-text)]/90 shrink-0"
+          className="text-[var(--yu3-wine)]/85 shrink-0"
           weight="duotone"
           aria-hidden
         />
@@ -55,42 +55,42 @@ export default function JobConditionsInline({
       </p>
 
       {wxAlert && (
-        <div className="flex gap-2 rounded-lg bg-sky-500/10 px-2 py-1.5">
+        <div className="flex gap-2 rounded-[var(--yu3-r-md)] bg-sky-500/8 border border-sky-500/15 px-2 py-1.5">
           <CloudRain
             size={12}
-            className="text-sky-400 shrink-0 mt-0.5"
+            className="text-sky-600 shrink-0 mt-0.5"
             weight="duotone"
             aria-hidden
           />
-          <p className="text-[10px] text-[var(--tx2)] leading-snug">
+          <p className="text-[10px] text-[var(--yu3-ink-muted)] leading-snug [font-family:var(--font-body)]">
             {wxAlert}
           </p>
         </div>
       )}
 
       {brief && (
-        <div className="space-y-1 text-[10px] text-[var(--tx2)]">
-          <p className="uppercase text-[var(--tx3)]">
+        <div className="space-y-1 text-[10px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+          <p className="uppercase text-[var(--yu3-ink-muted)] font-semibold tracking-wide">
             {brief.conditionsSummary}
           </p>
           <div className="flex flex-wrap gap-x-2.5 gap-y-1">
             <span className="inline-flex items-center gap-1">
               <Thermometer
                 size={11}
-                className="text-orange-300/85"
+                className="text-[var(--yu3-warning)]/90"
                 aria-hidden
               />
               {brief.tempLowC}°–{brief.tempHighC}°C
             </span>
             {brief.windMaxKmh != null && (
-              <span className="inline-flex items-center gap-1 text-[var(--tx3)]">
-                <Wind size={11} className="text-sky-300/75" aria-hidden />
+              <span className="inline-flex items-center gap-1 text-[var(--yu3-ink-muted)]">
+                <Wind size={11} className="text-[var(--yu3-info)]/80" aria-hidden />
                 {brief.windMaxKmh} km/h
               </span>
             )}
             {brief.precipProbabilityMax != null && (
-              <span className="inline-flex items-center gap-1 text-[var(--tx3)]">
-                <Drop size={11} className="text-sky-400/65" aria-hidden />
+              <span className="inline-flex items-center gap-1 text-[var(--yu3-ink-muted)]">
+                <Drop size={11} className="text-sky-600/80" aria-hidden />
                 {Math.round(brief.precipProbabilityMax * 100)}% rain
               </span>
             )}
@@ -98,7 +98,7 @@ export default function JobConditionsInline({
           {brief.roadConditionsNote?.trim() && (
             <div className="pt-2 space-y-2">
               <WineFadeRule />
-              <p className="text-[10px] text-[var(--tx3)] leading-snug">
+              <p className="text-[10px] text-[var(--yu3-ink-muted)] leading-snug [font-family:var(--font-body)]">
                 {brief.roadConditionsNote}
               </p>
             </div>
@@ -107,7 +107,7 @@ export default function JobConditionsInline({
       )}
 
       {canRoute && trafficLoading && !traffic && (
-        <p className="text-[10px] text-[var(--tx3)] animate-pulse">
+        <p className="text-[10px] text-[var(--yu3-ink-muted)] animate-pulse [font-family:var(--font-body)]">
           Checking route traffic…
         </p>
       )}
@@ -117,14 +117,14 @@ export default function JobConditionsInline({
           <div className="flex gap-1.5">
             <TrafficCone
               size={12}
-              className="text-[var(--accent-text)]/90 shrink-0 mt-0.5"
+              className="text-[var(--yu3-wine)]/85 shrink-0 mt-0.5"
               weight="duotone"
               aria-hidden
             />
-            <div className="text-[10px] text-[var(--tx2)] leading-snug space-y-1 min-w-0">
+            <div className="text-[10px] text-[var(--yu3-ink-muted)] leading-snug space-y-1 min-w-0 [font-family:var(--font-body)]">
               <p>{traffic.trafficSummaryLine}</p>
               {traffic.closureNotes.length > 0 && (
-                <ul className="pl-2.5 list-disc text-[9px] text-amber-200/85 space-y-0.5">
+                <ul className="pl-2.5 list-disc text-[9px] text-[var(--yu3-warning)] space-y-0.5">
                   {traffic.closureNotes.map((note, i) => (
                     <li key={i}>{note}</li>
                   ))}
@@ -135,7 +135,7 @@ export default function JobConditionsInline({
         </div>
       )}
       {canRoute && !trafficLoading && !traffic && (
-        <p className="text-[10px] text-[var(--tx3)]">
+        <p className="text-[10px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
           Live traffic isn&apos;t available for this route yet.
         </p>
       )}

@@ -34,6 +34,8 @@ interface Job {
   eventName?: string | null;
   weatherBrief?: MoveWeatherBrief | null;
   weatherAlert?: string | null;
+  fromAccessLine?: string | null;
+  toAccessLine?: string | null;
 }
 
 interface DashboardData {
@@ -358,7 +360,7 @@ export default function CrewDashboardPage() {
               return (
                   <article
                     key={job.id}
-                    className={`min-w-0 rounded-[12px] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 sm:p-5 shadow-[0_2px_14px_rgba(15,15,20,0.08)] ${
+                    className={`min-w-0 rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 sm:p-5 shadow-[var(--yu3-shadow-sm)] ${
                       !completed && !inProgress && !canStart && !isSample
                         ? " opacity-[0.88]"
                         : ""
@@ -462,13 +464,33 @@ export default function CrewDashboardPage() {
                         </div>
                       </div>
                       {/* Address text column */}
-                      <div className="flex flex-col justify-between min-w-0 flex-1 gap-2">
-                        <span className="text-[14px] text-[var(--yu3-ink-muted)] truncate pt-0.5 leading-snug">
-                          {job.fromAddress}
-                        </span>
-                        <span className="text-[14px] text-[var(--yu3-ink-muted)] truncate pb-0.5 leading-snug">
-                          {job.toAddress}
-                        </span>
+                      <div className="flex flex-col justify-between min-w-0 flex-1 gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-faint)] mb-0.5 [font-family:var(--font-body)] leading-none">
+                            Pickup
+                          </p>
+                          <p className="text-[14px] text-[var(--yu3-ink)] font-medium leading-snug">
+                            {job.fromAddress}
+                          </p>
+                          {job.fromAccessLine && (
+                            <p className="text-[13px] font-medium text-[var(--yu3-ink)] mt-1 leading-snug [font-family:var(--font-body)]">
+                              {job.fromAccessLine}
+                            </p>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-faint)] mb-0.5 [font-family:var(--font-body)] leading-none">
+                            Drop-off
+                          </p>
+                          <p className="text-[14px] text-[var(--yu3-ink)] font-medium leading-snug">
+                            {job.toAddress}
+                          </p>
+                          {job.toAccessLine && (
+                            <p className="text-[13px] font-medium text-[var(--yu3-ink)] mt-1 leading-snug [font-family:var(--font-body)]">
+                              {job.toAccessLine}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -526,25 +548,17 @@ export default function CrewDashboardPage() {
                       ) : canStart ? (
                         <Link
                           href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
-                          className={`flex items-center justify-center gap-2 min-h-[52px] py-3 text-[11px] font-bold uppercase tracking-[0.12em] transition-all [font-family:var(--font-body)] ${
+                          className={`flex w-full items-center justify-center gap-2 min-h-[52px] py-3 text-[11px] font-bold uppercase tracking-[0.12em] [font-family:var(--font-body)] crew-premium-cta ${
                             inProgress
-                              ? "text-[var(--yu3-on-wine)] shadow-[var(--yu3-shadow-md)]"
-                              : "crew-premium-cta shadow-[0_4px_20px_rgba(44,62,45,0.12)]"
-                          }`}
-                          style={
-                            inProgress
-                              ? {
-                                  background:
-                                    "linear-gradient(165deg, #5C1A33 0%, #3e1021 42%, #2a0c18 100%)",
-                                }
-                              : undefined
-                          }
+                              ? ""
+                              : "shadow-[0_4px_20px_rgba(92,26,51,0.12)]"
+                          } text-[#FFFBF7]`}
                         >
                           {inProgress ? (
                             <>
                               <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FFFBF7] opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FFFBF7]" />
                               </span>
                               Return to job
                             </>

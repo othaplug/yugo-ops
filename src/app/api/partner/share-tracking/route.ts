@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       const token = signTrackToken("move", move.id);
       const slug = getTrackMoveSlug({ move_code: move.move_code, id: move.id });
       trackUrl = `${getEmailBaseUrl()}/track/move/${encodeURIComponent(slug)}?token=${token}`;
-      emailSubject = "Track your move";
+      emailSubject = "Your move is scheduled";
       emailEyebrow = "Live tracking";
       emailTitle = "Your move is ready to track";
       emailBodyLine = `${move.client_name || "Resident"}. ${move.to_address || move.from_address || ""}`.trim();

@@ -607,13 +607,14 @@ export async function POST(req: NextRequest) {
           deposit_paid: depositPaid,
           balance_due: estimate - depositPaid,
           trackUrl,
+          notificationKind: "welcome",
         });
 
         const emailFrom = await getEmailFrom();
         const sendResult = await resend.emails.send({
           from: emailFrom,
           to: emailTrimmed,
-          subject: `Your move is confirmed — track your move`,
+          subject: "Your move is confirmed.",
           html,
           headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
         });

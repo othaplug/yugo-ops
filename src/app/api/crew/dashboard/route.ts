@@ -20,6 +20,10 @@ import {
   buildCrewSampleDashboardMoveJob,
   isCrewSampleDashboardJobId,
 } from "@/lib/crew/sample-dashboard-job";
+import {
+  accessLineText,
+  resolveMoveAccessLines,
+} from "@/lib/crew-move-access";
 
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
@@ -54,9 +58,9 @@ export async function GET(req: NextRequest) {
 
   /** Avoid columns missing on some prod DBs (`from_postal_code`, `recurring_schedule_id`, `notes`). */
   const moveSelect =
-    "id, move_code, client_name, from_address, to_address, scheduled_date, scheduled_time, status, move_type, crew_id, event_group_id, event_phase, event_name, weather_brief, weather_alert, completed_at";
+    "id, move_code, client_name, from_address, to_address, scheduled_date, scheduled_time, status, move_type, crew_id, event_group_id, event_phase, event_name, weather_brief, weather_alert, completed_at, from_access, to_access, access_notes, quote_id";
   const deliverySelect =
-    "id, delivery_number, customer_name, client_name, pickup_address, delivery_address, scheduled_date, time_slot, status, items, crew_id, booking_type, created_by_source";
+    "id, delivery_number, customer_name, client_name, pickup_address, delivery_address, scheduled_date, time_slot, status, items, crew_id, booking_type, created_by_source, pickup_access, delivery_access";
 
   const [movesRes, deliveriesRes] = await Promise.all([
     supabase
@@ -86,6 +90,31 @@ export async function GET(req: NextRequest) {
 
   const moves = movesRes.data || [];
   const deliveries = deliveriesRes.data || [];
+
+  const quoteIds = [
+    ...new Set(
+      moves
+        .map((m) => (m as { quote_id?: string | null }).quote_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    ),
+  ];
+  const quoteAccessById = new Map<
+    string,
+    { from: string | null; to: string | null }
+  >();
+  if (quoteIds.length > 0) {
+    const { data: quoteRows } = await supabase
+      .from("quotes")
+      .select("id, from_access, to_access")
+      .in("id", quoteIds);
+    for (const q of quoteRows || []) {
+      const id = String((q as { id: string }).id);
+      quoteAccessById.set(id, {
+        from: (q as { from_access?: string | null }).from_access?.trim() || null,
+        to: (q as { to_access?: string | null }).to_access?.trim() || null,
+      });
+    }
+  }
 
   const moveIdsForSession = moves.map((m) => m.id);
   const latestSessionByMoveId = new Map<
@@ -140,6 +169,9 @@ export async function GET(req: NextRequest) {
     eventName?: string | null;
     weatherBrief?: MoveWeatherBrief | null;
     weatherAlert?: string | null;
+    /** Single-line access label under pickup (resolved on server). */
+    fromAccessLine?: string | null;
+    toAccessLine?: string | null;
   };
 
   const jobs: Job[] = [];
@@ -181,6 +213,16 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const qid = (m as { quote_id?: string | null }).quote_id;
+    const qAcc = qid ? quoteAccessById.get(qid) : undefined;
+    const { from: fromA, to: toA } = resolveMoveAccessLines({
+      fromAccess: (m as { from_access?: string | null }).from_access,
+      toAccess: (m as { to_access?: string | null }).to_access,
+      accessNotes: (m as { access_notes?: string | null }).access_notes,
+      fromAccessFromQuote: qAcc?.from,
+      toAccessFromQuote: qAcc?.to,
+    });
+
     jobs.push({
       id: m.id,
       jobId: m.move_code || m.id,
@@ -196,6 +238,8 @@ export async function GET(req: NextRequest) {
       eventName,
       weatherBrief,
       weatherAlert,
+      fromAccessLine: accessLineText(fromA),
+      toAccessLine: accessLineText(toA),
     });
   }
 
@@ -206,6 +250,8 @@ export async function GET(req: NextRequest) {
     const isRec = createdSrc === "recurring_schedule";
     const bType = (d.booking_type as string | null) || null;
     const typeLabel = bType === "day_rate" ? "Day Rate" : "Delivery";
+    const pu = (d as { pickup_access?: string | null }).pickup_access;
+    const del = (d as { delivery_access?: string | null }).delivery_access;
     jobs.push({
       id: d.id,
       jobId: d.delivery_number || d.id,
@@ -222,6 +268,8 @@ export async function GET(req: NextRequest) {
       bookingType: bType,
       weatherBrief: null,
       weatherAlert: null,
+      fromAccessLine: accessLineText(pu),
+      toAccessLine: accessLineText(del),
     });
   }
 

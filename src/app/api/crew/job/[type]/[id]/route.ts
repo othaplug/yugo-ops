@@ -29,6 +29,7 @@ import {
   computeCrewTipReportNeeded,
   type TipReportTipRow,
 } from "@/lib/crew/tip-report-eligibility";
+import { parseFromToLinesFromAccessNotes } from "@/lib/crew-move-access";
 
 const COMPLEXITY_BADGE_LABELS: Record<string, string> = {
   specialty_transport: "Specialty transport",
@@ -413,7 +414,26 @@ export async function GET(
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
   }
 
-  const accessParts = [m.from_access, m.to_access].filter(Boolean);
+  const notesParsed = parseFromToLinesFromAccessNotes(
+    (m as { access_notes?: string | null }).access_notes,
+  );
+  let fromAccessOut =
+    (m.from_access as string | null | undefined)?.trim() || null;
+  let toAccessOut = (m.to_access as string | null | undefined)?.trim() || null;
+  if (!fromAccessOut) fromAccessOut = notesParsed.from;
+  if (!toAccessOut) toAccessOut = notesParsed.to;
+  if ((!fromAccessOut || !toAccessOut) && (m as { quote_id?: string | null }).quote_id) {
+    const { data: q } = await admin
+      .from("quotes")
+      .select("from_access, to_access")
+      .eq("id", (m as { quote_id: string }).quote_id)
+      .maybeSingle();
+    if (q) {
+      if (!fromAccessOut) fromAccessOut = (q as { from_access?: string | null }).from_access?.trim() || null;
+      if (!toAccessOut) toAccessOut = (q as { to_access?: string | null }).to_access?.trim() || null;
+    }
+  }
+  const accessParts = [fromAccessOut, toAccessOut].filter(Boolean);
   const access = accessParts.length ? accessParts.join(" -> ") : null;
 
   const { data: crewRow } = await admin
@@ -618,8 +638,8 @@ export async function GET(
     coordinatorPhone: (process.env.NEXT_PUBLIC_YUGO_PHONE || "").trim() || null,
     fromAddress: m.from_address || "-",
     toAddress: m.to_address || "-",
-    fromAccess: m.from_access || null,
-    toAccess: m.to_access || null,
+    fromAccess: fromAccessOut,
+    toAccess: toAccessOut,
     accessNotes: (m as any).access_notes || null,
     arrivalWindow: (m as any).arrival_window || null,
     scheduledDate: (m as any).scheduled_date || null,

@@ -107,7 +107,7 @@ export default function AdminLoginPage() {
           padding: max(1.25rem, env(safe-area-inset-top, 0px)) max(1.25rem, env(safe-area-inset-right, 0px)) max(1.25rem, env(safe-area-inset-bottom, 0px)) max(1.25rem, env(safe-area-inset-left, 0px));
           box-sizing: border-box;
           background: linear-gradient(165deg, #5C1A33 0%, #3e1021 42%, #2a0c18 100%);
-          font-family: 'DM Sans', sans-serif;
+          font-family: 'Brown', system-ui, sans-serif;
           position: relative; overflow: hidden;
         }
         .adm-login::before {
@@ -123,7 +123,7 @@ export default function AdminLoginPage() {
         }
         .adm-input {
           width: 100%; padding: 12px 0; background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.22);
-          border-radius: 0; color: rgba(255,255,255,0.94); font-size: 14px; font-family: 'DM Sans', sans-serif;
+          border-radius: 0; color: rgba(255,255,255,0.94); font-size: 14px; font-family: 'Brown', system-ui, sans-serif;
           outline: none; transition: border-color 0.2s;
         }
         .adm-input:focus { border-bottom-color: rgba(255,255,255,0.72); box-shadow: none; }
@@ -134,7 +134,7 @@ export default function AdminLoginPage() {
           color: rgba(255,255,255,0.95);
           border: 1px solid rgba(255,255,255,0.88);
           border-radius: 10px; font-size: 11px; font-weight: 700;
-          font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background 0.2s, border-color 0.2s, transform 0.2s;
+          font-family: 'Brown', system-ui, sans-serif; cursor: pointer; transition: background 0.2s, border-color 0.2s, transform 0.2s;
           text-transform: uppercase; letter-spacing: 0.12em; min-height: 48px;
           display: inline-flex; align-items: center; justify-content: center; gap: 8px;
           -webkit-tap-highlight-color: transparent;
@@ -145,9 +145,9 @@ export default function AdminLoginPage() {
         }
         .adm-btn:active:not(:disabled) { transform: scale(0.99); }
         .adm-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-        .adm-link { background: none; border: none; color: rgba(255,255,255,0.52); font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; transition: color 0.2s; }
+        .adm-link { background: none; border: none; color: rgba(255,255,255,0.52); font-size: 12px; cursor: pointer; font-family: 'Brown', system-ui, sans-serif; padding: 0; transition: color 0.2s; }
         .adm-link:hover { color: rgba(255,255,255,0.92); text-decoration: underline; }
-        .adm-back { background: none; border: none; color: rgba(255,255,255,0.45); font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; transition: color 0.2s; width: 100%; text-align: center; min-height: 40px; display: flex; align-items: center; justify-content: center; }
+        .adm-back { background: none; border: none; color: rgba(255,255,255,0.45); font-size: 12px; cursor: pointer; font-family: 'Brown', system-ui, sans-serif; padding: 0; transition: color 0.2s; width: 100%; text-align: center; min-height: 40px; display: flex; align-items: center; justify-content: center; }
         .adm-back:hover { color: rgba(255,255,255,0.9); }
         @keyframes admFade { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>

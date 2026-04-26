@@ -196,7 +196,7 @@ export function PartnerPortalWelcomeTour({
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "var(--font-body)",
               }}
             >
               I&apos;ll do this later

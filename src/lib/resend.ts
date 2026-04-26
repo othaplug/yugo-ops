@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import type { CreateEmailOptions } from "resend";
 import { applyEmailFooterTokens } from "@/lib/email/client-email-footer";
 import { finalizeClientEmailHtml } from "@/lib/email/finalize-client-html";
+import { normalizeEmailSubject } from "@/lib/email/normalize-email-subject";
 
 function templateFromTags(tags?: { name: string; value: string }[]): string | undefined {
   return tags?.find((t) => t.name === "template")?.value;
@@ -13,8 +14,13 @@ function firstRecipientEmail(to: string | string[]): string {
 }
 
 function patchEmailHtml(payload: CreateEmailOptions): CreateEmailOptions {
+  const subject =
+    typeof payload.subject === "string"
+      ? normalizeEmailSubject(payload.subject)
+      : payload.subject;
+
   if (typeof payload.html !== "string") {
-    return payload;
+    return { ...payload, subject } as CreateEmailOptions;
   }
 
   let html = finalizeClientEmailHtml(payload.html);
@@ -23,7 +29,7 @@ function patchEmailHtml(payload: CreateEmailOptions): CreateEmailOptions {
     !html.includes("__YUGO_FOOTER_RECIPIENT__") &&
     !html.includes("__YUGO_FOOTER_RECIPIENT_MAILTO__")
   ) {
-    return { ...payload, html } as CreateEmailOptions;
+    return { ...payload, html, subject } as CreateEmailOptions;
   }
 
   const recipientEmail = firstRecipientEmail(payload.to);
@@ -37,7 +43,7 @@ function patchEmailHtml(payload: CreateEmailOptions): CreateEmailOptions {
     template,
     showMarketingTopRow,
   });
-  return { ...payload, html: nextHtml } as CreateEmailOptions;
+  return { ...payload, html: nextHtml, subject } as CreateEmailOptions;
 }
 
 export function getResend(): Resend {

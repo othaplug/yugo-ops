@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { emailLayout } from "@/lib/email-templates";
-import { Resend } from "resend";
+import { getResend } from "@/lib/resend";
 import { getEmailFrom } from "@/lib/email/send";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -70,7 +70,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         const org = Array.isArray(orgRaw) ? (orgRaw[0] as { name: string; email: string | null; contact_name: string | null } | undefined) ?? null : (orgRaw as { name: string; email: string | null; contact_name: string | null } | null);
         if (org?.email && process.env.RESEND_API_KEY) {
           const baseUrl = getEmailBaseUrl();
-          const resend = new Resend(process.env.RESEND_API_KEY);
+          const resend = getResend();
           const emailFrom = await getEmailFrom();
           const budget = (project?.estimated_budget || 0) + (project?.project_mgmt_fee || 0);
           const html = emailLayout(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useId } from "react";
 import { Plus, Image } from "@phosphor-icons/react";
 
 const CHECKPOINT_TO_CATEGORY: Record<string, string> = {
@@ -60,6 +60,11 @@ interface JobPhotosProps {
   finalWalkPhotoAtLoading?: boolean;
   /** When true, only show photos; no add/upload. */
   readOnly?: boolean;
+  /**
+   * Fixed category and checkpoint for uploads (e.g. client sign-off: `walkthrough_final` even if session status differs).
+   * When set, the arrived-at-photo gate and skip control do not apply.
+   */
+  uploadOverride?: { category: string; checkpoint: string };
 }
 
 interface PhotoItem {
@@ -76,24 +81,32 @@ const ARRIVED_CHECKPOINTS = ["arrived_at_pickup", "arrived_at_destination", "arr
 /** No add-photo while crew is in transit (driving). Photos only at pickup/destination. */
 const NO_PHOTO_STATUSES = ["en_route_to_pickup", "en_route", "en_route_to_destination"];
 
-export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, onPhotoTaken, onPhotoCountChange, onCanAdvanceFromArrivedChange, finalWalkPhotoAtLoading = false, readOnly = false }: JobPhotosProps) {
+export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, onPhotoTaken, onPhotoCountChange, onCanAdvanceFromArrivedChange, finalWalkPhotoAtLoading = false, readOnly = false, uploadOverride }: JobPhotosProps) {
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [photosAtArrived, setPhotosAtArrived] = useState(0);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputId = useId();
+  /** Two JobPhotos (e.g. tab + modal) must not share one id, or the label targets the wrong input and uploads fail. */
+  const uniqueFileInputId = `job-photos-file-${fileInputId.replace(/:/g, "")}`;
 
-  const category = resolvePhotoCategory(
-    jobType,
-    currentStatus,
-    finalWalkPhotoAtLoading,
-  );
+  const category = uploadOverride
+    ? uploadOverride.category
+    : resolvePhotoCategory(jobType, currentStatus, finalWalkPhotoAtLoading);
+  const uploadCheckpoint = uploadOverride?.checkpoint ?? currentStatus;
   const prompt = CATEGORY_PROMPTS[category] || "Add photo";
-  const showPrompt = ARRIVED_CHECKPOINTS.includes(currentStatus);
-  const canAddPhotos = !NO_PHOTO_STATUSES.includes(currentStatus);
-  const requiresPhotosBeforeLoading =
+  const canAddPhotos =
+    readOnly
+      ? false
+      : uploadOverride
+        ? true
+        : !NO_PHOTO_STATUSES.includes(currentStatus);
+  const requiresPhotosBeforeLoading = !uploadOverride && (
     (jobType === "move" && (currentStatus === "arrived_at_pickup" || currentStatus === "arrived_at_destination")) ||
-    (jobType === "delivery" && (currentStatus === "arrived_at_pickup" || currentStatus === "arrived_at_destination" || currentStatus === "arrived"));
+    (jobType === "delivery" && (currentStatus === "arrived_at_pickup" || currentStatus === "arrived_at_destination" || currentStatus === "arrived"))
+  );
   const [photosSkipped, setPhotosSkipped] = useState(false);
 
   const fetchPhotos = () => {
@@ -116,6 +129,10 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
   }, [jobId, jobType]);
 
   useEffect(() => {
+    setUploadError(null);
+  }, [currentStatus, category, uploadOverride?.category, uploadOverride?.checkpoint]);
+
+  useEffect(() => {
     const canAdvance = !requiresPhotosBeforeLoading || photosAtArrived >= MIN_PHOTOS_AT_ARRIVED || photosSkipped;
     onCanAdvanceFromArrivedChange?.(canAdvance);
   }, [requiresPhotosBeforeLoading, photosAtArrived, photosSkipped, onCanAdvanceFromArrivedChange]);
@@ -124,13 +141,14 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith("image/")) return;
     setUploading(true);
+    setUploadError(null);
     try {
       const form = new FormData();
       form.append("file", file);
       form.append("jobId", jobId);
       form.append("jobType", jobType);
       if (sessionId) form.append("sessionId", sessionId);
-      form.append("checkpoint", currentStatus);
+      form.append("checkpoint", uploadCheckpoint);
       form.append("category", category);
       const res = await fetch("/api/crew/photos/upload", { method: "POST", body: form });
       const data = await res.json();
@@ -138,14 +156,14 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
       fetchPhotos();
       onPhotoTaken?.();
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
       console.error("Photo upload error:", err);
+      setUploadError(msg);
     } finally {
       setUploading(false);
       e.target.value = "";
     }
   };
-
-  const photosAtCurrentCheckpoint = photos.filter((p) => p.checkpoint === currentStatus).length;
 
   const photoCount = photos.length;
   const needsPhoto = requiresPhotosBeforeLoading && photosAtArrived < MIN_PHOTOS_AT_ARRIVED && !photosSkipped;
@@ -156,7 +174,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
       {!readOnly && canAddPhotos && (
         <input
           ref={fileInputRef}
-          id="job-photos-file-input"
+          id={uniqueFileInputId}
           type="file"
           accept="image/*"
           capture="environment"
@@ -170,6 +188,11 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
         <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50">Photos</p>
         {!readOnly && canAddPhotos && (
           <p className="text-[11px] text-[var(--tx2)] mt-0.5">{prompt}</p>
+        )}
+        {uploadError && (
+          <p className="text-[11px] text-red-800 mt-1.5 leading-snug" role="alert">
+            {uploadError}
+          </p>
         )}
       </div>
 
@@ -196,7 +219,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
           ))}
           {!readOnly && canAddPhotos && (
             <label
-              htmlFor="job-photos-file-input"
+              htmlFor={uniqueFileInputId}
               className={`aspect-square rounded-xl border border-dashed border-[var(--brd)] flex flex-col items-center justify-center gap-1 cursor-pointer transition-all hover:border-[#5C1A33]/50 hover:bg-[var(--gdim)]/20 ${uploading ? "opacity-40 pointer-events-none" : ""}`}
             >
               <Plus size={16} weight="regular" color="var(--tx3)" />
@@ -235,7 +258,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
               fetch("/api/crew/photos/skip-log", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ jobId, jobType, checkpoint: currentStatus }),
+                body: JSON.stringify({ jobId, jobType, checkpoint: uploadCheckpoint }),
               }).catch(() => {});
             }}
             className="ml-auto text-[10px] text-[var(--tx3)]/50 hover:text-[var(--tx3)] underline underline-offset-2"

@@ -205,12 +205,15 @@ export function AdminShell({
             </main>
           </div>
         </div>
-        {/* No z-index here: a high z on this root stacked the whole portal above the top bar, so
-            modal-scrims could never sit "under" the hamburger. Order: shell, then this portal. */}
+        {/* Stacking: this root must be above in-page stickies (e.g. DataTable header z-20) so
+            Radix portaled popovers and menus are not covered. Keep below topbar (50) and modals
+            (80+): a high z on this root (e.g. 70) once stacked the whole portal above the top bar
+            so modal-scrims could never sit "under" the hamburger. --yu3-z-rail (40) is the ladder
+            between sticky chrome and shell chrome. */}
         <div
           id="yu3-admin-portal-root"
           ref={setPortalNode}
-          className="pointer-events-none fixed inset-0 m-0 min-h-0 border-0 p-0 overflow-x-hidden overflow-y-visible"
+          className="pointer-events-none fixed inset-0 z-(--yu3-z-rail) m-0 min-h-0 border-0 p-0 overflow-x-hidden overflow-y-visible"
           aria-hidden
         />
 

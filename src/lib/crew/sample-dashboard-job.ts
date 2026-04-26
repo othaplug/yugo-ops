@@ -38,5 +38,7 @@ export function buildCrewSampleDashboardMoveJob() {
     eventName: null as string | null,
     weatherBrief: null,
     weatherAlert: null,
+    fromAccessLine: "Elevator",
+    toAccessLine: "Elevator",
   };
 }

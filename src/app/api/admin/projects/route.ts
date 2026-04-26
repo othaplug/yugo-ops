@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { emailLayout } from "@/lib/email-templates";
-import { Resend } from "resend";
+import { getResend } from "@/lib/resend";
 import { getEmailFrom } from "@/lib/email/send";
 
 export async function GET(req: NextRequest) {
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
         .single();
       if (org?.email && process.env.RESEND_API_KEY) {
         const baseUrl = getEmailBaseUrl();
-        const resend = new Resend(process.env.RESEND_API_KEY);
+        const resend = getResend();
         const emailFrom = await getEmailFrom();
         const budget = (body.estimated_budget || 0) + (body.project_mgmt_fee || 0);
         const html = emailLayout(

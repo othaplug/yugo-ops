@@ -21,7 +21,7 @@ export default function LoginLayout({
             justifyContent: "center",
             background: "linear-gradient(165deg, #5C1A33 0%, #3e1021 42%, #2a0c18 100%)",
             color: "rgba(255,255,255,0.7)",
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "var(--font-body)",
           }}
         >
           Loading…

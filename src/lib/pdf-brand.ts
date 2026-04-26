@@ -1,6 +1,6 @@
 /**
  * Premium PDF branding — single source of truth for all generated PDFs and documents.
- * Aligns with globals.css and STYLING_COLORS: wine, gold, cream, Instrument Serif (hero), DM Sans / system (body).
+ * Aligns with globals.css and STYLING_COLORS: wine, gold, cream, Instrument Serif (hero), Brown / system (body).
  * jsPDF does not support web fonts; we use Times (serif) for hero and Helvetica for body.
  */
 import type { jsPDF } from "jspdf";

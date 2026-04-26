@@ -46,9 +46,9 @@ All app styling colors are defined in **`src/app/globals.css`** as CSS variables
 
 | Variable | Stack |
 |----------|--------|
-| `--font-heading` | 'Instrument Sans', 'DM Sans', system-ui, sans-serif |
+| `--font-heading` | 'Brown', system-ui, sans-serif |
 | `--font-hero` | 'Instrument Serif', serif |
-| `--font-body` | 'DM Sans', system-ui, sans-serif |
+| `--font-body` | 'Brown', system-ui, sans-serif |
 
 ## Usage in components
 

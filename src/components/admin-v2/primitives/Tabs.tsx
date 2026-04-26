@@ -2,6 +2,11 @@
 
 import * as React from "react"
 import * as RadixTabs from "@radix-ui/react-tabs"
+import {
+  VercelRadixTabsList,
+  vercelRadixTabTriggerClassName,
+} from "@/components/ui/vercel-radix-tabs-list"
+
 import { cn } from "../lib/cn"
 
 type TabsVariant = "underline" | "pills"
@@ -25,18 +30,19 @@ export const TabsList = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof RadixTabs.List>
 >(({ className, ...props }, ref) => {
   const variant = React.useContext(TabsVariantContext)
-  return (
-    <RadixTabs.List
-      ref={ref}
-      className={cn(
-        variant === "underline"
-          ? "flex items-center gap-6 border-b border-line"
-          : "inline-flex items-center gap-1 rounded-md border border-line bg-surface-subtle p-1",
-        className,
-      )}
-      {...props}
-    />
-  )
+  if (variant === "pills") {
+    return (
+      <RadixTabs.List
+        ref={ref}
+        className={cn(
+          "inline-flex items-center gap-1 rounded-md border border-line bg-surface-subtle p-1",
+          className,
+        )}
+        {...props}
+      />
+    )
+  }
+  return <VercelRadixTabsList ref={ref} className={className} {...props} />
 })
 TabsList.displayName = "TabsList"
 
@@ -64,10 +70,8 @@ export const TabsTrigger = React.forwardRef<
     <RadixTabs.Trigger
       ref={ref}
       className={cn(
-        "inline-flex h-10 items-center gap-2 border-b-2 border-transparent body-sm font-medium text-fg-muted transition-colors outline-none",
-        "hover:text-fg",
-        "data-[state=active]:border-accent data-[state=active]:text-fg",
-        "focus-visible:ring-2 focus-visible:ring-accent/30 focus-visible:rounded-sm",
+        vercelRadixTabTriggerClassName,
+        "focus-visible:ring-accent/30",
         className,
       )}
       {...props}

@@ -42,7 +42,7 @@ function PlusMark({ size, color }: { size: number; color: string }) {
         letterSpacing: 0,
         position: "relative",
         top: Math.round(size * -0.12),
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "var(--font-body)",
       }}
     >
       +

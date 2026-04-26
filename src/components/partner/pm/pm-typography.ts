@@ -1,7 +1,7 @@
 /**
  * Property Management partner portal — typography tokens.
  * Serif (font-hero): page titles, section headings, large KPI numerals.
- * DM Sans (var(--font-body)): labels, nav, body, tables, uppercase eyebrows.
+ * Brown (var(--font-body)): labels, nav, body, tables, uppercase eyebrows.
  */
 
 export const pmFontBody = "[font-family:var(--font-body)]";
@@ -38,7 +38,7 @@ export const pmLeadTitle =
 export const pmTabLabel =
   `text-[10px] font-bold tracking-[0.12em] uppercase ${pmFontBody}`;
 
-/** DM Sans tight uppercase wine title (schedule / create-project chrome) */
+/** Brown tight uppercase wine title (schedule / create-project chrome) */
 export const pmUiTitleCaps =
   `text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.12em] leading-none text-[#5C1A33] ${pmFontBody}`;
 
