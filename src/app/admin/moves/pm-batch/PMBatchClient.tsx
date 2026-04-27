@@ -3,12 +3,16 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/design-system/admin/layout";
+import { KpiStrip } from "@/design-system/admin/dashboard";
 import { Button } from "@/design-system/admin/primitives";
+import { CaretRight, Plus } from "@phosphor-icons/react";
 import { useToast } from "@/app/admin/components/Toast";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatMoveDate } from "@/lib/date-format";
-import { Plus } from "@phosphor-icons/react";
 import { PMBatchMoveRow, type PMBatchRowState, emptyPmBatchRow } from "./PMBatchMoveRow";
+
+const createMovesLabel = (n: number) =>
+  n === 1 ? "Create 1 move" : `Create ${n} moves`;
 
 type PartnerOption = { id: string; name: string | null; vertical: string | null };
 
@@ -190,24 +194,37 @@ export function PMBatchClient() {
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full min-w-0 pb-10">
+    <div className="flex flex-col gap-5 max-w-5xl mx-auto w-full min-w-0 pb-10">
       <PageHeader
         eyebrow="Partners"
         title="Schedule PM moves"
         description="Create multiple property management moves at once. Pricing follows the partner contract rate card."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={() => router.push("/admin/partners")}>
+            <Button
+              variant="secondary"
+              size="sm"
+              uppercase
+              trailingIcon={<CaretRight weight="bold" size={14} className="opacity-90" aria-hidden />}
+              onClick={() => router.push("/admin/partners")}
+            >
               All partners
             </Button>
-            <Button variant="secondary" size="sm" onClick={() => router.push("/admin/moves")}>
+            <Button
+              variant="secondary"
+              size="sm"
+              uppercase
+              trailingIcon={<CaretRight weight="bold" size={14} className="opacity-90" aria-hidden />}
+              onClick={() => router.push("/admin/moves")}
+            >
               All moves
             </Button>
           </div>
         }
+        className="pb-2"
       />
 
-      <div>
+      <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)] p-4 md:p-5">
         <label className="yu3-t-eyebrow text-[var(--yu3-ink-muted)] block mb-2">
           Property management partner
         </label>
@@ -218,7 +235,7 @@ export function PMBatchClient() {
             setPartnerId(e.target.value);
             setMoves([emptyPmBatchRow()]);
           }}
-          className="admin-premium-input w-full max-w-lg text-[13px]"
+          className="admin-premium-input w-full max-w-xl text-[13px]"
         >
           <option value="">{loadingPartners ? "Loading…" : "Select partner"}</option>
           {partners.map((p) => (
@@ -230,26 +247,46 @@ export function PMBatchClient() {
       </div>
 
       {partnerId && loadingBoot && (
-        <p className="text-[13px] text-[var(--yu3-ink-muted)]">Loading buildings and contract…</p>
+        <p className="text-[13px] text-[var(--yu3-ink-muted)] px-1">Loading buildings and contract…</p>
       )}
 
       {bootstrap && bootstrap.contract && (
         <>
-          <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[#FAF7F2] px-4 py-3">
-            <p className="yu3-t-eyebrow text-[var(--yu3-ink-muted)] mb-2">Rate preview (local zone sample)</p>
-            {bootstrap.rate_preview.length === 0 ? (
-              <p className="text-[12px] text-[var(--yu3-ink-muted)]">
-                No matrix rows found. Pricing may fall back to legacy contract JSON.
+          <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)] overflow-hidden">
+            <div className="px-4 py-3 md:px-5 border-b border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]">
+              <p className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">Rate preview</p>
+              <p className="text-[12px] text-[var(--yu3-ink-muted)] mt-1.5 leading-relaxed max-w-2xl">
+                Sample rows from this partner&apos;s contract rate card for the active zone.
               </p>
-            ) : (
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-[var(--yu3-ink)]">
-                {bootstrap.rate_preview.slice(0, 8).map((r, i) => (
-                  <span key={`${r.reason_code}-${r.unit_size}-${i}`} className="tabular-nums">
-                    {bootstrap.reason_labels[r.reason_code] || r.reason_code} {r.unit_size}:{" "}
-                    {formatCurrency(Number(r.base_rate) || 0)}
-                  </span>
-                ))}
+            </div>
+            {bootstrap.rate_preview.length === 0 ? (
+              <div className="px-4 py-4 md:px-5">
+                <p className="text-[13px] text-[var(--yu3-ink-muted)] leading-relaxed">
+                  No matrix rows found. Pricing may fall back to legacy contract JSON.
+                </p>
               </div>
+            ) : (
+              <ul
+                className="divide-y divide-[var(--yu3-line-subtle)] max-h-52 overflow-y-auto"
+                aria-label="Rate preview rows"
+              >
+                {bootstrap.rate_preview.slice(0, 24).map((r, i) => (
+                  <li
+                    key={`${r.reason_code}-${r.unit_size}-${i}`}
+                    className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-2.5 md:px-5"
+                  >
+                    <span className="text-[13px] text-[var(--yu3-ink)] min-w-0">
+                      <span className="font-medium text-[var(--yu3-ink-strong)]">
+                        {bootstrap.reason_labels[r.reason_code] || r.reason_code}
+                      </span>
+                      <span className="text-[var(--yu3-ink-muted)]"> · {r.unit_size}</span>
+                    </span>
+                    <span className="text-[13px] font-semibold tabular-nums text-[var(--yu3-ink-strong)] shrink-0">
+                      {formatCurrency(Number(r.base_rate) || 0)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
 
@@ -271,64 +308,59 @@ export function PMBatchClient() {
           <button
             type="button"
             onClick={addRow}
-            className="w-full py-3 rounded-[var(--yu3-r-md)] border border-dashed border-[var(--yu3-line)] text-[13px] text-[var(--yu3-ink-muted)] hover:border-[var(--yu3-wine)]/35 hover:text-[var(--yu3-wine)] transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3.5 rounded-[var(--yu3-r-lg)] border border-dashed border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] hover:border-[var(--yu3-wine)]/40 hover:text-[var(--yu3-wine)] hover:bg-[var(--yu3-bg-surface-sunken)] transition-colors flex items-center justify-center gap-2"
           >
-            <Plus size={18} aria-hidden />
+            <Plus size={18} weight="bold" aria-hidden />
             Add another move
           </button>
 
           {moves.length > 0 && (
-            <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] p-4 shadow-[var(--yu3-shadow-sm)]">
-              <p className="yu3-t-eyebrow text-[var(--yu3-ink-muted)] mb-3">Batch summary</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-semibold text-[var(--yu3-ink-strong)] tabular-nums">
-                    {moves.length}
-                  </p>
-                  <p className="text-[11px] text-[var(--yu3-ink-muted)]">moves</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-semibold text-[var(--yu3-ink-strong)] tabular-nums">
-                    {summary.tenantCount}
-                  </p>
-                  <p className="text-[11px] text-[var(--yu3-ink-muted)]">tenants</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-semibold text-[var(--yu3-ink-strong)] tabular-nums">
-                    {summary.buildingCount}
-                  </p>
-                  <p className="text-[11px] text-[var(--yu3-ink-muted)]">buildings</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-semibold text-[var(--yu3-ink-strong)] tabular-nums">
-                    ·
-                  </p>
-                  <p className="text-[11px] text-[var(--yu3-ink-muted)]">priced on save</p>
-                </div>
-              </div>
+            <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)] p-4 md:p-5 space-y-4">
+              <p className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">Batch summary</p>
+              <KpiStrip
+                variant="grid"
+                columns={4}
+                gridCardClassName="p-4 md:p-5 border-[var(--yu3-line-subtle)]"
+                tiles={[
+                  { id: "moves", label: "Moves in batch", value: moves.length },
+                  { id: "tenants", label: "Unique tenants", value: summary.tenantCount },
+                  { id: "buildings", label: "Buildings", value: summary.buildingCount },
+                  {
+                    id: "pricing",
+                    label: "Pricing",
+                    value: "At save",
+                    hint: "Contract rate card applies to each row.",
+                  },
+                ]}
+              />
               {summary.earliest && summary.latest && (
-                <p className="text-[11px] text-[var(--yu3-ink-muted)] text-center mt-3">
-                  {formatMoveDate(summary.earliest)} to {formatMoveDate(summary.latest)}
+                <p className="text-[12px] text-[var(--yu3-ink-muted)] text-center leading-relaxed">
+                  Service dates from {formatMoveDate(summary.earliest)} to {formatMoveDate(summary.latest)}
                 </p>
               )}
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3">
-            <Button
-              variant="primary"
-              className="flex-1 min-w-[160px]"
-              disabled={submitting || !allValid}
-              onClick={() => void handleSubmit(false)}
-            >
-              Create {moves.length} moves
-            </Button>
+          <div className="flex flex-col-reverse sm:flex-row flex-wrap gap-3 pt-1">
             <Button
               variant="secondary"
+              size="md"
+              uppercase
+              className="min-w-[140px] sm:flex-initial"
               disabled={submitting || !allValid}
               onClick={() => void handleSubmit(true)}
             >
               Save as draft
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
+              uppercase
+              className="w-full sm:flex-1 sm:min-w-[200px]"
+              disabled={submitting || !allValid}
+              onClick={() => void handleSubmit(false)}
+            >
+              {createMovesLabel(moves.length)}
             </Button>
           </div>
         </>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { CaretRight, PencilSimple as Pencil, Plus, Trash as Trash2 } from "@phosphor-icons/react";
-import { PageHeader, PageMetaDivider } from "@/design-system/admin/layout";
+import { PageHeader } from "@/design-system/admin/layout";
 import { Button, Tabs, TabsList, TabsTrigger } from "@/design-system/admin/primitives";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
@@ -222,41 +222,6 @@ export default function ClientDetailClient({
             ? "Move client"
             : organizationTypeLabel(client.vertical || client.type)
         }
-        meta={
-          <>
-            <button
-              type="button"
-              onClick={() => setContactModalOpen(true)}
-              className="font-semibold text-[var(--yu3-wine)] hover:underline text-left"
-            >
-              {client.contact_name || "-"}
-            </button>
-            {client.email ? (
-              <>
-                <PageMetaDivider />
-                <a
-                  href={`mailto:${client.email}`}
-                  className="text-[var(--yu3-ink)] hover:text-[var(--yu3-wine)] break-all min-w-0"
-                >
-                  {client.email}
-                </a>
-              </>
-            ) : (
-              <>
-                <PageMetaDivider />
-                <span className="text-[var(--yu3-ink-muted)]">-</span>
-              </>
-            )}
-            {client.address ? (
-              <>
-                <PageMetaDivider />
-                <span className="text-[var(--yu3-ink-muted)] break-words max-w-xl">
-                  {client.address}
-                </span>
-              </>
-            ) : null}
-          </>
-        }
         actions={
           isAdmin ? (
             <div
@@ -363,7 +328,6 @@ export default function ClientDetailClient({
                   ) : null}
                 </>
               )}
-              <div className="self-end w-full max-w-[11rem] border-t border-[var(--yu3-line-subtle)] my-1" aria-hidden />
               <Button
                 variant="secondary"
                 size="sm"
@@ -564,6 +528,24 @@ export default function ClientDetailClient({
             <div className="text-[13px] font-semibold text-[var(--yu3-ink-strong)]">
               {isClient ? "Move client" : organizationTypeLabel(client.vertical || client.type)}
             </div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mt-3 mb-1">
+              Primary contact
+            </div>
+            <button
+              type="button"
+              onClick={() => setContactModalOpen(true)}
+              className="text-[13px] font-semibold text-[var(--yu3-wine)] hover:underline text-left"
+            >
+              {client.contact_name || "View contact details"}
+            </button>
+            {client.email ? (
+              <a
+                href={`mailto:${client.email}`}
+                className="block text-[12px] text-[var(--yu3-ink)] mt-1 break-all hover:text-[var(--yu3-wine)]"
+              >
+                {client.email}
+              </a>
+            ) : null}
             {client.address && (
               <>
                 <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mt-3 mb-1">Address</div>

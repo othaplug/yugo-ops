@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Button } from "@/design-system/admin/primitives";
 
 export type PMBatchRowState = {
   partner_property_id: string;
@@ -93,32 +94,38 @@ export function PMBatchMoveRow({
   }, [allRows, index]);
 
   return (
-    <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] p-4 shadow-[var(--yu3-shadow-sm)]">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="shrink-0 w-7 h-7 rounded-full bg-[var(--yu3-wine-tint)] flex items-center justify-center text-[11px] font-bold text-[var(--yu3-wine)] tabular-nums">
+    <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 md:p-5 shadow-[var(--yu3-shadow-sm)]">
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="shrink-0 w-8 h-8 rounded-full bg-[var(--yu3-wine-wash)] flex items-center justify-center text-[11px] font-bold text-[var(--yu3-wine)] tabular-nums ring-1 ring-[color-mix(in_srgb,var(--yu3-wine)_18%,transparent)]">
             {index + 1}
           </span>
-          <p className="text-[13px] font-semibold text-[var(--yu3-ink-strong)] truncate">
-            {row.tenant_name.trim() || "New move"}
-          </p>
+          <div className="min-w-0">
+            <p className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">Move row</p>
+            <p className="text-[15px] font-semibold text-[var(--yu3-ink-strong)] truncate mt-0.5">
+              {row.tenant_name.trim() || "New move"}
+            </p>
+          </div>
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="xs"
+          uppercase
+          className="shrink-0 text-[var(--yu3-danger)] hover:text-[var(--yu3-danger)] hover:bg-[var(--yu3-danger-tint)]"
           onClick={onRemove}
-          className="shrink-0 text-[11px] text-[var(--yu3-ink-muted)] hover:text-red-600"
         >
           Remove
-        </button>
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)]">
-          Building
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <label className="block min-w-0">
+          <span className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">Building</span>
           <select
             value={row.partner_property_id}
             onChange={(e) => onUpdate({ partner_property_id: e.target.value })}
-            className="mt-1 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
+            className="mt-1.5 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
           >
             <option value="">Select building</option>
             {properties.map((b) => (
@@ -128,21 +135,21 @@ export function PMBatchMoveRow({
             ))}
           </select>
         </label>
-        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)]">
-          Unit
+        <label className="block min-w-0">
+          <span className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">Unit</span>
           <input
             value={row.unit_number}
             onChange={(e) => onUpdate({ unit_number: e.target.value })}
             placeholder="e.g. 1304"
-            className="mt-1 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
+            className="mt-1.5 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
           />
         </label>
-        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)]">
-          Size
+        <label className="block min-w-0">
+          <span className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">Size</span>
           <select
             value={row.unit_type}
             onChange={(e) => onUpdate({ unit_type: e.target.value })}
-            className="mt-1 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
+            className="mt-1.5 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
           >
             {UNIT_TYPES.map((u) => (
               <option key={u.value} value={u.value}>
@@ -151,12 +158,12 @@ export function PMBatchMoveRow({
             ))}
           </select>
         </label>
-        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)]">
-          Move type
+        <label className="block min-w-0">
+          <span className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">Move type</span>
           <select
             value={row.reason_code}
             onChange={(e) => onUpdate({ reason_code: e.target.value })}
-            className="mt-1 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
+            className="mt-1.5 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
           >
             {reasonOptions.map((r) => (
               <option key={r.value} value={r.value}>
@@ -167,37 +174,37 @@ export function PMBatchMoveRow({
         </label>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
-        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)]">
-          Service date
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mt-4">
+        <label className="block min-w-0">
+          <span className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">Service date</span>
           <input
             type="date"
             value={row.scheduled_date}
             onChange={(e) => onUpdate({ scheduled_date: e.target.value })}
-            className="mt-1 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
+            className="mt-1.5 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
           />
         </label>
-        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)]">
-          Holding unit / notes
+        <label className="block min-w-0">
+          <span className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">Holding unit / notes</span>
           <input
             value={row.holding_unit}
             onChange={(e) => onUpdate({ holding_unit: e.target.value })}
             placeholder="e.g. 1294 WL"
-            className="mt-1 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
+            className="mt-1.5 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
           />
         </label>
-        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] lg:col-span-2">
-          Tenant
+        <label className="block min-w-0 lg:col-span-2">
+          <span className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">Tenant</span>
           <input
             value={row.tenant_name}
             onChange={(e) => onUpdate({ tenant_name: e.target.value })}
             placeholder="Tenant name"
-            className="mt-1 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
+            className="mt-1.5 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
           />
         </label>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 mt-3">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 px-3 py-3 rounded-[var(--yu3-r-md)] bg-[var(--yu3-bg-surface-sunken)] border border-[var(--yu3-line-subtle)]">
         <label className="inline-flex items-center gap-2 text-[12px] text-[var(--yu3-ink)] cursor-pointer">
           <input
             type="checkbox"
@@ -236,13 +243,13 @@ export function PMBatchMoveRow({
         </label>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 mt-3">
-        <label className="flex items-center gap-2 text-[11px] text-[var(--yu3-ink-muted)]">
-          <span className="shrink-0">Link to row</span>
+      <div className="flex flex-wrap items-center gap-3 mt-4">
+        <label className="flex flex-wrap items-center gap-2 text-[12px] text-[var(--yu3-ink)]">
+          <span className="yu3-t-eyebrow text-[var(--yu3-ink-muted)] shrink-0">Link to row</span>
           <select
             value={row.linked_batch_index}
             onChange={(e) => onUpdate({ linked_batch_index: e.target.value })}
-            className="admin-premium-input text-[12px] py-1.5 font-normal normal-case tracking-normal"
+            className="admin-premium-input text-[12px] py-2 font-normal normal-case tracking-normal min-w-[8rem]"
           >
             <option value="">None</option>
             {linkChoices.map((i) => (
@@ -256,31 +263,31 @@ export function PMBatchMoveRow({
         <button
           type="button"
           onClick={() => onUpdate({ show_tenant_contact: !row.show_tenant_contact })}
-          className="text-[11px] font-semibold text-[var(--yu3-wine)] hover:underline"
+          className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-wine)] hover:underline"
         >
           {row.show_tenant_contact ? "Hide" : "Add"} tenant contact
         </button>
       </div>
 
       {row.show_tenant_contact && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 p-3 rounded-[var(--yu3-r-md)] bg-[var(--yu3-bg-surface-subtle)] border border-[var(--yu3-line-subtle)]">
-          <label className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)]">
-            Tenant phone
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mt-4 p-4 rounded-[var(--yu3-r-md)] bg-[var(--yu3-bg-surface-sunken)] border border-[var(--yu3-line-subtle)]">
+          <label className="block min-w-0">
+            <span className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">Tenant phone</span>
             <input
               value={row.tenant_phone}
               onChange={(e) => onUpdate({ tenant_phone: e.target.value })}
               placeholder="(416) 555-0100"
-              className="mt-1 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
+              className="mt-1.5 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
             />
           </label>
-          <label className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)]">
-            Tenant email
+          <label className="block min-w-0">
+            <span className="yu3-t-eyebrow text-[var(--yu3-ink-muted)]">Tenant email</span>
             <input
               type="email"
               value={row.tenant_email}
               onChange={(e) => onUpdate({ tenant_email: e.target.value })}
               placeholder="tenant@email.com"
-              className="mt-1 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
+              className="mt-1.5 admin-premium-input w-full text-[13px] font-normal normal-case tracking-normal"
             />
           </label>
         </div>

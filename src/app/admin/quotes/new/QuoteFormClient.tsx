@@ -2226,7 +2226,7 @@ export default function QuoteFormClient({
   );
   const [leadParsedDimensions, setLeadParsedDimensions] = useState("");
   const [specialtyBuilderOpen, setSpecialtyBuilderOpen] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const prefillDone = useRef(false);
 
   // Contact search for auto-fill (same as Create Move)

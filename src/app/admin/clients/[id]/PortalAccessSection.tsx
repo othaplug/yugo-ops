@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { CaretDown } from "@phosphor-icons/react";
 import { useToast } from "../../components/Toast";
 import { Icon } from "@/components/AppIcons";
 import ModalOverlay from "../../components/ModalOverlay";
@@ -43,6 +44,7 @@ export default function PortalAccessSection({
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [inviteLoading, setInviteLoading] = useState(false);
+  const [sectionExpanded, setSectionExpanded] = useState(false);
 
   const fetchUsers = () => {
     setLoading(true);
@@ -168,79 +170,116 @@ export default function PortalAccessSection({
     }
   };
 
+  const portalUserSummary = loading
+    ? "Loading…"
+    : users.length === 0
+      ? "No portal users"
+      : `${users.length} portal user${users.length === 1 ? "" : "s"}`;
+
   return (
     <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)] overflow-hidden mb-6">
-      <div className="px-5 py-5 md:px-6 md:py-5 border-b border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-        <div className="min-w-0 flex-1">
-          <h3 className="font-heading text-[16px] md:text-[17px] font-bold text-[var(--yu3-ink-strong)] flex items-center gap-2.5 leading-snug">
-            <Icon name="lock" className="w-[16px] h-[16px] shrink-0 text-[var(--yu3-wine)]" aria-hidden /> Portal Access
-          </h3>
-          <p className="text-[12px] text-[var(--yu3-ink-muted)] mt-2 leading-relaxed max-w-2xl">
-            Manage who at this partner can log in to {labels.portalDescription}.
-          </p>
+      <button
+        type="button"
+        onClick={() => setSectionExpanded((open) => !open)}
+        aria-expanded={sectionExpanded}
+        aria-controls="partner-portal-access-panel"
+        id="partner-portal-access-toggle"
+        className="w-full flex items-center justify-between gap-3 px-5 py-4 md:px-6 text-left bg-[var(--yu3-bg-surface-sunken)] hover:bg-[color-mix(in_srgb,var(--yu3-ink)_5%,var(--yu3-bg-surface-sunken))] transition-colors"
+      >
+        <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
+          <Icon
+            name="lock"
+            className="w-[16px] h-[16px] shrink-0 text-[var(--yu3-wine)]"
+            aria-hidden
+          />
+          <span className="font-heading text-[16px] md:text-[17px] font-bold text-[var(--yu3-ink-strong)] leading-snug">
+            Portal access
+          </span>
+          <span className="text-[11px] text-[var(--yu3-ink-muted)] shrink-0">
+            {portalUserSummary}
+          </span>
         </div>
-        <button
-          type="button"
-          onClick={() => setInviteOpen(true)}
-          className="admin-btn admin-btn-sm admin-btn-primary shrink-0 self-start sm:self-center"
+        <CaretDown
+          weight="bold"
+          className={`shrink-0 w-5 h-5 text-[var(--yu3-ink-muted)] transition-transform duration-200 ${sectionExpanded ? "rotate-180" : ""}`}
+          aria-hidden
+        />
+      </button>
+
+      {sectionExpanded ? (
+        <div
+          id="partner-portal-access-panel"
+          role="region"
+          aria-labelledby="partner-portal-access-toggle"
+          className="px-5 py-5 md:px-6 space-y-4"
         >
-          + Invite Portal User
-        </button>
-      </div>
-      <div className="px-5 py-5 md:px-6">
-        {loading ? (
-          <div className="py-6 text-center text-[12px] text-[var(--yu3-ink-muted)]">
-            Loading…
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+            <p className="text-[12px] text-[var(--yu3-ink-muted)] leading-relaxed max-w-2xl">
+              Manage who at this partner can log in to {labels.portalDescription}.
+            </p>
+            <button
+              type="button"
+              onClick={() => setInviteOpen(true)}
+              className="admin-btn admin-btn-sm admin-btn-primary shrink-0 self-start sm:self-center"
+            >
+              + Invite Portal User
+            </button>
           </div>
-        ) : users.length === 0 ? (
-          <div className="py-6 text-center text-[12px] text-[var(--yu3-ink-muted)]">
-            No portal users yet. Invite someone to give them access.
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {users.map((u) => (
-              <div
-                key={u.user_id}
-                className="flex items-center justify-between gap-3 px-4 py-3 rounded-[var(--yu3-r-md)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)]"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-semibold text-[var(--yu3-ink-strong)] break-words">
-                    {u.name || u.email?.split("@")[0] || "-"}
+          {loading ? (
+            <div className="py-6 text-center text-[12px] text-[var(--yu3-ink-muted)]">
+              Loading…
+            </div>
+          ) : users.length === 0 ? (
+            <div className="py-6 text-center text-[12px] text-[var(--yu3-ink-muted)]">
+              No portal users yet. Invite someone to give them access.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {users.map((u) => (
+                <div
+                  key={u.user_id}
+                  className="flex items-center justify-between gap-3 px-4 py-3 rounded-[var(--yu3-r-md)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)]"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-semibold text-[var(--yu3-ink-strong)] break-words">
+                      {u.name || u.email?.split("@")[0] || "-"}
+                    </div>
+                    <div className="text-[11px] text-[var(--yu3-ink-muted)] break-all mt-0.5">
+                      {u.email}
+                    </div>
                   </div>
-                  <div className="text-[11px] text-[var(--yu3-ink-muted)] break-all mt-0.5">
-                    {u.email}
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                    <span
+                      className={`dt-badge tracking-[0.04em] ${
+                        u.status === "activated"
+                          ? "text-[var(--yu3-success)]"
+                          : "text-amber-700 dark:text-amber-300"
+                      }`}
+                    >
+                      {u.status === "activated" ? "Activated" : "Pending"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setResetUser(u)}
+                      className="px-2.5 py-1 rounded-[var(--yu3-r-sm)] text-[10px] font-semibold border border-[var(--yu3-line)] text-[var(--yu3-ink)] hover:border-[var(--yu3-wine)] hover:text-[var(--yu3-wine)] transition-colors"
+                    >
+                      Reset password
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRevoke(u.user_id)}
+                      disabled={revoking === u.user_id}
+                      className="px-2.5 py-0.5 rounded-[var(--yu3-r-sm)] text-[10px] font-semibold bg-[var(--yu3-danger)] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {revoking === u.user_id ? "Revoking…" : "Revoke"}
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                  <span
-                    className={`dt-badge tracking-[0.04em] ${
-                      u.status === "activated"
-                        ? "text-[var(--yu3-success)]"
-                        : "text-amber-700 dark:text-amber-300"
-                    }`}
-                  >
-                    {u.status === "activated" ? "Activated" : "Pending"}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setResetUser(u)}
-                    className="px-2.5 py-1 rounded-[var(--yu3-r-sm)] text-[10px] font-semibold border border-[var(--yu3-line)] text-[var(--yu3-ink)] hover:border-[var(--yu3-wine)] hover:text-[var(--yu3-wine)] transition-colors"
-                  >
-                    Reset password
-                  </button>
-                  <button
-                    onClick={() => handleRevoke(u.user_id)}
-                    disabled={revoking === u.user_id}
-                    className="px-2.5 py-0.5 rounded-[var(--yu3-r-sm)] text-[10px] font-semibold bg-[var(--yu3-danger)] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
-                  >
-                    {revoking === u.user_id ? "Revoking…" : "Revoke"}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
 
       <ModalOverlay
         open={!!resetUser}
