@@ -217,7 +217,6 @@ interface MoveDetailClientProps {
     client_name: string | null;
     status: string | null;
   } | null;
-  partnerOrgName?: string | null;
 }
 import {
   MOVE_STATUS_OPTIONS,
@@ -495,7 +494,6 @@ export default function MoveDetailClient({
   postCompletionPriceEdits = [],
   moveWaivers = [],
   pmLinkedPeer = null,
-  partnerOrgName = null,
 }: MoveDetailClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -926,9 +924,13 @@ export default function MoveDetailClient({
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <MoveNotifyButton move={move} />
-            <ResendTrackingLinkButton move={move} />
-            <PageMetaDivider />
+            {!isCompleted && (
+              <>
+                <MoveNotifyButton move={move} />
+                <ResendTrackingLinkButton move={move} />
+                <PageMetaDivider />
+              </>
+            )}
             <Button
               type="button"
               variant="ghost"
@@ -999,40 +1001,6 @@ export default function MoveDetailClient({
             )}
           </div>
         )}
-
-      {(move.contract_id || move.is_pm_move || move.holding_unit || partnerOrgName) && (
-        <div
-          className="rounded-[var(--yu3-r-lg)] border border-[#6D28D9]/25 bg-[#6D28D9]/[0.06] px-4 py-3 text-[12px] leading-snug text-[var(--yu3-ink)]"
-          role="region"
-          aria-label="Property management context"
-        >
-          <p className="yu3-t-eyebrow text-[#5B21B6] mb-1.5">Property management</p>
-          {partnerOrgName ? (
-            <p className="font-medium text-[var(--yu3-ink-strong)]">{partnerOrgName}</p>
-          ) : null}
-          {move.pm_reason_code || move.pm_move_kind ? (
-            <p className="text-[var(--yu3-ink-muted)] mt-1">
-              Move type:{" "}
-              <span className="text-[var(--yu3-ink)]">
-                {String(move.pm_reason_code || move.pm_move_kind).replace(/_/g, " ")}
-              </span>
-            </p>
-          ) : null}
-          {move.holding_unit ? (
-            <p className="text-[var(--yu3-ink-muted)] mt-1">
-              Holding: <span className="text-[var(--yu3-ink)]">{move.holding_unit}</span>
-            </p>
-          ) : null}
-          {move.pm_packing_required ? (
-            <p className="text-[var(--yu3-ink-muted)] mt-1">Packing required for crew.</p>
-          ) : null}
-          {move.tenant_present === false ? (
-            <p className="text-[var(--yu3-ink-muted)] mt-1">
-              Tenant may not be on site. Crew can skip client walkthrough when appropriate.
-            </p>
-          ) : null}
-        </div>
-      )}
 
       {pmLinkedPeer && (
         <div className="rounded-[var(--yu3-r-lg)] border border-[#6D28D9]/25 bg-[#6D28D9]/[0.06] px-4 py-3 text-[12px]">

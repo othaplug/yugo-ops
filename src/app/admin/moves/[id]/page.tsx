@@ -217,23 +217,13 @@ export default async function MoveDetailPage({
   const additionalFeesCents = changeFeesCents + extraFeesCents;
 
   const linkId = (move as { linked_move_id?: string | null }).linked_move_id;
-  const [{ data: pmLinkedPeer }, { data: partnerOrgRow }] = await Promise.all([
-    linkId
-      ? db
-          .from("moves")
-          .select("id, move_code, scheduled_date, client_name, status")
-          .eq("id", linkId)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-    (move as { organization_id?: string | null }).organization_id
-      ? db
-          .from("organizations")
-          .select("name")
-          .eq("id", (move as { organization_id: string }).organization_id)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-  ]);
-  const partnerOrgName = (partnerOrgRow as { name?: string } | null)?.name ?? null;
+  const { data: pmLinkedPeer } = linkId
+    ? await db
+        .from("moves")
+        .select("id, move_code, scheduled_date, client_name, status")
+        .eq("id", linkId)
+        .maybeSingle()
+    : { data: null };
 
   const moveWaivers = await Promise.all(
     (moveWaiverRows ?? []).map(
@@ -280,7 +270,6 @@ export default async function MoveDetailPage({
     <MoveDetailClient
       move={move}
       pmLinkedPeer={pmLinkedPeer}
-      partnerOrgName={partnerOrgName}
       crews={crews ?? []}
       isOffice={isOffice}
       userRole={userRole}
