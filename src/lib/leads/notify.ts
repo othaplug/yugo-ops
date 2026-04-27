@@ -1,8 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { sendSMS } from "@/lib/sms/sendSMS";
+import { newLeadAdminEmailHtml } from "@/lib/email/admin-templates";
 import { sendEmail } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
+import { sendSMS } from "@/lib/sms/sendSMS";
 
 export type LeadRow = {
   id: string;
@@ -15,6 +16,10 @@ export type LeadRow = {
   source?: string | null;
   source_detail?: string | null;
   assigned_to?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  from_address?: string | null;
+  to_address?: string | null;
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -28,6 +33,7 @@ const SOURCE_LABELS: Record<string, string> = {
   walk_in: "Walk-in",
   social_media: "Social media",
   repeat_client: "Repeat client",
+  manual: "Manual entry",
   other: "Other",
 };
 
@@ -38,7 +44,40 @@ function sourceLabel(source: string | null | undefined, detail: string | null | 
   return SOURCE_LABELS[s] || (s ? s.replace(/_/g, " ") : "Unknown");
 }
 
-async function phonesEmailsForUserIds(sb: SupabaseClient, userIds: string[]): Promise<{ userId: string; phone: string | null; email: string | null }[]> {
+function serviceLabelText(raw: string | null | undefined): string {
+  const s = (raw || "").trim() || "Move inquiry";
+  return s.replace(/_/g, " ");
+}
+
+function moveSizeLabelText(raw: string | null | undefined): string {
+  const m = (raw || "").trim();
+  if (!m) return "—";
+  const map: Record<string, string> = {
+    studio: "Studio",
+    partial: "Partial move",
+    "1br": "1 bedroom",
+    "2br": "2 bedrooms",
+    "3br": "3 bedrooms",
+    "4br": "4 bedrooms",
+    "4br_plus": "4+ bedrooms",
+    "5br_plus": "5+ bedrooms",
+  };
+  return map[m] || m.replace(/_/g, " ");
+}
+
+function preferredDateText(raw: string | null | undefined): string {
+  const t = (raw || "").trim();
+  if (!t) return "—";
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) {
+    return t.slice(0, 10);
+  }
+  return t;
+}
+
+async function phonesEmailsForUserIds(
+  sb: SupabaseClient,
+  userIds: string[],
+): Promise<{ userId: string; phone: string | null; email: string | null }[]> {
   const out: { userId: string; phone: string | null; email: string | null }[] = [];
   for (const uid of userIds) {
     const { data: pu } = await sb.from("platform_users").select("phone, email").eq("user_id", uid).maybeSingle();
@@ -61,9 +100,34 @@ export async function notifyLeadArrived(sb: SupabaseClient, lead: LeadRow): Prom
   const url = `${base}${path}`;
 
   const name = [lead.first_name, lead.last_name].filter(Boolean).join(" ") || "Unknown";
-  const svc = lead.service_type || "Move inquiry";
-  const size = lead.move_size || "";
+  const svc = serviceLabelText(lead.service_type);
+  const sizeLabel = moveSizeLabelText(lead.move_size);
   const src = sourceLabel(lead.source, lead.source_detail);
+  const dateLabel = preferredDateText(lead.preferred_date);
+  const leadNo = (lead.lead_number || "").trim() || null;
+
+  const contactEmail = (lead.email && String(lead.email).trim()) || null;
+  const contactPhone = (lead.phone && String(lead.phone).trim()) || null;
+  const fromAddress = (lead.from_address && String(lead.from_address).trim()) || null;
+  const toAddress = (lead.to_address && String(lead.to_address).trim()) || null;
+
+  const fullHtml = newLeadAdminEmailHtml({
+    leadNumber: leadNo,
+    clientName: name,
+    serviceLabel: svc,
+    moveSizeLabel: sizeLabel,
+    preferredDateLabel: dateLabel,
+    sourceLabel: src,
+    leadUrl: url,
+    contactEmail,
+    contactPhone,
+    fromAddress,
+    toAddress,
+  });
+
+  const emailSubject = leadNo
+    ? `New lead ${leadNo} · ${lead.first_name || "Inquiry"}`
+    : `New lead: ${lead.first_name || name} · ${svc}`;
 
   let recipientIds: string[] = [];
   if (lead.assigned_to) {
@@ -79,32 +143,26 @@ export async function notifyLeadArrived(sb: SupabaseClient, lead: LeadRow): Prom
   const contacts = await phonesEmailsForUserIds(sb, recipientIds);
 
   const smsLine =
-    `NEW LEAD: ${name} | ${svc}${size ? ` | ${size}` : ""} | Source: ${src}. Respond ASAP → ${url}`;
+    `NEW LEAD: ${name} | ${svc}${lead.move_size ? ` | ${moveSizeLabelText(lead.move_size)}` : ""} | Source: ${src}. Respond ASAP -> ${url}`;
 
   for (const c of contacts) {
     if (c.phone && c.phone.replace(/\D/g, "").length >= 10) {
       await sendSMS(c.phone, smsLine).catch(() => {});
     }
     if (c.email) {
-      const body =
-        `A new lead just came in. Respond within 5 minutes.\n\n` +
-        `Name: ${name}\n` +
-        `Service: ${svc}\n` +
-        `Size: ${size || "—"}\n` +
-        `Date: ${lead.preferred_date || "—"}\n` +
-        `Source: ${src}\n\n` +
-        `View: ${url}`;
       await sendEmail({
         to: c.email,
-        subject: `New Lead: ${lead.first_name || "Inquiry"} — ${svc}`,
-        html: `<pre style="font-family:system-ui,sans-serif;white-space:pre-wrap;">${body.replace(/</g, "&lt;")}</pre>`,
+        subject: emailSubject,
+        html: fullHtml,
       }).catch(() => {});
     }
   }
 
+  const descParts = [name, src, leadNo, url].filter(Boolean) as string[];
   await notifyAdmins("lead_new", {
-    subject: `New lead ${lead.lead_number || ""}`.trim(),
-    description: `${name} · ${src}. ${url}`,
+    subject: leadNo ? `New lead ${leadNo}` : emailSubject,
+    description: descParts.join(" · "),
     sourceId: lead.id,
+    html: fullHtml,
   }).catch(() => {});
 }

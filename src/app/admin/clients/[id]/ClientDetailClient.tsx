@@ -143,7 +143,8 @@ export default function ClientDetailClient({
 
   const isClient = client.type === "b2c";
   const personaLabel = isClient ? "Client" : "Partner";
-  const showPmProposal = !isClient && isPropertyManagementDeliveryVertical(String(client.vertical || client.type || ""));
+  const verticalKey = String(client.vertical || client.type || "");
+  const showPmProposal = !isClient && isPropertyManagementDeliveryVertical(verticalKey);
   const partnerLabels = getPartnerLabelsForPartner({
     vertical: client.vertical,
     type: client.type,
@@ -167,37 +168,64 @@ export default function ClientDetailClient({
 
   return (
     <div className="w-full min-w-0 py-5 md:py-6 animate-fade-up">
-      <button type="button" onClick={() => router.back()} className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] mb-4 transition-colors">
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] mb-4 transition-colors whitespace-nowrap shrink-0"
+      >
         ← Back
       </button>
 
       <div className="mb-4">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82">CRM · Client Profile</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 leading-relaxed">
+          CRM · Client Profile
+        </p>
       </div>
 
       {/* Hero + actions */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-6 mb-5">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="admin-page-hero text-[var(--tx)] break-words line-clamp-3">{client.name}</h1>
-              <span className={`dt-badge ${isClient ? "text-[var(--blue)]" : "text-[var(--accent-text)]"}`}>
+      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-7 mb-5">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 lg:gap-8">
+          <div className="min-w-0 flex-1 w-full max-w-full">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-3 sm:gap-y-1">
+              <h1 className="admin-page-hero text-[var(--tx)] break-words leading-snug max-w-full sm:min-w-0 sm:flex-1">
+                {client.name}
+              </h1>
+              <span
+                className={`dt-badge shrink-0 self-start sm:mt-0.5 ${isClient ? "text-[var(--blue)]" : "text-[var(--accent-text)]"}`}
+              >
                 {personaLabel}
               </span>
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--tx2)]">
-              <span className="font-medium text-[var(--accent-text)]">
+            <div className="mt-4 flex flex-col gap-2.5 text-[12px] text-[var(--tx2)] leading-relaxed">
+              <div className="font-medium text-[var(--accent-text)]">
                 {isClient ? "Move client" : organizationTypeLabel(client.vertical || client.type)}
-              </span>
-              <button type="button" onClick={() => setContactModalOpen(true)} className="text-[var(--accent-text)] hover:underline font-medium">
-                {client.contact_name || "-"}
-              </button>
-              <a href={`mailto:${client.email}`} className="text-[var(--tx2)] hover:text-[var(--accent-text)] truncate">{client.email || "-"}</a>
-              {client.address && <span className="text-[var(--tx3)] truncate">{client.address}</span>}
+              </div>
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-x-4 gap-y-2">
+                <button
+                  type="button"
+                  onClick={() => setContactModalOpen(true)}
+                  className="text-left text-[var(--accent-text)] hover:underline font-medium w-fit"
+                >
+                  {client.contact_name || "-"}
+                </button>
+                {client.email ? (
+                  <a
+                    href={`mailto:${client.email}`}
+                    className="text-[var(--tx2)] hover:text-[var(--accent-text)] break-all min-w-0"
+                  >
+                    {client.email}
+                  </a>
+                ) : (
+                  <span className="text-[var(--tx3)]">-</span>
+                )}
+              </div>
+              {client.address ? (
+                <p className="text-[var(--tx3)] break-words whitespace-normal max-w-2xl">{client.address}</p>
+              ) : null}
             </div>
           </div>
           {isAdmin && (
-          <div className="shrink-0 flex flex-wrap items-center gap-2">
+          <div className="shrink-0 flex flex-wrap items-center gap-2 lg:max-w-[min(100%,24rem)] lg:justify-end">
             {isClient ? (
               <button
                 type="button"
@@ -260,6 +288,20 @@ export default function ClientDetailClient({
                     <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
                   ) : null}
                 </button>
+                {!isClient && portfolioPartner && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      router.push(
+                        `/admin/partners/pm-batch?partner_id=${encodeURIComponent(client.id)}`,
+                      )
+                    }
+                    className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
+                  >
+                    Schedule PM moves
+                    <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
+                  </button>
+                )}
                 {showPmProposal && (
                   <button
                     type="button"
@@ -333,7 +375,7 @@ export default function ClientDetailClient({
 
       {/* Tab bar, partners only */}
       {!isClient && isAdmin && (
-        <div className="flex gap-0.5 border-b border-[var(--brd)] mb-0 -mx-0 overflow-x-auto">
+        <div className="flex gap-1 sm:gap-2 border-b border-[var(--brd)] mb-6 -mx-0 overflow-x-auto pb-px">
           {(portfolioPartner
             ? (["overview", "buildings", "rate-card", "moves", "analytics", "portal"] as const)
             : (["overview", "rate-card", "analytics", "portal"] as const)
@@ -354,7 +396,7 @@ export default function ClientDetailClient({
                 const qs = next.toString();
                 router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
               }}
-              className={`px-4 py-2.5 text-[10px] font-bold tracking-[0.08em] uppercase transition-all border-b-2 -mb-px whitespace-nowrap shrink-0 ${
+              className={`px-3 sm:px-5 py-3 text-[10px] font-bold tracking-[0.1em] uppercase transition-all border-b-2 -mb-px whitespace-nowrap shrink-0 ${
                 activeTab === tab
                   ? "border-[var(--gold)] text-[var(--accent-text)]"
                   : "border-transparent text-[var(--tx3)] hover:text-[var(--tx2)]"
@@ -387,10 +429,31 @@ export default function ClientDetailClient({
 
       {!isClient && isAdmin && portfolioPartner && activeTab === "moves" && (
         <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
-          <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3">Moves for this partner</h3>
-          <p className="text-[11px] text-[var(--tx3)] mb-4">
-            Tenant and portfolio jobs tied to this organization (residential move ops), not B2B deliveries.
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 mb-4">
+            <div className="min-w-0">
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3 sm:mb-2">
+                Moves for this partner
+              </h3>
+              <p className="text-[11px] text-[var(--tx3)]">
+                Tenant and portfolio jobs tied to this organization (residential move ops), not B2B deliveries.
+              </p>
+            </div>
+            {portfolioPartner ? (
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    `/admin/partners/pm-batch?partner_id=${encodeURIComponent(client.id)}`,
+                  )
+                }
+                className={`${ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS} shrink-0 self-start`}
+                aria-label="Create property management moves for this partner"
+              >
+                Create moves
+                <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
+              </button>
+            ) : null}
+          </div>
           {(() => {
             const buildingFilter = searchParams.get("building");
             const filteredMoves =
@@ -485,9 +548,11 @@ export default function ClientDetailClient({
         <>
 
       {/* Overview + since */}
-      <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
-        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3">Overview</div>
-        <div className="grid md:grid-cols-2 gap-6">
+      <div className="border-t border-[var(--brd)]/30 pt-8 pb-6">
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-4 leading-relaxed">
+          Profile summary
+        </div>
+        <div className="grid md:grid-cols-2 gap-8">
           {partnerSince && (
             <div>
               <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">{personaLabel} since</div>

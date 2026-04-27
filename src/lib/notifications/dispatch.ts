@@ -266,6 +266,7 @@ export function buildNotificationTitle(
     crew_idle_off_route: "Crew idle off job stops",
     lead_new: "New lead",
     partner_pm_booking: "PM booking request",
+    partner_pm_batch: "PM batch created",
     building_profile_pending: "Building profile review",
   };
   return titles[slug] || "Notification";

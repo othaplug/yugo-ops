@@ -199,7 +199,7 @@ export function PmPortalKpiStrip({ summary }: { summary: PmPortalSummary }) {
             {!hasActivity && (
               <>
                 {" "}
-                No activity yet this month — numbers will update as work is scheduled and completed.
+                No activity yet this month. Numbers will update as work is scheduled and completed.
               </>
             )}
           </span>
@@ -398,14 +398,32 @@ export function PartnerPmOverview({
                         <CalendarBlank size={20} weight="regular" className="shrink-0 text-[#2D3A26]" aria-hidden />
                         <span className="flex-1 min-w-0 text-left">
                           <span className={`block ${pmOverviewRowTitle} truncate`}>
+                            {m.tenant_name ? `${m.tenant_name} · ` : ""}
                             {m.building_name || "Move"}
                             {m.unit_number ? ` · Unit ${m.unit_number}` : ""}
                           </span>
                           <span className={`block ${pmBodyMuted} truncate`}>
+                            {(m as { move_type_label?: string | null }).move_type_label
+                              ? `${(m as { move_type_label?: string | null }).move_type_label} · `
+                              : ""}
                             {m.scheduled_date
                               ? formatDate(m.scheduled_date, { weekday: "short", month: "short", day: "numeric" })
                               : "Date TBD"}
                             {m.scheduled_time ? ` · ${m.scheduled_time}` : ""}
+                          </span>
+                          <span className="mt-1 inline-flex flex-wrap items-center gap-2">
+                            <PmStatusBadge status={m.status} />
+                            {(m as { tracking_url?: string | null }).tracking_url &&
+                            String(m.status || "").toLowerCase() === "in_progress" ? (
+                              <a
+                                href={(m as { tracking_url: string }).tracking_url}
+                                className={`${pmLink} text-[10px]`}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Track
+                              </a>
+                            ) : null}
                           </span>
                         </span>
                         <CaretRight

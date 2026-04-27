@@ -621,6 +621,37 @@ export async function GET(
       (orgM as { phone?: string | null } | null)?.phone?.trim() || null;
   }
 
+  const contractIdMove = (m as { contract_id?: string | null }).contract_id ?? null;
+  const isPmMoveRow = !!(contractIdMove && String(contractIdMove).trim()) ||
+    !!(m as { is_pm_move?: boolean | null }).is_pm_move;
+  const propId = (m as { partner_property_id?: string | null }).partner_property_id;
+  let buildingContactName: string | null = null;
+  let buildingContactPhone: string | null = null;
+  if (propId) {
+    const { data: prop } = await admin
+      .from("partner_properties")
+      .select("building_contact_name, building_contact_phone")
+      .eq("id", propId)
+      .maybeSingle();
+    buildingContactName =
+      (prop as { building_contact_name?: string | null } | null)?.building_contact_name?.trim() ||
+      null;
+    buildingContactPhone =
+      (prop as { building_contact_phone?: string | null } | null)?.building_contact_phone?.trim() ||
+      null;
+  }
+  const holdingUnit =
+    (m as { holding_unit?: string | null }).holding_unit?.trim() || null;
+  const pmPacking = !!(m as { pm_packing_required?: boolean | null }).pm_packing_required;
+  const pmReason =
+    String(
+      (m as { pm_reason_code?: string | null }).pm_reason_code ||
+        (m as { pm_move_kind?: string | null }).pm_move_kind ||
+        "",
+    ).trim() || null;
+  const tenantPresent =
+    (m as { tenant_present?: boolean | null }).tenant_present !== false;
+
   return NextResponse.json({
     viewerCrewMemberId: payload.crewMemberId,
     viewerCrewMemberName: payload.name,
@@ -634,6 +665,13 @@ export async function GET(
     clientEmail: (m.client_email as string | null | undefined)?.trim() || null,
     partnerName,
     partnerPhone,
+    isPmContractMove: isPmMoveRow,
+    pmHoldingUnit: holdingUnit,
+    pmReasonCode: pmReason,
+    pmPackingRequired: pmPacking,
+    tenantPresent,
+    buildingContactName,
+    buildingContactPhone,
     coordinatorName: "Yugo Operations",
     coordinatorPhone: (process.env.NEXT_PUBLIC_YUGO_PHONE || "").trim() || null,
     fromAddress: m.from_address || "-",

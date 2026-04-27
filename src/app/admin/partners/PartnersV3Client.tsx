@@ -22,7 +22,7 @@ import {
 } from "@/design-system/admin/table";
 import { KpiStrip } from "@/design-system/admin/dashboard";
 import { Sparkline } from "@/design-system/admin/primitives";
-import { Plus, Pulse } from "@phosphor-icons/react";
+import { Path, Plus, Pulse } from "@phosphor-icons/react";
 
 const ACTIVITY_WEEKS = 12;
 const emptyActivitySeries = () => new Array(ACTIVITY_WEEKS).fill(0);
@@ -404,6 +404,15 @@ export default function PartnersV3Client() {
         description="Every B2B relationship — retail, designers, hospitality, gallery, and referral partners."
         actions={
           <>
+            {activeTab === "property_management" ? (
+              <Button
+                variant="secondary"
+                leadingIcon={<Path size={16} />}
+                onClick={() => router.push("/admin/partners/pm-batch")}
+              >
+                Schedule PM moves
+              </Button>
+            ) : null}
             <Button
               variant="secondary"
               leadingIcon={<Pulse size={16} />}

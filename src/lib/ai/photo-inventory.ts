@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getAnthropicVisionModelCandidates } from "@/lib/ai/anthropic-vision-model";
 
 export type AIInventorySuggestion = {
   name: string
@@ -24,13 +25,25 @@ const WEIGHT_TO_TIER: Record<
 
 export { WEIGHT_TO_TIER };
 
+function firstAssistantText(
+  data: { content?: { type: string; text?: string }[] },
+): string {
+  const blocks = data.content;
+  if (!Array.isArray(blocks)) return "";
+  for (const b of blocks) {
+    if (b?.type === "text" && typeof b.text === "string") return b.text;
+  }
+  return "";
+}
+
 /**
  * Call Claude with vision on survey photos. Uses signed URLs to read private storage objects.
+ * Retries with alternate model ids if Anthropic returns a model/404-style error.
  */
 export async function analyzePhotosWithAI(
   db: SupabaseClient,
   photoPathsByRoom: Record<string, string[]>,
-): Promise<AIInventorySuggestion[]> {
+): Promise<{ suggestions: AIInventorySuggestion[]; modelUsed: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error("AI is not configured");
@@ -81,8 +94,10 @@ export async function analyzePhotosWithAI(
     }
   }
 
+  const models = getAnthropicVisionModelCandidates();
+  const firstModel = models[0] ?? "claude-sonnet-4-5-20250929";
   if (blocks.length === 0) {
-    return [];
+    return { suggestions: [], modelUsed: firstModel };
   }
 
   const instruction = `You are analyzing photos of a home for a moving company. For each room photo, identify every piece of furniture and large item visible.
@@ -121,35 +136,46 @@ Do NOT include small items (books, decorations, kitchenware) unless in large qua
     });
   }
 
-  const model = process.env.ANTHROPIC_VISION_MODEL || "claude-sonnet-4-20250514";
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 4000,
-      messages: [{ role: "user", content }],
-    }),
-  });
-
-  const data = (await response.json()) as {
-    content?: { type: string; text?: string }[];
-    error?: { message?: string };
+  const requestBody = {
+    max_tokens: 4000,
+    messages: [{ role: "user" as const, content }],
   };
-  if (!response.ok) {
-    throw new Error(data.error?.message || "Anthropic request failed");
+
+  let lastErrorMessage = "Anthropic request failed";
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i]!;
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({ ...requestBody, model }),
+    });
+    const data = (await response.json()) as {
+      content?: { type: string; text?: string }[];
+      error?: { message?: string; type?: string };
+    };
+    if (response.ok) {
+      const text = firstAssistantText(data);
+      try {
+        const cleaned = text.replace(/```json|```/g, "").trim();
+        const suggestions = JSON.parse(cleaned) as AIInventorySuggestion[];
+        if (!Array.isArray(suggestions)) {
+          return { suggestions: [], modelUsed: model };
+        }
+        return { suggestions, modelUsed: model };
+      } catch {
+        return { suggestions: [], modelUsed: model };
+      }
+    }
+    const msg = data.error?.message || "Anthropic request failed";
+    lastErrorMessage = msg;
+    const atEnd = i === models.length - 1;
+    const canRetryWithOtherModel = !atEnd && (response.status === 400 || response.status === 404);
+    if (canRetryWithOtherModel) continue;
+    throw new Error(msg);
   }
-  const text = data.content?.[0]?.type === "text" ? data.content[0].text || "" : "";
-  try {
-    const cleaned = text.replace(/```json|```/g, "").trim();
-    const suggestions = JSON.parse(cleaned) as AIInventorySuggestion[];
-    if (!Array.isArray(suggestions)) return [];
-    return suggestions;
-  } catch {
-    return [];
-  }
+  throw new Error(lastErrorMessage);
 }

@@ -68,6 +68,7 @@ import {
 import { B2B_PARTNER_TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 
 const fieldInput = "field-input-compact w-full";
+const accessSelectClass = `${fieldInput} text-left text-[12px] text-[var(--tx)]`;
 
 const WEIGHT_TIER_OPTIONS = weightTierSelectOptions();
 
@@ -2352,54 +2353,74 @@ export default function B2BJobsDeliveryForm({
         <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
           Route
         </h3>
-        <MultiStopAddressField
-          label="Pickup *"
-          placeholder="Pickup address"
-          stops={[{ address: pickupAddress }, ...extraPickupStops]}
-          onChange={(stops) => {
-            setPickupAddress(stops[0]?.address ?? "");
-            setExtraPickupStops(vis("multi_stop") ? stops.slice(1) : []);
-          }}
-          maxStops={vis("multi_stop") ? 6 : 1}
-          inputClassName={fieldInput}
-        />
-        <Field label="Pickup access">
-          <select
-            value={pickupAccess}
-            onChange={(e) => setPickupAccess(e.target.value)}
-            className={fieldInput}
-          >
-            {ACCESS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <MultiStopAddressField
-          label="Delivery *"
-          placeholder="Delivery address"
-          stops={[{ address: deliveryAddress }, ...extraDeliveryStops]}
-          onChange={(stops) => {
-            setDeliveryAddress(stops[0]?.address ?? "");
-            setExtraDeliveryStops(vis("multi_stop") ? stops.slice(1) : []);
-          }}
-          maxStops={vis("multi_stop") ? 6 : 1}
-          inputClassName={fieldInput}
-        />
-        <Field label="Delivery access">
-          <select
-            value={deliveryAccess}
-            onChange={(e) => setDeliveryAccess(e.target.value)}
-            className={fieldInput}
-          >
-            {ACCESS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
+        <div className="max-w-4xl">
+          <MultiStopAddressField
+            label="Pickup"
+            labelVisibility="sr-only"
+            placeholder="Pickup address*"
+            stops={[{ address: pickupAddress }, ...extraPickupStops]}
+            onChange={(stops) => {
+              setPickupAddress(stops[0]?.address ?? "");
+              setExtraPickupStops(vis("multi_stop") ? stops.slice(1) : []);
+            }}
+            maxStops={vis("multi_stop") ? 6 : 1}
+            inputClassName={fieldInput}
+            trailingOnFirstRow={
+              <>
+                <label htmlFor="b2b-pickup-access" className="sr-only">
+                  Pickup access
+                </label>
+                <select
+                  id="b2b-pickup-access"
+                  value={pickupAccess}
+                  onChange={(e) => setPickupAccess(e.target.value)}
+                  className={accessSelectClass}
+                  aria-label="Pickup access"
+                >
+                  {ACCESS_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </>
+            }
+          />
+        </div>
+        <div className="max-w-4xl">
+          <MultiStopAddressField
+            label="Delivery"
+            labelVisibility="sr-only"
+            placeholder="Delivery address*"
+            stops={[{ address: deliveryAddress }, ...extraDeliveryStops]}
+            onChange={(stops) => {
+              setDeliveryAddress(stops[0]?.address ?? "");
+              setExtraDeliveryStops(vis("multi_stop") ? stops.slice(1) : []);
+            }}
+            maxStops={vis("multi_stop") ? 6 : 1}
+            inputClassName={fieldInput}
+            trailingOnFirstRow={
+              <>
+                <label htmlFor="b2b-delivery-access" className="sr-only">
+                  Delivery access
+                </label>
+                <select
+                  id="b2b-delivery-access"
+                  value={deliveryAccess}
+                  onChange={(e) => setDeliveryAccess(e.target.value)}
+                  className={accessSelectClass}
+                  aria-label="Delivery access"
+                >
+                  {ACCESS_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </>
+            }
+          />
+        </div>
         <Field label="Access notes">
           <textarea
             value={accessNotes}

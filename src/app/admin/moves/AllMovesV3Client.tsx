@@ -43,6 +43,8 @@ interface Move {
   margin_flag?: string | null;
   est_margin_percent?: number | null;
   display_status?: string | null;
+  contract_id?: string | null;
+  is_pm_move?: boolean | null;
 }
 
 interface Quote {
@@ -77,6 +79,13 @@ function normalizeType(m: Move): string {
   if (mt.includes("labour")) return "labour_only";
   if (mt.includes("residential") || mt.includes("local")) return "residential";
   return mt || "residential";
+}
+
+function moveSegment(m: Move): "pm" | "b2b" | "b2c" {
+  const pm = !!(m.contract_id && String(m.contract_id).trim()) || !!m.is_pm_move;
+  if (pm) return "pm";
+  if (normalizeType(m) === "b2b") return "b2b";
+  return "b2c";
 }
 
 function statusTone(
@@ -136,6 +145,7 @@ export default function AllMovesV3Client({
 
   const urlType = params.get("type") || "";
   const urlStatus = params.get("status") || "";
+  const urlSegment = (params.get("segment") || "all").toLowerCase();
 
   const [search, setSearch] = React.useState(params.get("q") || "");
   const [sort, setSort] = React.useState<ColumnSort | null>({
@@ -150,9 +160,23 @@ export default function AllMovesV3Client({
       if (urlType && normalizeType(m) !== urlType) return false;
       if (urlStatus && effective(m).toLowerCase() !== urlStatus.toLowerCase())
         return false;
+      if (urlSegment === "pm" && moveSegment(m) !== "pm") return false;
+      if (urlSegment === "b2b" && moveSegment(m) !== "b2b") return false;
+      if (urlSegment === "b2c" && moveSegment(m) !== "b2c") return false;
       return true;
     });
-  }, [moves, urlStatus, urlType]);
+  }, [moves, urlSegment, urlStatus, urlType]);
+
+  const setSegmentParam = React.useCallback(
+    (next: string) => {
+      const q = new URLSearchParams(params.toString());
+      if (!next || next === "all") q.delete("segment");
+      else q.set("segment", next);
+      const s = q.toString();
+      router.push(s ? `/admin/moves?${s}` : "/admin/moves", { scroll: false });
+    },
+    [params, router],
+  );
 
   const kpis = React.useMemo(() => {
     const totalEstimate = moves.reduce((a, m) => a + (m.estimate || 0), 0);
@@ -248,9 +272,16 @@ export default function AllMovesV3Client({
         sortable: true,
         width: 130,
         cell: (m) => (
-          <span className="text-[12px] text-[var(--yu3-ink)]">
-            {serviceTypeDisplayLabel(normalizeType(m)) ||
-              toTitleCase(normalizeType(m))}
+          <span className="inline-flex flex-col gap-0.5">
+            <span className="text-[12px] text-[var(--yu3-ink)]">
+              {serviceTypeDisplayLabel(normalizeType(m)) ||
+                toTitleCase(normalizeType(m))}
+            </span>
+            {moveSegment(m) === "pm" && (
+              <span className="text-[9px] font-bold uppercase tracking-wider text-[#6D28D9]">
+                PM
+              </span>
+            )}
           </span>
         ),
       },
@@ -431,6 +462,22 @@ export default function AllMovesV3Client({
         }
       />
       <KpiStrip tiles={kpis} columns={5} />
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="sr-only" htmlFor="moves-segment-filter">
+          Move channel
+        </label>
+        <select
+          id="moves-segment-filter"
+          value={urlSegment === "pm" || urlSegment === "b2b" || urlSegment === "b2c" ? urlSegment : "all"}
+          onChange={(e) => setSegmentParam(e.target.value)}
+          className="admin-premium-input text-[13px] py-2 max-w-[220px]"
+        >
+          <option value="all">All channels</option>
+          <option value="b2c">B2C (direct)</option>
+          <option value="pm">Property management</option>
+          <option value="b2b">B2B deliveries</option>
+        </select>
+      </div>
       <DataTable<Move>
         columns={columns}
         rows={filtered}

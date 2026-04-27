@@ -173,6 +173,14 @@ export function isPropertyManagementDeliveryVertical(type: string): boolean {
 }
 
 /**
+ * Portfolio partners that use buildings, contracts, and PM-style batch scheduling.
+ * Same set as {@link PM_DELIVERY_VERTICALS} (residential PM, commercial PM, developer portfolio).
+ */
+export function isPmBatchScheduleVertical(type: string): boolean {
+  return isPropertyManagementDeliveryVertical(type);
+}
+
+/**
  * Partner verticals that receive a self-serve login and dashboard.
  * Referral realtors are coordinated offline — no portal login or in-app referral UI.
  */

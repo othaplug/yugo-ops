@@ -131,6 +131,72 @@ export function widgetLeadAdminEmailHtml(params: {
   return adminNotificationLayout(inner, undefined);
 }
 
+/** New lead from capture or admin (all coordinators + in-app; also direct email in notify). */
+export function newLeadAdminEmailHtml(params: {
+  leadNumber: string | null;
+  clientName: string;
+  serviceLabel: string;
+  moveSizeLabel: string;
+  preferredDateLabel: string;
+  sourceLabel: string;
+  leadUrl: string;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  fromAddress: string | null;
+  toAddress: string | null;
+}): string {
+  const num = (params.leadNumber || "").trim();
+  const titleLine = num
+    ? `${escapeHtml(num)} · ${escapeHtml(params.clientName)}`
+    : escapeHtml(params.clientName);
+  const fromTo =
+    (params.fromAddress || params.toAddress)
+      ? `<tr><td style="${ADMIN_LABEL_TD}">Move route</td><td style="color:${TEXT};font-size:12px;padding:4px 0;line-height:1.45;">${
+        params.fromAddress
+          ? `From: ${escapeHtml(String(params.fromAddress))}${
+              params.toAddress ? "<br/>" : ""
+            }`
+          : ""
+      }${
+        params.toAddress
+          ? `${params.fromAddress ? "" : ""}To: ${escapeHtml(String(params.toAddress))}`
+          : ""
+      }</td></tr>`
+      : "";
+  const contactRows =
+    params.contactEmail || params.contactPhone
+      ? `<tr><td style="${ADMIN_LABEL_TD}">Contact</td><td style="color:${TEXT};padding:4px 0;">${
+        [params.contactEmail ? escapeHtml(params.contactEmail) : "", params.contactPhone ? escapeHtml(params.contactPhone) : ""]
+          .filter(Boolean)
+          .join(" · ") || "—"
+      }</td></tr>`
+      : "";
+  const inner = `
+    <div style="${ADMIN_KICKER}">New lead</div>
+    <h1 style="font-size:22px;font-weight:700;color:${TEXT};margin:0 0 6px;letter-spacing:-0.02em;">${titleLine}</h1>
+    <p style="font-size:14px;color:${TEXT_MUTED};line-height:1.55;margin:0 0 18px;">
+      A new lead just came in. Please respond as soon as you can, ideally within 5 minutes during business hours.
+    </p>
+    <p style="font-size:12px;font-weight:600;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.08em;margin:0 0 10px;font-family:${BTN_FONT};">Lead details</p>
+    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border:1px solid rgba(44,62,45,0.12);border-radius:0;padding:18px 20px;margin-bottom:14px;">
+      <table style="width:100%;font-size:14px;border-collapse:collapse;font-family:${BTN_FONT};">
+        <tr><td style="${ADMIN_LABEL_TD}">Name</td><td style="color:${TEXT};font-weight:600;padding:4px 0;">${escapeHtml(params.clientName)}</td></tr>
+        <tr><td style="${ADMIN_LABEL_TD}">Service</td><td style="color:${TEXT};padding:4px 0;">${escapeHtml(params.serviceLabel)}</td></tr>
+        <tr><td style="${ADMIN_LABEL_TD}">Size</td><td style="color:${TEXT};padding:4px 0;">${escapeHtml(params.moveSizeLabel)}</td></tr>
+        <tr><td style="${ADMIN_LABEL_TD}">Move date</td><td style="color:${TEXT};padding:4px 0;">${escapeHtml(params.preferredDateLabel)}</td></tr>
+        <tr><td style="${ADMIN_LABEL_TD}">Source</td><td style="color:${TEXT};padding:4px 0;">${escapeHtml(params.sourceLabel)}</td></tr>
+        ${contactRows}
+        ${fromTo}
+      </table>
+    </div>
+    <p style="font-size:13px;color:${TEXT_MUTED};line-height:1.55;margin:0 0 20px;">
+      Open the lead to assign, add notes, and follow up. If the client came from the website, they may be waiting for pricing.
+    </p>
+    <a class="yugo-admin-cta" href="${escapeHtml(params.leadUrl)}" style="${emailPrimaryCtaStyle(BTN_FONT, "inline-block")}">Open lead in Ops+</a>
+  `;
+  return adminNotificationLayout(inner, undefined);
+}
+
 /** Estate booking — admin notification. */
 export function estateBookingAdminEmailHtml(params: {
   clientName: string;

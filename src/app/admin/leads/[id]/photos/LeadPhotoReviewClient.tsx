@@ -10,6 +10,7 @@ import { mapAISuggestionsToInventory } from "@/lib/ai/map-to-inventory";
 import type { AIInventorySuggestion } from "@/lib/ai/photo-inventory";
 import { formatTimeAgo } from "@/lib/format-time-ago";
 import { PHOTO_ROOM_LABELS } from "@/lib/photo-survey/rooms";
+import { QUOTE_SERVICE_TYPE_DEFINITIONS } from "@/lib/quote-service-types";
 import { residentialInventoryLineScore } from "@/lib/pricing/weight-tiers";
 import { suggestMoveSizeFromInventory } from "@/lib/pricing/move-size-suggestion";
 import { useToast } from "../../../components/Toast";
@@ -153,19 +154,68 @@ export default function LeadPhotoReviewClient({
         return;
       }
     }
+    const leadSt =
+      lead && typeof (lead as { service_type?: unknown }).service_type === "string"
+        ? String((lead as { service_type: string }).service_type).trim()
+        : "";
+    const quoteService =
+      leadSt === "b2b_oneoff"
+        ? "b2b_delivery"
+        : leadSt && QUOTE_SERVICE_TYPE_DEFINITIONS.some((d) => d.value === leadSt)
+          ? leadSt
+          : "";
+    const leadStr = (key: string) => {
+      const v = lead[key];
+      if (v == null) return "";
+      const t = String(v).trim();
+      return t;
+    };
+    const handoff: {
+      items: InventoryItemEntry[];
+      service_type?: string;
+      first_name?: string;
+      last_name?: string;
+      email?: string;
+      phone?: string;
+      from_address?: string;
+      to_address?: string;
+      preferred_date?: string;
+      move_size?: string;
+    } = { items: inventoryItems };
+    if (quoteService) handoff.service_type = quoteService;
+    if (leadStr("first_name")) handoff.first_name = leadStr("first_name");
+    if (leadStr("last_name")) handoff.last_name = leadStr("last_name");
+    if (leadStr("email")) handoff.email = leadStr("email");
+    if (leadStr("phone")) handoff.phone = leadStr("phone");
+    if (leadStr("from_address")) handoff.from_address = leadStr("from_address");
+    if (leadStr("to_address")) handoff.to_address = leadStr("to_address");
+    const pDate = leadStr("preferred_date");
+    if (pDate) {
+      const slice = pDate.length >= 10 ? pDate.slice(0, 10) : pDate;
+      handoff.preferred_date = slice;
+    }
+    if (ms) {
+      handoff.move_size = ms;
+    } else {
+      const msl = leadStr("move_size");
+      if (msl) handoff.move_size = msl;
+    }
+
     try {
       window.sessionStorage.setItem(
         `quote_inv_prefill_v1_${leadId}`,
-        JSON.stringify(inventoryItems),
+        JSON.stringify(handoff),
       );
     } catch {
       toast("Could not hand off inventory. Try again.", "x");
       return;
     }
-    router.push(
-      `/admin/quotes/new?lead_id=${encodeURIComponent(leadId)}&from_photo_review=1`,
-    );
-  }, [inventoryItems, leadId, router, suggestedMove, toast]);
+    const qs = new URLSearchParams();
+    qs.set("lead_id", leadId);
+    qs.set("from_photo_review", "1");
+    if (quoteService) qs.set("service", quoteService);
+    router.push(`/admin/quotes/new?${qs.toString()}`);
+  }, [inventoryItems, lead, leadId, router, suggestedMove, toast]);
 
   if (!survey) {
     return (

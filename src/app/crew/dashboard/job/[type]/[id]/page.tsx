@@ -223,6 +223,14 @@ interface JobDetail {
   coordinatorPhone?: string | null;
   /** Completed jobs: crew still owes cash / none tip report. */
   tipReportNeeded?: boolean;
+  /** PM contract moves: partner building context for crew. */
+  isPmContractMove?: boolean;
+  pmHoldingUnit?: string | null;
+  pmReasonCode?: string | null;
+  pmPackingRequired?: boolean;
+  tenantPresent?: boolean;
+  buildingContactName?: string | null;
+  buildingContactPhone?: string | null;
 }
 
 interface Session {
@@ -474,6 +482,16 @@ export default function CrewJobPage({
       cancelled = true;
     };
   }, [isCompleted, id, jobType, pathname]);
+
+  useEffect(() => {
+    if (
+      jobType === "move" &&
+      job?.isPmContractMove &&
+      job.tenantPresent === false
+    ) {
+      setWalkthroughSkipped(true);
+    }
+  }, [job?.id, job?.isPmContractMove, job?.tenantPresent, jobType]);
 
   useEffect(() => {
     if (
@@ -1683,10 +1701,55 @@ export default function CrewJobPage({
               </div>
             </div>
           )}
+          {jobType === "move" && job.isPmContractMove && (
+            <div className="mb-5 rounded-[var(--yu3-r-lg)] border border-[#6D28D9]/35 bg-[#6D28D9]/12 p-3">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#5B21B6] mb-1.5 [font-family:var(--font-body)]">
+                Property management move
+              </p>
+              {job.partnerName ? (
+                <p className="text-[13px] font-semibold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+                  {job.partnerName}
+                </p>
+              ) : null}
+              {job.pmReasonCode ? (
+                <p className="text-[12px] text-[var(--yu3-ink-muted)] mt-1 [font-family:var(--font-body)]">
+                  {job.pmReasonCode.replace(/_/g, " ")}
+                  {job.pmPackingRequired ? " · Packing required" : ""}
+                  {job.pmHoldingUnit ? ` · Holding: ${job.pmHoldingUnit}` : ""}
+                </p>
+              ) : null}
+              {job.tenantPresent === false ? (
+                <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-2 leading-snug [font-family:var(--font-body)]">
+                  Tenant may not be on site. Proceed with building access as noted in the job.
+                </p>
+              ) : null}
+            </div>
+          )}
+          {jobType === "move" && job.isPmContractMove && (job.buildingContactName || job.buildingContactPhone) && (
+            <div className="mb-5 rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] p-3">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-muted)] mb-1.5 [font-family:var(--font-body)]">
+                Building contact
+              </p>
+              {job.buildingContactName ? (
+                <p className="text-[13px] font-semibold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+                  {job.buildingContactName}
+                </p>
+              ) : null}
+              {job.buildingContactPhone ? (
+                <a
+                  href={`tel:${normalizePhone(job.buildingContactPhone)}`}
+                  className="inline-block mt-1 text-[13px] font-medium text-[var(--yu3-wine)] hover:underline [font-family:var(--font-body)]"
+                  aria-label={`Call ${job.buildingContactPhone}`}
+                >
+                  {formatPhone(job.buildingContactPhone) || job.buildingContactPhone}
+                </a>
+              ) : null}
+            </div>
+          )}
           {(job.clientName || job.clientPhone) && (
             <div className="mb-5">
               <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--yu3-ink-muted)] mb-1.5 [font-family:var(--font-body)]">
-                Client
+                {jobType === "move" && job.isPmContractMove ? "Tenant" : "Client"}
               </p>
               {job.clientName ? (
                 <p className="text-[13px] font-semibold text-[var(--yu3-ink)] [font-family:var(--font-body)]">

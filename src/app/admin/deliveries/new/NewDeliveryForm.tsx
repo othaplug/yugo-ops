@@ -92,6 +92,19 @@ const TIME_OPTIONS = (() => {
 })();
 
 const fieldInput = "field-input-compact w-full";
+const accessSelectClass = `${fieldInput} text-left text-[12px] text-[var(--tx)]`;
+
+const ROUTE_ACCESS_OPTIONS = [
+  { value: "elevator", label: "Elevator" },
+  { value: "ground_floor", label: "Ground Floor" },
+  { value: "loading_dock", label: "Loading Dock" },
+  { value: "walk_up_2nd", label: "Walk-up (2nd floor)" },
+  { value: "walk_up_3rd", label: "Walk-up (3rd floor)" },
+  { value: "walk_up_4th_plus", label: "Walk-up (4th+ floor)" },
+  { value: "long_carry", label: "Long Carry" },
+  { value: "narrow_stairs", label: "Narrow Stairs" },
+  { value: "no_parking_nearby", label: "No Parking Nearby" },
+];
 
 export default function NewDeliveryForm({
   organizations,
@@ -176,6 +189,7 @@ export default function NewDeliveryForm({
   const [specialHandling, setSpecialHandling] = useState(false);
   const [quotedPrice, setQuotedPrice] = useState("");
   const [crewId, setCrewId] = useState("");
+  const [pickupAccess, setPickupAccess] = useState("elevator");
   const [deliveryAccess, setDeliveryAccess] = useState("elevator");
   const [itemWeightCategory, setItemWeightCategory] = useState("standard");
   const [complexityIndicators, setComplexityIndicators] = useState<string[]>(
@@ -210,6 +224,7 @@ export default function NewDeliveryForm({
       internalNotes,
       quotedPrice,
       crewId,
+      pickupAccess,
       deliveryAccess,
       itemWeightCategory,
       itemsFallback,
@@ -230,6 +245,7 @@ export default function NewDeliveryForm({
       internalNotes,
       quotedPrice,
       crewId,
+      pickupAccess,
       deliveryAccess,
       itemWeightCategory,
       itemsFallback,
@@ -257,7 +273,11 @@ export default function NewDeliveryForm({
     if (d.internalNotes) setInternalNotes(d.internalNotes as string);
     if (d.quotedPrice) setQuotedPrice(d.quotedPrice as string);
     if (d.crewId) setCrewId(d.crewId as string);
-    if (d.deliveryAccess) setDeliveryAccess(d.deliveryAccess as string);
+    if (d.pickupAccess) setPickupAccess(d.pickupAccess as string);
+    if (d.deliveryAccess) {
+      const da = String(d.deliveryAccess);
+      setDeliveryAccess(da === "no_parking" ? "no_parking_nearby" : da);
+    }
     if (d.itemWeightCategory)
       setItemWeightCategory(d.itemWeightCategory as string);
     if (d.itemsFallback) setItemsFallback(d.itemsFallback as string);
@@ -508,6 +528,7 @@ export default function NewDeliveryForm({
       special_handling: specialHandling,
       quoted_price: parseNumberInput(quotedPrice) || null,
       crew_id: crewId || null,
+      pickup_access: pickupAccess || null,
       delivery_access: deliveryAccess || null,
       item_weight_category: itemWeightCategory || null,
       category: projectType || org?.vertical || org?.type || "retail",
@@ -768,26 +789,76 @@ export default function NewDeliveryForm({
           <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
             Addresses
           </h3>
-          <MultiStopAddressField
-            label="Pickup"
-            placeholder="Warehouse, store, or pickup location"
-            stops={[{ address: pickupAddress }, ...extraPickupStops]}
-            onChange={(stops) => {
-              setPickupAddress(stops[0]?.address ?? "");
-              setExtraPickupStops(stops.slice(1));
-            }}
-            inputClassName={fieldInput}
-          />
-          <MultiStopAddressField
-            label="Delivery"
-            placeholder="Delivery destination"
-            stops={[{ address: deliveryAddress }, ...extraDeliveryStops]}
-            onChange={(stops) => {
-              setDeliveryAddress(stops[0]?.address ?? "");
-              setExtraDeliveryStops(stops.slice(1));
-            }}
-            inputClassName={fieldInput}
-          />
+          <div className="max-w-4xl space-y-3">
+            <MultiStopAddressField
+              label="Pickup"
+              labelVisibility="sr-only"
+              placeholder="Warehouse, store, or pickup location"
+              stops={[{ address: pickupAddress }, ...extraPickupStops]}
+              onChange={(stops) => {
+                setPickupAddress(stops[0]?.address ?? "");
+                setExtraPickupStops(stops.slice(1));
+              }}
+              inputClassName={fieldInput}
+              trailingOnFirstRow={
+                <>
+                  <label
+                    htmlFor="new-delivery-pickup-access"
+                    className="sr-only"
+                  >
+                    Pickup access
+                  </label>
+                  <select
+                    id="new-delivery-pickup-access"
+                    value={pickupAccess}
+                    onChange={(e) => setPickupAccess(e.target.value)}
+                    className={accessSelectClass}
+                    aria-label="Pickup access"
+                  >
+                    {ROUTE_ACCESS_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              }
+            />
+            <MultiStopAddressField
+              label="Delivery"
+              labelVisibility="sr-only"
+              placeholder="Delivery destination"
+              stops={[{ address: deliveryAddress }, ...extraDeliveryStops]}
+              onChange={(stops) => {
+                setDeliveryAddress(stops[0]?.address ?? "");
+                setExtraDeliveryStops(stops.slice(1));
+              }}
+              inputClassName={fieldInput}
+              trailingOnFirstRow={
+                <>
+                  <label
+                    htmlFor="new-delivery-delivery-access"
+                    className="sr-only"
+                  >
+                    Delivery access
+                  </label>
+                  <select
+                    id="new-delivery-delivery-access"
+                    value={deliveryAccess}
+                    onChange={(e) => setDeliveryAccess(e.target.value)}
+                    className={accessSelectClass}
+                    aria-label="Delivery access"
+                  >
+                    {ROUTE_ACCESS_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              }
+            />
+          </div>
         </section>
 
         {/* Section: Schedule */}
@@ -871,25 +942,6 @@ export default function NewDeliveryForm({
                 inputMode="decimal"
                 className={fieldInput}
               />
-            </Field>
-            <Field label="Delivery Access">
-              <select
-                value={deliveryAccess}
-                onChange={(e) => setDeliveryAccess(e.target.value)}
-                className={fieldInput}
-              >
-                <option value="elevator">Elevator</option>
-                <option value="ground_floor">
-                  Ground Floor / Loading Dock
-                </option>
-                <option value="loading_dock">Loading Dock</option>
-                <option value="walk_up_2nd">Walk-up (2nd floor)</option>
-                <option value="walk_up_3rd">Walk-up (3rd floor)</option>
-                <option value="walk_up_4th_plus">Walk-up (4th+ floor)</option>
-                <option value="long_carry">Long Carry (50m+)</option>
-                <option value="narrow_stairs">Narrow Stairs</option>
-                <option value="no_parking">No Parking Nearby</option>
-              </select>
             </Field>
             <Field label="Item Weight">
               <select

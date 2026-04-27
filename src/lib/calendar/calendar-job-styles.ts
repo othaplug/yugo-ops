@@ -3,6 +3,8 @@ import type { CalendarEvent } from "./types";
 
 /** Wine move / partner-style pill on admin calendar */
 export const CALENDAR_WINE_MOVE_FILL = "#8B1A3A";
+/** Property management (contract) moves on admin calendar */
+export const CALENDAR_PM_MOVE_FILL = "#6D28D9";
 /** B2B delivery — wine rose (replaces bright pink; light ink for contrast). */
 export const CALENDAR_B2B_DELIVERY_FILL = "#7A2848";
 export const CALENDAR_WINE_PILL_TEXT = "#F9EDE4";
@@ -17,6 +19,7 @@ export function calendarPillUsesLightInk(ev: CalendarEvent): boolean {
   return (
     c === CALENDAR_WINE_MOVE_FILL.toLowerCase() ||
     c === CALENDAR_B2B_DELIVERY_FILL.toLowerCase() ||
+    c === CALENDAR_PM_MOVE_FILL.toLowerCase() ||
     ev.type === "move"
   );
 }

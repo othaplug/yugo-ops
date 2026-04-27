@@ -131,6 +131,12 @@ export const SIDEBAR_SECTIONS: NavSection[] = [
         minRole: "coordinator",
       },
       {
+        href: "/admin/partners/pm-batch",
+        label: "Schedule PM moves",
+        Icon: CalendarBlank,
+        minRole: "coordinator",
+      },
+      {
         href: "/admin/partners/referral",
         label: "Referral partners",
         Icon: ShareNetwork,

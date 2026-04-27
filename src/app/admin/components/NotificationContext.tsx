@@ -19,6 +19,8 @@ export type Notification = {
 
 type NotificationContextType = {
   notifications: Notification[];
+  /** True after the first GET /api/admin/notifications attempt completes (ok or not). */
+  listLoaded: boolean;
   unreadCount: number;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
@@ -68,6 +70,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [listLoaded, setListLoaded] = useState(false);
   const supabase = createClient();
 
   const loadNotifications = useCallback(async () => {
@@ -80,6 +83,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       }
     } catch {
       // Network error or server down: leave notifications unchanged so the app doesn't crash
+    } finally {
+      setListLoaded(true);
     }
   }, []);
 
@@ -193,7 +198,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, addNotification }}>
+    <NotificationContext.Provider
+      value={{
+        notifications,
+        listLoaded,
+        unreadCount,
+        markAsRead,
+        markAllAsRead,
+        addNotification,
+      }}
+    >
       {children}
     </NotificationContext.Provider>
   );

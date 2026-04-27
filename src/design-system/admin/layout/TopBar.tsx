@@ -126,7 +126,11 @@ export function TopBar({
             "bg-[var(--yu3-topbar-search-bg)] text-[var(--yu3-ink)]",
             "hover:brightness-95",
           )}
-          aria-label="Notifications"
+          aria-label={
+            notificationCount > 0
+              ? `Notifications, ${notificationCount} unread`
+              : "Notifications"
+          }
         >
           <Bell
             size={16}
@@ -135,7 +139,13 @@ export function TopBar({
           />
           {notificationCount > 0 ? (
             <span
-              className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--yu3-wine)] text-[var(--yu3-on-wine)] text-[10px] font-bold flex items-center justify-center"
+              className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[var(--yu3-topbar-search-bg)] z-[1]"
+              aria-hidden
+            />
+          ) : null}
+          {notificationCount > 0 ? (
+            <span
+              className="absolute -top-0.5 -right-0.5 z-[2] min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center"
               aria-hidden
             >
               {notificationCount > 99 ? "99+" : notificationCount}

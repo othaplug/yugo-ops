@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "bash -lc \"ulimit -n 10000 || true; WATCHPACK_POLLING=true WATCHPACK_POLLING_INTERVAL=1000 next dev --hostname 127.0.0.1\"",
-    "build": "NODE_OPTIONS=--max-old-space-size=8192 next build",
+    "build": "node -e \"const fs=require('fs');try{fs.unlinkSync('.next/lock')}catch(e){if(e.code!=='ENOENT'&&e.code!=='EACCES'&&e.code!=='EPERM'&&e.code!=='EBUSY')throw e}\" && NODE_OPTIONS=--max-old-space-size=8192 next build",
     "unlock-next": "node -e \"const fs=require('fs');for(const p of ['.next/lock','.next/dev/lock']){try{fs.unlinkSync(p)}catch(e){if(e.code!=='ENOENT')throw e}}\"",
     "build:resume": "npm run unlock-next && npm run build",
     "lint": "eslint .",

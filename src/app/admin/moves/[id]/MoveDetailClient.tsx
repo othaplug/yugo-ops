@@ -59,6 +59,7 @@ import CrewJobTimer from "@/app/crew/components/CrewJobTimer";
 import { capMarginAlertMinutes } from "@/lib/jobs/duration-estimate";
 import type { OperationalJobAlerts } from "@/lib/jobs/operational-alerts";
 import { formatMinutesAsHhMm } from "@/lib/duration-hhmm";
+import { getMoveDetailPath } from "@/lib/move-code";
 
 function isEstateTierMove(m: {
   tier_selected?: string | null;
@@ -209,6 +210,14 @@ interface MoveDetailClientProps {
     invoice_may_need_reissue?: boolean | null;
   }[];
   moveWaivers?: MoveWaiverRow[];
+  pmLinkedPeer?: {
+    id: string;
+    move_code: string | null;
+    scheduled_date: string | null;
+    client_name: string | null;
+    status: string | null;
+  } | null;
+  partnerOrgName?: string | null;
 }
 import {
   MOVE_STATUS_OPTIONS,
@@ -485,6 +494,8 @@ export default function MoveDetailClient({
   canEditPostCompletionPrice = false,
   postCompletionPriceEdits = [],
   moveWaivers = [],
+  pmLinkedPeer = null,
+  partnerOrgName = null,
 }: MoveDetailClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -988,6 +999,63 @@ export default function MoveDetailClient({
             )}
           </div>
         )}
+
+      {(move.contract_id || move.is_pm_move || move.holding_unit || partnerOrgName) && (
+        <div
+          className="rounded-[var(--yu3-r-lg)] border border-[#6D28D9]/25 bg-[#6D28D9]/[0.06] px-4 py-3 text-[12px] leading-snug text-[var(--yu3-ink)]"
+          role="region"
+          aria-label="Property management context"
+        >
+          <p className="yu3-t-eyebrow text-[#5B21B6] mb-1.5">Property management</p>
+          {partnerOrgName ? (
+            <p className="font-medium text-[var(--yu3-ink-strong)]">{partnerOrgName}</p>
+          ) : null}
+          {move.pm_reason_code || move.pm_move_kind ? (
+            <p className="text-[var(--yu3-ink-muted)] mt-1">
+              Move type:{" "}
+              <span className="text-[var(--yu3-ink)]">
+                {String(move.pm_reason_code || move.pm_move_kind).replace(/_/g, " ")}
+              </span>
+            </p>
+          ) : null}
+          {move.holding_unit ? (
+            <p className="text-[var(--yu3-ink-muted)] mt-1">
+              Holding: <span className="text-[var(--yu3-ink)]">{move.holding_unit}</span>
+            </p>
+          ) : null}
+          {move.pm_packing_required ? (
+            <p className="text-[var(--yu3-ink-muted)] mt-1">Packing required for crew.</p>
+          ) : null}
+          {move.tenant_present === false ? (
+            <p className="text-[var(--yu3-ink-muted)] mt-1">
+              Tenant may not be on site. Crew can skip client walkthrough when appropriate.
+            </p>
+          ) : null}
+        </div>
+      )}
+
+      {pmLinkedPeer && (
+        <div className="rounded-[var(--yu3-r-lg)] border border-[#6D28D9]/25 bg-[#6D28D9]/[0.06] px-4 py-3 text-[12px]">
+          <p className="yu3-t-eyebrow text-[#5B21B6] mb-1.5">Linked move</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="yu3-num font-semibold text-[var(--yu3-ink-strong)]">
+              {move.move_code || "This move"}
+            </span>
+            <span className="text-[var(--yu3-ink-muted)]">pairs with</span>
+            <Link
+              href={getMoveDetailPath(pmLinkedPeer)}
+              className="yu3-num font-semibold text-[var(--yu3-wine)] hover:underline"
+            >
+              {pmLinkedPeer.move_code || pmLinkedPeer.id}
+            </Link>
+          </div>
+          {pmLinkedPeer.scheduled_date ? (
+            <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1">
+              Other leg date: {formatMoveDate(String(pmLinkedPeer.scheduled_date))}
+            </p>
+          ) : null}
+        </div>
+      )}
 
       {/* Status, live stage, checklist, progress */}
       <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] overflow-hidden p-4 sm:p-5 shadow-[0_1px_0_0_rgba(0,0,0,0.03)]">

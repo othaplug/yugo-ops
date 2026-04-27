@@ -170,23 +170,24 @@ export default function PortalAccessSection({
 
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden mb-6">
-      <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
-        <div>
-          <h3 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
-            <Icon name="lock" className="w-[16px] h-[16px]" /> Portal Access
+      <div className="px-5 py-5 md:px-6 md:py-5 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-heading text-[16px] md:text-[17px] font-bold text-[var(--tx)] flex items-center gap-2.5 leading-snug">
+            <Icon name="lock" className="w-[16px] h-[16px] shrink-0" aria-hidden /> Portal Access
           </h3>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">
+          <p className="text-[12px] text-[var(--tx3)] mt-2 leading-relaxed max-w-2xl">
             Manage who at this partner can log in to {labels.portalDescription}.
           </p>
         </div>
         <button
+          type="button"
           onClick={() => setInviteOpen(true)}
-          className="admin-btn admin-btn-sm admin-btn-primary"
+          className="admin-btn admin-btn-sm admin-btn-primary shrink-0 self-start sm:self-center"
         >
           + Invite Portal User
         </button>
       </div>
-      <div className="px-5 py-5">
+      <div className="px-5 py-5 md:px-6">
         {loading ? (
           <div className="py-6 text-center text-[12px] text-[var(--tx3)]">
             Loading…
@@ -203,10 +204,10 @@ export default function PortalAccessSection({
                 className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-[var(--brd)] bg-[var(--bg)]"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-semibold text-[var(--tx)] truncate">
+                  <div className="text-[13px] font-semibold text-[var(--tx)] break-words">
                     {u.name || u.email?.split("@")[0] || "-"}
                   </div>
-                  <div className="text-[11px] text-[var(--tx3)] truncate">
+                  <div className="text-[11px] text-[var(--tx3)] break-all mt-0.5">
                     {u.email}
                   </div>
                 </div>

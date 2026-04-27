@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getMoveDetailPath, getDeliveryDetailPath } from "@/lib/move-code";
 import type { CalendarEvent, YearHeatData, CalendarStatus } from "@/lib/calendar/types";
 import { JOB_COLORS } from "@/lib/calendar/types";
-import { CALENDAR_B2B_DELIVERY_FILL } from "@/lib/calendar/calendar-job-styles";
+import { CALENDAR_B2B_DELIVERY_FILL, CALENDAR_PM_MOVE_FILL } from "@/lib/calendar/calendar-job-styles";
 import { requireStaff } from "@/lib/api-auth";
 import { formatDeliveryCalendarDescription } from "@/lib/calendar/delivery-event-label";
 import { toTitleCase } from "@/lib/format-text";
@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
       db
         .from("moves")
         .select(
-          "id, move_code, client_name, client_phone, client_email, move_type, move_size, est_hours, status, scheduled_date, scheduled_start, scheduled_end, scheduled_time, preferred_time, arrival_window, estimated_duration_minutes, crew_id, from_address, to_address, event_group_id, event_phase, event_name",
+          "id, move_code, client_name, client_phone, client_email, move_type, move_size, est_hours, status, scheduled_date, scheduled_start, scheduled_end, scheduled_time, preferred_time, arrival_window, estimated_duration_minutes, crew_id, from_address, to_address, event_group_id, event_phase, event_name, contract_id, is_pm_move, organization_id, service_type, unit_number, pm_reason_code",
         )
         .gte("scheduled_date", startDate)
         .lte("scheduled_date", endDate)
@@ -271,17 +271,34 @@ export async function GET(req: NextRequest) {
       const eventName = (m.event_name as string | null) || null;
       const eventGroupId = (m.event_group_id as string | null) || null;
       // Build display name: event moves prefix with event name + phase
+      const isPmCal =
+        !!(m as { contract_id?: string | null }).contract_id ||
+        !!(m as { is_pm_move?: boolean | null }).is_pm_move;
+      const unitBit = (m as { unit_number?: string | null }).unit_number
+        ? `Unit ${(m as { unit_number?: string | null }).unit_number} · `
+        : "";
       const moveName = eventName
         ? `${eventName} ${eventPhase === "delivery" ? "Delivery" : eventPhase === "return" ? "Return" : eventPhase === "setup" ? "Setup" : "Event"}`
-        : (m.client_name || "Move");
+        : isPmCal
+          ? `${unitBit}${m.client_name || "PM move"}`
+          : (m.client_name || "Move");
+      const pmReason = String((m as { pm_reason_code?: string | null }).pm_reason_code || "").trim();
+      const moveColor = eventGroupId
+        ? JOB_COLORS.project
+        : isPmCal
+          ? CALENDAR_PM_MOVE_FILL
+          : JOB_COLORS.move;
+      const moveDescription = eventName
+        ? `${toTitleCase(eventPhase || "event")} · ${m.client_name || ""}`
+        : isPmCal
+          ? `PM · ${pmReason ? pmReason.replace(/_/g, " ") : "contract move"}`
+          : `${toTitleCase(m.move_type || "")} Move`.trim();
       events.push({
         id: m.id,
         type: "move",
         blockType: "move",
         name: moveName,
-        description: eventName
-          ? `${toTitleCase(eventPhase || "event")} · ${m.client_name || ""}`
-          : `${toTitleCase(m.move_type || "")} Move`.trim(),
+        description: moveDescription,
         date: dk,
         start: moveStart,
         end: moveEnd,
@@ -292,7 +309,7 @@ export async function GET(req: NextRequest) {
         truckName: null,
         status: m.status || "scheduled",
         calendarStatus: (m.status || "scheduled") as CalendarStatus,
-        color: eventGroupId ? JOB_COLORS.project : JOB_COLORS.move,
+        color: moveColor,
         href: getMoveDetailPath(m),
         clientName: m.client_name || null,
         clientPhone: (m.client_phone as string | null) || null,

@@ -5,7 +5,8 @@ import { Warning, WarningCircle } from "@phosphor-icons/react";
 import { Icon } from "@/components/AppIcons";
 
 interface ToastContextType {
-  toast: (message: string, icon?: string) => void;
+  /** Optional `durationMs` defaults by icon; pass a number to override (e.g. 4000 for in-app toasts). */
+  toast: (message: string, icon?: string, durationMs?: number) => void;
 }
 
 const ToastContext = createContext<ToastContextType>({ toast: () => {} });
@@ -25,11 +26,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [message, setMessage] = useState("");
   const [iconKey, setIconKey] = useState("check");
 
-  const toast = useCallback((msg: string, ic = "check") => {
+  const toast = useCallback((msg: string, ic = "check", durationMs?: number) => {
     setMessage(msg);
     setIconKey(ic);
     setVisible(true);
-    setTimeout(() => setVisible(false), toastDurationMs(ic));
+    setTimeout(
+      () => setVisible(false),
+      durationMs !== undefined ? durationMs : toastDurationMs(ic),
+    );
   }, []);
 
   const isError = iconKey === "x";

@@ -3,6 +3,7 @@
 import React, {
   useState,
   useEffect,
+  useLayoutEffect,
   useCallback,
   useMemo,
   useRef,
@@ -279,6 +280,26 @@ interface LeadInvReviewRow {
   confidence: string;
   note?: string;
 }
+
+/**
+ * Caches the photo review → new quote `sessionStorage` handoff so React 18 Strict
+ * Mode (mount, unmount, remount) can re-read the same JSON after the first pass
+ * schedules removal without losing the handoff.
+ */
+const quotePhotoReviewHandoffJsonByLeadId = new Map<string, string>();
+
+type PhotoReviewQuoteHandoffShape = {
+  items: InventoryItemEntry[];
+  service_type?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  from_address?: string;
+  to_address?: string;
+  preferred_date?: string;
+  move_size?: string;
+};
 
 // ─── Constants ──────────────────────────────────
 
@@ -631,6 +652,7 @@ function useQuoteFormIsV2(): boolean {
 // ─── Helpers ────────────────────────────────────
 
 const fieldInput = "field-input-compact w-full";
+const accessSelectClass = `${fieldInput} text-left text-[12px] text-[var(--tx)]`;
 
 function Field({
   label,
@@ -1235,6 +1257,11 @@ export default function QuoteFormClient({
   /** Deep link from admin (e.g. Bin Rentals → Generate quote uses `?service=bin_rental`). */
   const serviceTypeFromUrl = searchParams.get("service")?.trim() || "";
   const fromPhotoReview = searchParams.get("from_photo_review") === "1";
+  /** Re-run handoff when Next hydrates `useSearchParams` (first paint can be empty). */
+  const photoHandoffQueryKey = [
+    searchParams.get("lead_id") ?? "",
+    searchParams.get("from_photo_review") ?? "",
+  ].join("|");
 
   // ── Form state ────────────────────────────
   const [serviceType, setServiceType] = useState("local_move");
@@ -1904,6 +1931,9 @@ export default function QuoteFormClient({
   >([]);
   const leadInventoryPrefillSigRef = useRef<string>("");
   const leadSpecialtyPrefillSigRef = useRef<string>("");
+  /** Strips `from_photo_review` on load; then lead re-fetch can overwrite session inventory without this. */
+  const photoReviewInventoryHandoffRef = useRef(false);
+  const prevLeadIdForHandoffRef = useRef<string | null>(null);
 
   // Referral code
   const [referralCode, setReferralCode] = useState("");
@@ -2632,9 +2662,35 @@ export default function QuoteFormClient({
     })();
   }, [copyQuoteParam]);
 
+  useEffect(() => {
+    const leadForPrev =
+      (leadIdParam || "").trim() ||
+      (typeof window !== "undefined"
+        ? (new URLSearchParams(window.location.search).get("lead_id") || "")
+            .trim()
+        : "");
+    if (
+      prevLeadIdForHandoffRef.current != null &&
+      prevLeadIdForHandoffRef.current !== leadForPrev
+    ) {
+      photoReviewInventoryHandoffRef.current = false;
+    }
+    prevLeadIdForHandoffRef.current = leadForPrev || null;
+  }, [leadIdParam, photoHandoffQueryKey]);
+
   // ── Lead pre-fill (Send Quote from Leads dashboard) ────
   useEffect(() => {
-    if (!leadIdParam) {
+    // `useSearchParams()` can be empty for one frame while `window.location` already
+    // has `?lead_id=` (App Router hydration). If we treat that as "no lead", we run
+    // the cleanup below *after* the photo handoff `useLayoutEffect` and wipe
+    // `photoReviewInventoryHandoffRef` + pre-filled inventory.
+    const leadIdForEffect =
+      leadIdParam ||
+      (typeof window !== "undefined"
+        ? (new URLSearchParams(window.location.search).get("lead_id") || "")
+            .trim()
+        : "");
+    if (!leadIdForEffect) {
       setLeadQuoteBanner("");
       setLeadIntelSummary(null);
       setLeadInventoryReview([]);
@@ -2642,13 +2698,14 @@ export default function QuoteFormClient({
       setLeadParsedDimensions("");
       leadInventoryPrefillSigRef.current = "";
       leadSpecialtyPrefillSigRef.current = "";
+      photoReviewInventoryHandoffRef.current = false;
       return;
     }
     let cancelled = false;
     (async () => {
       try {
         const res = await fetch(
-          `/api/admin/leads/${encodeURIComponent(leadIdParam)}`,
+          `/api/admin/leads/${encodeURIComponent(leadIdForEffect)}`,
         );
         if (!res.ok || cancelled) return;
         const data = await res.json();
@@ -2713,9 +2770,11 @@ export default function QuoteFormClient({
         const autoItems: InventoryItemEntry[] = [];
         const invSig =
           Array.isArray(rawInv) && rawInv.length > 0
-            ? `${leadIdParam}:${itemWeights.length}:${JSON.stringify(rawInv)}`
-            : `empty:${leadIdParam}`;
-        if (!fromPhotoReview && invSig !== leadInventoryPrefillSigRef.current) {
+            ? `${leadIdForEffect}:${itemWeights.length}:${JSON.stringify(rawInv)}`
+            : `empty:${leadIdForEffect}`;
+        if (photoReviewInventoryHandoffRef.current) {
+          leadInventoryPrefillSigRef.current = invSig;
+        } else if (!fromPhotoReview && invSig !== leadInventoryPrefillSigRef.current) {
           if (!Array.isArray(rawInv) || rawInv.length === 0) {
             setInventoryItems([]);
             setLeadInventoryReview([]);
@@ -2760,8 +2819,8 @@ export default function QuoteFormClient({
         const specRaw = L.specialty_items_detected;
         const specSig =
           Array.isArray(specRaw) && specRaw.length > 0
-            ? `${leadIdParam}:${JSON.stringify(specRaw)}`
-            : `empty:${leadIdParam}`;
+            ? `${leadIdForEffect}:${JSON.stringify(specRaw)}`
+            : `empty:${leadIdForEffect}`;
         if (specSig !== leadSpecialtyPrefillSigRef.current) {
           if (!Array.isArray(specRaw) || specRaw.length === 0) {
             setSpecialtyItems([]);
@@ -2782,45 +2841,117 @@ export default function QuoteFormClient({
     return () => {
       cancelled = true;
     };
-  }, [leadIdParam, itemWeights, fromPhotoReview]);
+  }, [leadIdParam, itemWeights, fromPhotoReview, photoHandoffQueryKey]);
 
-  // Photo review: session handoff overwrites lead parsed inventory.
-  useEffect(() => {
-    if (!fromPhotoReview || !leadIdParam) return;
+  // Photo review: hand off inventory + lead fields via sessionStorage. We read
+  // `window.location.search` (not only `useSearchParams`) so the first client
+  // render cannot skip the handoff when the hook is still empty or stale.
+  const applyPhotoReviewHandoff = useCallback(() => {
     if (typeof window === "undefined") return;
-    const k = `quote_inv_prefill_v1_${leadIdParam}`;
-    const raw = window.sessionStorage.getItem(k);
-    if (!raw) {
+    const wsp = new URLSearchParams(window.location.search);
+    const fromReview = wsp.get("from_photo_review") === "1";
+    const leadForHandoff = (wsp.get("lead_id") || "").trim();
+    if (!fromReview || !leadForHandoff) return;
+    const k = `quote_inv_prefill_v1_${leadForHandoff}`;
+
+    const stripParamFromUrl = () => {
+      if (new URLSearchParams(window.location.search).get("from_photo_review") !== "1")
+        return;
       const u = new URL(window.location.href);
       u.searchParams.delete("from_photo_review");
-      if (u.searchParams.toString() !== (new URLSearchParams(window.location.search).toString())) {
-        window.history.replaceState({}, "", `${u.pathname}${u.search ? `?${u.searchParams.toString()}` : ""}${u.hash}`);
+      const next = `${u.pathname}${u.search ? `?${u.search}` : ""}${u.hash}`;
+      router.replace(next);
+    };
+
+    let raw: string | null = quotePhotoReviewHandoffJsonByLeadId.get(leadForHandoff) ?? null;
+    if (raw == null) {
+      try {
+        raw = window.sessionStorage.getItem(k);
+      } catch {
+        raw = null;
       }
+      if (raw) quotePhotoReviewHandoffJsonByLeadId.set(leadForHandoff, raw);
+    }
+
+    if (!raw) {
+      stripParamFromUrl();
       return;
     }
+    const strH = (v: unknown) => (v != null ? String(v).trim() : "");
     try {
-      const items = JSON.parse(raw) as InventoryItemEntry[];
+      const parsed: unknown = JSON.parse(raw);
+      let items: InventoryItemEntry[] = [];
+      let serviceFromHandoff: string | null = null;
+      if (Array.isArray(parsed)) {
+        items = parsed as InventoryItemEntry[];
+      } else if (parsed && typeof parsed === "object" && "items" in (parsed as object)) {
+        const p = parsed as PhotoReviewQuoteHandoffShape;
+        if (!Array.isArray(p.items)) {
+          stripParamFromUrl();
+          return;
+        }
+        items = p.items;
+        const stHand = p.service_type;
+        if (
+          typeof stHand === "string" &&
+          stHand.trim() &&
+          SERVICE_TYPES.some((x) => x.value === stHand.trim())
+        ) {
+          serviceFromHandoff = stHand.trim();
+        }
+        if (strH(p.first_name)) setFirstName(strH(p.first_name));
+        if (strH(p.last_name)) setLastName(strH(p.last_name));
+        if (strH(p.email)) setEmail(strH(p.email).toLowerCase());
+        if (strH(p.phone)) setPhone(formatPhone(strH(p.phone)));
+        if (strH(p.from_address)) setFromAddress(strH(p.from_address));
+        if (strH(p.to_address)) setToAddress(strH(p.to_address));
+        if (strH(p.preferred_date)) setMoveDate(strH(p.preferred_date).slice(0, 10));
+        const msH = strH(p.move_size);
+        if (msH && MOVE_SIZES.some((x) => x.value === msH)) {
+          setMoveSize(msH);
+          moveSizeUserTouchedRef.current = true;
+        }
+      } else {
+        stripParamFromUrl();
+        return;
+      }
       if (Array.isArray(items) && items.length > 0) {
         setInventoryItems(items);
         setLeadInventoryReview([]);
+        photoReviewInventoryHandoffRef.current = true;
         setLeadQuoteBanner(
           (prev) => (prev ? `${prev} · From photo review` : "From photo review"),
         );
+        if (serviceFromHandoff) {
+          setServiceType(serviceFromHandoff);
+          serviceTypeUrlAppliedRef.current = true;
+        }
+      } else if (serviceFromHandoff) {
+        setServiceType(serviceFromHandoff);
+        serviceTypeUrlAppliedRef.current = true;
       }
     } catch {
-      /* ignore */
+      stripParamFromUrl();
+      return;
     }
-    try {
-      window.sessionStorage.removeItem(k);
-    } catch {
-      /* ignore */
-    }
-    const u = new URL(window.location.href);
-    u.searchParams.delete("from_photo_review");
-    const qs = u.searchParams.toString();
-    const next = `${u.pathname}${qs ? `?${qs}` : ""}${u.hash}`;
-    window.history.replaceState({}, "", next);
-  }, [fromPhotoReview, leadIdParam]);
+    window.setTimeout(() => {
+      try {
+        window.sessionStorage.removeItem(k);
+      } catch {
+        /* ignore */
+      }
+      quotePhotoReviewHandoffJsonByLeadId.delete(leadForHandoff);
+    }, 0);
+    stripParamFromUrl();
+  }, [router]);
+
+  useLayoutEffect(() => {
+    applyPhotoReviewHandoff();
+  }, [applyPhotoReviewHandoff, photoHandoffQueryKey]);
+
+  useEffect(() => {
+    applyPhotoReviewHandoff();
+  }, [applyPhotoReviewHandoff, photoHandoffQueryKey]);
 
   useEffect(() => {
     if (specialtyBuilderQs) setSpecialtyBuilderOpen(true);
@@ -5312,7 +5443,7 @@ export default function QuoteFormClient({
 
               {!isB2bEmbed && quoteFlowStep === 1 && (
               <>
-              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+              <div className="mt-10 pt-2 sm:mt-14" aria-hidden />
 
               {/* ── 2. Client ── */}
               <div className="space-y-3">
@@ -5650,7 +5781,7 @@ export default function QuoteFormClient({
 
               {!isB2bEmbed && quoteFlowStep === 2 && (
               <>
-              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+              <div className="mt-8 pt-2 sm:mt-10" aria-hidden />
 
               {/* ── 3. Addresses ── */}
               <div className="space-y-3">
@@ -5673,28 +5804,33 @@ export default function QuoteFormClient({
                   )}
 
                   {serviceType === "bin_rental" && (
-                    <div className="space-y-3">
-                      <div className="flex flex-col sm:flex-row gap-3 items-start">
-                        <div className="flex-1 min-w-0 w-full max-w-2xl">
-                          <MultiStopAddressField
-                            label="Delivery address *"
-                            placeholder="Where bins are delivered"
-                            stops={[{ address: toAddress }]}
-                            onChange={(stops) => {
-                              const p = stops[0];
-                              setToAddress(p?.address ?? "");
-                              setToLat(p?.lat ?? null);
-                              setToLng(p?.lng ?? null);
-                            }}
-                            inputClassName={fieldInput}
-                          />
-                        </div>
-                        <div className="w-full sm:w-[150px] shrink-0">
-                          <Field label="Access">
+                    <div className="max-w-4xl space-y-3">
+                      <MultiStopAddressField
+                        label="Delivery"
+                        labelVisibility="sr-only"
+                        placeholder="Delivery address * (where bins are delivered)"
+                        stops={[{ address: toAddress }]}
+                        onChange={(stops) => {
+                          const p = stops[0];
+                          setToAddress(p?.address ?? "");
+                          setToLat(p?.lat ?? null);
+                          setToLng(p?.lng ?? null);
+                        }}
+                        inputClassName={fieldInput}
+                        trailingOnFirstRow={
+                          <>
+                            <label
+                              htmlFor="quote-bin-to-access"
+                              className="sr-only"
+                            >
+                              To access
+                            </label>
                             <select
+                              id="quote-bin-to-access"
                               value={toAccess}
                               onChange={(e) => setToAccess(e.target.value)}
-                              className={fieldInput}
+                              className={accessSelectClass}
+                              aria-label="Delivery location access"
                             >
                               {BIN_RENTAL_ACCESS_OPTIONS.map((o) => (
                                 <option key={o.value} value={o.value}>
@@ -5702,9 +5838,9 @@ export default function QuoteFormClient({
                                 </option>
                               ))}
                             </select>
-                          </Field>
-                        </div>
-                      </div>
+                          </>
+                        }
+                      />
                       <Field label="Delivery notes">
                         <textarea
                           value={binDeliveryNotes}
@@ -5730,37 +5866,42 @@ export default function QuoteFormClient({
                         address. Uncheck and enter the destination.
                       </p>
                       {!binPickupSameAsDelivery && (
-                        <div className="flex flex-col sm:flex-row gap-3 items-start">
-                          <div className="flex-1 min-w-0 w-full max-w-2xl">
-                            <MultiStopAddressField
-                              label="Pickup address *"
-                              placeholder="Where bins are collected"
-                              stops={[{ address: fromAddress }]}
-                            onChange={(stops) => {
-                              const p = stops[0];
-                              setFromAddress(p?.address ?? "");
-                              setFromLat(p?.lat ?? null);
-                              setFromLng(p?.lng ?? null);
-                            }}
-                            inputClassName={fieldInput}
-                          />
-                        </div>
-                        <div className="w-full sm:w-[150px] shrink-0">
-                          <Field label="Access">
-                            <select
-                              value={fromAccess}
-                              onChange={(e) => setFromAccess(e.target.value)}
-                              className={fieldInput}
-                            >
-                              {BIN_RENTAL_ACCESS_OPTIONS.map((o) => (
+                        <MultiStopAddressField
+                          label="Pickup"
+                          labelVisibility="sr-only"
+                          placeholder="Pickup address * (where bins are collected)"
+                          stops={[{ address: fromAddress }]}
+                          onChange={(stops) => {
+                            const p = stops[0];
+                            setFromAddress(p?.address ?? "");
+                            setFromLat(p?.lat ?? null);
+                            setFromLng(p?.lng ?? null);
+                          }}
+                          inputClassName={fieldInput}
+                          trailingOnFirstRow={
+                            <>
+                              <label
+                                htmlFor="quote-bin-from-access"
+                                className="sr-only"
+                              >
+                                From access
+                              </label>
+                              <select
+                                id="quote-bin-from-access"
+                                value={fromAccess}
+                                onChange={(e) => setFromAccess(e.target.value)}
+                                className={accessSelectClass}
+                                aria-label="Pickup location access"
+                              >
+                                {BIN_RENTAL_ACCESS_OPTIONS.map((o) => (
                                   <option key={o.value} value={o.value}>
                                     {o.label}
                                   </option>
                                 ))}
                               </select>
-                            </Field>
-                          </div>
-                        </div>
+                            </>
+                          }
+                        />
                       )}
                     </div>
                   )}
@@ -5769,18 +5910,21 @@ export default function QuoteFormClient({
                   {serviceType !== "labour_only" &&
                     !(serviceType === "event" && eventMulti) &&
                     serviceType !== "bin_rental" && (
-                      <div className="flex flex-col sm:flex-row gap-3 items-start">
-                        <div className="flex-1 min-w-0 w-full">
+                      <div className="flex max-w-4xl flex-col gap-3 sm:flex-row sm:items-end">
+                        <div className="min-w-0 w-full flex-1">
                           <MultiStopAddressField
                             label={
                               serviceType === "event"
                                 ? "Origin Address *"
                                 : "From"
                             }
+                            labelVisibility={
+                              serviceType === "event" ? "visible" : "sr-only"
+                            }
                             placeholder={
                               serviceType === "event"
                                 ? "Where items come from (office/warehouse/home)"
-                                : "Origin address"
+                                : "From address*"
                             }
                             stops={[
                               { address: fromAddress },
@@ -5803,42 +5947,58 @@ export default function QuoteFormClient({
                               : "max-h-0 opacity-0 pointer-events-none w-full sm:w-0"
                           }`}
                         >
-                          <Field label="Unit">
-                            <input
-                              type="text"
-                              value={fromUnit}
-                              onChange={(e) => setFromUnit(e.target.value)}
-                              placeholder="1204"
-                              className={fieldInput}
-                              tabIndex={["elevator", "concierge", "loading_dock"].includes(fromAccess) ? 0 : -1}
-                            />
-                          </Field>
+                          <label htmlFor="quote-from-unit" className="sr-only">
+                            Unit or suite
+                          </label>
+                          <input
+                            id="quote-from-unit"
+                            type="text"
+                            value={fromUnit}
+                            onChange={(e) => setFromUnit(e.target.value)}
+                            placeholder="Unit"
+                            className={fieldInput}
+                            tabIndex={
+                              ["elevator", "concierge", "loading_dock"].includes(
+                                fromAccess,
+                              )
+                                ? 0
+                                : -1
+                            }
+                            aria-label="Origin unit or suite"
+                          />
                         </div>
-                        <div className="w-full sm:w-[150px] shrink-0">
-                          <Field label="From Access">
-                            <select
-                              value={fromAccess}
-                              onChange={(e) => setFromAccess(e.target.value)}
-                              className={fieldInput}
-                            >
-                              {ACCESS_OPTIONS.map((o) => (
-                                <option key={o.value} value={o.value}>
-                                  {o.label}
-                                </option>
-                              ))}
-                            </select>
-                          </Field>
+                        <div className="w-full shrink-0 sm:w-[150px]">
+                          <label
+                            htmlFor="quote-from-access"
+                            className="sr-only"
+                          >
+                            From access
+                          </label>
+                          <select
+                            id="quote-from-access"
+                            value={fromAccess}
+                            onChange={(e) => setFromAccess(e.target.value)}
+                            className={accessSelectClass}
+                            aria-label="From access"
+                          >
+                            {ACCESS_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       </div>
                     )}
                   {serviceType !== "event" &&
                     serviceType !== "labour_only" &&
                     serviceType !== "bin_rental" && (
-                      <div className="flex flex-wrap flex-col sm:flex-row gap-3 items-start">
-                        <div className="flex-1 min-w-0 w-full">
+                      <div className="flex max-w-4xl flex-wrap flex-col gap-3 sm:flex-row sm:items-end">
+                        <div className="min-w-0 w-full flex-1">
                           <MultiStopAddressField
                             label="To"
-                            placeholder="Destination address"
+                            labelVisibility="sr-only"
+                            placeholder="To address*"
                             stops={[{ address: toAddress }, ...extraToStops]}
                             onChange={(stops) => {
                               const p = stops[0];
@@ -5857,31 +6017,43 @@ export default function QuoteFormClient({
                               : "max-h-0 opacity-0 pointer-events-none w-full sm:w-0"
                           }`}
                         >
-                          <Field label="Unit">
-                            <input
-                              type="text"
-                              value={toUnit}
-                              onChange={(e) => setToUnit(e.target.value)}
-                              placeholder="804"
-                              className={fieldInput}
-                              tabIndex={["elevator", "concierge", "loading_dock"].includes(toAccess) ? 0 : -1}
-                            />
-                          </Field>
+                          <label htmlFor="quote-to-unit" className="sr-only">
+                            Unit or suite
+                          </label>
+                          <input
+                            id="quote-to-unit"
+                            type="text"
+                            value={toUnit}
+                            onChange={(e) => setToUnit(e.target.value)}
+                            placeholder="Unit"
+                            className={fieldInput}
+                            tabIndex={
+                              ["elevator", "concierge", "loading_dock"].includes(
+                                toAccess,
+                              )
+                                ? 0
+                                : -1
+                            }
+                            aria-label="Destination unit or suite"
+                          />
                         </div>
-                        <div className="w-full sm:w-[150px] shrink-0">
-                          <Field label="To Access">
-                            <select
-                              value={toAccess}
-                              onChange={(e) => setToAccess(e.target.value)}
-                              className={fieldInput}
-                            >
-                              {ACCESS_OPTIONS.map((o) => (
-                                <option key={o.value} value={o.value}>
-                                  {o.label}
-                                </option>
-                              ))}
-                            </select>
-                          </Field>
+                        <div className="w-full shrink-0 sm:w-[150px]">
+                          <label htmlFor="quote-to-access" className="sr-only">
+                            To access
+                          </label>
+                          <select
+                            id="quote-to-access"
+                            value={toAccess}
+                            onChange={(e) => setToAccess(e.target.value)}
+                            className={accessSelectClass}
+                            aria-label="To access"
+                          >
+                            {ACCESS_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       </div>
                     )}
@@ -6098,7 +6270,7 @@ export default function QuoteFormClient({
                     )}
                 </div>
 
-              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+              <div className="mt-8 pt-6 sm:mt-10" aria-hidden />
 
               {/* ── 4. Move details ── */}
               {/* Event and labour_only manage their own date fields */}
@@ -8828,34 +9000,41 @@ export default function QuoteFormClient({
                   <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
                     Labour Only
                   </h3>
-                  <div className="flex flex-col sm:flex-row gap-3 items-start">
-                    <div className="flex-1 min-w-0">
-                      <MultiStopAddressField
-                        label="Work Address *"
-                        placeholder="55 Avenue Rd, Unit 2801"
-                        stops={[{ address: workAddress }, ...extraWorkStops]}
-                        onChange={(stops) => {
-                          setWorkAddress(stops[0]?.address ?? "");
-                          setExtraWorkStops(stops.slice(1));
-                        }}
-                        inputClassName={fieldInput}
-                      />
-                    </div>
-                    <div className="w-full sm:w-[150px] shrink-0">
-                      <Field label="Access">
-                        <select
-                          value={workAccess}
-                          onChange={(e) => setWorkAccess(e.target.value)}
-                          className={fieldInput}
-                        >
-                          {ACCESS_OPTIONS.map((o) => (
-                            <option key={o.value} value={o.value}>
-                              {o.label}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                    </div>
+                  <div className="max-w-4xl">
+                    <MultiStopAddressField
+                      label="Work"
+                      labelVisibility="sr-only"
+                      placeholder="Work address*"
+                      stops={[{ address: workAddress }, ...extraWorkStops]}
+                      onChange={(stops) => {
+                        setWorkAddress(stops[0]?.address ?? "");
+                        setExtraWorkStops(stops.slice(1));
+                      }}
+                      inputClassName={fieldInput}
+                      trailingOnFirstRow={
+                        <>
+                          <label
+                            htmlFor="quote-labour-work-access"
+                            className="sr-only"
+                          >
+                            Site access
+                          </label>
+                          <select
+                            id="quote-labour-work-access"
+                            value={workAccess}
+                            onChange={(e) => setWorkAccess(e.target.value)}
+                            className={accessSelectClass}
+                            aria-label="Work site access"
+                          >
+                            {ACCESS_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </select>
+                        </>
+                      }
+                    />
                   </div>
                   <Field label="Description of Work *">
                     <textarea

@@ -1,9 +1,10 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { sendSMS } from "@/lib/sms/sendSMS";
-import { sendEmail } from "@/lib/email/send";
-import type { CompletenessCheck } from "./assess-completeness";
+import type { SupabaseClient } from "@supabase/supabase-js"
+import { buildSmartFollowUpEmail } from "@/lib/email/lead-smart-followup-client"
+import { sendEmail } from "@/lib/email/send"
+import { sendSMS } from "@/lib/sms/sendSMS"
+import type { CompletenessCheck } from "./assess-completeness"
 
-const COORD_PHONE_DISPLAY = "(647) 370-4525";
+const COORD_PHONE_DISPLAY = "(647) 370-4525"
 
 export function buildSmartFollowUpQuestions(completeness: CompletenessCheck): string[] {
   const missingQuestions: string[] = [];
@@ -81,16 +82,10 @@ export async function sendSmartFollowUp(
 
   const first = (lead.first_name || "there").trim() || "there";
 
-  const emailHtml = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
-<body class="email-outer-gutter yugo-light-email-doc" style="font-family:system-ui,sans-serif;line-height:1.5;color:#1a1a1a;width:100%;max-width:600px;box-sizing:border-box;margin:0 auto;padding:16px 20px;">
-  <p>Hi ${first.replace(/</g, "&lt;")},</p>
-  <p>Thanks for reaching out to Yugo. We would like to get your personalized quote ready.</p>
-  <p>To make sure we give you the most accurate price, we need a few details:</p>
-  <ol style="padding-left:20px;">${missingQuestions.map((q) => `<li style="margin-bottom:8px;">${q.replace(/</g, "&lt;")}</li>`).join("")}</ol>
-  <p>Simply reply to this email or text us at ${COORD_PHONE_DISPLAY} and we will have your quote ready within the hour.</p>
-  <p style="margin-top:24px;">— The Yugo Team</p>
-</body></html>`;
+  const { subject: followSubject, html: emailHtml } = buildSmartFollowUpEmail({
+    firstName: first,
+    questions: missingQuestions,
+  })
 
   const phoneOk = lead.phone && lead.phone.replace(/\D/g, "").length >= 10;
   const emailOk = lead.email && lead.email.includes("@");
@@ -98,15 +93,15 @@ export async function sendSmartFollowUp(
   if (phoneOk) {
     const smsText =
       missingQuestions.length <= 2
-        ? `Hi ${first}, thanks for reaching out to Yugo! To get your quote ready: ${missingQuestions[0]!}${missingQuestions[1] ? ` Also: ${missingQuestions[1]}` : ""} — The Yugo Team`
-        : `Hi ${first}, thanks for reaching out to Yugo! We have a few quick questions to finalize your quote. Check your email for details. — The Yugo Team`;
+        ? `Hi ${first}, thanks for reaching out to Yugo! To get your quote ready: ${missingQuestions[0]!}${missingQuestions[1] ? ` Also: ${missingQuestions[1]}` : ""} The Yugo Team`
+        : `Hi ${first}, thanks for reaching out to Yugo! We have a few quick questions to finalize your quote. Check your email for details. The Yugo Team`
     await sendSMS(lead.phone!, smsText).catch((e) => console.warn("[leads] smart follow-up SMS:", e));
   }
 
   if (emailOk) {
     await sendEmail({
       to: lead.email!.trim(),
-      subject: "Quick questions about your move — Yugo",
+      subject: followSubject,
       html: emailHtml,
     }).catch((e) => console.warn("[leads] smart follow-up email:", e));
   }

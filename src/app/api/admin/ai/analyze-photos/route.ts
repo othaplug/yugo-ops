@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ANTHROPIC_VISION_DEFAULT } from "@/lib/ai/anthropic-vision-model";
 import { analyzePhotosWithAI } from "@/lib/ai/photo-inventory";
 import { requireStaff } from "@/lib/api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   const { user, error } = await requireStaff();
@@ -39,7 +41,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const suggestions = await analyzePhotosWithAI(sb, photos);
+    const { suggestions, modelUsed } = await analyzePhotosWithAI(sb, photos);
     const photoCount = Object.values(photos).reduce(
       (a, p) => a + (Array.isArray(p) ? p.length : 0),
       0,
@@ -58,9 +60,19 @@ export async function POST(req: NextRequest) {
       .update({ ai_analyzed: true, ai_suggestions: suggestions as unknown as Record<string, unknown> })
       .eq("id", surveyId);
 
-    return NextResponse.json({ suggestions });
+    return NextResponse.json(
+      { suggestions, visionModel: modelUsed },
+      { headers: { "X-Yugo-Vision-Model": modelUsed } },
+    );
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: "Analysis failed", message: msg }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Analysis failed",
+        message: msg,
+        visionModel: ANTHROPIC_VISION_DEFAULT,
+      },
+      { status: 500 },
+    );
   }
 }

@@ -4,7 +4,8 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { ToastProvider } from "./Toast"
-import { NotificationProvider } from "./NotificationContext"
+import { NotificationProvider, useNotifications } from "./NotificationContext"
+import { AdminNotificationToastBridge } from "./AdminNotificationToastBridge"
 import {
   PendingChangeRequestsProvider,
   usePendingChangeRequests,
@@ -30,8 +31,8 @@ function PendingAwareShell({
   const router = useRouter()
   const supabase = React.useMemo(() => createClient(), [])
   const { pendingCount } = usePendingChangeRequests()
+  const { unreadCount: notificationCount } = useNotifications()
   const [quoteBadge, setQuoteBadge] = React.useState(0)
-  const [notificationCount, setNotificationCount] = React.useState(0)
 
   React.useEffect(() => {
     supabase
@@ -42,18 +43,6 @@ function PendingAwareShell({
         if (typeof count === "number") setQuoteBadge(count)
       })
   }, [supabase])
-
-  React.useEffect(() => {
-    if (!user?.id) return
-    supabase
-      .from("notifications")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .is("read_at", null)
-      .then(({ count }: { count: number | null }) => {
-        if (typeof count === "number") setNotificationCount(count)
-      })
-  }, [supabase, user?.id])
 
   const handleSignOut = React.useCallback(async () => {
     await supabase.auth.signOut()
@@ -97,18 +86,19 @@ export default function AdminShellV3Wrapper({
 }) {
   return (
     <ThemeProvider>
-      <NotificationProvider>
-        <PendingChangeRequestsProvider>
-          <ToastProvider>
+      <ToastProvider>
+        <NotificationProvider>
+          <AdminNotificationToastBridge />
+          <PendingChangeRequestsProvider>
             <RealtimeListener />
             <SessionTimeout />
             <OfflineBanner />
             <PendingAwareShell user={user} isSuperAdmin={isSuperAdmin} role={role}>
               {children}
             </PendingAwareShell>
-          </ToastProvider>
-        </PendingChangeRequestsProvider>
-      </NotificationProvider>
+          </PendingChangeRequestsProvider>
+        </NotificationProvider>
+      </ToastProvider>
     </ThemeProvider>
   )
 }
