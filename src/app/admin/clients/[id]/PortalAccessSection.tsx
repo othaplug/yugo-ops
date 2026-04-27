@@ -169,13 +169,13 @@ export default function PortalAccessSection({
   };
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden mb-6">
-      <div className="px-5 py-5 md:px-6 md:py-5 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+    <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)] overflow-hidden mb-6">
+      <div className="px-5 py-5 md:px-6 md:py-5 border-b border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
         <div className="min-w-0 flex-1">
-          <h3 className="font-heading text-[16px] md:text-[17px] font-bold text-[var(--tx)] flex items-center gap-2.5 leading-snug">
-            <Icon name="lock" className="w-[16px] h-[16px] shrink-0" aria-hidden /> Portal Access
+          <h3 className="font-heading text-[16px] md:text-[17px] font-bold text-[var(--yu3-ink-strong)] flex items-center gap-2.5 leading-snug">
+            <Icon name="lock" className="w-[16px] h-[16px] shrink-0 text-[var(--yu3-wine)]" aria-hidden /> Portal Access
           </h3>
-          <p className="text-[12px] text-[var(--tx3)] mt-2 leading-relaxed max-w-2xl">
+          <p className="text-[12px] text-[var(--yu3-ink-muted)] mt-2 leading-relaxed max-w-2xl">
             Manage who at this partner can log in to {labels.portalDescription}.
           </p>
         </div>
@@ -189,11 +189,11 @@ export default function PortalAccessSection({
       </div>
       <div className="px-5 py-5 md:px-6">
         {loading ? (
-          <div className="py-6 text-center text-[12px] text-[var(--tx3)]">
+          <div className="py-6 text-center text-[12px] text-[var(--yu3-ink-muted)]">
             Loading…
           </div>
         ) : users.length === 0 ? (
-          <div className="py-6 text-center text-[12px] text-[var(--tx3)]">
+          <div className="py-6 text-center text-[12px] text-[var(--yu3-ink-muted)]">
             No portal users yet. Invite someone to give them access.
           </div>
         ) : (
@@ -201,21 +201,21 @@ export default function PortalAccessSection({
             {users.map((u) => (
               <div
                 key={u.user_id}
-                className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-[var(--brd)] bg-[var(--bg)]"
+                className="flex items-center justify-between gap-3 px-4 py-3 rounded-[var(--yu3-r-md)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)]"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-semibold text-[var(--tx)] break-words">
+                  <div className="text-[13px] font-semibold text-[var(--yu3-ink-strong)] break-words">
                     {u.name || u.email?.split("@")[0] || "-"}
                   </div>
-                  <div className="text-[11px] text-[var(--tx3)] break-all mt-0.5">
+                  <div className="text-[11px] text-[var(--yu3-ink-muted)] break-all mt-0.5">
                     {u.email}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                   <span
                     className={`dt-badge tracking-[0.04em] ${
                       u.status === "activated"
-                        ? "text-[var(--grn)]"
+                        ? "text-[var(--yu3-success)]"
                         : "text-amber-700 dark:text-amber-300"
                     }`}
                   >
@@ -224,14 +224,14 @@ export default function PortalAccessSection({
                   <button
                     type="button"
                     onClick={() => setResetUser(u)}
-                    className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+                    className="px-2.5 py-1 rounded-[var(--yu3-r-sm)] text-[10px] font-semibold border border-[var(--yu3-line)] text-[var(--yu3-ink)] hover:border-[var(--yu3-wine)] hover:text-[var(--yu3-wine)] transition-colors"
                   >
                     Reset password
                   </button>
                   <button
                     onClick={() => handleRevoke(u.user_id)}
                     disabled={revoking === u.user_id}
-                    className="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all disabled:opacity-50"
+                    className="px-2.5 py-0.5 rounded-[var(--yu3-r-sm)] text-[10px] font-semibold bg-[var(--yu3-danger)] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
                   >
                     {revoking === u.user_id ? "Revoking…" : "Revoke"}
                   </button>
@@ -253,7 +253,7 @@ export default function PortalAccessSection({
       >
         {resetUser && (
           <form onSubmit={handleResetPassword} className="p-5 space-y-4">
-            <p className="text-[12px] text-[var(--tx3)]">
+            <p className="text-[12px] text-[var(--yu3-ink-muted)]">
               Set a new temporary password for{" "}
               <strong>{resetUser.name || resetUser.email}</strong>. They will
               receive an email with the new password and login link.
@@ -275,7 +275,7 @@ export default function PortalAccessSection({
                 <button
                   type="button"
                   onClick={generateResetPassword}
-                  className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                  className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--yu3-line)] text-[var(--yu3-ink)] hover:border-[var(--yu3-wine)] hover:text-[var(--yu3-wine)] transition-colors"
                 >
                   Generate
                 </button>
@@ -311,7 +311,7 @@ export default function PortalAccessSection({
         maxWidth="md"
       >
         <form onSubmit={handleInvite} className="p-5 space-y-4">
-          <p className="text-[12px] text-[var(--tx3)]">
+          <p className="text-[12px] text-[var(--yu3-ink-muted)]">
             Invite someone at {orgName} to log in. They can{" "}
             {labels.portalDescription}.
           </p>
@@ -351,7 +351,7 @@ export default function PortalAccessSection({
               <button
                 type="button"
                 onClick={generatePassword}
-                className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--yu3-line)] text-[var(--yu3-ink)] hover:border-[var(--yu3-wine)] hover:text-[var(--yu3-wine)] transition-colors"
               >
                 Generate
               </button>

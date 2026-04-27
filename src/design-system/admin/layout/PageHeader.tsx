@@ -12,6 +12,8 @@ export interface PageHeaderProps {
   tabs?: React.ReactNode;
   variant?: "default" | "hero";
   className?: string;
+  /** When false, title wraps (e.g. long org names on profile pages). Default: single-line truncate. */
+  titleClamp?: boolean;
 }
 
 export function PageHeader({
@@ -23,6 +25,7 @@ export function PageHeader({
   tabs,
   variant = "default",
   className,
+  titleClamp = true,
 }: PageHeaderProps) {
   return (
     <div
@@ -38,7 +41,7 @@ export function PageHeader({
           <h1
             className={cn(
               variant === "hero" ? "yu3-t-display" : "yu3-t-page",
-              "truncate",
+              titleClamp ? "truncate" : "break-words whitespace-normal max-w-full",
             )}
           >
             {title}

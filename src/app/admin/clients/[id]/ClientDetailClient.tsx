@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { CaretRight, PencilSimple as Pencil, Trash as Trash2 } from "@phosphor-icons/react";
-import {
-  ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS,
-  ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS,
-} from "../../components/admin-toolbar-action-classes";
+import { CaretRight, PencilSimple as Pencil, Plus, Trash as Trash2 } from "@phosphor-icons/react";
+import { PageHeader, PageMetaDivider } from "@/design-system/admin/layout";
+import { Button, Tabs, TabsList, TabsTrigger } from "@/design-system/admin/primitives";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import Badge from "../../components/Badge";
@@ -30,7 +28,11 @@ import { formatJobId, getMoveCode, getMoveDetailPath } from "@/lib/move-code";
 import { getStatusLabel } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
 import { ScheduleDeliveryButton, ScheduleMoveItem } from "../../components/ScheduleItem";
-import { isPropertyManagementDeliveryVertical, organizationTypeLabel } from "@/lib/partner-type";
+import {
+  isPmBatchScheduleVertical,
+  isPropertyManagementDeliveryVertical,
+  organizationTypeLabel,
+} from "@/lib/partner-type";
 import { getPartnerLabelsForPartner } from "@/utils/partnerType";
 
 interface MoveRow {
@@ -145,6 +147,7 @@ export default function ClientDetailClient({
   const personaLabel = isClient ? "Client" : "Partner";
   const verticalKey = String(client.vertical || client.type || "");
   const showPmProposal = !isClient && isPropertyManagementDeliveryVertical(verticalKey);
+  const showPmBatchSchedule = !isClient && isPmBatchScheduleVertical(verticalKey);
   const partnerLabels = getPartnerLabelsForPartner({
     vertical: client.vertical,
     type: client.type,
@@ -166,203 +169,225 @@ export default function ClientDetailClient({
     }
   };
 
+  const handlePartnerTabChange = (tab: string) => {
+    const nextTab = tab as PartnerAdminTab;
+    setActiveTab(nextTab);
+    const next = new URLSearchParams(searchParams.toString());
+    if (nextTab === "overview") {
+      next.delete("tab");
+      next.delete("building");
+    } else {
+      next.set("tab", nextTab);
+      if (nextTab !== "moves") next.delete("building");
+    }
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+
+  const partnerTabs = (
+    portfolioPartner
+      ? (["overview", "buildings", "rate-card", "moves", "analytics", "portal"] as const)
+      : (["overview", "rate-card", "analytics", "portal"] as const)
+  ) satisfies readonly PartnerAdminTab[];
+
+  const tabLabel = (tab: PartnerAdminTab) =>
+    tab === "overview"
+      ? "Overview"
+      : tab === "buildings"
+        ? "Buildings"
+        : tab === "rate-card"
+          ? "Rate card"
+          : tab === "moves"
+            ? "Moves"
+            : tab === "analytics"
+              ? "Analytics"
+              : "Portal";
+
   return (
-    <div className="w-full min-w-0 py-5 md:py-6 animate-fade-up">
+    <div className="w-full min-w-0 py-4 md:py-6 flex flex-col gap-4 animate-fade-up">
       <button
         type="button"
         onClick={() => router.back()}
-        className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] mb-4 transition-colors whitespace-nowrap shrink-0"
+        className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--yu3-ink-muted)] hover:text-[var(--yu3-ink)] transition-colors w-fit"
       >
         ← Back
       </button>
 
-      <div className="mb-4">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 leading-relaxed">
-          CRM · Client Profile
-        </p>
-      </div>
-
-      {/* Hero + actions */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 md:p-7 mb-5">
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 lg:gap-8">
-          <div className="min-w-0 flex-1 w-full max-w-full">
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-3 sm:gap-y-1">
-              <h1 className="admin-page-hero text-[var(--tx)] break-words leading-snug max-w-full sm:min-w-0 sm:flex-1">
-                {client.name}
-              </h1>
-              <span
-                className={`dt-badge shrink-0 self-start sm:mt-0.5 ${isClient ? "text-[var(--blue)]" : "text-[var(--accent-text)]"}`}
-              >
-                {personaLabel}
-              </span>
-            </div>
-            <div className="mt-4 flex flex-col gap-2.5 text-[12px] text-[var(--tx2)] leading-relaxed">
-              <div className="font-medium text-[var(--accent-text)]">
-                {isClient ? "Move client" : organizationTypeLabel(client.vertical || client.type)}
-              </div>
-              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-x-4 gap-y-2">
-                <button
-                  type="button"
-                  onClick={() => setContactModalOpen(true)}
-                  className="text-left text-[var(--accent-text)] hover:underline font-medium w-fit"
+      <PageHeader
+        eyebrow="CRM"
+        title={client.name}
+        titleClamp={false}
+        description={
+          isClient
+            ? "Move client"
+            : organizationTypeLabel(client.vertical || client.type)
+        }
+        meta={
+          <>
+            <button
+              type="button"
+              onClick={() => setContactModalOpen(true)}
+              className="font-semibold text-[var(--yu3-wine)] hover:underline text-left"
+            >
+              {client.contact_name || "-"}
+            </button>
+            {client.email ? (
+              <>
+                <PageMetaDivider />
+                <a
+                  href={`mailto:${client.email}`}
+                  className="text-[var(--yu3-ink)] hover:text-[var(--yu3-wine)] break-all min-w-0"
                 >
-                  {client.contact_name || "-"}
-                </button>
-                {client.email ? (
-                  <a
-                    href={`mailto:${client.email}`}
-                    className="text-[var(--tx2)] hover:text-[var(--accent-text)] break-all min-w-0"
-                  >
-                    {client.email}
-                  </a>
-                ) : (
-                  <span className="text-[var(--tx3)]">-</span>
-                )}
-              </div>
-              {client.address ? (
-                <p className="text-[var(--tx3)] break-words whitespace-normal max-w-2xl">{client.address}</p>
-              ) : null}
-            </div>
-          </div>
-          {isAdmin && (
-          <div className="shrink-0 flex flex-wrap items-center gap-2 lg:max-w-[min(100%,24rem)] lg:justify-end">
-            {isClient ? (
-              <button
-                type="button"
-                onClick={async () => {
-                  const moveId = moves[0]?.id;
-                  if (!moveId) {
-                    toast("No move yet. Create a move first.", "x");
-                    return;
-                  }
-                  if (!client.email?.trim()) {
-                    toast("Add client email first (Edit).", "x");
-                    return;
-                  }
-                  setResendPortalLoading(true);
-                  try {
-                    const res = await fetch(`/api/moves/${moveId}/send-tracking-link`, { method: "POST" });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error || "Failed to send");
-                    toast("Tracking link sent.", "mail");
-                  } catch (e) {
-                    toast(e instanceof Error ? e.message : "Failed to send", "x");
-                  } finally {
-                    setResendPortalLoading(false);
-                  }
-                }}
-                disabled={resendPortalLoading || !client.email?.trim() || moves.length === 0}
-                className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
-              >
-                {resendPortalLoading ? "Sending…" : "Send tracking link"}
-                {!resendPortalLoading ? (
-                  <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
-                ) : null}
-              </button>
+                  {client.email}
+                </a>
+              </>
             ) : (
               <>
-                <button
-                  type="button"
+                <PageMetaDivider />
+                <span className="text-[var(--yu3-ink-muted)]">-</span>
+              </>
+            )}
+            {client.address ? (
+              <>
+                <PageMetaDivider />
+                <span className="text-[var(--yu3-ink-muted)] break-words max-w-xl">
+                  {client.address}
+                </span>
+              </>
+            ) : null}
+          </>
+        }
+        actions={
+          isAdmin ? (
+            <div
+              className="flex flex-col gap-2 w-full sm:w-auto sm:min-w-[12rem] sm:items-end"
+              role="group"
+              aria-label="Profile actions"
+            >
+              {isClient ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  uppercase
+                  disabled={resendPortalLoading || !client.email?.trim() || moves.length === 0}
+                  trailingIcon={<CaretRight weight="bold" className="opacity-90" size={14} aria-hidden />}
                   onClick={async () => {
+                    const moveId = moves[0]?.id;
+                    if (!moveId) {
+                      toast("No move yet. Create a move first.", "x");
+                      return;
+                    }
                     if (!client.email?.trim()) {
-                      toast("Add partner email first (Edit).", "x");
+                      toast("Add client email first (Edit).", "x");
                       return;
                     }
                     setResendPortalLoading(true);
                     try {
-                      const res = await fetch(`/api/admin/organizations/${client.id}/resend-portal`, { method: "POST" });
+                      const res = await fetch(`/api/moves/${moveId}/send-tracking-link`, { method: "POST" });
                       const data = await res.json();
                       if (!res.ok) throw new Error(data.error || "Failed to send");
-                      toast("Partner portal access sent.", "mail");
+                      toast("Tracking link sent.", "mail");
                     } catch (e) {
                       toast(e instanceof Error ? e.message : "Failed to send", "x");
                     } finally {
                       setResendPortalLoading(false);
                     }
                   }}
-                  disabled={resendPortalLoading || !client.email?.trim()}
-                  className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
                 >
-                  {resendPortalLoading ? "Sending…" : "Resend portal access"}
-                  {!resendPortalLoading ? (
-                    <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
-                  ) : null}
-                </button>
-                {!isClient && portfolioPartner && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      router.push(
-                        `/admin/partners/pm-batch?partner_id=${encodeURIComponent(client.id)}`,
-                      )
-                    }
-                    className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
-                  >
-                    Schedule PM moves
-                    <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
-                  </button>
-                )}
-                {showPmProposal && (
-                  <button
-                    type="button"
-                    disabled={proposalLoading}
+                  {resendPortalLoading ? "Sending…" : "Send tracking link"}
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    uppercase
+                    disabled={resendPortalLoading || !client.email?.trim()}
+                    trailingIcon={<CaretRight weight="bold" className="opacity-90" size={14} aria-hidden />}
                     onClick={async () => {
-                      setProposalLoading(true);
+                      if (!client.email?.trim()) {
+                        toast("Add partner email first (Edit).", "x");
+                        return;
+                      }
+                      setResendPortalLoading(true);
                       try {
-                        const res = await fetch(`/api/admin/organizations/${client.id}/pm-proposal`, {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({}),
-                        });
-                        if (!res.ok) {
-                          const err = await res.json().catch(() => ({}));
-                          throw new Error((err as { error?: string }).error || "Failed to generate");
-                        }
-                        const blob = await res.blob();
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = `yugo-proposal-${client.name?.replace(/\s+/g, "-") || "partner"}.pdf`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                        toast("Proposal downloaded", "check");
+                        const res = await fetch(`/api/admin/organizations/${client.id}/resend-portal`, { method: "POST" });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || "Failed to send");
+                        toast("Partner portal access sent.", "mail");
                       } catch (e) {
-                        toast(e instanceof Error ? e.message : "Failed", "x");
+                        toast(e instanceof Error ? e.message : "Failed to send", "x");
                       } finally {
-                        setProposalLoading(false);
+                        setResendPortalLoading(false);
                       }
                     }}
-                    className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
                   >
-                    {proposalLoading ? "Generating…" : "Generate proposal PDF"}
-                    {!proposalLoading ? (
-                      <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
-                    ) : null}
-                  </button>
-                )}
-              </>
-            )}
-            <button
-              type="button"
-              onClick={() => setEditModalOpen(true)}
-              className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
-            >
-              <Pencil weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
-              Edit {isClient ? "client" : "partner"}
-              <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
-            </button>
-            <button
-              type="button"
-              onClick={() => setDeleteConfirmOpen(true)}
-              className={ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS}
-            >
-              <Trash2 weight="regular" className="w-3 h-3 shrink-0" aria-hidden />
-              Delete
-            </button>
-          </div>
-          )}
-        </div>
-      </div>
+                    {resendPortalLoading ? "Sending…" : "Resend portal access"}
+                  </Button>
+                  {showPmProposal ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      uppercase
+                      disabled={proposalLoading}
+                      trailingIcon={<CaretRight weight="bold" className="opacity-90" size={14} aria-hidden />}
+                      onClick={async () => {
+                        setProposalLoading(true);
+                        try {
+                          const res = await fetch(`/api/admin/organizations/${client.id}/pm-proposal`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({}),
+                          });
+                          if (!res.ok) {
+                            const err = await res.json().catch(() => ({}));
+                            throw new Error((err as { error?: string }).error || "Failed to generate");
+                          }
+                          const blob = await res.blob();
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `yugo-proposal-${client.name?.replace(/\s+/g, "-") || "partner"}.pdf`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          toast("Proposal downloaded", "check");
+                        } catch (e) {
+                          toast(e instanceof Error ? e.message : "Failed", "x");
+                        } finally {
+                          setProposalLoading(false);
+                        }
+                      }}
+                    >
+                      {proposalLoading ? "Generating…" : "Generate proposal PDF"}
+                    </Button>
+                  ) : null}
+                </>
+              )}
+              <div className="self-end w-full max-w-[11rem] border-t border-[var(--yu3-line-subtle)] my-1" aria-hidden />
+              <Button
+                variant="secondary"
+                size="sm"
+                uppercase
+                leadingIcon={<Pencil weight="regular" size={14} aria-hidden />}
+                trailingIcon={<CaretRight weight="bold" className="opacity-90" size={14} aria-hidden />}
+                onClick={() => setEditModalOpen(true)}
+              >
+                Edit {isClient ? "client" : "partner"}
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                uppercase
+                leadingIcon={<Trash2 weight="regular" size={14} aria-hidden />}
+                onClick={() => setDeleteConfirmOpen(true)}
+              >
+                Delete
+              </Button>
+            </div>
+          ) : undefined
+        }
+        className="pb-2"
+      />
 
       {/* Portal Access, partners only */}
       {!isClient && isAdmin && (
@@ -373,49 +398,17 @@ export default function ClientDetailClient({
         />
       )}
 
-      {/* Tab bar, partners only */}
+      {/* Partner workspace tabs (below portal access) */}
       {!isClient && isAdmin && (
-        <div className="flex gap-1 sm:gap-2 border-b border-[var(--brd)] mb-6 -mx-0 overflow-x-auto pb-px">
-          {(portfolioPartner
-            ? (["overview", "buildings", "rate-card", "moves", "analytics", "portal"] as const)
-            : (["overview", "rate-card", "analytics", "portal"] as const)
-          ).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => {
-                setActiveTab(tab);
-                const next = new URLSearchParams(searchParams.toString());
-                if (tab === "overview") {
-                  next.delete("tab");
-                  next.delete("building");
-                } else {
-                  next.set("tab", tab);
-                  if (tab !== "moves") next.delete("building");
-                }
-                const qs = next.toString();
-                router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-              }}
-              className={`px-3 sm:px-5 py-3 text-[10px] font-bold tracking-[0.1em] uppercase transition-all border-b-2 -mb-px whitespace-nowrap shrink-0 ${
-                activeTab === tab
-                  ? "border-[var(--gold)] text-[var(--accent-text)]"
-                  : "border-transparent text-[var(--tx3)] hover:text-[var(--tx2)]"
-              }`}
-            >
-              {tab === "overview"
-                ? "Overview"
-                : tab === "buildings"
-                  ? "Buildings"
-                  : tab === "rate-card"
-                    ? "Rate Card"
-                    : tab === "moves"
-                      ? "Moves"
-                      : tab === "analytics"
-                        ? "Analytics"
-                        : "Portal"}
-            </button>
-          ))}
-        </div>
+        <Tabs value={activeTab} onValueChange={handlePartnerTabChange}>
+          <TabsList variant="underline" className="w-full min-w-0 justify-start border-b border-[var(--yu3-line-subtle)] pb-0">
+            {partnerTabs.map((tab) => (
+              <TabsTrigger key={tab} value={tab} variant="underline">
+                {tabLabel(tab)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       )}
 
       {/* Rate Card tab content */}
@@ -428,30 +421,32 @@ export default function ClientDetailClient({
       )}
 
       {!isClient && isAdmin && portfolioPartner && activeTab === "moves" && (
-        <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
+        <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)] p-5 md:p-6 mt-2">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 mb-4">
             <div className="min-w-0">
-              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3 sm:mb-2">
+              <h3 className="yu3-t-eyebrow text-[var(--yu3-ink-muted)] mb-3 sm:mb-2">
                 Moves for this partner
               </h3>
-              <p className="text-[11px] text-[var(--tx3)]">
+              <p className="yu3-t-body text-[13px] text-[var(--yu3-ink-muted)] leading-relaxed">
                 Tenant and portfolio jobs tied to this organization (residential move ops), not B2B deliveries.
               </p>
             </div>
-            {portfolioPartner ? (
-              <button
-                type="button"
+            {showPmBatchSchedule ? (
+              <Button
+                variant="primary"
+                size="sm"
+                uppercase
+                className="shrink-0 self-start sm:self-center"
+                leadingIcon={<Plus weight="bold" size={16} aria-hidden />}
+                trailingIcon={<CaretRight weight="bold" size={14} className="opacity-90" aria-hidden />}
                 onClick={() =>
                   router.push(
                     `/admin/partners/pm-batch?partner_id=${encodeURIComponent(client.id)}`,
                   )
                 }
-                className={`${ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS} shrink-0 self-start`}
-                aria-label="Create property management moves for this partner"
               >
-                Create moves
-                <CaretRight weight="bold" className="w-3 h-3 shrink-0 opacity-90" aria-hidden />
-              </button>
+                Create move
+              </Button>
             ) : null}
           </div>
           {(() => {
@@ -466,22 +461,22 @@ export default function ClientDetailClient({
             return (
               <>
                 {propName ? (
-                  <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] text-[var(--tx2)]">
+                  <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] text-[var(--yu3-ink)]">
                     <span>
-                      Filtered: <span className="font-semibold text-[var(--tx)]">{propName}</span>
+                      Filtered: <span className="font-semibold text-[var(--yu3-ink-strong)]">{propName}</span>
                     </span>
                     <button
                       type="button"
                       onClick={() => router.replace(`/admin/clients/${client.id}?tab=moves`)}
-                      className="text-[var(--accent-text)] font-semibold hover:underline"
+                      className="text-[var(--yu3-wine)] font-semibold hover:underline"
                     >
                       Clear filter
                     </button>
                   </div>
                 ) : null}
-                <div className="divide-y divide-[var(--brd)]/30 -mx-2">
+                <div className="divide-y divide-[var(--yu3-line-subtle)] -mx-2">
                   {filteredMoves.length === 0 ? (
-                    <div className="text-[10px] text-[var(--tx3)] py-4 text-center">
+                    <div className="text-[10px] text-[var(--yu3-ink-muted)] py-4 text-center">
                       {buildingFilter ? "No moves for this building yet" : "No moves yet"}
                     </div>
                   ) : (
@@ -517,7 +512,7 @@ export default function ClientDetailClient({
 
       {/* Portal Features tab content */}
       {!isClient && isAdmin && activeTab === "portal" && (
-        <div className="pt-6 space-y-6">
+        <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)] p-5 md:p-6 mt-2 space-y-6">
           <PartnerCardOnFileSection
             orgId={client.id}
             squareCardId={client.square_card_id}
@@ -545,34 +540,34 @@ export default function ClientDetailClient({
 
       {/* Overview content, hidden when rate card tab active */}
       {(isClient || !isAdmin || activeTab === "overview") && (
-        <>
+        <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)] p-5 md:p-6 mt-2">
 
       {/* Overview + since */}
-      <div className="border-t border-[var(--brd)]/30 pt-8 pb-6">
-        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-4 leading-relaxed">
+      <div className="pt-2 pb-6">
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-4 leading-relaxed">
           Profile summary
         </div>
         <div className="grid md:grid-cols-2 gap-8">
           {partnerSince && (
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">{personaLabel} since</div>
-              <div className="text-[15px] font-bold font-heading text-[var(--tx)]">
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-1">{personaLabel} since</div>
+              <div className="text-[15px] font-bold font-heading text-[var(--yu3-ink-strong)]">
                 {partnerSince.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 {partnerDuration && (
-                  <span className="text-[11px] font-normal text-[var(--tx3)] ml-2">({partnerDuration})</span>
+                  <span className="text-[11px] font-normal text-[var(--yu3-ink-muted)] ml-2">({partnerDuration})</span>
                 )}
               </div>
             </div>
           )}
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">{isClient ? "Type" : "Partner type"}</div>
-            <div className="text-[13px] font-semibold text-[var(--tx)]">
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-1">{isClient ? "Type" : "Partner type"}</div>
+            <div className="text-[13px] font-semibold text-[var(--yu3-ink-strong)]">
               {isClient ? "Move client" : organizationTypeLabel(client.vertical || client.type)}
             </div>
             {client.address && (
               <>
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mt-3 mb-1">Address</div>
-                <div className="text-[12px] text-[var(--tx2)]">{client.address}</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mt-3 mb-1">Address</div>
+                <div className="text-[12px] text-[var(--yu3-ink)]">{client.address}</div>
               </>
             )}
           </div>
@@ -580,84 +575,84 @@ export default function ClientDetailClient({
       </div>
 
       {/* High-level metrics */}
-      <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
-        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3">Metrics</div>
+      <div className="border-t border-[var(--yu3-line-subtle)] pt-6 pb-6">
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-3">Metrics</div>
         {portfolioPartner && pmMetrics ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Buildings</div>
-              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{pmMetrics.buildingsCount}</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-1">Buildings</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--yu3-ink-strong)]">{pmMetrics.buildingsCount}</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Total moves</div>
-              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{pmMetrics.totalMoves}</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-1">Total moves</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--yu3-ink-strong)]">{pmMetrics.totalMoves}</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">This month</div>
-              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{pmMetrics.movesThisMonth} moves</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-1">This month</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--yu3-ink-strong)]">{pmMetrics.movesThisMonth} moves</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Revenue (MTD)</div>
-              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(pmMetrics.revenueMtd)}</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-1">Revenue (MTD)</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--yu3-success)]">{formatCompactCurrency(pmMetrics.revenueMtd)}</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Revenue (YTD)</div>
-              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(pmMetrics.revenueYtd)}</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-1">Revenue (YTD)</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--yu3-success)]">{formatCompactCurrency(pmMetrics.revenueYtd)}</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Outstanding</div>
-              <div className={`text-[18px] md:text-[20px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-1">Outstanding</div>
+              <div className={`text-[18px] md:text-[20px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--yu3-warning)]" : "text-[var(--yu3-success)]"}`}>
                 {outstandingTotal > 0 ? formatCompactCurrency(outstandingTotal) : formatCompactCurrency(0)}
               </div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Avg move value</div>
-              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">
-                {pmMetrics.avgMoveValue > 0 ? formatCompactCurrency(pmMetrics.avgMoveValue) : "—"}
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-1">Avg move value</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--yu3-ink-strong)]">
+                {pmMetrics.avgMoveValue > 0 ? formatCompactCurrency(pmMetrics.avgMoveValue) : "-"}
               </div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">On-time rate</div>
-              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">
-                {pmMetrics.onTimeRate != null ? `${Math.round(pmMetrics.onTimeRate * 100)}%` : "—"}
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-1">On-time rate</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--yu3-ink-strong)]">
+                {pmMetrics.onTimeRate != null ? `${Math.round(pmMetrics.onTimeRate * 100)}%` : "-"}
               </div>
             </div>
             <div className="col-span-2 sm:col-span-1">
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Invoices</div>
-              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-1">Invoices</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--yu3-ink-strong)]">
                 {allInvoices.length}{" "}
-                <span className="text-[11px] font-normal text-[var(--tx3)]">({paidInvoices.length} paid)</span>
+                <span className="text-[11px] font-normal text-[var(--yu3-ink-muted)]">({paidInvoices.length} paid)</span>
               </div>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-6">
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-1">
                 {isClient ? "Moves" : partnerLabels.totalMetric}
               </div>
-              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--yu3-ink-strong)]">
                 {isClient ? moves.length : deliveries.length}
               </div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">AVG DEL</div>
-              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{client.deliveries_per_month ?? "-"}</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-1">AVG DEL</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--yu3-ink-strong)]">{client.deliveries_per_month ?? "-"}</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Total paid</div>
-              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(paidTotal)}</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-1">Total paid</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--yu3-success)]">{formatCompactCurrency(paidTotal)}</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Outstanding</div>
-              <div className={`text-[18px] md:text-[20px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-1">Outstanding</div>
+              <div className={`text-[18px] md:text-[20px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--yu3-warning)]" : "text-[var(--yu3-success)]"}`}>
                 {outstandingTotal > 0 ? formatCompactCurrency(outstandingTotal) : formatCompactCurrency(0)}
               </div>
             </div>
             <div className="col-span-2 sm:col-span-1">
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-1">Invoices</div>
-              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">
-                {allInvoices.length} <span className="text-[11px] font-normal text-[var(--tx3)]">({paidInvoices.length} paid)</span>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-1">Invoices</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--yu3-ink-strong)]">
+                {allInvoices.length} <span className="text-[11px] font-normal text-[var(--yu3-ink-muted)]">({paidInvoices.length} paid)</span>
               </div>
             </div>
           </div>
@@ -665,14 +660,14 @@ export default function ClientDetailClient({
       </div>
 
       {/* Recent moves (B2C) or Recent projects (delivery partners) / moves (portfolio) */}
-      <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
-        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3">
+      <div className="border-t border-[var(--yu3-line-subtle)] pt-6 pb-4">
+        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)] mb-3">
           {isClient ? "Recent moves" : partnerLabels.recentLabel}
         </h3>
-        <div className="divide-y divide-[var(--brd)]/30 -mx-2">
+        <div className="divide-y divide-[var(--yu3-line-subtle)] -mx-2">
           {isClient ? (
             moves.length === 0 ? (
-              <div className="text-[10px] text-[var(--tx3)] py-4 text-center">No moves yet</div>
+              <div className="text-[10px] text-[var(--yu3-ink-muted)] py-4 text-center">No moves yet</div>
             ) : (
               moves.map((m, idx) => (
                 <ScheduleMoveItem
@@ -688,7 +683,7 @@ export default function ClientDetailClient({
             )
           ) : portfolioPartner ? (
             partnerMoves.length === 0 ? (
-              <div className="text-[10px] text-[var(--tx3)] py-4 text-center">No moves yet</div>
+              <div className="text-[10px] text-[var(--yu3-ink-muted)] py-4 text-center">No moves yet</div>
             ) : (
               partnerMoves.slice(0, 8).map((m, idx) => (
                 <ScheduleMoveItem
@@ -716,7 +711,7 @@ export default function ClientDetailClient({
                 />
               ))}
               {deliveries.length === 0 && (
-                <div className="text-[10px] text-[var(--tx3)] py-4 text-center">{partnerLabels.emptyState}</div>
+                <div className="text-[10px] text-[var(--yu3-ink-muted)] py-4 text-center">{partnerLabels.emptyState}</div>
               )}
             </>
           )}
@@ -733,14 +728,14 @@ export default function ClientDetailClient({
 
       {/* Change requests (client-submitted) */}
       {changeRequests.length > 0 && (
-        <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
+        <div className="border-t border-[var(--yu3-line-subtle)] pt-6 pb-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Change requests</h3>
-            <Link href="/admin/change-requests" className="text-[10px] font-semibold text-[var(--accent-text)] hover:underline">
+            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)]">Change requests</h3>
+            <Link href="/admin/change-requests" className="text-[10px] font-semibold text-[var(--yu3-wine)] hover:underline">
               View all
             </Link>
           </div>
-          <div className="divide-y divide-[var(--brd)]/30">
+          <div className="divide-y divide-[var(--yu3-line-subtle)]">
             {changeRequests.slice(0, 5).map((cr) => {
               const moveData = Array.isArray(cr.moves) ? cr.moves[0] : cr.moves;
               const moveCode = moveData?.move_code ? formatJobId(moveData.move_code, "move") : "-";
@@ -748,15 +743,15 @@ export default function ClientDetailClient({
                 <Link
                   key={cr.id}
                   href={getMoveDetailPath({ move_code: moveData?.move_code, id: cr.move_id })}
-                  className="flex items-center gap-2.5 py-3 first:pt-0 hover:text-[var(--accent-text)] transition-colors text-left w-full"
+                  className="flex items-center gap-2.5 py-3 first:pt-0 hover:text-[var(--yu3-wine)] transition-colors text-left w-full"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-semibold text-[var(--tx)]">{cr.type}</div>
-                    <div className="text-[9px] text-[var(--tx3)] line-clamp-1">{cr.description}</div>
+                    <div className="text-[11px] font-semibold text-[var(--yu3-ink-strong)]">{cr.type}</div>
+                    <div className="text-[9px] text-[var(--yu3-ink-muted)] line-clamp-1">{cr.description}</div>
                   </div>
-                  <span className="text-[9px] text-[var(--tx3)] shrink-0">{moveCode}</span>
+                  <span className="text-[9px] text-[var(--yu3-ink-muted)] shrink-0">{moveCode}</span>
                   <span className={`dt-badge tracking-[0.04em] shrink-0 ${
-                    cr.status === "pending" ? "text-[var(--accent-text)]" : cr.status === "approved" ? "text-[var(--grn)]" : "text-[var(--red)]"
+                    cr.status === "pending" ? "text-[var(--yu3-wine)]" : cr.status === "approved" ? "text-[var(--yu3-success)]" : "text-[var(--yu3-danger)]"
                   }`}>
                     {toTitleCase(cr.status)}
                   </span>
@@ -768,38 +763,38 @@ export default function ClientDetailClient({
       )}
 
       {/* Invoices - click opens detail popup */}
-      <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
+      <div className="border-t border-[var(--yu3-line-subtle)] pt-6 pb-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Invoices</h3>
+          <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)]">Invoices</h3>
           {outstandingTotal > 0 && (
-            <div className="text-[11px] font-semibold text-[var(--org)]">
+            <div className="text-[11px] font-semibold text-[var(--yu3-warning)]">
               Outstanding: {formatCompactCurrency(outstandingTotal)}
             </div>
           )}
         </div>
-        <div className="divide-y divide-[var(--brd)]/30">
+        <div className="divide-y divide-[var(--yu3-line-subtle)]">
           {allInvoices.map((inv) => (
             <button
               key={inv.id}
               type="button"
               onClick={() => setSummaryInvoice(inv)}
-              className="flex items-center gap-2.5 py-3 first:pt-0 hover:text-[var(--accent-text)] transition-colors text-left w-full"
+              className="flex items-center gap-2.5 py-3 first:pt-0 hover:text-[var(--yu3-wine)] transition-colors text-left w-full"
             >
               <div className="flex-1">
                 <div className="text-[11px] font-semibold">{inv.invoice_number}</div>
-                <div className="text-[9px] text-[var(--tx3)]">Due: {inv.due_date}</div>
+                <div className="text-[9px] text-[var(--yu3-ink-muted)]">Due: {inv.due_date}</div>
               </div>
-              <div className="text-[10px] font-bold">{formatCurrency(inv.amount)}{Number(inv.amount) > 0 ? <span className="text-[9px] text-[var(--tx3)] ml-0.5">+{formatCurrency(Math.round(Number(inv.amount) * 0.13))} HST</span> : null}</div>
+              <div className="text-[10px] font-bold">{formatCurrency(inv.amount)}{Number(inv.amount) > 0 ? <span className="text-[9px] text-[var(--yu3-ink-muted)] ml-0.5">+{formatCurrency(Math.round(Number(inv.amount) * 0.13))} HST</span> : null}</div>
               <Badge status={inv.status} />
             </button>
           ))}
           {allInvoices.length === 0 && (
-            <div className="text-[10px] text-[var(--tx3)] py-4 text-center">No invoices yet</div>
+            <div className="text-[10px] text-[var(--yu3-ink-muted)] py-4 text-center">No invoices yet</div>
           )}
         </div>
       </div>
 
-        </>
+        </div>
       )}
 
       <DeliverySummaryModal open={!!summaryDelivery} onClose={() => setSummaryDelivery(null)} delivery={summaryDelivery} />
@@ -828,20 +823,20 @@ export default function ClientDetailClient({
         createPortal(
           <ModalOverlay open onClose={() => setDeleteConfirmOpen(false)} title="Delete client?" maxWidth="sm">
             <div className="p-5 space-y-4">
-              <p className="text-[12px] text-[var(--tx2)]">
+              <p className="text-[12px] text-[var(--yu3-ink)]">
                 This will remove the client from the list. Linked moves or invoices will not be deleted. This cannot be undone.
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setDeleteConfirmOpen(false)}
-                  className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)]"
+                  className="flex-1 py-2 rounded-lg text-[11px] font-semibold border border-[var(--yu3-line)] text-[var(--yu3-ink)]"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--red)] text-white disabled:opacity-50"
+                  className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--yu3-danger)] text-white disabled:opacity-50"
                 >
                   {deleting ? "Deleting…" : "Delete"}
                 </button>

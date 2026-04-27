@@ -172,12 +172,14 @@ export function isPropertyManagementDeliveryVertical(type: string): boolean {
   return PM_DELIVERY_VERTICALS.has(resolveVertical(type));
 }
 
-/**
- * Portfolio partners that use buildings, contracts, and PM-style batch scheduling.
- * Same set as {@link PM_DELIVERY_VERTICALS} (residential PM, commercial PM, developer portfolio).
- */
+/** Verticals eligible for admin PM batch scheduling (matches `/api/admin/moves/pm-batch` partner list). */
+const PM_BATCH_SCHEDULE_VERTICALS = new Set<string>([
+  "property_management_residential",
+  "property_management_commercial",
+]);
+
 export function isPmBatchScheduleVertical(type: string): boolean {
-  return isPropertyManagementDeliveryVertical(type);
+  return PM_BATCH_SCHEDULE_VERTICALS.has(resolveVertical(type));
 }
 
 /**

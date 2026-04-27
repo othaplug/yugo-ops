@@ -7,7 +7,6 @@ import { sendSMS } from "@/lib/sms/sendSMS";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
 import { getTrackMoveSlug } from "@/lib/move-code";
-import { PM_DELIVERY_VERTICALS } from "@/lib/partner-type";
 import {
   partnerMayUseReason,
   normalizePmReasonCode,
@@ -16,6 +15,11 @@ import {
   pricePmBatchLine,
   type PmBatchLineInput,
 } from "@/lib/partners/pm-batch-create";
+
+const PM_VERTICALS = [
+  "property_management_residential",
+  "property_management_commercial",
+] as const;
 
 function asLine(raw: unknown): PmBatchLineInput | null {
   if (!raw || typeof raw !== "object") return null;
@@ -66,24 +70,15 @@ export async function GET(req: NextRequest) {
   const partnerId = req.nextUrl.searchParams.get("partner_id")?.trim() || "";
 
   if (!partnerId) {
-    const verticals = Array.from(PM_DELIVERY_VERTICALS);
-    const [byVertical, byType] = await Promise.all([
-      db.from("organizations").select("id, name, vertical").in("vertical", verticals).order("name"),
-      db.from("organizations").select("id, name, vertical").in("type", verticals).order("name"),
-    ]);
-    const error = byVertical.error || byType.error;
+    const { data: orgs, error } = await db
+      .from("organizations")
+      .select("id, name, vertical")
+      .in("vertical", [...PM_VERTICALS])
+      .order("name");
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    const merged = new Map<string, { id: string; name: string | null; vertical: string | null }>();
-    for (const row of [...(byVertical.data ?? []), ...(byType.data ?? [])]) {
-      const r = row as { id: string; name: string | null; vertical: string | null };
-      merged.set(r.id, { id: r.id, name: r.name, vertical: r.vertical });
-    }
-    const orgs = [...merged.values()].sort((a, b) =>
-      (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }),
-    );
-    return NextResponse.json({ partners: orgs });
+    return NextResponse.json({ partners: orgs ?? [] });
   }
 
   const [{ data: org }, { data: contract }, { data: properties }] = await Promise.all([
