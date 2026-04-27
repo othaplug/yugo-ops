@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react"
+import { flushSync } from "react-dom"
 import Image from "next/image"
 import { Check, X } from "@phosphor-icons/react"
 import YugoLogo from "@/components/YugoLogo"
@@ -17,7 +18,53 @@ type SurveyRow = {
   coordinator_phone: string | null;
 };
 
-type LocalPhoto = { id: string; preview: string; path?: string; file?: File };
+type LocalPhoto = { id: string; preview: string; path?: string; file?: File }
+
+const setPhotoPathInAnyRoom = (
+  prev: Record<string, LocalPhoto[]>,
+  id: string,
+  path: string,
+  preview: string,
+  file: File | undefined,
+): Record<string, LocalPhoto[]> => {
+  for (const rid of Object.keys(prev)) {
+    const arr = prev[rid]
+    if (!arr?.length) continue
+    const idx = arr.findIndex((x) => x.id === id)
+    if (idx < 0) continue
+    const next = { ...prev }
+    const newArr = [...(next[rid] || [])]
+    newArr[idx] = { ...newArr[idx]!, path, preview, file }
+    next[rid] = newArr
+    return next
+  }
+  return prev
+}
+
+const uploadOnePhoto = async (
+  token: string,
+  roomId: string,
+  file: File,
+): Promise<string> => {
+  const fd = new FormData()
+  fd.set("room_id", roomId)
+  fd.set("file", file)
+  const res = await fetch(`/api/surveys/${token}/upload`, {
+    method: "POST",
+    body: fd,
+    credentials: "same-origin",
+  })
+  let data: { path?: string; error?: string } = {}
+  try {
+    data = (await res.json()) as { path?: string; error?: string }
+  } catch {
+    throw new Error("The server could not save this photo. Check your connection and try again.")
+  }
+  if (!res.ok) throw new Error(data.error || "Upload failed")
+  const path = String(data.path || "")
+  if (!path) throw new Error("Upload did not return a file path. Please try again.")
+  return path
+}
 
 export default function PhotoSurveyClient({
   token,
@@ -74,32 +121,26 @@ export default function PhotoSurveyClient({
             ? crypto.randomUUID()
             : `${roomId}-${Date.now()}-${Math.random()}`;
         const preview = URL.createObjectURL(file);
-        setRoomPhotos((prev) => {
-          const next = { ...prev, [roomId]: [...(prev[roomId] || [])] };
-          const slot: LocalPhoto = { id, preview, file };
-          next[roomId].push(slot);
-          return next;
-        });
-        try {
-          const fd = new FormData();
-          fd.set("room_id", roomId);
-          fd.set("file", file);
-          const res = await fetch(`/api/surveys/${token}/upload`, {
-            method: "POST",
-            body: fd,
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Upload failed");
-          const path = String(data.path || "");
+        flushSync(() => {
           setRoomPhotos((prev) => {
-            const arr = [...(prev[roomId] || [])];
-            const idx = arr.findIndex((x) => x.id === id);
-            if (idx >= 0 && path) {
-              arr[idx] = { ...arr[idx]!, path, preview, file };
-            }
+            const next = { ...prev, [roomId]: [...(prev[roomId] || [])] };
+            const slot: LocalPhoto = { id, preview, file };
+            next[roomId].push(slot);
+            return next;
+          });
+        });
+        const removeThisPhoto = () => {
+          if (preview.startsWith("blob:")) URL.revokeObjectURL(preview);
+          setRoomPhotos((prev) => {
+            const arr = (prev[roomId] || []).filter((p) => p.id !== id);
             return { ...prev, [roomId]: arr };
           });
+        };
+        try {
+          const path = await uploadOnePhoto(token, roomId, file);
+          setRoomPhotos((prev) => setPhotoPathInAnyRoom(prev, id, path, preview, file));
         } catch (err) {
+          removeThisPhoto();
           setError(err instanceof Error ? err.message : "Upload failed");
         }
       }
@@ -123,20 +164,35 @@ export default function PhotoSurveyClient({
     if (totalPhotos < 1) return;
     setSubmitting(true);
     setError(null);
-    const uploaded: Record<string, string[]> = {};
-    for (const [roomId, list] of Object.entries(roomPhotos)) {
-      const paths: string[] = [];
-      for (const p of list) {
-        if (p.path) paths.push(p.path);
-      }
-      if (paths.length) uploaded[roomId] = paths;
-    }
-    if (Object.values(uploaded).flat().length < 1) {
-      setError("Photos are still uploading. Try again in a moment.");
-      setSubmitting(false);
-      return;
-    }
     try {
+      const uploaded: Record<string, string[]> = {};
+      for (const [roomId, list] of Object.entries(roomPhotos)) {
+        const paths: string[] = [];
+        for (const p of list) {
+          if (p.path) {
+            paths.push(p.path);
+            continue;
+          }
+          if (p.file) {
+            const path = await uploadOnePhoto(token, roomId, p.file);
+            paths.push(path);
+            setRoomPhotos((prev) =>
+              setPhotoPathInAnyRoom(prev, p.id, path, p.preview, p.file),
+            );
+          } else {
+            throw new Error(
+              "A photo is missing on our side. Please remove that image and add it again, then submit.",
+            );
+          }
+        }
+        if (paths.length) uploaded[roomId] = paths;
+      }
+      if (Object.values(uploaded).flat().length < 1) {
+        setError(
+          "We could not save your photos. Check your connection, then try again or add the images again.",
+        );
+        return;
+      }
       const res = await fetch(`/api/surveys/${token}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -145,8 +201,21 @@ export default function PhotoSurveyClient({
           special_notes: specialNotes,
           total_photos: totalPhotos,
         }),
+        credentials: "same-origin",
       });
-      const data = await res.json();
+      let data: { error?: string } = {};
+      try {
+        data = (await res.json()) as { error?: string };
+      } catch {
+        if (!res.ok) {
+          throw new Error("Submit failed. Check your connection and try again.");
+        }
+        setSubmitted(true);
+        if (survey) {
+          setSurvey({ ...survey, status: "submitted" });
+        }
+        return;
+      }
       if (!res.ok) throw new Error(data.error || "Submit failed");
       setSubmitted(true);
       if (survey) {

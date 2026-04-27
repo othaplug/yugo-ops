@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { uploadLeadPhotoSurveyRoom } from "@/lib/photo-survey/lead-survey-storage-upload.server";
 import { verifyPhotoSurveyToken } from "@/lib/track-token";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/heic"];
@@ -7,15 +8,14 @@ const MAX_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
 const BUCKET = "survey-photos";
 
 // POST /api/survey/[token]/upload
-// Public — client uploads a room photo for the photo survey.
+// Quote-based survey OR lead photo_surveys (same form as /api/surveys/ when using file + room_id).
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ token: string }> },
 ) {
   const { token } = await params;
-  const quoteId = verifyPhotoSurveyToken(token);
-  if (!quoteId) {
-    return NextResponse.json({ error: "Invalid or expired link" }, { status: 401 });
+  if (!token) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   let formData: FormData;
@@ -25,6 +25,17 @@ export async function POST(
     return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
   }
 
+  const roomId = String(formData.get("room_id") || "").trim();
+  const fileForLead = formData.get("file");
+  if (roomId && fileForLead && fileForLead instanceof Blob) {
+    return uploadLeadPhotoSurveyRoom(token, roomId, fileForLead);
+  }
+
+  const quoteId = verifyPhotoSurveyToken(token);
+  if (!quoteId) {
+    return NextResponse.json({ error: "Invalid or expired link" }, { status: 401 });
+  }
+
   const file = formData.get("photo") as File | null;
   const room = (formData.get("room") as string | null) ?? "General";
 
@@ -32,10 +43,16 @@ export async function POST(
     return NextResponse.json({ error: "No photo provided" }, { status: 400 });
   }
   if (!ALLOWED_TYPES.includes(file.type.toLowerCase())) {
-    return NextResponse.json({ error: "Invalid file type. Please upload a photo." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid file type. Please upload a photo." },
+      { status: 400 },
+    );
   }
   if (file.size > MAX_SIZE_BYTES) {
-    return NextResponse.json({ error: "Photo is too large. Maximum size is 20 MB." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Photo is too large. Maximum size is 20 MB." },
+      { status: 400 },
+    );
   }
 
   const admin = createAdminClient();
@@ -57,7 +74,6 @@ export async function POST(
     return NextResponse.json({ error: "Upload failed. Please try again." }, { status: 500 });
   }
 
-  // Log the upload in the database
   const { error: dbError } = await admin.from("quote_survey_photos").insert({
     quote_id: quoteId,
     room,

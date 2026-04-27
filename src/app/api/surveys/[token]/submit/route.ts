@@ -90,13 +90,17 @@ export async function POST(
   const base = getEmailBaseUrl();
   const reviewUrl = `${base}/admin/leads/${leadId}/photos`;
 
-  await notifyAllAdmins({
-    title: `Photos received from ${clientName}`,
-    body: `${total} photos across ${roomCount} ${roomCount === 1 ? "room" : "rooms"}. Ready for inventory review.`,
-    link: reviewUrl,
-    sourceType: "lead",
-    sourceId: leadId,
-  });
+  try {
+    await notifyAllAdmins({
+      title: `Photos received from ${clientName}`,
+      body: `${total} photos across ${roomCount} ${roomCount === 1 ? "room" : "rooms"}. Ready for inventory review.`,
+      link: reviewUrl,
+      sourceType: "lead",
+      sourceId: leadId,
+    });
+  } catch (e) {
+    console.error("[photo survey submit] notifyAllAdmins:", e);
+  }
 
   const assignee = (lead as { assigned_to?: string } | null)?.assigned_to;
   const coordPhone =
@@ -113,8 +117,12 @@ export async function POST(
     "";
 
   if (coordPhone && String(coordPhone).replace(/\D/g, "").length >= 10) {
-    const line = `${clientName} just uploaded ${total} move photos. Review and build inventory: ${reviewUrl}`;
-    await sendSMS(String(coordPhone), line);
+    try {
+      const line = `${clientName} just uploaded ${total} move photos. Review and build inventory: ${reviewUrl}`;
+      await sendSMS(String(coordPhone), line);
+    } catch (e) {
+      console.error("[photo survey submit] sendSMS:", e);
+    }
   }
 
   return NextResponse.json({ ok: true, leadId });
