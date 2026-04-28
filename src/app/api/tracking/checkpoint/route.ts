@@ -10,6 +10,7 @@ import { isTerminalJobStatus } from "@/lib/moves/job-terminal";
 import {
   applyCheckpointProgressToJobRow,
   ensureJobCompleted,
+  repairJobCompletionFromEvidence,
   runDeliveryCompletionFollowUp,
   runMoveCompletionFollowUp,
 } from "@/lib/moves/complete-move-job";
@@ -265,14 +266,55 @@ export async function POST(req: NextRequest) {
       ? Math.round(((sessionEnd - sessionStart) / 3_600_000) * 100) / 100
       : null;
 
-    const { wasAlreadyComplete } = await ensureJobCompleted(admin, {
+    const fin = await ensureJobCompleted(admin, {
       jobId: session.job_id,
       jobType: session.job_type as "move" | "delivery",
       completedAt: now,
       actualHours,
     });
 
-    if (!wasAlreadyComplete) {
+    let runCompletionFollowUp = fin.ok && !fin.wasAlreadyComplete;
+
+    if (!fin.ok) {
+      console.error("[checkpoint] ensureJobCompleted failed, attempting evidence repair:", fin.error);
+      const repaired = await repairJobCompletionFromEvidence(
+        admin,
+        session.job_id,
+        session.job_type as "move" | "delivery",
+      );
+      if (!repaired.ok) {
+        return NextResponse.json(
+          {
+            error:
+              "Session was closed but the job record could not be updated. Contact the office so they can fix the move status.",
+            code: "COMPLETION_SYNC_FAILED",
+          },
+          { status: 503 },
+        );
+      }
+      const jobTable = session.job_type === "move" ? "moves" : "deliveries";
+      const { data: statusCheck } = await admin
+        .from(jobTable)
+        .select("status")
+        .eq("id", session.job_id)
+        .maybeSingle();
+      if (
+        !statusCheck ||
+        !isTerminalJobStatus(statusCheck.status as string, session.job_type as "move" | "delivery")
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Session was closed but the job record could not be updated. Contact the office so they can fix the move status.",
+            code: "COMPLETION_SYNC_FAILED",
+          },
+          { status: 503 },
+        );
+      }
+      runCompletionFollowUp = repaired.transitioned;
+    }
+
+    if (runCompletionFollowUp) {
       if (session.job_type === "move") {
         await runMoveCompletionFollowUp(admin, session.job_id, {
           source: "crew_checkpoint",

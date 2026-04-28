@@ -71,15 +71,19 @@ export async function POST(
     }
   }
 
-  // 2. Review request (idempotent / eligibility-checked)
-  createReviewRequestIfEligible(admin, moveId).catch((e) =>
-    console.error("[notify-complete] review request failed:", e)
-  );
+  // 2. Review request (idempotent / eligibility-checked) — awaited so notify-complete reliably seeds review_requests before cron
+  try {
+    await createReviewRequestIfEligible(admin, moveId);
+  } catch (e) {
+    console.error("[notify-complete] review request failed:", e);
+  }
 
   // 3. Client referral code if needed (idempotent)
-  createClientReferralIfNeeded(admin, moveId).catch((e) =>
-    console.error("[notify-complete] client referral failed:", e)
-  );
+  try {
+    await createClientReferralIfNeeded(admin, moveId);
+  } catch (e) {
+    console.error("[notify-complete] client referral failed:", e);
+  }
 
   // 4. Generate move PDFs (summary, invoice, receipt)
   generateMovePDFs(moveId).catch((e) =>

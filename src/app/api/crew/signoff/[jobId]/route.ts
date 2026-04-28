@@ -6,6 +6,7 @@ import { isEquipmentRelationUnavailable } from "@/lib/supabase-equipment-errors"
 import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
 import {
   ensureJobCompleted,
+  repairJobCompletionFromEvidence,
   runDeliveryCompletionFollowUp,
   runMoveCompletionFollowUp,
 } from "@/lib/moves/complete-move-job";
@@ -185,7 +186,32 @@ export async function POST(
     .eq("job_type", jobType)
     .maybeSingle();
 
-  if (existing) return NextResponse.json({ error: "Sign-off already recorded" }, { status: 400 });
+  if (existing) {
+    const repair = await repairJobCompletionFromEvidence(admin, entityId, jobType);
+    if (!repair.ok) {
+      return NextResponse.json(
+        { error: repair.error || "Could not sync job completion. Contact support." },
+        { status: 503 },
+      );
+    }
+    if (repair.transitioned) {
+      if (jobType === "move") {
+        await runMoveCompletionFollowUp(admin, entityId, { source: "repair_signoff_retry" });
+      } else {
+        await runDeliveryCompletionFollowUp(admin, entityId);
+      }
+    }
+    const { data: existingRow, error: exErr } = await admin
+      .from("client_sign_offs")
+      .select("id, signed_at")
+      .eq("job_id", entityId)
+      .eq("job_type", jobType)
+      .single();
+    if (exErr || !existingRow) {
+      return NextResponse.json({ error: "Sign-off already recorded" }, { status: 400 });
+    }
+    return NextResponse.json(existingRow);
+  }
 
   // 24-hour damage reporting window
   const damageReportDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
@@ -331,8 +357,59 @@ export async function POST(
     }
   } catch {}
 
-  // Create Proof of Delivery record
   const hasNewDamage = itemConditions.some((ic: { condition: string }) => ic.condition === "new_damage");
+
+  // Complete the job row BEFORE PoD so we never leave PoD on file with status still in_progress.
+  const now = new Date().toISOString();
+
+  const { data: activeSession } = await admin
+    .from("tracking_sessions")
+    .select("id, started_at")
+    .eq("job_id", entityId)
+    .eq("job_type", jobType)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  const { data: latestSession } = await admin
+    .from("tracking_sessions")
+    .select("id, started_at")
+    .eq("job_id", entityId)
+    .eq("job_type", jobType)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const sessionForHours = activeSession ?? latestSession;
+  const sessionStartMs = sessionForHours?.started_at
+    ? new Date(sessionForHours.started_at as string).getTime()
+    : null;
+  const sessionEndMs = new Date(now).getTime();
+  const actualHours =
+    sessionStartMs != null
+      ? Math.round(((sessionEndMs - sessionStartMs) / 3_600_000) * 100) / 100
+      : null;
+
+  const completedAt = (inserted.signed_at as string) || now;
+  const { wasAlreadyComplete, ok: completeOk, error: completeErr } = await ensureJobCompleted(admin, {
+    jobId: entityId,
+    jobType,
+    completedAt,
+    actualHours,
+  });
+
+  if (!completeOk) {
+    console.error("[signoff] ensureJobCompleted failed:", completeErr);
+    return NextResponse.json(
+      {
+        error:
+          "Sign-off was saved but the job could not be marked complete in the system. Tap submit again or contact the office.",
+        code: "COMPLETION_SYNC_FAILED",
+      },
+      { status: 503 },
+    );
+  }
+
+  // Create Proof of Delivery record (after the job is terminal in the database).
   try {
     const { data: jobPhotos } = await admin
       .from("job_photos")
@@ -383,44 +460,9 @@ export async function POST(
         icon: "alert-triangle",
       });
     }
-  } catch {}
-
-  // Complete the job: sign-off always finalizes the move/delivery (centralized so status/stage/sessions stay aligned).
-  const now = new Date().toISOString();
-
-  const { data: activeSession } = await admin
-    .from("tracking_sessions")
-    .select("id, started_at")
-    .eq("job_id", entityId)
-    .eq("job_type", jobType)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  const { data: latestSession } = await admin
-    .from("tracking_sessions")
-    .select("id, started_at")
-    .eq("job_id", entityId)
-    .eq("job_type", jobType)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const sessionForHours = activeSession ?? latestSession;
-  const sessionStartMs = sessionForHours?.started_at
-    ? new Date(sessionForHours.started_at as string).getTime()
-    : null;
-  const sessionEndMs = new Date(now).getTime();
-  const actualHours =
-    sessionStartMs != null
-      ? Math.round(((sessionEndMs - sessionStartMs) / 3_600_000) * 100) / 100
-      : null;
-
-  const { wasAlreadyComplete } = await ensureJobCompleted(admin, {
-    jobId: entityId,
-    jobType,
-    completedAt: now,
-    actualHours,
-  });
+  } catch (e) {
+    console.error("[signoff] proof_of_delivery insert failed (job already completed):", e);
+  }
 
   const signoffHadDamage = !noDamages || !noPropertyDamage || hasNewDamage;
 

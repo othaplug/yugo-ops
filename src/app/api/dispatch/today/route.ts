@@ -4,6 +4,11 @@ import { requireStaff } from "@/lib/api-auth";
 import { getLocalDateString, getAppTimezone, addCalendarDaysYmd } from "@/lib/business-timezone";
 import { getMoveDetailPath, getDeliveryDetailPath, getMoveCode } from "@/lib/move-code";
 import { deliveryContactEmail, deliveryContactPhone } from "@/lib/calendar/delivery-contact";
+import {
+  repairJobCompletionFromEvidence,
+  runMoveCompletionFollowUp,
+  runDeliveryCompletionFollowUp,
+} from "@/lib/moves/complete-move-job";
 
 export const dynamic = "force-dynamic";
 
@@ -113,6 +118,75 @@ export async function GET(req: NextRequest) {
   const reviewsToday = unwrap(results[9], "review_requests");
   const statusEventsToday = unwrap(results[10], "status_events");
 
+  let movesList = moves ?? [];
+  let deliveriesList = deliveries ?? [];
+  let refetchMoves = false;
+  let refetchDeliveries = false;
+  const terminalDispatchStatus = (s: string | null | undefined) =>
+    ["completed", "delivered", "job_complete", "cancelled"].includes((s || "").toLowerCase());
+
+  const applyRepairFollowUp = async (): Promise<void> => {
+    for (const m of movesList) {
+      if (terminalDispatchStatus(m.status)) continue;
+      const r = await repairJobCompletionFromEvidence(admin, m.id, "move");
+      if (!r.ok) {
+        console.error("[dispatch/today] move repair:", m.id, r.error);
+        continue;
+      }
+      if (r.transitioned) {
+        try {
+          await runMoveCompletionFollowUp(admin, m.id, { source: "repair_dispatch" });
+        } catch (e) {
+          console.error("[dispatch/today] move completion follow-up:", m.id, e);
+        }
+        refetchMoves = true;
+      }
+    }
+    for (const d of deliveriesList) {
+      if (terminalDispatchStatus(d.status)) continue;
+      const r = await repairJobCompletionFromEvidence(admin, d.id, "delivery");
+      if (!r.ok) {
+        console.error("[dispatch/today] delivery repair:", d.id, r.error);
+        continue;
+      }
+      if (r.transitioned) {
+        try {
+          await runDeliveryCompletionFollowUp(admin, d.id);
+        } catch (e) {
+          console.error("[dispatch/today] delivery completion follow-up:", d.id, e);
+        }
+        refetchDeliveries = true;
+      }
+    }
+  };
+
+  await applyRepairFollowUp();
+
+  if (refetchMoves) {
+    const { data: mFresh, error: mErr } = await admin
+      .from("moves")
+      .select(
+        "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at",
+      )
+      .eq("scheduled_date", targetDate)
+      .neq("status", "cancelled")
+      .order("preferred_time", { ascending: true, nullsFirst: false });
+    if (mErr) console.error("[dispatch/today] moves refetch after repair:", mErr);
+    if (mFresh) movesList = mFresh;
+  }
+  if (refetchDeliveries) {
+    const { data: dFresh, error: dErr } = await admin
+      .from("deliveries")
+      .select(
+        "id, delivery_number, crew_id, client_name, customer_name, customer_phone, customer_email, contact_phone, contact_email, end_customer_phone, end_customer_email, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, scheduled_date, time_slot, status, stage, eta_current_minutes, updated_at",
+      )
+      .eq("scheduled_date", targetDate)
+      .not("status", "in", '("cancelled")')
+      .order("time_slot", { ascending: true, nullsFirst: false });
+    if (dErr) console.error("[dispatch/today] deliveries refetch after repair:", dErr);
+    if (dFresh) deliveriesList = dFresh;
+  }
+
   const membersByTeam = new Map<string, string[]>();
   for (const m of crewMembers || []) {
     const list = membersByTeam.get(m.team_id) || [];
@@ -133,10 +207,10 @@ export async function GET(req: NextRequest) {
     if (loc.crew_id) locationByCrew.set(loc.crew_id, loc);
   }
 
-  const moveMap = new Map((moves || []).map((m) => [m.id, m]));
-  const deliveryMap = new Map((deliveries || []).map((d) => [d.id, d]));
-  const moveByCode = new Map((moves || []).map((m) => [m.move_code || m.id, m]));
-  const deliveryByNumber = new Map((deliveries || []).map((d) => [d.delivery_number || d.id, d]));
+  const moveMap = new Map(movesList.map((m) => [m.id, m]));
+  const deliveryMap = new Map(deliveriesList.map((d) => [d.id, d]));
+  const moveByCode = new Map(movesList.map((m) => [m.move_code || m.id, m]));
+  const deliveryByNumber = new Map(deliveriesList.map((d) => [d.delivery_number || d.id, d]));
   const crewMap = new Map((crews || []).map((c) => [c.id, c]));
 
   const jobs: Array<{
@@ -211,7 +285,7 @@ export async function GET(req: NextRequest) {
     return labels[s] || status?.replace(/_/g, " ") || "-";
   }
 
-  for (const m of moves || []) {
+  for (const m of movesList) {
     const crew = m.crew_id ? crewMap.get(m.crew_id) : null;
     const members = m.crew_id ? membersByTeam.get(m.crew_id) || (crew?.members as string[]) || [] : [];
     const moveStatusLc = (m.status || "").toLowerCase();
@@ -246,7 +320,7 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  for (const d of deliveries || []) {
+  for (const d of deliveriesList) {
     const crew = d.crew_id ? crewMap.get(d.crew_id) : null;
     const members = d.crew_id ? membersByTeam.get(d.crew_id) || (crew?.members as string[]) || [] : [];
     const deliveryStatusLc = (d.status || "").toLowerCase();

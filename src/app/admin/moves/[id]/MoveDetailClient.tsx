@@ -1148,9 +1148,34 @@ export default function MoveDetailClient({
                         .catch(() => {});
                     }
                     if (v.toLowerCase() === "completed") {
-                      fetch(`/api/admin/moves/${move.id}/notify-complete`, {
+                      void fetch(`/api/admin/moves/${move.id}/notify-complete`, {
                         method: "POST",
-                      }).catch(() => {});
+                      })
+                        .then(async (notifyRes) => {
+                          if (!notifyRes.ok) {
+                            try {
+                              const j = await notifyRes.json();
+                              toast(
+                                j?.error ||
+                                  "Completion email or review scheduling failed. Retry from the office or reload.",
+                                "alertTriangle",
+                              );
+                            } catch {
+                              toast(
+                                "Completion email or review scheduling failed. Retry later.",
+                                "alertTriangle",
+                              );
+                            }
+                          } else {
+                            router.refresh();
+                          }
+                        })
+                        .catch(() => {
+                          toast(
+                            "Completion email or review scheduling failed to reach the server.",
+                            "alertTriangle",
+                          );
+                        });
                     }
                     // Sync status to HubSpot deal (and keep deal fields in sync)
                     if (move.hubspot_deal_id) {

@@ -21,6 +21,8 @@ export const LIVE_TRACKING_STAGES = [
   { key: "arrived_at_destination", label: "Arrived" },
   { key: "unloading", label: "Unloading" },
   { key: "job_complete", label: "Job Complete" },
+  /** Set when ops or checkpoint marks the job terminal; same key as terminalRowPatch.stage */
+  { key: "completed", label: "Complete" },
   // Legacy keys kept for backward compatibility
   { key: "on_route", label: "En Route to Pickup" },
   { key: "arrived_on_site", label: "Arrived at Pickup" },

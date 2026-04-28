@@ -118,12 +118,24 @@ export async function POST(req: NextRequest) {
       ? Math.round(((sessionEndMs - sessionStartMs) / 3_600_000) * 100) / 100
       : null;
 
-  const { wasAlreadyComplete } = await ensureJobCompleted(admin, {
+  const { wasAlreadyComplete, ok: completeOk, error: completeErr } = await ensureJobCompleted(admin, {
     jobId: entityId,
     jobType: jobType as "move" | "delivery",
     completedAt: now,
     actualHours,
   });
+
+  if (!completeOk) {
+    console.error("[signoff/skip] ensureJobCompleted failed:", completeErr);
+    return NextResponse.json(
+      {
+        error:
+          "Could not mark this job complete in the system. Try again or contact the office.",
+        code: "COMPLETION_SYNC_FAILED",
+      },
+      { status: 503 },
+    );
+  }
 
   if (!wasAlreadyComplete) {
     if (jobType === "move") {

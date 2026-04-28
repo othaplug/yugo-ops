@@ -11,7 +11,12 @@ export type MoveJobCompletionSource =
   | "crew_signoff"
   | "crew_signoff_skip"
   | "crew_checkpoint"
-  | "admin_bulk";
+  | "admin_bulk"
+  /** Dispatch board load: repaired stuck job from PoD/sign-off evidence */
+  | "repair_dispatch"
+  /** move-completion-repair cron */
+  | "repair_cron"
+  | "repair_signoff_retry";
 
 /**
  * Closes every still-active tracking session for a job (handles duplicate / drifted rows).
@@ -51,9 +56,16 @@ const terminalRowPatch = (
   ...(actualHours != null && actualHours > 0 ? { actual_hours: actualHours } : {}),
 });
 
+export type EnsureJobCompletedResult = {
+  wasAlreadyComplete: boolean;
+  ok: boolean;
+  error?: string;
+};
+
 /**
  * Marks the move/delivery row finished and closes sessions. Idempotent: if already terminal,
  * normalizes stage/ETA flags and still closes stray active sessions.
+ * When `ok` is false, the job row may still be non-terminal (caller must surface error / retry).
  */
 export const ensureJobCompleted = async (
   admin: SupabaseClient,
@@ -63,7 +75,7 @@ export const ensureJobCompleted = async (
     completedAt: string;
     actualHours?: number | null;
   },
-): Promise<{ wasAlreadyComplete: boolean }> => {
+): Promise<EnsureJobCompletedResult> => {
   const { jobId, jobType, completedAt, actualHours } = params;
   const table = jobType === "move" ? "moves" : "deliveries";
 
@@ -75,7 +87,11 @@ export const ensureJobCompleted = async (
 
   if (fetchErr || !row) {
     console.error("[complete-move-job] ensureJobCompleted fetch:", fetchErr?.message);
-    return { wasAlreadyComplete: false };
+    return {
+      wasAlreadyComplete: false,
+      ok: false,
+      error: fetchErr?.message || "job_not_found",
+    };
   }
 
   const wasAlreadyComplete = isTerminalJobStatus(row.status as string, jobType);
@@ -93,11 +109,13 @@ export const ensureJobCompleted = async (
       .eq("id", jobId);
     if (upErr) {
       console.error("[complete-move-job] ensureJobCompleted normalize:", upErr.message);
+      return { wasAlreadyComplete: true, ok: false, error: upErr.message };
     }
   } else {
     const { error: upErr } = await admin.from(table).update(patch).eq("id", jobId);
     if (upErr) {
       console.error("[complete-move-job] ensureJobCompleted finalize:", upErr.message);
+      return { wasAlreadyComplete: false, ok: false, error: upErr.message };
     }
   }
 
@@ -118,7 +136,86 @@ export const ensureJobCompleted = async (
     }
   }
 
-  return { wasAlreadyComplete };
+  return { wasAlreadyComplete, ok: true };
+};
+
+const maxIso = (a: string | null | undefined, b: string | null | undefined): string | null => {
+  if (!a) return b ?? null;
+  if (!b) return a;
+  return Date.parse(a) >= Date.parse(b) ? a : b;
+};
+
+/**
+ * Strict repair: if PoD and/or client sign-off exists but the job row is not terminal, finalize it.
+ * Used when a prior completion write failed after evidence was stored, or for idempotent sign-off retries.
+ */
+export const repairJobCompletionFromEvidence = async (
+  admin: SupabaseClient,
+  jobId: string,
+  jobType: "move" | "delivery",
+): Promise<{ transitioned: boolean; ok: boolean; error?: string }> => {
+  const table = jobType === "move" ? "moves" : "deliveries";
+  const { data: row, error: fe } = await admin
+    .from(table)
+    .select("status, completed_at")
+    .eq("id", jobId)
+    .maybeSingle();
+  if (fe || !row) {
+    return { transitioned: false, ok: false, error: fe?.message || "job_not_found" };
+  }
+  if (isTerminalJobStatus(row.status as string, jobType)) {
+    const now = new Date().toISOString();
+    await closeActiveTrackingSessionsForJob(admin, jobId, jobType, now);
+    return { transitioned: false, ok: true };
+  }
+
+  let evidenceAt: string | null = null;
+  if (jobType === "move") {
+    const { data: pod } = await admin
+      .from("proof_of_delivery")
+      .select("signed_at, completed_at")
+      .eq("move_id", jobId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const { data: so } = await admin
+      .from("client_sign_offs")
+      .select("signed_at")
+      .eq("job_id", jobId)
+      .eq("job_type", "move")
+      .maybeSingle();
+    if (!pod && !so) return { transitioned: false, ok: true };
+    evidenceAt = maxIso(pod?.signed_at ?? null, pod?.completed_at ?? null);
+    evidenceAt = maxIso(evidenceAt, so?.signed_at ?? null);
+  } else {
+    const { data: pod } = await admin
+      .from("proof_of_delivery")
+      .select("signed_at, completed_at")
+      .eq("delivery_id", jobId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const { data: so } = await admin
+      .from("client_sign_offs")
+      .select("signed_at")
+      .eq("job_id", jobId)
+      .eq("job_type", "delivery")
+      .maybeSingle();
+    if (!pod && !so) return { transitioned: false, ok: true };
+    evidenceAt = maxIso(pod?.signed_at ?? null, pod?.completed_at ?? null);
+    evidenceAt = maxIso(evidenceAt, so?.signed_at ?? null);
+  }
+
+  const completedAt =
+    maxIso(evidenceAt, (row.completed_at as string | null) ?? null) || new Date().toISOString();
+
+  const { wasAlreadyComplete, ok, error } = await ensureJobCompleted(admin, {
+    jobId,
+    jobType,
+    completedAt,
+  });
+  if (!ok) return { transitioned: false, ok: false, error };
+  return { transitioned: !wasAlreadyComplete, ok: true };
 };
 
 const fetchOriginBase = () =>

@@ -73,6 +73,10 @@
       "schedule": "*/3 * * * *"
     },
     {
+      "path": "/api/cron/move-completion-repair",
+      "schedule": "*/10 * * * *"
+    },
+    {
       "path": "/api/cron/crew-eod-auto",
       "schedule": "* * * * *"
     },

@@ -29,15 +29,26 @@ export async function POST(req: NextRequest) {
   const now = new Date().toISOString();
 
   if (action === "complete") {
+    const failures: string[] = [];
     for (const moveId of ids) {
-      const { wasAlreadyComplete } = await ensureJobCompleted(admin, {
+      const { wasAlreadyComplete, ok, error } = await ensureJobCompleted(admin, {
         jobId: moveId,
         jobType: "move",
         completedAt: now,
       });
+      if (!ok) {
+        failures.push(`${moveId}: ${error || "unknown"}`);
+        continue;
+      }
       if (!wasAlreadyComplete) {
         await runMoveCompletionFollowUp(admin, moveId, { source: "admin_bulk" });
       }
+    }
+    if (failures.length > 0) {
+      return NextResponse.json(
+        { ok: false, error: "Some moves could not be marked complete", failures },
+        { status: 422 },
+      );
     }
     return NextResponse.json({ ok: true, updated: ids.length });
   }
