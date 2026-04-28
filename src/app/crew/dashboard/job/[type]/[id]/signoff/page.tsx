@@ -398,6 +398,7 @@ export default function ClientSignOffPage({
   const [skipReason, setSkipReason] = useState("");
   const [skipNote, setSkipNote] = useState("");
   const [skipSubmitting, setSkipSubmitting] = useState(false);
+  const [skipError, setSkipError] = useState("");
 
   const [tipMethod, setTipMethod] = useState<"none" | "cash" | "interac">(
     "none",
@@ -658,8 +659,9 @@ export default function ClientSignOffPage({
   const handleSkipSubmit = async () => {
     if (!skipReason) return;
     setSkipSubmitting(true);
+    setSkipError("");
     try {
-      await fetch("/api/crew/signoff/skip", {
+      const res = await fetch("/api/crew/signoff/skip", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -671,8 +673,28 @@ export default function ClientSignOffPage({
           locationLng: geoLng,
         }),
       });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        code?: string;
+      };
+      if (!res.ok) {
+        setSkipError(
+          typeof data.error === "string"
+            ? data.error
+            : "Could not confirm skip. Try again.",
+        );
+        return;
+      }
+      if (data.ok !== true) {
+        setSkipError("Could not confirm skip. Try again.");
+        return;
+      }
       router.push(`/crew/dashboard/job/${jobType}/${id}`);
+      router.refresh();
     } catch {
+      setSkipError("Connection error. Check your signal and try again.");
+    } finally {
       setSkipSubmitting(false);
     }
   };
@@ -1975,9 +1997,20 @@ export default function ClientSignOffPage({
               </p>
             )}
 
+            {skipError && (
+              <div
+                className="mb-4 rounded-[var(--yu3-r-md)] border border-red-200 bg-red-50 p-3.5"
+                role="alert"
+              >
+                <p className="text-[12px] font-semibold leading-snug text-red-800 [font-family:var(--font-body)]">
+                  {skipError}
+                </p>
+              </div>
+            )}
+
             <button
               type="button"
-              onClick={handleSkipSubmit}
+              onClick={() => void handleSkipSubmit()}
               disabled={
                 skipSubmitting ||
                 !skipReason ||
@@ -2015,7 +2048,10 @@ export default function ClientSignOffPage({
           <p className="text-center mt-8">
             <button
               type="button"
-              onClick={() => setPhase(7)}
+              onClick={() => {
+                setSkipError("");
+                setPhase(7);
+              }}
               className="text-[11px] transition-colors hover:text-[var(--yu3-wine)] underline underline-offset-2"
               style={{ color: MUTED }}
             >

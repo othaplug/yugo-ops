@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import {
+  CREW_JOB_UUID_RE,
+  normalizeCrewJobId,
+  selectDeliveryByJobId,
+} from "@/lib/resolve-delivery-by-job-id";
 import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
 import {
   ensureJobCompleted,
@@ -42,36 +47,87 @@ export async function POST(req: NextRequest) {
   }
 
   const admin = createAdminClient();
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId);
-  let entityId = jobId;
+  const normalizedJobId = normalizeCrewJobId(jobId);
+  if (!normalizedJobId) {
+    return NextResponse.json({ error: "jobId required" }, { status: 400 });
+  }
+  const isUuid = CREW_JOB_UUID_RE.test(normalizedJobId);
+  let entityId: string;
 
   if (jobType === "move") {
-    const { data: m } = isUuid
-      ? await admin.from("moves").select("id, move_code, crew_id").eq("id", jobId).single()
-      : await admin.from("moves").select("id, move_code, crew_id").ilike("move_code", jobId.replace(/^#/, "").toUpperCase()).single();
-    if (!m || m.crew_id !== payload.teamId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    let m: { id: string; crew_id: string } | null = null;
+    if (isUuid) {
+      const byId = await admin
+        .from("moves")
+        .select("id, crew_id")
+        .eq("id", normalizedJobId)
+        .maybeSingle();
+      if (byId.data) m = byId.data as { id: string; crew_id: string };
+      else {
+        const byCode = await admin
+          .from("moves")
+          .select("id, crew_id")
+          .ilike("move_code", normalizedJobId.replace(/^#/, "").toUpperCase())
+          .maybeSingle();
+        m = (byCode.data as { id: string; crew_id: string } | null) ?? null;
+      }
+    } else {
+      const byCode = await admin
+        .from("moves")
+        .select("id, crew_id")
+        .ilike("move_code", normalizedJobId.replace(/^#/, "").toUpperCase())
+        .maybeSingle();
+      m = (byCode.data as { id: string; crew_id: string } | null) ?? null;
+    }
+    if (!m || m.crew_id !== payload.teamId) {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    }
     entityId = m.id;
   } else {
-    const { data: d } = isUuid
-      ? await admin.from("deliveries").select("id, crew_id").eq("id", jobId).single()
-      : await admin.from("deliveries").select("id, crew_id").ilike("delivery_number", jobId).single();
-    if (!d || d.crew_id !== payload.teamId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const { data: dRow, error: delErr } = await selectDeliveryByJobId(
+      admin,
+      normalizedJobId,
+      "id, crew_id",
+    );
+    if (delErr) {
+      console.error("[signoff/skip] delivery lookup:", delErr);
+      return NextResponse.json({ error: "Could not look up this job" }, { status: 503 });
+    }
+    const d = dRow as { id?: string; crew_id?: string } | null;
+    if (!d?.id || d.crew_id !== payload.teamId) {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    }
     entityId = d.id;
   }
 
-  // Record detailed skip in signoff_skips table
-  await admin.from("signoff_skips").insert({
-    job_id: entityId,
-    job_type: jobType,
-    team_id: payload.teamId,
-    crew_member_id: payload.crewMemberId,
-    skip_reason: skipReason,
-    skip_note: skipNote,
-    location_lat: locationLat,
-    location_lng: locationLng,
-  });
+  const { data: insertedRows, error: skipInsertErr } = await admin
+    .from("signoff_skips")
+    .insert({
+      job_id: entityId,
+      job_type: jobType,
+      team_id: payload.teamId,
+      crew_member_id: payload.crewMemberId,
+      skip_reason: skipReason,
+      skip_note: skipNote,
+      location_lat: locationLat,
+      location_lng: locationLng,
+    })
+    .select("id");
+  const insertedSkipId =
+    Array.isArray(insertedRows) && insertedRows[0] && typeof (insertedRows[0] as { id?: string }).id === "string"
+      ? (insertedRows[0] as { id: string }).id
+      : null;
+  if (skipInsertErr || !insertedSkipId) {
+    console.error("[signoff/skip] signoff_skips insert:", skipInsertErr);
+    return NextResponse.json(
+      {
+        error: "Could not save skip reason. Try again or contact the office.",
+        code: "SKIP_RECORD_FAILED",
+      },
+      { status: 503 },
+    );
+  }
 
-  // Also log a status event
   const reasonLabels: Record<string, string> = {
     client_not_home: "Client not home",
     client_refused: "Client refused to sign",
@@ -79,15 +135,6 @@ export async function POST(req: NextRequest) {
     emergency: "Emergency",
     other: "Other",
   };
-  try {
-    await admin.from("status_events").insert({
-      entity_type: jobType,
-      entity_id: entityId,
-      event_type: "signoff_skipped",
-      description: `Sign-off skipped: ${reasonLabels[skipReason] || skipReason}${skipNote ? `, ${skipNote}` : ""}`,
-      icon: "user-x",
-    });
-  } catch {}
 
   const now = new Date().toISOString();
 
@@ -112,10 +159,9 @@ export async function POST(req: NextRequest) {
   const sessionStartMs = sessionForHours?.started_at
     ? new Date(sessionForHours.started_at as string).getTime()
     : null;
-  const sessionEndMs = new Date(now).getTime();
   const actualHours =
     sessionStartMs != null
-      ? Math.round(((sessionEndMs - sessionStartMs) / 3_600_000) * 100) / 100
+      ? Math.round(((new Date(now).getTime() - sessionStartMs) / 3_600_000) * 100) / 100
       : null;
 
   const { wasAlreadyComplete, ok: completeOk, error: completeErr } = await ensureJobCompleted(admin, {
@@ -127,6 +173,7 @@ export async function POST(req: NextRequest) {
 
   if (!completeOk) {
     console.error("[signoff/skip] ensureJobCompleted failed:", completeErr);
+    await admin.from("signoff_skips").delete().eq("id", insertedSkipId);
     return NextResponse.json(
       {
         error:
@@ -136,6 +183,16 @@ export async function POST(req: NextRequest) {
       { status: 503 },
     );
   }
+
+  try {
+    await admin.from("status_events").insert({
+      entity_type: jobType,
+      entity_id: entityId,
+      event_type: "signoff_skipped",
+      description: `Sign-off skipped: ${reasonLabels[skipReason] || skipReason}${skipNote ? `, ${skipNote}` : ""}`,
+      icon: "user-x",
+    });
+  } catch {}
 
   if (!wasAlreadyComplete) {
     if (jobType === "move") {

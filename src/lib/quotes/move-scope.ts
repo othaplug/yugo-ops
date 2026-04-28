@@ -1,0 +1,271 @@
+/**
+ * Residential move scope: day count detection and flat multi-day add-ons (Generate Quote Phase A).
+ * Shared by admin quote UI and quotes/generate API.
+ */
+
+export type MoveScopeTier = "essential" | "signature" | "estate"
+
+export type MoveScopeDetectionInput = {
+  tier: MoveScopeTier | string
+  move_size: string
+  specialty_items?: { type: string; qty: number }[]
+  /** When true, coordinator selected crating pieces on the quote form */
+  crating_required?: boolean
+  /** Slug identifiers from addon selections (lowercased for matching) */
+  addon_slugs: string[]
+}
+
+export type MoveScopePricingInput = MoveScopeDetectionInput & {
+  /** When set (1–14), replaces auto day count for quotes.estimated_days only. */
+  estimated_days_override?: number | null
+}
+
+const CRATING_SPECIALTY_TYPES = new Set([
+  "piano_grand",
+  "artwork",
+  "antique",
+  "wine_collection",
+])
+
+function normSize(ms: string | undefined): string {
+  return (ms || "2br").toLowerCase().trim().replace(/\s+/g, "_").replace(/bedroom/g, "br")
+}
+
+export function detectDayCount(input: MoveScopeDetectionInput): number {
+  let days = 1
+  const ms = normSize(input.move_size)
+  const tier = String(input.tier || "signature").toLowerCase()
+
+  const slugStr = input.addon_slugs.map((s) => s.toLowerCase()).join("|")
+
+  const hasFullPackingAddon =
+    slugStr.includes("full_packing") ||
+    slugStr.includes("full-packing") ||
+    (slugStr.includes("full") && slugStr.includes("pack") && !slugStr.includes("unpack"))
+
+  const hasUnpackAddon =
+    slugStr.includes("unpacking") ||
+    slugStr.includes("unpack") ||
+    slugStr.includes("unpack_setup")
+
+  const hasPacking =
+    tier === "estate" || hasFullPackingAddon || ms === "4br" || ms === "5br_plus"
+
+  if (hasPacking) days += 1
+
+  const hasUnpacking = tier === "estate" || hasUnpackAddon
+
+  if (hasUnpacking) days += 1
+
+  const hasSpecialtyCrating =
+    input.specialty_items?.some((it) => CRATING_SPECIALTY_TYPES.has(it.type)) ?? false
+  const hasCrating = hasSpecialtyCrating && !!input.crating_required
+
+  if (hasCrating) days += 1
+
+  if (ms === "5br_plus") days += 1
+
+  return Math.min(Math.max(days, 1), 14)
+}
+
+export type ScopeAddonLine = {
+  label: string
+  amount: number
+  kind: "pack_day" | "unpack_day" | "crating_day" | "volume_day"
+}
+
+export type MoveScopePricingResult = {
+  detectedDays: number
+  effectiveDays: number
+  totalAddonPreTax: number
+  lines: ScopeAddonLine[]
+  /** Stored on quotes.day_breakdown */
+  breakdownJson: Array<{ day: number; type: string; rate: number }>
+  /** Short labels for client email or timeline */
+  daySummaryParts: string[]
+}
+
+function cfgNum(map: Map<string, string>, key: string, fallback: number): number {
+  const v = map.get(key)
+  return v !== undefined && Number.isFinite(Number(v)) ? Number(v) : fallback
+}
+
+/**
+ * Flat-rate add-ons applied equally to Essential / Signature / Estate pre-tax totals,
+ * after the core pricing engine (aligned with Phase A prompt).
+ */
+export function computeMoveScopeAddonPreTax(
+  config: Map<string, string>,
+  input: MoveScopePricingInput,
+): MoveScopePricingResult {
+  const ms = normSize(input.move_size)
+  const tier = String(input.tier || "signature").toLowerCase()
+  const slugStr = input.addon_slugs.map((s) => s.toLowerCase()).join("|")
+
+  const hasFullPackingAddon =
+    slugStr.includes("full_packing") ||
+    slugStr.includes("full-packing") ||
+    (slugStr.includes("full") && slugStr.includes("pack") && !slugStr.includes("unpack"))
+
+  const hasUnpackAddon =
+    slugStr.includes("unpacking") ||
+    slugStr.includes("unpack_setup") ||
+    (slugStr.includes("unpack") && !slugStr.includes("junk"))
+
+  const hasPacking =
+    tier === "estate" || hasFullPackingAddon || ms === "4br" || ms === "5br_plus"
+
+  const hasUnpacking = tier === "estate" || hasUnpackAddon
+
+  const hasSpecialtyCrating =
+    input.specialty_items?.some((it) => CRATING_SPECIALTY_TYPES.has(it.type)) ?? false
+  const hasCrating = hasSpecialtyCrating && !!input.crating_required
+
+  const packDayRate = cfgNum(config, "pack_day_rate", 650)
+  const moveDayRate = cfgNum(config, "multi_day_rate", 850)
+
+  const lines: ScopeAddonLine[] = []
+
+  if (hasPacking) {
+    lines.push({
+      kind: "pack_day",
+      label: "Packing day",
+      amount: packDayRate,
+    })
+  }
+  if (hasUnpacking) {
+    lines.push({
+      kind: "unpack_day",
+      label: "Unpacking day",
+      amount: packDayRate,
+    })
+  }
+  if (hasCrating) {
+    lines.push({
+      kind: "crating_day",
+      label: "Crating day",
+      amount: moveDayRate,
+    })
+  }
+  if (ms === "5br_plus") {
+    lines.push({
+      kind: "volume_day",
+      label: "Large volume day",
+      amount: moveDayRate,
+    })
+  }
+
+  const totalAddonPreTax = lines.reduce((s, l) => s + l.amount, 0)
+
+  const detectedDays = detectDayCount(input)
+
+  const breakdownJson: MoveScopePricingResult["breakdownJson"] = []
+  let dayCursor = 1
+  const summary: string[] = []
+  if (hasPacking) {
+    breakdownJson.push({ day: dayCursor++, type: "pack", rate: packDayRate })
+    summary.push("Packing")
+  }
+  if (hasCrating) {
+    breakdownJson.push({ day: dayCursor++, type: "crating", rate: moveDayRate })
+    summary.push("Crating")
+  }
+  if (hasUnpacking) {
+    breakdownJson.push({ day: dayCursor++, type: "unpack", rate: packDayRate })
+    summary.push("Unpacking")
+  }
+  if (ms === "5br_plus") {
+    breakdownJson.push({ day: dayCursor++, type: "volume", rate: moveDayRate })
+  }
+  breakdownJson.push({ day: dayCursor++, type: "move", rate: 0 })
+  summary.push("Moving")
+
+  const plannedDays = breakdownJson.length
+  let effectiveDays = Math.max(detectedDays, plannedDays)
+  const ov = input.estimated_days_override
+  if (typeof ov === "number" && Number.isFinite(ov)) {
+    effectiveDays = Math.min(14, Math.max(1, Math.round(ov)))
+  }
+
+  const daySummaryParts = summary.length > 0 ? summary : ["Moving"]
+
+  return {
+    detectedDays,
+    effectiveDays,
+    totalAddonPreTax,
+    lines,
+    breakdownJson,
+    daySummaryParts,
+  }
+}
+
+export function clampEstimatedDaysOverride(raw: unknown): number | null {
+  if (raw === undefined || raw === null) return null
+  const n = typeof raw === "number" ? raw : Number(String(raw).trim())
+  if (!Number.isFinite(n)) return null
+  return Math.min(14, Math.max(1, Math.round(n)))
+}
+
+/** Matches quotes/generate TierResult deposit math after pre-tax bump */
+export type ScopedResidentialTier = {
+  price: number
+  deposit: number
+  tax: number
+  total: number
+  includes: string[]
+}
+
+export type ScopedResidentialTiers = {
+  essential: ScopedResidentialTier
+  signature: ScopedResidentialTier
+  estate: ScopedResidentialTier
+}
+
+function cfgNumLocal(map: Map<string, string>, key: string, fallback: number): number {
+  const v = map.get(key)
+  return v !== undefined && Number.isFinite(Number(v)) ? Number(v) : fallback
+}
+
+/** Apply flat multi-day scope dollars to all residential tiers after core engine pricing */
+export function applyMoveScopeAddonToResidentialTiers(
+  tiers: ScopedResidentialTiers,
+  addonPreTax: number,
+  config: Map<string, string>,
+): ScopedResidentialTiers {
+  if (!Number.isFinite(addonPreTax) || addonPreTax <= 0) return tiers
+
+  const taxRate = cfgNumLocal(config, "tax_rate", 0.13)
+  const rounding = cfgNumLocal(config, "rounding_nearest", 50)
+
+  const curPct = cfgNumLocal(config, "deposit_essential_pct", cfgNumLocal(config, "deposit_curated_pct", 10))
+  const curMin = cfgNumLocal(config, "deposit_essential_min", cfgNumLocal(config, "deposit_curated_min", 150))
+  const sigPct = cfgNumLocal(config, "deposit_signature_pct", 15)
+  const sigMin = cfgNumLocal(config, "deposit_signature_min", 250)
+  const estPct = cfgNumLocal(config, "deposit_estate_pct", 25)
+  const estMin = cfgNumLocal(config, "deposit_estate_min", 500)
+
+  const bumpOne = (
+    row: ScopedResidentialTier,
+    pct: number,
+    minDep: number,
+  ): ScopedResidentialTier => {
+    let price = row.price + addonPreTax
+    price = Math.round(price / rounding) * rounding
+    const tax = Math.round(price * taxRate)
+    const total = price + tax
+    const deposit = Math.max(minDep, Math.round((price * pct) / 100))
+    return {
+      ...row,
+      price,
+      tax,
+      total,
+      deposit,
+    }
+  }
+
+  return {
+    essential: bumpOne(tiers.essential, curPct, curMin),
+    signature: bumpOne(tiers.signature, sigPct, sigMin),
+    estate: bumpOne(tiers.estate, estPct, estMin),
+  }
+}

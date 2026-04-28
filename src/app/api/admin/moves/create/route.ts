@@ -487,6 +487,51 @@ export async function POST(req: NextRequest) {
     const moveId = move.id;
 
     try {
+      let resolvedQuoteUuid: string | null = null;
+      let quoteContactId: string | null = null;
+      let scopedEstimatedDays = 1;
+      let scopedDayBreakdown: unknown = [];
+      const quoteUuidRaw = (body.quote_uuid as string)?.trim();
+      if (quoteUuidRaw) {
+        const { data: quoteRow } = await db
+          .from("quotes")
+          .select("id, contact_id, estimated_days, day_breakdown")
+          .eq("id", quoteUuidRaw)
+          .maybeSingle();
+        if (quoteRow?.id) {
+          resolvedQuoteUuid = quoteRow.id;
+          quoteContactId = quoteRow.contact_id ?? null;
+          scopedEstimatedDays =
+            typeof quoteRow.estimated_days === "number" ? quoteRow.estimated_days : 1;
+          scopedDayBreakdown = quoteRow.day_breakdown ?? [];
+        }
+      }
+      if (typeof body.estimated_days === "number") {
+        scopedEstimatedDays = body.estimated_days;
+      }
+      if (Array.isArray(body.day_breakdown)) {
+        scopedDayBreakdown = body.day_breakdown;
+      }
+
+      if (moveType === "residential" && scopedEstimatedDays > 1) {
+        const { attachMultiDayMoveProjectFromScope } = await import(
+          "@/lib/move-projects/create-from-move-scope"
+        );
+        await attachMultiDayMoveProjectFromScope(db, {
+          moveId,
+          quoteUuid: resolvedQuoteUuid,
+          contactId: quoteContactId,
+          clientName,
+          fromAddress,
+          toAddress,
+          scheduledDateIso:
+            (body.scheduled_date as string)?.trim() ||
+            new Date().toISOString().slice(0, 10),
+          estimatedDays: scopedEstimatedDays,
+          dayBreakdown: scopedDayBreakdown,
+        });
+      }
+
       if (!organizationId) {
         const orgEmail = (clientEmail || "").trim() || null;
         const { data: newOrg, error: orgError } = await db

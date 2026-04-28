@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { generateEODReportPDF } from "@/lib/pdf";
@@ -155,6 +156,20 @@ export default function CrewReportsTab({
     if (filterOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [filterOpen]);
+
+  useEffect(() => {
+    if (!detailModal) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDetailModal(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [detailModal]);
 
   const filteredReports = useMemo(() => {
     let list = reports;
@@ -341,7 +356,342 @@ export default function CrewReportsTab({
     setFilterOpen(false);
   };
 
+  const detailModalPortal =
+    detailModal && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            data-modal-root
+            className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 overflow-y-auto overscroll-contain modal-overlay"
+            style={{
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+            }}
+            onClick={() => setDetailModal(null)}
+            role="presentation"
+          >
+            <div
+              className="modal-card bg-[var(--card)] rounded-2xl shadow-xl max-w-lg w-full overflow-y-auto relative z-10"
+              style={{ maxHeight: "min(90dvh, 90vh)" }}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="crew-report-job-details-title"
+            >
+              <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 flex items-center justify-between">
+                <h3
+                  id="crew-report-job-details-title"
+                  className="font-heading text-[18px] font-bold text-[var(--tx)]"
+                >
+                  Job details
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setDetailModal(null)}
+                  className="p-2 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)] font-semibold text-[16px] leading-none"
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="p-5 space-y-5">
+                {detailLoading ? (
+                  <p className="text-[13px] text-[var(--tx3)]">Loading…</p>
+                ) : detailData?.job ? (
+                  <>
+                    {detailData.error && (
+                      <div className="bg-[var(--ordim)]/30 px-3 py-2.5 flex items-center justify-between gap-2">
+                        <span className="text-[12px] text-[var(--org)]">
+                          {detailData.error}
+                        </span>
+                        {detailModal && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openDetail(detailModal.report, detailModal.job)
+                            }
+                            className="shrink-0 text-[11px] font-semibold text-[var(--accent-text)] hover:underline"
+                          >
+                            Retry
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-heading font-semibold text-[var(--tx)] text-[17px]">
+                        {detailData.job?.displayId ?? "-"}
+                      </div>
+                      <div className="text-[var(--text-base)] text-[var(--tx2)] mt-0.5 font-heading">
+                        {detailData.job?.clientName ?? "-"}
+                      </div>
+                      <p className="text-[11px] text-[var(--tx3)] mt-1">
+                        Crew: {detailData.job?.crewName || "-"}
+                      </p>
+                      <p className="text-[11px] text-[var(--tx3)] mt-1">
+                        {detailData.job?.scheduledDate
+                          ? new Date(
+                              detailData.job.scheduledDate,
+                            ).toLocaleDateString("en-US", {
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          : "-"}
+                        {detailData.job?.arrivalWindow
+                          ? ` · ${detailData.job.arrivalWindow}`
+                          : ""}
+                      </p>
+                      <p className="text-[11px] text-[var(--tx3)] mt-2">
+                        From: {detailData.job?.fromAddress || "-"}
+                      </p>
+                      <p className="text-[11px] text-[var(--tx3)]">
+                        To: {detailData.job?.toAddress || "-"}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">
+                        Trip
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-[12px]">
+                        <div>
+                          <span className="text-[var(--tx3)]">KM travelled</span>{" "}
+                          <span className="font-heading font-semibold text-[var(--tx)]">
+                            {detailData.kmTravelled != null
+                              ? `${detailData.kmTravelled.toFixed(1)} km`
+                              : "-"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[var(--tx3)]">Stops</span>{" "}
+                          <span className="font-heading font-semibold text-[var(--tx)]">
+                            {detailData.stopsMade ?? "-"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      className={`rounded-xl border p-4 ${(detailData.incidents?.filter((i) => i.issue_type === "damage").length ?? 0) > 0 ? "border-[var(--org)]/60 bg-[var(--ordim)]/30" : "border-[var(--brd)] bg-[var(--bg)]"}`}
+                    >
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">
+                        Damage
+                      </div>
+                      {detailData.incidents?.filter(
+                        (i) => i.issue_type === "damage",
+                      ).length ? (
+                        <ul className="space-y-2">
+                          {detailData.incidents
+                            .filter((i) => i.issue_type === "damage")
+                            .map((inc) => (
+                              <li
+                                key={inc.id}
+                                className="text-[12px] text-[var(--tx2)]"
+                              >
+                                <span className="font-semibold text-[var(--org)]">
+                                  Damage reported
+                                </span>
+                                {inc.description && (
+                                  <span className="block text-[11px] text-[var(--tx3)] mt-0.5">
+                                    {inc.description}
+                                  </span>
+                                )}
+                              </li>
+                            ))}
+                        </ul>
+                      ) : (
+                        <p className="text-[12px] text-[var(--tx3)]">
+                          No damage reported.
+                        </p>
+                      )}
+                    </div>
+                    <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">
+                        Session
+                      </div>
+                      {detailData.session?.startedAt ||
+                      detailData.session?.completedAt ? (
+                        <p className="text-[12px] text-[var(--tx2)]">
+                          {detailData.session.startedAt && (
+                            <span>
+                              Started:{" "}
+                              {new Date(
+                                detailData.session.startedAt,
+                              ).toLocaleTimeString("en-US", {
+                                hour: "numeric",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          )}
+                          {detailData.session.completedAt && (
+                            <span className="ml-3">
+                              Completed:{" "}
+                              {new Date(
+                                detailData.session.completedAt,
+                              ).toLocaleTimeString("en-US", {
+                                hour: "numeric",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          )}
+                        </p>
+                      ) : (
+                        <p className="text-[12px] text-[var(--tx3)]">-</p>
+                      )}
+                    </div>
+                    <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">
+                        Time breakdown
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-[12px]">
+                        <div>
+                          <span className="text-[var(--tx3)]">Total</span>{" "}
+                          <span className="font-heading font-semibold text-[var(--tx)]">
+                            {detailData.summary?.totalMinutes ?? 0} min
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[var(--tx3)]">Drive</span>{" "}
+                          <span className="font-heading font-semibold text-[var(--tx)]">
+                            {detailData.summary?.driveMinutes ?? 0} min
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[var(--tx3)]">Loading</span>{" "}
+                          <span className="font-heading font-semibold text-[var(--tx)]">
+                            {detailData.summary?.loadingMinutes ?? 0} min
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[var(--tx3)]">Unloading</span>{" "}
+                          <span className="font-heading font-semibold text-[var(--tx)]">
+                            {detailData.summary?.unloadingMinutes ?? 0} min
+                          </span>
+                        </div>
+                      </div>
+                      {detailData.timeBreakdown &&
+                      detailData.timeBreakdown.length > 0 ? (
+                        <div className="mt-3 pt-3 border-t border-[var(--brd)]">
+                          <div className="text-[10px] font-semibold text-[var(--tx3)] uppercase mb-2">
+                            By stage
+                          </div>
+                          <ul className="space-y-1 text-[11px] text-[var(--tx2)]">
+                            {detailData.timeBreakdown.map((t, i) => (
+                              <li key={i} className="flex justify-between">
+                                <span>{t.label}</span>
+                                <span className="tabular-nums">{t.minutes}m</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-[var(--tx3)] mt-2">
+                          No stage data recorded.
+                        </p>
+                      )}
+                    </div>
+                    <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">
+                        Client sign-off
+                      </div>
+                      {detailData.signOff ? (
+                        <>
+                          <p className="text-[13px] text-[var(--tx)]">
+                            Signed by {detailData.signOff.signedBy}
+                          </p>
+                          {detailData.signOff.rating != null && (
+                            <p className="text-[13px] text-[var(--tx2)] mt-1">
+                              Rating: {detailData.signOff.rating}/5
+                            </p>
+                          )}
+                          {detailData.signOff.signedAt && (
+                            <p className="text-[11px] text-[var(--tx3)] mt-0.5">
+                              {new Date(
+                                detailData.signOff.signedAt,
+                              ).toLocaleString("en-US")}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-[12px] text-[var(--tx3)]">
+                          No sign-off recorded.
+                        </p>
+                      )}
+                    </div>
+                    {detailData.photosCount != null &&
+                      detailData.photosCount > 0 && (
+                        <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">
+                            Photos
+                          </div>
+                          <p className="text-[12px] text-[var(--tx2)]">
+                            {detailData.photosCount} photo
+                            {detailData.photosCount !== 1 ? "s" : ""} captured
+                          </p>
+                        </div>
+                      )}
+                    {detailData.incidents && detailData.incidents.length > 0 && (
+                      <div className="rounded-xl border border-[var(--org)]/40 bg-[var(--ordim)]/30 p-4">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--org)] mb-2">
+                          Incidents
+                        </div>
+                        <ul className="space-y-2">
+                          {detailData.incidents.map((inc) => (
+                            <li
+                              key={inc.id}
+                              className="text-[12px] text-[var(--tx2)]"
+                            >
+                              <span className="font-semibold uppercase">
+                                {toTitleCase(inc.issue_type)}
+                              </span>
+                              {inc.description && (
+                                <span className="block text-[11px] text-[var(--tx3)] mt-0.5">
+                                  {inc.description}
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {detailModal && (
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        <Link
+                          href={
+                            detailData.job?.type === "move"
+                              ? `/admin/moves/${detailData.job?.notFound ? detailModal?.job?.jobId : (detailData.job?.displayId ?? "").replace(/^#/, "")}`
+                              : `/admin/deliveries/${detailData.job?.notFound ? detailModal?.job?.jobId : encodeURIComponent((detailData.job?.displayId ?? "").replace(/^#/, ""))}`
+                          }
+                          className="admin-btn admin-btn-primary"
+                        >
+                          Open{" "}
+                          {detailData.job?.type === "move"
+                            ? "move"
+                            : "delivery"}{" "}
+                          →
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setDetailModal(null)}
+                          className="inline-flex items-center rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[var(--tx)] font-semibold text-[12px] py-2.5 px-4 hover:bg-[var(--brd)]/30 transition-colors"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-[13px] text-[var(--tx3)]">
+                    Could not load details.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
+    <>
     <div className="space-y-6">
       <div className="flex w-full min-w-0 max-w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div
@@ -680,322 +1030,8 @@ export default function CrewReportsTab({
           ))}
         </div>
       )}
-
-      {detailModal && (
-        <div
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 modal-overlay"
-          onClick={() => setDetailModal(null)}
-        >
-          <div
-            className="bg-[var(--card)] rounded-2xl shadow-xl max-w-lg w-full overflow-y-auto"
-            style={{ maxHeight: "min(90dvh, 90vh)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 flex items-center justify-between">
-              <h3 className="font-heading text-[18px] font-bold text-[var(--tx)]">
-                Job details
-              </h3>
-              <button
-                type="button"
-                onClick={() => setDetailModal(null)}
-                className="p-2 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)] font-semibold text-[16px] leading-none"
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
-            <div className="p-5 space-y-5">
-              {detailLoading ? (
-                <p className="text-[13px] text-[var(--tx3)]">Loading…</p>
-              ) : detailData?.job ? (
-                <>
-                  {detailData.error && (
-                    <div className="bg-[var(--ordim)]/30 px-3 py-2.5 flex items-center justify-between gap-2">
-                      <span className="text-[12px] text-[var(--org)]">
-                        {detailData.error}
-                      </span>
-                      {detailModal && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            openDetail(detailModal.report, detailModal.job)
-                          }
-                          className="shrink-0 text-[11px] font-semibold text-[var(--accent-text)] hover:underline"
-                        >
-                          Retry
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  <div>
-                    <div className="font-heading font-semibold text-[var(--tx)] text-[17px]">
-                      {detailData.job?.displayId ?? "-"}
-                    </div>
-                    <div className="text-[var(--text-base)] text-[var(--tx2)] mt-0.5 font-heading">
-                      {detailData.job?.clientName ?? "-"}
-                    </div>
-                    <p className="text-[11px] text-[var(--tx3)] mt-1">
-                      Crew: {detailData.job?.crewName || "-"}
-                    </p>
-                    <p className="text-[11px] text-[var(--tx3)] mt-1">
-                      {detailData.job?.scheduledDate
-                        ? new Date(
-                            detailData.job.scheduledDate,
-                          ).toLocaleDateString("en-US", {
-                            weekday: "short",
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })
-                        : "-"}
-                      {detailData.job?.arrivalWindow
-                        ? ` · ${detailData.job.arrivalWindow}`
-                        : ""}
-                    </p>
-                    <p className="text-[11px] text-[var(--tx3)] mt-2">
-                      From: {detailData.job?.fromAddress || "-"}
-                    </p>
-                    <p className="text-[11px] text-[var(--tx3)]">
-                      To: {detailData.job?.toAddress || "-"}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">
-                      Trip
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-[12px]">
-                      <div>
-                        <span className="text-[var(--tx3)]">KM travelled</span>{" "}
-                        <span className="font-heading font-semibold text-[var(--tx)]">
-                          {detailData.kmTravelled != null
-                            ? `${detailData.kmTravelled.toFixed(1)} km`
-                            : "-"}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[var(--tx3)]">Stops</span>{" "}
-                        <span className="font-heading font-semibold text-[var(--tx)]">
-                          {detailData.stopsMade ?? "-"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    className={`rounded-xl border p-4 ${(detailData.incidents?.filter((i) => i.issue_type === "damage").length ?? 0) > 0 ? "border-[var(--org)]/60 bg-[var(--ordim)]/30" : "border-[var(--brd)] bg-[var(--bg)]"}`}
-                  >
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">
-                      Damage
-                    </div>
-                    {detailData.incidents?.filter(
-                      (i) => i.issue_type === "damage",
-                    ).length ? (
-                      <ul className="space-y-2">
-                        {detailData.incidents
-                          .filter((i) => i.issue_type === "damage")
-                          .map((inc) => (
-                            <li
-                              key={inc.id}
-                              className="text-[12px] text-[var(--tx2)]"
-                            >
-                              <span className="font-semibold text-[var(--org)]">
-                                Damage reported
-                              </span>
-                              {inc.description && (
-                                <span className="block text-[11px] text-[var(--tx3)] mt-0.5">
-                                  {inc.description}
-                                </span>
-                              )}
-                            </li>
-                          ))}
-                      </ul>
-                    ) : (
-                      <p className="text-[12px] text-[var(--tx3)]">
-                        No damage reported.
-                      </p>
-                    )}
-                  </div>
-                  <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">
-                      Session
-                    </div>
-                    {detailData.session?.startedAt ||
-                    detailData.session?.completedAt ? (
-                      <p className="text-[12px] text-[var(--tx2)]">
-                        {detailData.session.startedAt && (
-                          <span>
-                            Started:{" "}
-                            {new Date(
-                              detailData.session.startedAt,
-                            ).toLocaleTimeString("en-US", {
-                              hour: "numeric",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        )}
-                        {detailData.session.completedAt && (
-                          <span className="ml-3">
-                            Completed:{" "}
-                            {new Date(
-                              detailData.session.completedAt,
-                            ).toLocaleTimeString("en-US", {
-                              hour: "numeric",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        )}
-                      </p>
-                    ) : (
-                      <p className="text-[12px] text-[var(--tx3)]">-</p>
-                    )}
-                  </div>
-                  <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">
-                      Time breakdown
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-[12px]">
-                      <div>
-                        <span className="text-[var(--tx3)]">Total</span>{" "}
-                        <span className="font-heading font-semibold text-[var(--tx)]">
-                          {detailData.summary?.totalMinutes ?? 0} min
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[var(--tx3)]">Drive</span>{" "}
-                        <span className="font-heading font-semibold text-[var(--tx)]">
-                          {detailData.summary?.driveMinutes ?? 0} min
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[var(--tx3)]">Loading</span>{" "}
-                        <span className="font-heading font-semibold text-[var(--tx)]">
-                          {detailData.summary?.loadingMinutes ?? 0} min
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[var(--tx3)]">Unloading</span>{" "}
-                        <span className="font-heading font-semibold text-[var(--tx)]">
-                          {detailData.summary?.unloadingMinutes ?? 0} min
-                        </span>
-                      </div>
-                    </div>
-                    {detailData.timeBreakdown &&
-                    detailData.timeBreakdown.length > 0 ? (
-                      <div className="mt-3 pt-3 border-t border-[var(--brd)]">
-                        <div className="text-[10px] font-semibold text-[var(--tx3)] uppercase mb-2">
-                          By stage
-                        </div>
-                        <ul className="space-y-1 text-[11px] text-[var(--tx2)]">
-                          {detailData.timeBreakdown.map((t, i) => (
-                            <li key={i} className="flex justify-between">
-                              <span>{t.label}</span>
-                              <span className="tabular-nums">{t.minutes}m</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : (
-                      <p className="text-[11px] text-[var(--tx3)] mt-2">
-                        No stage data recorded.
-                      </p>
-                    )}
-                  </div>
-                  <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">
-                      Client sign-off
-                    </div>
-                    {detailData.signOff ? (
-                      <>
-                        <p className="text-[13px] text-[var(--tx)]">
-                          Signed by {detailData.signOff.signedBy}
-                        </p>
-                        {detailData.signOff.rating != null && (
-                          <p className="text-[13px] text-[var(--tx2)] mt-1">
-                            Rating: {detailData.signOff.rating}/5
-                          </p>
-                        )}
-                        {detailData.signOff.signedAt && (
-                          <p className="text-[11px] text-[var(--tx3)] mt-0.5">
-                            {new Date(
-                              detailData.signOff.signedAt,
-                            ).toLocaleString("en-US")}
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <p className="text-[12px] text-[var(--tx3)]">
-                        No sign-off recorded.
-                      </p>
-                    )}
-                  </div>
-                  {detailData.photosCount != null &&
-                    detailData.photosCount > 0 && (
-                      <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">
-                          Photos
-                        </div>
-                        <p className="text-[12px] text-[var(--tx2)]">
-                          {detailData.photosCount} photo
-                          {detailData.photosCount !== 1 ? "s" : ""} captured
-                        </p>
-                      </div>
-                    )}
-                  {detailData.incidents && detailData.incidents.length > 0 && (
-                    <div className="rounded-xl border border-[var(--org)]/40 bg-[var(--ordim)]/30 p-4">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--org)] mb-2">
-                        Incidents
-                      </div>
-                      <ul className="space-y-2">
-                        {detailData.incidents.map((inc) => (
-                          <li
-                            key={inc.id}
-                            className="text-[12px] text-[var(--tx2)]"
-                          >
-                            <span className="font-semibold uppercase">
-                              {toTitleCase(inc.issue_type)}
-                            </span>
-                            {inc.description && (
-                              <span className="block text-[11px] text-[var(--tx3)] mt-0.5">
-                                {inc.description}
-                              </span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {detailModal && (
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      <Link
-                        href={
-                          detailData.job?.type === "move"
-                            ? `/admin/moves/${detailData.job?.notFound ? detailModal?.job?.jobId : (detailData.job?.displayId ?? "").replace(/^#/, "")}`
-                            : `/admin/deliveries/${detailData.job?.notFound ? detailModal?.job?.jobId : encodeURIComponent((detailData.job?.displayId ?? "").replace(/^#/, ""))}`
-                        }
-                        className="admin-btn admin-btn-primary"
-                      >
-                        Open{" "}
-                        {detailData.job?.type === "move" ? "move" : "delivery"}{" "}
-                        →
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => setDetailModal(null)}
-                        className="inline-flex items-center rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[var(--tx)] font-semibold text-[12px] py-2.5 px-4 hover:bg-[var(--brd)]/30 transition-colors"
-                      >
-                        Close
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className="text-[13px] text-[var(--tx3)]">
-                  Could not load details.
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
+    {detailModalPortal}
+    </>
   );
 }

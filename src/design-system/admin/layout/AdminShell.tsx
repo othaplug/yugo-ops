@@ -205,15 +205,14 @@ export function AdminShell({
             </main>
           </div>
         </div>
-        {/* Stacking: this root must be above in-page stickies (e.g. DataTable header z-20) so
-            Radix portaled popovers and menus are not covered. Keep below topbar (50) and modals
-            (80+): a high z on this root (e.g. 70) once stacked the whole portal above the top bar
-            so modal-scrims could never sit "under" the hamburger. --yu3-z-rail (40) is the ladder
-            between sticky chrome and shell chrome. */}
+        {/* Stacking: Radix portaled UI (tooltips, dropdowns, dialogs) mounts here. The root must sit
+            above sidebar (--yu3-z-sidebar 60) and topbar (50), or tooltips hugging the rail render
+            behind chrome. Use --yu3-z-drawer (70): still below in-layer modal content (80) and
+            palette/toast (90+) which order as siblings inside this tree. */}
         <div
           id="yu3-admin-portal-root"
           ref={setPortalNode}
-          className="pointer-events-none fixed inset-0 z-(--yu3-z-rail) m-0 min-h-0 border-0 p-0 overflow-x-hidden overflow-y-visible"
+          className="pointer-events-none fixed inset-0 z-[var(--yu3-z-drawer)] m-0 min-h-0 border-0 p-0 overflow-x-hidden overflow-y-visible"
           aria-hidden
         />
 

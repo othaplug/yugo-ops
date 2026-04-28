@@ -74,6 +74,11 @@ import { buildResidentialProjectQuoteBreakdown } from "@/lib/move-projects/resid
 import type { ProjectQuoteBreakdown } from "@/lib/move-projects/residential-project-quote-lines";
 import { pickupDropoffFactorsFromPayload } from "@/lib/quotes/quote-address-display";
 import {
+  applyMoveScopeAddonToResidentialTiers,
+  clampEstimatedDaysOverride,
+  computeMoveScopeAddonPreTax,
+} from "@/lib/quotes/move-scope";
+import {
   generateNextQuoteId,
   getQuoteIdPrefix,
   isQuoteIdUniqueViolation,
@@ -337,6 +342,10 @@ interface QuoteInput {
   move_project?: unknown;
   /** When true, detach and delete linked move_projects row for this quote. */
   clear_move_project?: boolean;
+  /** Optional coordinator override for quotes.estimated_days (local_move scope flow). */
+  move_scope?: {
+    estimated_days_override?: number | null;
+  };
   /** Mapbox geocode (primary stop) for building profile proximity match */
   from_lat?: number;
   from_lng?: number;
@@ -3803,6 +3812,47 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Unknown service_type: ${svcType}` }, { status: 400 });
   }
 
+  let estimatedDaysForQuoteRow = 1;
+  let dayBreakdownForQuoteRow: unknown[] = [];
+
+  if (svcType === "local_move" && tiers) {
+    const addonSlugs = addonResult.breakdown.map((b) => b.slug);
+    const msScope = computeMoveScopeAddonPreTax(config, {
+      tier: normalizeRecommendedTierForDb(input.recommended_tier),
+      move_size: input.move_size ?? "2br",
+      specialty_items: input.specialty_items,
+      crating_required: !!(input.crating_pieces && input.crating_pieces.length > 0),
+      addon_slugs: addonSlugs,
+      estimated_days_override: clampEstimatedDaysOverride(input.move_scope?.estimated_days_override),
+    });
+    estimatedDaysForQuoteRow = msScope.effectiveDays;
+    dayBreakdownForQuoteRow = msScope.breakdownJson;
+    if (msScope.totalAddonPreTax > 0) {
+      const bumped = applyMoveScopeAddonToResidentialTiers(
+        {
+          essential: tiers.essential,
+          signature: tiers.signature,
+          estate: tiers.estate,
+        },
+        msScope.totalAddonPreTax,
+        config,
+      );
+      tiers = {
+        essential: bumped.essential,
+        signature: bumped.signature,
+        estate: bumped.estate,
+      };
+    }
+    factors = {
+      ...factors,
+      move_scope_addon_lines: msScope.lines,
+      move_scope_addon_pre_tax_total: msScope.totalAddonPreTax,
+      move_scope_detected_days: msScope.detectedDays,
+      move_scope_effective_days: msScope.effectiveDays,
+      move_scope_day_summary: msScope.daySummaryParts,
+    };
+  }
+
   if (isLocalMove || isLongDistance || svcType === "white_glove") {
     const stopFac = pickupDropoffFactorsFromPayload({
       from_address: input.from_address,
@@ -4015,8 +4065,8 @@ export async function POST(req: NextRequest) {
   const moveProjectParsed = moveProjectPayloadSchema.safeParse(input.move_project);
   if (
     moveProjectParsed.success &&
-    (svcType === "local_move" ||
-      svcType === "long_distance" ||
+    svcType !== "local_move" &&
+    (svcType === "long_distance" ||
       svcType === "office_move" ||
       svcType === "white_glove")
   ) {
@@ -4048,7 +4098,7 @@ export async function POST(req: NextRequest) {
         suggested_pre_tax_at_estate_margin: priceFromCostAndMargin(pricing.totalCostEstimate, marginFrac),
       },
     };
-    if (svcType === "local_move" && tiers) {
+    if ((svcType === "long_distance" || svcType === "office_move") && tiers) {
       const br = buildResidentialProjectQuoteBreakdown({
         config,
         recommendedTier: normalizeRecommendedTierForDb(input.recommended_tier),
@@ -4288,6 +4338,15 @@ export async function POST(req: NextRequest) {
 
   if (!isPreview) {
     const mpForFlags = moveProjectPayloadSchema.safeParse(input.move_project);
+    const extraPickCount =
+      input.additional_pickup_addresses?.filter((a) => String(a.address ?? "").trim()).length ?? 0;
+    const extraDropCount =
+      input.additional_dropoff_addresses?.filter((a) => String(a.address ?? "").trim()).length ?? 0;
+    const multiLocQuote = extraPickCount > 0 || extraDropCount > 0;
+    const isProjectQuote =
+      mpForFlags.success ||
+      (svcType === "local_move" && (estimatedDaysForQuoteRow > 1 || multiLocQuote));
+
     const quotePayload = {
       hubspot_deal_id: input.hubspot_deal_id || null,
       quote_source: input.quote_source?.trim() || null,
@@ -4295,9 +4354,17 @@ export async function POST(req: NextRequest) {
       contact_id: contactId,
       service_type: svcType === "b2b_oneoff" ? "b2b_delivery" : svcType === "event" ? "event" : svcType === "labour_only" ? "labour_only" : svcType,
       status: "draft",
-      is_project: mpForFlags.success,
-      origin_count: mpForFlags.success ? mpForFlags.data.origins.length : null,
-      destination_count: mpForFlags.success ? mpForFlags.data.destinations.length : null,
+      is_project: isProjectQuote,
+      origin_count: mpForFlags.success
+        ? mpForFlags.data.origins.length
+        : svcType === "local_move"
+          ? 1 + extraPickCount
+          : null,
+      destination_count: mpForFlags.success
+        ? mpForFlags.data.destinations.length
+        : svcType === "local_move"
+          ? 1 + extraDropCount
+          : null,
       from_address: input.from_address,
       from_access: input.from_access || null,
       from_postal: neighbourhood.postalPrefix || null,
@@ -4346,6 +4413,11 @@ export async function POST(req: NextRequest) {
       labour_validation_message: labour_validation_primary.message,
       labour_component: labour_validation_primary.labourComponent,
       non_labour_component: labour_validation_primary.nonLabourComponent,
+      estimated_days: svcType === "local_move" ? estimatedDaysForQuoteRow : 1,
+      day_breakdown: svcType === "local_move" ? dayBreakdownForQuoteRow : [],
+      multi_location: multiLocQuote,
+      additional_origins: input.additional_pickup_addresses ?? [],
+      additional_destinations: input.additional_dropoff_addresses ?? [],
     };
 
     if (isUpdate) {
@@ -4404,7 +4476,9 @@ export async function POST(req: NextRequest) {
 
     const { data: qUuidRow } = await sb.from("quotes").select("id").eq("quote_id", quoteId).maybeSingle();
     if (qUuidRow?.id) {
-      if (input.clear_move_project) {
+      if (svcType === "local_move") {
+        await clearMoveProjectFromQuote(sb, qUuidRow.id);
+      } else if (input.clear_move_project) {
         await clearMoveProjectFromQuote(sb, qUuidRow.id);
       } else if (input.move_project != null && typeof input.move_project === "object") {
         const parsedMp = moveProjectPayloadSchema.safeParse(input.move_project);

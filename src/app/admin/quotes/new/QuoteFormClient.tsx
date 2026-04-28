@@ -64,6 +64,7 @@ import {
   isSkidCatalogLabel,
 } from "./b2b-one-off-ui";
 import SpecialtyTransportQuoteBuilder from "./SpecialtyTransportQuoteBuilder";
+import MoveScopeSection from "./MoveScopeSection";
 import MoveProjectPlannerSection, {
   buildDefaultMoveProjectPayload,
 } from "./MoveProjectPlannerSection";
@@ -1945,8 +1946,12 @@ export default function QuoteFormClient({
   const [referralDiscount, setReferralDiscount] = useState(0);
 
   const [multiDayEnabled, setMultiDayEnabled] = useState(false);
-  /** When set, hides the planner even if size/tier would auto-qualify (user can turn off). */
+  /** When true, hides the planner even if size/tier would auto-qualify (user can turn off). */
   const [multiDayPlannerOptOut, setMultiDayPlannerOptOut] = useState(false);
+  /** Coordinator override for quotes.estimated_days (local / long-distance scope flow). */
+  const [moveScopeDaysOverride, setMoveScopeDaysOverride] = useState<number | null>(
+    null,
+  );
   const [moveProjectPayload, setMoveProjectPayload] =
     useState<MoveProjectPayload | null>(null);
   const [savedMoveProjectId, setSavedMoveProjectId] = useState<string | null>(
@@ -2319,6 +2324,15 @@ export default function QuoteFormClient({
   const boxScore = clientBoxCountNum * 0.3;
   const inventoryScoreWithBoxes = inventoryScore + boxScore;
 
+  const scopeAddonSlugs = useMemo(() => {
+    const slugs: string[] = [];
+    for (const sel of selectedAddons.values()) {
+      const row = allAddons.find((a) => a.id === sel.addon_id);
+      if (row?.slug) slugs.push(row.slug);
+    }
+    return slugs;
+  }, [selectedAddons, allAddons]);
+
   const workstationCountN = Number(wsCount) || 0;
   const extraPickupStopCount = extraFromStops.filter((s) =>
     s.address.trim(),
@@ -2407,6 +2421,7 @@ export default function QuoteFormClient({
   );
 
   useEffect(() => {
+    if (serviceType !== "office_move") return;
     if (!movePlannerVisible) {
       moveProjectSeededRef.current = false;
       setMoveProjectPayload(null);
@@ -2431,6 +2446,7 @@ export default function QuoteFormClient({
       }),
     );
   }, [
+    serviceType,
     movePlannerVisible,
     moveProjectPayload,
     firstName,
@@ -2440,7 +2456,6 @@ export default function QuoteFormClient({
     fromAccess,
     toAccess,
     moveDate,
-    serviceType,
     workstationCountN,
     b2bBusinessName,
     officeEstHours,
@@ -2448,6 +2463,7 @@ export default function QuoteFormClient({
 
   const moveProjectStopsSyncSig = useRef<string>("");
   useEffect(() => {
+    if (serviceType !== "office_move") return;
     if (!movePlannerVisible) {
       moveProjectStopsSyncSig.current = "";
       return;
@@ -2484,6 +2500,7 @@ export default function QuoteFormClient({
       };
     });
   }, [
+    serviceType,
     movePlannerVisible,
     pickupAddressList,
     dropAddressList,
@@ -4417,14 +4434,27 @@ export default function QuoteFormClient({
       if (opts?.serviceAreaOverride || serviceAreaOverride)
         base.service_area_override = true;
 
-      const plannerActive = movePlannerVisible;
+      const plannerActive =
+        movePlannerVisible &&
+        !!moveProjectPayload &&
+        serviceType === "office_move";
+
       if (plannerActive && moveProjectPayload) {
         const pid = moveProjectPayload.id ?? savedMoveProjectId ?? undefined;
         base.move_project = pid
           ? { ...moveProjectPayload, id: pid }
           : { ...moveProjectPayload };
-      } else if (savedMoveProjectId) {
+      } else if (
+        savedMoveProjectId &&
+        (serviceType === "office_move" || serviceType === "white_glove")
+      ) {
         base.clear_move_project = true;
+      }
+
+      if (serviceType === "local_move" || serviceType === "long_distance") {
+        base.move_scope = {
+          estimated_days_override: moveScopeDaysOverride ?? undefined,
+        };
       }
 
       if (widgetRequestIdParam) {
@@ -4566,6 +4596,7 @@ export default function QuoteFormClient({
       binLinkedMoveId,
       binDeliveryNotes,
       binInternalNotes,
+      moveScopeDaysOverride,
       movePlannerVisible,
       moveProjectPayload,
       savedMoveProjectId,
@@ -7245,8 +7276,24 @@ export default function QuoteFormClient({
               )}
 
               {(serviceType === "local_move" ||
-                serviceType === "long_distance" ||
-                serviceType === "office_move") && (
+                serviceType === "long_distance") && (
+                <div className="col-span-full space-y-3">
+                  <MoveScopeSection
+                    recommendedTier={recommendedTier}
+                    moveSize={moveSize || moveSizeSuggestion?.suggested || "2br"}
+                    specialtyItems={specialtyItems}
+                    cratingRequired={cratingRequired}
+                    addonSlugs={scopeAddonSlugs}
+                    extraPickupStopCount={extraPickupStopCount}
+                    extraDropoffStopCount={extraDropoffStopCount}
+                    moveScopeDaysOverride={moveScopeDaysOverride}
+                    onDaysOverrideChange={setMoveScopeDaysOverride}
+                    config={config}
+                  />
+                </div>
+              )}
+
+              {serviceType === "office_move" && (
                 <div className="col-span-full space-y-3">
                   <div className="border-t border-[var(--brd)]/30 pt-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">

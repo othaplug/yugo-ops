@@ -48,7 +48,7 @@ export function describeAutoProjectModeReason(args: {
   return "Project schedule"
 }
 
-/** When the multi-day move project planner should appear on Generate Quote. */
+/** When the legacy phase/day planner should appear on Generate Quote (office white-glove only). */
 export function shouldShowMoveProjectPlanner(args: {
   serviceType: string;
   moveSize: string;
@@ -58,6 +58,9 @@ export function shouldShowMoveProjectPlanner(args: {
   extraPickupStopCount?: number;
   extraDropoffStopCount?: number;
 }): boolean {
+  if (args.serviceType === "local_move" || args.serviceType === "long_distance") {
+    return false;
+  }
   if (args.multiDayEnabled) return true;
   return moveProjectPlannerAutoQualifies(args);
 }
