@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     admin
       .from("moves")
       .select(
-        "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at"
+        "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at, completed_at"
       )
       .eq("scheduled_date", targetDate)
       .neq("status", "cancelled")
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     admin
       .from("deliveries")
       .select(
-        "id, delivery_number, crew_id, client_name, customer_name, customer_phone, customer_email, contact_phone, contact_email, end_customer_phone, end_customer_email, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, scheduled_date, time_slot, status, stage, eta_current_minutes, updated_at"
+        "id, delivery_number, crew_id, client_name, customer_name, customer_phone, customer_email, contact_phone, contact_email, end_customer_phone, end_customer_email, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, scheduled_date, time_slot, status, stage, eta_current_minutes, updated_at, completed_at"
       )
       .eq("scheduled_date", targetDate)
       .not("status", "in", '("cancelled")')
@@ -125,6 +125,41 @@ export async function GET(req: NextRequest) {
   const terminalDispatchStatus = (s: string | null | undefined) =>
     ["completed", "delivered", "job_complete", "cancelled"].includes((s || "").toLowerCase());
 
+  /**
+   * Dispatch reads `jobs.status` for badges/KPIs. Some rows historically drift (`in_progress`
+   * while completed_at/stage terminal). Align display with canonical terminal facts without
+   * silently changing DB here (repair still handles writes).
+   */
+  const normalizedMoveRowForBoard = (
+    status: string | null | undefined,
+    stage: string | null | undefined,
+    completedAt: string | null | undefined,
+  ): string => {
+    const s = (status || "").toLowerCase();
+    const st = (stage || "").toLowerCase().replace(/-/g, "_");
+    if (terminalDispatchStatus(status)) return status || "";
+    const hasTs = !!(completedAt && String(completedAt).trim());
+    if (s !== "cancelled" && (hasTs || st === "completed" || st === "job_complete")) {
+      return "completed";
+    }
+    return status || "scheduled";
+  };
+
+  const normalizedDeliveryRowForBoard = (
+    status: string | null | undefined,
+    stage: string | null | undefined,
+    completedAt: string | null | undefined,
+  ): string => {
+    const s = (status || "").toLowerCase();
+    const st = (stage || "").toLowerCase().replace(/-/g, "_");
+    if (terminalDispatchStatus(status)) return status || "";
+    const hasTs = !!(completedAt && String(completedAt).trim());
+    if (s !== "cancelled" && (hasTs || st === "completed" || st === "job_complete")) {
+      return "delivered";
+    }
+    return status || "scheduled";
+  };
+
   const applyRepairFollowUp = async (): Promise<void> => {
     for (const m of movesList) {
       if (terminalDispatchStatus(m.status)) continue;
@@ -166,7 +201,7 @@ export async function GET(req: NextRequest) {
     const { data: mFresh, error: mErr } = await admin
       .from("moves")
       .select(
-        "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at",
+        "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at, completed_at",
       )
       .eq("scheduled_date", targetDate)
       .neq("status", "cancelled")
@@ -178,7 +213,7 @@ export async function GET(req: NextRequest) {
     const { data: dFresh, error: dErr } = await admin
       .from("deliveries")
       .select(
-        "id, delivery_number, crew_id, client_name, customer_name, customer_phone, customer_email, contact_phone, contact_email, end_customer_phone, end_customer_email, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, scheduled_date, time_slot, status, stage, eta_current_minutes, updated_at",
+        "id, delivery_number, crew_id, client_name, customer_name, customer_phone, customer_email, contact_phone, contact_email, end_customer_phone, end_customer_email, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, scheduled_date, time_slot, status, stage, eta_current_minutes, updated_at, completed_at",
       )
       .eq("scheduled_date", targetDate)
       .not("status", "in", '("cancelled")')
@@ -288,7 +323,9 @@ export async function GET(req: NextRequest) {
   for (const m of movesList) {
     const crew = m.crew_id ? crewMap.get(m.crew_id) : null;
     const members = m.crew_id ? membersByTeam.get(m.crew_id) || (crew?.members as string[]) || [] : [];
-    const moveStatusLc = (m.status || "").toLowerCase();
+    const row = m as typeof m & { completed_at?: string | null };
+    const effectiveStatusNorm = normalizedMoveRowForBoard(m.status, m.stage, row.completed_at ?? null);
+    const moveStatusLc = (effectiveStatusNorm || "").toLowerCase();
     const displayStageMove = COMPLETED_STATUSES.includes(moveStatusLc)
       ? "completed"
       : m.stage || null;
@@ -303,7 +340,7 @@ export async function GET(req: NextRequest) {
       fromAddress: m.from_address || "",
       toAddress: m.to_address || "",
       scheduledTime: m.preferred_time || m.arrival_window || null,
-      status: m.status || "scheduled",
+      status: effectiveStatusNorm || "scheduled",
       stage: displayStageMove,
       crewId: m.crew_id || null,
       crewName: crew?.name || null,
@@ -314,8 +351,8 @@ export async function GET(req: NextRequest) {
       toLat: m.to_lat != null ? Number(m.to_lat) : null,
       toLng: m.to_lng != null ? Number(m.to_lng) : null,
       href: getMoveDetailPath(m),
-      progress: progressFromStage(m.status || "", displayStageMove),
-      currentStageLabel: stageLabel(m.status || "", displayStageMove, "move"),
+      progress: progressFromStage(effectiveStatusNorm || "", displayStageMove),
+      currentStageLabel: stageLabel(effectiveStatusNorm || "", displayStageMove, "move"),
       updatedAt: m.updated_at || null,
     });
   }
@@ -323,7 +360,13 @@ export async function GET(req: NextRequest) {
   for (const d of deliveriesList) {
     const crew = d.crew_id ? crewMap.get(d.crew_id) : null;
     const members = d.crew_id ? membersByTeam.get(d.crew_id) || (crew?.members as string[]) || [] : [];
-    const deliveryStatusLc = (d.status || "").toLowerCase();
+    const drow = d as typeof d & { completed_at?: string | null };
+    const effectiveDeliveryStatusNorm = normalizedDeliveryRowForBoard(
+      d.status,
+      d.stage,
+      drow.completed_at ?? null,
+    );
+    const deliveryStatusLc = (effectiveDeliveryStatusNorm || "").toLowerCase();
     const displayStageDelivery = COMPLETED_STATUSES.includes(deliveryStatusLc)
       ? "completed"
       : d.stage || null;
@@ -338,7 +381,7 @@ export async function GET(req: NextRequest) {
       fromAddress: d.pickup_address || "",
       toAddress: d.delivery_address || "",
       scheduledTime: d.time_slot || null,
-      status: d.status || "scheduled",
+      status: effectiveDeliveryStatusNorm || "scheduled",
       stage: displayStageDelivery,
       crewId: d.crew_id || null,
       crewName: crew?.name || null,
@@ -349,8 +392,8 @@ export async function GET(req: NextRequest) {
       toLat: d.delivery_lat != null ? Number(d.delivery_lat) : null,
       toLng: d.delivery_lng != null ? Number(d.delivery_lng) : null,
       href: getDeliveryDetailPath(d),
-      progress: progressFromStage(d.status || "", displayStageDelivery),
-      currentStageLabel: stageLabel(d.status || "", displayStageDelivery, "delivery"),
+      progress: progressFromStage(effectiveDeliveryStatusNorm || "", displayStageDelivery),
+      currentStageLabel: stageLabel(effectiveDeliveryStatusNorm || "", displayStageDelivery, "delivery"),
       updatedAt: d.updated_at || null,
     });
   }
