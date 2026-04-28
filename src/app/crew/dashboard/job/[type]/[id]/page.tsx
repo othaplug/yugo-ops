@@ -45,6 +45,7 @@ import { InfoHint } from "@/components/ui/InfoHint";
 import JobPhotos from "./JobPhotos";
 import JobInventory from "./JobInventory";
 import DayRateStopFlow from "./DayRateStopFlow";
+import B2bMultiStopJobWrapUp from "./B2bMultiStopJobWrapUp";
 import CrewBuildingReportCard from "@/components/crew/CrewBuildingReportCard";
 import WalkthroughModal from "./WalkthroughModal";
 import CrewJobTimer from "@/app/crew/components/CrewJobTimer";
@@ -792,6 +793,12 @@ export default function CrewJobPage({
     job.isMultiStop &&
     job.stops &&
     job.stops.length > 0;
+  const allB2bStopsDone =
+    isB2bMultiStop &&
+    job.stops!.every((s) => {
+      const ss = (s.stop_status || "pending").toLowerCase();
+      return ss === "completed" || ss === "skipped";
+    });
   if (isDayRate || isB2bMultiStop) {
     const flowTitle =
       job.projectName?.trim() ||
@@ -843,6 +850,15 @@ export default function CrewJobPage({
             fetchJob();
           }}
         />
+        {allB2bStopsDone && (
+          <B2bMultiStopJobWrapUp
+            jobUuid={job.id}
+            jobRouteId={id}
+            jobType="delivery"
+            sessionId={session?.id ?? null}
+            sessionStatus={session?.status ?? "completed"}
+          />
+        )}
       </PageContent>
     );
   }

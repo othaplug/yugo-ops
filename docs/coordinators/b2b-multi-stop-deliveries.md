@@ -2,7 +2,9 @@
 
 ## How progress works
 
-Crew progress for **multi-stop** jobs is driven by **`delivery_stops.stop_status`** (pending, current, arrived, in_progress, completed). The client-facing **`deliveries.stage`** and the **live tracking session** are updated from that flow, including when the crew uses the sequential stops screen without tapping **Start tracking**.
+Crew progress for **multi-stop** jobs is driven by **`delivery_stops.stop_status`** (pending, current, arrived, in_progress, completed). Vendor legs are shown as **pickups** (e.g. Pickup 1 of 3); the last leg is **Final drop-off**. After every stop is done, the crew app shows the usual **finish** steps: **photos**, optional **truck equipment check**, then **client sign-off** (same as other deliveries).
+
+The client-facing **`deliveries.stage`** and the **live tracking session** are updated from that flow, including when the crew uses the sequential stops screen without tapping **Start tracking**.
 
 If you **edit stops or statuses in admin** while a job is in progress, **`deliveries.stage`** may look out of step until the crew takes the **next** stop action (or opens the job in the crew app, which reconciles the tracking session when possible).
 

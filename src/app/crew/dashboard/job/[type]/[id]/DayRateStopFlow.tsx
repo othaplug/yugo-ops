@@ -139,6 +139,18 @@ export default function DayRateStopFlow({
 
   const completedCount = stops.filter((s) => s.stop_status === "completed").length;
   const totalCount = stops.length;
+  const pickupLegsOrdered =
+    flowKind === "b2b_multi"
+      ? stops.filter((s) => !s.is_final_destination)
+      : [];
+  const pickupLegCount = pickupLegsOrdered.length;
+  const completedPickups = pickupLegsOrdered.filter((s) =>
+    ["completed", "skipped"].includes(s.stop_status),
+  ).length;
+  const finalLeg = stops.find((s) => s.is_final_destination);
+  const finalLegDone =
+    !!finalLeg &&
+    (finalLeg.stop_status === "completed" || finalLeg.stop_status === "skipped");
   const currentStop = stops.find((s) =>
     ["current", "arrived", "in_progress"].includes(s.stop_status),
   );
@@ -228,8 +240,18 @@ export default function DayRateStopFlow({
           <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
             {flowKind === "b2b_multi" ? "Multi-stop" : "Day rate"}
           </span>
-          <span className="rounded-full bg-[var(--yu3-wine-tint)] px-2 py-0.5 text-[10px] font-semibold text-[var(--yu3-wine)] [font-family:var(--font-body)]">
-            {completedCount}/{totalCount} stops
+          <span className="rounded-full bg-[var(--yu3-wine-tint)] px-2 py-0.5 text-[10px] font-semibold text-[var(--yu3-wine)] [font-family:var(--font-body)] max-w-[58%] text-right leading-snug">
+            {flowKind === "b2b_multi" && pickupLegCount > 0 ? (
+              <>
+                Pickups {completedPickups}/{pickupLegCount}
+                <span className="mx-1 opacity-60">·</span>
+                {finalLegDone ? "Drop-off done" : "Drop-off"}
+              </>
+            ) : (
+              <>
+                {completedCount}/{totalCount} stops
+              </>
+            )}
           </span>
         </div>
         <h2 className="text-[18px] font-bold leading-tight text-[var(--yu3-ink)] [font-family:var(--font-body)]">
@@ -261,7 +283,9 @@ export default function DayRateStopFlow({
             Current:{" "}
             {flowKind === "b2b_multi" && currentStop.is_final_destination
               ? `Final drop-off · ${currentStop.address}`
-              : `Stop ${currentStop.stop_number} of ${totalCount} · ${currentStop.address}`}
+              : flowKind === "b2b_multi" && pickupLegCount > 0
+                ? `Pickup ${pickupLegsOrdered.findIndex((s) => s.id === currentStop.id) + 1} of ${pickupLegCount} · ${currentStop.address}`
+                : `Stop ${currentStop.stop_number} of ${totalCount} · ${currentStop.address}`}
           </p>
         )}
       </div>
@@ -330,14 +354,20 @@ export default function DayRateStopFlow({
                         <span className="text-[12px] font-bold text-[var(--yu3-wine)] [font-family:var(--font-body)]">
                           Final drop-off
                         </span>
+                      ) : flowKind === "b2b_multi" && pickupLegCount > 0 ? (
+                        <span className="text-[12px] font-bold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+                          Pickup {pickupLegsOrdered.findIndex((s) => s.id === stop.id) + 1}{" "}
+                          of {pickupLegCount}
+                        </span>
                       ) : (
                         <span className="text-[12px] font-bold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
                           Stop {stop.stop_number} of {totalCount}
                         </span>
                       )}
-                      {finalDropCard && (
+                      {finalDropCard && pickupLegCount > 0 && (
                         <span className="text-[10px] font-semibold text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
-                          Leg {stop.stop_number} of {totalCount}
+                          After {pickupLegCount} vendor{" "}
+                          {pickupLegCount === 1 ? "pickup" : "pickups"}
                         </span>
                       )}
                       <span
@@ -666,11 +696,13 @@ export default function DayRateStopFlow({
       {completedCount === totalCount && totalCount > 0 && (
         <div className="rounded-2xl border border-[var(--yu3-wine)]/30 bg-[var(--yu3-wine-tint)]/50 p-4 text-center">
           <p className="text-[15px] font-bold text-[var(--yu3-wine)] [font-family:var(--font-body)]">
-            All {totalCount} stops completed
+            {flowKind === "b2b_multi" && pickupLegCount > 0
+              ? "Pickups and drop-off complete"
+              : `All ${totalCount} stops completed`}
           </p>
           <p className="mt-1 text-[11px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
             {flowKind === "b2b_multi"
-              ? "Multi-stop job is done. Great work."
+              ? "Continue below for photos, equipment check if required, and client sign-off."
               : "Day rate job is done. Great work."}
           </p>
         </div>
