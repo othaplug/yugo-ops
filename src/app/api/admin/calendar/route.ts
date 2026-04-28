@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
       db
         .from("deliveries")
         .select(
-          "id, delivery_number, client_name, customer_name, customer_phone, customer_email, contact_phone, contact_email, end_customer_phone, end_customer_email, delivery_type, category, status, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_hours, estimated_duration_minutes, crew_id, pickup_address, delivery_address, items",
+          "id, delivery_number, client_name, customer_name, customer_phone, customer_email, contact_phone, contact_email, end_customer_phone, end_customer_email, end_client_name, delivery_type, category, status, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_hours, estimated_duration_minutes, crew_id, pickup_address, delivery_address, items, is_multi_stop, total_stops, project_name",
         )
         .gte("scheduled_date", startDate)
         .lte("scheduled_date", endDate)
@@ -364,18 +364,32 @@ export async function GET(req: NextRequest) {
       });
       const delStart = resolvedDel.start;
       const delEnd = resolvedDel.end;
-      const delDuration = resolvedDel.durationHours;
+      let delDuration = resolvedDel.durationHours ?? 0;
+      const isMultiStopCal = !!(d as { is_multi_stop?: boolean }).is_multi_stop;
+      const totalStopsCal = Number((d as { total_stops?: number | null }).total_stops) || 0;
+      if (isMultiStopCal && totalStopsCal > 2) {
+        delDuration += Math.max(0, totalStopsCal - 2) * 0.35;
+      }
       const delCat = `${d.category || ""} ${d.delivery_type || ""}`.toLowerCase();
       const deliveryFill = delCat.includes("b2b") ? CALENDAR_B2B_DELIVERY_FILL : JOB_COLORS.delivery;
+      const projectTitle = String((d as { project_name?: string | null }).project_name || "").trim();
+      const calName =
+        isMultiStopCal && projectTitle
+          ? projectTitle
+          : d.client_name || d.customer_name || d.delivery_number || "Delivery";
+      let calDescription = formatDeliveryCalendarDescription(
+        itemCount,
+        d.delivery_type || d.category,
+      );
+      if (isMultiStopCal && totalStopsCal > 0) {
+        calDescription = `${calDescription} · ${totalStopsCal} stops`.trim();
+      }
       events.push({
         id: d.id,
         type: "delivery",
         blockType: "delivery",
-        name: d.client_name || d.customer_name || d.delivery_number || "Delivery",
-        description: formatDeliveryCalendarDescription(
-          itemCount,
-          d.delivery_type || d.category,
-        ),
+        name: calName,
+        description: calDescription,
         date: dk,
         start: delStart,
         end: delEnd,

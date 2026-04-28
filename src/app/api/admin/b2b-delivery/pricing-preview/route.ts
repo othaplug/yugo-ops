@@ -64,7 +64,14 @@ export async function POST(req: NextRequest) {
       ? (body.extra_delivery_addresses as string[]).map((a) => String(a || "").trim()).filter(Boolean)
       : [];
 
-    const addresses = [pickupMain, ...extraP, deliveryMain, ...extraD];
+    const routeOrdered = Array.isArray(body.route_addresses_in_order)
+      ? (body.route_addresses_in_order as string[]).map((a) => String(a || "").trim()).filter(Boolean)
+      : [];
+
+    const addresses =
+      routeOrdered.length >= 2
+        ? routeOrdered
+        : [pickupMain, ...extraP, deliveryMain, ...extraD];
     const distInfo = await getMultiStopDrivingDistance(addresses);
     const distKm = distInfo?.distance_km ?? 0;
 
@@ -182,18 +189,42 @@ export async function POST(req: NextRequest) {
       platformConfig: config,
     });
 
+    const multiStopProject = !!body.multi_stop_project;
+    const extraPickupStopsForSurcharge =
+      typeof body.extra_pickup_stops_for_surcharge === "number" &&
+      Number.isFinite(body.extra_pickup_stops_for_surcharge)
+        ? Math.max(0, Math.floor(body.extra_pickup_stops_for_surcharge))
+        : 0;
+    const perMultiStop = cfgNum(config, "b2b_multi_stop_surcharge", 75);
+    const multiStopLineAmount =
+      multiStopProject && extraPickupStopsForSurcharge > 0 && perMultiStop > 0
+        ? perMultiStop * extraPickupStopsForSurcharge
+        : 0;
+
     const engineSubtotal = dim.subtotal;
-    const roundedSubtotal = roundTo(engineSubtotal + accessSurcharge, rounding);
+    const roundedSubtotal = roundTo(
+      engineSubtotal + accessSurcharge + multiStopLineAmount,
+      rounding,
+    );
     const hst = Math.round(roundedSubtotal * taxRate * 100) / 100;
+
+    const breakdownOut = [...dim.breakdown];
+    if (multiStopLineAmount > 0) {
+      breakdownOut.push({
+        label: `Additional pickup stops (${extraPickupStopsForSurcharge} × $${perMultiStop})`,
+        amount: multiStopLineAmount,
+      });
+    }
 
     return NextResponse.json({
       ok: true,
       subtotal_pre_round: engineSubtotal,
       access_surcharge: accessSurcharge,
+      multi_stop_surcharge: multiStopLineAmount,
       rounded_pre_tax: roundedSubtotal,
       hst,
       total_with_tax: Math.round((roundedSubtotal + hst) * 100) / 100,
-      breakdown: dim.breakdown,
+      breakdown: breakdownOut,
       includes: dim.includes,
       truck: dim.truck,
       crew: dim.crew,

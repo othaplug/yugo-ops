@@ -183,15 +183,34 @@ export async function GET(
         };
     }
 
-    // Fetch delivery stops for day_rate bookings
+    // Fetch delivery stops (day rate + multi-stop B2B)
     const bookingType = (d as any).booking_type as string | null;
+    const isMultiStopB2b = !!(d as { is_multi_stop?: boolean }).is_multi_stop;
     const { data: stops } = await admin
       .from("delivery_stops")
       .select(
-        "id, stop_number, address, customer_name, customer_phone, client_phone, items_description, special_instructions, notes, status, stop_status, stop_type, arrived_at, completed_at",
+        "id, stop_number, address, customer_name, customer_phone, client_phone, vendor_name, contact_name, contact_phone, access_type, access_notes, readiness, readiness_notes, items_description, special_instructions, notes, status, stop_status, stop_type, arrived_at, completed_at, is_final_destination, lat, lng",
       )
       .eq("delivery_id", d.id)
       .order("stop_number");
+
+    const stopIds = (stops || []).map((s) => s.id).filter(Boolean);
+    const { data: allStopItems } =
+      stopIds.length > 0
+        ? await admin
+            .from("delivery_stop_items")
+            .select(
+              "id, stop_id, description, quantity, weight_range, is_fragile, is_high_value, requires_assembly, status, notes, photo_url, checked_by, checked_at",
+            )
+            .in("stop_id", stopIds)
+        : { data: null };
+
+    const itemsByStop: Record<string, NonNullable<typeof allStopItems>[number][]> = {};
+    for (const row of allStopItems || []) {
+      const sid = row.stop_id as string;
+      if (!itemsByStop[sid]) itemsByStop[sid] = [];
+      itemsByStop[sid].push(row);
+    }
 
     let fromLat = d.pickup_lat != null ? Number(d.pickup_lat) : null;
     let fromLng = d.pickup_lng != null ? Number(d.pickup_lng) : null;
@@ -366,12 +385,32 @@ export async function GET(
       jobTypeLabel:
         bookingType === "day_rate"
           ? `Day Rate · ${(stops || []).length} stops`
-          : `Delivery · ${rawItems.length} items`,
+          : isMultiStopB2b && (stops || []).length > 0
+            ? `Multi-stop · ${(stops || []).length} stops`
+            : `Delivery · ${rawItems.length} items`,
       itemCount: rawItems.length,
+      isMultiStop: isMultiStopB2b,
+      projectName: (d as { project_name?: string | null }).project_name ?? null,
+      endClientName: (d as { end_client_name?: string | null }).end_client_name ?? null,
+      endClientPhone: (d as { end_client_phone?: string | null }).end_client_phone ?? null,
       stops: (stops || []).map((s) => ({
         ...s,
         stop_status: s.stop_status || s.status || "pending",
         stop_type: s.stop_type || "delivery",
+        stopItems: (itemsByStop[s.id] || []).map((it) => ({
+          id: it.id,
+          description: it.description,
+          quantity: it.quantity,
+          weight_range: it.weight_range,
+          is_fragile: it.is_fragile,
+          is_high_value: it.is_high_value,
+          requires_assembly: it.requires_assembly,
+          status: it.status,
+          notes: it.notes,
+          photo_url: it.photo_url,
+          checked_by: it.checked_by,
+          checked_at: it.checked_at,
+        })),
       })),
       inventory: [{ room: "Items", items: rawItems, itemsWithId: items }],
       extraItems: extra || [],

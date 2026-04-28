@@ -32,6 +32,9 @@ export type DeliveryV3 = {
   payment_received_at?: string | null
   vehicle_type?: string | null
   num_stops?: number | null
+  is_multi_stop?: boolean | null
+  total_stops?: number | null
+  project_name?: string | null
   total_price?: number | null
   admin_adjusted_price?: number | null
   quoted_price?: number | null
@@ -218,8 +221,15 @@ export function AllDeliveriesV3DataTable({
         sortable: true,
         width: 200,
         cell: (d) => (
-          <div className="min-w-0 text-[13px] font-medium text-[var(--yu3-ink-strong)] truncate">
-            {d.client_name || "—"}
+          <div className="min-w-0">
+            <div className="text-[13px] font-medium text-[var(--yu3-ink-strong)] truncate">
+              {d.client_name || "—"}
+            </div>
+            {d.is_multi_stop && d.project_name?.trim() ? (
+              <div className="text-[11px] text-[var(--yu3-ink-muted)] truncate mt-0.5">
+                {d.project_name.trim()}
+              </div>
+            ) : null}
           </div>
         ),
       },
@@ -231,9 +241,21 @@ export function AllDeliveriesV3DataTable({
         sortable: true,
         width: 120,
         cell: (d) => (
-          <span className="text-[12px] text-[var(--yu3-ink)]">
-            {toTitleCase((d.category || "delivery").replace(/_/g, " "))}
-          </span>
+          <div className="flex flex-col gap-1 min-w-0">
+            <span className="text-[12px] text-[var(--yu3-ink)]">
+              {toTitleCase((d.category || "delivery").replace(/_/g, " "))}
+            </span>
+            {d.is_multi_stop ? (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <StatusPill tone="info">Multi-stop</StatusPill>
+                {d.total_stops != null && d.total_stops > 0 ? (
+                  <span className="text-[10px] font-medium text-[var(--yu3-ink-muted)] tabular-nums">
+                    {d.total_stops} stops
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         ),
       },
       {

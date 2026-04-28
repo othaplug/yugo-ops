@@ -166,6 +166,52 @@ export async function POST(req: NextRequest) {
           : null,
     };
 
+    const isMultiStopB2b = !!body.is_multi_stop;
+    const multiRouteStops = Array.isArray(body.multi_route_stops)
+      ? (body.multi_route_stops as Record<string, unknown>[])
+      : [];
+
+    if (isMultiStopB2b && multiRouteStops.length > 0) {
+      insertPayload.is_multi_stop = true;
+      insertPayload.total_stops = multiRouteStops.length;
+      insertPayload.num_stops = multiRouteStops.length;
+      insertPayload.staged_delivery = !!body.staged_delivery;
+      insertPayload.phase_count =
+        typeof body.phase_count === "number" && body.phase_count >= 1
+          ? Math.floor(body.phase_count)
+          : 1;
+      insertPayload.project_name =
+        typeof body.project_name === "string" && body.project_name.trim()
+          ? body.project_name.trim()
+          : null;
+      insertPayload.end_client_name =
+        typeof body.end_client_name === "string" && body.end_client_name.trim()
+          ? body.end_client_name.trim()
+          : null;
+      insertPayload.end_client_phone =
+        typeof body.end_client_phone === "string" && body.end_client_phone.trim()
+          ? body.end_client_phone.trim()
+          : null;
+      const firstPickup = multiRouteStops.find(
+        (s) => String(s.stop_type || "pickup").toLowerCase() !== "delivery",
+      );
+      const lastDelivery = [...multiRouteStops]
+        .reverse()
+        .find((s) => String(s.stop_type || "").toLowerCase() === "delivery");
+      if (firstPickup && String(firstPickup.address || "").trim()) {
+        insertPayload.pickup_address = String(firstPickup.address || "").trim();
+      }
+      if (lastDelivery && String(lastDelivery.address || "").trim()) {
+        insertPayload.delivery_address = String(lastDelivery.address || "").trim();
+      }
+      if (typeof firstPickup?.access_type === "string" && firstPickup.access_type.trim()) {
+        insertPayload.pickup_access = firstPickup.access_type.trim();
+      }
+      if (typeof lastDelivery?.access_type === "string" && lastDelivery.access_type.trim()) {
+        insertPayload.delivery_access = lastDelivery.access_type.trim();
+      }
+    }
+
     if (
       explicitOverride != null &&
       explicitOverride !== "" &&
@@ -196,7 +242,138 @@ export async function POST(req: NextRequest) {
     }
 
     const stopsRaw = Array.isArray(body.stops) ? body.stops : (Array.isArray(body.stops_detail) ? body.stops_detail : []);
-    if (body.booking_type === "day_rate" && stopsRaw.length > 0 && created) {
+    if (
+      created &&
+      isMultiStopB2b &&
+      multiRouteStops.length > 0
+    ) {
+      for (let i = 0; i < multiRouteStops.length; i++) {
+        const s = multiRouteStops[i];
+        const addr = String(s.address || "").trim();
+        if (!addr) continue;
+        const stRaw = String(s.stop_type || "pickup").toLowerCase();
+        const stype = stRaw === "delivery" ? "delivery" : "pickup";
+        const itemArr = Array.isArray(s.items) ? (s.items as Record<string, unknown>[]) : [];
+        const linesSummary = itemArr
+          .map((it) => {
+            const q = Math.max(1, Number(it.quantity) || 1);
+            const d = String(it.description || "").trim();
+            if (!d) return null;
+            return q > 1 ? `${q}× ${d}` : d;
+          })
+          .filter(Boolean)
+          .join("; ");
+        const contactName =
+          typeof s.contact_name === "string" && s.contact_name.trim()
+            ? s.contact_name.trim()
+            : null;
+        const contactPhone =
+          typeof s.contact_phone === "string" && s.contact_phone.trim()
+            ? s.contact_phone.trim()
+            : null;
+        const contactEmail =
+          typeof s.contact_email === "string" && s.contact_email.trim()
+            ? s.contact_email.trim()
+            : null;
+        const vendorName =
+          typeof s.vendor_name === "string" && s.vendor_name.trim()
+            ? s.vendor_name.trim()
+            : null;
+        const accessType =
+          typeof s.access_type === "string" && s.access_type.trim()
+            ? s.access_type.trim()
+            : "ground_floor";
+        const accessNotes =
+          typeof s.access_notes === "string" && s.access_notes.trim()
+            ? s.access_notes.trim()
+            : null;
+        const readiness =
+          typeof s.readiness === "string" && s.readiness.trim()
+            ? s.readiness.trim()
+            : "confirmed";
+        const readinessNotes =
+          typeof s.readiness_notes === "string" && s.readiness_notes.trim()
+            ? s.readiness_notes.trim()
+            : null;
+        const notes =
+          typeof s.notes === "string" && s.notes.trim() ? s.notes.trim() : null;
+        const specialInstructions =
+          typeof s.special_instructions === "string" && s.special_instructions.trim()
+            ? s.special_instructions.trim()
+            : null;
+        const isFinal = !!s.is_final_destination;
+        const phase =
+          typeof s.delivery_phase === "number" && Number.isFinite(s.delivery_phase)
+            ? Math.max(1, Math.floor(s.delivery_phase))
+            : 1;
+        const estMin =
+          typeof s.estimated_duration_minutes === "number" &&
+          Number.isFinite(s.estimated_duration_minutes)
+            ? Math.max(5, Math.floor(s.estimated_duration_minutes))
+            : 30;
+        const lat =
+          s.lat != null && Number.isFinite(Number(s.lat)) ? Number(s.lat) : null;
+        const lng =
+          s.lng != null && Number.isFinite(Number(s.lng)) ? Number(s.lng) : null;
+
+        const { data: insertedStop, error: stopErr } = await admin
+          .from("delivery_stops")
+          .insert({
+            delivery_id: created.id,
+            stop_number: i + 1,
+            address: addr,
+            lat,
+            lng,
+            vendor_name: vendorName,
+            contact_name: contactName,
+            contact_phone: contactPhone,
+            contact_email: contactEmail,
+            customer_name: contactName ?? vendorName,
+            customer_phone: contactPhone,
+            access_type: accessType,
+            access_notes: accessNotes,
+            readiness,
+            readiness_notes: readinessNotes,
+            estimated_duration_minutes: estMin,
+            is_final_destination: isFinal,
+            delivery_phase: phase,
+            stop_type: stype,
+            items_description: linesSummary || null,
+            special_instructions: specialInstructions,
+            notes,
+            stop_status: i === 0 ? "current" : "pending",
+            status: i === 0 ? "current" : "pending",
+            services_selected: [],
+          })
+          .select("id")
+          .single();
+
+        if (stopErr || !insertedStop?.id) {
+          console.error("[admin-delivery-create] delivery_stops insert:", stopErr?.message);
+          continue;
+        }
+
+        for (const it of itemArr) {
+          const desc = String(it.description || "").trim();
+          if (!desc) continue;
+          const qty = Math.max(1, Number(it.quantity) || 1);
+          const wrRaw = String(it.weight_range || it.weight_category || "standard").toLowerCase();
+          const { error: itemErr } = await admin.from("delivery_stop_items").insert({
+            stop_id: insertedStop.id,
+            description: desc,
+            quantity: qty,
+            weight_range: wrRaw,
+            is_fragile: !!it.is_fragile,
+            is_high_value: !!it.is_high_value,
+            requires_assembly: !!it.requires_assembly,
+            status: "pending",
+          });
+          if (itemErr) {
+            console.error("[admin-delivery-create] delivery_stop_items:", itemErr.message);
+          }
+        }
+      }
+    } else if (body.booking_type === "day_rate" && stopsRaw.length > 0 && created) {
       const stopRows = stopsRaw.map((s: Record<string, unknown>, i: number) => ({
         delivery_id: created.id,
         stop_number: i + 1,

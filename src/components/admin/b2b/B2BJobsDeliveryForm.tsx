@@ -66,6 +66,15 @@ import {
   weightTierSelectOptions,
 } from "@/lib/pricing/weight-tiers";
 import { B2B_PARTNER_TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
+import B2BMultiStopRouteSection from "./B2BMultiStopRouteSection";
+import {
+  defaultMultiStopRoute,
+  flattenMultiStopToLineRows,
+  multiStopPayloadStops,
+  newLocalId,
+  type MultiStopDraftStop,
+} from "./b2b-multi-stop-types";
+import { normalizeB2bVerticalFormCode } from "@/lib/b2b-vertical-ui";
 
 const fieldInput = "field-input-compact w-full";
 const accessSelectClass = `${fieldInput} text-left text-[12px] text-[var(--tx)]`;
@@ -314,6 +323,7 @@ export default function B2BJobsDeliveryForm({
     () => verticals[0]?.code ?? "",
   );
   const lastVerticalForItemsRef = useRef<string | null>(null);
+  const lastVerticalForRouteModeRef = useRef<string | null>(null);
 
   const [hsLookupState, setHsLookupState] = useState<
     "idle" | "loading" | "found" | "not_found"
@@ -491,6 +501,15 @@ export default function B2BJobsDeliveryForm({
   }, [verticalCode, fieldVisibility?.defaultHandling]);
 
   useEffect(() => {
+    const c = normalizeB2bVerticalFormCode(verticalCode);
+    const prev = lastVerticalForRouteModeRef.current;
+    if (prev !== verticalCode && c === "designer") {
+      setRouteMode("multi");
+    }
+    lastVerticalForRouteModeRef.current = verticalCode;
+  }, [verticalCode]);
+
+  useEffect(() => {
     setNewStopAssignment("");
     setNewSerialNumber("");
     setNewDeclaredValue("");
@@ -508,6 +527,14 @@ export default function B2BJobsDeliveryForm({
     }
     lastVerticalForItemsRef.current = verticalCode;
   }, [verticalCode]);
+
+  const [routeMode, setRouteMode] = useState<"single" | "multi">("single");
+  const [multiStops, setMultiStops] =
+    useState<MultiStopDraftStop[]>(defaultMultiStopRoute);
+  const [projectName, setProjectName] = useState("");
+  const [endClientName, setEndClientName] = useState("");
+  const [endClientPhone, setEndClientPhone] = useState("");
+  const [stagedDelivery, setStagedDelivery] = useState(false);
 
   const [pickupAddress, setPickupAddress] = useState("");
   const [extraPickupStops, setExtraPickupStops] = useState<StopEntry[]>([]);
@@ -593,6 +620,17 @@ export default function B2BJobsDeliveryForm({
     applyPartnerRates && partnerOrgId.trim() ? partnerOrgId.trim() : null;
 
   const buildEffectiveLines = useCallback((): LineRow[] => {
+    if (routeMode === "multi") {
+      const flat = flattenMultiStopToLineRows(multiStops);
+      return flat.map((r) => ({
+        description: r.description,
+        quantity: r.quantity,
+        weight_category: r.weight_category,
+        fragile: r.fragile,
+        line_assembly_required: r.line_assembly_required,
+        declared_value: r.declared_value,
+      }));
+    }
     if (lines.length > 0) return lines;
     const bc = parseInt(boxCount, 10);
     if (verticalCode === "flooring" && vis("box_count") && bc >= 1) {
@@ -607,7 +645,7 @@ export default function B2BJobsDeliveryForm({
       ];
     }
     return [];
-  }, [lines, boxCount, vis, verticalCode]);
+  }, [routeMode, multiStops, lines, boxCount, vis, verticalCode]);
 
   const showUnitTypeColumn =
     verticalCode === "flooring" && showItemField("unit_type");
@@ -640,10 +678,37 @@ export default function B2BJobsDeliveryForm({
 
   const runPricingPreview = useCallback(async () => {
     const effLines = buildEffectiveLines();
+    const firstPu = multiStops.find((s) => !s.isFinalDestination);
+    const finDel = multiStops.find((s) => s.isFinalDestination);
+    const pickAddr =
+      routeMode === "multi"
+        ? (firstPu?.address ?? "").trim()
+        : pickupAddress.trim();
+    const delAddr =
+      routeMode === "multi"
+        ? (finDel?.address ?? "").trim()
+        : deliveryAddress.trim();
+    const pickAcc =
+      routeMode === "multi" ? firstPu?.accessType || pickupAccess : pickupAccess;
+    const delAcc =
+      routeMode === "multi"
+        ? finDel?.accessType || deliveryAccess
+        : deliveryAccess;
+    const routeOrdered =
+      routeMode === "multi"
+        ? multiStops.map((s) => s.address.trim()).filter(Boolean)
+        : [];
+    const extraPuSurcharge =
+      routeMode === "multi"
+        ? Math.max(
+            0,
+            multiStops.filter((s) => !s.isFinalDestination).length - 1,
+          )
+        : 0;
     if (
       !verticalCode.trim() ||
-      !pickupAddress.trim() ||
-      !deliveryAddress.trim() ||
+      !pickAddr ||
+      !delAddr ||
       effLines.length === 0
     ) {
       return;
@@ -657,16 +722,23 @@ export default function B2BJobsDeliveryForm({
           vertical_code: verticalCode,
           organization_id: effectiveOrgId,
           scheduled_date: scheduledDate,
-          pickup_address: pickupAddress,
-          delivery_address: deliveryAddress,
-          pickup_access: pickupAccess,
-          delivery_access: deliveryAccess,
+          pickup_address: pickAddr,
+          delivery_address: delAddr,
+          pickup_access: pickAcc,
+          delivery_access: delAcc,
           extra_pickup_addresses: extraPickupStops
             .map((s) => s.address)
             .filter(Boolean),
           extra_delivery_addresses: extraDeliveryStops
             .map((s) => s.address)
             .filter(Boolean),
+          ...(routeMode === "multi" && routeOrdered.length >= 2
+            ? {
+                route_addresses_in_order: routeOrdered,
+                multi_stop_project: true,
+                extra_pickup_stops_for_surcharge: extraPuSurcharge,
+              }
+            : {}),
           handling_type: handlingType,
           line_items: effLines.map((l) => toB2bLinePayload(l, handlingType)),
           crew_override: crewOverride ? Number(crewOverride) : undefined,
@@ -712,6 +784,8 @@ export default function B2BJobsDeliveryForm({
     }
   }, [
     verticalCode,
+    routeMode,
+    multiStops,
     pickupAddress,
     deliveryAddress,
     pickupAccess,
@@ -1033,16 +1107,14 @@ export default function B2BJobsDeliveryForm({
 
   useEffect(() => {
     let cancelled = false;
-    const pickupMain = pickupAddress.trim();
-    const deliveryMain = deliveryAddress.trim();
-    if (!pickupMain || !deliveryMain) {
-      setEstimatedDistanceKm(null);
-      setClientDistanceLoading(false);
-      return;
-    }
     const extraP = extraPickupStops.map((s) => s.address).filter(Boolean);
     const extraD = extraDeliveryStops.map((s) => s.address).filter(Boolean);
-    const addresses = [pickupMain, ...extraP, deliveryMain, ...extraD];
+    const pickupMain = pickupAddress.trim();
+    const deliveryMain = deliveryAddress.trim();
+    const addresses =
+      routeMode === "multi"
+        ? multiStops.map((s) => s.address.trim()).filter(Boolean)
+        : [pickupMain, ...extraP, deliveryMain, ...extraD];
     if (addresses.length < 2) {
       setEstimatedDistanceKm(null);
       setClientDistanceLoading(false);
@@ -1066,7 +1138,14 @@ export default function B2BJobsDeliveryForm({
       cancelled = true;
       clearTimeout(t);
     };
-  }, [pickupAddress, deliveryAddress, extraPickupStops, extraDeliveryStops]);
+  }, [
+    routeMode,
+    multiStops,
+    pickupAddress,
+    deliveryAddress,
+    extraPickupStops,
+    extraDeliveryStops,
+  ]);
 
   useEffect(() => {
     if (!selectedVertical) {
@@ -1074,12 +1153,13 @@ export default function B2BJobsDeliveryForm({
       return;
     }
     const eff = buildEffectiveLines();
-    if (
-      !verticalCode.trim() ||
-      !pickupAddress.trim() ||
-      !deliveryAddress.trim() ||
-      eff.length === 0
-    ) {
+    const mp = multiStops.find((s) => !s.isFinalDestination);
+    const mf = multiStops.find((s) => s.isFinalDestination);
+    const pickM = (mp?.address ?? "").trim();
+    const delM = (mf?.address ?? "").trim();
+    const pickOk = routeMode === "multi" ? pickM : pickupAddress.trim();
+    const delOk = routeMode === "multi" ? delM : deliveryAddress.trim();
+    if (!verticalCode.trim() || !pickOk || !delOk || eff.length === 0) {
       setClientEstimate(null);
       return;
     }
@@ -1134,14 +1214,26 @@ export default function B2BJobsDeliveryForm({
       merged,
     );
 
-    const routeStops = b2bJobsDimensionalStops(
-      pickupAddress,
-      deliveryAddress,
-      pickupAccess,
-      deliveryAccess,
-      extraPickupStops,
-      extraDeliveryStops,
-    );
+    const routeStops =
+      routeMode === "multi"
+        ? multiStops
+            .filter((s) => s.address.trim())
+            .map((s) => ({
+              address: s.address.trim(),
+              type:
+                s.stopType === "delivery"
+                  ? ("delivery" as const)
+                  : ("pickup" as const),
+              access: s.accessType || undefined,
+            }))
+        : b2bJobsDimensionalStops(
+            pickupAddress,
+            deliveryAddress,
+            pickupAccess,
+            deliveryAccess,
+            extraPickupStops,
+            extraDeliveryStops,
+          );
 
     const dimInput: B2BDimensionalQuoteInput = {
       vertical_code: verticalCode,
@@ -1185,16 +1277,32 @@ export default function B2BJobsDeliveryForm({
     });
 
     const access = 0;
+    const extraPuClient =
+      routeMode === "multi"
+        ? Math.max(
+            0,
+            multiStops.filter((s) => !s.isFinalDestination).length - 1,
+          )
+        : 0;
+    const multiSurchargeClient =
+      routeMode === "multi" && extraPuClient > 0 ? extraPuClient * 75 : 0;
     const roundedPreTax = roundToNearest(
-      dim.subtotal + access,
+      dim.subtotal + access + multiSurchargeClient,
       ROUNDING_NEAREST_CLIENT,
     );
     const hst = Math.round(roundedPreTax * TAX_RATE_CLIENT * 100) / 100;
+    const bd = [...dim.breakdown];
+    if (multiSurchargeClient > 0) {
+      bd.push({
+        label: `Additional pickup stops (${extraPuClient} × $75)`,
+        amount: multiSurchargeClient,
+      });
+    }
     setClientEstimate({
       rounded_pre_tax: roundedPreTax,
       hst,
       total_with_tax: Math.round((roundedPreTax + hst) * 100) / 100,
-      breakdown: dim.breakdown,
+      breakdown: bd,
       truck: dim.truck,
       crew: dim.crew,
       estimated_hours: dim.estimatedHours,
@@ -1203,6 +1311,8 @@ export default function B2BJobsDeliveryForm({
   }, [
     selectedVertical,
     verticalCode,
+    routeMode,
+    multiStops,
     buildEffectiveLines,
     pickupAddress,
     deliveryAddress,
@@ -1269,8 +1379,18 @@ export default function B2BJobsDeliveryForm({
     if (!verticalCode.trim()) return "Delivery vertical is required";
     if (buildEffectiveLines().length === 0)
       return "Add at least one line item (or box count for flooring)";
-    if (!pickupAddress.trim() || !deliveryAddress.trim())
+    if (routeMode === "multi") {
+      const fin = multiStops.find((s) => s.isFinalDestination);
+      const pickups = multiStops.filter((s) => !s.isFinalDestination);
+      if (pickups.length < 1) return "Add at least one pickup stop";
+      if (!fin) return "Final delivery stop is required";
+      for (const p of pickups) {
+        if (!p.address.trim()) return "Each pickup stop needs an address";
+      }
+      if (!fin.address.trim()) return "Final delivery address is required";
+    } else if (!pickupAddress.trim() || !deliveryAddress.trim()) {
       return "Pickup and delivery addresses are required";
+    }
     if (!scheduledDate) return "Date is required";
     if (requireEmailForQuote && !(contactEmail || "").trim())
       return "Email is required to send a quote";
@@ -1309,14 +1429,33 @@ export default function B2BJobsDeliveryForm({
     const totalWithTax =
       finalPreTax > 0 ? Math.round(finalPreTax * 1.13 * 100) / 100 : null;
 
+    const firstPuStop = multiStops.find((s) => !s.isFinalDestination);
+    const finStop = multiStops.find((s) => s.isFinalDestination);
+    const pickAddr =
+      routeMode === "multi"
+        ? (firstPuStop?.address ?? "").trim()
+        : pickupAddress.trim();
+    const delAddr =
+      routeMode === "multi"
+        ? (finStop?.address ?? "").trim()
+        : deliveryAddress.trim();
+    const pickAcc =
+      routeMode === "multi"
+        ? firstPuStop?.accessType || pickupAccess
+        : pickupAccess;
+    const delAcc =
+      routeMode === "multi"
+        ? finStop?.accessType || deliveryAccess
+        : deliveryAccess;
+
     const basePayload: Record<string, unknown> = {
       customer_name: contactName.trim(),
       customer_phone: normalizePhone(contactPhone),
       customer_email: contactEmail.trim() || null,
-      pickup_address: pickupAddress.trim(),
-      delivery_address: deliveryAddress.trim(),
-      pickup_access: pickupAccess || null,
-      delivery_access: deliveryAccess || null,
+      pickup_address: pickAddr,
+      delivery_address: delAddr,
+      pickup_access: pickAcc || null,
+      delivery_access: delAcc || null,
       items: itemsList,
       scheduled_date: scheduledDate,
       delivery_window: timeWindow || null,
@@ -1337,6 +1476,20 @@ export default function B2BJobsDeliveryForm({
       total_price: totalWithTax,
       quoted_price: finalPreTax > 0 ? finalPreTax : null,
     };
+
+    if (routeMode === "multi") {
+      basePayload.is_multi_stop = true;
+      basePayload.multi_route_stops = multiStopPayloadStops(multiStops);
+      basePayload.project_name = projectName.trim() || null;
+      basePayload.end_client_name = endClientName.trim() || null;
+      basePayload.end_client_phone = endClientPhone.trim() || null;
+      basePayload.staged_delivery = stagedDelivery;
+      const maxPhase = Math.max(
+        ...multiStops.map((s) => s.deliveryPhase || 1),
+        1,
+      );
+      basePayload.phase_count = stagedDelivery ? maxPhase : 1;
+    }
 
     if (ovAmt > 0 && overrideReason.trim()) {
       basePayload.override_price = ovAmt;
@@ -1382,7 +1535,7 @@ export default function B2BJobsDeliveryForm({
             sort_order: i + 1,
           })),
       ];
-      if (extras.length > 0) {
+      if (extras.length > 0 && routeMode !== "multi") {
         fetch("/api/admin/job-stops", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1415,6 +1568,28 @@ export default function B2BJobsDeliveryForm({
     const b2b_line_items = effLines.map((l) =>
       toB2bLinePayload(l, handlingType),
     );
+    const sqFirst = multiStops.find((s) => !s.isFinalDestination);
+    const sqFin = multiStops.find((s) => s.isFinalDestination);
+    const sqPick =
+      routeMode === "multi"
+        ? (sqFirst?.address ?? "").trim()
+        : pickupAddress.trim();
+    const sqDel =
+      routeMode === "multi"
+        ? (sqFin?.address ?? "").trim()
+        : deliveryAddress.trim();
+    const sqPickAcc =
+      routeMode === "multi" ? sqFirst?.accessType || pickupAccess : pickupAccess;
+    const sqDelAcc =
+      routeMode === "multi" ? sqFin?.accessType || deliveryAccess : deliveryAccess;
+    const sqRoute =
+      routeMode === "multi"
+        ? multiStops.map((s) => s.address.trim()).filter(Boolean)
+        : [];
+    const sqExtraPu =
+      routeMode === "multi"
+        ? Math.max(0, multiStops.filter((s) => !s.isFinalDestination).length - 1)
+        : 0;
 
     try {
       const pv = await fetch("/api/admin/b2b-delivery/pricing-preview", {
@@ -1424,16 +1599,23 @@ export default function B2BJobsDeliveryForm({
           vertical_code: verticalCode,
           organization_id: effectiveOrgId,
           scheduled_date: scheduledDate,
-          pickup_address: pickupAddress,
-          delivery_address: deliveryAddress,
-          pickup_access: pickupAccess,
-          delivery_access: deliveryAccess,
+          pickup_address: sqPick,
+          delivery_address: sqDel,
+          pickup_access: sqPickAcc,
+          delivery_access: sqDelAcc,
           extra_pickup_addresses: extraPickupStops
             .map((s) => s.address)
             .filter(Boolean),
           extra_delivery_addresses: extraDeliveryStops
             .map((s) => s.address)
             .filter(Boolean),
+          ...(routeMode === "multi" && sqRoute.length >= 2
+            ? {
+                route_addresses_in_order: sqRoute,
+                multi_stop_project: true,
+                extra_pickup_stops_for_surcharge: sqExtraPu,
+              }
+            : {}),
           handling_type: handlingType,
           line_items: effLines.map((l) => toB2bLinePayload(l, handlingType)),
           crew_override: crewOverride ? Number(crewOverride) : undefined,
@@ -1481,12 +1663,25 @@ export default function B2BJobsDeliveryForm({
       });
 
       const ovAmt = parseNumberInput(overridePrice);
+      const b2bStopsPayload =
+        routeMode === "multi"
+          ? multiStops
+              .filter((s) => s.address.trim())
+              .map((s) => ({
+                address: s.address.trim(),
+                type:
+                  s.stopType === "delivery"
+                    ? ("delivery" as const)
+                    : ("pickup" as const),
+                access: s.accessType || undefined,
+              }))
+          : buildB2bStopsPayload();
       const payload: Record<string, unknown> = {
         service_type: "b2b_delivery",
-        from_address: pickupAddress.trim(),
-        to_address: deliveryAddress.trim(),
-        from_access: pickupAccess,
-        to_access: deliveryAccess,
+        from_address: sqPick,
+        to_address: sqDel,
+        from_access: sqPickAcc,
+        to_access: sqDelAcc,
         move_date: scheduledDate,
         client_name: contactName.trim(),
         client_email: contactEmail.trim().toLowerCase(),
@@ -1496,7 +1691,7 @@ export default function B2BJobsDeliveryForm({
         b2b_partner_organization_id: effectiveOrgId,
         b2b_handling_type: handlingType,
         b2b_line_items,
-        b2b_stops: buildB2bStopsPayload(),
+        b2b_stops: b2bStopsPayload,
         b2b_payment_method: paymentMethod,
         ...(paymentMethod === "invoice"
           ? { b2b_invoice_terms: invoiceTerms }
@@ -1609,6 +1804,36 @@ export default function B2BJobsDeliveryForm({
       ]);
     },
     [showUnitTypeColumn],
+  );
+
+  const addQuickPresetToMultiStop = useCallback(
+    (p: {
+      name: string;
+      weight?: string;
+      fragile?: boolean;
+      unit?: string;
+      icon?: string;
+    }, stopLocalId: string) => {
+      const wcRaw = (p.weight || "medium").toLowerCase();
+      const wc = normalizeB2bWeightCategory(wcRaw);
+      const item = {
+        localId: newLocalId(),
+        description: p.name,
+        quantity: 1,
+        weight_range: wc,
+        fragile: !!p.fragile,
+        is_high_value: false,
+        requires_assembly: false,
+      };
+      setMultiStops((prev) =>
+        prev.map((s) =>
+          s.localId === stopLocalId && !s.isFinalDestination
+            ? { ...s, items: [...s.items, item], collapsed: false }
+            : s,
+        ),
+      );
+    },
+    [],
   );
 
   const addLine = () => {
@@ -1900,7 +2125,13 @@ export default function B2BJobsDeliveryForm({
         <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
           Items *
         </h3>
-        {verticalCode === "flooring" && vis("box_count") && (
+        {routeMode === "multi" && (
+          <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
+            Items are added per pickup stop in the Route section. Quick add
+            buttons appear on each expanded stop card.
+          </p>
+        )}
+        {routeMode !== "multi" && verticalCode === "flooring" && vis("box_count") && (
           <Field label="Box / unit count (flooring shortcut)">
             <input
               type="number"
@@ -1914,7 +2145,7 @@ export default function B2BJobsDeliveryForm({
             </p>
           </Field>
         )}
-        {lines.length > 0 && (
+        {routeMode !== "multi" && lines.length > 0 && (
           <ul className="space-y-2">
             {lines.map((row, idx) => (
               <li
@@ -2140,6 +2371,8 @@ export default function B2BJobsDeliveryForm({
             ))}
           </ul>
         )}
+        {routeMode !== "multi" && (
+        <>
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
           <div className="sm:col-span-3">
             <Field label="Description">
@@ -2321,6 +2554,8 @@ export default function B2BJobsDeliveryForm({
             </div>
           </div>
         )}
+        </>
+        )}
       </section>
 
       {vis("handling") && (
@@ -2350,86 +2585,155 @@ export default function B2BJobsDeliveryForm({
       )}
 
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
-        <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
-          Route
-        </h3>
-        <div className="max-w-4xl">
-          <MultiStopAddressField
-            label="Pickup"
-            labelVisibility="sr-only"
-            placeholder="Pickup address*"
-            stops={[{ address: pickupAddress }, ...extraPickupStops]}
-            onChange={(stops) => {
-              setPickupAddress(stops[0]?.address ?? "");
-              setExtraPickupStops(vis("multi_stop") ? stops.slice(1) : []);
-            }}
-            maxStops={vis("multi_stop") ? 6 : 1}
-            inputClassName={fieldInput}
-            trailingOnFirstRow={
-              <>
-                <label htmlFor="b2b-pickup-access" className="sr-only">
-                  Pickup access
-                </label>
-                <select
-                  id="b2b-pickup-access"
-                  value={pickupAccess}
-                  onChange={(e) => setPickupAccess(e.target.value)}
-                  className={accessSelectClass}
-                  aria-label="Pickup access"
-                >
-                  {ACCESS_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </>
-            }
-          />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
+            Route
+          </h3>
+          <div
+            className="inline-flex rounded-lg border border-[var(--brd)] bg-[var(--bg)] p-0.5"
+            role="group"
+            aria-label="Route mode"
+          >
+            <button
+              type="button"
+              onClick={() => setRouteMode("single")}
+              className={`rounded-md px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider ${
+                routeMode === "single"
+                  ? "bg-[var(--card)] text-[var(--tx)] shadow-sm"
+                  : "text-[var(--tx3)]"
+              }`}
+            >
+              Single route
+            </button>
+            <button
+              type="button"
+              onClick={() => setRouteMode("multi")}
+              className={`rounded-md px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider ${
+                routeMode === "multi"
+                  ? "bg-[var(--card)] text-[var(--tx)] shadow-sm"
+                  : "text-[var(--tx3)]"
+              }`}
+            >
+              Multi-stop project
+            </button>
+          </div>
         </div>
-        <div className="max-w-4xl">
-          <MultiStopAddressField
-            label="Delivery"
-            labelVisibility="sr-only"
-            placeholder="Delivery address*"
-            stops={[{ address: deliveryAddress }, ...extraDeliveryStops]}
-            onChange={(stops) => {
-              setDeliveryAddress(stops[0]?.address ?? "");
-              setExtraDeliveryStops(vis("multi_stop") ? stops.slice(1) : []);
-            }}
-            maxStops={vis("multi_stop") ? 6 : 1}
-            inputClassName={fieldInput}
-            trailingOnFirstRow={
-              <>
-                <label htmlFor="b2b-delivery-access" className="sr-only">
-                  Delivery access
-                </label>
-                <select
-                  id="b2b-delivery-access"
-                  value={deliveryAccess}
-                  onChange={(e) => setDeliveryAccess(e.target.value)}
-                  className={accessSelectClass}
-                  aria-label="Delivery access"
-                >
-                  {ACCESS_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </>
-            }
-          />
-        </div>
-        <Field label="Access notes">
-          <textarea
-            value={accessNotes}
-            onChange={(e) => setAccessNotes(e.target.value)}
-            rows={2}
-            placeholder="Dock hours, buzzer codes, long carry notes…"
-            className={`${fieldInput} resize-y`}
-          />
-        </Field>
+        {routeMode === "multi" ? (
+          <>
+            <label className="flex items-center gap-2 text-[11px] text-[var(--tx)]">
+              <input
+                type="checkbox"
+                checked={stagedDelivery}
+                onChange={(e) => setStagedDelivery(e.target.checked)}
+                className="accent-[var(--gold)]"
+              />
+              Staged delivery (split phases when not all stops are ready)
+            </label>
+            <B2BMultiStopRouteSection
+              projectName={projectName}
+              setProjectName={setProjectName}
+              endClientName={endClientName}
+              setEndClientName={setEndClientName}
+              endClientPhone={endClientPhone}
+              setEndClientPhone={setEndClientPhone}
+              stops={multiStops}
+              setStops={setMultiStops}
+              stagedDelivery={stagedDelivery}
+              setStagedDelivery={setStagedDelivery}
+              quickAddPresets={quickAddPresets}
+              onQuickAdd={addQuickPresetToMultiStop}
+            />
+            <Field label="Access notes (job-wide)">
+              <textarea
+                value={accessNotes}
+                onChange={(e) => setAccessNotes(e.target.value)}
+                rows={2}
+                placeholder="Dock hours, buzzer codes, long carry notes…"
+                className={`${fieldInput} resize-y`}
+              />
+            </Field>
+          </>
+        ) : (
+          <>
+            <div className="max-w-4xl">
+              <MultiStopAddressField
+                label="Pickup"
+                labelVisibility="sr-only"
+                placeholder="Pickup address*"
+                stops={[{ address: pickupAddress }, ...extraPickupStops]}
+                onChange={(stops) => {
+                  setPickupAddress(stops[0]?.address ?? "");
+                  setExtraPickupStops(vis("multi_stop") ? stops.slice(1) : []);
+                }}
+                maxStops={vis("multi_stop") ? 6 : 1}
+                inputClassName={fieldInput}
+                trailingOnFirstRow={
+                  <>
+                    <label htmlFor="b2b-pickup-access" className="sr-only">
+                      Pickup access
+                    </label>
+                    <select
+                      id="b2b-pickup-access"
+                      value={pickupAccess}
+                      onChange={(e) => setPickupAccess(e.target.value)}
+                      className={accessSelectClass}
+                      aria-label="Pickup access"
+                    >
+                      {ACCESS_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                }
+              />
+            </div>
+            <div className="max-w-4xl">
+              <MultiStopAddressField
+                label="Delivery"
+                labelVisibility="sr-only"
+                placeholder="Delivery address*"
+                stops={[{ address: deliveryAddress }, ...extraDeliveryStops]}
+                onChange={(stops) => {
+                  setDeliveryAddress(stops[0]?.address ?? "");
+                  setExtraDeliveryStops(vis("multi_stop") ? stops.slice(1) : []);
+                }}
+                maxStops={vis("multi_stop") ? 6 : 1}
+                inputClassName={fieldInput}
+                trailingOnFirstRow={
+                  <>
+                    <label htmlFor="b2b-delivery-access" className="sr-only">
+                      Delivery access
+                    </label>
+                    <select
+                      id="b2b-delivery-access"
+                      value={deliveryAccess}
+                      onChange={(e) => setDeliveryAccess(e.target.value)}
+                      className={accessSelectClass}
+                      aria-label="Delivery access"
+                    >
+                      {ACCESS_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                }
+              />
+            </div>
+            <Field label="Access notes">
+              <textarea
+                value={accessNotes}
+                onChange={(e) => setAccessNotes(e.target.value)}
+                rows={2}
+                placeholder="Dock hours, buzzer codes, long carry notes…"
+                className={`${fieldInput} resize-y`}
+              />
+            </Field>
+          </>
+        )}
       </section>
 
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">

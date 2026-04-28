@@ -3,7 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import { isUuid, getDeliveryDetailPath } from "@/lib/move-code";
 import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
-import DeliveryDetailClient from "./DeliveryDetailClient";
+import DeliveryDetailClient, {
+  type DeliveryStopItem,
+} from "./DeliveryDetailClient";
 import { canEditFinalJobPrice } from "@/lib/admin-can-edit-final-price";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -38,6 +40,8 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
   const canEditPostCompletionPrice = canEditFinalJobPrice(pu?.role ?? null, user?.email ?? null);
 
   const isDayRate = delivery.booking_type === "day_rate";
+  const isMultiStop = !!(delivery as { is_multi_stop?: boolean }).is_multi_stop;
+  const loadDeliveryStops = isDayRate || isMultiStop;
   const [
     { data: org },
     { data: orgs },
@@ -53,7 +57,15 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
     db.from("crews").select("id, name, members").order("name"),
     db.from("eta_sms_log").select("message_type, sent_at, eta_minutes, twilio_sid").eq("delivery_id", delivery.id).order("sent_at", { ascending: false }),
     db.from("invoices").select("id, invoice_number, square_invoice_url, status").eq("delivery_id", delivery.id).maybeSingle(),
-    isDayRate ? db.from("delivery_stops").select("id, stop_number, address, customer_name, customer_phone, items_description, special_instructions").eq("delivery_id", delivery.id).order("stop_number") : Promise.resolve({ data: null }),
+    loadDeliveryStops
+      ? db
+          .from("delivery_stops")
+          .select(
+            "id, stop_number, address, customer_name, customer_phone, client_phone, vendor_name, contact_name, contact_phone, access_type, access_notes, readiness, readiness_notes, items_description, special_instructions, notes, stop_status, stop_type, arrived_at, completed_at, is_final_destination",
+          )
+          .eq("delivery_id", delivery.id)
+          .order("stop_number")
+      : Promise.resolve({ data: null }),
     delivery.project_id
       ? db.from("projects").select("id, project_number, project_name").eq("id", delivery.project_id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -67,7 +79,75 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
       .order("created_at", { ascending: false }),
   ]);
 
-  const stops = (stopsResult as { data: Array<{ id: string; stop_number: number; address: string; customer_name: string | null; customer_phone: string | null; items_description: string | null; special_instructions: string | null }> | null })?.data ?? null;
+  type StopRow = {
+    id: string;
+    stop_number: number;
+    address: string;
+    customer_name: string | null;
+    customer_phone: string | null;
+    client_phone?: string | null;
+    vendor_name?: string | null;
+    contact_name?: string | null;
+    contact_phone?: string | null;
+    access_type?: string | null;
+    access_notes?: string | null;
+    readiness?: string | null;
+    readiness_notes?: string | null;
+    items_description: string | null;
+    special_instructions: string | null;
+    notes?: string | null;
+    stop_status?: string | null;
+    stop_type?: string | null;
+    arrived_at?: string | null;
+    completed_at?: string | null;
+    is_final_destination?: boolean | null;
+    stop_items?: DeliveryStopItem[];
+  };
+
+  let stops =
+    (stopsResult as { data: StopRow[] | null })?.data ?? null;
+
+  if (stops && stops.length > 0 && isMultiStop) {
+    type StopItemRow = {
+      id: string;
+      stop_id: string;
+      description: string;
+      quantity: number;
+      weight_range: string | null;
+      is_fragile: boolean | null;
+      is_high_value: boolean | null;
+      requires_assembly: boolean | null;
+      status: string | null;
+    };
+    const { data: stopItems } = await db
+      .from("delivery_stop_items")
+      .select(
+        "id, stop_id, description, quantity, weight_range, is_fragile, is_high_value, requires_assembly, status",
+      )
+      .in(
+        "stop_id",
+        stops.map((s) => s.id),
+      );
+    const byStop: Record<string, DeliveryStopItem[]> = {};
+    for (const row of (stopItems || []) as StopItemRow[]) {
+      const sid = row.stop_id;
+      if (!byStop[sid]) byStop[sid] = [];
+      byStop[sid].push({
+        id: row.id,
+        description: row.description,
+        quantity: row.quantity,
+        weight_range: row.weight_range,
+        is_fragile: row.is_fragile,
+        is_high_value: row.is_high_value,
+        requires_assembly: row.requires_assembly,
+        status: row.status,
+      });
+    }
+    stops = stops.map((s) => ({
+      ...s,
+      stop_items: byStop[s.id] || [],
+    }));
+  }
 
   const deliveryOrg = delivery.organization_id
     ? (orgs || []).find((o: { id: string }) => o.id === delivery.organization_id)

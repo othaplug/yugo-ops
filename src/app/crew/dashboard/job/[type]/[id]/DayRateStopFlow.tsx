@@ -4,6 +4,17 @@ import { useState, useCallback } from "react";
 import { Check, MapPin, Clock, SkipForward } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
+interface StopItemRow {
+  id: string;
+  description: string;
+  quantity: number;
+  weight_range?: string | null;
+  is_fragile?: boolean | null;
+  status?: string | null;
+  notes?: string | null;
+  photo_url?: string | null;
+}
+
 interface Stop {
   id: string;
   stop_number: number;
@@ -11,6 +22,13 @@ interface Stop {
   customer_name: string | null;
   customer_phone: string | null;
   client_phone: string | null;
+  vendor_name?: string | null;
+  contact_name?: string | null;
+  contact_phone?: string | null;
+  access_type?: string | null;
+  access_notes?: string | null;
+  readiness?: string | null;
+  readiness_notes?: string | null;
   items_description: string | null;
   special_instructions: string | null;
   notes: string | null;
@@ -18,6 +36,8 @@ interface Stop {
   stop_type: string;
   arrived_at: string | null;
   completed_at: string | null;
+  is_final_destination?: boolean | null;
+  stopItems?: StopItemRow[];
 }
 
 interface DeliveryInfo {
@@ -33,7 +53,9 @@ interface Props {
   stops: Stop[];
   delivery: DeliveryInfo;
   partnerName: string;
+  flowSubtitle?: string;
   vehicleType?: string | null;
+  flowKind?: "day_rate" | "b2b_multi";
   onStopUpdated?: () => void;
 }
 
@@ -81,10 +103,16 @@ export default function DayRateStopFlow({
   stops,
   delivery,
   partnerName,
+  flowSubtitle,
   vehicleType,
+  flowKind = "day_rate",
   onStopUpdated,
 }: Props) {
   const [advancing, setAdvancing] = useState<string | null>(null);
+  const [itemBusy, setItemBusy] = useState<string | null>(null);
+  const [issueItemId, setIssueItemId] = useState<string | null>(null);
+  const [issueNote, setIssueNote] = useState("");
+  const [issuePhotoUrl, setIssuePhotoUrl] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(() => {
     const current = stops.find(
       (s) =>
@@ -125,6 +153,62 @@ export default function DayRateStopFlow({
     [delivery.id, onStopUpdated],
   );
 
+  const patchStopItem = useCallback(
+    async (
+      itemId: string,
+      status: string,
+      notes?: string | null,
+      photo_url?: string | null,
+    ) => {
+      setItemBusy(itemId);
+      try {
+        const res = await fetch("/api/crew/delivery-stop-items", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            item_id: itemId,
+            delivery_id: delivery.id,
+            status,
+            notes: notes ?? undefined,
+            photo_url: photo_url ?? undefined,
+          }),
+        });
+        if (!res.ok) throw new Error("Failed");
+        setIssueItemId(null);
+        setIssueNote("");
+        setIssuePhotoUrl("");
+        onStopUpdated?.();
+      } catch {
+        /* ignore */
+      } finally {
+        setItemBusy(null);
+      }
+    },
+    [delivery.id, onStopUpdated],
+  );
+
+  const itemsForStop = useCallback(
+    (stop: Stop): StopItemRow[] => {
+      if (
+        flowKind === "b2b_multi" &&
+        stop.stop_type === "delivery" &&
+        stop.is_final_destination
+      ) {
+        const acc: StopItemRow[] = [];
+        for (const s of stops) {
+          if (s.stop_type !== "pickup") continue;
+          for (const it of s.stopItems || []) acc.push(it);
+        }
+        return acc;
+      }
+      return stop.stopItems || [];
+    },
+    [flowKind, stops],
+  );
+
+  const navigateUrl = (address: string) =>
+    `https://maps.apple.com/?daddr=${encodeURIComponent(address)}`;
+
   const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
@@ -132,7 +216,7 @@ export default function DayRateStopFlow({
       <div className="rounded-2xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 shadow-[var(--yu3-shadow-sm)]">
         <div className="mb-1 flex items-center justify-between">
           <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
-            Day rate
+            {flowKind === "b2b_multi" ? "Multi-stop" : "Day rate"}
           </span>
           <span className="rounded-full bg-[var(--yu3-wine-tint)] px-2 py-0.5 text-[10px] font-semibold text-[var(--yu3-wine)] [font-family:var(--font-body)]">
             {completedCount}/{totalCount} stops
@@ -141,6 +225,11 @@ export default function DayRateStopFlow({
         <h2 className="text-[18px] font-bold leading-tight text-[var(--yu3-ink)] [font-family:var(--font-body)]">
           {partnerName}
         </h2>
+        {flowSubtitle && (
+          <p className="mt-0.5 text-[11px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+            {flowSubtitle}
+          </p>
+        )}
         {vehicleType && (
           <p className="mt-0.5 text-[11px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
             {vehicleType} · Full day
@@ -217,6 +306,11 @@ export default function DayRateStopFlow({
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="mb-0.5 flex flex-wrap items-center gap-2">
+                      {stop.vendor_name && flowKind === "b2b_multi" && (
+                        <span className="text-[11px] font-semibold text-[var(--yu3-wine)] [font-family:var(--font-body)]">
+                          {stop.vendor_name}
+                        </span>
+                      )}
                       <span className="text-[12px] font-bold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
                         Stop {stop.stop_number} of {totalCount}
                       </span>
@@ -254,21 +348,198 @@ export default function DayRateStopFlow({
 
               {isExpanded && (
                 <div className="space-y-3 border-t border-[var(--yu3-line-subtle)]/80 px-4 pb-4 pt-0">
-                  {(stop.customer_name || stop.customer_phone || stop.client_phone) && (
+                  {(stop.customer_name ||
+                    stop.contact_name ||
+                    stop.customer_phone ||
+                    stop.contact_phone ||
+                    stop.client_phone) && (
                     <div className="space-y-1">
-                      {stop.customer_name && (
+                      {(stop.customer_name || stop.contact_name) && (
                         <p className="text-[11px] text-[var(--yu3-ink)] [font-family:var(--font-body)]">
-                          Contact: <strong>{stop.customer_name}</strong>
+                          Contact:{" "}
+                          <strong>
+                            {stop.contact_name || stop.customer_name}
+                          </strong>
                         </p>
                       )}
-                      {(stop.customer_phone || stop.client_phone) && (
+                      {(stop.customer_phone ||
+                        stop.contact_phone ||
+                        stop.client_phone) && (
                         <a
-                          href={`tel:${stop.customer_phone || stop.client_phone}`}
+                          href={`tel:${stop.customer_phone || stop.contact_phone || stop.client_phone}`}
                           className="text-[11px] text-[var(--yu3-wine)] underline-offset-2 hover:underline [font-family:var(--font-body)]"
                         >
-                          {stop.customer_phone || stop.client_phone}
+                          {stop.customer_phone ||
+                            stop.contact_phone ||
+                            stop.client_phone}
                         </a>
                       )}
+                    </div>
+                  )}
+
+                  {(stop.access_type || stop.access_notes) &&
+                    flowKind === "b2b_multi" && (
+                      <p className="text-[10px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+                        Access: {[stop.access_type, stop.access_notes]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    )}
+
+                  {flowKind === "b2b_multi" &&
+                    stop.stop_type === "pickup" &&
+                    stop.readiness &&
+                    stop.readiness !== "confirmed" && (
+                      <p className="text-[10px] text-amber-800 [font-family:var(--font-body)]">
+                        Readiness: {stop.readiness}
+                        {stop.readiness_notes
+                          ? ` · ${stop.readiness_notes}`
+                          : ""}
+                      </p>
+                    )}
+
+                  {itemsForStop(stop).length > 0 && flowKind === "b2b_multi" && (
+                    <div className="space-y-2 rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/50 p-2">
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
+                        {stop.stop_type === "pickup" || !stop.is_final_destination
+                          ? "Pick up"
+                          : "Deliver"}
+                      </p>
+                      <ul className="space-y-2">
+                        {itemsForStop(stop).map((it) => {
+                          const st = (it.status || "pending").toLowerCase();
+                          const donePickup =
+                            st === "picked_up" ||
+                            st === "loaded" ||
+                            st === "delivered";
+                          const doneDel = st === "delivered";
+                          const canToggle =
+                            stop.stop_status === "in_progress" ||
+                            stop.stop_status === "arrived";
+                          const targetStatus =
+                            stop.stop_type === "pickup" ||
+                            (!stop.is_final_destination &&
+                              stop.stop_type !== "delivery")
+                              ? "picked_up"
+                              : "delivered";
+                          const isDone =
+                            stop.stop_type === "pickup"
+                              ? donePickup
+                              : doneDel;
+                          return (
+                            <li
+                              key={it.id}
+                              className="rounded-md border border-[var(--yu3-line)]/40 bg-[var(--yu3-bg-surface)] px-2 py-1.5"
+                            >
+                              <div className="flex items-start gap-2">
+                                <button
+                                  type="button"
+                                  disabled={
+                                    !canToggle || itemBusy === it.id || isDone
+                                  }
+                                  onClick={() =>
+                                    void patchStopItem(it.id, targetStatus)
+                                  }
+                                  className={cn(
+                                    "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border",
+                                    isDone
+                                      ? "border-[var(--yu3-wine)] bg-[var(--yu3-wine)] text-white"
+                                      : "border-[var(--yu3-line)]",
+                                  )}
+                                  aria-label={
+                                    isDone ? "Item checked" : "Mark item"
+                                  }
+                                >
+                                  {isDone && <Check size={12} weight="bold" />}
+                                </button>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-[11px] font-medium text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+                                    {it.quantity}× {it.description}
+                                    {it.is_fragile ? " · Fragile" : ""}
+                                  </p>
+                                  <p className="text-[9px] uppercase text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
+                                    {st.replace(/_/g, " ")}
+                                  </p>
+                                </div>
+                              </div>
+                              {canToggle && !isDone && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  <button
+                                    type="button"
+                                    className="text-[10px] font-semibold text-red-700 underline"
+                                    onClick={() => setIssueItemId(it.id)}
+                                  >
+                                    Report issue
+                                  </button>
+                                </div>
+                              )}
+                              {issueItemId === it.id && (
+                                <div className="mt-2 space-y-1 border-t border-[var(--yu3-line-subtle)] pt-2">
+                                  <label className="block text-[9px] font-bold uppercase text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
+                                    Note (required)
+                                  </label>
+                                  <textarea
+                                    value={issueNote}
+                                    onChange={(e) =>
+                                      setIssueNote(e.target.value)
+                                    }
+                                    rows={2}
+                                    className="w-full rounded-md border border-[var(--yu3-line)] px-2 py-1 text-[11px]"
+                                  />
+                                  <label className="block text-[9px] font-bold uppercase text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
+                                    Photo URL (required)
+                                  </label>
+                                  <input
+                                    value={issuePhotoUrl}
+                                    onChange={(e) =>
+                                      setIssuePhotoUrl(e.target.value)
+                                    }
+                                    className="w-full rounded-md border border-[var(--yu3-line)] px-2 py-1 text-[11px]"
+                                    placeholder="https://…"
+                                  />
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      className="rounded-md bg-red-700 px-2 py-1 text-[10px] font-semibold text-white"
+                                      onClick={() =>
+                                        void patchStopItem(
+                                          it.id,
+                                          "damaged",
+                                          issueNote,
+                                          issuePhotoUrl,
+                                        )
+                                      }
+                                    >
+                                      Damaged
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="rounded-md bg-zinc-700 px-2 py-1 text-[10px] font-semibold text-white"
+                                      onClick={() =>
+                                        void patchStopItem(
+                                          it.id,
+                                          "missing",
+                                          issueNote,
+                                          issuePhotoUrl,
+                                        )
+                                      }
+                                    >
+                                      Missing
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="text-[10px] text-[var(--yu3-ink-muted)]"
+                                      onClick={() => setIssueItemId(null)}
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
                     </div>
                   )}
 
@@ -281,14 +552,24 @@ export default function DayRateStopFlow({
                   {!isDone && !isPending && (
                     <div className="flex flex-wrap gap-2 pt-1">
                       {stop.stop_status === "current" && (
-                        <button
-                          type="button"
-                          onClick={() => advanceStop(stop.id, "arrived")}
-                          disabled={advancing === stop.id}
-                          className="min-h-[40px] rounded-[var(--yu3-r-md)] bg-sky-600 px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50 [font-family:var(--font-body)]"
-                        >
-                          {advancing === stop.id ? "…" : "Arrived"}
-                        </button>
+                        <>
+                          <a
+                            href={navigateUrl(stop.address)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex min-h-[40px] items-center justify-center rounded-[var(--yu3-r-md)] border border-[var(--yu3-wine)]/40 px-3 py-1.5 text-[11px] font-semibold text-[var(--yu3-wine)] [font-family:var(--font-body)]"
+                          >
+                            Navigate
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => advanceStop(stop.id, "arrived")}
+                            disabled={advancing === stop.id}
+                            className="min-h-[40px] rounded-[var(--yu3-r-md)] bg-sky-600 px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50 [font-family:var(--font-body)]"
+                          >
+                            {advancing === stop.id ? "…" : "Arrived"}
+                          </button>
+                        </>
                       )}
                       {stop.stop_status === "arrived" && (
                         <button
@@ -350,7 +631,9 @@ export default function DayRateStopFlow({
             All {totalCount} stops completed
           </p>
           <p className="mt-1 text-[11px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
-            Day rate job is done. Great work.
+            {flowKind === "b2b_multi"
+              ? "Multi-stop job is done. Great work."
+              : "Day rate job is done. Great work."}
           </p>
         </div>
       )}

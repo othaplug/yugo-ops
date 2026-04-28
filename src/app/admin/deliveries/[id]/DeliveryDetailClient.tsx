@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -11,6 +11,7 @@ import {
   Stack as Layers,
   Users,
   FileText,
+  Printer,
   Money as DollarSign,
   Warning as AlertTriangle,
   PencilSimple as Pencil,
@@ -257,6 +258,17 @@ interface Crew {
   members?: string[];
 }
 
+export interface DeliveryStopItem {
+  id?: string;
+  description: string;
+  quantity: number;
+  weight_range?: string | null;
+  is_fragile?: boolean | null;
+  is_high_value?: boolean | null;
+  requires_assembly?: boolean | null;
+  status?: string | null;
+}
+
 export interface DeliveryStop {
   id: string;
   stop_number: number;
@@ -264,6 +276,14 @@ export interface DeliveryStop {
   customer_name: string | null;
   customer_phone: string | null;
   client_phone?: string | null;
+  vendor_name?: string | null;
+  contact_name?: string | null;
+  contact_phone?: string | null;
+  contact_email?: string | null;
+  access_type?: string | null;
+  access_notes?: string | null;
+  readiness?: string | null;
+  readiness_notes?: string | null;
   items_description: string | null;
   special_instructions: string | null;
   notes?: string | null;
@@ -271,7 +291,37 @@ export interface DeliveryStop {
   stop_type?: string | null;
   arrived_at?: string | null;
   completed_at?: string | null;
+  is_final_destination?: boolean | null;
+  stop_items?: DeliveryStopItem[] | null;
 }
+
+const ACCESS_TYPE_LABELS: Record<string, string> = {
+  elevator: "Elevator",
+  ground_floor: "Ground floor",
+  loading_dock: "Loading dock",
+  walk_up_2: "Walk-up (2 flights)",
+  walk_up_3: "Walk-up (3 flights)",
+  walk_up_4_plus: "Walk-up (4+ flights)",
+  long_carry: "Long carry",
+  narrow_stairs: "Narrow stairs",
+  no_parking: "No parking",
+};
+
+const formatStopAccess = (raw: string | null | undefined) => {
+  if (!raw) return "";
+  return ACCESS_TYPE_LABELS[raw] || raw.replace(/_/g, " ");
+};
+
+const readinessBadge = (readiness: string | null | undefined) => {
+  const r = (readiness || "confirmed").toLowerCase();
+  const map: Record<string, { label: string; dot: string }> = {
+    confirmed: { label: "Ready", dot: "bg-emerald-500" },
+    pending: { label: "Pending", dot: "bg-amber-400" },
+    partial: { label: "Partial", dot: "bg-orange-500" },
+    delayed: { label: "Delayed", dot: "bg-red-500" },
+  };
+  return map[r] || { label: toTitleCase(r.replace(/_/g, " ")), dot: "bg-zinc-400" };
+};
 
 interface EtaSmsLogEntry {
   message_type: string;
@@ -618,11 +668,40 @@ export default function DeliveryDetailClient({
   };
 
   const items = Array.isArray(delivery.items) ? delivery.items : [];
-  const itemsDisplay = normalizeDeliveryItemsForDisplay(items);
+  const isMultiStop =
+    !!delivery.is_multi_stop && Array.isArray(stops) && stops.length > 0;
+  const itemsDisplay = useMemo(() => {
+    if (!isMultiStop || !stops) {
+      return normalizeDeliveryItemsForDisplay(items);
+    }
+    const rows: { name: string; qty: number }[] = [];
+    for (const s of stops) {
+      const lineItems = s.stop_items;
+      if (Array.isArray(lineItems) && lineItems.length > 0) {
+        for (const it of lineItems) {
+          const q = Math.max(1, Number(it.quantity) || 1);
+          let name = String(it.description || "").trim() || "Item";
+          const bits: string[] = [];
+          if (it.is_fragile) bits.push("fragile");
+          if (it.is_high_value) bits.push("high value");
+          if (it.requires_assembly) bits.push("assembly");
+          if (bits.length) name = `${name} (${bits.join(", ")})`;
+          rows.push({ name, qty: q });
+        }
+      } else if (s.items_description?.trim()) {
+        rows.push({ name: s.items_description.trim(), qty: 1 });
+      }
+    }
+    return rows;
+  }, [isMultiStop, stops, items]);
   const totalItems = itemsDisplay.reduce(
-    (sum: number, i: any) => sum + (i.qty || 1),
+    (sum: number, i: { qty?: number }) => sum + (i.qty || 1),
     0,
   );
+  const hasMultiRoute = !!(isMultiStop && stops && stops.length > 0);
+  const pickupStopCount = hasMultiRoute
+    ? stops!.filter((s) => !s.is_final_destination).length
+    : 0;
   const isPartnerRequest = delivery.created_by_source === "partner_portal";
   const needsApproval =
     (delivery.status === "pending_approval" || delivery.status === "pending") &&
@@ -982,7 +1061,9 @@ export default function DeliveryDetailClient({
                   onClick={() => setContactModalOpen(true)}
                   className="font-heading text-[18px] md:text-[20px] font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors truncate"
                 >
-                  {delivery.customer_name || delivery.delivery_number}
+                  {hasMultiRoute && String(delivery.project_name || "").trim()
+                    ? String(delivery.project_name).trim()
+                    : delivery.customer_name || delivery.delivery_number}
                 </button>
                 {price > 0 && (
                   <span className="inline-flex items-baseline gap-1.5">
@@ -1008,6 +1089,16 @@ export default function DeliveryDetailClient({
                       : ""}
                   </span>
                 )}
+                {hasMultiRoute && (
+                  <span className="dt-badge tracking-[0.04em] text-sky-700 dark:text-sky-300">
+                    Multi-stop
+                    {delivery.total_stops != null
+                      ? ` · ${delivery.total_stops} stops`
+                      : stops
+                        ? ` · ${stops.length} stops`
+                        : ""}
+                  </span>
+                )}
                 <span className={`dt-badge tracking-[0.04em] ${cat.text}`}>
                   {cat.label}
                 </span>
@@ -1023,6 +1114,18 @@ export default function DeliveryDetailClient({
                   </span>
                 )}
               </div>
+              {hasMultiRoute &&
+                (delivery.end_client_name || delivery.end_client_phone) && (
+                  <p className="text-[11px] text-[var(--tx2)] mt-2 font-medium">
+                    End client:{" "}
+                    {delivery.end_client_name
+                      ? String(delivery.end_client_name)
+                      : "—"}
+                    {delivery.end_client_phone
+                      ? ` · ${formatPhone(String(delivery.end_client_phone))}`
+                      : ""}
+                  </p>
+                )}
             </div>
 
             {/* Actions */}
@@ -1048,6 +1151,26 @@ export default function DeliveryDetailClient({
                 delivery={delivery}
                 className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
               />
+              {hasMultiRoute ? (
+                <a
+                  href={`/admin/deliveries/${encodeURIComponent(delivery.delivery_number || delivery.id)}/manifest`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
+                >
+                  <Printer
+                    weight="regular"
+                    className="w-3 h-3 shrink-0"
+                    aria-hidden
+                  />{" "}
+                  Print manifest
+                  <CaretRight
+                    weight="bold"
+                    className="w-3 h-3 shrink-0 opacity-90"
+                    aria-hidden
+                  />
+                </a>
+              ) : null}
               <button
                 type="button"
                 onClick={() => setDeleteConfirmOpen(true)}
@@ -1297,151 +1420,294 @@ export default function DeliveryDetailClient({
 
           {/* ─── Seamless sections below map ─── */}
           <div className="mt-6 space-y-0">
-            {/* Route / Day rate stops */}
+            {/* Route / Day rate stops / Multi-stop B2B */}
             <div className="pb-5">
               <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-4">
-                {delivery.booking_type === "day_rate" &&
-                stops &&
-                stops.length > 0
-                  ? `Route · ${stops.length} stop${stops.length !== 1 ? "s" : ""}`
-                  : "Route"}
+                {hasMultiRoute
+                  ? `Route (${pickupStopCount} pickup${pickupStopCount !== 1 ? "s" : ""} → 1 delivery)`
+                  : delivery.booking_type === "day_rate" &&
+                      stops &&
+                      stops.length > 0
+                    ? `Route · ${stops.length} stop${stops.length !== 1 ? "s" : ""}`
+                    : "Route"}
               </div>
               <div className="space-y-0">
-                {/* Pickup */}
-                <div className="flex items-start gap-3.5">
-                  <div className="flex flex-col items-center shrink-0">
-                    <div className="w-3 h-3 rounded-full border-2 border-emerald-500 bg-emerald-500/20" />
-                    <div className="w-px h-full min-h-[32px] bg-[var(--brd)]/30" />
-                  </div>
-                  <div className="flex-1 min-w-0 pb-4">
-                    <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-emerald-500/70 mb-0.5">
-                      Pickup
-                    </div>
-                    <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">
-                      {delivery.pickup_address || "Not set"}
-                    </div>
-                    {delivery.pickup_access && (
-                      <div className="text-[10px] text-[var(--tx3)] mt-0.5">
-                        Access: {delivery.pickup_access}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {/* Day rate: list each stop with status */}
-                {delivery.booking_type === "day_rate" &&
-                stops &&
-                stops.length > 0 ? (
-                  stops.map((stop, i) => {
-                    const sStatus = stop.stop_status || "pending";
-                    const isDoneStop = sStatus === "completed";
-                    const isCurrentStop = [
-                      "current",
-                      "arrived",
-                      "in_progress",
-                    ].includes(sStatus);
-                    const dotColor = isDoneStop
-                      ? "#22C55E"
-                      : isCurrentStop
-                        ? "#F59E0B"
-                        : "var(--brd)";
-                    const statusIcon = isDoneStop
-                      ? "done"
-                      : isCurrentStop
-                        ? "active"
-                        : "pending";
-                    const completedTime = stop.completed_at
-                      ? new Date(stop.completed_at).toLocaleTimeString(
-                          "en-CA",
-                          { hour: "2-digit", minute: "2-digit" },
-                        )
-                      : null;
-                    return (
-                      <div key={stop.id} className="flex items-start gap-3.5">
-                        <div className="flex flex-col items-center shrink-0">
-                          <div
-                            className="w-3 h-3 rounded-full border-2 flex items-center justify-center text-[9px]"
-                            style={{
-                              borderColor: dotColor,
-                              backgroundColor: `${dotColor}20`,
-                            }}
-                          />
-                          {i < stops.length - 1 && (
-                            <div className="w-px h-full min-h-[32px] bg-[var(--brd)]/30" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0 pb-4">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/70 flex items-center gap-1">
-                              {statusIcon === "done" && (
-                                <Check size={9} color="#22C55E" weight="bold" />
-                              )}
-                              {statusIcon === "active" && (
-                                <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
-                              )}
-                              {statusIcon === "pending" && (
-                                <span className="w-2 h-2 rounded-full border border-[var(--brd)] inline-block" />
-                              )}
-                              Stop {stop.stop_number}
-                            </div>
-                            {stop.stop_type && (
-                              <span className="text-[9px] uppercase font-semibold text-[var(--tx3)]/82">
-                                {stop.stop_type}
-                              </span>
-                            )}
-                            {isDoneStop && completedTime && (
-                              <span className="text-[9px] text-[#22C55E] ml-auto">
-                                Done {completedTime}
-                              </span>
-                            )}
-                            {isCurrentStop && (
-                              <span className="text-[9px] text-[#F59E0B] ml-auto">
-                                In Progress
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">
-                            {stop.address || "-"}
-                          </div>
-                          {stop.customer_name && (
-                            <div className="text-[11px] text-[var(--tx3)] mt-0.5">
-                              {stop.customer_name}
-                            </div>
-                          )}
-                          {stop.items_description && (
-                            <div className="text-[10px] text-[var(--tx3)] mt-0.5">
-                              {stop.items_description}
-                            </div>
-                          )}
-                          {(stop.special_instructions || stop.notes) && (
-                            <div className="text-[10px] text-[var(--tx3)] mt-0.5 italic">
-                              Note: {stop.special_instructions || stop.notes}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  /* Single drop-off */
+                {/* Pickup summary (hidden when multi-stop rows include each pickup) */}
+                {!hasMultiRoute && (
                   <div className="flex items-start gap-3.5">
                     <div className="flex flex-col items-center shrink-0">
-                      <div className="w-3 h-3 rounded-full border-2 border-[var(--gold)] bg-[var(--gold)]/20" />
+                      <div className="w-3 h-3 rounded-full border-2 border-emerald-500 bg-emerald-500/20" />
+                      <div className="w-px h-full min-h-[32px] bg-[var(--brd)]/30" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/70 mb-0.5">
-                        Drop-off
+                    <div className="flex-1 min-w-0 pb-4">
+                      <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-emerald-500/70 mb-0.5">
+                        Pickup
                       </div>
                       <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">
-                        {delivery.delivery_address || "Not set"}
+                        {delivery.pickup_address || "Not set"}
                       </div>
-                      {delivery.delivery_access && (
+                      {delivery.pickup_access && (
                         <div className="text-[10px] text-[var(--tx3)] mt-0.5">
-                          Access: {delivery.delivery_access}
+                          Access: {delivery.pickup_access}
                         </div>
                       )}
                     </div>
                   </div>
                 )}
+                {hasMultiRoute && stops
+                  ? stops.map((stop, i) => {
+                      const isFinal = !!stop.is_final_destination;
+                      const sStatus = stop.stop_status || "pending";
+                      const isDoneStop = sStatus === "completed";
+                      const isCurrentStop = [
+                        "current",
+                        "arrived",
+                        "in_progress",
+                      ].includes(sStatus);
+                      const dotColor = isFinal
+                        ? "var(--gold)"
+                        : isDoneStop
+                          ? "#22C55E"
+                          : isCurrentStop
+                            ? "#F59E0B"
+                            : "var(--brd)";
+                      const statusIcon = isDoneStop
+                        ? "done"
+                        : isCurrentStop
+                          ? "active"
+                          : "pending";
+                      const completedTime = stop.completed_at
+                        ? new Date(stop.completed_at).toLocaleTimeString(
+                            "en-CA",
+                            { hour: "2-digit", minute: "2-digit" },
+                          )
+                        : null;
+                      const rb = readinessBadge(stop.readiness);
+                      const lineItems = stop.stop_items || [];
+                      return (
+                        <div key={stop.id} className="flex items-start gap-3.5">
+                          <div className="flex flex-col items-center shrink-0">
+                            <div
+                              className="w-3 h-3 rounded-full border-2 flex items-center justify-center text-[9px]"
+                              style={{
+                                borderColor: dotColor,
+                                backgroundColor: `${dotColor}20`,
+                              }}
+                            />
+                            {i < stops.length - 1 && (
+                              <div className="w-px h-full min-h-[32px] bg-[var(--brd)]/30" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0 pb-4">
+                            <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                              <div
+                                className={`text-[9px] font-bold tracking-[0.12em] uppercase flex items-center gap-1 ${isFinal ? "text-[var(--gold)]/70" : "text-[var(--gold)]/70"}`}
+                              >
+                                {statusIcon === "done" && (
+                                  <Check size={9} color="#22C55E" weight="bold" />
+                                )}
+                                {statusIcon === "active" && (
+                                  <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                                )}
+                                {statusIcon === "pending" && (
+                                  <span className="w-2 h-2 rounded-full border border-[var(--brd)] inline-block" />
+                                )}
+                                {isFinal
+                                  ? "Delivery"
+                                  : `Stop ${stop.stop_number}`}
+                              </div>
+                              {!isFinal && (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold tracking-[0.08em] uppercase text-[var(--tx3)]">
+                                  <span
+                                    className={`w-2 h-2 rounded-full shrink-0 ${rb.dot}`}
+                                  />
+                                  {rb.label}
+                                </span>
+                              )}
+                              {stop.vendor_name ? (
+                                <span className="text-[11px] font-semibold text-[var(--tx)]">
+                                  {stop.vendor_name}
+                                </span>
+                              ) : null}
+                              {isDoneStop && completedTime && (
+                                <span className="text-[9px] text-[#22C55E] ml-auto">
+                                  Done {completedTime}
+                                </span>
+                              )}
+                              {isCurrentStop && (
+                                <span className="text-[9px] text-[#F59E0B] ml-auto">
+                                  In Progress
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">
+                              {stop.address || "—"}
+                            </div>
+                            {(stop.contact_name || stop.contact_phone) && (
+                              <div className="text-[11px] text-[var(--tx3)] mt-0.5">
+                                Contact:{" "}
+                                {[stop.contact_name, stop.contact_phone]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </div>
+                            )}
+                            {stop.customer_name && !stop.contact_name ? (
+                              <div className="text-[11px] text-[var(--tx3)] mt-0.5">
+                                {stop.customer_name}
+                              </div>
+                            ) : null}
+                            {(stop.access_type || stop.access_notes) && (
+                              <div className="text-[10px] text-[var(--tx3)] mt-0.5">
+                                Access: {formatStopAccess(stop.access_type)}
+                                {stop.access_notes
+                                  ? ` · ${stop.access_notes}`
+                                  : ""}
+                              </div>
+                            )}
+                            {lineItems.length > 0 ? (
+                              <ul className="mt-1 space-y-0.5 text-[10px] text-[var(--tx3)] list-disc pl-4">
+                                {lineItems.map((it, j) => (
+                                  <li key={j}>
+                                    {it.quantity}× {it.description}
+                                    {it.is_fragile ? " · fragile" : ""}
+                                    {it.requires_assembly ? " · assembly" : ""}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : stop.items_description ? (
+                              <div className="text-[10px] text-[var(--tx3)] mt-0.5">
+                                {stop.items_description}
+                              </div>
+                            ) : null}
+                            {(stop.readiness === "partial" ||
+                              stop.readiness === "delayed") &&
+                              stop.readiness_notes && (
+                                <div className="text-[10px] text-amber-700 dark:text-amber-300 mt-0.5">
+                                  Readiness: {stop.readiness_notes}
+                                </div>
+                              )}
+                            {(stop.special_instructions || stop.notes) && (
+                              <div className="text-[10px] text-[var(--tx3)] mt-0.5 italic">
+                                Note: {stop.special_instructions || stop.notes}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  : delivery.booking_type === "day_rate" &&
+                      stops &&
+                      stops.length > 0
+                    ? stops.map((stop, i) => {
+                        const sStatus = stop.stop_status || "pending";
+                        const isDoneStop = sStatus === "completed";
+                        const isCurrentStop = [
+                          "current",
+                          "arrived",
+                          "in_progress",
+                        ].includes(sStatus);
+                        const dotColor = isDoneStop
+                          ? "#22C55E"
+                          : isCurrentStop
+                            ? "#F59E0B"
+                            : "var(--brd)";
+                        const statusIcon = isDoneStop
+                          ? "done"
+                          : isCurrentStop
+                            ? "active"
+                            : "pending";
+                        const completedTime = stop.completed_at
+                          ? new Date(stop.completed_at).toLocaleTimeString(
+                              "en-CA",
+                              { hour: "2-digit", minute: "2-digit" },
+                            )
+                          : null;
+                        return (
+                          <div key={stop.id} className="flex items-start gap-3.5">
+                            <div className="flex flex-col items-center shrink-0">
+                              <div
+                                className="w-3 h-3 rounded-full border-2 flex items-center justify-center text-[9px]"
+                                style={{
+                                  borderColor: dotColor,
+                                  backgroundColor: `${dotColor}20`,
+                                }}
+                              />
+                              {i < stops.length - 1 && (
+                                <div className="w-px h-full min-h-[32px] bg-[var(--brd)]/30" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 pb-4">
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/70 flex items-center gap-1">
+                                  {statusIcon === "done" && (
+                                    <Check size={9} color="#22C55E" weight="bold" />
+                                  )}
+                                  {statusIcon === "active" && (
+                                    <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                                  )}
+                                  {statusIcon === "pending" && (
+                                    <span className="w-2 h-2 rounded-full border border-[var(--brd)] inline-block" />
+                                  )}
+                                  Stop {stop.stop_number}
+                                </div>
+                                {stop.stop_type && (
+                                  <span className="text-[9px] uppercase font-semibold text-[var(--tx3)]/82">
+                                    {stop.stop_type}
+                                  </span>
+                                )}
+                                {isDoneStop && completedTime && (
+                                  <span className="text-[9px] text-[#22C55E] ml-auto">
+                                    Done {completedTime}
+                                  </span>
+                                )}
+                                {isCurrentStop && (
+                                  <span className="text-[9px] text-[#F59E0B] ml-auto">
+                                    In Progress
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">
+                                {stop.address || "-"}
+                              </div>
+                              {stop.customer_name && (
+                                <div className="text-[11px] text-[var(--tx3)] mt-0.5">
+                                  {stop.customer_name}
+                                </div>
+                              )}
+                              {stop.items_description && (
+                                <div className="text-[10px] text-[var(--tx3)] mt-0.5">
+                                  {stop.items_description}
+                                </div>
+                              )}
+                              {(stop.special_instructions || stop.notes) && (
+                                <div className="text-[10px] text-[var(--tx3)] mt-0.5 italic">
+                                  Note: {stop.special_instructions || stop.notes}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    : !hasMultiRoute && (
+                        <div className="flex items-start gap-3.5">
+                          <div className="flex flex-col items-center shrink-0">
+                            <div className="w-3 h-3 rounded-full border-2 border-[var(--gold)] bg-[var(--gold)]/20" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/70 mb-0.5">
+                              Drop-off
+                            </div>
+                            <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">
+                              {delivery.delivery_address || "Not set"}
+                            </div>
+                            {delivery.delivery_access && (
+                              <div className="text-[10px] text-[var(--tx3)] mt-0.5">
+                                Access: {delivery.delivery_access}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
               </div>
             </div>
 

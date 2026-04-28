@@ -142,6 +142,21 @@ interface ProjectContext {
   phaseName: string | null;
 }
 
+interface DeliveryStopItemRow {
+  id: string;
+  description: string;
+  quantity: number;
+  weight_range?: string | null;
+  is_fragile?: boolean | null;
+  is_high_value?: boolean | null;
+  requires_assembly?: boolean | null;
+  status?: string | null;
+  notes?: string | null;
+  photo_url?: string | null;
+  checked_by?: string | null;
+  checked_at?: string | null;
+}
+
 interface DeliveryStop {
   id: string;
   stop_number: number;
@@ -149,6 +164,13 @@ interface DeliveryStop {
   customer_name: string | null;
   customer_phone: string | null;
   client_phone: string | null;
+  vendor_name?: string | null;
+  contact_name?: string | null;
+  contact_phone?: string | null;
+  access_type?: string | null;
+  access_notes?: string | null;
+  readiness?: string | null;
+  readiness_notes?: string | null;
   items_description: string | null;
   special_instructions: string | null;
   notes: string | null;
@@ -156,6 +178,8 @@ interface DeliveryStop {
   stop_type: string;
   arrived_at: string | null;
   completed_at: string | null;
+  is_final_destination?: boolean | null;
+  stopItems?: DeliveryStopItemRow[];
 }
 
 interface JobDetail {
@@ -227,6 +251,10 @@ interface JobDetail {
   isPmContractMove?: boolean;
   pmHoldingUnit?: string | null;
   pmReasonCode?: string | null;
+  isMultiStop?: boolean;
+  projectName?: string | null;
+  endClientName?: string | null;
+  endClientPhone?: string | null;
   pmPackingRequired?: boolean;
   tenantPresent?: boolean;
   buildingContactName?: string | null;
@@ -756,10 +784,27 @@ export default function CrewJobPage({
     );
   }
 
-  // Day rate with stops — render dedicated multi-stop flow
+  // Day rate or B2B multi-stop: sequential stops flow
   const isDayRate =
     job.bookingType === "day_rate" && job.stops && job.stops.length > 0;
-  if (isDayRate) {
+  const isB2bMultiStop =
+    job.jobType === "delivery" &&
+    job.isMultiStop &&
+    job.stops &&
+    job.stops.length > 0;
+  if (isDayRate || isB2bMultiStop) {
+    const flowTitle =
+      job.projectName?.trim() ||
+      job.endClientName?.trim() ||
+      job.clientName;
+    const flowSubtitle = [
+      job.endClientName?.trim() && job.projectName?.trim()
+        ? job.endClientName.trim()
+        : null,
+      job.endClientPhone?.trim() || null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
     return (
       <PageContent className="crew-job-premium w-full min-w-0 max-w-[520px] mx-auto">
         <div className="flex items-center gap-2 mb-5">
@@ -770,8 +815,14 @@ export default function CrewJobPage({
             <CaretLeft size={15} weight="regular" />
             Jobs
           </Link>
-          <span className="rounded-full bg-teal-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-700 [font-family:var(--font-body)]">
-            Day Rate
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider [font-family:var(--font-body)] ${
+              isB2bMultiStop
+                ? "bg-[var(--yu3-wine-tint)] text-[var(--yu3-wine)]"
+                : "bg-teal-500/15 text-teal-700"
+            }`}
+          >
+            {isB2bMultiStop ? "Multi-stop" : "Day Rate"}
           </span>
         </div>
         <DayRateStopFlow
@@ -784,8 +835,10 @@ export default function CrewJobPage({
             clientName: job.clientName,
             deliveryNumber: job.jobId,
           }}
-          partnerName={job.clientName}
+          partnerName={flowTitle}
+          flowSubtitle={flowSubtitle || undefined}
           vehicleType={null}
+          flowKind={isB2bMultiStop ? "b2b_multi" : "day_rate"}
           onStopUpdated={() => {
             fetchJob();
           }}

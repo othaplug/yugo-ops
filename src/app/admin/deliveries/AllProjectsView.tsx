@@ -73,6 +73,9 @@ interface Delivery {
   payment_received_at?: string | null;
   vehicle_type?: string | null;
   num_stops?: number | null;
+  is_multi_stop?: boolean | null;
+  total_stops?: number | null;
+  project_name?: string | null;
   total_price?: number | null;
   admin_adjusted_price?: number | null;
   quoted_price?: number | null;
