@@ -750,13 +750,13 @@ export default function LiveTrackingMap({
 
   if (!HAS_MAPBOX) {
     return (
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+      <div className={hideHeader ? undefined : "space-y-3"}>
         {!hideHeader && (
           <>
-            <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-2">
+            <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">
               Live Crew Tracking
             </h3>
-            <p className="text-[11px] text-[var(--tx3)] mb-3">
+            <p className="text-[11px] text-[var(--tx3)]">
               {crewName || crew?.name || "Crew"} •{" "}
               {hasPosition ? "Live position updating" : "Waiting for GPS..."}
               {crew?.updated_at ? (
@@ -771,7 +771,7 @@ export default function LiveTrackingMap({
           </>
         )}
         <div
-          className={`relative rounded-lg border border-[var(--brd)] overflow-hidden ${isFullscreen ? "map-fullscreen" : ""}`}
+          className={`relative w-full rounded-xl border border-[var(--brd)] overflow-hidden bg-[var(--bg)] ${isFullscreen ? "map-fullscreen" : ""}`}
           style={isFullscreen ? undefined : { height: 320 }}
         >
           {/* Fullscreen toggle */}
@@ -829,13 +829,13 @@ export default function LiveTrackingMap({
   }
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
+    <div className={hideHeader ? undefined : "space-y-3"}>
       {!hideHeader && (
         <>
-          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-2">
+          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)]">
             Live Crew Tracking
           </h3>
-          <p className="text-[11px] text-[var(--tx3)] mb-3">
+          <p className="text-[11px] text-[var(--tx3)]">
             {crewName || crew?.name || "Crew"} •{" "}
             {hasPosition ? "Live position updating" : "Waiting for GPS..."}
             {crew?.updated_at ? (
@@ -850,7 +850,7 @@ export default function LiveTrackingMap({
         </>
       )}
       <div
-        className={`relative rounded-lg border border-[var(--brd)] overflow-hidden ${isFullscreen ? "map-fullscreen" : ""}`}
+        className={`relative w-full rounded-xl border border-[var(--brd)] overflow-hidden bg-[var(--bg)] ${isFullscreen ? "map-fullscreen" : ""}`}
         style={isFullscreen ? undefined : { height: 320 }}
       >
         {/* Fullscreen toggle */}

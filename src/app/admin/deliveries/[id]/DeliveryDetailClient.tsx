@@ -1477,15 +1477,15 @@ export default function DeliveryDetailClient({
               </div>
             )
           ) : (
-            <div className="rounded-xl border border-[var(--brd)]/50 overflow-hidden bg-[var(--card)]">
-              <CollapsibleSection
-                title="Live Crew Tracking"
-                defaultCollapsed={!deliveryInProgress}
-                subtitle={
-                  displayCrew?.name ||
-                  (delivery.crew_id ? "Crew assigned" : "Assign crew")
-                }
-              >
+            <CollapsibleSection
+              title="Live Crew Tracking"
+              defaultCollapsed={!deliveryInProgress}
+              subtitle={
+                displayCrew?.name ||
+                (delivery.crew_id ? "Crew assigned" : "Assign crew")
+              }
+              surfaceClassName="rounded-xl border border-[var(--brd)]/50 overflow-hidden bg-[var(--card)]"
+            >
                 {delivery.crew_id ? (
                   <div className="space-y-2">
                     {!deliveryInProgress && (
@@ -1528,7 +1528,6 @@ export default function DeliveryDetailClient({
                   </div>
                 )}
               </CollapsibleSection>
-            </div>
           )}
 
           {/* ─── Seamless sections below map ─── */}

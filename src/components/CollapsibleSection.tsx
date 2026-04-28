@@ -9,6 +9,8 @@ interface CollapsibleSectionProps {
   children: React.ReactNode;
   /** Optional subtitle shown in header when collapsed */
   subtitle?: string;
+  /** Optional classes on the outer wrapper (e.g. card border) */
+  surfaceClassName?: string;
 }
 
 export default function CollapsibleSection({
@@ -16,11 +18,12 @@ export default function CollapsibleSection({
   defaultCollapsed = true,
   children,
   subtitle,
+  surfaceClassName,
 }: CollapsibleSectionProps) {
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
   return (
-    <div>
+    <div className={surfaceClassName}>
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
