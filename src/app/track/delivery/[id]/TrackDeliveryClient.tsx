@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import YugoLogo from "@/components/YugoLogo";
@@ -19,6 +19,8 @@ import {
   toTitleCase,
 } from "@/lib/format-text";
 import { normalizeDeliveryItem } from "@/lib/delivery-items";
+import type { TrackPublicStop, TrackRoutePlanPoint } from "@/lib/track-delivery-public";
+import { totalUnitsFromTrackStops } from "@/lib/track-delivery-public";
 import { shouldRevealCrewNamesOnMoveTrack } from "@/lib/track-crew-visibility";
 import {
   CaretDown,
@@ -312,6 +314,8 @@ export default function TrackDeliveryClient({
   b2bAssembly = false,
   b2bDebrisRemoval = false,
   companyContactEmail = process.env.NEXT_PUBLIC_YUGO_EMAIL || "support@helloyugo.com",
+  trackStops = null,
+  routePlan = null,
 }: {
   delivery: any;
   token: string;
@@ -327,6 +331,10 @@ export default function TrackDeliveryClient({
   b2bAssembly?: boolean;
   b2bDebrisRemoval?: boolean;
   companyContactEmail?: string;
+  /** Multi-stop: ordered stops with line items (from `delivery_stops`). */
+  trackStops?: TrackPublicStop[] | null;
+  /** Geocoded map path; labels 1…n and D for final. */
+  routePlan?: TrackRoutePlanPoint[] | null;
 }) {
   const [liveStage, setLiveStage] = useState<string | null>(
     delivery.stage || null,
@@ -407,6 +415,30 @@ export default function TrackDeliveryClient({
   }, [delivery.id, token]);
 
   const itemsCount = Array.isArray(delivery.items) ? delivery.items.length : 0;
+  const isMultiStopTrack =
+    Array.isArray(trackStops) && trackStops.length > 0;
+  const legacyItemUnits = useMemo(() => {
+    if (!Array.isArray(delivery.items)) return 0;
+    let n = 0;
+    for (const raw of delivery.items) {
+      const { qty } = normalizeDeliveryItem(raw);
+      n += Math.max(1, qty);
+    }
+    return n;
+  }, [delivery.items]);
+  const itemsReceiptText = useMemo(() => {
+    if (isMultiStopTrack && trackStops) {
+      const units = totalUnitsFromTrackStops(trackStops);
+      const n = trackStops.length;
+      return `${units} piece${units !== 1 ? "s" : ""} · ${n} stop${n !== 1 ? "s" : ""}`;
+    }
+    if (legacyItemUnits > 0) {
+      return `${legacyItemUnits} piece${legacyItemUnits !== 1 ? "s" : ""}`;
+    }
+    return `${itemsCount} item${itemsCount !== 1 ? "s" : ""}`;
+  }, [isMultiStopTrack, trackStops, legacyItemUnits, itemsCount]);
+  const showItemSection =
+    isMultiStopTrack || itemsCount > 0 || legacyItemUnits > 0;
   const normalizedStage = normalizeDeliveryStage(liveStage);
   const statusVal =
     normalizedStage === "completed" ? "delivered" : delivery.status;
@@ -469,7 +501,10 @@ export default function TrackDeliveryClient({
       )
     : null;
 
-  const hasMapCoords = !!(pickup || dropoff) || !!crewLoc;
+  const hasMapCoords =
+    !!(pickup || dropoff) ||
+    !!crewLoc ||
+    !!(routePlan && routePlan.length >= 2);
   const crewHasStarted = hasActiveTracking;
   const deliveryCrewAssigned = !!delivery.crew_id;
   const deliveryRevealCrewNames = shouldRevealCrewNamesOnMoveTrack({
@@ -543,6 +578,7 @@ export default function TrackDeliveryClient({
             pickup={pickup}
             dropoff={dropoff}
             liveStage={liveStage}
+            routePlan={routePlan}
           />
         ) : (
           <div className="h-full flex items-center justify-center">
@@ -590,6 +626,16 @@ export default function TrackDeliveryClient({
               ? `Your ${b2bCoBrand} delivery`
               : delivery.customer_name || "Your Delivery"}
           </h1>
+          {isMultiStopTrack &&
+          typeof delivery.project_name === "string" &&
+          delivery.project_name.trim() ? (
+            <p
+              className="text-[13px] mt-1.5 font-semibold leading-snug"
+              style={{ color: FOREST_BODY }}
+            >
+              {delivery.project_name.trim()}
+            </p>
+          ) : null}
           {b2bItemSummary ? (
             <p
               className="text-[13px] mt-2 font-medium leading-relaxed"
@@ -780,8 +826,86 @@ export default function TrackDeliveryClient({
             </div>
           )}
 
-          {/* ── Route (vertical timeline: P / dashed / D, forest) ── */}
-          {pickupAddr || dropoffAddr ? (
+          {/* ── Route (multi-stop or single pickup / delivery) ── */}
+          {isMultiStopTrack && trackStops ? (
+            <div className="py-5 anim-slide-up anim-delay-3 flex flex-col gap-0 min-w-0">
+              <p
+                className={`${QUOTE_EYEBROW_CLASS} mb-3`}
+                style={{ color: WINE }}
+              >
+                Multi-stop route · {trackStops.length} stops
+              </p>
+              {(() => {
+                let pickupSeq = 0;
+                return trackStops.map((stop, idx) => {
+                  const isLast = idx === trackStops.length - 1;
+                  const circleLabel =
+                    stop.kind === "delivery"
+                      ? "D"
+                      : String(++pickupSeq);
+                  const title =
+                    stop.kind === "delivery"
+                      ? "Final delivery"
+                      : `Pickup ${pickupSeq}`;
+                  return (
+                    <div key={stop.stopNumber} className="min-w-0">
+                      <div className="flex gap-3.5 min-w-0">
+                        <div
+                          className="w-7 flex justify-center shrink-0 pt-0.5"
+                          aria-hidden
+                        >
+                          <div
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold tracking-[0.04em] text-white"
+                            style={{ backgroundColor: FOREST }}
+                          >
+                            {circleLabel}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div
+                            className={`${QUOTE_EYEBROW_CLASS} mb-0.5`}
+                            style={{ color: FOREST }}
+                          >
+                            {title}
+                          </div>
+                          {stop.subtitle ? (
+                            <div
+                              className="text-[11px] font-medium mb-0.5 leading-snug"
+                              style={{ color: FOREST_MUTED }}
+                            >
+                              {stop.subtitle}
+                            </div>
+                          ) : null}
+                          <div
+                            className="text-[13px] font-bold leading-snug"
+                            style={{ color: FOREST }}
+                          >
+                            {addressWithoutPostalSuffix(
+                              formatAddressForDisplay(stop.address),
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {!isLast ? (
+                        <div
+                          className="flex gap-3.5 min-w-0 -my-0.5 py-1"
+                          aria-hidden
+                        >
+                          <div className="w-7 flex justify-center shrink-0">
+                            <div
+                              className="w-0 border-l-2 border-dashed min-h-[24px]"
+                              style={{ borderColor: FOREST }}
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0" />
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          ) : pickupAddr || dropoffAddr ? (
             <div className="py-5 anim-slide-up anim-delay-3 flex flex-col gap-5 min-w-0">
               {pickupAddr ? (
                 <div className="flex gap-3.5 min-w-0">
@@ -902,7 +1026,7 @@ export default function TrackDeliveryClient({
                     className="text-[13px] font-semibold mt-1 leading-snug"
                     style={{ color: FOREST }}
                   >
-                    {itemsCount} item{itemsCount !== 1 ? "s" : ""}
+                    {itemsReceiptText}
                   </p>
                 </div>
                 <div className="min-w-0">
@@ -1027,84 +1151,161 @@ export default function TrackDeliveryClient({
           </div>
 
           {/* ── Item List ── */}
-          {itemsCount > 0 &&
-            (() => {
-              const grouped: Record<string, Map<string, number>> = {};
-              const rawList = Array.isArray(delivery.items)
-                ? delivery.items
-                : [];
-              rawList.forEach((raw: unknown) => {
-                const { room, name, qty } = normalizeDeliveryItem(raw);
-                const trimmed = name.trim();
-                if (!trimmed) return;
-                const r = room.trim() || "Items";
-                if (!grouped[r]) grouped[r] = new Map();
-                const m = grouped[r];
-                const prev = m.get(trimmed) ?? 0;
-                m.set(trimmed, prev + Math.max(1, qty));
-              });
-              const rooms = Object.keys(grouped).sort((a, b) =>
-                a.localeCompare(b, undefined, { sensitivity: "base" }),
-              );
-              const GENERIC_ROOM = "Items";
-
-              return (
-                <div className="py-5 anim-slide-up anim-delay-4">
-                  <div className="mb-4">
-                    <span
-                      className={QUOTE_EYEBROW_CLASS}
-                      style={{ color: FOREST_MUTED }}
-                    >
-                      Items
-                    </span>
-                  </div>
-                  <div className="divide-y divide-[#2C3E2D]/12">
-                    {rooms.map((room) => (
-                      <div key={room} className="py-3.5 first:pt-0 last:pb-0">
-                        {room !== GENERIC_ROOM ? (
+          {showItemSection &&
+            (isMultiStopTrack && trackStops ? (
+              <div className="py-5 anim-slide-up anim-delay-4">
+                <div className="mb-4">
+                  <span
+                    className={QUOTE_EYEBROW_CLASS}
+                    style={{ color: FOREST_MUTED }}
+                  >
+                    Items by stop
+                  </span>
+                </div>
+                <div className="divide-y divide-[#2C3E2D]/12">
+                  {(() => {
+                    let pickupSeq = 0;
+                    return trackStops.map((stop) => {
+                      const stopTitle =
+                        stop.kind === "delivery"
+                          ? "Final delivery"
+                          : `Pickup ${++pickupSeq}`;
+                      const heading = stop.subtitle
+                        ? `${stopTitle} · ${stop.subtitle}`
+                        : stopTitle;
+                      return (
+                        <div
+                          key={stop.stopNumber}
+                          className="py-3.5 first:pt-0 last:pb-0"
+                        >
                           <div
                             className={`${QUOTE_EYEBROW_CLASS} mb-2`}
                             style={{ color: WINE }}
                           >
-                            {room}
+                            {heading}
                           </div>
-                        ) : null}
-                        <div className="space-y-2">
-                          {Array.from(grouped[room].entries())
-                            .sort(([a], [b]) =>
-                              a.localeCompare(b, undefined, {
-                                sensitivity: "base",
-                              }),
-                            )
-                            .map(([itemName, totalQty]) => {
-                              const label = `${itemName} ×${totalQty}`;
-                              return (
-                                <div
-                                  key={itemName}
-                                  className="flex items-center gap-3"
-                                >
+                          {stop.lineItems.length === 0 ? (
+                            <p
+                              className="text-[12px] leading-relaxed"
+                              style={{ color: FOREST_MUTED }}
+                            >
+                              Item list for this stop is with your coordinator.
+                            </p>
+                          ) : (
+                            <div className="space-y-2">
+                              {stop.lineItems.map((li, liIdx) => {
+                                const q = Math.max(
+                                  1,
+                                  Math.floor(Number(li.quantity) || 1),
+                                );
+                                const label = `${li.description} ×${q}`;
+                                return (
                                   <div
-                                    className="w-1 h-1 rounded-full shrink-0"
-                                    style={{
-                                      backgroundColor: `${FOREST}25`,
-                                    }}
-                                  />
-                                  <span
-                                    className="text-[13px] font-medium"
-                                    style={{ color: FOREST }}
+                                    key={`${stop.stopNumber}-${liIdx}-${li.description}`}
+                                    className="flex items-center gap-3"
                                   >
-                                    {label}
-                                  </span>
-                                </div>
-                              );
-                            })}
+                                    <div
+                                      className="w-1 h-1 rounded-full shrink-0"
+                                      style={{
+                                        backgroundColor: `${FOREST}25`,
+                                      }}
+                                    />
+                                    <span
+                                      className="text-[13px] font-medium"
+                                      style={{ color: FOREST }}
+                                    >
+                                      {label}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      );
+                    });
+                  })()}
                 </div>
-              );
-            })()}
+              </div>
+            ) : itemsCount > 0 ? (
+              (() => {
+                const grouped: Record<string, Map<string, number>> = {};
+                const rawList = Array.isArray(delivery.items)
+                  ? delivery.items
+                  : [];
+                rawList.forEach((raw: unknown) => {
+                  const { room, name, qty } = normalizeDeliveryItem(raw);
+                  const trimmed = name.trim();
+                  if (!trimmed) return;
+                  const r = room.trim() || "Items";
+                  if (!grouped[r]) grouped[r] = new Map();
+                  const m = grouped[r];
+                  const prev = m.get(trimmed) ?? 0;
+                  m.set(trimmed, prev + Math.max(1, qty));
+                });
+                const rooms = Object.keys(grouped).sort((a, b) =>
+                  a.localeCompare(b, undefined, { sensitivity: "base" }),
+                );
+                const GENERIC_ROOM = "Items";
+
+                return (
+                  <div className="py-5 anim-slide-up anim-delay-4">
+                    <div className="mb-4">
+                      <span
+                        className={QUOTE_EYEBROW_CLASS}
+                        style={{ color: FOREST_MUTED }}
+                      >
+                        Items
+                      </span>
+                    </div>
+                    <div className="divide-y divide-[#2C3E2D]/12">
+                      {rooms.map((room) => (
+                        <div key={room} className="py-3.5 first:pt-0 last:pb-0">
+                          {room !== GENERIC_ROOM ? (
+                            <div
+                              className={`${QUOTE_EYEBROW_CLASS} mb-2`}
+                              style={{ color: WINE }}
+                            >
+                              {room}
+                            </div>
+                          ) : null}
+                          <div className="space-y-2">
+                            {Array.from(grouped[room].entries())
+                              .sort(([a], [b]) =>
+                                a.localeCompare(b, undefined, {
+                                  sensitivity: "base",
+                                }),
+                              )
+                              .map(([itemName, totalQty]) => {
+                                const label = `${itemName} ×${totalQty}`;
+                                return (
+                                  <div
+                                    key={itemName}
+                                    className="flex items-center gap-3"
+                                  >
+                                    <div
+                                      className="w-1 h-1 rounded-full shrink-0"
+                                      style={{
+                                        backgroundColor: `${FOREST}25`,
+                                      }}
+                                    />
+                                    <span
+                                      className="text-[13px] font-medium"
+                                      style={{ color: FOREST }}
+                                    >
+                                      {label}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()
+            ) : null)}
 
           {b2bAudience ? (
             <div className="py-5 anim-slide-up anim-delay-3">
@@ -1176,6 +1377,7 @@ export default function TrackDeliveryClient({
                             pickup={pickup}
                             dropoff={dropoff}
                             liveStage={liveStage}
+                            routePlan={routePlan}
                           />
                         )}
                       </div>
@@ -1309,6 +1511,7 @@ export default function TrackDeliveryClient({
                           pickup={pickup}
                           dropoff={dropoff}
                           liveStage={liveStage}
+                          routePlan={routePlan}
                         />
                       ) : (
                         <div className="absolute inset-0 flex flex-col items-center justify-center">

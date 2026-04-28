@@ -49,6 +49,7 @@ import { formatCurrency, calcHST } from "@/lib/format-currency";
 import { toTitleCase } from "@/lib/format-text";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
+import { deliveryEligibleForAdminPrepaidMark } from "@/lib/delivery-prepaid-eligibility";
 import { formatPlatformDisplay } from "@/lib/date-format";
 import PostCompletionPriceEdit from "../../components/PostCompletionPriceEdit";
 
@@ -394,6 +395,9 @@ export default function DeliveryDetailClient({
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [crewModalOpen, setCrewModalOpen] = useState(false);
+  /** Modal: selected team and member subset (names must match crew roster strings). */
+  const [crewPickCrewId, setCrewPickCrewId] = useState<string | null>(null);
+  const [crewPickMembers, setCrewPickMembers] = useState<string[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editingStatus, setEditingStatus] = useState(false);
@@ -498,7 +502,12 @@ export default function DeliveryDetailClient({
           name: linkedCrew
             ? (linkedCrew.name || "").trim() || snapName || "Crew"
             : (snapName || "Crew (archived)").trim() || "Crew",
-          members: linkedCrew ? liveMembers : snapMembers,
+          members:
+            snapMembers.length > 0
+              ? snapMembers
+              : linkedCrew
+                ? liveMembers
+                : snapMembers,
         }
       : null;
   const completed = isDone(delivery.status);
@@ -549,16 +558,53 @@ export default function DeliveryDetailClient({
     };
   }, [delivery.id]);
 
-  const assignCrew = async (crewId: string | null) => {
+  useEffect(() => {
+    if (!crewModalOpen) return;
+    const cid =
+      delivery.crew_id != null && String(delivery.crew_id).trim() !== ""
+        ? String(delivery.crew_id)
+        : null;
+    setCrewPickCrewId(cid);
+    const crew = cid ? crews.find((c) => c.id === cid) : undefined;
+    const roster =
+      crew?.members
+        ?.filter(
+          (m: unknown) => typeof m === "string" && String(m).trim() !== "",
+        )
+        .map((m) => String(m).trim()) ?? [];
+    const snap = Array.isArray(delivery.assigned_members)
+      ? delivery.assigned_members
+          .filter(
+            (m: unknown): m is string =>
+              typeof m === "string" && String(m).trim() !== "",
+          )
+          .map((m: string) => m.trim())
+      : [];
+    if (cid && snap.length > 0) {
+      const valid = snap.filter((m: string) => roster.includes(m));
+      setCrewPickMembers(valid.length > 0 ? valid : [...roster]);
+    } else {
+      setCrewPickMembers([...roster]);
+    }
+  }, [crewModalOpen, delivery.crew_id, delivery.assigned_members, crews]);
+
+  const assignCrewWithMembers = async (
+    crewId: string | null,
+    memberNames?: string[] | null,
+  ) => {
     const crew = crewId ? crews.find((c) => c.id === crewId) : null;
     try {
+      const body: Record<string, unknown> = {
+        crew_id: crewId,
+        updated_at: new Date().toISOString(),
+      };
+      if (crewId && memberNames && memberNames.length > 0) {
+        body.assigned_members = memberNames;
+      }
       const res = await fetch(`/api/admin/deliveries/${delivery.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          crew_id: crewId,
-          updated_at: new Date().toISOString(),
-        }),
+        body: JSON.stringify(body),
       });
       const result = await res.json();
       if (!res.ok) {
@@ -573,6 +619,71 @@ export default function DeliveryDetailClient({
     }
     router.refresh();
     toast(crewId ? `Assigned to ${crew?.name}` : "Crew unassigned", "check");
+  };
+
+  const handleSelectCrewForPicker = (crewId: string) => {
+    setCrewPickCrewId(crewId);
+    const crew = crews.find((c) => c.id === crewId);
+    const roster =
+      crew?.members
+        ?.filter(
+          (m: unknown) => typeof m === "string" && String(m).trim() !== "",
+        )
+        .map((m) => String(m).trim()) ?? [];
+    const snap = Array.isArray(delivery.assigned_members)
+      ? delivery.assigned_members
+          .filter(
+            (m: unknown): m is string =>
+              typeof m === "string" && String(m).trim() !== "",
+          )
+          .map((m: string) => m.trim())
+      : [];
+    if (delivery.crew_id === crewId && snap.length > 0) {
+      const valid = snap.filter((m: string) => roster.includes(m));
+      setCrewPickMembers(valid.length > 0 ? valid : [...roster]);
+    } else {
+      setCrewPickMembers([...roster]);
+    }
+  };
+
+  const handleToggleCrewMemberPick = (name: string) => {
+    setCrewPickMembers((prev) =>
+      prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name],
+    );
+  };
+
+  const crewPickRoster = useMemo(() => {
+    if (!crewPickCrewId) return [] as string[];
+    const pickCrew = crews.find((x) => x.id === crewPickCrewId);
+    return (
+      pickCrew?.members
+        ?.filter(
+          (m: unknown) => typeof m === "string" && String(m).trim() !== "",
+        )
+        .map((m) => String(m).trim()) ?? []
+    );
+  }, [crewPickCrewId, crews]);
+
+  const handleApplyCrewAssignment = async () => {
+    if (!crewPickCrewId) {
+      toast("Choose a team", "alertTriangle");
+      return;
+    }
+    if (crewPickRoster.length === 0) {
+      await assignCrewWithMembers(crewPickCrewId, null);
+      setCrewModalOpen(false);
+      return;
+    }
+    if (crewPickMembers.length === 0) {
+      toast("Select at least one crew member", "alertTriangle");
+      return;
+    }
+    if (crewPickMembers.some((m) => !crewPickRoster.includes(m))) {
+      toast("Invalid member selection", "alertTriangle");
+      return;
+    }
+    await assignCrewWithMembers(crewPickCrewId, crewPickMembers);
+    setCrewModalOpen(false);
   };
 
   const handleStatusChange = async (newStatus: string) => {
@@ -735,7 +846,7 @@ export default function DeliveryDetailClient({
         setRecordPaymentLoading(false);
         return;
       }
-      toast("Payment recorded — tracking links sent", "check");
+      toast("Marked as paid. Tracking links sent when applicable.", "check");
       router.refresh();
     } catch {
       toast("Failed to record payment", "alertTriangle");
@@ -1189,7 +1300,8 @@ export default function DeliveryDetailClient({
           {/* Status row */}
           <div className="mt-4 pt-3 border-t border-[var(--brd)]/30">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-              {isB2BOneOff && delivery.payment_received_at ? (
+              {delivery.payment_received_at &&
+              deliveryEligibleForAdminPrepaidMark(delivery) ? (
                 <span className="dt-badge tracking-[0.04em] text-emerald-700 dark:text-emerald-300">
                   Paid (prepaid)
                 </span>
@@ -1947,6 +2059,33 @@ export default function DeliveryDetailClient({
                   +{formatCurrency(calcHST(price))} HST &middot; Total{" "}
                   {formatCurrency(price + calcHST(price))}
                 </div>
+                {!delivery.payment_received_at &&
+                  deliveryEligibleForAdminPrepaidMark(delivery) ? (
+                  <div className="mt-3 pt-3 border-t border-[var(--gold)]/15 space-y-1.5">
+                    <button
+                      type="button"
+                      onClick={handleRecordPayment}
+                      disabled={recordPaymentLoading}
+                      className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-lg text-[11px] font-semibold border-2 border-[color-mix(in_srgb,var(--tx)_34%,transparent)] text-[var(--tx)] hover:bg-[color-mix(in_srgb,var(--tx)_8%,transparent)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {recordPaymentLoading ? "Saving…" : "Marked as paid"}
+                    </button>
+                    <p className="text-[10px] text-[var(--tx3)] leading-relaxed">
+                      Use when the business already paid before this job was
+                      created (for example card outside Square or e-transfer).
+                    </p>
+                  </div>
+                ) : null}
+                {delivery.payment_received_at &&
+                deliveryEligibleForAdminPrepaidMark(delivery) ? (
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2">
+                    Marked paid{" "}
+                    {new Date(delivery.payment_received_at).toLocaleString(
+                      "en-CA",
+                      { timeZone: "America/Toronto" },
+                    )}
+                  </p>
+                ) : null}
                 {(delivery.override_price != null &&
                   Number(delivery.override_price) > 0 &&
                   calculatedBaseline > 0 &&
@@ -2026,7 +2165,7 @@ export default function DeliveryDetailClient({
         open={crewModalOpen}
         onClose={() => setCrewModalOpen(false)}
         title="Assign Crew"
-        maxWidth="sm"
+        maxWidth="md"
       >
         <div className="p-5 space-y-2">
           {deliveryInProgress && (
@@ -2040,7 +2179,7 @@ export default function DeliveryDetailClient({
             disabled={deliveryInProgress}
             onClick={() => {
               if (!deliveryInProgress) {
-                assignCrew(null);
+                assignCrewWithMembers(null);
                 setCrewModalOpen(false);
               }
             }}
@@ -2064,12 +2203,9 @@ export default function DeliveryDetailClient({
               type="button"
               disabled={deliveryInProgress}
               onClick={() => {
-                if (!deliveryInProgress) {
-                  assignCrew(c.id);
-                  setCrewModalOpen(false);
-                }
+                if (!deliveryInProgress) handleSelectCrewForPicker(c.id);
               }}
-              className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${delivery.crew_id === c.id ? "border-[var(--gold)] bg-[var(--gold)]/5" : "border-[var(--brd)] hover:border-[var(--gold)]/40"} disabled:opacity-60 disabled:cursor-not-allowed`}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${crewPickCrewId === c.id ? "border-[var(--gold)] bg-[var(--gold)]/5" : "border-[var(--brd)] hover:border-[var(--gold)]/40"} disabled:opacity-60 disabled:cursor-not-allowed`}
             >
               <div className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[12px] font-bold text-[var(--gold)]">
                 {c.name.charAt(0).toUpperCase()}
@@ -2091,6 +2227,61 @@ export default function DeliveryDetailClient({
               )}
             </button>
           ))}
+          {crewPickCrewId && !deliveryInProgress && crewPickRoster.length > 0 ? (
+            <div className="mt-3 pt-3 border-t border-[var(--brd)] space-y-2">
+              <div className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">
+                Who is on this job
+              </div>
+              <ul className="space-y-1.5 max-h-48 overflow-y-auto">
+                {crewPickRoster.map((memberName, idx) => {
+                  const id = `crew-member-${crewPickCrewId}-${idx}-${memberName}`;
+                  return (
+                    <li key={id}>
+                      <label
+                        htmlFor={id}
+                        className="flex items-center gap-2.5 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-[var(--bg)]"
+                      >
+                        <input
+                          id={id}
+                          type="checkbox"
+                          checked={crewPickMembers.includes(memberName)}
+                          onChange={() =>
+                            handleToggleCrewMemberPick(memberName)
+                          }
+                          className="rounded border-[var(--brd)]"
+                        />
+                        <span className="text-[12px] text-[var(--tx)]">
+                          {memberName}
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
+          {!deliveryInProgress ? (
+            <div className="pt-3 flex flex-wrap items-center justify-end gap-2 border-t border-[var(--brd)]">
+              <button
+                type="button"
+                onClick={() => setCrewModalOpen(false)}
+                className="px-4 py-2 rounded-lg text-[11px] font-medium text-[var(--tx3)] hover:text-[var(--tx)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={
+                  !crewPickCrewId ||
+                  (crewPickRoster.length > 0 && crewPickMembers.length === 0)
+                }
+                onClick={() => void handleApplyCrewAssignment()}
+                className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/35 hover:bg-[var(--gold)]/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Apply assignment
+              </button>
+            </div>
+          ) : null}
         </div>
       </ModalOverlay>
 

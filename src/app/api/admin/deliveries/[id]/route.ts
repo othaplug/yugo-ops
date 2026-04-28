@@ -98,14 +98,63 @@ export async function PATCH(
         : String(raw).trim();
     if (cid) {
       const snap = await fetchCrewAssignmentSnapshot(admin, cid);
+      const roster = new Set(snap.assigned_members);
       updates.crew_id = cid;
-      updates.assigned_members = snap.assigned_members;
       updates.assigned_crew_name = snap.assigned_crew_name;
+      if (Array.isArray(body.assigned_members) && body.assigned_members.length > 0) {
+        const picked = body.assigned_members
+          .filter(
+            (m: unknown): m is string =>
+              typeof m === "string" && m.trim().length > 0 && roster.has(m.trim()),
+          )
+          .map((m: string) => m.trim());
+        const deduped = [...new Set(picked)];
+        if (deduped.length === 0) {
+          return NextResponse.json(
+            { error: "Select at least one crew member from this team" },
+            { status: 400 },
+          );
+        }
+        updates.assigned_members = deduped;
+      } else {
+        updates.assigned_members = snap.assigned_members;
+      }
     } else {
       updates.crew_id = null;
       updates.assigned_members = [];
       updates.assigned_crew_name = null;
     }
+  } else if ("assigned_members" in body) {
+    const cidExisting = existing?.crew_id;
+    if (!cidExisting) {
+      return NextResponse.json(
+        { error: "Assign a crew before selecting members" },
+        { status: 400 },
+      );
+    }
+    const snap = await fetchCrewAssignmentSnapshot(admin, cidExisting);
+    const roster = new Set(snap.assigned_members);
+    const raw = body.assigned_members;
+    if (!Array.isArray(raw)) {
+      return NextResponse.json(
+        { error: "assigned_members must be an array" },
+        { status: 400 },
+      );
+    }
+    const picked = raw
+      .filter(
+        (m: unknown): m is string =>
+          typeof m === "string" && m.trim().length > 0 && roster.has(m.trim()),
+      )
+      .map((m: string) => m.trim());
+    const deduped = [...new Set(picked)];
+    if (deduped.length === 0) {
+      return NextResponse.json(
+        { error: "Select at least one crew member from this team" },
+        { status: 400 },
+      );
+    }
+    updates.assigned_members = deduped;
   }
 
   if (Object.keys(updates).length === 0) {

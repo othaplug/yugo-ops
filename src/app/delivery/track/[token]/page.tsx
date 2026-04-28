@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLegalBranding } from "@/lib/legal-branding";
 import B2BDeliveryTrackClient from "./B2BDeliveryTrackClient";
+import { loadTrackDeliveryPublicData } from "@/lib/track-delivery-public-load";
 
 export const metadata: Metadata = {
   title: "Track your delivery",
@@ -60,8 +61,11 @@ export default async function B2BDeliveryTrackPage({
 
   const pickupAddr = delivery.pickup_address || delivery.from_address;
   const dropoffAddr = delivery.delivery_address || delivery.to_address;
+  const totalStops = Number((delivery as { total_stops?: number }).total_stops) || 0;
+  const isMultiStop =
+    !!(delivery as { is_multi_stop?: boolean }).is_multi_stop || totalStops > 2;
 
-  const [{ data: pod }, reviewCfg] = await Promise.all([
+  const [{ data: pod }, reviewCfg, { trackStops, routePlan }] = await Promise.all([
     supabase
       .from("proof_of_delivery")
       .select("photos_delivery, signature_data")
@@ -70,6 +74,7 @@ export default async function B2BDeliveryTrackPage({
       .limit(1)
       .maybeSingle(),
     supabase.from("platform_config").select("value").eq("key", "google_review_url").maybeSingle(),
+    loadTrackDeliveryPublicData(supabase, delivery.id, isMultiStop, geocode),
   ]);
 
   const podPhotos = (pod?.photos_delivery as { url?: string }[] | undefined) || [];
@@ -100,6 +105,8 @@ export default async function B2BDeliveryTrackPage({
       googleReviewUrl={googleReviewUrl}
       podImageUrl={podImageUrl}
       companyContactEmail={companyContactEmail}
+      trackStops={trackStops}
+      routePlan={routePlan}
     />
   );
 }

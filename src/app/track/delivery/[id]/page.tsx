@@ -5,6 +5,7 @@ import { getLegalBranding } from "@/lib/legal-branding";
 import { verifyTrackToken } from "@/lib/track-token";
 import { isUuid } from "@/lib/move-code";
 import TrackDeliveryClient from "./TrackDeliveryClient";
+import { loadTrackDeliveryPublicData } from "@/lib/track-delivery-public-load";
 
 export const metadata: Metadata = {
   title: "Track Your Delivery",
@@ -51,18 +52,23 @@ export default async function TrackDeliveryPage({
 
   const pickupAddr = delivery.pickup_address || delivery.from_address;
   const dropoffAddr = delivery.delivery_address || delivery.to_address;
+  const totalStops = Number((delivery as { total_stops?: number }).total_stops) || 0;
+  const isMultiStop =
+    !!(delivery as { is_multi_stop?: boolean }).is_multi_stop || totalStops > 2;
 
-  const [[pickupCoords, dropoffCoords], reviewCfg] = await Promise.all([
-    Promise.all([
-      pickupAddr ? geocode(pickupAddr) : null,
-      dropoffAddr ? geocode(dropoffAddr) : null,
-    ]),
-    supabase
-      .from("platform_config")
-      .select("value")
-      .eq("key", "google_review_url")
-      .maybeSingle(),
-  ]);
+  const [[pickupCoords, dropoffCoords], reviewCfg, { trackStops, routePlan }] =
+    await Promise.all([
+      Promise.all([
+        pickupAddr ? geocode(pickupAddr) : null,
+        dropoffAddr ? geocode(dropoffAddr) : null,
+      ]),
+      supabase
+        .from("platform_config")
+        .select("value")
+        .eq("key", "google_review_url")
+        .maybeSingle(),
+      loadTrackDeliveryPublicData(supabase, delivery.id, isMultiStop, geocode),
+    ]);
 
   const googleReviewUrl = reviewCfg.data?.value || null;
 
@@ -76,6 +82,8 @@ export default async function TrackDeliveryPage({
       initialDropoff={dropoffCoords}
       googleReviewUrl={googleReviewUrl}
       companyContactEmail={companyContactEmail}
+      trackStops={trackStops}
+      routePlan={routePlan}
     />
   );
 }

@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import type { TrackRoutePlanPoint } from "@/lib/track-delivery-public";
+import { WINE } from "@/lib/client-theme";
 
 const MAPBOX_TOKEN =
   (typeof process !== "undefined" && (process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_TOKEN)) || "";
@@ -12,7 +14,6 @@ const USE_MAPBOX = MAPBOX_TOKEN && !MAPBOX_TOKEN.startsWith("pk.your-") && MAPBO
 type Coord = { lat: number; lng: number };
 type CrewPos = { current_lat: number; current_lng: number; name?: string } | null;
 
-const GOLD = "#C9A94E";
 /** Yugo forest — crew / client map chrome (not tailwind green). */
 const FOREST_MARKER = "#2C3E2D";
 
@@ -44,7 +45,7 @@ function lastKnownIcon() {
 
 const pickupIcon = L.divIcon({
   className: "custom-marker",
-  html: `<div style="width:12px;height:12px;background:${GOLD};border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>`,
+  html: `<div style="width:12px;height:12px;background:${WINE};border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>`,
   iconSize: [18, 18],
   iconAnchor: [9, 9],
 });
@@ -56,15 +57,26 @@ const dropoffIcon = L.divIcon({
   iconAnchor: [9, 9],
 });
 
+function planStopIcon(label: string) {
+  const safe = label.replace(/[^0-9A-Za-z]/g, "").slice(0, 2) || "?";
+  return L.divIcon({
+    className: "custom-marker",
+    html: `<div style="width:28px;height:28px;border-radius:50%;background:#2C3E2D;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800">${safe}</div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -12],
+  });
+}
+
 /** Directional arrow marker for delivery crew — rotated to heading. */
 function crewArrowIcon(bearing: number | null = null) {
   const rot = bearing != null ? bearing : 0;
   return L.divIcon({
     className: "crew-marker crew-marker-arrow",
     html: `<div style="position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center">
-      <span style="position:absolute;inset:5px;border-radius:50%;background:${GOLD};opacity:0.18;animation:crew-ring 2s ease-out infinite"></span>
+      <span style="position:absolute;inset:5px;border-radius:50%;background:${FOREST_MARKER};opacity:0.2;animation:crew-ring 2s ease-out infinite"></span>
       <svg width="36" height="36" viewBox="0 0 44 44" style="transform:rotate(${rot}deg);transition:transform 0.8s ease-out;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6))" aria-hidden="true">
-        <polygon points="22,5 34,36 22,29 10,36" fill="${GOLD}" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
+        <polygon points="22,5 34,36 22,29 10,36" fill="${FOREST_MARKER}" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
       </svg>
     </div>`,
     iconSize: [40, 40],
@@ -100,13 +112,29 @@ function useAnimatedCrewPos(target: CrewPos, ms = 2000): CrewPos {
   return pos;
 }
 
-function MapController({ center, pickup, dropoff, crew }: { center: Coord; pickup: Coord | null; dropoff: Coord | null; crew: CrewPos }) {
+function MapController({
+  center,
+  pickup,
+  dropoff,
+  crew,
+  routePlan,
+}: {
+  center: Coord;
+  pickup: Coord | null;
+  dropoff: Coord | null;
+  crew: CrewPos;
+  routePlan: TrackRoutePlanPoint[] | null;
+}) {
   const map = useMap();
   useEffect(() => {
     const pts: Coord[] = [];
     if (crew) pts.push({ lat: crew.current_lat, lng: crew.current_lng });
-    if (pickup) pts.push(pickup);
-    if (dropoff) pts.push(dropoff);
+    if (routePlan?.length) {
+      routePlan.forEach((p) => pts.push({ lat: p.lat, lng: p.lng }));
+    } else {
+      if (pickup) pts.push(pickup);
+      if (dropoff) pts.push(dropoff);
+    }
     if (pts.length >= 2) {
       const bounds = L.latLngBounds(pts.map((p) => [p.lat, p.lng]));
       map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
@@ -115,7 +143,7 @@ function MapController({ center, pickup, dropoff, crew }: { center: Coord; picku
     } else {
       map.setView([center.lat, center.lng], 10);
     }
-  }, [map, center, pickup, dropoff, crew]);
+  }, [map, center, pickup, dropoff, crew, routePlan]);
   return null;
 }
 
@@ -126,6 +154,7 @@ export default function DeliveryTrackMap({
   dropoff,
   liveStage,
   lastKnownPos,
+  routePlan = null,
 }: {
   center: Coord;
   crew: CrewPos;
@@ -133,10 +162,11 @@ export default function DeliveryTrackMap({
   dropoff?: Coord | null;
   liveStage?: string | null;
   lastKnownPos?: Coord | null;
+  /** Multi-stop: ordered geocoded stops with map labels (1, 2, …, D). */
+  routePlan?: TrackRoutePlanPoint[] | null;
 }) {
   const animCrew = useAnimatedCrewPos(crew);
 
-  // Track bearing from consecutive raw GPS positions
   const [bearing, setBearing] = useState<number | null>(null);
   const prevCrewRef = useRef<{ lat: number; lng: number } | null>(null);
   useEffect(() => {
@@ -162,8 +192,8 @@ export default function DeliveryTrackMap({
     if (lastFetchRef.current === key) return;
     lastFetchRef.current = key;
     try {
-      const coords = `${from.lng},${from.lat};${to.lng},${to.lat}`;
-      const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coords}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
+      const coordStr = `${from.lng},${from.lat};${to.lng},${to.lat}`;
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordStr}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
       const res = await fetch(url);
       const data = await res.json();
       const coordsList = data?.routes?.[0]?.geometry?.coordinates as [number, number][] | undefined;
@@ -177,7 +207,30 @@ export default function DeliveryTrackMap({
     }
   }, []);
 
-  // Single primitive key so useEffect dependency array size never changes
+  const fetchDrivingRouteChain = useCallback(async (points: Coord[]) => {
+    if (!MAPBOX_TOKEN || !USE_MAPBOX || points.length < 2) return;
+    const key = `chain:${points.map((p) => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join("|")}`;
+    if (lastFetchRef.current === key) return;
+    lastFetchRef.current = key;
+    try {
+      const coordStr = points.map((p) => `${p.lng},${p.lat}`).join(";");
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const coordsList = data?.routes?.[0]?.geometry?.coordinates as [number, number][] | undefined;
+      if (Array.isArray(coordsList) && coordsList.length >= 2) {
+        setRouteLine(coordsList.map(([lng, lat]) => [lat, lng] as [number, number]));
+      } else {
+        setRouteLine(null);
+      }
+    } catch {
+      setRouteLine(null);
+    }
+  }, []);
+
+  const routePlanKey =
+    routePlan?.map((p) => `${p.lat},${p.lng},${p.label}`).join("|") ?? "";
+
   const routeDepsKey = [
     crew?.current_lat,
     crew?.current_lng,
@@ -187,17 +240,27 @@ export default function DeliveryTrackMap({
     pickup?.lng,
     dropoff?.lat,
     dropoff?.lng,
+    routePlanKey,
   ]
     .map((n) => (n != null ? String(n) : ""))
     .join("|");
 
   useEffect(() => {
     const from = crew ?? animCrew;
+    const planCoords =
+      routePlan && routePlan.length >= 2
+        ? routePlan.map((p) => ({ lat: p.lat, lng: p.lng }))
+        : null;
+
     if (from && trackingDestination) {
       fetchDrivingRoute(
         { lat: from.current_lat, lng: from.current_lng },
-        { lat: trackingDestination.lat, lng: trackingDestination.lng }
+        { lat: trackingDestination.lat, lng: trackingDestination.lng },
       );
+      return;
+    }
+    if (planCoords && planCoords.length >= 2) {
+      fetchDrivingRouteChain(planCoords);
       return;
     }
     if (!pickup || !dropoff) {
@@ -205,9 +268,13 @@ export default function DeliveryTrackMap({
       setRouteLine(null);
       return;
     }
-    // No crew position yet: show planned route pickup → dropoff so user sees where crew is going
     fetchDrivingRoute(pickup, dropoff);
   }, [routeDepsKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const chainStraight: [number, number][] = useMemo(() => {
+    if (!routePlan?.length || routePlan.length < 2) return [];
+    return routePlan.map((p) => [p.lat, p.lng] as [number, number]);
+  }, [routePlan]);
 
   const trackingLineStraight: [number, number][] = useMemo(() => {
     if (animCrew && trackingDestination)
@@ -218,11 +285,13 @@ export default function DeliveryTrackMap({
   }, [animCrew, trackingDestination, pickup, dropoff]);
 
   const purpleLinePositions =
-    (routeLine && routeLine.length >= 2)
+    routeLine && routeLine.length >= 2
       ? routeLine
-      : trackingLineStraight.length >= 2
-        ? trackingLineStraight
-        : [];
+      : chainStraight.length >= 2
+        ? chainStraight
+        : trackingLineStraight.length >= 2
+          ? trackingLineStraight
+          : [];
 
   return (
     <MapContainer
@@ -232,7 +301,13 @@ export default function DeliveryTrackMap({
       scrollWheelZoom
       className="track-live-map"
     >
-      <MapController center={center} pickup={pickup ?? null} dropoff={dropoff ?? null} crew={crew} />
+      <MapController
+        center={center}
+        pickup={pickup ?? null}
+        dropoff={dropoff ?? null}
+        crew={crew}
+        routePlan={routePlan ?? null}
+      />
       {USE_MAPBOX ? (
         <TileLayer
           url={`https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/512/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`}
@@ -246,15 +321,25 @@ export default function DeliveryTrackMap({
       {purpleLinePositions.length >= 2 && (
         <Polyline positions={purpleLinePositions} color="#2C3E2D" weight={4} opacity={0.9} lineCap="round" lineJoin="round" />
       )}
-      {pickup && (
-        <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon}>
-          <Popup>Pickup</Popup>
-        </Marker>
-      )}
-      {dropoff && (
-        <Marker position={[dropoff.lat, dropoff.lng]} icon={dropoffIcon}>
-          <Popup>Destination</Popup>
-        </Marker>
+      {routePlan?.length ? (
+        routePlan.map((p, i) => (
+          <Marker key={`${p.lat}-${p.lng}-${i}`} position={[p.lat, p.lng]} icon={planStopIcon(p.label)}>
+            <Popup>{p.kind === "delivery" ? "Final delivery" : `Pickup ${p.label}`}</Popup>
+          </Marker>
+        ))
+      ) : (
+        <>
+          {pickup && (
+            <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon}>
+              <Popup>Pickup</Popup>
+            </Marker>
+          )}
+          {dropoff && (
+            <Marker position={[dropoff.lat, dropoff.lng]} icon={dropoffIcon}>
+              <Popup>Destination</Popup>
+            </Marker>
+          )}
+        </>
       )}
       {animCrew && (
         <Marker position={[animCrew.current_lat, animCrew.current_lng]} icon={crewArrowIcon(bearing)}>

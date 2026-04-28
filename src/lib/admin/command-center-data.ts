@@ -39,6 +39,42 @@ function scheduleDateYmd(row: { scheduled_date?: unknown }): string {
   return String(v).trim().slice(0, 10)
 }
 
+/** Time label for Command Center job rows (matches detail page when slot is empty but window exists). */
+function commandCenterDeliveryTime(d: Record<string, unknown>): string {
+  const slot =
+    d.time_slot != null && String(d.time_slot).trim() !== ""
+      ? String(d.time_slot).trim()
+      : ""
+  if (slot) return slot
+  const win =
+    d.delivery_window != null && String(d.delivery_window).trim() !== ""
+      ? String(d.delivery_window).trim()
+      : ""
+  if (win) return win
+  const startRaw = d.scheduled_start
+  const endRaw = d.scheduled_end
+  const fmtT = (t: unknown) => {
+    if (t == null || String(t).trim() === "") return ""
+    const s = String(t).trim()
+    const m = s.match(/^(\d{1,2}):(\d{2})/)
+    if (m) {
+      let h = parseInt(m[1], 10)
+      const min = m[2]
+      const ap = h >= 12 ? "PM" : "AM"
+      if (h > 12) h -= 12
+      if (h === 0) h = 12
+      return `${h}:${min} ${ap}`
+    }
+    return s
+  }
+  const a = fmtT(startRaw)
+  const b = fmtT(endRaw)
+  if (a && b && a !== b) return `${a} to ${b}`
+  if (a) return a
+  if (b) return b
+  return "TBD"
+}
+
 function mergeRowsById(
   primary: Record<string, unknown>[],
   extra: Record<string, unknown>[],
@@ -481,7 +517,7 @@ export const loadCommandCenterData = async () => {
       type: "delivery",
       name: String(d.customer_name || d.client_name || "Delivery"),
       subtitle,
-      time: String(d.time_slot || "TBD"),
+      time: commandCenterDeliveryTime(d),
       status: String(d.status || "pending").toLowerCase(),
       date: scheduleDateYmd(d),
       tag: String(d.category || "Delivery"),

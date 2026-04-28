@@ -2,6 +2,7 @@
 
 import TrackDeliveryClient from "@/app/track/delivery/[id]/TrackDeliveryClient";
 import { normalizeDeliveryItem } from "@/lib/delivery-items";
+import type { TrackPublicStop, TrackRoutePlanPoint } from "@/lib/track-delivery-public";
 
 function firstItemSummary(items: unknown): string | null {
   if (!Array.isArray(items) || items.length === 0) return null;
@@ -28,6 +29,8 @@ export default function B2BDeliveryTrackClient({
   googleReviewUrl,
   podImageUrl,
   companyContactEmail,
+  trackStops = null,
+  routePlan = null,
 }: {
   delivery: Record<string, unknown>;
   token: string;
@@ -38,6 +41,8 @@ export default function B2BDeliveryTrackClient({
   googleReviewUrl?: string | null;
   podImageUrl?: string | null;
   companyContactEmail: string;
+  trackStops?: TrackPublicStop[] | null;
+  routePlan?: TrackRoutePlanPoint[] | null;
 }) {
   const { assembly, debris } = flagsFromDelivery(delivery);
   const crewSize =
@@ -48,6 +53,9 @@ export default function B2BDeliveryTrackClient({
         : typeof delivery.crew_size === "number"
           ? delivery.crew_size
           : null;
+
+  const isMulti =
+    Array.isArray(trackStops) && trackStops.length > 0;
 
   return (
     <TrackDeliveryClient
@@ -60,10 +68,16 @@ export default function B2BDeliveryTrackClient({
       b2bAudience={audience}
       b2bCoBrand={coBrandName}
       b2bPodImageUrl={podImageUrl || null}
-      b2bItemSummary={firstItemSummary(delivery.items)}
+      b2bItemSummary={
+        isMulti && trackStops
+          ? `Multi-stop route · ${trackStops.length} stops`
+          : firstItemSummary(delivery.items)
+      }
       b2bCrewSize={crewSize}
       b2bAssembly={assembly}
       b2bDebrisRemoval={debris}
+      trackStops={trackStops}
+      routePlan={routePlan}
     />
   );
 }

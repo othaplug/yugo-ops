@@ -13,12 +13,25 @@ import {
 } from "@/hooks/useHubSpotContactSuggest";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
-import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import MultiStopAddressField, {
   type StopEntry,
 } from "@/components/ui/MultiStopAddressField";
 import DraftBanner from "@/components/ui/DraftBanner";
 import { Plus, Trash as Trash2, Stack as Layers } from "@phosphor-icons/react";
+import B2BMultiStopRouteSection from "@/components/admin/b2b/B2BMultiStopRouteSection";
+import {
+  b2bVerticalQuickAddPresets,
+  normalizeB2bVerticalFormCode,
+} from "@/lib/b2b-vertical-ui";
+import { normalizeB2bWeightCategory } from "@/lib/pricing/weight-tiers";
+import {
+  createEmptyPickupStop,
+  createFinalDeliveryStop,
+  flattenMultiStopToLineRows,
+  multiStopPayloadStops,
+  newLocalId,
+  type MultiStopDraftStop,
+} from "@/components/admin/b2b/b2b-multi-stop-types";
 
 interface ProjectOption {
   id: string;
@@ -206,6 +219,89 @@ export default function NewDeliveryForm({
   const [bulkText, setBulkText] = useState("");
   const [itemsFallback, setItemsFallback] = useState("");
 
+  const [routeMode, setRouteMode] = useState<"single" | "multi">("single");
+  const [multiStops, setMultiStops] =
+    useState<MultiStopDraftStop[]>(() => [
+      createEmptyPickupStop(),
+      createFinalDeliveryStop(),
+    ]);
+  const [projectName, setProjectName] = useState("");
+  const [endClientName, setEndClientName] = useState("");
+  const [endClientPhone, setEndClientPhone] = useState("");
+  const [stagedDelivery, setStagedDelivery] = useState(false);
+  const lastProjectTypeForRouteRef = useRef<string | null>(null);
+
+  const quickAddPresets = useMemo(
+    () => b2bVerticalQuickAddPresets(normalizeB2bVerticalFormCode(projectType)),
+    [projectType],
+  );
+
+  const addQuickPresetToMultiStop = useCallback(
+    (
+      p: {
+        name: string;
+        weight?: string;
+        fragile?: boolean;
+        unit?: string;
+        icon?: string;
+      },
+      stopLocalId: string,
+    ) => {
+      const wcRaw = (p.weight || "medium").toLowerCase();
+      const wc = normalizeB2bWeightCategory(wcRaw);
+      const item = {
+        localId: newLocalId(),
+        description: p.name,
+        quantity: 1,
+        weight_range: wc,
+        fragile: !!p.fragile,
+        is_high_value: false,
+        requires_assembly: false,
+      };
+      setMultiStops((prev) =>
+        prev.map((s) =>
+          s.localId === stopLocalId && !s.isFinalDestination
+            ? { ...s, items: [...s.items, item], collapsed: false }
+            : s,
+        ),
+      );
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const prev = lastProjectTypeForRouteRef.current;
+    if (prev !== projectType && projectType === "interior_designer") {
+      setRouteMode("multi");
+    }
+    lastProjectTypeForRouteRef.current = projectType;
+  }, [projectType]);
+
+  const seedMultiStopsFromSingleRow = useCallback(() => {
+    setMultiStops([
+      {
+        ...createEmptyPickupStop(),
+        address: pickupAddress,
+        accessType: pickupAccess || "ground_floor",
+      },
+      {
+        ...createFinalDeliveryStop(),
+        address: deliveryAddress,
+        accessType: deliveryAccess || "elevator",
+      },
+    ]);
+  }, [pickupAddress, deliveryAddress, pickupAccess, deliveryAccess]);
+
+  const handleSetRouteMode = useCallback(
+    (mode: "single" | "multi") => {
+      if (mode === "multi") {
+        seedMultiStopsFromSingleRow();
+      }
+      setRouteMode(mode);
+    },
+    [seedMultiStopsFromSingleRow],
+  );
+
   // Draft auto-save
   const draftState = useMemo(
     () => ({
@@ -228,6 +324,12 @@ export default function NewDeliveryForm({
       deliveryAccess,
       itemWeightCategory,
       itemsFallback,
+      routeMode,
+      projectName,
+      endClientName,
+      endClientPhone,
+      stagedDelivery,
+      multiStops,
     }),
     [
       projectType,
@@ -249,6 +351,12 @@ export default function NewDeliveryForm({
       deliveryAccess,
       itemWeightCategory,
       itemsFallback,
+      routeMode,
+      projectName,
+      endClientName,
+      endClientPhone,
+      stagedDelivery,
+      multiStops,
     ],
   );
 
@@ -281,6 +389,16 @@ export default function NewDeliveryForm({
     if (d.itemWeightCategory)
       setItemWeightCategory(d.itemWeightCategory as string);
     if (d.itemsFallback) setItemsFallback(d.itemsFallback as string);
+    if (d.routeMode === "single" || d.routeMode === "multi") {
+      setRouteMode(d.routeMode);
+    }
+    if (typeof d.projectName === "string") setProjectName(d.projectName);
+    if (typeof d.endClientName === "string") setEndClientName(d.endClientName);
+    if (typeof d.endClientPhone === "string") setEndClientPhone(d.endClientPhone);
+    if (typeof d.stagedDelivery === "boolean") setStagedDelivery(d.stagedDelivery);
+    if (Array.isArray(d.multiStops) && d.multiStops.length > 0) {
+      setMultiStops(d.multiStops as MultiStopDraftStop[]);
+    }
   }, []);
 
   const { hasDraft, restoreDraft, dismissDraft, clearDraft } = useFormDraft(
@@ -396,11 +514,21 @@ export default function NewDeliveryForm({
   useEffect(() => {
     if (!linkedPhaseId) return;
     const phase = phases.find((p) => p.id === linkedPhaseId);
-    if (phase?.address && !deliveryAddress) {
-      setDeliveryAddress(phase.address);
+    const addr = phase?.address?.trim();
+    if (!addr) return;
+    if (routeMode === "multi") {
+      setMultiStops((prev) =>
+        prev.map((s) =>
+          s.isFinalDestination ? { ...s, address: addr } : s,
+        ),
+      );
+      return;
+    }
+    if (!deliveryAddress) {
+      setDeliveryAddress(addr);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [linkedPhaseId, phases]);
+  }, [linkedPhaseId, phases, routeMode]);
 
   const addInventoryItem = () => {
     if (!newItemName.trim() || !newRoom) return;
@@ -479,7 +607,7 @@ export default function NewDeliveryForm({
       setError("Customer name is required");
       return;
     }
-    if (!deliveryAddress.trim()) {
+    if (routeMode === "single" && !deliveryAddress.trim()) {
       setError("Delivery address is required");
       return;
     }
@@ -488,17 +616,55 @@ export default function NewDeliveryForm({
       return;
     }
 
+    if (routeMode === "multi") {
+      const fin = multiStops.find((s) => s.isFinalDestination);
+      const pickups = multiStops.filter((s) => !s.isFinalDestination);
+      if (pickups.length < 1) {
+        setError("Add at least one pickup stop");
+        return;
+      }
+      if (!fin?.address.trim()) {
+        setError("Final delivery address is required");
+        return;
+      }
+      for (const p of pickups) {
+        if (!p.address.trim()) {
+          setError("Each pickup stop needs an address");
+          return;
+        }
+      }
+      const flatLines = flattenMultiStopToLineRows(multiStops);
+      if (flatLines.length === 0) {
+        setError("Add at least one item on a pickup stop");
+        return;
+      }
+    }
+
     setLoading(true);
     setError("");
 
     const org = organizations.find((o) => o.id === organizationId);
-    const itemsList =
+
+    const itemsListSingle =
       inventory.length > 0
         ? inventory.map((i) => `${i.room}: ${i.item_name}`)
         : itemsFallback
             .split("\n")
             .map((l) => l.trim())
             .filter(Boolean);
+
+    const itemsListMulti = flattenMultiStopToLineRows(multiStops).map((i) =>
+      `${i.description}${i.quantity > 1 ? ` ×${i.quantity}` : ""}`,
+    );
+
+    const itemsList =
+      routeMode === "multi" ? itemsListMulti : itemsListSingle;
+
+    if (routeMode === "single" && itemsList.length === 0) {
+      setError("Add at least one inventory line or paste items below");
+      setLoading(false);
+      return;
+    }
 
     const instructionsMerged = [
       instructions,
@@ -510,7 +676,21 @@ export default function NewDeliveryForm({
       .filter(Boolean)
       .join("\n");
 
-    const payload = {
+    const firstPu =
+      routeMode === "multi"
+        ? multiStops.find((s) => !s.isFinalDestination)
+        : null;
+    const finStop =
+      routeMode === "multi"
+        ? multiStops.find((s) => s.isFinalDestination)
+        : null;
+
+    const maxPhase = Math.max(
+      ...multiStops.map((s) => s.deliveryPhase || 1),
+      1,
+    );
+
+    const payload: Record<string, unknown> = {
       organization_id: organizationId || null,
       client_name: org?.name || "",
       customer_name: customerName.trim(),
@@ -518,8 +698,14 @@ export default function NewDeliveryForm({
       customer_phone: customerPhone.trim()
         ? normalizePhone(customerPhone)
         : null,
-      pickup_address: pickupAddress.trim() || null,
-      delivery_address: deliveryAddress.trim(),
+      pickup_address:
+        routeMode === "multi"
+          ? (firstPu?.address ?? "").trim() || null
+          : pickupAddress.trim() || null,
+      delivery_address:
+        routeMode === "multi"
+          ? (finStop?.address ?? "").trim()
+          : deliveryAddress.trim(),
       items: itemsList,
       scheduled_date: scheduledDate,
       time_slot: timeSlot || null,
@@ -528,13 +714,32 @@ export default function NewDeliveryForm({
       special_handling: specialHandling,
       quoted_price: parseNumberInput(quotedPrice) || null,
       crew_id: crewId || null,
-      pickup_access: pickupAccess || null,
-      delivery_access: deliveryAccess || null,
+      pickup_access:
+        routeMode === "multi"
+          ? firstPu?.accessType || null
+          : pickupAccess || null,
+      delivery_access:
+        routeMode === "multi"
+          ? finStop?.accessType || null
+          : deliveryAccess || null,
       item_weight_category: itemWeightCategory || null,
       category: projectType || org?.vertical || org?.type || "retail",
       project_id: linkedProjectId || null,
       phase_id: linkedPhaseId || null,
+      vertical_code: projectType.trim() || null,
     };
+
+    if (routeMode === "multi") {
+      payload.is_multi_stop = true;
+      payload.multi_route_stops = multiStopPayloadStops(multiStops);
+      payload.project_name = projectName.trim() || null;
+      payload.end_client_name = endClientName.trim() || null;
+      payload.end_client_phone = endClientPhone.trim()
+        ? normalizePhone(endClientPhone)
+        : null;
+      payload.staged_delivery = stagedDelivery;
+      payload.phase_count = stagedDelivery ? maxPhase : 1;
+    }
 
     const res = await fetch("/api/admin/deliveries/create", {
       method: "POST",
@@ -548,25 +753,30 @@ export default function NewDeliveryForm({
     if (res.ok && data.delivery) {
       const created = data.delivery;
 
-      // Persist additional stops to job_stops if any were added
-      const allExtraStops = [
-        ...extraPickupStops
-          .filter((s) => s.address.trim())
-          .map((s, i) => ({ ...s, stop_type: "pickup", sort_order: i + 1 })),
-        ...extraDeliveryStops
-          .filter((s) => s.address.trim())
-          .map((s, i) => ({ ...s, stop_type: "dropoff", sort_order: i + 1 })),
-      ];
-      if (allExtraStops.length > 0) {
-        fetch("/api/admin/job-stops", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            job_type: "delivery",
-            job_id: created.id,
-            stops: allExtraStops,
-          }),
-        }).catch(() => {});
+      if (routeMode === "single") {
+        const allExtraStops = [
+          ...extraPickupStops
+            .filter((s) => s.address.trim())
+            .map((s, i) => ({ ...s, stop_type: "pickup", sort_order: i + 1 })),
+          ...extraDeliveryStops
+            .filter((s) => s.address.trim())
+            .map((s, i) => ({
+              ...s,
+              stop_type: "dropoff",
+              sort_order: i + 1,
+            })),
+        ];
+        if (allExtraStops.length > 0) {
+          fetch("/api/admin/job-stops", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              job_type: "delivery",
+              job_id: created.id,
+              stops: allExtraStops,
+            }),
+          }).catch(() => {});
+        }
       }
 
       clearDraft();
@@ -785,80 +995,138 @@ export default function NewDeliveryForm({
         </section>
 
         {/* Section: Addresses */}
-        <section className="space-y-3">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
-            Addresses
-          </h3>
-          <div className="max-w-4xl space-y-3">
-            <MultiStopAddressField
-              label="Pickup"
-              labelVisibility="sr-only"
-              placeholder="Warehouse, store, or pickup location"
-              stops={[{ address: pickupAddress }, ...extraPickupStops]}
-              onChange={(stops) => {
-                setPickupAddress(stops[0]?.address ?? "");
-                setExtraPickupStops(stops.slice(1));
-              }}
-              inputClassName={fieldInput}
-              trailingOnFirstRow={
-                <>
-                  <label
-                    htmlFor="new-delivery-pickup-access"
-                    className="sr-only"
-                  >
-                    Pickup access
-                  </label>
-                  <select
-                    id="new-delivery-pickup-access"
-                    value={pickupAccess}
-                    onChange={(e) => setPickupAccess(e.target.value)}
-                    className={accessSelectClass}
-                    aria-label="Pickup access"
-                  >
-                    {ROUTE_ACCESS_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                </>
-              }
-            />
-            <MultiStopAddressField
-              label="Delivery"
-              labelVisibility="sr-only"
-              placeholder="Delivery destination"
-              stops={[{ address: deliveryAddress }, ...extraDeliveryStops]}
-              onChange={(stops) => {
-                setDeliveryAddress(stops[0]?.address ?? "");
-                setExtraDeliveryStops(stops.slice(1));
-              }}
-              inputClassName={fieldInput}
-              trailingOnFirstRow={
-                <>
-                  <label
-                    htmlFor="new-delivery-delivery-access"
-                    className="sr-only"
-                  >
-                    Delivery access
-                  </label>
-                  <select
-                    id="new-delivery-delivery-access"
-                    value={deliveryAccess}
-                    onChange={(e) => setDeliveryAccess(e.target.value)}
-                    className={accessSelectClass}
-                    aria-label="Delivery access"
-                  >
-                    {ROUTE_ACCESS_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                </>
-              }
-            />
+        <section className="space-y-3 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
+              Addresses
+            </h3>
+            <div
+              className="inline-flex rounded-lg border border-[var(--brd)] bg-[var(--bg)] p-0.5"
+              role="group"
+              aria-label="Route mode"
+            >
+              <button
+                type="button"
+                onClick={() => handleSetRouteMode("single")}
+                className={`rounded-md px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider ${
+                  routeMode === "single"
+                    ? "bg-[var(--card)] text-[var(--tx)] shadow-sm"
+                    : "text-[var(--tx3)]"
+                }`}
+              >
+                Single route
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSetRouteMode("multi")}
+                className={`rounded-md px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider ${
+                  routeMode === "multi"
+                    ? "bg-[var(--card)] text-[var(--tx)] shadow-sm"
+                    : "text-[var(--tx3)]"
+                }`}
+              >
+                Multi-stop project
+              </button>
+            </div>
           </div>
+          {routeMode === "multi" ? (
+            <div className="space-y-3 max-w-4xl">
+              <B2BMultiStopRouteSection
+                projectName={projectName}
+                setProjectName={setProjectName}
+                endClientName={endClientName}
+                setEndClientName={setEndClientName}
+                endClientPhone={endClientPhone}
+                setEndClientPhone={setEndClientPhone}
+                stops={multiStops}
+                setStops={setMultiStops}
+                stagedDelivery={stagedDelivery}
+                setStagedDelivery={setStagedDelivery}
+                quickAddPresets={quickAddPresets}
+                onQuickAdd={addQuickPresetToMultiStop}
+              />
+              <Field label="Access notes (job-wide)">
+                <textarea
+                  value={accessNotes}
+                  onChange={(e) => setAccessNotes(e.target.value)}
+                  rows={2}
+                  placeholder="Dock hours, buzzer codes, long carry notes…"
+                  className={`${fieldInput} resize-y`}
+                />
+              </Field>
+            </div>
+          ) : (
+            <div className="max-w-4xl space-y-3">
+              <MultiStopAddressField
+                label="Pickup"
+                labelVisibility="sr-only"
+                placeholder="Warehouse, store, or pickup location"
+                stops={[{ address: pickupAddress }, ...extraPickupStops]}
+                onChange={(stops) => {
+                  setPickupAddress(stops[0]?.address ?? "");
+                  setExtraPickupStops(stops.slice(1));
+                }}
+                inputClassName={fieldInput}
+                trailingOnFirstRow={
+                  <>
+                    <label
+                      htmlFor="new-delivery-pickup-access"
+                      className="sr-only"
+                    >
+                      Pickup access
+                    </label>
+                    <select
+                      id="new-delivery-pickup-access"
+                      value={pickupAccess}
+                      onChange={(e) => setPickupAccess(e.target.value)}
+                      className={accessSelectClass}
+                      aria-label="Pickup access"
+                    >
+                      {ROUTE_ACCESS_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                }
+              />
+              <MultiStopAddressField
+                label="Delivery"
+                labelVisibility="sr-only"
+                placeholder="Delivery destination"
+                stops={[{ address: deliveryAddress }, ...extraDeliveryStops]}
+                onChange={(stops) => {
+                  setDeliveryAddress(stops[0]?.address ?? "");
+                  setExtraDeliveryStops(stops.slice(1));
+                }}
+                inputClassName={fieldInput}
+                trailingOnFirstRow={
+                  <>
+                    <label
+                      htmlFor="new-delivery-delivery-access"
+                      className="sr-only"
+                    >
+                      Delivery access
+                    </label>
+                    <select
+                      id="new-delivery-delivery-access"
+                      value={deliveryAccess}
+                      onChange={(e) => setDeliveryAccess(e.target.value)}
+                      className={accessSelectClass}
+                      aria-label="Delivery access"
+                    >
+                      {ROUTE_ACCESS_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                }
+              />
+            </div>
+          )}
         </section>
 
         {/* Section: Schedule */}
@@ -963,9 +1231,17 @@ export default function NewDeliveryForm({
           <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
             Inventory
           </h3>
+          {routeMode === "multi" ? (
+            <p className="text-[11px] text-[var(--tx3)] leading-relaxed rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2.5">
+              Multi-stop projects use items on each pickup stop in the route
+              above. Quick-add presets follow your project type vertical.
+            </p>
+          ) : null}
 
           {/* Add from project inventory (Yugo items only) */}
-          {linkedProjectId && yugoProjectItems.length > 0 && (
+          {routeMode !== "multi" &&
+            linkedProjectId &&
+            yugoProjectItems.length > 0 && (
             <div className="p-3 rounded-lg bg-[var(--gold)]/5 border border-[var(--gold)]/20 space-y-2">
               <div className="text-[11px] font-semibold text-[var(--tx)] flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-[var(--gold)]" />
@@ -1022,7 +1298,7 @@ export default function NewDeliveryForm({
             </div>
           )}
 
-          {inventory.length > 0 && (
+          {routeMode !== "multi" && inventory.length > 0 && (
             <ul className="space-y-1.5 mb-2">
               {inventory.map((item, idx) => (
                 <li
@@ -1045,6 +1321,8 @@ export default function NewDeliveryForm({
               ))}
             </ul>
           )}
+          {routeMode !== "multi" && (
+            <>
           <div className="flex items-center gap-2 mb-2">
             <button
               type="button"
@@ -1145,6 +1423,8 @@ export default function NewDeliveryForm({
             placeholder="Sofa x2&#10;Coffee Table"
             className={`${fieldInput} resize-y`}
           />
+            </>
+          )}
         </section>
 
         {/* Section: Complexity */}
@@ -1195,15 +1475,17 @@ export default function NewDeliveryForm({
               className={`${fieldInput} resize-y`}
             />
           </Field>
-          <Field label="Access Notes">
-            <textarea
-              value={accessNotes}
-              onChange={(e) => setAccessNotes(e.target.value)}
-              rows={2}
-              placeholder="Building codes, gate access, parking…"
-              className={`${fieldInput} resize-y`}
-            />
-          </Field>
+          {routeMode !== "multi" ? (
+            <Field label="Access Notes">
+              <textarea
+                value={accessNotes}
+                onChange={(e) => setAccessNotes(e.target.value)}
+                rows={2}
+                placeholder="Building codes, gate access, parking…"
+                className={`${fieldInput} resize-y`}
+              />
+            </Field>
+          ) : null}
           <Field label="Internal Notes">
             <textarea
               value={internalNotes}
