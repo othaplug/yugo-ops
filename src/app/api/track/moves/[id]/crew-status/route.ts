@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { getDispatchPhone } from "@/lib/config";
+import { isTerminalMoveStatus } from "@/lib/moves/job-terminal";
 
 const MAPBOX_TOKEN =
   process.env.MAPBOX_ACCESS_TOKEN ||
@@ -111,6 +112,10 @@ export async function GET(
       };
       liveStage = ts.status || liveStage;
       lastLocationAt = loc.timestamp || null;
+    }
+
+    if (isTerminalMoveStatus(move.status as string | undefined)) {
+      liveStage = "completed";
     }
 
     if (move.crew_id && ts?.is_active) {

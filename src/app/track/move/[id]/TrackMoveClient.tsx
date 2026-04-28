@@ -15,6 +15,7 @@ import { useToast } from "@/app/admin/components/Toast";
 import {
   MOVE_STATUS_INDEX,
   LIVE_TRACKING_STAGES,
+  LIVE_STAGE_MAP,
   getStatusLabel,
 } from "@/lib/move-status";
 import { getDisplayLabel } from "@/lib/displayLabels";
@@ -801,6 +802,13 @@ export default function TrackMoveClient({
 
   // Poll crew-status (including liveStage, scheduled_date, status) so client stays in sync when admin updates
   useEffect(() => {
+    const moveDone =
+      move.status === "completed" ||
+      move.status === "delivered" ||
+      move.status === "job_complete" ||
+      move.status === "cancelled";
+    if (moveDone) return;
+
     const poll = async () => {
       try {
         const res = await fetch(
@@ -809,7 +817,24 @@ export default function TrackMoveClient({
         );
         const data = await res.json();
         if (res.ok && data) {
-          if ("liveStage" in data) setLiveStage(data.liveStage ?? null);
+          const polledStatus = String(data.status || "").toLowerCase();
+          if (
+            polledStatus === "completed" ||
+            polledStatus === "delivered" ||
+            polledStatus === "job_complete" ||
+            polledStatus === "cancelled"
+          ) {
+            setLiveStage("completed");
+            return;
+          }
+          if ("liveStage" in data && data.liveStage != null) {
+            setLiveStage((prev) => {
+              const next = data.liveStage as string;
+              const rank = (s: string | null) =>
+                s ? (LIVE_STAGE_MAP[s] ?? -2) : -2;
+              return rank(next) >= rank(prev) ? next : prev;
+            });
+          }
           if ("scheduled_date" in data)
             setLiveScheduledDate(data.scheduled_date ?? null);
           if ("arrival_window" in data)
@@ -833,7 +858,7 @@ export default function TrackMoveClient({
     poll();
     const id = setInterval(poll, 10000);
     return () => clearInterval(id);
-  }, [move.id, token]);
+  }, [move.id, move.status, token]);
 
   const moveCode = getMoveCode(move);
   const displayCode = formatJobId(moveCode, "move");
@@ -855,12 +880,20 @@ export default function TrackMoveClient({
     "arrived_at_destination",
     "unloading",
   ];
+  const moveStatusLower = (move.status || "").toLowerCase();
   const statusVal =
-    liveStage === "completed"
-      ? "completed"
-      : liveStage && EN_ROUTE_OR_ACTIVE.includes(liveStage)
-        ? "in_progress"
-        : move.status || "confirmed";
+    moveStatusLower === "completed" ||
+    moveStatusLower === "delivered" ||
+    moveStatusLower === "job_complete" ||
+    moveStatusLower === "cancelled"
+      ? moveStatusLower === "cancelled"
+        ? "cancelled"
+        : "completed"
+      : liveStage === "completed"
+        ? "completed"
+        : liveStage && EN_ROUTE_OR_ACTIVE.includes(liveStage)
+          ? "in_progress"
+          : move.status || "confirmed";
   const currentIdx = getStatusIdx(statusVal);
   const isCancelled = statusVal === "cancelled";
   const isCompleted = statusVal === "completed" || statusVal === "delivered";

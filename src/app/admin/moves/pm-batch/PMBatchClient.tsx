@@ -29,7 +29,12 @@ type Bootstrap = {
   rate_preview: { reason_code: string; unit_size: string; base_rate: number }[];
 };
 
-export function PMBatchClient() {
+export function PMBatchClient({
+  embedded = false,
+}: {
+  /** When true, omit top PageHeader chrome (nested under Create move flow). */
+  embedded?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -63,7 +68,10 @@ export function PMBatchClient() {
   }, [toast]);
 
   const urlPartnerId = React.useMemo(
-    () => searchParams.get("partner_id")?.trim() || "",
+    () =>
+      searchParams.get("partner_id")?.trim() ||
+      searchParams.get("partner")?.trim() ||
+      "",
     [searchParams],
   );
 
@@ -194,35 +202,39 @@ export function PMBatchClient() {
   };
 
   return (
-    <div className="flex flex-col gap-5 max-w-5xl mx-auto w-full min-w-0 pb-10">
-      <PageHeader
-        eyebrow="Partners"
-        title="Schedule PM moves"
-        description="Create multiple property management moves at once. Pricing follows the partner contract rate card."
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              uppercase
-              trailingIcon={<CaretRight weight="bold" size={14} className="opacity-90" aria-hidden />}
-              onClick={() => router.push("/admin/partners")}
-            >
-              All partners
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              uppercase
-              trailingIcon={<CaretRight weight="bold" size={14} className="opacity-90" aria-hidden />}
-              onClick={() => router.push("/admin/moves")}
-            >
-              All moves
-            </Button>
-          </div>
-        }
-        className="pb-2"
-      />
+    <div
+      className={`flex flex-col gap-5 w-full min-w-0 ${embedded ? "" : "max-w-5xl mx-auto pb-10"}`}
+    >
+      {!embedded ? (
+        <PageHeader
+          eyebrow="Partners"
+          title="Schedule PM moves"
+          description="Create multiple property management moves at once. Pricing follows the partner contract rate card."
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                uppercase
+                trailingIcon={<CaretRight weight="bold" size={14} className="opacity-90" aria-hidden />}
+                onClick={() => router.push("/admin/partners")}
+              >
+                All partners
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                uppercase
+                trailingIcon={<CaretRight weight="bold" size={14} className="opacity-90" aria-hidden />}
+                onClick={() => router.push("/admin/moves")}
+              >
+                All moves
+              </Button>
+            </div>
+          }
+          className="pb-2"
+        />
+      ) : null}
 
       <div className="rounded-[var(--yu3-r-lg)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] shadow-[var(--yu3-shadow-sm)] p-4 md:p-5">
         <label className="yu3-t-eyebrow text-[var(--yu3-ink-muted)] block mb-2">

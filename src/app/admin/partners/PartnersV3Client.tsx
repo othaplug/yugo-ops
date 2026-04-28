@@ -408,7 +408,7 @@ export default function PartnersV3Client() {
               <Button
                 variant="secondary"
                 leadingIcon={<Path size={16} />}
-                onClick={() => router.push("/admin/partners/pm-batch")}
+                onClick={() => router.push("/admin/moves/create?mode=pm_batch")}
               >
                 Schedule PM moves
               </Button>

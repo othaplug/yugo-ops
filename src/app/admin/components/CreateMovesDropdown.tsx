@@ -46,7 +46,7 @@ export default function CreateMovesDropdown({
           onMouseLeave={() => setOpen(false)}
         >
           <Link
-            href="/admin/moves/new"
+            href="/admin/moves/create"
             className="flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--bg)] transition-colors first:rounded-t-xl last:rounded-b-xl"
           >
             <span className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center text-[var(--accent-text)]">

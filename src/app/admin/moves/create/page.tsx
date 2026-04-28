@@ -1,0 +1,45 @@
+import { Suspense } from "react"
+import { createAdminClient } from "@/lib/supabase/admin";
+import CreateMovePageClient from "./CreateMovePageClient";
+
+export const metadata = { title: "Create move" };
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+function LoadingShell() {
+  return (
+    <div className="w-full py-10 text-[13px] text-[var(--yu3-ink-muted)] text-center">
+      Loading…
+    </div>
+  );
+}
+
+export default async function CreateMovePage() {
+  const db = createAdminClient();
+  const [{ data: orgs }, { data: crews }, { data: itemWeights }] = await Promise.all([
+    db
+      .from("organizations")
+      .select("id, name, type, email, contact_name, phone, address")
+      .eq("type", "b2c")
+      .not("name", "like", "\\_%")
+      .order("name"),
+    db.from("crews").select("id, name, members").order("name"),
+    db
+      .from("item_weights")
+      .select("slug, item_name, weight_score, category, room, is_common, display_order, active")
+      .eq("active", true)
+      .order("display_order"),
+  ]);
+
+  return (
+    <div className="w-full min-w-0 py-4 md:py-6">
+      <Suspense fallback={<LoadingShell />}>
+        <CreateMovePageClient
+          organizations={orgs || []}
+          crews={crews || []}
+          itemWeights={itemWeights || []}
+        />
+      </Suspense>
+    </div>
+  );
+}

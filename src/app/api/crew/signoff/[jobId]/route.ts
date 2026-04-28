@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
-import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
-import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
-import { createClientReferralIfNeeded } from "@/lib/client-referral";
-import { generateMovePDFs } from "@/lib/documents/generateMovePDFs";
-import { maybeNotifyB2BOneOffDelivered } from "@/lib/b2b-delivery-business-notifications";
 import { isEquipmentRelationUnavailable } from "@/lib/supabase-equipment-errors";
 import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
+import {
+  ensureJobCompleted,
+  runDeliveryCompletionFollowUp,
+  runMoveCompletionFollowUp,
+} from "@/lib/moves/complete-move-job";
 
 export async function GET(
   req: NextRequest,
@@ -385,8 +385,7 @@ export async function POST(
     }
   } catch {}
 
-  // Complete the job: sign-off always finalizes the move/delivery. Do not require an *active* tracking session,
-  // otherwise moves can stay in_progress while the session row is already completed (admin and crew dashboard drift).
+  // Complete the job: sign-off always finalizes the move/delivery (centralized so status/stage/sessions stay aligned).
   const now = new Date().toISOString();
 
   const { data: activeSession } = await admin
@@ -406,14 +405,6 @@ export async function POST(
     .limit(1)
     .maybeSingle();
 
-  if (activeSession) {
-    const { error: sessionErr } = await admin
-      .from("tracking_sessions")
-      .update({ status: "completed", is_active: false, completed_at: now, updated_at: now })
-      .eq("id", activeSession.id);
-    if (sessionErr) console.error("[signoff] tracking_sessions complete failed:", sessionErr.message);
-  }
-
   const sessionForHours = activeSession ?? latestSession;
   const sessionStartMs = sessionForHours?.started_at
     ? new Date(sessionForHours.started_at as string).getTime()
@@ -424,63 +415,25 @@ export async function POST(
       ? Math.round(((sessionEndMs - sessionStartMs) / 3_600_000) * 100) / 100
       : null;
 
-  const table = jobType === "move" ? "moves" : "deliveries";
-  const { error: jobCompleteErr } = await admin
-    .from(table)
-    .update({
-      status: jobType === "move" ? "completed" : "delivered",
-      stage: "completed",
-      completed_at: now,
-      updated_at: now,
-      eta_tracking_active: false,
-      ...(actualHours != null && actualHours > 0 ? { actual_hours: actualHours } : {}),
-    })
-    .eq("id", entityId);
+  const { wasAlreadyComplete } = await ensureJobCompleted(admin, {
+    jobId: entityId,
+    jobType,
+    completedAt: now,
+    actualHours,
+  });
 
-  if (jobCompleteErr) {
-    console.error(
-      "[signoff] job finalize failed (client sign-off row already saved; dispatch may need manual status fix):",
-      jobCompleteErr.message,
-    );
-  } else {
+  const signoffHadDamage = !noDamages || !noPropertyDamage || hasNewDamage;
+
+  if (!wasAlreadyComplete) {
     if (jobType === "move") {
-      syncDealStageByMoveId(entityId, "completed").catch(() => {});
-      createReviewRequestIfEligible(admin, entityId).catch((e) => console.error("[review] create failed:", e));
-      createClientReferralIfNeeded(admin, entityId).catch((e) => console.error("[referral] create failed:", e));
-      try {
-        await generateMovePDFs(entityId);
-      } catch (e) {
-        console.error("[generateMovePDFs] failed:", e);
-      }
-    }
-
-    const origin = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    fetch(`${origin.replace(/\/$/, "")}/api/eta/send-completed`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jobId: entityId, jobType }),
-    }).catch((e) => console.error("[eta] send-completed failed:", e));
-
-    if (jobType === "delivery") {
-      maybeNotifyB2BOneOffDelivered(entityId).catch(() => {});
-      fetch(`${origin.replace(/\/$/, "")}/api/invoices/auto-delivery`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deliveryId: entityId }),
-      }).catch((e) => console.error("[auto-invoice] delivery trigger failed:", e));
-    }
-    if (jobType === "move") {
-      fetch(`${origin.replace(/\/$/, "")}/api/invoices/auto-move`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ moveId: entityId }),
-      }).catch((e) => console.error("[auto-invoice] move trigger failed:", e));
+      await runMoveCompletionFollowUp(admin, entityId, {
+        source: "crew_signoff",
+      });
+    } else {
+      await runDeliveryCompletionFollowUp(admin, entityId);
     }
   }
 
-  const signoffHadDamage = !noDamages || !noPropertyDamage || hasNewDamage;
   notifyJobCompletedForCrewProfiles(admin, {
     jobType,
     jobId: entityId,

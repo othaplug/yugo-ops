@@ -312,7 +312,7 @@ export async function POST(req: NextRequest) {
   if (session.is_active && session.job_type === "move" && session.job_id) {
     const { data: move } = await admin
       .from("moves")
-      .select("id, client_name, from_address, to_address, from_lat, from_lng, to_lat, to_lng")
+      .select("id, client_name, from_address, to_address, from_lat, from_lng, to_lat, to_lng, status")
       .eq("id", session.job_id as string)
       .single();
 
@@ -324,8 +324,13 @@ export async function POST(req: NextRequest) {
 
       await admin.from("moves").update({ gps_alert_sent: false }).eq("id", move.id);
 
-      // Geofencing: auto-detect arrival at pickup or delivery
-      const transition = sessionStatus ? GEOFENCE_TRANSITIONS[sessionStatus] : undefined;
+      const moveTerminal = ["completed", "cancelled", "delivered", "job_complete"].includes(
+        String((move as { status?: string }).status || "").toLowerCase(),
+      );
+
+      // Geofencing: auto-detect arrival at pickup or delivery (never advance a finished move)
+      const transition =
+        !moveTerminal && sessionStatus ? GEOFENCE_TRANSITIONS[sessionStatus] : undefined;
       if (transition) {
         let targetLat: number | null = null;
         let targetLng: number | null = null;

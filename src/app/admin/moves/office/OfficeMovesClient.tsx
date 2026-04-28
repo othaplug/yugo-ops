@@ -195,7 +195,7 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
               )}
             </div>
           </div>
-          <CreateButton href="/admin/moves/new" title="New Move" />
+          <CreateButton href="/admin/moves/create" title="New Move" />
         </div>
 
         {filterOpen && (

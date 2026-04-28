@@ -203,7 +203,7 @@ export default function MoveProjectsV3Client({
             <Button
               variant="primary"
               leadingIcon={<Plus size={16} />}
-              onClick={() => router.push("/admin/moves/new?mode=estate")}
+              onClick={() => router.push("/admin/moves/create?mode=estate")}
             >
               New project
             </Button>

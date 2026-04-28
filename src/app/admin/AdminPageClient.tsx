@@ -696,7 +696,7 @@ export default function AdminPageClient({
                     </p>
                     {[
                       { href: "/admin/quotes/new", label: "New Quote" },
-                      { href: "/admin/moves/new", label: "New Move" },
+                      { href: "/admin/moves/create", label: "New Move" },
                       { href: "/admin/deliveries/new", label: "New Delivery" },
                     ].map((item) => (
                       <Link

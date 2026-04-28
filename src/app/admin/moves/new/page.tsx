@@ -1,19 +1,20 @@
-import { createAdminClient } from "@/lib/supabase/admin";
-import CreateMoveForm from "./CreateMoveForm";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "New Move" };
 
-export default async function NewMovePage() {
-  const db = createAdminClient();
-  const [{ data: orgs }, { data: crews }, { data: itemWeights }] = await Promise.all([
-    db.from("organizations").select("id, name, type, email, contact_name, phone, address").eq("type", "b2c").not("name", "like", "\\_%").order("name"),
-    db.from("crews").select("id, name, members").order("name"),
-    db.from("item_weights").select("slug, item_name, weight_score, category, room, is_common, display_order, active").eq("active", true).order("display_order"),
-  ]);
+export default async function LegacyNewMoveRedirect({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const raw = await searchParams;
+  const params = new URLSearchParams();
 
-  return (
-    <div className="w-full min-w-0 py-4 md:py-6">
-      <CreateMoveForm organizations={orgs || []} crews={crews || []} itemWeights={itemWeights || []} />
-    </div>
-  );
+  for (const [key, value] of Object.entries(raw)) {
+    if (value === undefined) continue;
+    params.set(key, Array.isArray(value) ? String(value[value.length - 1] ?? "") : value);
+  }
+
+  const qs = params.toString();
+  redirect(qs ? `/admin/moves/create?${qs}` : "/admin/moves/create");
 }

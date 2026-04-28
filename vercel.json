@@ -69,6 +69,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/move-client-sms",
+      "schedule": "*/3 * * * *"
+    },
+    {
       "path": "/api/cron/crew-eod-auto",
       "schedule": "* * * * *"
     },

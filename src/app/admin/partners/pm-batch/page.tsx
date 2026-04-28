@@ -1,18 +1,19 @@
-import { Suspense } from "react";
-import { PMBatchClient } from "@/app/admin/moves/pm-batch/PMBatchClient";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Schedule PM moves" };
 
-export default function PartnerPmBatchPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="p-6 text-[13px] text-[var(--yu3-ink-muted)] max-w-4xl mx-auto">
-          Loading…
-        </div>
-      }
-    >
-      <PMBatchClient />
-    </Suspense>
-  );
+export default async function PartnerPmBatchRedirect({
+  searchParams,
+}: {
+  searchParams: Promise<{ partner_id?: string }>;
+}) {
+  const sp = await searchParams;
+  const pid =
+    typeof sp.partner_id === "string" ? sp.partner_id.trim() : "";
+
+  const params = new URLSearchParams();
+  params.set("mode", "pm_batch");
+  if (pid) params.set("partner", pid);
+
+  redirect(`/admin/moves/create?${params.toString()}`);
 }

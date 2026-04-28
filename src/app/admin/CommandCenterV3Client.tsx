@@ -485,7 +485,7 @@ export default function CommandCenterV3Client({
               variant="primary"
               size="sm"
               leadingIcon={<Plus size={14} />}
-              onClick={() => router.push("/admin/moves/new")}
+              onClick={() => router.push("/admin/moves/create")}
             >
               New move
             </Button>

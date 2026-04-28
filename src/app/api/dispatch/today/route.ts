@@ -214,6 +214,10 @@ export async function GET(req: NextRequest) {
   for (const m of moves || []) {
     const crew = m.crew_id ? crewMap.get(m.crew_id) : null;
     const members = m.crew_id ? membersByTeam.get(m.crew_id) || (crew?.members as string[]) || [] : [];
+    const moveStatusLc = (m.status || "").toLowerCase();
+    const displayStageMove = COMPLETED_STATUSES.includes(moveStatusLc)
+      ? "completed"
+      : m.stage || null;
     jobs.push({
       id: m.id,
       type: "move",
@@ -226,7 +230,7 @@ export async function GET(req: NextRequest) {
       toAddress: m.to_address || "",
       scheduledTime: m.preferred_time || m.arrival_window || null,
       status: m.status || "scheduled",
-      stage: m.stage || null,
+      stage: displayStageMove,
       crewId: m.crew_id || null,
       crewName: crew?.name || null,
       crewSize: Array.isArray(members) ? members.length : 0,
@@ -236,8 +240,8 @@ export async function GET(req: NextRequest) {
       toLat: m.to_lat != null ? Number(m.to_lat) : null,
       toLng: m.to_lng != null ? Number(m.to_lng) : null,
       href: getMoveDetailPath(m),
-      progress: progressFromStage(m.status || "", m.stage),
-      currentStageLabel: stageLabel(m.status || "", m.stage, "move"),
+      progress: progressFromStage(m.status || "", displayStageMove),
+      currentStageLabel: stageLabel(m.status || "", displayStageMove, "move"),
       updatedAt: m.updated_at || null,
     });
   }
@@ -245,6 +249,10 @@ export async function GET(req: NextRequest) {
   for (const d of deliveries || []) {
     const crew = d.crew_id ? crewMap.get(d.crew_id) : null;
     const members = d.crew_id ? membersByTeam.get(d.crew_id) || (crew?.members as string[]) || [] : [];
+    const deliveryStatusLc = (d.status || "").toLowerCase();
+    const displayStageDelivery = COMPLETED_STATUSES.includes(deliveryStatusLc)
+      ? "completed"
+      : d.stage || null;
     jobs.push({
       id: d.id,
       type: "delivery",
@@ -257,7 +265,7 @@ export async function GET(req: NextRequest) {
       toAddress: d.delivery_address || "",
       scheduledTime: d.time_slot || null,
       status: d.status || "scheduled",
-      stage: d.stage || null,
+      stage: displayStageDelivery,
       crewId: d.crew_id || null,
       crewName: crew?.name || null,
       crewSize: Array.isArray(members) ? members.length : 0,
@@ -267,8 +275,8 @@ export async function GET(req: NextRequest) {
       toLat: d.delivery_lat != null ? Number(d.delivery_lat) : null,
       toLng: d.delivery_lng != null ? Number(d.delivery_lng) : null,
       href: getDeliveryDetailPath(d),
-      progress: progressFromStage(d.status || "", d.stage),
-      currentStageLabel: stageLabel(d.status || "", d.stage, "delivery"),
+      progress: progressFromStage(d.status || "", displayStageDelivery),
+      currentStageLabel: stageLabel(d.status || "", displayStageDelivery, "delivery"),
       updatedAt: d.updated_at || null,
     });
   }

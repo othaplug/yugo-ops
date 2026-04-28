@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
-import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
-import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
-import { createClientReferralIfNeeded } from "@/lib/client-referral";
-import { generatePostMoveDocuments } from "@/lib/post-move-documents";
 import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
+import {
+  ensureJobCompleted,
+  runDeliveryCompletionFollowUp,
+  runMoveCompletionFollowUp,
+} from "@/lib/moves/complete-move-job";
 
 const VALID_SKIP_REASONS = [
   "client_not_home",
@@ -107,14 +108,6 @@ export async function POST(req: NextRequest) {
     .limit(1)
     .maybeSingle();
 
-  if (activeSession) {
-    const { error: sessionErr } = await admin
-      .from("tracking_sessions")
-      .update({ status: "completed", is_active: false, completed_at: now, updated_at: now })
-      .eq("id", activeSession.id);
-    if (sessionErr) console.error("[signoff/skip] tracking_sessions complete failed:", sessionErr.message);
-  }
-
   const sessionForHours = activeSession ?? latestSession;
   const sessionStartMs = sessionForHours?.started_at
     ? new Date(sessionForHours.started_at as string).getTime()
@@ -125,36 +118,25 @@ export async function POST(req: NextRequest) {
       ? Math.round(((sessionEndMs - sessionStartMs) / 3_600_000) * 100) / 100
       : null;
 
-  const table = jobType === "move" ? "moves" : "deliveries";
-  const { error: jobCompleteErr } = await admin
-    .from(table)
-    .update({
-      status: jobType === "move" ? "completed" : "delivered",
-      stage: "completed",
-      completed_at: now,
-      updated_at: now,
-      eta_tracking_active: false,
-      ...(actualHours != null && actualHours > 0 ? { actual_hours: actualHours } : {}),
-    })
-    .eq("id", entityId);
+  const { wasAlreadyComplete } = await ensureJobCompleted(admin, {
+    jobId: entityId,
+    jobType: jobType as "move" | "delivery",
+    completedAt: now,
+    actualHours,
+  });
 
-  if (jobCompleteErr) {
-    console.error(
-      "[signoff/skip] job finalize failed (skip row already saved; dispatch may need manual status fix):",
-      jobCompleteErr.message,
-    );
-  } else {
+  if (!wasAlreadyComplete) {
     if (jobType === "move") {
-      syncDealStageByMoveId(entityId, "completed").catch(() => {});
-      createReviewRequestIfEligible(admin, entityId).catch((e) => console.error("[review] create failed:", e));
-      createClientReferralIfNeeded(admin, entityId).catch((e) => console.error("[referral] create failed:", e));
-      generatePostMoveDocuments(entityId).catch((e) => console.error("[post-move-documents] failed:", e));
+      await runMoveCompletionFollowUp(admin, entityId, { source: "crew_signoff_skip" });
+    } else {
+      await runDeliveryCompletionFollowUp(admin, entityId);
     }
-    notifyJobCompletedForCrewProfiles(admin, {
-      jobType: jobType as "move" | "delivery",
-      jobId: entityId,
-    }).catch((e) => console.error("[crew-profile] signoff skip:", e));
   }
+
+  notifyJobCompletedForCrewProfiles(admin, {
+    jobType: jobType as "move" | "delivery",
+    jobId: entityId,
+  }).catch((e) => console.error("[crew-profile] signoff skip:", e));
 
   return NextResponse.json({ ok: true });
 }

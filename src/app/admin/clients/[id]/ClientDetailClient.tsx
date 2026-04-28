@@ -229,6 +229,21 @@ export default function ClientDetailClient({
               role="group"
               aria-label="Profile actions"
             >
+              {!isClient && showPmBatchSchedule ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  uppercase
+                  trailingIcon={<CaretRight weight="bold" className="opacity-90" size={14} aria-hidden />}
+                  onClick={() =>
+                    router.push(
+                      `/admin/moves/create?mode=pm_batch&partner=${encodeURIComponent(client.id)}`,
+                    )
+                  }
+                >
+                  Schedule moves
+                </Button>
+              ) : null}
               {isClient ? (
                 <Button
                   variant="secondary"
@@ -405,7 +420,7 @@ export default function ClientDetailClient({
                 trailingIcon={<CaretRight weight="bold" size={14} className="opacity-90" aria-hidden />}
                 onClick={() =>
                   router.push(
-                    `/admin/partners/pm-batch?partner_id=${encodeURIComponent(client.id)}`,
+                    `/admin/moves/create?mode=pm_batch&partner=${encodeURIComponent(client.id)}`,
                   )
                 }
               >

@@ -24,6 +24,7 @@ import {
   ShareNetwork,
   Gift,
   HardHat,
+  Buildings,
   Shield,
   CurrencyDollar,
   Gear,
@@ -131,12 +132,6 @@ export const SIDEBAR_SECTIONS: NavSection[] = [
         minRole: "coordinator",
       },
       {
-        href: "/admin/partners/pm-batch",
-        label: "Schedule PM moves",
-        Icon: CalendarBlank,
-        minRole: "coordinator",
-      },
-      {
         href: "/admin/partners/referral",
         label: "Referral partners",
         Icon: ShareNetwork,
@@ -161,6 +156,12 @@ export const SIDEBAR_SECTIONS: NavSection[] = [
         Icon: HardHat,
         minRole: "dispatcher",
         activePath: (p) => p !== "/admin/crew" && p.startsWith("/admin/crew/"),
+      },
+      {
+        href: "/admin/buildings",
+        label: "Buildings",
+        Icon: Buildings,
+        minRole: "coordinator",
       },
       {
         href: "/admin/claims",
@@ -236,7 +237,7 @@ export const QUICK_ACTIONS: QuickAction[] = [
   },
   {
     label: "New move",
-    href: "/admin/moves/new",
+    href: "/admin/moves/create",
     description: "Schedule a move",
   },
   {

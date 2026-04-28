@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
+import { ensureJobCompleted, runMoveCompletionFollowUp } from "@/lib/moves/complete-move-job";
 
 /** POST /api/admin/moves/bulk — Bulk status updates for moves */
 export async function POST(req: NextRequest) {
@@ -25,11 +26,25 @@ export async function POST(req: NextRequest) {
   }
 
   const admin = createAdminClient();
-  const statusMap: Record<string, string> = { complete: "completed", cancel: "cancelled" };
+  const now = new Date().toISOString();
+
+  if (action === "complete") {
+    for (const moveId of ids) {
+      const { wasAlreadyComplete } = await ensureJobCompleted(admin, {
+        jobId: moveId,
+        jobType: "move",
+        completedAt: now,
+      });
+      if (!wasAlreadyComplete) {
+        await runMoveCompletionFollowUp(admin, moveId, { source: "admin_bulk" });
+      }
+    }
+    return NextResponse.json({ ok: true, updated: ids.length });
+  }
 
   const { error } = await admin
     .from("moves")
-    .update({ status: statusMap[action], updated_at: new Date().toISOString() })
+    .update({ status: "cancelled", updated_at: now })
     .in("id", ids);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

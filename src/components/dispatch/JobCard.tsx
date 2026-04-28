@@ -128,6 +128,9 @@ const IN_PROGRESS_STATUSES = [
 
 function isJobInProgress(status: string, stage: string | null): boolean {
   const s = (status || "").toLowerCase().replace(/-/g, "_");
+  if (["completed", "delivered", "job_complete", "cancelled"].includes(s)) {
+    return false;
+  }
   const st = (stage || "").toLowerCase().replace(/-/g, "_");
   return IN_PROGRESS_STATUSES.includes(s) || IN_PROGRESS_STATUSES.includes(st);
 }

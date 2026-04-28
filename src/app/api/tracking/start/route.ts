@@ -15,6 +15,7 @@ import {
   getCrewStatusFlowForMove,
   getCrewStatusFlowForDelivery,
 } from "@/lib/crew/service-type-flow";
+import { isTerminalJobStatus } from "@/lib/moves/job-terminal";
 
 export async function POST(req: NextRequest) {
   // Job sessions always allowed for assigned crew; `crew_tracking` toggle only gates live GPS ingest (see /api/tracking/location).
@@ -58,14 +59,14 @@ export async function POST(req: NextRequest) {
       ? await admin
           .from("moves")
           .select(
-            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type, move_type",
+            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type, move_type, status",
           )
           .eq("id", rawJobId)
           .maybeSingle()
       : await admin
           .from("moves")
           .select(
-            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type, move_type",
+            "id, move_code, crew_id, assigned_members, assigned_crew_name, service_type, move_type, status",
           )
           .ilike("move_code", rawJobId.replace(/^#/, "").toUpperCase())
           .maybeSingle();
@@ -76,11 +77,17 @@ export async function POST(req: NextRequest) {
         { error: "Job not assigned to your team" },
         { status: 403 },
       );
+    if (isTerminalJobStatus(move.status as string | undefined, "move")) {
+      return NextResponse.json(
+        { error: "This move is already finished and cannot be started again." },
+        { status: 409 },
+      );
+    }
     jobRow = move as JobSnapRow;
     entityId = move.id;
   } else {
     // Do not select assigned_* — older DBs may not have those columns (see migration job_crew_assignment_snapshot).
-    const selectCols = "id, delivery_number, crew_id, source_quote_id, booking_type";
+    const selectCols = "id, delivery_number, crew_id, source_quote_id, booking_type, status";
     const { data: deliveryData } = await selectDeliveryByJobId(
       admin,
       rawJobId,
@@ -94,6 +101,12 @@ export async function POST(req: NextRequest) {
         { error: "Job not assigned to your team" },
         { status: 403 },
       );
+    if (isTerminalJobStatus((delivery as { status?: string }).status, "delivery")) {
+      return NextResponse.json(
+        { error: "This delivery is already finished and cannot be started again." },
+        { status: 409 },
+      );
+    }
     jobRow = delivery as JobSnapRow;
     entityId = delivery.id;
   }

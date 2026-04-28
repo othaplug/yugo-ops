@@ -3,13 +3,21 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { notifyOnCheckpoint } from "@/lib/tracking-notifications";
-import {
-  maybeNotifyB2BOneOffOutForDelivery,
-  maybeNotifyB2BOneOffDelivered,
-} from "@/lib/b2b-delivery-business-notifications";
-import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
+import { maybeNotifyB2BOneOffOutForDelivery } from "@/lib/b2b-delivery-business-notifications";
 import { applyEstateServiceChecklistAutomation } from "@/lib/estate-service-checklist-sync";
 import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
+import { isTerminalJobStatus } from "@/lib/moves/job-terminal";
+import {
+  applyCheckpointProgressToJobRow,
+  ensureJobCompleted,
+  runDeliveryCompletionFollowUp,
+  runMoveCompletionFollowUp,
+} from "@/lib/moves/complete-move-job";
+import {
+  EN_ROUTE_CHECKIN_DELAY_MS,
+  scheduleEnRouteMidMoveCheckin,
+  scheduleLongUnloadCheckinIfNeeded,
+} from "@/lib/moves/schedule-mid-move-client-sms";
 import {
   persistDeliveryArrivedLateIfNeeded,
   persistMoveArrivalOnTimeIfNeeded,
@@ -102,6 +110,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: "That step is not part of this job type flow" },
       { status: 400 },
+    );
+  }
+
+  const jobTable = session.job_type === "move" ? "moves" : "deliveries";
+  const { data: jobStatusRow } = await admin
+    .from(jobTable)
+    .select("status")
+    .eq("id", session.job_id)
+    .maybeSingle();
+  if (
+    jobStatusRow &&
+    isTerminalJobStatus(jobStatusRow.status as string, session.job_type as "move" | "delivery") &&
+    status !== "completed"
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "This job is already completed. Refresh the crew app if steps look out of date.",
+      },
+      { status: 409 },
     );
   }
 
@@ -228,17 +256,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Sync move/delivery status and stage with crew tracking for admin and dashboard
-  const table = session.job_type === "move" ? "moves" : "deliveries";
-  const enRouteStatuses = [
-    "en_route_to_pickup",
-    "en_route_to_destination",
-    "en_route_venue",
-    "en_route_return",
-    "on_route",
-    "en_route",
-  ];
   if (isCompleted) {
-    // Calculate actual job duration from session timestamps and write to move/delivery record
     const sessionStart = session.started_at
       ? new Date(session.started_at as string).getTime()
       : null;
@@ -247,115 +265,55 @@ export async function POST(req: NextRequest) {
       ? Math.round(((sessionEnd - sessionStart) / 3_600_000) * 100) / 100
       : null;
 
-    const { error: moveCompleteErr } = await admin
-      .from(table)
-      .update({
-        status: session.job_type === "move" ? "completed" : "delivered",
-        stage: "completed",
-        completed_at: now,
-        updated_at: now,
-        eta_tracking_active: false,
-        ...(actualHours != null && actualHours > 0
-          ? { actual_hours: actualHours }
-          : {}),
-      })
-      .eq("id", session.job_id);
-    if (moveCompleteErr) {
-      console.error(
-        "[checkpoint] job row did not sync to completed (session already finalized):",
-        moveCompleteErr.message,
-      );
-    }
-    if (session.job_type === "move") {
-      syncDealStageByMoveId(session.job_id, "completed").catch(() => {});
-      const { createReviewRequestIfEligible } =
-        await import("@/lib/review-request-helper");
-      createReviewRequestIfEligible(admin, session.job_id).catch((e) =>
-        console.error("[review] create failed:", e),
-      );
-      const { createClientReferralIfNeeded } =
-        await import("@/lib/client-referral");
-      createClientReferralIfNeeded(admin, session.job_id).catch((e) =>
-        console.error("[referral] create failed:", e),
-      );
-      const { generateMovePDFs } =
-        await import("@/lib/documents/generateMovePDFs");
-      generateMovePDFs(session.job_id).catch((e) =>
-        console.error("[generateMovePDFs] failed:", e),
-      );
-
-      // Calculate actual margin and persist (non-blocking)
-      (async () => {
-        try {
-          const { calcActualMargin } = await import("@/lib/pricing/engine");
-          const { data: moveForMargin } = await admin
-            .from("moves")
-            .select(
-              "actual_hours, est_hours, actual_crew_count, crew_count, truck_primary, distance_km, tier_selected, move_size, estimate",
-            )
-            .eq("id", session.job_id)
-            .single();
-          if (moveForMargin) {
-            const { data: cfgRows } = await admin
-              .from("platform_config")
-              .select("key, value");
-            const cfg: Record<string, string> = {};
-            for (const r of cfgRows ?? []) cfg[r.key] = r.value;
-            const marginResult = calcActualMargin(
-              {
-                actualHours: actualHours,
-                estimatedHours: moveForMargin.est_hours ?? null,
-                actualCrew: moveForMargin.actual_crew_count ?? null,
-                crewSize: moveForMargin.crew_count ?? null,
-                truckType: moveForMargin.truck_primary ?? null,
-                distanceKm: moveForMargin.distance_km ?? null,
-                tier: moveForMargin.tier_selected ?? null,
-                moveSize: moveForMargin.move_size ?? null,
-                totalPrice: moveForMargin.estimate ?? null,
-              },
-              cfg,
-            );
-            await admin
-              .from("moves")
-              .update(marginResult)
-              .eq("id", session.job_id);
-          }
-        } catch (e) {
-          console.error("[checkpoint] margin calculation failed:", e);
-        }
-      })();
-    }
-    // Send completed SMS to client/customer
-    const origin =
-      process.env.NEXT_PUBLIC_APP_URL || "https://app.withyugo.com";
-    fetch(`${origin}/api/eta/send-completed`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jobId: session.job_id,
-        jobType: session.job_type,
-      }),
-    }).catch((e) => console.error("[eta] send-completed failed:", e));
-    if (session.job_type === "delivery") {
-      maybeNotifyB2BOneOffDelivered(session.job_id).catch(() => {});
-    }
-    notifyJobCompletedForCrewProfiles(admin, {
-      jobType: session.job_type as "move" | "delivery",
+    const { wasAlreadyComplete } = await ensureJobCompleted(admin, {
       jobId: session.job_id,
-    }).catch((e) => console.error("[crew-profile] checkpoint completion:", e));
-  } else if (enRouteStatuses.includes(status)) {
-    await admin
-      .from(table)
-      .update({ status: "in_progress", stage: status, updated_at: now })
-      .eq("id", session.job_id);
-    if (session.job_type === "move") {
-      syncDealStageByMoveId(session.job_id, "in_progress").catch(() => {});
+      jobType: session.job_type as "move" | "delivery",
+      completedAt: now,
+      actualHours,
+    });
+
+    if (!wasAlreadyComplete) {
+      if (session.job_type === "move") {
+        await runMoveCompletionFollowUp(admin, session.job_id, {
+          source: "crew_checkpoint",
+          marginActualHours: actualHours,
+        });
+      } else {
+        await runDeliveryCompletionFollowUp(admin, session.job_id);
+      }
+      notifyJobCompletedForCrewProfiles(admin, {
+        jobType: session.job_type as "move" | "delivery",
+        jobId: session.job_id,
+      }).catch((e) => console.error("[crew-profile] checkpoint completion:", e));
     }
   } else {
-    await admin
-      .from(table)
-      .update({ stage: status, updated_at: now })
-      .eq("id", session.job_id);
+    const applied = await applyCheckpointProgressToJobRow(admin, {
+      jobId: session.job_id,
+      jobType: session.job_type as "move" | "delivery",
+      checkpointStatus: String(status),
+      now,
+    });
+    if (applied && session.job_type === "move") {
+      try {
+        if (status === "en_route_to_destination") {
+          await scheduleEnRouteMidMoveCheckin(
+            admin,
+            session.job_id,
+            new Date(Date.now() + EN_ROUTE_CHECKIN_DELAY_MS),
+          );
+        }
+        if (status === "unloading") {
+          await scheduleLongUnloadCheckinIfNeeded(
+            admin,
+            session.job_id,
+            session.started_at as string | null,
+            now,
+          );
+        }
+      } catch (e) {
+        console.error("[checkpoint] mid-move SMS schedule:", e);
+      }
+    }
   }
 
   if (session.job_type === "move") {

@@ -455,9 +455,9 @@ export default function AllMovesV3Client({
           <Button
             variant="primary"
             leadingIcon={<Plus size={16} />}
-            onClick={() => router.push("/admin/moves/new")}
+            onClick={() => router.push("/admin/moves/create")}
           >
-            New move
+            Create move
           </Button>
         }
       />
