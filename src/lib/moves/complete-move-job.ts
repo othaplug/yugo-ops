@@ -146,8 +146,8 @@ const maxIso = (a: string | null | undefined, b: string | null | undefined): str
 };
 
 /**
- * Strict repair: if PoD and/or client sign-off exists but the job row is not terminal, finalize it.
- * Used when a prior completion write failed after evidence was stored, or for idempotent sign-off retries.
+ * Strict repair: if PoD, client sign-off, OR sign-off skip exists but the job row is not terminal, finalize it.
+ * Skips (`signoff_skips`) finalize the job in crew flow without PoD; they must still count as evidence here.
  */
 export const repairJobCompletionFromEvidence = async (
   admin: SupabaseClient,
@@ -184,9 +184,18 @@ export const repairJobCompletionFromEvidence = async (
       .eq("job_id", jobId)
       .eq("job_type", "move")
       .maybeSingle();
-    if (!pod && !so) return { transitioned: false, ok: true };
+    const { data: skipped } = await admin
+      .from("signoff_skips")
+      .select("created_at")
+      .eq("job_id", jobId)
+      .eq("job_type", "move")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!pod && !so && !skipped) return { transitioned: false, ok: true };
     evidenceAt = maxIso(pod?.signed_at ?? null, pod?.completed_at ?? null);
     evidenceAt = maxIso(evidenceAt, so?.signed_at ?? null);
+    evidenceAt = maxIso(evidenceAt, skipped?.created_at ?? null);
   } else {
     const { data: pod } = await admin
       .from("proof_of_delivery")
@@ -201,9 +210,18 @@ export const repairJobCompletionFromEvidence = async (
       .eq("job_id", jobId)
       .eq("job_type", "delivery")
       .maybeSingle();
-    if (!pod && !so) return { transitioned: false, ok: true };
+    const { data: skipped } = await admin
+      .from("signoff_skips")
+      .select("created_at")
+      .eq("job_id", jobId)
+      .eq("job_type", "delivery")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!pod && !so && !skipped) return { transitioned: false, ok: true };
     evidenceAt = maxIso(pod?.signed_at ?? null, pod?.completed_at ?? null);
     evidenceAt = maxIso(evidenceAt, so?.signed_at ?? null);
+    evidenceAt = maxIso(evidenceAt, skipped?.created_at ?? null);
   }
 
   const completedAt =

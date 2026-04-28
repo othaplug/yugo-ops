@@ -248,6 +248,40 @@ export async function GET(req: NextRequest) {
   const deliveryByNumber = new Map(deliveriesList.map((d) => [d.delivery_number || d.id, d]));
   const crewMap = new Map((crews || []).map((c) => [c.id, c]));
 
+  /** Any completion artifact: proves the crew finished closing the job even if moves.status drifted */
+  const moveIdsWithEvidence = new Set<string>();
+  const deliveryIdsWithEvidence = new Set<string>();
+  if (movesList.length > 0) {
+    const mIds = movesList.map((m) => m.id);
+    try {
+      const [podsMv, offsMv, skipsMv] = await Promise.all([
+        admin.from("proof_of_delivery").select("move_id").in("move_id", mIds),
+        admin.from("client_sign_offs").select("job_id").eq("job_type", "move").in("job_id", mIds),
+        admin.from("signoff_skips").select("job_id").eq("job_type", "move").in("job_id", mIds),
+      ]);
+      for (const r of podsMv.data || []) if (r.move_id) moveIdsWithEvidence.add(r.move_id as string);
+      for (const r of offsMv.data || []) if (r.job_id) moveIdsWithEvidence.add(r.job_id as string);
+      for (const r of skipsMv.data || []) if (r.job_id) moveIdsWithEvidence.add(String(r.job_id));
+    } catch (e) {
+      console.error("[dispatch/today] move evidence lookup:", e);
+    }
+  }
+  if (deliveriesList.length > 0) {
+    const dIds = deliveriesList.map((d) => d.id);
+    try {
+      const [podsDv, offsDv, skipsDv] = await Promise.all([
+        admin.from("proof_of_delivery").select("delivery_id").in("delivery_id", dIds),
+        admin.from("client_sign_offs").select("job_id").eq("job_type", "delivery").in("job_id", dIds),
+        admin.from("signoff_skips").select("job_id").eq("job_type", "delivery").in("job_id", dIds),
+      ]);
+      for (const r of podsDv.data || []) if (r.delivery_id) deliveryIdsWithEvidence.add(r.delivery_id as string);
+      for (const r of offsDv.data || []) if (r.job_id) deliveryIdsWithEvidence.add(r.job_id as string);
+      for (const r of skipsDv.data || []) if (r.job_id) deliveryIdsWithEvidence.add(String(r.job_id));
+    } catch (e) {
+      console.error("[dispatch/today] delivery evidence lookup:", e);
+    }
+  }
+
   const jobs: Array<{
     id: string;
     type: "move" | "delivery";
@@ -324,7 +358,10 @@ export async function GET(req: NextRequest) {
     const crew = m.crew_id ? crewMap.get(m.crew_id) : null;
     const members = m.crew_id ? membersByTeam.get(m.crew_id) || (crew?.members as string[]) || [] : [];
     const row = m as typeof m & { completed_at?: string | null };
-    const effectiveStatusNorm = normalizedMoveRowForBoard(m.status, m.stage, row.completed_at ?? null);
+    let effectiveStatusNorm = normalizedMoveRowForBoard(m.status, m.stage, row.completed_at ?? null);
+    if (!terminalDispatchStatus(m.status) && moveIdsWithEvidence.has(m.id)) {
+      effectiveStatusNorm = "completed";
+    }
     const moveStatusLc = (effectiveStatusNorm || "").toLowerCase();
     const displayStageMove = COMPLETED_STATUSES.includes(moveStatusLc)
       ? "completed"
@@ -361,11 +398,14 @@ export async function GET(req: NextRequest) {
     const crew = d.crew_id ? crewMap.get(d.crew_id) : null;
     const members = d.crew_id ? membersByTeam.get(d.crew_id) || (crew?.members as string[]) || [] : [];
     const drow = d as typeof d & { completed_at?: string | null };
-    const effectiveDeliveryStatusNorm = normalizedDeliveryRowForBoard(
+    let effectiveDeliveryStatusNorm = normalizedDeliveryRowForBoard(
       d.status,
       d.stage,
       drow.completed_at ?? null,
     );
+    if (!terminalDispatchStatus(d.status) && deliveryIdsWithEvidence.has(d.id)) {
+      effectiveDeliveryStatusNorm = "delivered";
+    }
     const deliveryStatusLc = (effectiveDeliveryStatusNorm || "").toLowerCase();
     const displayStageDelivery = COMPLETED_STATUSES.includes(deliveryStatusLc)
       ? "completed"

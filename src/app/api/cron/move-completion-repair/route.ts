@@ -37,6 +37,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: signErr.message }, { status: 500 });
   }
 
+  const { data: skipRows, error: skipErr } = await admin
+    .from("signoff_skips")
+    .select("job_id, job_type")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (skipErr) {
+    return NextResponse.json({ error: skipErr.message }, { status: 500 });
+  }
+
   const moveIds = new Set<string>();
   const deliveryIds = new Set<string>();
   for (const r of podRows || []) {
@@ -46,6 +56,10 @@ export async function GET(req: NextRequest) {
   for (const r of signRows || []) {
     if (r.job_type === "move" && r.job_id) moveIds.add(r.job_id as string);
     if (r.job_type === "delivery" && r.job_id) deliveryIds.add(r.job_id as string);
+  }
+  for (const r of skipRows || []) {
+    if (r.job_type === "move" && r.job_id) moveIds.add(String(r.job_id));
+    if (r.job_type === "delivery" && r.job_id) deliveryIds.add(String(r.job_id));
   }
 
   const results = {
