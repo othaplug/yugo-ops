@@ -3,6 +3,11 @@
 import { useState, useCallback } from "react";
 import { Check, MapPin, Clock, SkipForward } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import {
+  formatStopAccess,
+  formatStopReadiness,
+  formatDeliveryStopItemStatus,
+} from "@/lib/delivery-stop-ui-labels";
 
 interface StopItemRow {
   id: string;
@@ -97,7 +102,16 @@ const STOP_STATUS_CONFIG: Record<
   },
 };
 
-const STOP_TYPE_LABELS: Record<string, string> = { pickup: "Pickup", delivery: "Delivery" };
+const STOP_TYPE_LABELS: Record<string, string> = {
+  pickup: "Pickup",
+  delivery: "Drop-off",
+  dropoff: "Drop-off",
+};
+
+/** B2B multi-stop: card is the client drop-off leg (not a vendor pickup). */
+const isClientDropLeg = (stop: Stop): boolean =>
+  Boolean(stop.is_final_destination) ||
+  ["delivery", "dropoff"].includes(String(stop.stop_type || "").toLowerCase());
 
 export default function DayRateStopFlow({
   stops,
@@ -189,14 +203,10 @@ export default function DayRateStopFlow({
 
   const itemsForStop = useCallback(
     (stop: Stop): StopItemRow[] => {
-      if (
-        flowKind === "b2b_multi" &&
-        stop.stop_type === "delivery" &&
-        stop.is_final_destination
-      ) {
+      if (flowKind === "b2b_multi" && isClientDropLeg(stop)) {
         const acc: StopItemRow[] = [];
         for (const s of stops) {
-          if (s.stop_type !== "pickup") continue;
+          if (String(s.stop_type || "").toLowerCase() !== "pickup") continue;
           for (const it of s.stopItems || []) acc.push(it);
         }
         return acc;
@@ -248,7 +258,10 @@ export default function DayRateStopFlow({
         </div>
         {currentStop && (
           <p className="mt-2 text-[10px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
-            Current: Stop {currentStop.stop_number}, {currentStop.address}
+            Current:{" "}
+            {flowKind === "b2b_multi" && currentStop.is_final_destination
+              ? `Final drop-off · ${currentStop.address}`
+              : `Stop ${currentStop.stop_number} of ${totalCount} · ${currentStop.address}`}
           </p>
         )}
       </div>
@@ -262,6 +275,8 @@ export default function DayRateStopFlow({
           );
           const isDone = stop.stop_status === "completed";
           const isPending = stop.stop_status === "pending";
+          const finalDropCard =
+            flowKind === "b2b_multi" && Boolean(stop.is_final_destination);
 
           return (
             <div
@@ -311,9 +326,20 @@ export default function DayRateStopFlow({
                           {stop.vendor_name}
                         </span>
                       )}
-                      <span className="text-[12px] font-bold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
-                        Stop {stop.stop_number} of {totalCount}
-                      </span>
+                      {finalDropCard ? (
+                        <span className="text-[12px] font-bold text-[var(--yu3-wine)] [font-family:var(--font-body)]">
+                          Final drop-off
+                        </span>
+                      ) : (
+                        <span className="text-[12px] font-bold text-[var(--yu3-ink)] [font-family:var(--font-body)]">
+                          Stop {stop.stop_number} of {totalCount}
+                        </span>
+                      )}
+                      {finalDropCard && (
+                        <span className="text-[10px] font-semibold text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
+                          Leg {stop.stop_number} of {totalCount}
+                        </span>
+                      )}
                       <span
                         className={cn(
                           "rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase",
@@ -323,7 +349,10 @@ export default function DayRateStopFlow({
                         {cfg.label}
                       </span>
                       <span className="text-[9px] font-semibold uppercase text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
-                        {STOP_TYPE_LABELS[stop.stop_type] || "Delivery"}
+                        {finalDropCard
+                          ? "Drop-off"
+                          : STOP_TYPE_LABELS[String(stop.stop_type || "").toLowerCase()] ||
+                            "Stop"}
                       </span>
                     </div>
                     <p className="truncate text-[11px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
@@ -380,7 +409,8 @@ export default function DayRateStopFlow({
                   {(stop.access_type || stop.access_notes) &&
                     flowKind === "b2b_multi" && (
                       <p className="text-[10px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">
-                        Access: {[stop.access_type, stop.access_notes]
+                        Access:{" "}
+                        {[stop.access_type ? formatStopAccess(stop.access_type) : null, stop.access_notes]
                           .filter(Boolean)
                           .join(" · ")}
                       </p>
@@ -391,7 +421,7 @@ export default function DayRateStopFlow({
                     stop.readiness &&
                     stop.readiness !== "confirmed" && (
                       <p className="text-[10px] text-amber-800 [font-family:var(--font-body)]">
-                        Readiness: {stop.readiness}
+                        Readiness: {formatStopReadiness(stop.readiness)}
                         {stop.readiness_notes
                           ? ` · ${stop.readiness_notes}`
                           : ""}
@@ -401,7 +431,8 @@ export default function DayRateStopFlow({
                   {itemsForStop(stop).length > 0 && flowKind === "b2b_multi" && (
                     <div className="space-y-2 rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/50 p-2">
                       <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
-                        {stop.stop_type === "pickup" || !stop.is_final_destination
+                        {String(stop.stop_type || "").toLowerCase() === "pickup" ||
+                        !stop.is_final_destination
                           ? "Pick up"
                           : "Deliver"}
                       </p>
@@ -416,16 +447,23 @@ export default function DayRateStopFlow({
                           const canToggle =
                             stop.stop_status === "in_progress" ||
                             stop.stop_status === "arrived";
+                          const isPickupStop =
+                            String(stop.stop_type || "").toLowerCase() === "pickup";
                           const targetStatus =
-                            stop.stop_type === "pickup" ||
-                            (!stop.is_final_destination &&
-                              stop.stop_type !== "delivery")
+                            isPickupStop ||
+                            (!stop.is_final_destination && !isClientDropLeg(stop))
                               ? "picked_up"
                               : "delivered";
+                          const isFinalDropItems =
+                            flowKind === "b2b_multi" && isClientDropLeg(stop);
                           const isDone =
-                            stop.stop_type === "pickup"
-                              ? donePickup
-                              : doneDel;
+                            stop.stop_status === "completed"
+                              ? true
+                              : isPickupStop
+                                ? donePickup
+                                : isFinalDropItems
+                                  ? doneDel || donePickup
+                                  : doneDel;
                           return (
                             <li
                               key={it.id}
@@ -458,7 +496,7 @@ export default function DayRateStopFlow({
                                     {it.is_fragile ? " · Fragile" : ""}
                                   </p>
                                   <p className="text-[9px] uppercase text-[var(--yu3-ink-faint)] [font-family:var(--font-body)]">
-                                    {st.replace(/_/g, " ")}
+                                    {formatDeliveryStopItemStatus(st)}
                                   </p>
                                 </div>
                               </div>
@@ -580,9 +618,9 @@ export default function DayRateStopFlow({
                         >
                           {advancing === stop.id
                             ? "…"
-                            : stop.stop_type === "pickup"
-                              ? "Loading"
-                              : "Unloading"}
+                            : String(stop.stop_type || "").toLowerCase() === "pickup"
+                              ? "Begin pickup"
+                              : "Begin unloading"}
                         </button>
                       )}
                       {stop.stop_status === "in_progress" && (

@@ -27,6 +27,7 @@ import {
   Check,
   XCircle,
 } from "@phosphor-icons/react";
+import { formatStopAccess } from "@/lib/delivery-stop-ui-labels";
 import BackButton from "../../components/BackButton";
 import {
   ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS,
@@ -295,23 +296,6 @@ export interface DeliveryStop {
   is_final_destination?: boolean | null;
   stop_items?: DeliveryStopItem[] | null;
 }
-
-const ACCESS_TYPE_LABELS: Record<string, string> = {
-  elevator: "Elevator",
-  ground_floor: "Ground floor",
-  loading_dock: "Loading dock",
-  walk_up_2: "Walk-up (2 flights)",
-  walk_up_3: "Walk-up (3 flights)",
-  walk_up_4_plus: "Walk-up (4+ flights)",
-  long_carry: "Long carry",
-  narrow_stairs: "Narrow stairs",
-  no_parking: "No parking",
-};
-
-const formatStopAccess = (raw: string | null | undefined) => {
-  if (!raw) return "";
-  return ACCESS_TYPE_LABELS[raw] || raw.replace(/_/g, " ");
-};
 
 const readinessBadge = (readiness: string | null | undefined) => {
   const r = (readiness || "confirmed").toLowerCase();

@@ -286,6 +286,8 @@ export async function notifyOnCheckpoint(
     contact_phone?: string | null;
     customer_phone?: string | null;
     end_customer_phone?: string | null;
+    /** Site / recipient phone on B2B multi-stop (preferred over billing customer_phone for SMS). */
+    end_client_phone?: string | null;
   } | null = null;
 
   if (jobType === "move") {
@@ -333,7 +335,7 @@ export async function notifyOnCheckpoint(
     const { data: delivery } = await admin
       .from("deliveries")
       .select(
-        "id, delivery_number, client_name, customer_name, customer_email, end_customer_email, contact_email, category, organization_id, booking_type, contact_phone, customer_phone, end_customer_phone, tracking_token, recipient_tracking_token",
+        "id, delivery_number, client_name, customer_name, customer_email, end_customer_email, contact_email, category, organization_id, booking_type, contact_phone, customer_phone, end_customer_phone, end_client_phone, tracking_token, recipient_tracking_token",
       )
       .eq("id", jobId)
       .single();
@@ -357,6 +359,8 @@ export async function notifyOnCheckpoint(
           .customer_phone,
         end_customer_phone: (delivery as { end_customer_phone?: string | null })
           .end_customer_phone,
+        end_client_phone: (delivery as { end_client_phone?: string | null })
+          .end_client_phone,
       };
       clientEmail = deliveryContactEmail(
         delivery as Parameters<typeof deliveryContactEmail>[0],
@@ -556,7 +560,9 @@ export async function notifyOnCheckpoint(
       isPartnerClassDelivery(deliveryRowForSms) &&
       partnerSmsNotifyClient &&
       phoneOk(
-        deliveryRowForSms.end_customer_phone || deliveryRowForSms.customer_phone,
+        deliveryRowForSms.end_client_phone ||
+          deliveryRowForSms.end_customer_phone ||
+          deliveryRowForSms.customer_phone,
       )) ||
     (jobType === "move" &&
       moveRowForSms &&
@@ -570,10 +576,13 @@ export async function notifyOnCheckpoint(
       jobType === "move"
         ? moveRowForSms?.client_phone
         : deliveryRowForSms
-          ? (deliveryRowForSms.end_customer_phone ||
+          ? (
+              deliveryRowForSms.end_client_phone ||
+              deliveryRowForSms.end_customer_phone ||
               deliveryRowForSms.customer_phone ||
               deliveryRowForSms.contact_phone ||
-              "")
+              ""
+            )
               .trim() || null
           : null;
     if (phoneOk(clientPhone)) {

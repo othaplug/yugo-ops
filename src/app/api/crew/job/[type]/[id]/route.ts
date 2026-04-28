@@ -30,6 +30,8 @@ import {
   type TipReportTipRow,
 } from "@/lib/crew/tip-report-eligibility";
 import { parseFromToLinesFromAccessNotes } from "@/lib/crew-move-access";
+import { ensureAndReconcileMultiStopDeliveryTrackingSession } from "@/lib/crew/multi-stop-delivery-tracking";
+import { isTerminalJobStatus } from "@/lib/moves/job-terminal";
 
 const COMPLEXITY_BADGE_LABELS: Record<string, string> = {
   specialty_transport: "Specialty transport",
@@ -347,6 +349,20 @@ export async function GET(
       clientLabel: deliveryClientLabel,
       alerts: deliveryOperationalAlerts,
     });
+
+    if (
+      isMultiStopB2b &&
+      (stops || []).length > 0 &&
+      !isTerminalJobStatus(String(d.status || ""), "delivery")
+    ) {
+      void ensureAndReconcileMultiStopDeliveryTrackingSession(admin, {
+        deliveryId: d.id,
+        teamId: payload.teamId,
+        crewLeadId: payload.crewMemberId ?? null,
+      }).catch((e) =>
+        console.error("[crew/job] multi-stop tracking session:", e),
+      );
+    }
 
     let tipReportNeeded = false;
     const dst = String(d.status || "").toLowerCase();

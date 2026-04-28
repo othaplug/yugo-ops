@@ -144,6 +144,8 @@ export type PartnerDeliveryCheckpointRow = {
   contact_phone?: string | null;
   customer_phone?: string | null;
   end_customer_phone?: string | null;
+  /** Site / recipient on B2B multi-stop */
+  end_client_phone?: string | null;
 };
 
 /**
@@ -175,7 +177,12 @@ export async function sendPartnerDeliveryCheckpointSms(opts: {
     if (op) partnerPhone = op;
   }
 
-  const endPhone = (row.end_customer_phone || row.customer_phone || "").trim();
+  const endPhone = (
+    row.end_client_phone ||
+    row.end_customer_phone ||
+    row.customer_phone ||
+    ""
+  ).trim();
   const bizUrl = deliveryBusinessTrackUrl(row);
   const recUrl = deliveryRecipientTrackUrl(row);
   const linePartner = checkpointSmsLine(status, "delivery", teamName, false);

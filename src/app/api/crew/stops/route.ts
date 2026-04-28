@@ -4,6 +4,16 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { syncDealStageByDeliveryId } from "@/lib/hubspot/sync-deal-stage";
 import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
+import {
+  ensureAndReconcileMultiStopDeliveryTrackingSession,
+  isFinalDropStopRow,
+  syncMultiStopDeliveryClientCheckpoint,
+} from "@/lib/crew/multi-stop-delivery-tracking";
+import { notifyOnCheckpoint } from "@/lib/tracking-notifications";
+import {
+  recordDeliveryTrackingNotifyDedupe,
+  shouldSkipDuplicateDeliveryTrackingNotify,
+} from "@/lib/tracking-notify-dedupe";
 
 export const dynamic = "force-dynamic";
 
@@ -84,11 +94,21 @@ export async function PATCH(req: NextRequest) {
   // Verify crew owns this delivery
   const { data: delivery } = await db
     .from("deliveries")
-    .select("id, crew_id, stops_completed")
+    .select("id, crew_id, stops_completed, is_multi_stop")
     .eq("id", delivery_id)
     .single();
 
   if (!delivery || delivery.crew_id !== payload.teamId) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const { data: stopRow } = await db
+    .from("delivery_stops")
+    .select("id, delivery_id, stop_status, stop_type, is_final_destination")
+    .eq("id", stop_id)
+    .maybeSingle();
+
+  if (!stopRow || stopRow.delivery_id !== delivery_id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -97,6 +117,8 @@ export async function PATCH(req: NextRequest) {
     stop_status: new_status,
     status: new_status,
   };
+  let promotedFinalLeg = false;
+
   if (new_status === "arrived") updates.arrived_at = now;
   if (new_status === "completed") {
     updates.completed_at = now;
@@ -116,19 +138,60 @@ export async function PATCH(req: NextRequest) {
 
     if (nextStop) {
       await db.from("delivery_stops").update({ stop_status: "current", status: "current" }).eq("id", nextStop.id);
+      const { data: promotedMeta } = await db
+        .from("delivery_stops")
+        .select("is_final_destination, stop_type")
+        .eq("id", nextStop.id)
+        .maybeSingle();
+      promotedFinalLeg = promotedMeta ? isFinalDropStopRow(promotedMeta) : false;
     } else {
-      // All stops done — mark delivery as completed
+      // Last stop completing: row is still in_progress in DB until update below — treat this id as done
       const { data: allStops } = await db
         .from("delivery_stops")
         .select("id, stop_status")
         .eq("delivery_id", delivery_id);
-      const allDone = (allStops || []).every((s) => s.stop_status === "completed" || s.stop_status === "skipped");
+      const allDone = (allStops || []).every(
+        (s) =>
+          s.id === stop_id || s.stop_status === "completed" || s.stop_status === "skipped",
+      );
       if (allDone) {
-        await db.from("deliveries").update({ status: "completed", completed_at: now }).eq("id", delivery_id);
+        await db
+          .from("deliveries")
+          .update({ status: "completed", completed_at: now, stage: "completed" })
+          .eq("id", delivery_id);
         syncDealStageByDeliveryId(delivery_id, "completed").catch(() => {});
         notifyJobCompletedForCrewProfiles(db, { jobType: "delivery", jobId: delivery_id }).catch((e) =>
           console.error("[crew-profile] stops completion:", e),
         );
+
+        const { data: dN } = await db
+          .from("deliveries")
+          .select("customer_name, client_name, pickup_address, delivery_address, delivery_number")
+          .eq("id", delivery_id)
+          .maybeSingle();
+        const { data: crewN } = await db.from("crews").select("name").eq("id", delivery.crew_id).maybeSingle();
+        const teamName = crewN?.name || "Crew";
+        const jobName =
+          `${dN?.customer_name || ""}${dN?.client_name ? ` (${dN.client_name})` : ""}`.trim() ||
+          dN?.delivery_number ||
+          delivery_id;
+        const skipComp = await shouldSkipDuplicateDeliveryTrackingNotify(db, delivery_id, "completed");
+        if (!skipComp) {
+          try {
+            await notifyOnCheckpoint(
+              "completed",
+              delivery_id,
+              "delivery",
+              teamName,
+              jobName,
+              dN?.pickup_address || undefined,
+              dN?.delivery_address || undefined,
+            );
+            await recordDeliveryTrackingNotifyDedupe(db, delivery_id, "completed");
+          } catch (e) {
+            console.error("[crew/stops] completion notify:", e);
+          }
+        }
       }
     }
   }
@@ -144,6 +207,67 @@ export async function PATCH(req: NextRequest) {
 
   const { error } = await db.from("delivery_stops").update(updates).eq("id", stop_id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  if (new_status === "completed") {
+    const stType = String(stopRow.stop_type || "").toLowerCase();
+    const isPickupLeg = stType === "pickup";
+    const lineStatus = isPickupLeg ? "picked_up" : "delivered";
+    await db.from("delivery_stop_items").update({ status: lineStatus }).eq("stop_id", stop_id);
+
+    if (isFinalDropStopRow(stopRow)) {
+      const { data: pickupStops } = await db
+        .from("delivery_stops")
+        .select("id")
+        .eq("delivery_id", delivery_id)
+        .eq("stop_type", "pickup");
+      for (const ps of pickupStops || []) {
+        await db.from("delivery_stop_items").update({ status: "delivered" }).eq("stop_id", ps.id);
+      }
+    }
+  }
+
+  if (promotedFinalLeg) {
+    try {
+      await syncMultiStopDeliveryClientCheckpoint(db, {
+        deliveryId: delivery_id,
+        checkpointStatus: "en_route_to_destination",
+      });
+    } catch (e) {
+      console.error("[crew/stops] multi-stop en route notify:", e);
+    }
+  }
+  if (new_status === "current" && isFinalDropStopRow(stopRow)) {
+    try {
+      await syncMultiStopDeliveryClientCheckpoint(db, {
+        deliveryId: delivery_id,
+        checkpointStatus: "en_route_to_destination",
+      });
+    } catch (e) {
+      console.error("[crew/stops] multi-stop en route notify:", e);
+    }
+  }
+  if (new_status === "arrived" && isFinalDropStopRow(stopRow)) {
+    try {
+      await syncMultiStopDeliveryClientCheckpoint(db, {
+        deliveryId: delivery_id,
+        checkpointStatus: "arrived_at_destination",
+      });
+    } catch (e) {
+      console.error("[crew/stops] multi-stop arrived notify:", e);
+    }
+  }
+
+  if (delivery.is_multi_stop) {
+    try {
+      await ensureAndReconcileMultiStopDeliveryTrackingSession(db, {
+        deliveryId: delivery_id,
+        teamId: payload.teamId,
+        crewLeadId: payload.crewMemberId ?? null,
+      });
+    } catch (e) {
+      console.error("[crew/stops] multi-stop session reconcile:", e);
+    }
+  }
 
   return NextResponse.json({ success: true });
 }
