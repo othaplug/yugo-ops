@@ -24,7 +24,6 @@ import {
   ShareNetwork,
   Gift,
   HardHat,
-  Buildings,
   Shield,
   CurrencyDollar,
   Gear,
@@ -156,12 +155,6 @@ export const SIDEBAR_SECTIONS: NavSection[] = [
         Icon: HardHat,
         minRole: "dispatcher",
         activePath: (p) => p !== "/admin/crew" && p.startsWith("/admin/crew/"),
-      },
-      {
-        href: "/admin/buildings",
-        label: "Buildings",
-        Icon: Buildings,
-        minRole: "coordinator",
       },
       {
         href: "/admin/claims",
