@@ -629,6 +629,7 @@ export default function MoveDetailClient({
   };
   const lastUpdatedRelative = useRelativeTime(move.updated_at);
   const isCompleted = isMoveStatusCompleted(move.status);
+  const isFinishedForTimeIntel = isCompleted || Boolean(move.completed_at);
   const isPaid = move.status === "paid" || !!move.payment_marked_paid;
   const moveInProgress = isMoveInProgress(move.status, move.stage);
   const isBalancePaid = !!move.balance_paid_at;
@@ -1638,16 +1639,18 @@ export default function MoveDetailClient({
                   : "Not set"}
               </div>
             </div>
-            <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
-                Margin alert at
-              </span>
-              <div className="text-[13px] font-medium text-[var(--yu3-ink)] tabular-nums">
-                {jobTimeTracker
-                  ? formatMinutesAsHhMm(Math.round(jobTimeTracker.margin))
-                  : "-"}
+            {!isFinishedForTimeIntel && (
+              <div>
+                <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
+                  Margin alert at
+                </span>
+                <div className="text-[13px] font-medium text-[var(--yu3-ink)] tabular-nums">
+                  {jobTimeTracker
+                    ? formatMinutesAsHhMm(Math.round(jobTimeTracker.margin))
+                    : "-"}
+                </div>
               </div>
-            </div>
+            )}
             <div>
               <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                 Completed at
@@ -1667,30 +1670,32 @@ export default function MoveDetailClient({
                   : "-"}
               </div>
             </div>
-            <div>
-              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
-                Days Left
-              </span>
-              <div
-                className={`text-[13px] font-bold tabular-nums ${
-                  daysUntil === null || daysUntil === undefined
-                    ? "text-[var(--yu3-ink-muted)]"
+            {!isFinishedForTimeIntel && (
+              <div>
+                <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
+                  Days Left
+                </span>
+                <div
+                  className={`text-[13px] font-bold tabular-nums ${
+                    daysUntil === null || daysUntil === undefined
+                      ? "text-[var(--yu3-ink-muted)]"
+                      : daysUntil < 0
+                        ? "text-[var(--red)]"
+                        : daysUntil <= 1
+                          ? "text-amber-400"
+                          : "text-[var(--yu3-wine)]"
+                  }`}
+                >
+                  {daysUntil === null || daysUntil === undefined
+                    ? "-"
                     : daysUntil < 0
-                      ? "text-[var(--red)]"
-                      : daysUntil <= 1
-                        ? "text-amber-400"
-                        : "text-[var(--yu3-wine)]"
-                }`}
-              >
-                {daysUntil === null || daysUntil === undefined
-                  ? "-"
-                  : daysUntil < 0
-                    ? `${Math.abs(daysUntil)}d overdue`
-                    : daysUntil === 0
-                      ? "Today"
-                      : `${daysUntil}d`}
+                      ? `${Math.abs(daysUntil)}d overdue`
+                      : daysUntil === 0
+                        ? "Today"
+                        : `${daysUntil}d`}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 

@@ -70,6 +70,7 @@ const STATUS_LABELS: Record<string, string> = {
   scheduled: "Scheduled",
   confirmed: "Confirmed",
   "in-transit": "In Transit",
+  in_progress: "In Progress",
   delivered: "Completed",
   completed: "Completed",
   cancelled: "Cancelled",
@@ -99,6 +100,11 @@ const STATUS_COLORS: Record<string, { dot: string; bg: string; text: string }> =
       text: "text-emerald-900 dark:text-emerald-300",
     },
     "in-transit": {
+      dot: "bg-[var(--admin-primary-fill)]",
+      bg: "bg-[var(--gdim)]",
+      text: "text-[var(--gold)]",
+    },
+    in_progress: {
       dot: "bg-[var(--admin-primary-fill)]",
       bg: "bg-[var(--gdim)]",
       text: "text-[var(--gold)]",
@@ -169,6 +175,21 @@ function isDeliveryInProgress(
   return IN_PROGRESS_STATUSES.includes(s) || IN_PROGRESS_STATUSES.includes(st);
 }
 
+/** Maps DB status + crew stage to the four lifecycle segments (pending → confirmed → in transit → done). */
+function deliveryLifecycleProgressIndex(
+  status: string | null | undefined,
+  stage: string | null | undefined,
+): number {
+  const s = (status || "").toLowerCase().replace(/_/g, "-");
+  if (s === "delivered" || s === "completed") return 3;
+  if (isDeliveryInProgress(status, stage)) return 2;
+  const flowIdx = STATUS_FLOW.indexOf(s as (typeof STATUS_FLOW)[number]);
+  if (flowIdx >= 0) return flowIdx;
+  if (s === "scheduled") return 1;
+  if (s === "pending" || s === "pending-approval" || s === "draft") return 0;
+  return 0;
+}
+
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "Not set";
   return formatPlatformDisplay(
@@ -191,8 +212,15 @@ function StatusDot({ status }: { status: string }) {
   return <span className={`w-2 h-2 rounded-full shrink-0 ${c.dot}`} />;
 }
 
-function ProgressBar({ status }: { status: string }) {
-  const idx = STATUS_FLOW.indexOf(status as (typeof STATUS_FLOW)[number]);
+function ProgressBar({
+  status,
+  stage,
+}: {
+  status: string | null | undefined;
+  stage: string | null | undefined;
+}) {
+  const idx = deliveryLifecycleProgressIndex(status, stage);
+  const lastSeg = STATUS_FLOW.length - 1;
   return (
     <div className="flex gap-1 h-2 w-full mt-3">
       {STATUS_FLOW.map((step, i) => {
@@ -204,7 +232,7 @@ function ProgressBar({ status }: { status: string }) {
             className="flex-1 rounded-full transition-all duration-300"
             style={{
               background: filled
-                ? isCurrent && status !== "delivered"
+                ? isCurrent && idx < lastSeg
                   ? "var(--gold)"
                   : "var(--grn)"
                 : "color-mix(in srgb, var(--tx) 28%, transparent)",
@@ -1329,7 +1357,7 @@ export default function DeliveryDetailClient({
             </div>
 
             {delivery.status !== "cancelled" && (
-              <ProgressBar status={delivery.status} />
+              <ProgressBar status={delivery.status} stage={delivery.stage} />
             )}
           </div>
         </div>
@@ -1450,67 +1478,56 @@ export default function DeliveryDetailClient({
             )
           ) : (
             <div className="rounded-xl border border-[var(--brd)]/50 overflow-hidden bg-[var(--card)]">
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--brd)]/30">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-heading text-[11px] font-bold tracking-wide uppercase text-[var(--tx)]">
-                    Live Tracking
-                  </span>
-                </div>
+              <CollapsibleSection
+                title="Live Crew Tracking"
+                defaultCollapsed={!deliveryInProgress}
+                subtitle={
+                  displayCrew?.name ||
+                  (delivery.crew_id ? "Crew assigned" : "Assign crew")
+                }
+              >
                 {delivery.crew_id ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-[var(--tx3)]">
-                      {displayCrew?.name || "Crew assigned"}
-                    </span>
+                  <div className="space-y-2">
+                    {!deliveryInProgress && (
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setCrewModalOpen(true)}
+                          className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                        >
+                          Change crew
+                        </button>
+                      </div>
+                    )}
+                    <LiveTrackingMap
+                      crewId={delivery.crew_id}
+                      crewName={displayCrew?.name}
+                      deliveryId={delivery.id}
+                      pickup={mapPickup ?? undefined}
+                      dropoff={mapDropoff ?? undefined}
+                      hideHeader
+                    />
+                  </div>
+                ) : (
+                  <div className="px-2 py-6 text-center">
+                    <p className="text-[12px] font-medium text-[var(--tx2)]">
+                      No crew assigned
+                    </p>
+                    <p className="text-[10px] text-[var(--tx3)] mt-1 mb-3">
+                      Assign a crew to enable live GPS tracking
+                    </p>
                     {!deliveryInProgress && (
                       <button
                         type="button"
                         onClick={() => setCrewModalOpen(true)}
-                        className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                        className="admin-btn admin-btn-primary"
                       >
-                        Change
+                        Assign Crew
                       </button>
                     )}
                   </div>
-                ) : (
-                  !deliveryInProgress && (
-                    <button
-                      type="button"
-                      onClick={() => setCrewModalOpen(true)}
-                      className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
-                    >
-                      Assign Crew
-                    </button>
-                  )
                 )}
-              </div>
-              {delivery.crew_id ? (
-                <LiveTrackingMap
-                  crewId={delivery.crew_id}
-                  crewName={displayCrew?.name}
-                  deliveryId={delivery.id}
-                  pickup={mapPickup ?? undefined}
-                  dropoff={mapDropoff ?? undefined}
-                />
-              ) : (
-                <div className="px-6 py-10 text-center">
-                  <p className="text-[12px] font-medium text-[var(--tx2)]">
-                    No crew assigned
-                  </p>
-                  <p className="text-[10px] text-[var(--tx3)] mt-1 mb-3">
-                    Assign a crew to enable live GPS tracking
-                  </p>
-                  {!deliveryInProgress && (
-                    <button
-                      type="button"
-                      onClick={() => setCrewModalOpen(true)}
-                      className="admin-btn admin-btn-primary"
-                    >
-                      Assign Crew
-                    </button>
-                  )}
-                </div>
-              )}
+              </CollapsibleSection>
             </div>
           )}
 

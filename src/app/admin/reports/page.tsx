@@ -104,7 +104,7 @@ export default async function ReportsPage({
 
     supabase
       .from("tracking_sessions")
-      .select("id, job_id, job_type, status, started_at, completed_at, team_id")
+      .select("id, job_id, job_type, status, is_active, started_at, completed_at, team_id")
       .gte("started_at", monthStart),
   ]);
 
@@ -319,6 +319,7 @@ export default async function ReportsPage({
     job_id: s.job_id as string,
     job_type: s.job_type as string,
     status: s.status as string,
+    is_active: Boolean(s.is_active),
     started_at: s.started_at as string | null,
     completed_at: s.completed_at as string | null,
     team_id: s.team_id as string | null,

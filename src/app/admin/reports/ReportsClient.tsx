@@ -66,6 +66,7 @@ interface TrackingSession {
   job_id: string;
   job_type: string;
   status: string;
+  is_active: boolean;
   started_at: string | null;
   completed_at: string | null;
   team_id: string | null;
@@ -132,6 +133,10 @@ export default function ReportsClient({
   const totalMovesThisMonth = opsMovesThisMonth.length;
 
   const completedSessions = trackingSessions.filter((s) => s.status === "completed");
+  const activeSessions = useMemo(
+    () => trackingSessions.filter((s) => s.is_active === true),
+    [trackingSessions],
+  );
   const avgDurationMinutes = useMemo(() => {
     const durations = completedSessions
       .filter((s) => s.started_at && s.completed_at)
@@ -503,10 +508,7 @@ export default function ReportsClient({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8">
               <KpiCard label="Total Sessions" value={String(trackingSessions.length)} />
               <KpiCard label="Completed" value={String(completedSessions.length)} accent={completedSessions.length > 0} />
-              <KpiCard
-                label="Active"
-                value={String(trackingSessions.filter((s) => s.status === "active" || s.status === "in_progress").length)}
-              />
+              <KpiCard label="Active" value={String(activeSessions.length)} accent={activeSessions.length > 0} />
               <KpiCard
                 label="Completion Rate"
                 value={
