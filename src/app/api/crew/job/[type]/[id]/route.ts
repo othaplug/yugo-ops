@@ -707,6 +707,82 @@ export async function GET(
   const tenantPresent =
     (m as { tenant_present?: boolean | null }).tenant_present !== false;
 
+  let moveProjectDay:
+    | {
+        projectId: string;
+        projectName: string;
+        totalDays: number;
+        dayId: string;
+        dayNumber: number;
+        dayLabel: string;
+        dayType: string;
+        date: string | null;
+        stages: string[];
+        currentStage: string | null;
+        requiresProofOfDelivery: boolean;
+        status: string;
+      }
+    | null = null;
+
+  const mpAttachId = (m as { move_project_id?: string | null }).move_project_id;
+  if (mpAttachId && typeof mpAttachId === "string") {
+    const { data: mpProj } = await admin
+      .from("move_projects")
+      .select("id, project_name, total_days")
+      .eq("id", mpAttachId)
+      .maybeSingle();
+
+    const { data: mpDays } = await admin
+      .from("move_project_days")
+      .select(
+        "id, day_number, date, label, day_type, status, stages, current_stage, requires_pod",
+      )
+      .eq("move_id", m.id)
+      .order("day_number", { ascending: true });
+
+    if (mpProj && mpDays && mpDays.length > 0) {
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const active =
+        mpDays.find(
+          (d) =>
+            String(d.date || "").slice(0, 10) === todayKey &&
+            String(d.status || "").toLowerCase() !== "completed",
+        ) ??
+        mpDays.find(
+          (d) =>
+            !["completed", "cancelled"].includes(
+              String(d.status || "").toLowerCase(),
+            ),
+        ) ??
+        mpDays[mpDays.length - 1];
+
+      if (active?.id) {
+        const rawStages = active.stages;
+        const stagesArr = Array.isArray(rawStages)
+          ? rawStages.filter((x): x is string => typeof x === "string")
+          : [];
+
+        moveProjectDay = {
+          projectId: mpProj.id as string,
+          projectName: String(mpProj.project_name || "Move project"),
+          totalDays: Number(mpProj.total_days) || mpDays.length,
+          dayId: active.id as string,
+          dayNumber: Number(active.day_number) || 1,
+          dayLabel: String(active.label || ""),
+          dayType: String(active.day_type || "move"),
+          date: active.date ? String(active.date).slice(0, 10) : null,
+          stages: stagesArr,
+          currentStage:
+            typeof active.current_stage === "string"
+              ? active.current_stage
+              : null,
+          requiresProofOfDelivery: !!(active as { requires_pod?: boolean }).requires_pod,
+          status: String(active.status || "scheduled"),
+        };
+      }
+    }
+  }
+
   return NextResponse.json({
     viewerCrewMemberId: payload.crewMemberId,
     viewerCrewMemberName: payload.name,
@@ -767,5 +843,6 @@ export async function GET(
     marginAlertMinutes: moveMarginMin,
     operationalAlerts,
     tipReportNeeded,
+    moveProjectDay,
   });
 }

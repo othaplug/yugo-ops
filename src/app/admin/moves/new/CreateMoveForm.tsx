@@ -37,6 +37,7 @@ import InventoryInput, {
   type InventoryItemEntry,
 } from "@/components/inventory/InventoryInput";
 import { residentialInventoryLineScore } from "@/lib/pricing/weight-tiers";
+import { labelForDayType } from "@/lib/move-projects/day-types";
 
 interface Org {
   id: string;
@@ -237,6 +238,16 @@ const accessSelectClass = `${fieldInput} min-h-[2.5rem] text-left text-[12px] te
 /** Elevator / loading dock: unit field only (no floor). Gate / buzz: unit + floor. */
 const ACCESS_UNIT_ONLY = new Set<string>(["Elevator", "Loading dock"]);
 
+function defaultResidentialDayBreakdown(
+  dayCount: number,
+): { day: number; type: string }[] {
+  const n = Math.max(1, Math.min(14, Math.round(dayCount)));
+  return Array.from({ length: n }, (_, i) => ({
+    day: i + 1,
+    type: i === n - 1 ? "move" : "pack",
+  }));
+}
+
 interface ItemWeightRow {
   slug: string;
   item_name: string;
@@ -252,10 +263,13 @@ export default function CreateMoveForm({
   organizations,
   crews,
   itemWeights = [],
+  initialQuoteUuid = null,
 }: {
   organizations: Org[];
   crews: Crew[];
   itemWeights?: ItemWeightRow[];
+  /** When present (URL `quote_uuid`), load quote scope for multi-day scheduling fields */
+  initialQuoteUuid?: string | null;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -347,6 +361,14 @@ export default function CreateMoveForm({
     "essential" | "signature" | "estate"
   >("essential");
 
+  /** Multi-day residential: optional quote link + persisted days (Create move API attaches move_projects) */
+  const [linkedQuoteUuid, setLinkedQuoteUuid] = useState<string | null>(null);
+  const [estimatedMoveDays, setEstimatedMoveDays] = useState(1);
+  const [dayBreakdownRows, setDayBreakdownRows] = useState<
+    { day: number; type: string }[]
+  >([]);
+  const [quoteScopeLoading, setQuoteScopeLoading] = useState(false);
+
   // Office-only state
   const [companyName, setCompanyName] = useState("");
 
@@ -434,6 +456,80 @@ export default function CreateMoveForm({
 
   // Labour only
   const [labourDescription, setLabourDescription] = useState("");
+
+  useEffect(() => {
+    if (!initialQuoteUuid?.trim()) return;
+    let cancelled = false;
+    void (async () => {
+      setQuoteScopeLoading(true);
+      try {
+        const res = await fetch(
+          `/api/admin/quotes/copy-prefill?uuid=${encodeURIComponent(initialQuoteUuid.trim())}`,
+        );
+        const data = (await res.json()) as {
+          quote?: Record<string, unknown>;
+          error?: string;
+        };
+        if (!res.ok || !data.quote || cancelled) return;
+        const q = data.quote as {
+          id?: string;
+          estimated_days?: unknown;
+          day_breakdown?: unknown;
+        };
+        if (typeof q.id === "string") setLinkedQuoteUuid(q.id);
+        const rawEd = q.estimated_days;
+        const ed =
+          typeof rawEd === "number" && Number.isFinite(rawEd)
+            ? Math.round(rawEd)
+            : parseInt(String(rawEd ?? "1"), 10);
+        const days = Number.isFinite(ed) ? Math.max(1, Math.min(14, ed)) : 1;
+        setEstimatedMoveDays(days);
+        const arr = Array.isArray(q.day_breakdown) ? q.day_breakdown : [];
+        if (arr.length > 0) {
+          const rows = arr.map((row: unknown, i: number) => {
+            const o =
+              row && typeof row === "object"
+                ? (row as { day?: number; type?: string })
+                : {};
+            const typ =
+              typeof o.type === "string" ? o.type.toLowerCase() : "pack";
+            const safeType = ["pack", "move", "unpack", "crating", "volume"].includes(typ)
+              ? typ
+              : "pack";
+            return {
+              day: typeof o.day === "number" ? o.day : i + 1,
+              type: safeType,
+            };
+          });
+          setDayBreakdownRows(rows);
+        } else if (days > 1) {
+          setDayBreakdownRows(defaultResidentialDayBreakdown(days));
+        }
+      } finally {
+        if (!cancelled) setQuoteScopeLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialQuoteUuid]);
+
+  useEffect(() => {
+    if (moveType !== "residential") return;
+    const n = Math.max(1, Math.min(14, estimatedMoveDays));
+    if (n <= 1) {
+      setDayBreakdownRows([]);
+      return;
+    }
+    setDayBreakdownRows((prev) => {
+      if (prev.length === n) return prev;
+      const seed = defaultResidentialDayBreakdown(n);
+      return seed.map((row, i) => ({
+        ...row,
+        type: prev[i]?.type ?? row.type,
+      }));
+    });
+  }, [moveType, estimatedMoveDays]);
 
   // Draft auto-save (track core fields only — type-specific fields are less critical)
   const draftState = useMemo(
@@ -819,6 +915,17 @@ export default function CreateMoveForm({
       }
       formData.append("estimate", String(parseNumberInput(estimate) || 0));
       formData.append("scheduled_date", scheduledDate);
+      if (linkedQuoteUuid?.trim()) {
+        formData.append("quote_uuid", linkedQuoteUuid.trim());
+      }
+      if (moveType === "residential" && estimatedMoveDays > 1) {
+        formData.append("estimated_days", String(estimatedMoveDays));
+        const rows =
+          dayBreakdownRows.length === estimatedMoveDays
+            ? dayBreakdownRows
+            : defaultResidentialDayBreakdown(estimatedMoveDays);
+        formData.append("day_breakdown", JSON.stringify(rows));
+      }
       formData.append("scheduled_time", scheduledTime);
       formData.append("arrival_window", arrivalWindow);
       formData.append("access_notes", accessNotes);
@@ -2896,10 +3003,96 @@ export default function CreateMoveForm({
                       />
                     </Field>
                   </div>
+
+                  {moveType === "residential" && (
+                    <div className="mt-4 rounded-lg border border-[var(--brd)] bg-[var(--bg2)]/35 px-4 py-3 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)]">
+                            Multi-day move plan
+                          </p>
+                          <p className="text-[11px] text-[var(--tx3)] mt-1 leading-snug">
+                            More than one calendar day creates linked move project days on save (first day starts from scheduled date above).
+                          </p>
+                        </div>
+                        {quoteScopeLoading ? (
+                          <span className="text-[10px] font-semibold text-[var(--tx3)]">
+                            Loading quote scope…
+                          </span>
+                        ) : linkedQuoteUuid ? (
+                          <span className="text-[10px] font-semibold text-[var(--yu-accent)]">
+                            Quote linked
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="max-w-[14rem]">
+                        <label
+                          htmlFor="est-move-days"
+                          className="admin-premium-label admin-premium-label--tight mb-1"
+                        >
+                          Calendar days on job
+                        </label>
+                        <input
+                          id="est-move-days"
+                          type="number"
+                          min={1}
+                          max={14}
+                          value={estimatedMoveDays}
+                          onChange={(e) => {
+                            const v = parseInt(e.target.value, 10);
+                            if (!Number.isFinite(v)) return;
+                            setEstimatedMoveDays(Math.max(1, Math.min(14, v)));
+                          }}
+                          className={fieldInput}
+                          aria-label="Estimated calendar days for this move"
+                        />
+                      </div>
+                      {estimatedMoveDays > 1 && dayBreakdownRows.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">
+                            Day types (editable)
+                          </p>
+                          <ul className="space-y-2" aria-label="Day breakdown">
+                            {dayBreakdownRows.map((row, idx) => (
+                              <li
+                                key={`day-${row.day}-${idx}`}
+                                className="flex flex-wrap items-center gap-2 text-[12px]"
+                              >
+                                <span className="text-[var(--tx2)] min-w-[4.5rem]">
+                                  Day {row.day}
+                                </span>
+                                <select
+                                  value={row.type}
+                                  onChange={(e) => {
+                                    const next = e.target.value;
+                                    setDayBreakdownRows((prev) =>
+                                      prev.map((r, i) =>
+                                        i === idx ? { ...r, type: next } : r,
+                                      ),
+                                    );
+                                  }}
+                                  className={`${fieldInput} max-w-[11rem]`}
+                                  aria-label={`Day ${row.day} type`}
+                                >
+                                  <option value="pack">Pack</option>
+                                  <option value="move">Move</option>
+                                  <option value="unpack">Unpack</option>
+                                  <option value="crating">Crating</option>
+                                  <option value="volume">Volume</option>
+                                </select>
+                                <span className="text-[11px] text-[var(--tx3)]">
+                                  {labelForDayType(row.type)}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-6 space-y-2">
-                  {/* Crew / team */}
                   <div className="space-y-2">
                     <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
                       Move Team

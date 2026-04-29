@@ -151,6 +151,7 @@ export default function CalendarView() {
                 onEventClick={handleEventClick}
                 onDateClick={handleDateClick}
                 onNewClick={handleNewClick}
+                onEventRescheduled={cal.refetch}
               />
             )}
 
@@ -173,6 +174,7 @@ export default function CalendarView() {
                 eventsByDate={cal.eventsByDate}
                 onEventClick={handleEventClick}
                 onDayClick={handleDayClick}
+                onEventRescheduled={cal.refetch}
               />
             )}
 

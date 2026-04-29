@@ -61,6 +61,7 @@ import {
   MOVE_DAY_ISSUE_OPTIONS,
   defaultUrgencyForIssue,
 } from "@/lib/crew/move-day-issues";
+import { displayLabelForMoveProjectStage } from "@/lib/move-projects/day-types";
 import { cn } from "@/lib/utils";
 
 const CrewNavigation = dynamic(
@@ -260,6 +261,21 @@ interface JobDetail {
   tenantPresent?: boolean;
   buildingContactName?: string | null;
   buildingContactPhone?: string | null;
+  /** Residential multi-day move_projects context for this calendar day */
+  moveProjectDay?: {
+    projectId: string;
+    projectName: string;
+    totalDays: number;
+    dayId: string;
+    dayNumber: number;
+    dayLabel: string;
+    dayType: string;
+    date: string | null;
+    stages: string[];
+    currentStage: string | null;
+    requiresProofOfDelivery: boolean;
+    status: string;
+  } | null;
 }
 
 interface Session {
@@ -296,6 +312,7 @@ export default function CrewJobPage({
   /** Start job / checkpoint failures while the job UI is visible (do not use full-page error gate). */
   const [actionError, setActionError] = useState("");
   const [advancing, setAdvancing] = useState(false);
+  const [moveProjectStageSaving, setMoveProjectStageSaving] = useState(false);
   const [note, setNote] = useState("");
   const [locationPermission, setLocationPermission] =
     useState<GeoPermissionState>("unknown");
@@ -657,6 +674,43 @@ export default function CrewJobPage({
       setActionError(e instanceof Error ? e.message : "Failed");
     } finally {
       setAdvancing(false);
+    }
+  };
+
+  const updateMoveProjectDayStage = async (nextStage: string) => {
+    if (!job?.moveProjectDay || moveProjectStageSaving) return;
+    if (nextStage === (job.moveProjectDay.currentStage ?? "")) return;
+    setMoveProjectStageSaving(true);
+    setActionError("");
+    try {
+      const r = await fetch("/api/crew/move-project-day", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          move_id: job.id,
+          day_id: job.moveProjectDay.dayId,
+          current_stage: nextStage,
+        }),
+      });
+      const d = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) {
+        setActionError(d.error || "Could not update this day stage");
+        return;
+      }
+      setJob((prev) => {
+        if (!prev?.moveProjectDay) return prev;
+        return {
+          ...prev,
+          moveProjectDay: {
+            ...prev.moveProjectDay,
+            currentStage: nextStage,
+          },
+        };
+      });
+    } catch {
+      setActionError("Network error while updating stage");
+    } finally {
+      setMoveProjectStageSaving(false);
     }
   };
 
@@ -1030,6 +1084,73 @@ export default function CrewJobPage({
 
       {/* Job header: flat strip (no card) — route + title stay visible on all tabs */}
       <div className="mb-5 pb-4 border-b border-[var(--yu3-line-subtle)]">
+        {jobType === "move" && job.moveProjectDay ? (
+          <div className="mb-4 rounded-xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] px-4 py-3 shadow-[var(--yu3-shadow-sm)]">
+            <p className="yu3-t-eyebrow text-[10px] text-[var(--yu3-wine)]/85 mb-1 [font-family:var(--font-body)] leading-none">
+              Multi-day move · Day {job.moveProjectDay.dayNumber} of{" "}
+              {job.moveProjectDay.totalDays}
+            </p>
+            <p className="text-[14px] font-semibold text-[var(--yu3-ink-strong)] [font-family:var(--font-body)]">
+              {job.moveProjectDay.dayLabel || job.moveProjectDay.projectName}
+            </p>
+            {job.moveProjectDay.date ? (
+              <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1 [font-family:var(--font-body)]">
+                {formatPlatformDisplay(`${job.moveProjectDay.date}T12:00:00`, {
+                  weekday: "long",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </p>
+            ) : null}
+            {job.moveProjectDay.requiresProofOfDelivery ? (
+              <p className="text-[11px] text-[var(--yu3-wine)] mt-2 leading-snug [font-family:var(--font-body)]">
+                Proof of delivery required when this day is completed.
+              </p>
+            ) : null}
+            {job.moveProjectDay.stages.length > 0 && !isCompleted ? (
+              <div className="mt-3 pt-3 border-t border-[var(--yu3-line-subtle)]">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] mb-2 [font-family:var(--font-body)] leading-none">
+                  Day stages
+                </p>
+                {!job.moveProjectDay.currentStage ? (
+                  <p className="text-[10px] text-[var(--yu3-ink-muted)] mb-2 leading-snug [font-family:var(--font-body)]">
+                    Select the stage you are on. You can move forward or go back
+                    if dispatch corrects the plan.
+                  </p>
+                ) : null}
+                <div
+                  className="flex flex-wrap gap-1.5"
+                  role="list"
+                  aria-label="Stages for this project day"
+                >
+                  {job.moveProjectDay.stages.map((stageKey) => {
+                    const isActive =
+                      job.moveProjectDay!.currentStage === stageKey;
+                    return (
+                      <button
+                        key={stageKey}
+                        type="button"
+                        role="listitem"
+                        disabled={moveProjectStageSaving}
+                        aria-pressed={isActive}
+                        aria-label={`Stage ${displayLabelForMoveProjectStage(stageKey)}${isActive ? ", current" : ""}`}
+                        onClick={() => void updateMoveProjectDayStage(stageKey)}
+                        className={cn(
+                          "text-[10px] font-bold uppercase tracking-[0.1em] px-2.5 py-1.5 rounded-md border transition-colors [font-family:var(--font-body)] leading-none",
+                          isActive
+                            ? "border-[var(--yu3-wine)] bg-[var(--yu3-wine)] text-[#F9EDE4]"
+                            : "border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] text-[var(--yu3-ink-muted)] hover:border-[var(--yu3-wine)]/45",
+                        )}
+                      >
+                        {displayLabelForMoveProjectStage(stageKey)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="min-w-0">
             <p className="yu3-t-eyebrow text-[10px] text-[var(--yu3-wine)]/80 mb-1 [font-family:var(--font-body)] leading-none">

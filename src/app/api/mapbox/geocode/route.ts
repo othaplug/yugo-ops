@@ -12,6 +12,7 @@ const MAPBOX_TOKEN =
 /**
  * GET /api/mapbox/geocode?q=ADDRESS
  * Proxies Mapbox Geocoding API for address autocomplete. Returns GeoJSON FeatureCollection.
+ * Optional `proximity=lng,lat` (WGS84) is forwarded to Mapbox to bias result ranking toward an area.
  * Accepts either authenticated user (admin) or partner auth.
  */
 export async function GET(req: NextRequest) {
@@ -44,6 +45,21 @@ export async function GET(req: NextRequest) {
       limit: String(limit),
       country,
     });
+
+    const proximityRaw = req.nextUrl.searchParams.get("proximity")?.trim();
+    if (proximityRaw) {
+      const parts = proximityRaw.split(",").map((s) => Number.parseFloat(s.trim()));
+      if (
+        parts.length === 2 &&
+        parts.every((n) => Number.isFinite(n)) &&
+        parts[0] >= -180 &&
+        parts[0] <= 180 &&
+        parts[1] >= -90 &&
+        parts[1] <= 90
+      ) {
+        params.set("proximity", `${parts[0]},${parts[1]}`);
+      }
+    }
 
     const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?${params}`;
     const res = await fetch(url, { next: { revalidate: 0 } });

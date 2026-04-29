@@ -29,6 +29,11 @@ export interface AddressAutocompleteProps {
   name?: string;
   /** ISO 3166-1 alpha-2 country code to bias results (e.g. "CA") */
   country?: string;
+  /**
+   * Mapbox `proximity` as { lng, lat }. Biases suggestion ranking toward that area.
+   * Omit for Greater Toronto default. Pass `null` for no proximity (neutral ranking in the allowed countries).
+   */
+  mapProximity?: { lng: number; lat: number } | null;
   disabled?: boolean;
   /** Match design-system admin v3 field chrome */
   variant?: "yu3" | "default";
@@ -129,6 +134,9 @@ function mapboxFeatureToAddressResult(f: MapboxFeature): AddressResult {
 
 const DEBOUNCE_MS = 280;
 
+/** Downtown Toronto: default Mapbox `proximity` so Canadian addresses rank near operations area first. */
+const DEFAULT_MAP_PROXIMITY_TORONTO = { lng: -79.3832, lat: 43.6532 } as const;
+
 export default function AddressAutocomplete({
   value,
   onChange,
@@ -140,6 +148,7 @@ export default function AddressAutocomplete({
   id,
   name,
   country: countryBias = "",
+  mapProximity,
   disabled,
   variant = "default",
   onInputBlur,
@@ -193,6 +202,9 @@ export default function AddressAutocomplete({
     };
   }, [open, updateDropdownRect]);
 
+  const resolvedProximity =
+    mapProximity === null ? null : mapProximity ?? DEFAULT_MAP_PROXIMITY_TORONTO;
+
   const fetchSuggestions = useCallback(async (query: string) => {
     if (query.length < 2) {
       setSuggestions([]);
@@ -202,6 +214,9 @@ export default function AddressAutocomplete({
     try {
       const params = new URLSearchParams({ q: query, limit: "8" });
       if (countryBias) params.set("country", countryBias);
+      if (resolvedProximity) {
+        params.set("proximity", `${resolvedProximity.lng},${resolvedProximity.lat}`);
+      }
       const res = await fetch(`/api/mapbox/geocode?${params}`, { credentials: "include" });
       const data = await res.json();
       if (!res.ok) {
@@ -218,7 +233,7 @@ export default function AddressAutocomplete({
     } finally {
       setLoading(false);
     }
-  }, [countryBias]);
+  }, [countryBias, resolvedProximity]);
 
   useEffect(() => {
     if (isInternalUpdate.current) {

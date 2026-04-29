@@ -333,7 +333,8 @@ export async function createMoveFromQuote(
     neighbourhood_tier: (factors.neighbourhood_tier as string) ?? null,
     lead_source: "quote",
 
-    move_project_id: (quote as { move_project_id?: string | null }).move_project_id ?? null,
+    /** Fresh moves must not inherit quote-linked planner previews; multi-day attach sets this after insert. */
+    move_project_id: null,
 
     client_box_count: clientBoxCountForMove(),
 
@@ -643,6 +644,46 @@ export async function createMoveFromQuote(
       squareCardId: input.squareCardId ?? null,
       depositAmount: input.depositAmount,
     });
+  }
+
+  const svcForProject = String(quote.service_type ?? "");
+  const residentialMultiDayQuote =
+    (svcForProject === "local_move" || svcForProject === "long_distance") &&
+    rowsToInsert.length === 1;
+
+  if (residentialMultiDayQuote) {
+    const rawDays = (quote as { estimated_days?: unknown }).estimated_days;
+    const estDays =
+      typeof rawDays === "number" && Number.isFinite(rawDays)
+        ? Math.round(rawDays)
+        : parseInt(String(rawDays ?? "1"), 10);
+    const estimatedDays =
+      Number.isFinite(estDays) && estDays > 0 ? estDays : 1;
+    const dayBreakdown = (quote as { day_breakdown?: unknown }).day_breakdown;
+
+    if (estimatedDays > 1) {
+      const scheduledIso =
+        String(rowsToInsert[0]?.scheduled_date ?? quote.move_date ?? "").slice(
+          0,
+          10,
+        ) || new Date().toISOString().slice(0, 10);
+
+      const { attachMultiDayMoveProjectFromScope } = await import(
+        "@/lib/move-projects/create-from-move-scope"
+      );
+      await attachMultiDayMoveProjectFromScope(supabase, {
+        moveId: primary.id,
+        quoteUuid: quote.id as string,
+        contactId:
+          (quote as { contact_id?: string | null }).contact_id ?? null,
+        clientName,
+        fromAddress: String(quote.from_address || "").trim(),
+        toAddress: String(quote.to_address || "").trim(),
+        scheduledDateIso: scheduledIso,
+        estimatedDays,
+        dayBreakdown: dayBreakdown ?? [],
+      });
+    }
   }
 
   return {

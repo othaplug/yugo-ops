@@ -10,13 +10,17 @@ import {
   jobPillSurfaceStyle,
   pillStatusDotColor,
 } from "@/lib/calendar/calendar-job-styles";
+import {
+  postBulkShiftMoveProjectDays,
+  withDurationEnd,
+} from "@/lib/calendar/move-project-bulk-shift";
 const HOUR_HEIGHT = 48;
 const DAY_START_HOUR = 6;
 const DAY_END_HOUR = 20;
 const TOTAL_HOURS = DAY_END_HOUR - DAY_START_HOUR;
 const HOURS = Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => DAY_START_HOUR + i);
 const DRAG_THRESHOLD = 6;
-const DRAGGABLE_TYPES = ["move", "delivery", "blocked"] as const;
+const DRAGGABLE_TYPES = ["move", "delivery", "blocked", "move_project_day"] as const;
 
 interface Props {
   date: string;
@@ -85,6 +89,7 @@ export default function DayView({
   } | null>(null);
 
   const [draggingEvent, setDraggingEvent] = useState<CalendarEvent | null>(null);
+  const [dragLiveShift, setDragLiveShift] = useState(false);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const [dropCrewId, setDropCrewId] = useState<string | null>(null);
   const [rescheduling, setRescheduling] = useState(false);
@@ -136,19 +141,78 @@ export default function DayView({
 
   // ── Reschedule API call (uses refs so always fresh)
   const doReschedule = useCallback(
-    async (ev: CalendarEvent, newCrewId: string, newStart: string) => {
-      const durationMins =
-        ev.start && ev.end
-          ? timeToMinutes(ev.end) - timeToMinutes(ev.start)
-          : ev.durationHours != null && Number.isFinite(ev.durationHours)
-            ? Math.round(ev.durationHours * 60)
-            : 120;
-      const newEnd = minutesToTime(
-        Math.min(timeToMinutes(newStart) + durationMins, DAY_END_HOUR * 60)
+    async (
+      ev: CalendarEvent,
+      newCrewId: string,
+      newStart: string,
+      shiftRescheduleWholeProject: boolean,
+    ) => {
+      const newEnd = withDurationEnd(
+        newStart,
+        ev.end,
+        ev.durationHours != null && Number.isFinite(ev.durationHours)
+          ? ev.durationHours
+          : null,
       );
 
       setRescheduling(true);
       try {
+        if (ev.type === "move_project_day") {
+          const pid = ev.moveProjectId?.trim();
+          if (!pid) {
+            alert("Missing move project reference for this calendar entry.");
+            return;
+          }
+          if (shiftRescheduleWholeProject) {
+            const merged = await postBulkShiftMoveProjectDays({
+              projectId: pid,
+              anchorDayId: ev.id,
+              targetDate: dateRef.current,
+              startTime: newStart,
+              endTime: newEnd,
+              crewId: newCrewId || ev.crewId || null,
+              shiftEntireProject: true,
+              syncTimeAndCrewToAll: true,
+            });
+            if (merged.ok) {
+              onEventRescheduledRef.current?.();
+            } else {
+              alert(merged.error);
+            }
+            return;
+          }
+          const res = await fetch(
+            `/api/admin/move-projects/${pid}/days/${ev.id}`,
+            {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                crew_ids: newCrewId ? [newCrewId] : [],
+                date: dateRef.current,
+                start_time: newStart,
+                end_time: newEnd,
+              }),
+            },
+          );
+          if (res.ok) {
+            onEventRescheduledRef.current?.();
+          } else {
+            const data = await res.json().catch(() => ({}));
+            alert((data as { error?: string }).error || "Failed to reschedule");
+          }
+          return;
+        }
+
+        const durationMins =
+          ev.start && ev.end
+            ? timeToMinutes(ev.end) - timeToMinutes(ev.start)
+            : ev.durationHours != null && Number.isFinite(ev.durationHours)
+              ? Math.round(ev.durationHours * 60)
+              : 120;
+        const newEndMove = minutesToTime(
+          Math.min(timeToMinutes(newStart) + durationMins, DAY_END_HOUR * 60),
+        );
+
         const res = await fetch("/api/admin/calendar/schedule", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -158,7 +222,7 @@ export default function DayView({
             crew_id: newCrewId,
             date: dateRef.current,
             start: newStart,
-            end: newEnd,
+            end: newEndMove,
           }),
         });
         if (res.ok) {
@@ -202,6 +266,7 @@ export default function DayView({
         setDraggingEvent(d.event);
       }
 
+      setDragLiveShift(e.shiftKey);
       setDragPos({ x: e.clientX, y: e.clientY });
 
       const col = getCandidateColumn(e.clientX, e.clientY);
@@ -216,6 +281,7 @@ export default function DayView({
 
       setDraggingEvent(null);
       setDragPos(null);
+      setDragLiveShift(false);
       setDropCrewId(null);
 
       if (!d.isDragging) {
@@ -230,7 +296,11 @@ export default function DayView({
       if (col) {
         const y = e.clientY - col.rect.top;
         const newStart = yToTime(y);
-        doReschedule(d.event, col.crewId, newStart);
+        const shiftWhole =
+          e.shiftKey &&
+          d.event.type === "move_project_day" &&
+          !!d.event.moveProjectId?.trim();
+        void doReschedule(d.event, col.crewId, newStart, shiftWhole);
       }
     };
 
@@ -510,7 +580,11 @@ export default function DayView({
             </div>
           ) : (
             <div className="mt-0.5 text-[9px] text-[var(--tx3)] pl-1 opacity-60">
-              Drag to a team column
+              {draggingEvent.type === "move_project_day" && dragLiveShift
+                ? "Shift: updates every project day (time + crew)"
+                : draggingEvent.type === "move_project_day"
+                  ? "Shift+drop: all days · Drop: this day only"
+                  : "Drag to a team column"}
             </div>
           )}
         </div>

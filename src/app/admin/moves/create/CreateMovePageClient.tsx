@@ -124,6 +124,7 @@ export default function CreateMovePageClient({
           organizations={organizations}
           crews={crews}
           itemWeights={itemWeights}
+          initialQuoteUuid={searchParams.get("quote_uuid")}
         />
       ) : null}
 

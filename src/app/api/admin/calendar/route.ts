@@ -173,7 +173,7 @@ export async function GET(req: NextRequest) {
       db
         .from("move_project_days")
         .select(
-          "id, date, day_number, label, day_type, crew_size, crew_ids, truck_type, estimated_hours, status, project_id, origin_address, destination_address, start_time, end_time, arrival_window, move_projects(project_name)",
+          "id, date, day_number, label, day_type, crew_size, crew_ids, truck_type, estimated_hours, status, project_id, origin_address, destination_address, start_time, end_time, arrival_window, move_id, move_projects(project_name), moves(move_code)",
         )
         .gte("date", startDate)
         .lte("date", endDate)
@@ -528,6 +528,16 @@ export async function GET(req: NextRequest) {
       const mpName =
         (Array.isArray(mpRaw) ? (mpRaw[0] as { project_name?: string } | undefined)?.project_name : (mpRaw as { project_name?: string } | null)?.project_name) ||
         "Move project";
+      const moveEmbed = row.moves as unknown;
+      const moveCodeRow =
+        Array.isArray(moveEmbed)
+          ? (moveEmbed[0] as { move_code?: string | null } | undefined)
+          : (moveEmbed as { move_code?: string | null } | null);
+      const moveCode =
+        typeof moveCodeRow?.move_code === "string"
+          ? moveCodeRow.move_code.trim().replace(/^#/, "").toUpperCase()
+          : "";
+      const moveIdForHref = row.move_id as string | null | undefined;
       const dayNum = row.day_number != null ? Number(row.day_number) : 0;
       const primaryCrewId = crewIds[0] ?? null;
       const crewN = primaryCrewId ? crewListForLookup.find((c) => c.id === primaryCrewId) : null;
@@ -559,7 +569,12 @@ export async function GET(req: NextRequest) {
             ? "cancelled"
             : "scheduled") as CalendarStatus,
         color: JOB_COLORS.move_project_day,
-        href: `/admin/move-projects/${row.project_id}`,
+        href:
+          moveCode
+            ? getMoveDetailPath({ move_code: moveCode })
+            : moveIdForHref
+              ? getMoveDetailPath({ id: String(moveIdForHref) })
+              : `/admin/move-projects/${row.project_id}`,
         clientName: mpName,
         fromAddress: origin,
         toAddress: dest,

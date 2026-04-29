@@ -12,7 +12,10 @@ export type EstateDayPlan = {
   unpackIncluded: boolean;
 };
 
-export function calculateEstateDays(moveSize: string | undefined | null, inventoryScore: number): EstateDayPlan {
+export function calculateEstateDays(
+  moveSize: string | undefined | null,
+  inventoryScore: number,
+): EstateDayPlan {
   const ms = (moveSize || "2br").toLowerCase().trim();
   const score = Number.isFinite(inventoryScore) ? inventoryScore : 0;
 
@@ -71,7 +74,10 @@ export function calculateEstateDays(moveSize: string | undefined | null, invento
   }
 }
 
-export function estateLoadedLabourCost(plan: EstateDayPlan, loadedHourlyRate: number): number {
+export function estateLoadedLabourCost(
+  plan: EstateDayPlan,
+  loadedHourlyRate: number,
+): number {
   const rate = Math.max(0, loadedHourlyRate);
   let total = 0;
   if (plan.packDay) {
@@ -139,7 +145,10 @@ export function moveMatchesBalanceReminder48hWindow(params: {
 
 function fmtMoveDayLabel(iso: string): string {
   if (!iso) return "TBD";
-  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-CA", {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 /** Human-readable lines for quote confirm + emails (not raw DB keys). */

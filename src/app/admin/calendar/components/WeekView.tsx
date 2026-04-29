@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import {
+  useMemo,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import {
   Lock,
   MapPin,
@@ -10,9 +16,20 @@ import {
   Truck,
 } from "@phosphor-icons/react";
 import type { CalendarEvent } from "@/lib/calendar/types";
-import { formatTime12, timeToMinutes } from "@/lib/calendar/types";
-import { weekEventBlockStyle } from "@/lib/calendar/calendar-job-styles";
+import {
+  formatTime12,
+  timeToMinutes,
+  minutesToTime,
+} from "@/lib/calendar/types";
+import {
+  weekEventBlockStyle,
+  calendarPillForeground,
+} from "@/lib/calendar/calendar-job-styles";
 import { getWeekEventLayouts } from "@/lib/calendar/week-event-layout";
+import {
+  postBulkShiftMoveProjectDays,
+  withDurationEnd,
+} from "@/lib/calendar/move-project-bulk-shift";
 const HOUR_HEIGHT = 32;
 const DAY_START_HOUR = 6;
 const DAY_END_HOUR = 20;
@@ -23,12 +40,15 @@ const HOURS = Array.from(
 );
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
+const DRAG_THRESHOLD = 6;
+
 interface Props {
   anchor: Date;
   todayKey: string;
   eventsByDate: Record<string, CalendarEvent[]>;
   onEventClick: (e: CalendarEvent) => void;
   onDayClick: (date: string) => void;
+  onEventRescheduled?: () => void;
 }
 
 function getWeekDays(anchor: Date): { date: Date; key: string }[] {
@@ -97,14 +117,186 @@ function WeekEventTypeIcon({
   }
 }
 
+function canEditWeekEvent(ev: CalendarEvent): boolean {
+  if (ev.calendarStatus !== "completed") return true;
+  const hasTime = !!(ev.start || ev.end);
+  const hasTeam = !!ev.crewId;
+  return !hasTime && !hasTeam;
+}
+
+function yToTimeFromClientY(clientY: number, rectTop: number): string {
+  const y = clientY - rectTop;
+  const rawMins = DAY_START_HOUR * 60 + (y / HOUR_HEIGHT) * 60;
+  const snapped = Math.round(rawMins / 15) * 15;
+  return minutesToTime(
+    Math.max(DAY_START_HOUR * 60, Math.min(DAY_END_HOUR * 60 - 15, snapped)),
+  );
+}
+
+function getCalendarDayDropAtPoint(
+  x: number,
+  y: number,
+): { dayKey: string; rect: DOMRect } | null {
+  const el = document.elementFromPoint(x, y);
+  if (!el) return null;
+  const col = el.closest("[data-calendar-day]") as HTMLElement | null;
+  if (!col) return null;
+  const dk = col.dataset.calendarDay;
+  if (!dk) return null;
+  return { dayKey: dk, rect: col.getBoundingClientRect() };
+}
+
 export default function WeekView({
   anchor,
   todayKey,
   eventsByDate,
   onEventClick,
   onDayClick,
+  onEventRescheduled,
 }: Props) {
   const weekDays = useMemo(() => getWeekDays(anchor), [anchor]);
+
+  const dragRef = useRef<{
+    event: CalendarEvent;
+    startX: number;
+    startY: number;
+    isDragging: boolean;
+  } | null>(null);
+  const reschedulingRef = useRef(false);
+  const suppressDayClickRef = useRef(false);
+  const onEventClickRef = useRef(onEventClick);
+  onEventClickRef.current = onEventClick;
+  const onEventRescheduledRef = useRef(onEventRescheduled);
+  onEventRescheduledRef.current = onEventRescheduled;
+
+  const [draggingEvent, setDraggingEvent] = useState<CalendarEvent | null>(
+    null,
+  );
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const [dragLiveShift, setDragLiveShift] = useState(false);
+  const [dropDayKey, setDropDayKey] = useState<string | null>(null);
+  const [rescheduling, setRescheduling] = useState(false);
+  reschedulingRef.current = rescheduling;
+
+  const rescheduleProjectDayWeek = useCallback(
+    async (
+      ev: CalendarEvent,
+      targetDayKey: string,
+      newStart: string,
+      shiftEntire: boolean,
+    ) => {
+      const pid = ev.moveProjectId?.trim();
+      if (!pid || ev.type !== "move_project_day") return;
+      const newEnd = withDurationEnd(
+        newStart,
+        ev.end,
+        ev.durationHours != null && Number.isFinite(ev.durationHours)
+          ? ev.durationHours
+          : null,
+      );
+      const crewId = ev.crewId?.trim() || null;
+      const crewPayload = crewId ? [crewId] : [];
+
+      setRescheduling(true);
+      try {
+        if (shiftEntire) {
+          const merged = await postBulkShiftMoveProjectDays({
+            projectId: pid,
+            anchorDayId: ev.id,
+            targetDate: targetDayKey,
+            startTime: newStart,
+            endTime: newEnd,
+            crewId,
+            shiftEntireProject: true,
+            syncTimeAndCrewToAll: false,
+          });
+          if (merged.ok) onEventRescheduledRef.current?.();
+          else alert(merged.error);
+        } else {
+          const res = await fetch(
+            `/api/admin/move-projects/${pid}/days/${ev.id}`,
+            {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                crew_ids: crewPayload,
+                date: targetDayKey,
+                start_time: newStart,
+                end_time: newEnd,
+              }),
+            },
+          );
+          if (res.ok) {
+            onEventRescheduledRef.current?.();
+          } else {
+            const data = (await res.json().catch(() => ({}))) as {
+              error?: string;
+            };
+            alert(data.error || "Failed to reschedule");
+          }
+        }
+      } catch {
+        alert("Network error while rescheduling");
+      } finally {
+        setRescheduling(false);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const onPointerMove = (e: PointerEvent) => {
+      const d = dragRef.current;
+      if (!d || reschedulingRef.current) return;
+      const dx = e.clientX - d.startX;
+      const dy = e.clientY - d.startY;
+      if (!d.isDragging) {
+        if (Math.abs(dx) + Math.abs(dy) < DRAG_THRESHOLD) return;
+        d.isDragging = true;
+        setDraggingEvent(d.event);
+      }
+      setDragLiveShift(e.shiftKey);
+      setDragPos({ x: e.clientX, y: e.clientY });
+      const hit = getCalendarDayDropAtPoint(e.clientX, e.clientY);
+      setDropDayKey(hit?.dayKey ?? null);
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      const d = dragRef.current;
+      dragRef.current = null;
+      if (!d) return;
+      setDraggingEvent(null);
+      setDragPos(null);
+      setDragLiveShift(false);
+      setDropDayKey(null);
+
+      if (!d.isDragging) {
+        onEventClickRef.current(d.event);
+        return;
+      }
+      if (reschedulingRef.current) return;
+      if (d.event.type !== "move_project_day") return;
+
+      const hit = getCalendarDayDropAtPoint(e.clientX, e.clientY);
+      if (!hit) return;
+      const newStart = yToTimeFromClientY(e.clientY, hit.rect.top);
+      const shiftEntire = e.shiftKey;
+      suppressDayClickRef.current = true;
+      void rescheduleProjectDayWeek(
+        d.event,
+        hit.dayKey,
+        newStart,
+        shiftEntire,
+      );
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+  }, [rescheduleProjectDayWeek]);
 
   const utilization = useMemo(() => {
     const result: Record<string, { booked: number; total: number }> = {};
@@ -139,7 +331,9 @@ export default function WeekView({
   }, [weekDays, eventsByDate]);
 
   return (
-    <div className="px-2 sm:px-4 pb-3">
+    <div
+      className={`px-2 sm:px-4 pb-3 ${draggingEvent ? "select-none" : ""}`}
+    >
       {/* Horizontal scroll wrapper, all rows scroll together on mobile */}
       <div className="overflow-x-auto">
         {/* Day headers */}
@@ -253,8 +447,15 @@ export default function WeekView({
               return (
                 <div
                   key={key}
+                  data-calendar-day={key}
                   className={`flex-1 min-w-[44px] relative border-l border-[var(--brd)] ${isToday ? "bg-blue-500/[0.04]" : ""}`}
-                  onClick={() => onDayClick(key)}
+                  onClick={() => {
+                    if (suppressDayClickRef.current) {
+                      suppressDayClickRef.current = false;
+                      return;
+                    }
+                    onDayClick(key);
+                  }}
                 >
                   {HOURS.map((h) => (
                     <div
@@ -280,36 +481,35 @@ export default function WeekView({
                     };
                     const cancelled = ev.calendarStatus === "cancelled";
                     const inProgress = ev.calendarStatus === "in_progress";
-                    return (
-                      <button
-                        key={ev.id}
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEventClick(ev);
-                        }}
-                        className={`absolute overflow-hidden text-left cursor-pointer transition-all ${
-                          inProgress
-                            ? "ring-1 ring-amber-500/40 shadow-[0_0_0_1px_rgba(245,158,11,0.15)]"
-                            : "hover:brightness-[1.015]"
-                        } ${cancelled ? "line-through" : ""}`}
-                        style={{
-                          top,
-                          height: Math.max(height, 20),
-                          left:
-                            hPos.widthPct < 100
-                              ? `calc(2px + (100% - 4px) * ${(hPos.leftPct / 100).toFixed(4)})`
-                              : "2px",
-                          width:
-                            hPos.widthPct < 100
-                              ? `calc((100% - 4px) * ${(hPos.widthPct / 100).toFixed(4)})`
-                              : "calc(100% - 4px)",
-                          zIndex: 5 + hPos.columnIndex,
-                          borderRadius: 6,
-                          ...block.container,
-                        }}
-                      >
-                        <div className="px-1.5 pt-1 pb-0.5 min-h-0 flex flex-col items-stretch text-left min-w-0">
+                    const canDrag =
+                      !rescheduling &&
+                      ev.type === "move_project_day" &&
+                      !!ev.moveProjectId?.trim() &&
+                      canEditWeekEvent(ev);
+                    const isBeingDragged = draggingEvent?.id === ev.id;
+                    const posStyle = {
+                      top,
+                      height: Math.max(height, 20),
+                      left:
+                        hPos.widthPct < 100
+                          ? `calc(2px + (100% - 4px) * ${(hPos.leftPct / 100).toFixed(4)})`
+                          : "2px",
+                      width:
+                        hPos.widthPct < 100
+                          ? `calc((100% - 4px) * ${(hPos.widthPct / 100).toFixed(4)})`
+                          : "calc(100% - 4px)",
+                      zIndex: 5 + hPos.columnIndex,
+                      borderRadius: 6,
+                      ...block.container,
+                    };
+                    const chromeClass = `absolute overflow-hidden text-left transition-all ${
+                      inProgress
+                        ? "ring-1 ring-amber-500/40 shadow-[0_0_0_1px_rgba(245,158,11,0.15)]"
+                        : "hover:brightness-[1.015]"
+                    } ${cancelled ? "line-through" : ""}`;
+                    const inner = (
+                      <>
+                        <div className="px-1.5 pt-1 pb-0.5 min-h-0 flex flex-col items-stretch text-left min-w-0 pointer-events-none">
                           <div className="flex items-center gap-0.5 min-w-0">
                             {ev.start && (
                               <span
@@ -335,12 +535,66 @@ export default function WeekView({
                         </div>
                         {height > 30 && ev.description ? (
                           <div
-                            className="px-1.5 pb-1 text-[9px] sm:text-[10px] leading-snug"
+                            className="px-1.5 pb-1 text-[9px] sm:text-[10px] leading-snug pointer-events-none"
                             style={{ color: block.subtleColor }}
                           >
-                            <span className="line-clamp-1">{ev.description}</span>
+                            <span className="line-clamp-1">
+                              {ev.description}
+                            </span>
                           </div>
                         ) : null}
+                      </>
+                    );
+
+                    if (canDrag) {
+                      return (
+                        <div
+                          key={ev.id}
+                          role="button"
+                          tabIndex={0}
+                          data-event-card="1"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onEventClick(ev);
+                            }
+                          }}
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            dragRef.current = {
+                              event: ev,
+                              startX: e.clientX,
+                              startY: e.clientY,
+                              isDragging: false,
+                            };
+                          }}
+                          className={`${chromeClass} cursor-grab active:cursor-grabbing ${
+                            isBeingDragged
+                              ? "opacity-35 pointer-events-none"
+                              : ""
+                          }`}
+                          style={posStyle}
+                        >
+                          {inner}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={ev.id}
+                        type="button"
+                        data-event-card="1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEventClick(ev);
+                        }}
+                        className={`${chromeClass} cursor-pointer`}
+                        style={posStyle}
+                      >
+                        {inner}
                       </button>
                     );
                   })}
@@ -381,6 +635,54 @@ export default function WeekView({
           })}
         </div>
       </div>
+
+      {draggingEvent && dragPos && (
+        <div
+          className="fixed z-[9999] pointer-events-none"
+          style={{ left: dragPos.x + 14, top: dragPos.y - 16 }}
+        >
+          <div
+            className="px-2.5 py-1.5 rounded-md text-[11px] font-bold max-w-[200px] truncate border"
+            style={{
+              borderLeft: `4px solid ${draggingEvent.color}`,
+              background: `${draggingEvent.color}cc`,
+              color: calendarPillForeground(draggingEvent).main,
+              borderColor: draggingEvent.color,
+            }}
+          >
+            {draggingEvent.name}
+            {draggingEvent.start && (
+              <span className="ml-1 opacity-70 font-normal">
+                {formatTime12(draggingEvent.start)}
+              </span>
+            )}
+          </div>
+          <div className="mt-0.5 text-[9px] pl-1">
+            {dropDayKey ? (
+              <span className="font-semibold text-green-500 dark:text-green-400">
+                Drop on day to reschedule
+              </span>
+            ) : (
+              <span className="text-[var(--tx3)] opacity-60">
+                {draggingEvent.type === "move_project_day" && dragLiveShift
+                  ? "Shift: shift every project day together"
+                  : draggingEvent.type === "move_project_day"
+                    ? "Shift+drop: all days · drop: this day only"
+                    : ""}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {rescheduling && (
+        <div className="fixed inset-0 z-[9998] pointer-events-none flex items-center justify-center">
+          <div className="bg-[var(--card)] border border-[var(--brd)] px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 text-[13px] font-semibold text-[var(--tx)]">
+            <div className="w-4 h-4 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
+            Saving…
+          </div>
+        </div>
+      )}
     </div>
   );
 }

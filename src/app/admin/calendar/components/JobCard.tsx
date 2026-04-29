@@ -1,5 +1,6 @@
 "use client";
 
+import type { DragEvent } from "react";
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { formatTime12 } from "@/lib/calendar/types";
 import {
@@ -16,10 +17,16 @@ interface Props {
   event: CalendarEvent;
   compact?: boolean;
   onClick?: (e: CalendarEvent) => void;
-  onDragStart?: (e: CalendarEvent) => void;
+  /** HTML5 drag: receives the drag event so DataTransfer can be set (month grid). */
+  onDragStart?: (e: DragEvent<HTMLButtonElement>, calEv: CalendarEvent) => void;
 }
 
-export default function JobCard({ event, compact, onClick, onDragStart }: Props) {
+export default function JobCard({
+  event,
+  compact,
+  onClick,
+  onDragStart,
+}: Props) {
   const dotColor = pillStatusDotColor(event.calendarStatus);
   const isCompleted = event.calendarStatus === "completed";
   const isCancelled = event.calendarStatus === "cancelled";
@@ -45,7 +52,7 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
         type="button"
         onClick={() => onClick?.(event)}
         draggable={!!onDragStart}
-        onDragStart={() => onDragStart?.(event)}
+        onDragStart={(e) => onDragStart?.(e, event)}
         className={`w-full text-left flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] truncate transition-all cursor-pointer hover:brightness-[1.02] active:scale-[0.99] ${
           isCompleted ? "opacity-80" : ""
         } ${isCancelled ? "line-through" : ""}`}
@@ -53,7 +60,9 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
       >
         <span
           className={`w-1.5 h-1.5 rounded-full shrink-0 ring-1 ${dotRing} ${isInProgress ? "animate-pulse" : ""}`}
-          style={{ backgroundColor: isCancelled ? "rgba(249,237,228,0.8)" : dotColor }}
+          style={{
+            backgroundColor: isCancelled ? "rgba(249,237,228,0.8)" : dotColor,
+          }}
         />
         <span
           className="truncate font-semibold"
@@ -62,7 +71,9 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
           {timeStr && (
             <span
               className="mr-1 font-medium"
-              style={{ color: isCancelled ? "rgba(249,237,228,0.75)" : fg.muted }}
+              style={{
+                color: isCancelled ? "rgba(249,237,228,0.75)" : fg.muted,
+              }}
             >
               {timeStr}
             </span>
@@ -78,7 +89,7 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
       type="button"
       onClick={() => onClick?.(event)}
       draggable={!!onDragStart}
-      onDragStart={() => onDragStart?.(event)}
+      onDragStart={(e) => onDragStart?.(e, event)}
       className={`w-full text-left p-2.5 rounded-lg transition-all cursor-pointer hover:brightness-[1.02] active:scale-[0.99] ${
         isCompleted ? "opacity-75" : ""
       } ${isCancelled ? "opacity-90" : ""}`}
@@ -87,7 +98,9 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
       <div className="flex items-center gap-1.5 mb-1">
         <span
           className={`w-2 h-2 rounded-full shrink-0 ring-1 ${dotRing} ${isInProgress ? "animate-pulse" : ""}`}
-          style={{ backgroundColor: isCancelled ? "rgba(249,237,228,0.85)" : dotColor }}
+          style={{
+            backgroundColor: isCancelled ? "rgba(249,237,228,0.85)" : dotColor,
+          }}
         />
         {timeStr && (
           <span
@@ -97,7 +110,10 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
             {timeStr}
           </span>
         )}
-        <span className="text-[8px] opacity-50" style={{ color: isCancelled ? "inherit" : fg.main }}>
+        <span
+          className="text-[8px] opacity-50"
+          style={{ color: isCancelled ? "inherit" : fg.main }}
+        >
           ·
         </span>
         <span
@@ -107,7 +123,10 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
           {event.name}
         </span>
         {event.isRecurring && (
-          <span className="ml-auto shrink-0 text-[8px] font-bold uppercase" style={tagStyle}>
+          <span
+            className="ml-auto shrink-0 text-[8px] font-bold uppercase"
+            style={tagStyle}
+          >
             RECURRING
           </span>
         )}
@@ -117,7 +136,9 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
         style={{ color: isCancelled ? "rgba(249,237,228,0.8)" : fg.muted }}
       >
         <span className="truncate">
-          {event.type === "delivery" ? event.description : toTitleCase(event.description)}
+          {event.type === "delivery"
+            ? event.description
+            : toTitleCase(event.description)}
         </span>
         {event.eventPhase && (
           <span className="shrink-0 font-bold uppercase" style={tagStyle}>
