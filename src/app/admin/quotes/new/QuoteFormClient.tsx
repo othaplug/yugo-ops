@@ -5045,7 +5045,7 @@ export default function QuoteFormClient({
       </div>
 
       {quoteHasDraft && (
-        <div className="mb-4">
+        <div className="mb-2">
           <DraftBanner
             onRestore={handleRestoreQuoteDraft}
             onDismiss={quoteDismissDraft}
