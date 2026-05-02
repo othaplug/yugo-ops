@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { isMoveIdUuid, getMoveDetailPath } from "@/lib/move-code";
 import MoveDetailClient from "./MoveDetailClient";
 import { canEditFinalJobPrice } from "@/lib/admin-can-edit-final-price";
+import { fetchMoveProjectWithTree } from "@/lib/move-projects/fetch";
 
 export const dynamic = "force-dynamic";
 
@@ -266,6 +267,25 @@ export default async function MoveDetailPage({
     ),
   );
 
+  const mpResidentialId = (move as { move_project_id?: string | null }).move_project_id;
+  let residentialMoveProject: {
+    project: Record<string, unknown>;
+    phases: { phase_name?: string | null; phase_type?: string | null; days?: Record<string, unknown>[] }[];
+  } | null = null;
+  if (typeof mpResidentialId === "string" && mpResidentialId.trim()) {
+    const mpRes = await fetchMoveProjectWithTree(db, mpResidentialId.trim());
+    if (!mpRes.error && mpRes.project && Array.isArray(mpRes.phases) && mpRes.phases.length > 0) {
+      residentialMoveProject = {
+        project: mpRes.project as Record<string, unknown>,
+        phases: mpRes.phases as {
+          phase_name?: string | null;
+          phase_type?: string | null;
+          days?: Record<string, unknown>[];
+        }[],
+      };
+    }
+  }
+
   return (
     <MoveDetailClient
       move={move}
@@ -286,6 +306,7 @@ export default async function MoveDetailPage({
       canEditPostCompletionPrice={canEditPostCompletionPrice}
       postCompletionPriceEdits={postCompletionPriceEdits ?? []}
       moveWaivers={moveWaivers}
+      residentialMoveProject={residentialMoveProject}
     />
   );
 }

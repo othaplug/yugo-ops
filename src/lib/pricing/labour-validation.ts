@@ -265,11 +265,13 @@ export function aggregateSpecialtySurchargesForLabourValidation(
     s += num(factors.crating_surcharge) + num(factors.climate_surcharge)
   }
   if (st === "white_glove") {
-    const wrapQty = num(factors.white_glove_wrap_qty)
-    const asmQty = num(factors.white_glove_assembly_qty)
-    const wrapEach = num(factors.white_glove_wrap_per_item)
-    const asmEach = num(factors.white_glove_assembly_per_item)
-    s += wrapQty * wrapEach + asmQty * asmEach + num(factors.white_glove_declared_value_premium)
+    s +=
+      num(factors.white_glove_assembly_total) +
+      num(factors.white_glove_debris_fee) +
+      num(factors.white_glove_declared_value_premium) +
+      num(factors.white_glove_guaranteed_window_fee) +
+      num(factors.white_glove_distance_surcharge) +
+      num(factors.white_glove_items_subtotal)
   }
   if (st === "b2b_delivery" || st === "b2b_oneoff") {
     s += num(factors.weight_surcharge)

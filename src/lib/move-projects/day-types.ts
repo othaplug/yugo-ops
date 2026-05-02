@@ -43,6 +43,24 @@ export function labelForDayType(dayType: string): string {
   return MOVE_DAY_STAGE_FLOW[dayType]?.label ?? "Move day";
 }
 
+/** Create Move planner defaults (admin form + DB seed overlap). */
+export const MOVE_DAY_FORM_DEFAULTS: Record<
+  string,
+  {
+    hours: number
+    crewSize: number
+    truckLabel: string
+    /** HH:MM (24h) for HTML time inputs */
+    startTime: string
+  }
+> = {
+  pack: { hours: 8, crewSize: 3, truckLabel: "", startTime: "08:00" },
+  move: { hours: 10, crewSize: 4, truckLabel: "26ft", startTime: "07:00" },
+  unpack: { hours: 8, crewSize: 3, truckLabel: "", startTime: "08:00" },
+  crating: { hours: 6, crewSize: 2, truckLabel: "", startTime: "08:00" },
+  volume: { hours: 10, crewSize: 4, truckLabel: "26ft", startTime: "07:00" },
+}
+
 /** Crew and calendar copy: human label for a move_project_days.current_stage value */
 const MOVE_PROJECT_STAGE_LABELS: Record<string, string> = (() => {
   const m: Record<string, string> = {};

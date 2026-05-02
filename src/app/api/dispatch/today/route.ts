@@ -9,6 +9,7 @@ import {
   runMoveCompletionFollowUp,
   runDeliveryCompletionFollowUp,
 } from "@/lib/moves/complete-move-job";
+import { displayLabelForMoveProjectStage } from "@/lib/move-projects/day-types";
 
 export const dynamic = "force-dynamic";
 
@@ -222,6 +223,73 @@ export async function GET(req: NextRequest) {
     if (dFresh) deliveriesList = dFresh;
   }
 
+  const MOVE_DISPATCH_SELECT =
+    "id, move_code, crew_id, client_name, client_phone, client_email, tier_selected, from_address, to_address, from_lat, from_lng, to_lat, to_lng, scheduled_date, preferred_time, arrival_window, status, stage, eta_current_minutes, updated_at, completed_at";
+
+  const projectDayByMoveId = new Map<
+    string,
+    { dayNumber: number; totalDays: number; kind: string; currentStage: string | null }
+  >();
+
+  try {
+    const { data: mpd } = await admin
+      .from("move_project_days")
+      .select("move_id, day_number, day_type, label, status, current_stage, move_projects(total_days)")
+      .eq("date", targetDate)
+      .neq("status", "cancelled");
+    const idsFromProjectDays = new Set<string>();
+    for (const r of mpd || []) {
+      const mid = r.move_id ? String(r.move_id) : "";
+      if (!mid) continue;
+      idsFromProjectDays.add(mid);
+      const mj = r.move_projects as unknown;
+      let totalDays = 1;
+      if (mj && typeof mj === "object" && !Array.isArray(mj) && "total_days" in mj) {
+        const v = Number((mj as { total_days?: number }).total_days);
+        if (Number.isFinite(v)) totalDays = Math.max(1, v);
+      } else if (
+        Array.isArray(mj) &&
+        mj[0] &&
+        typeof mj[0] === "object" &&
+        "total_days" in mj[0]
+      ) {
+        const v = Number((mj[0] as { total_days?: number }).total_days);
+        if (Number.isFinite(v)) totalDays = Math.max(1, v);
+      }
+      const dn = Number(r.day_number);
+      const dayNum = Number.isFinite(dn) ? Math.max(1, dn) : 1;
+      const kind = String(r.day_type || "move").toLowerCase().trim();
+      const curSt =
+        typeof r.current_stage === "string" && r.current_stage.trim()
+          ? r.current_stage.trim()
+          : null;
+      projectDayByMoveId.set(mid, { dayNumber: dayNum, totalDays, kind, currentStage: curSt });
+    }
+    const missingOnBoard = [...idsFromProjectDays].filter(
+      (id) => !movesList.some((m) => m.id === id),
+    );
+    if (missingOnBoard.length > 0) {
+      const { data: extraMoves, error: exErr } = await admin
+        .from("moves")
+        .select(MOVE_DISPATCH_SELECT)
+        .in("id", missingOnBoard)
+        .neq("status", "cancelled");
+      if (exErr) console.error("[dispatch/today] extra moves fetch:", exErr.message);
+      movesList = movesList.concat(extraMoves ?? []);
+    }
+  } catch (e) {
+    console.error("[dispatch/today] multi-day dispatch merge:", e);
+  }
+
+  {
+    const seenMv = new Set<string>();
+    movesList = movesList.filter((m) => {
+      if (seenMv.has(m.id)) return false;
+      seenMv.add(m.id);
+      return true;
+    });
+  }
+
   const membersByTeam = new Map<string, string[]>();
   for (const m of crewMembers || []) {
     const list = membersByTeam.get(m.team_id) || [];
@@ -290,6 +358,7 @@ export async function GET(req: NextRequest) {
     clientPhone?: string | null;
     clientEmail?: string | null;
     tier?: string;
+    projectDayNote?: string;
     partnerName?: string;
     fromAddress: string;
     toAddress: string;
@@ -366,6 +435,33 @@ export async function GET(req: NextRequest) {
     const displayStageMove = COMPLETED_STATUSES.includes(moveStatusLc)
       ? "completed"
       : m.stage || null;
+    const projDay = projectDayByMoveId.get(m.id);
+    let projectDayNote: string | undefined;
+    if (projDay && projDay.totalDays > 1) {
+      const kt = projDay.kind;
+      const role =
+        kt === "move"
+          ? "Move"
+          : kt === "pack"
+            ? "Pack"
+            : kt === "unpack"
+              ? "Unpack"
+              : kt === "crating"
+                ? "Crating"
+                : kt === "volume"
+                  ? "Volume"
+                  : kt.length > 0
+                    ? kt.charAt(0).toUpperCase() + kt.slice(1)
+                    : "Move";
+      projectDayNote = `${role} day (Day ${projDay.dayNumber} / ${projDay.totalDays})`;
+    }
+    let stageLine = stageLabel(effectiveStatusNorm || "", displayStageMove, "move");
+    if (projDay && projDay.totalDays > 1 && projDay.currentStage) {
+      const friendly = displayLabelForMoveProjectStage(projDay.currentStage);
+      if (friendly) {
+        stageLine = `${friendly} (project day ${projDay.dayNumber} / ${projDay.totalDays})`;
+      }
+    }
     jobs.push({
       id: m.id,
       type: "move",
@@ -374,6 +470,7 @@ export async function GET(req: NextRequest) {
       clientPhone: m.client_phone || null,
       clientEmail: m.client_email || null,
       tier: m.tier_selected || undefined,
+      projectDayNote,
       fromAddress: m.from_address || "",
       toAddress: m.to_address || "",
       scheduledTime: m.preferred_time || m.arrival_window || null,
@@ -389,7 +486,7 @@ export async function GET(req: NextRequest) {
       toLng: m.to_lng != null ? Number(m.to_lng) : null,
       href: getMoveDetailPath(m),
       progress: progressFromStage(effectiveStatusNorm || "", displayStageMove),
-      currentStageLabel: stageLabel(effectiveStatusNorm || "", displayStageMove, "move"),
+      currentStageLabel: stageLine,
       updatedAt: m.updated_at || null,
     });
   }

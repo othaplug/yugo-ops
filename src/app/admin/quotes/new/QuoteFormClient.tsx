@@ -65,17 +65,15 @@ import {
 } from "./b2b-one-off-ui";
 import SpecialtyTransportQuoteBuilder from "./SpecialtyTransportQuoteBuilder";
 import MoveScopeSection from "./MoveScopeSection";
-import MoveProjectPlannerSection, {
-  buildDefaultMoveProjectPayload,
-} from "./MoveProjectPlannerSection";
+import {
+  WhiteGloveItemsEditor,
+  createDefaultWhiteGloveItem,
+  type WhiteGloveItemRow,
+} from "@/components/admin/WhiteGloveItemsEditor";
+import { computeWhiteGlovePricingBreakdown } from "@/lib/quotes/white-glove-pricing";
+import OfficeMoveScopeSection from "./OfficeMoveScopeSection";
 import BuildingProfileQuoteAlert from "./BuildingProfileQuoteAlert";
 import type { BuildingAccessFlag } from "@/lib/buildings/types";
-import {
-  describeAutoProjectModeReason,
-  moveProjectPlannerAutoQualifies,
-  shouldShowMoveProjectPlanner,
-} from "@/lib/move-projects/visibility";
-import type { MoveProjectPayload } from "@/lib/move-projects/schema";
 import type { ProjectQuoteBreakdown } from "@/lib/move-projects/residential-project-quote-lines";
 import type { LabourValidationResult } from "@/lib/pricing/labour-validation";
 import B2BJobsDeliveryForm, {
@@ -607,6 +605,10 @@ const ITEM_CATEGORIES = [
   { value: "fragile_specialty", label: "Fragile (art, antique, glass)" },
   { value: "multiple_2_to_5", label: "Multiple (2–5 items)" },
 ];
+
+const SINGLE_ITEM_CATEGORIES = ITEM_CATEGORIES.filter(
+  (c) => c.value !== "multiple_2_to_5",
+);
 
 const WEIGHT_CLASSES = [
   "Under 50 lbs",
@@ -1238,15 +1240,21 @@ export default function QuoteFormClient({
   const buildingElevatorPanelClass = isV2
     ? "rounded-lg border border-line bg-accent-subtle/50 px-3 py-3 space-y-2"
     : "rounded-lg border border-[var(--brd)] bg-[#F9F0E8] px-3 py-3 space-y-2";
-  const multiDayCalloutClass = isV2
-    ? "mt-3 rounded-lg border border-line bg-accent-subtle/35 px-3 py-2.5"
-    : "mt-3 rounded-lg border border-[var(--brd)]/80 bg-[#F9EDE4]/90 px-3 py-2.5";
-  const multiDayTitleClass = isV2
-    ? "text-[11px] font-semibold text-fg"
-    : "text-[11px] font-semibold text-[#2B0416]";
   const eventQuickAddBtnClass = isV2
     ? "inline-flex items-center rounded-md border border-line px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-fg hover:bg-accent/10"
     : "inline-flex items-center rounded-md border border-[#2C3E2D]/35 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-[var(--tx)] hover:bg-[#2C3E2D]/8";
+  const addressSectionHeadingClass = isV2
+    ? "text-[11px] font-bold tracking-[0.12em] uppercase text-fg"
+    : "text-[11px] font-bold tracking-[0.12em] uppercase text-[var(--tx2)]";
+  const addressStopTitleClass = isV2
+    ? "text-[10px] font-bold uppercase tracking-[0.12em] text-fg-subtle"
+    : "text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx2)]";
+  const addressMicroLabelClass = isV2
+    ? "block text-[9px] font-bold uppercase tracking-[0.1em] text-fg-subtle mb-1"
+    : "block text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)] mb-1";
+  const addressUnitPlaceholderClass = isV2
+    ? "flex min-h-[38px] items-center rounded-md border border-dashed border-line/70 bg-surface-sunken/40 px-2.5 text-[11px] text-fg-subtle"
+    : "flex min-h-[38px] items-center rounded-md border border-dashed border-[var(--brd)]/60 bg-[var(--card)]/50 px-2.5 text-[11px] text-[var(--tx3)]";
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -1479,6 +1487,17 @@ export default function QuoteFormClient({
 
   // White glove
   const [declaredValue, setDeclaredValue] = useState("");
+  const [whiteGloveItemRows, setWhiteGloveItemRows] = useState<
+    WhiteGloveItemRow[]
+  >([]);
+  const [wgGuaranteedWindow, setWgGuaranteedWindow] = useState(false);
+  const [wgGuaranteedWindowHours, setWgGuaranteedWindowHours] = useState<
+    2 | 3 | 4
+  >(2);
+  const [wgDebrisRemoval, setWgDebrisRemoval] = useState(false);
+  const [wgBuildingReqs, setWgBuildingReqs] = useState<string[]>([]);
+  const [wgBuildingNote, setWgBuildingNote] = useState("");
+  const [wgDeliveryInstructions, setWgDeliveryInstructions] = useState("");
 
   // Specialty (dedicated item move)
   const [specialtyType, setSpecialtyType] = useState("");
@@ -1945,19 +1964,20 @@ export default function QuoteFormClient({
   const [referralMsg, setReferralMsg] = useState("");
   const [referralDiscount, setReferralDiscount] = useState(0);
 
-  const [multiDayEnabled, setMultiDayEnabled] = useState(false);
-  /** When true, hides the planner even if size/tier would auto-qualify (user can turn off). */
-  const [multiDayPlannerOptOut, setMultiDayPlannerOptOut] = useState(false);
+  const [savedMoveProjectId, setSavedMoveProjectId] = useState<string | null>(
+    null,
+  );
+
+  /** Office move scope strip (replacing Generate Quote planner). */
+  const [officeMoveScopeDaysOverride, setOfficeMoveScopeDaysOverride] =
+    useState<number | null>(null);
+  const [officeScopeAdditionalMoveDay, setOfficeScopeAdditionalMoveDay] =
+    useState(false);
   /** Coordinator override for quotes.estimated_days (local / long-distance scope flow). */
   const [moveScopeDaysOverride, setMoveScopeDaysOverride] = useState<number | null>(
     null,
   );
-  const [moveProjectPayload, setMoveProjectPayload] =
-    useState<MoveProjectPayload | null>(null);
-  const [savedMoveProjectId, setSavedMoveProjectId] = useState<string | null>(
-    null,
-  );
-  const moveProjectSeededRef = useRef(false);
+  const [moveScopeExtraVolumeDay, setMoveScopeExtraVolumeDay] = useState(false);
 
   // Draft auto-save
   const quoteDraftState = useMemo(
@@ -2340,174 +2360,42 @@ export default function QuoteFormClient({
   const extraDropoffStopCount = extraToStops.filter((s) =>
     s.address.trim(),
   ).length;
-  const plannerAutoQualifies = useMemo(
-    () =>
-      moveProjectPlannerAutoQualifies({
-        serviceType,
-        moveSize,
-        recommendedTier,
-        workstationCount: workstationCountN,
-        extraPickupStopCount,
-        extraDropoffStopCount,
-      }),
-    [
-      serviceType,
-      moveSize,
-      recommendedTier,
-      workstationCountN,
-      extraPickupStopCount,
-      extraDropoffStopCount,
-    ],
-  );
 
-  const autoProjectModeReason = useMemo(
-    () =>
-      describeAutoProjectModeReason({
-        serviceType,
-        moveSize,
-        recommendedTier,
-        extraPickupStopCount,
-        extraDropoffStopCount,
-      }),
-    [
-      serviceType,
-      moveSize,
-      recommendedTier,
-      extraPickupStopCount,
-      extraDropoffStopCount,
-    ],
-  );
-
-  const showMoveProjectPlanner = useMemo(
-    () =>
-      multiDayPlannerOptOut
-        ? false
-        : shouldShowMoveProjectPlanner({
-            serviceType,
-            moveSize,
-            recommendedTier,
-            multiDayEnabled,
-            workstationCount: workstationCountN,
-            extraPickupStopCount,
-            extraDropoffStopCount,
-          }),
-    [
-      multiDayPlannerOptOut,
-      serviceType,
-      moveSize,
-      recommendedTier,
-      multiDayEnabled,
-      workstationCountN,
-      extraPickupStopCount,
-      extraDropoffStopCount,
-    ],
-  );
-  const movePlannerVisible = showMoveProjectPlanner;
-
-  const handleMultiDayPlannerCheckboxChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const wantOn = e.target.checked;
-      if (wantOn) {
-        setMultiDayPlannerOptOut(false);
-        if (!plannerAutoQualifies) {
-          setMultiDayEnabled(true);
-        }
-      } else {
-        setMultiDayEnabled(false);
-        setMultiDayPlannerOptOut(true);
-      }
-    },
-    [plannerAutoQualifies],
-  );
-
-  useEffect(() => {
-    if (serviceType !== "office_move") return;
-    if (!movePlannerVisible) {
-      moveProjectSeededRef.current = false;
-      setMoveProjectPayload(null);
-      return;
+  const handleMoveScopeToggleMultiPickup = useCallback((want: boolean) => {
+    if (want) {
+      setExtraFromStops((prev) => (prev.length === 0 ? [{ address: "" }] : prev));
+    } else {
+      setExtraFromStops([]);
     }
-    if (moveProjectPayload) return;
-    if (moveProjectSeededRef.current) return;
-    moveProjectSeededRef.current = true;
-    const nm = [firstName, lastName].filter(Boolean).join(" ");
-    setMoveProjectPayload(
-      buildDefaultMoveProjectPayload({
-        clientName: nm,
-        fromAddress,
-        toAddress,
-        fromAccess,
-        toAccess,
-        moveDate,
-        serviceType,
-        workstationCount: workstationCountN,
-        companyName: b2bBusinessName,
-        officeEstHours,
-      }),
+  }, []);
+
+  const handleMoveScopeToggleMultiDelivery = useCallback((want: boolean) => {
+    if (want) {
+      setExtraToStops((prev) => (prev.length === 0 ? [{ address: "" }] : prev));
+    } else {
+      setExtraToStops([]);
+    }
+  }, []);
+
+  const officeTimingAfterHoursHint = useMemo(() => {
+    const t = (timingPref || "").toLowerCase();
+    return (
+      t.includes("evening") ||
+      t.includes("night") ||
+      t.includes("weekend")
     );
-  }, [
-    serviceType,
-    movePlannerVisible,
-    moveProjectPayload,
-    firstName,
-    lastName,
-    fromAddress,
-    toAddress,
-    fromAccess,
-    toAccess,
-    moveDate,
-    workstationCountN,
-    b2bBusinessName,
-    officeEstHours,
-  ]);
+  }, [timingPref]);
 
-  const moveProjectStopsSyncSig = useRef<string>("");
   useEffect(() => {
-    if (serviceType !== "office_move") return;
-    if (!movePlannerVisible) {
-      moveProjectStopsSyncSig.current = "";
-      return;
-    }
-    const pickups = pickupAddressList;
-    const drops = dropAddressList;
-    if (pickups.length === 0 || drops.length === 0) return;
-    const sig = `${pickups.join("|")}::${drops.join("|")}::${fromAccess}::${toAccess}::${moveDate}`;
-    if (moveProjectStopsSyncSig.current === sig) return;
-    moveProjectStopsSyncSig.current = sig;
-    setMoveProjectPayload((prev) => {
-      if (!prev) return prev;
-      const nextOrigins = pickups.map((address, i) => ({
-        ...(prev.origins[i] ?? {}),
-        address,
-        ...(i === 0 ? { access: fromAccess } : {}),
-        label:
-          prev.origins[i]?.label?.trim() ||
-          (i === 0 ? "Primary pickup" : `Pickup ${i + 1}`),
-      }));
-      const nextDest = drops.map((address, i) => ({
-        ...(prev.destinations[i] ?? {}),
-        address,
-        ...(i === 0 ? { access: toAccess } : {}),
-        label:
-          prev.destinations[i]?.label?.trim() ||
-          (i === 0 ? "Primary drop-off" : `Drop-off ${i + 1}`),
-      }));
-      return {
-        ...prev,
-        origins: nextOrigins,
-        destinations: nextDest,
-        start_date: moveDate || prev.start_date,
-      };
-    });
-  }, [
-    serviceType,
-    movePlannerVisible,
-    pickupAddressList,
-    dropAddressList,
-    fromAccess,
-    toAccess,
-    moveDate,
-  ]);
+    if (serviceType === "office_move") return;
+    setOfficeMoveScopeDaysOverride(null);
+    setOfficeScopeAdditionalMoveDay(false);
+  }, [serviceType]);
+
+  useEffect(() => {
+    if (serviceType !== "single_item") return;
+    if (itemCategory === "multiple_2_to_5") setItemCategory("standard_furniture");
+  }, [serviceType, itemCategory]);
 
   useEffect(() => {
     if (!multiPickupInventoryMode) {
@@ -2538,20 +2426,8 @@ export default function QuoteFormClient({
     );
   }, [inventoryLinesForScore, clientBoxCountNum, inventoryScore]);
 
-  const inventoryScoresByOrigin = useMemo(
-    () =>
-      perPickupInventory.map((g) =>
-        g.reduce((s, i) => s + residentialInventoryLineScore(i), 0),
-      ),
-    [perPickupInventory],
-  );
-
   useEffect(() => {
-    if (
-      serviceType !== "local_move" &&
-      serviceType !== "long_distance" &&
-      serviceType !== "white_glove"
-    ) {
+    if (serviceType !== "local_move" && serviceType !== "long_distance") {
       return;
     }
     if (inventoryItems.length === 0) return;
@@ -3240,7 +3116,7 @@ export default function QuoteFormClient({
   }, [serviceType, toAccess, fromAccess]);
 
   useEffect(() => {
-    if (serviceType !== "specialty") {
+    if (serviceType !== "specialty" && serviceType !== "white_glove") {
       setSpecialtyRouteKm(null);
       return;
     }
@@ -3273,6 +3149,19 @@ export default function QuoteFormClient({
     return () => clearTimeout(handle);
   }, [serviceType, fromAddress, toAddress]);
 
+  const wgPrevServiceTypeRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (
+      serviceType === "white_glove" &&
+      wgPrevServiceTypeRef.current !== "white_glove"
+    ) {
+      setWhiteGloveItemRows((rows) =>
+        rows.length > 0 ? rows : [createDefaultWhiteGloveItem()],
+      );
+    }
+    wgPrevServiceTypeRef.current = serviceType;
+  }, [serviceType]);
+
   // ── Add-on subtotal ───────────────────────
   const addonSubtotal = useMemo(() => {
     let total = 0;
@@ -3296,6 +3185,8 @@ export default function QuoteFormClient({
     }
     return total;
   }, [selectedAddons, allAddons]);
+
+  const configMap = useMemo(() => new Map(Object.entries(config)), [config]);
 
   /** Specialty suggested $ range: base band × weight + distance (Mapbox) + crane/climate/crating */
   const specialtyLivePreview = useMemo(() => {
@@ -3340,6 +3231,74 @@ export default function QuoteFormClient({
     cratingItems,
   ]);
 
+  const whiteGloveLivePreview = useMemo(() => {
+    if (serviceType !== "white_glove") return null;
+    const items = whiteGloveItemRows
+      .filter((r) => r.description.trim())
+      .map((r) => ({
+        description: r.description.trim(),
+        quantity: r.quantity,
+        category: r.category,
+        weight_class: r.weight_class,
+        assembly: r.assembly,
+        is_fragile: r.is_fragile,
+        is_high_value: r.is_high_value,
+        notes: r.notes,
+      }));
+    if (items.length === 0) return null;
+    const parkingRates = parseCfgJson<Record<string, number>>(
+      config,
+      "parking_surcharges",
+      {
+        dedicated: 0,
+        street: 0,
+        no_dedicated: 75,
+      },
+    );
+    const lc = cfgNum(config, "long_carry_surcharge", 75);
+    const plcTotal =
+      (parkingRates[fromParking] ?? 0) +
+      (parkingRates[toParking] ?? 0) +
+      (fromLongCarry ? lc : 0) +
+      (toLongCarry ? lc : 0);
+    const bd = computeWhiteGlovePricingBreakdown(configMap, items, {
+      distKm: specialtyRouteKm ?? 0,
+      fromAccessCharge: 0,
+      toAccessCharge: 0,
+      parkingLongCarryTotal: plcTotal,
+      declaredValue: Number(declaredValue) || 0,
+      debrisRemoval: wgDebrisRemoval,
+      guaranteedNarrowWindowhours: wgGuaranteedWindow
+        ? wgGuaranteedWindowHours
+        : null,
+      truckType: "sprinter",
+    });
+    const taxR = cfgNum(config, "tax_rate", TAX_RATE);
+    const tax = Math.round(bd.subtotalPreTax * taxR * 100) / 100;
+    return {
+      bd,
+      tax,
+      total: bd.subtotalPreTax + tax,
+      distKm: specialtyRouteKm,
+      distLoading: specialtyRouteLoading,
+    };
+  }, [
+    serviceType,
+    whiteGloveItemRows,
+    config,
+    configMap,
+    fromParking,
+    toParking,
+    fromLongCarry,
+    toLongCarry,
+    declaredValue,
+    wgDebrisRemoval,
+    wgGuaranteedWindow,
+    wgGuaranteedWindowHours,
+    specialtyRouteKm,
+    specialtyRouteLoading,
+  ]);
+
   // ── Quick optimistic estimate — updates on ANY pricing-relevant change ──────
   const liveEstimate = useMemo(
     () =>
@@ -3366,8 +3325,6 @@ export default function QuoteFormClient({
       moveDate,
     ],
   );
-
-  const configMap = useMemo(() => new Map(Object.entries(config)), [config]);
 
   useEffect(() => {
     if (serviceType !== "bin_rental") return;
@@ -4154,26 +4111,44 @@ export default function QuoteFormClient({
           singleItemSpecialHandling.trim() || undefined;
       }
       if (serviceType === "white_glove") {
-        base.move_size = moveSize || undefined;
-        base.item_description = itemDescription.trim() || undefined;
-        base.item_category = itemCategory;
-        base.item_weight_class = itemWeight || undefined;
+        const items = whiteGloveItemRows
+          .filter((r) => r.description.trim())
+          .map((r) => ({
+            description: r.description.trim(),
+            quantity: r.quantity,
+            category: r.category,
+            weight_class: r.weight_class,
+            assembly: r.assembly,
+            is_fragile: r.is_fragile,
+            is_high_value: r.is_high_value,
+            notes: r.notes?.trim() || undefined,
+          }));
+        base.white_glove_items = items.length > 0 ? items : undefined;
         base.declared_value = Number(declaredValue) || undefined;
-        base.stair_carry = stairCarry;
-        base.stair_flights = stairFlights;
-        if (multiPickupInventoryMode && perPickupInventory.length > 0) {
-          base.inventory_items = perPickupInventory.flatMap((items, idx) =>
-            items.map((it) => inventoryItemToPayload(it, idx)),
-          );
-        } else if (inventoryItems.length > 0) {
-          base.inventory_items = inventoryItems.map((i) =>
-            inventoryItemToPayload(i),
+        if (wgDebrisRemoval) base.white_glove_debris_removal = true;
+        if (
+          wgGuaranteedWindow &&
+          wgGuaranteedWindowHours != null &&
+          Number(wgGuaranteedWindowHours) > 0
+        ) {
+          base.white_glove_guaranteed_window_hours = Number(
+            wgGuaranteedWindowHours,
           );
         }
-        base.client_box_count =
-          clientBoxCount !== "" && clientBoxCount != null
-            ? Number(clientBoxCount)
-            : 0;
+        if (wgBuildingReqs.length > 0) {
+          base.specialty_building_requirements = wgBuildingReqs;
+        }
+        if (wgBuildingNote.trim()) {
+          base.white_glove_building_requirements_note = wgBuildingNote.trim();
+        }
+        if (wgDeliveryInstructions.trim()) {
+          base.white_glove_delivery_instructions =
+            wgDeliveryInstructions.trim();
+        }
+        if (fromLat != null && Number.isFinite(fromLat)) base.from_lat = fromLat;
+        if (fromLng != null && Number.isFinite(fromLng)) base.from_lng = fromLng;
+        if (toLat != null && Number.isFinite(toLat)) base.to_lat = toLat;
+        if (toLng != null && Number.isFinite(toLng)) base.to_lng = toLng;
       }
       if (serviceType === "specialty") {
         base.project_type = specialtyType || "other";
@@ -4434,26 +4409,16 @@ export default function QuoteFormClient({
       if (opts?.serviceAreaOverride || serviceAreaOverride)
         base.service_area_override = true;
 
-      const plannerActive =
-        movePlannerVisible &&
-        !!moveProjectPayload &&
-        serviceType === "office_move";
-
-      if (plannerActive && moveProjectPayload) {
-        const pid = moveProjectPayload.id ?? savedMoveProjectId ?? undefined;
-        base.move_project = pid
-          ? { ...moveProjectPayload, id: pid }
-          : { ...moveProjectPayload };
-      } else if (
-        savedMoveProjectId &&
-        (serviceType === "office_move" || serviceType === "white_glove")
-      ) {
+      if (savedMoveProjectId && serviceType === "office_move") {
         base.clear_move_project = true;
       }
 
       if (serviceType === "local_move" || serviceType === "long_distance") {
         base.move_scope = {
           estimated_days_override: moveScopeDaysOverride ?? undefined,
+          optional_additional_volume_day: moveScopeExtraVolumeDay
+            ? true
+            : undefined,
         };
       }
 
@@ -4597,10 +4562,16 @@ export default function QuoteFormClient({
       binDeliveryNotes,
       binInternalNotes,
       moveScopeDaysOverride,
-      movePlannerVisible,
-      moveProjectPayload,
+      moveScopeExtraVolumeDay,
       savedMoveProjectId,
       widgetRequestIdParam,
+      whiteGloveItemRows,
+      wgDebrisRemoval,
+      wgGuaranteedWindow,
+      wgGuaranteedWindowHours,
+      wgBuildingReqs,
+      wgBuildingNote,
+      wgDeliveryInstructions,
     ],
   );
 
@@ -4709,6 +4680,16 @@ export default function QuoteFormClient({
       );
       return;
     }
+    if (serviceType === "white_glove") {
+      const hasItem = whiteGloveItemRows.some((r) => r.description.trim());
+      if (!hasItem) {
+        toast(
+          "Add at least one delivery item with a description.",
+          "alertTriangle",
+        );
+        return;
+      }
+    }
     if (
       (serviceType === "local_move" || serviceType === "long_distance") &&
       !moveSize.trim()
@@ -4754,12 +4735,6 @@ export default function QuoteFormClient({
       setSavedMoveProjectId(
         typeof data.move_project_id === "string" ? data.move_project_id : null,
       );
-      if (typeof data.move_project_id === "string" && moveProjectPayload) {
-        setMoveProjectPayload((prev) =>
-          prev ? { ...prev, id: data.move_project_id } : prev,
-        );
-      }
-      setB2bSubmitErrors({});
       quoteClearDraft();
       toast(`Quote ${id} generated`, "check");
 
@@ -5196,11 +5171,7 @@ export default function QuoteFormClient({
           className={`flex flex-col transition-all duration-300 w-full max-w-none min-w-0 ${previewOpen ? "min-[480px]:w-[60%]" : "min-[480px]:w-full"}`}
         >
           <div
-            className={
-              isV2
-                ? "mb-6 border-b border-line/80 pb-6"
-                : "mb-6 pb-6 border-b border-[var(--brd)]/70"
-            }
+            className="mb-6 pb-6"
           >
             <p
               className={
@@ -5773,7 +5744,7 @@ export default function QuoteFormClient({
                 </div>
 
               {/* ── Referral Code ── */}
-                <div className="border-t border-[var(--brd)]/30 pt-4 pb-1">
+                <div className="pt-6 pb-1">
                   <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-3">
                     Referral Code
                   </h3>
@@ -5815,8 +5786,8 @@ export default function QuoteFormClient({
               <div className="mt-8 pt-2 sm:mt-10" aria-hidden />
 
               {/* ── 3. Addresses ── */}
-              <div className="space-y-3">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+              <div className="space-y-6">
+                  <h3 className={addressSectionHeadingClass}>
                     {serviceType === "event" && eventMulti
                       ? "Addresses (per event below)"
                       : serviceType === "event"
@@ -5941,151 +5912,401 @@ export default function QuoteFormClient({
                   {serviceType !== "labour_only" &&
                     !(serviceType === "event" && eventMulti) &&
                     serviceType !== "bin_rental" && (
-                      <div className="flex max-w-4xl flex-col gap-3 sm:flex-row sm:items-end">
-                        <div className="min-w-0 w-full flex-1">
-                          <MultiStopAddressField
-                            label={
-                              serviceType === "event"
-                                ? "Origin Address *"
-                                : "From"
-                            }
-                            labelVisibility={
-                              serviceType === "event" ? "visible" : "sr-only"
-                            }
-                            placeholder={
-                              serviceType === "event"
-                                ? "Where items come from (office/warehouse/home)"
+                      <div className="max-w-4xl space-y-3">
+                        <p className={addressStopTitleClass}>
+                          {serviceType === "event"
+                            ? "Origin"
+                            : serviceType === "white_glove"
+                              ? "Pickup location"
+                              : "From"}
+                        </p>
+                        <MultiStopAddressField
+                          label={
+                            serviceType === "event"
+                              ? "Origin Address *"
+                              : "From"
+                          }
+                          labelVisibility="sr-only"
+                          placeholder={
+                            serviceType === "event"
+                              ? "Where items come from (office/warehouse/home)"
+                              : serviceType === "white_glove"
+                                ? "Pickup location*"
                                 : "From address*"
-                            }
-                            stops={[
-                              { address: fromAddress },
-                              ...extraFromStops,
-                            ]}
-                            onChange={(stops) => {
-                              const p = stops[0];
-                              setFromAddress(p?.address ?? "");
-                              setFromLat(p?.lat ?? null);
-                              setFromLng(p?.lng ?? null);
-                              setExtraFromStops(stops.slice(1));
-                            }}
-                            inputClassName={fieldInput}
-                          />
-                        </div>
-                        <div
-                          className={`transition-all duration-200 ease-out overflow-hidden shrink-0 ${
-                            ["elevator", "concierge", "loading_dock"].includes(fromAccess)
-                              ? "max-h-[60px] opacity-100 w-full sm:w-[88px]"
-                              : "max-h-0 opacity-0 pointer-events-none w-full sm:w-0"
-                          }`}
-                        >
-                          <label htmlFor="quote-from-unit" className="sr-only">
-                            Unit or suite
+                          }
+                          stops={[
+                            { address: fromAddress },
+                            ...extraFromStops,
+                          ]}
+                          onChange={(stops) => {
+                            const p = stops[0];
+                            setFromAddress(p?.address ?? "");
+                            setFromLat(p?.lat ?? null);
+                            setFromLng(p?.lng ?? null);
+                            setExtraFromStops(stops.slice(1));
+                          }}
+                          inputClassName={fieldInput}
+                        />
+                        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4">
+                          <div className="w-full min-w-0 sm:w-[7.25rem] sm:shrink-0">
+                            <label
+                              htmlFor={
+                                ["elevator", "concierge", "loading_dock"].includes(
+                                  fromAccess,
+                                )
+                                  ? "quote-from-unit"
+                                  : "quote-from-unit-ph"
+                              }
+                              className={addressMicroLabelClass}
+                            >
+                              Unit
+                            </label>
+                            {["elevator", "concierge", "loading_dock"].includes(
+                              fromAccess,
+                            ) ? (
+                              <input
+                                id="quote-from-unit"
+                                type="text"
+                                value={fromUnit}
+                                onChange={(e) => setFromUnit(e.target.value)}
+                                placeholder="e.g. 1201"
+                                className={fieldInput}
+                                aria-label="Origin unit or suite"
+                              />
+                            ) : (
+                              <div
+                                id="quote-from-unit-ph"
+                                className={addressUnitPlaceholderClass}
+                                role="status"
+                              >
+                                Not required for this access type
+                              </div>
+                            )}
+                          </div>
+                          <div className="w-full min-w-0 sm:w-[11rem] sm:max-w-[13rem] sm:shrink-0">
+                            <label
+                              htmlFor="quote-from-access"
+                              className={addressMicroLabelClass}
+                            >
+                              Access
+                            </label>
+                            <select
+                              id="quote-from-access"
+                              value={fromAccess}
+                              onChange={(e) => setFromAccess(e.target.value)}
+                              className={accessSelectClass}
+                              aria-label="From access"
+                            >
+                              {ACCESS_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {o.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="w-full min-w-0 sm:min-w-[12rem] sm:max-w-[20rem] sm:flex-1">
+                            <label
+                              htmlFor="quote-from-parking"
+                              className={addressMicroLabelClass}
+                            >
+                              Parking
+                            </label>
+                            <select
+                              id="quote-from-parking"
+                              value={fromParking}
+                              onChange={(e) =>
+                                setFromParking(
+                                  e.target.value as
+                                    | "dedicated"
+                                    | "street"
+                                    | "no_dedicated",
+                                )
+                              }
+                              className={fieldInput}
+                              aria-label="From address parking"
+                            >
+                              {PARKING_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {o.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <label className="mt-1 flex w-full min-w-full cursor-pointer items-center gap-2 text-[12px] text-[var(--tx2)] basis-full sm:mt-2">
+                            <input
+                              type="checkbox"
+                              checked={fromLongCarry}
+                              onChange={(e) =>
+                                setFromLongCarry(e.target.checked)
+                              }
+                              className={checkboxAccentClass}
+                            />
+                            {serviceType === "white_glove"
+                              ? "Pickup location: Long carry (50m+ from truck to entrance) (+$75)"
+                              : "From address: Long carry (50m+ from truck to entrance) (+$75)"}
                           </label>
-                          <input
-                            id="quote-from-unit"
-                            type="text"
-                            value={fromUnit}
-                            onChange={(e) => setFromUnit(e.target.value)}
-                            placeholder="Unit"
-                            className={fieldInput}
-                            tabIndex={
-                              ["elevator", "concierge", "loading_dock"].includes(
-                                fromAccess,
-                              )
-                                ? 0
-                                : -1
-                            }
-                            aria-label="Origin unit or suite"
-                          />
                         </div>
-                        <div className="w-full shrink-0 sm:w-[150px]">
+                      </div>
+                    )}
+                  {serviceType === "event" &&
+                    !eventMulti && (
+                      <div className="max-w-4xl space-y-3">
+                        <p className={addressStopTitleClass}>
+                          Destination / venue
+                        </p>
+                        <div className="max-w-xl space-y-1.5">
                           <label
-                            htmlFor="quote-from-access"
-                            className="sr-only"
+                            htmlFor="quote-event-venue-parking"
+                            className={addressMicroLabelClass}
                           >
-                            From access
+                            Parking
                           </label>
                           <select
-                            id="quote-from-access"
-                            value={fromAccess}
-                            onChange={(e) => setFromAccess(e.target.value)}
-                            className={accessSelectClass}
-                            aria-label="From access"
+                            id="quote-event-venue-parking"
+                            value={toParking}
+                            onChange={(e) =>
+                              setToParking(
+                                e.target.value as
+                                  | "dedicated"
+                                  | "street"
+                                  | "no_dedicated",
+                              )
+                            }
+                            className={fieldInput}
+                            aria-label="To address parking"
                           >
-                            {ACCESS_OPTIONS.map((o) => (
+                            {PARKING_OPTIONS.map((o) => (
                               <option key={o.value} value={o.value}>
                                 {o.label}
                               </option>
                             ))}
                           </select>
                         </div>
+                        <label className="flex cursor-pointer items-center gap-2 text-[12px] text-[var(--tx2)]">
+                          <input
+                            type="checkbox"
+                            checked={toLongCarry}
+                            onChange={(e) =>
+                              setToLongCarry(e.target.checked)
+                            }
+                            className={checkboxAccentClass}
+                          />
+                          To address: Long carry (50m+ from truck to entrance)
+                          (+$75)
+                        </label>
                       </div>
                     )}
                   {serviceType !== "event" &&
                     serviceType !== "labour_only" &&
                     serviceType !== "bin_rental" && (
-                      <div className="flex max-w-4xl flex-wrap flex-col gap-3 sm:flex-row sm:items-end">
-                        <div className="min-w-0 w-full flex-1">
-                          <MultiStopAddressField
-                            label="To"
-                            labelVisibility="sr-only"
-                            placeholder="To address*"
-                            stops={[{ address: toAddress }, ...extraToStops]}
-                            onChange={(stops) => {
-                              const p = stops[0];
-                              setToAddress(p?.address ?? "");
-                              setToLat(p?.lat ?? null);
-                              setToLng(p?.lng ?? null);
-                              setExtraToStops(stops.slice(1));
-                            }}
-                            inputClassName={fieldInput}
-                          />
-                        </div>
-                        <div
-                          className={`transition-all duration-200 ease-out overflow-hidden shrink-0 ${
-                            ["elevator", "concierge", "loading_dock"].includes(toAccess)
-                              ? "max-h-[60px] opacity-100 w-full sm:w-[88px]"
-                              : "max-h-0 opacity-0 pointer-events-none w-full sm:w-0"
-                          }`}
-                        >
-                          <label htmlFor="quote-to-unit" className="sr-only">
-                            Unit or suite
+                      <div className="max-w-4xl space-y-3">
+                        <p className={addressStopTitleClass}>
+                          {serviceType === "white_glove"
+                            ? "Delivery location"
+                            : "To"}
+                        </p>
+                        <MultiStopAddressField
+                          label="To"
+                          labelVisibility="sr-only"
+                          placeholder={
+                            serviceType === "white_glove"
+                              ? "Delivery location*"
+                              : "To address*"
+                          }
+                          stops={[{ address: toAddress }, ...extraToStops]}
+                          onChange={(stops) => {
+                            const p = stops[0];
+                            setToAddress(p?.address ?? "");
+                            setToLat(p?.lat ?? null);
+                            setToLng(p?.lng ?? null);
+                            setExtraToStops(stops.slice(1));
+                          }}
+                          inputClassName={fieldInput}
+                        />
+                        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4">
+                          <div className="w-full min-w-0 sm:w-[7.25rem] sm:shrink-0">
+                            <label
+                              htmlFor={
+                                ["elevator", "concierge", "loading_dock"].includes(
+                                  toAccess,
+                                )
+                                  ? "quote-to-unit"
+                                  : "quote-to-unit-ph"
+                              }
+                              className={addressMicroLabelClass}
+                            >
+                              Unit
+                            </label>
+                            {["elevator", "concierge", "loading_dock"].includes(
+                              toAccess,
+                            ) ? (
+                              <input
+                                id="quote-to-unit"
+                                type="text"
+                                value={toUnit}
+                                onChange={(e) => setToUnit(e.target.value)}
+                                placeholder="e.g. 1201"
+                                className={fieldInput}
+                                aria-label="Destination unit or suite"
+                              />
+                            ) : (
+                              <div
+                                id="quote-to-unit-ph"
+                                className={addressUnitPlaceholderClass}
+                                role="status"
+                              >
+                                Not required for this access type
+                              </div>
+                            )}
+                          </div>
+                          <div className="w-full min-w-0 sm:w-[11rem] sm:max-w-[13rem] sm:shrink-0">
+                            <label
+                              htmlFor="quote-to-access"
+                              className={addressMicroLabelClass}
+                            >
+                              Access
+                            </label>
+                            <select
+                              id="quote-to-access"
+                              value={toAccess}
+                              onChange={(e) => setToAccess(e.target.value)}
+                              className={accessSelectClass}
+                              aria-label="To access"
+                            >
+                              {ACCESS_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {o.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="w-full min-w-0 sm:min-w-[12rem] sm:max-w-[20rem] sm:flex-1">
+                            <label
+                              htmlFor="quote-to-parking"
+                              className={addressMicroLabelClass}
+                            >
+                              Parking
+                            </label>
+                            <select
+                              id="quote-to-parking"
+                              value={toParking}
+                              onChange={(e) =>
+                                setToParking(
+                                  e.target.value as
+                                    | "dedicated"
+                                    | "street"
+                                    | "no_dedicated",
+                                )
+                              }
+                              className={fieldInput}
+                              aria-label="To address parking"
+                            >
+                              {PARKING_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {o.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <label className="mt-1 flex w-full min-w-full cursor-pointer items-center gap-2 text-[12px] text-[var(--tx2)] basis-full sm:mt-2">
+                            <input
+                              type="checkbox"
+                              checked={toLongCarry}
+                              onChange={(e) =>
+                                setToLongCarry(e.target.checked)
+                              }
+                              className={checkboxAccentClass}
+                            />
+                            {serviceType === "white_glove"
+                              ? "Delivery location: Long carry (50m+ from truck to entrance) (+$75)"
+                              : "To address: Long carry (50m+ from truck to entrance) (+$75)"}
                           </label>
-                          <input
-                            id="quote-to-unit"
-                            type="text"
-                            value={toUnit}
-                            onChange={(e) => setToUnit(e.target.value)}
-                            placeholder="Unit"
-                            className={fieldInput}
-                            tabIndex={
-                              ["elevator", "concierge", "loading_dock"].includes(
-                                toAccess,
-                              )
-                                ? 0
-                                : -1
-                            }
-                            aria-label="Destination unit or suite"
-                          />
                         </div>
-                        <div className="w-full shrink-0 sm:w-[150px]">
-                          <label htmlFor="quote-to-access" className="sr-only">
-                            To access
+                      </div>
+                    )}
+                  {serviceType === "event" &&
+                    eventMulti && (
+                      <div className="flex max-w-4xl flex-col gap-3 min-[500px]:flex-row min-[500px]:flex-wrap min-[500px]:items-end min-[500px]:gap-x-4">
+                        <div className="w-full min-w-0 min-[500px]:max-w-[20rem]">
+                          <label
+                            htmlFor="quote-ev-multi-from-parking"
+                            className={addressMicroLabelClass}
+                          >
+                            From parking
                           </label>
                           <select
-                            id="quote-to-access"
-                            value={toAccess}
-                            onChange={(e) => setToAccess(e.target.value)}
-                            className={accessSelectClass}
-                            aria-label="To access"
+                            id="quote-ev-multi-from-parking"
+                            value={fromParking}
+                            onChange={(e) =>
+                              setFromParking(
+                                e.target.value as
+                                  | "dedicated"
+                                  | "street"
+                                  | "no_dedicated",
+                              )
+                            }
+                            className={fieldInput}
+                            aria-label="From address parking"
                           >
-                            {ACCESS_OPTIONS.map((o) => (
+                            {PARKING_OPTIONS.map((o) => (
                               <option key={o.value} value={o.value}>
                                 {o.label}
                               </option>
                             ))}
                           </select>
                         </div>
+                        <div className="w-full min-w-0 min-[500px]:max-w-[20rem]">
+                          <label
+                            htmlFor="quote-ev-multi-to-parking"
+                            className={addressMicroLabelClass}
+                          >
+                            To parking
+                          </label>
+                          <select
+                            id="quote-ev-multi-to-parking"
+                            value={toParking}
+                            onChange={(e) =>
+                              setToParking(
+                                e.target.value as
+                                  | "dedicated"
+                                  | "street"
+                                  | "no_dedicated",
+                              )
+                            }
+                            className={fieldInput}
+                            aria-label="To address parking"
+                          >
+                            {PARKING_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <label className="flex min-[500px]:basis-full cursor-pointer items-center gap-2 text-[12px] text-[var(--tx2)]">
+                          <input
+                            type="checkbox"
+                            checked={fromLongCarry}
+                            onChange={(e) =>
+                              setFromLongCarry(e.target.checked)
+                            }
+                            className={checkboxAccentClass}
+                          />
+                          From address: Long carry (50m+ from truck to entrance)
+                          (+$75)
+                        </label>
+                        <label className="flex min-[500px]:basis-full cursor-pointer items-center gap-2 text-[12px] text-[var(--tx2)]">
+                          <input
+                            type="checkbox"
+                            checked={toLongCarry}
+                            onChange={(e) =>
+                              setToLongCarry(e.target.checked)
+                            }
+                            className={checkboxAccentClass}
+                          />
+                          To address: Long carry (50m+ from truck to entrance)
+                          (+$75)
+                        </label>
                       </div>
                     )}
                   {(serviceType === "local_move" ||
@@ -6234,71 +6455,6 @@ export default function QuoteFormClient({
                       )}
                     </div>
                   )}
-                  {serviceType !== "labour_only" &&
-                    serviceType !== "bin_rental" && (
-                      <div className="grid grid-cols-1 min-[500px]:grid-cols-2 gap-3 pt-2">
-                        <Field label="From address parking">
-                          <select
-                            value={fromParking}
-                            onChange={(e) =>
-                              setFromParking(
-                                e.target.value as
-                                  | "dedicated"
-                                  | "street"
-                                  | "no_dedicated",
-                              )
-                            }
-                            className={fieldInput}
-                          >
-                            {PARKING_OPTIONS.map((o) => (
-                              <option key={o.value} value={o.value}>
-                                {o.label}
-                              </option>
-                            ))}
-                          </select>
-                        </Field>
-                        <Field label="To address parking">
-                          <select
-                            value={toParking}
-                            onChange={(e) =>
-                              setToParking(
-                                e.target.value as
-                                  | "dedicated"
-                                  | "street"
-                                  | "no_dedicated",
-                              )
-                            }
-                            className={fieldInput}
-                          >
-                            {PARKING_OPTIONS.map((o) => (
-                              <option key={o.value} value={o.value}>
-                                {o.label}
-                              </option>
-                            ))}
-                          </select>
-                        </Field>
-                        <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)] col-span-full cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={fromLongCarry}
-                            onChange={(e) => setFromLongCarry(e.target.checked)}
-                            className="accent-[var(--gold)]"
-                          />
-                          From address: Long carry (50m+ from truck to entrance)
-                          (+$75)
-                        </label>
-                        <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)] col-span-full cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={toLongCarry}
-                            onChange={(e) => setToLongCarry(e.target.checked)}
-                            className="accent-[var(--gold)]"
-                          />
-                          To address: Long carry (50m+ from truck to entrance)
-                          (+$75)
-                        </label>
-                      </div>
-                    )}
                 </div>
 
               <div className="mt-8 pt-6 sm:mt-10" aria-hidden />
@@ -6372,8 +6528,7 @@ export default function QuoteFormClient({
                         </Field>
                       )}
                     {(serviceType === "local_move" ||
-                      serviceType === "long_distance" ||
-                      serviceType === "white_glove") && (
+                      serviceType === "long_distance") && (
                       <Field label="Move Size">
                         <select
                           value={moveSize}
@@ -6445,6 +6600,52 @@ export default function QuoteFormClient({
                             );
                           })()}
                       </Field>
+                    )}
+                    {serviceType === "white_glove" && (
+                      <div className="col-span-full space-y-2 rounded-lg border border-[var(--brd)] bg-[var(--card)] p-3">
+                        <label className="flex items-start gap-2 text-[11px] text-[var(--tx2)] cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={wgGuaranteedWindow}
+                            onChange={(e) =>
+                              setWgGuaranteedWindow(e.target.checked)
+                            }
+                            className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
+                          />
+                          <span>
+                            <span className="font-medium text-[var(--tx)]">
+                              Guaranteed time window
+                            </span>
+                            <span className="block text-[10px] text-[var(--tx3)] mt-0.5">
+                              Client requires delivery within a specific time
+                              slot
+                            </span>
+                          </span>
+                        </label>
+                        {wgGuaranteedWindow && (
+                          <div className="pl-6 space-y-2">
+                            <Field label="Window">
+                              <select
+                                value={String(wgGuaranteedWindowHours)}
+                                onChange={(e) =>
+                                  setWgGuaranteedWindowHours(
+                                    Number(e.target.value) as 2 | 3 | 4,
+                                  )
+                                }
+                                className={fieldInput}
+                              >
+                                <option value="2">2 hours</option>
+                                <option value="3">3 hours</option>
+                                <option value="4">4 hours</option>
+                              </select>
+                            </Field>
+                            <p className="text-[10px] text-[var(--tx3)] leading-snug">
+                              Condo buildings often require a booked elevator
+                              slot. We will arrive within your confirmed window.
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     )}
                     {serviceType === "local_move" &&
                       !ecoBinsUpsellDismissed && (
@@ -6526,24 +6727,10 @@ export default function QuoteFormClient({
                                 }
                                 className={`${fieldInput} w-full min-w-[10.5rem] max-w-[16rem] shrink-0`}
                               >
-                                <option value="essential">Essential</option>
+                                <option value="essential">Curated</option>
                                 <option value="signature">Signature</option>
                                 <option value="estate">Estate</option>
                               </select>
-                              {recommendedTier !== "estate" && (
-                                <button
-                                  type="button"
-                                  onClick={() => setRecommendedTier("estate")}
-                                  className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-[var(--gold)] hover:text-[var(--gold2)] hover:underline underline-offset-2 transition-colors whitespace-nowrap shrink-0"
-                                >
-                                  White glove? Estate
-                                  <ChevronRight
-                                    className="w-3.5 h-3.5 shrink-0"
-                                    weight="bold"
-                                    aria-hidden
-                                  />
-                                </button>
-                              )}
                             </div>
                           </Field>
                         </div>
@@ -6700,7 +6887,7 @@ export default function QuoteFormClient({
               )}
 
               {serviceType !== "b2b_delivery" && (
-                <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+                <div className="pt-5 pb-5" aria-hidden />
               )}
 
               {/* ── 5. Specialty items ── */}
@@ -6913,11 +7100,10 @@ export default function QuoteFormClient({
               {/* ── 5c. Inventory (Residential / Long distance / Office) ── */}
               {(serviceType === "local_move" ||
                 serviceType === "long_distance" ||
-                serviceType === "office_move" ||
-                serviceType === "white_glove") &&
+                serviceType === "office_move") &&
                 itemWeights.length > 0 && (
                   <>
-                    <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+                    <div className="pt-5 pb-5" aria-hidden />
                     {multiPickupInventoryMode ? (
                       <div className="space-y-6">
                         <p className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">
@@ -6935,68 +7121,14 @@ export default function QuoteFormClient({
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <p className="text-[11px] font-semibold text-[var(--tx)]">
-                                    {moveProjectPayload?.origins[idx]?.label?.trim() || `Pickup ${idx + 1}`}
+                                    Pickup {idx + 1}
                                   </p>
-                                  {moveProjectPayload?.origins[idx]?.is_partial && (
-                                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-700">
-                                      Partial
-                                    </span>
-                                  )}
                                 </div>
                                 <p className="text-[10px] text-[var(--tx3)] break-words">
                                   {addr || "Add this pickup above"}
                                 </p>
-                                {moveProjectPayload?.origins[idx]?.is_partial && (
-                                  <p className="text-[10px] text-amber-600 mt-0.5">
-                                    Only selected items from this location
-                                  </p>
-                                )}
                               </div>
                             </div>
-                            {movePlannerVisible &&
-                              moveProjectPayload &&
-                              (serviceType === "local_move" ||
-                                serviceType === "long_distance") && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                  <Field label="Size at this location">
-                                    <select
-                                      className={fieldInput}
-                                      value={
-                                        moveProjectPayload.origins[idx]
-                                          ?.move_size ?? ""
-                                      }
-                                      onChange={(e) => {
-                                        const v = e.target.value;
-                                        setMoveProjectPayload((prev) => {
-                                          if (!prev) return prev;
-                                          const origins = [...prev.origins];
-                                          while (origins.length <= idx) {
-                                            origins.push({
-                                              address:
-                                                pickupAddressList[idx] ?? "",
-                                              label: `Pickup ${idx + 1}`,
-                                            });
-                                          }
-                                          origins[idx] = {
-                                            ...origins[idx]!,
-                                            move_size: v || undefined,
-                                          };
-                                          return { ...prev, origins };
-                                        });
-                                      }}
-                                    >
-                                      <option value="">Same as quote</option>
-                                      <option value="studio">Studio</option>
-                                      <option value="1br">1 bedroom</option>
-                                      <option value="2br">2 bedroom</option>
-                                      <option value="3br">3 bedroom</option>
-                                      <option value="4br">4 bedroom</option>
-                                      <option value="5br_plus">5+ bedroom</option>
-                                      <option value="partial">Partial</option>
-                                    </select>
-                                  </Field>
-                                </div>
-                              )}
                             <InventoryInput
                               itemWeights={
                                 itemWeights as {
@@ -7070,10 +7202,9 @@ export default function QuoteFormClient({
                           (!!moveSize ||
                             !!moveSizeSuggestion ||
                             inventoryItems.length > 0) &&
-                          (serviceType === "local_move" ||
-                            serviceType === "long_distance" ||
-                            serviceType === "white_glove" ||
-                            serviceType === "office_move")
+                          ["local_move", "long_distance", "office_move"].includes(
+                            serviceType,
+                          )
                         }
                         boxCount={Number(clientBoxCount) || 0}
                         onBoxCountChange={(n) =>
@@ -7090,7 +7221,7 @@ export default function QuoteFormClient({
                 )}
 
               {serviceType !== "b2b_delivery" && (
-                <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+                <div className="pt-5 pb-5" aria-hidden />
               )}
 
               {/* ── Office fields ── */}
@@ -7289,80 +7420,32 @@ export default function QuoteFormClient({
                     moveScopeDaysOverride={moveScopeDaysOverride}
                     onDaysOverrideChange={setMoveScopeDaysOverride}
                     config={config}
+                    optionalExtraVolumeDay={moveScopeExtraVolumeDay}
+                    onOptionalExtraVolumeDayChange={setMoveScopeExtraVolumeDay}
+                    onToggleMultiPickup={handleMoveScopeToggleMultiPickup}
+                    onToggleMultiDelivery={handleMoveScopeToggleMultiDelivery}
                   />
                 </div>
               )}
 
               {serviceType === "office_move" && (
                 <div className="col-span-full space-y-3">
-                  <div className="border-t border-[var(--brd)]/30 pt-5">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                          Multi-day scheduling
-                        </h3>
-                        <p className="text-[10px] text-[var(--tx3)] mt-1 max-w-xl leading-snug">
-                          {plannerAutoQualifies
-                            ? "This quote qualifies for the multi-day planner. Uncheck to turn the planner off, or adjust phases and days below when it is on."
-                            : "Turn on to plan pack, move, and setup as separate days, or for custom milestones."}
-                        </p>
-                        {plannerAutoQualifies && !multiDayEnabled && !multiDayPlannerOptOut && (
-                          <p className="text-[10px] text-[var(--yu-accent)] mt-2 font-medium">
-                            Auto-enabled: {autoProjectModeReason}
-                          </p>
-                        )}
-                      </div>
-                      <label className="flex items-center gap-2 text-[11px] font-medium text-[var(--tx)] cursor-pointer select-none shrink-0">
-                        <input
-                          type="checkbox"
-                          className="rounded border-[var(--brd)]"
-                          checked={movePlannerVisible}
-                          onChange={handleMultiDayPlannerCheckboxChange}
-                        />
-                        Enable multi-day planner
-                      </label>
-                    </div>
-                    <div className={multiDayCalloutClass}>
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <p className={multiDayTitleClass}>
-                            Multi-location or multi-day move
-                          </p>
-                          <p className="text-[10px] text-[var(--tx3)] mt-0.5 max-w-xl leading-snug">
-                            Use multiple pickups or drop-offs above, then build phases here. Pack days, crew splits, and truck days stay on the project record for the client timeline.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  {movePlannerVisible && moveProjectPayload && (
-                    <MoveProjectPlannerSection
-                      value={moveProjectPayload}
-                      onChange={setMoveProjectPayload}
-                      clientName={[firstName, lastName]
-                        .filter(Boolean)
-                        .join(" ")}
-                      fromAddress={fromAddress}
-                      toAddress={toAddress}
-                      fromAccess={fromAccess}
-                      toAccess={toAccess}
-                      moveDate={moveDate}
-                      serviceType={serviceType}
-                      workstationCount={workstationCountN}
-                      companyName={b2bBusinessName}
-                      officeEstHours={officeEstHours}
-                      primaryMoveSize={
-                        moveSize || moveSizeSuggestion?.suggested || "2br"
-                      }
-                      inventoryScoresByOrigin={inventoryScoresByOrigin}
-                      quoteFactors={
-                        (quoteResult?.factors as Record<
-                          string,
-                          unknown
-                        > | null) ?? null
-                      }
-                    />
-                  )}
+                  <OfficeMoveScopeSection
+                    workstationsTotal={workstationCountN}
+                    squareFootageStr={sqft}
+                    serverRoom={hasIt}
+                    scheduleLabel={timingPref}
+                    afterHoursContext={officeTimingAfterHoursHint}
+                    extraPickupStopCount={extraPickupStopCount}
+                    extraDropoffStopCount={extraDropoffStopCount}
+                    daysOverride={officeMoveScopeDaysOverride}
+                    onDaysOverrideChange={setOfficeMoveScopeDaysOverride}
+                    additionalMoveDay={officeScopeAdditionalMoveDay}
+                    onAdditionalMoveDayChange={setOfficeScopeAdditionalMoveDay}
+                    config={config}
+                    onToggleMultiPickup={handleMoveScopeToggleMultiPickup}
+                    onToggleMultiDelivery={handleMoveScopeToggleMultiDelivery}
+                  />
                 </div>
               )}
 
@@ -7405,7 +7488,7 @@ export default function QuoteFormClient({
                         onChange={(e) => setItemCategory(e.target.value)}
                         className={`${fieldInput} min-w-0`}
                       >
-                        {ITEM_CATEGORIES.map((c) => (
+                        {SINGLE_ITEM_CATEGORIES.map((c) => (
                           <option key={c.value} value={c.value}>
                             {c.label}
                           </option>
@@ -7481,109 +7564,87 @@ export default function QuoteFormClient({
                       )}
                     </div>
                   </div>
+                  {numItems >= 3 && (
+                    <p className="text-[10px] text-[var(--tx3)] mt-1 max-w-md leading-snug">
+                      For 3+ items of different types, our{" "}
+                      <button
+                        type="button"
+                        onClick={() => setServiceType("white_glove")}
+                        className="font-semibold text-[var(--admin-primary-fill)] underline underline-offset-2 hover:opacity-90"
+                      >
+                        White Glove service
+                      </button>{" "}
+                      offers itemized pricing with assembly and premium handling.
+                    </p>
+                  )}
                 </div>
               )}
 
               {/* ── White glove fields ── */}
               {serviceType === "white_glove" && (
-                <div className="space-y-2">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                    White glove
-                  </h3>
-                  <p className="text-[10px] text-[var(--tx3)] leading-snug">
-                    Priced on premium crew hours plus wrapping and assembly —
-                    not residential tier rates. Mark inventory lines as fragile
-                    when extra wrapping applies.
-                  </p>
-                  <Field label="Item description *">
-                    <input
-                      value={itemDescription}
-                      onChange={(e) => setItemDescription(e.target.value)}
-                      placeholder="e.g. Antique dresser, Grand piano, Art piece"
-                      className={fieldInput}
+                <div className="space-y-4">
+                  <WhiteGloveItemsEditor
+                    value={whiteGloveItemRows}
+                    onChange={setWhiteGloveItemRows}
+                    fieldInputClass={fieldInput}
+                    cargoCoverageHint="For insurance purposes. Standard cargo coverage is $100K."
+                    declaredValue={declaredValue}
+                    onDeclaredValueChange={setDeclaredValue}
+                    debrisRemoval={wgDebrisRemoval}
+                    onDebrisRemovalChange={setWgDebrisRemoval}
+                  />
+                  <div className="space-y-2">
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                      Building / access requirements
+                    </h3>
+                    <div className="flex flex-wrap gap-1.5">
+                      {SPECIALTY_BUILDING_REQUIREMENTS.map((req) => {
+                        const active = wgBuildingReqs.includes(req.value);
+                        return (
+                          <button
+                            key={req.value}
+                            type="button"
+                            onClick={() =>
+                              setWgBuildingReqs((prev) =>
+                                active
+                                  ? prev.filter((v) => v !== req.value)
+                                  : [...prev, req.value],
+                              )
+                            }
+                            className={`px-2.5 py-1 rounded-md text-[9px] font-semibold border transition-colors ${
+                              active
+                                ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                                : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
+                            }`}
+                          >
+                            {req.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {wgBuildingReqs.length > 0 && (
+                      <Field label="Building requirements note">
+                        <textarea
+                          value={wgBuildingNote}
+                          onChange={(e) => setWgBuildingNote(e.target.value)}
+                          rows={2}
+                          placeholder="COI details, dock booking, hours…"
+                          className={fieldInput}
+                        />
+                      </Field>
+                    )}
+                  </div>
+                  <Field label="Delivery instructions">
+                    <textarea
+                      value={wgDeliveryInstructions}
+                      onChange={(e) =>
+                        setWgDeliveryInstructions(e.target.value)
+                      }
+                      rows={3}
+                      placeholder="Store pickup coordination, placement, other notes"
+                      className={`${fieldInput} resize-y min-h-[72px]`}
                     />
                   </Field>
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
-                    <Field label="Item Category">
-                      <select
-                        value={itemCategory}
-                        onChange={(e) => setItemCategory(e.target.value)}
-                        className={`${fieldInput} min-w-0`}
-                      >
-                        {ITEM_CATEGORIES.map((c) => (
-                          <option key={c.value} value={c.value}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Weight Class">
-                      <select
-                        value={itemWeight}
-                        onChange={(e) => setItemWeight(e.target.value)}
-                        className={`${fieldInput} min-w-0`}
-                      >
-                        <option value="">Select…</option>
-                        {WEIGHT_CLASSES.map((w) => (
-                          <option key={w} value={w}>
-                            {w}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Declared Value ($)">
-                      <input
-                        type="number"
-                        min={0}
-                        value={declaredValue}
-                        onChange={(e) => setDeclaredValue(e.target.value)}
-                        placeholder="For insurance"
-                        className={`${fieldInput} w-24 min-w-0`}
-                      />
-                    </Field>
-                    <Field label="Assembly">
-                      <select
-                        value={assembly}
-                        onChange={(e) => setAssembly(e.target.value)}
-                        className={`${fieldInput} min-w-0`}
-                      >
-                        {ASSEMBLY_OPTIONS.map((a) => (
-                          <option key={a} value={a}>
-                            {a}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] font-bold uppercase text-[var(--tx3)] shrink-0">
-                        Stair Carry
-                      </span>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={stairCarry}
-                        onClick={() => setStairCarry(!stairCarry)}
-                        className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${stairCarry ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                      >
-                        <span
-                          className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`}
-                        />
-                      </button>
-                      {stairCarry && (
-                        <input
-                          type="number"
-                          min={1}
-                          max={10}
-                          value={stairFlights}
-                          onChange={(e) =>
-                            setStairFlights(Number(e.target.value) || 1)
-                          }
-                          className={`${fieldInput} w-12 py-1 min-w-0`}
-                          title="Flights"
-                        />
-                      )}
-                    </div>
-                  </div>
                 </div>
               )}
 
@@ -9487,7 +9548,7 @@ export default function QuoteFormClient({
                 quoteFlowStep === 3 &&
                 !skipsCatalogAddonsQuoteStep && (
               <>
-              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+              <div className="pt-5 pb-5" aria-hidden />
 
               {/* ── 6. Add-ons (popular first, show all expander) ── */}
               {applicableAddons.length > 0 && serviceType !== "bin_rental" && (
@@ -9707,7 +9768,7 @@ export default function QuoteFormClient({
                         );
                       })}
                   </div>
-                  <div className="pt-3 border-t border-[var(--brd)] flex items-center justify-between">
+                  <div className="pt-3 flex items-center justify-between">
                     <span className="text-[11px] font-semibold text-[var(--tx)]">
                       Add-ons total
                     </span>
@@ -9721,7 +9782,7 @@ export default function QuoteFormClient({
           {serviceType !== "bin_rental" &&
             serviceType !== "b2b_delivery" &&
             serviceType !== "b2b_oneoff" && (
-              <div className="px-0 sm:px-0 pb-3 space-y-2 border-t border-[var(--brd)]/40 pt-4 mt-2">
+              <div className="px-0 sm:px-0 pb-3 space-y-2 pt-4 mt-2">
                 <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
                   Coordinator price override (pre-tax)
                 </h3>
@@ -9766,8 +9827,8 @@ export default function QuoteFormClient({
           <div
             className={
               isV2
-                ? "border-t border-line px-4 py-3 sm:px-5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
-                : "py-3 px-4 sm:px-5 border-t border-[var(--brd)]/60 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
+                ? "px-4 py-3 sm:px-5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
+                : "py-3 px-4 sm:px-5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
             }
           >
             {showQuoteFlowNav ? (
@@ -10031,6 +10092,84 @@ export default function QuoteFormClient({
                               </div>
                             </div>
                           )}
+                        {quoteResult.factors &&
+                          serviceType === "local_move" &&
+                          (() => {
+                            const fac = quoteResult.factors as Record<
+                              string,
+                              unknown
+                            >;
+                            const eff =
+                              typeof fac.move_scope_effective_days === "number"
+                                ? Number(fac.move_scope_effective_days)
+                                : 1;
+                            const addonLines = Array.isArray(fac.move_scope_addon_lines)
+                              ? (fac.move_scope_addon_lines as {
+                                  label?: string;
+                                  amount?: number;
+                                }[])
+                              : [];
+                            const clientDayLines = Array.isArray(
+                              fac.move_scope_client_day_lines,
+                            )
+                              ? (fac.move_scope_client_day_lines as string[])
+                              : [];
+                            if (eff <= 1 && addonLines.length === 0) return null;
+                            return (
+                            <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2.5 mt-2 space-y-2">
+                              <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">
+                                Move duration
+                              </p>
+                              {typeof fac.move_scope_effective_days === "number" && (
+                                <p className="text-[11px] text-[var(--tx)] font-semibold">
+                                  {String(fac.move_scope_client_service_label ?? "").trim() ||
+                                    `Duration: ${eff} days`}
+                                </p>
+                              )}
+                              {clientDayLines.map((ln, i) => (
+                                <p
+                                  key={i}
+                                  className="text-[10px] text-[var(--tx2)] border-l border-[var(--brd)] pl-2"
+                                >
+                                  {ln}
+                                </p>
+                              ))}
+                              {(() => {
+                                if (!addonLines.length) return null;
+                                const total =
+                                  typeof fac.move_scope_addon_pre_tax_total ===
+                                  "number"
+                                    ? Number(fac.move_scope_addon_pre_tax_total)
+                                    : addonLines.reduce(
+                                        (s, l) => s + Number(l.amount || 0),
+                                        0,
+                                      );
+                                return (
+                                  <>
+                                    <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] pt-1 border-t border-[var(--brd)]/50">
+                                      Day-rate add-ons (pre-tax)
+                                    </p>
+                                    {addonLines.map((ln, i) => (
+                                      <div
+                                        key={`${ln.label}-${i}`}
+                                        className="flex justify-between gap-2 text-[10px] text-[var(--tx2)]"
+                                      >
+                                        <span>{ln.label}</span>
+                                        <span className="font-medium text-[var(--tx)] shrink-0">
+                                          {fmtPrice(Number(ln.amount || 0))}
+                                        </span>
+                                      </div>
+                                    ))}
+                                    <div className="flex justify-between gap-2 text-[10px] font-semibold text-[var(--tx)]">
+                                      <span>Scope schedule subtotal</span>
+                                      <span>{fmtPrice(total)}</span>
+                                    </div>
+                                  </>
+                                );
+                              })()}
+                            </div>
+                            );
+                          })()}
                         {(serviceType === "local_move" ||
                           serviceType === "long_distance") &&
                           (() => {
@@ -10635,6 +10774,107 @@ export default function QuoteFormClient({
                           Click Generate for the final priced quote (includes
                           timeline and server pricing rules).
                         </p>
+                      </div>
+                    ) : whiteGloveLivePreview ? (
+                      <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-4 space-y-2">
+                        <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+                          White glove delivery (estimate)
+                        </p>
+                        <p className="text-[10px] text-[var(--tx2)]">
+                          {whiteGloveLivePreview.distKm != null
+                            ? `${whiteGloveLivePreview.distKm} km route`
+                            : whiteGloveLivePreview.distLoading
+                              ? "Calculating distance…"
+                              : "Add addresses for distance adjustment"}
+                        </p>
+                        {whiteGloveLivePreview.bd.itemLines.length > 0 ? (
+                          <ul className="text-[11px] text-[var(--tx2)] space-y-0.5 list-disc pl-4">
+                            {whiteGloveLivePreview.bd.itemLines.map(
+                              (ln, i) => (
+                                <li key={i}>
+                                  {ln.quantity}× {ln.description}
+                                  {ln.assemblyAmount > 0
+                                    ? ` (${ln.assemblyNote ?? "assembly"})`
+                                    : ""}
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                        ) : null}
+                        {[
+                          {
+                            label: "Item handling (minimum may apply)",
+                            amount: whiteGloveLivePreview.bd.itemsOrMinimum,
+                          },
+                          {
+                            label: "Assembly / disassembly",
+                            amount: whiteGloveLivePreview.bd.assemblyTotal,
+                          },
+                          {
+                            label: "Parking and access",
+                            amount: whiteGloveLivePreview.bd.accessTotal,
+                          },
+                          {
+                            label: "Distance",
+                            amount: whiteGloveLivePreview.bd.distanceSurcharge,
+                          },
+                          {
+                            label: "Debris removal",
+                            amount: whiteGloveLivePreview.bd.debrisFee,
+                          },
+                          {
+                            label: "Declared value premium",
+                            amount:
+                              whiteGloveLivePreview.bd.declaredValuePremium,
+                          },
+                          {
+                            label: "Guaranteed window",
+                            amount:
+                              whiteGloveLivePreview.bd.guaranteedWindowFee,
+                          },
+                          {
+                            label: "Truck",
+                            amount: whiteGloveLivePreview.bd.truckSurcharge,
+                          },
+                        ]
+                          .filter((row) => row.amount > 0)
+                          .map((row, i) => (
+                            <div
+                              key={i}
+                              className="flex justify-between text-[11px] gap-2"
+                            >
+                              <span className="text-[var(--tx2)] min-w-0 break-words pr-2">
+                                {row.label}
+                              </span>
+                              <span className="text-[var(--tx)] font-medium shrink-0">
+                                {fmtPrice(row.amount)}
+                              </span>
+                            </div>
+                          ))}
+                        <p className="text-[9px] text-[var(--tx3)] leading-snug pt-1">
+                          Stairs surcharges on the quote use server rules.
+                          Generate for final pricing.
+                        </p>
+                        <div className="flex justify-between text-[11px] pt-1 border-t border-[var(--brd)]/40">
+                          <span className="text-[var(--tx3)]">
+                            Subtotal (pre-tax)
+                          </span>
+                          <span className="font-semibold">
+                            {fmtPrice(whiteGloveLivePreview.bd.subtotalPreTax)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-[var(--tx3)]">HST</span>
+                          <span>
+                            {fmtPrice(whiteGloveLivePreview.tax ?? 0)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-[12px] font-bold">
+                          <span>Total</span>
+                          <span className="text-[var(--gold)]">
+                            {fmtPrice(whiteGloveLivePreview.total ?? 0)}
+                          </span>
+                        </div>
                       </div>
                     ) : (
                       <div className="text-center py-5">

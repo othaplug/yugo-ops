@@ -20,11 +20,9 @@ import {
   estimateOfficeHours,
   estimateOfficeTruckOpsCost,
   estimateSingleItemHours,
-  estimateWhiteGloveHours,
   officeTruckSurchargeStack,
   singleItemPricingCategory,
   singleItemWalkUpSurcharge,
-  whiteGloveWrapAndAssemblyCounts,
   type OfficeScheduleFlags,
 } from "@/lib/pricing/non-residential-quote-calcs";
 import {
@@ -75,6 +73,7 @@ import type { ProjectQuoteBreakdown } from "@/lib/move-projects/residential-proj
 import { pickupDropoffFactorsFromPayload } from "@/lib/quotes/quote-address-display";
 import {
   applyMoveScopeAddonToResidentialTiers,
+  buildMoveScopeClientSchedule,
   clampEstimatedDaysOverride,
   computeMoveScopeAddonPreTax,
 } from "@/lib/quotes/move-scope";
@@ -87,8 +86,13 @@ import {
 import { patchHubSpotDealJobNo } from "@/lib/hubspot/sync-deal-job-no";
 import { getResolvedMoveIncludeTitles } from "@/lib/quotes/residential-tier-quote-display";
 import { normalizePhone } from "@/lib/phone";
-import { matchBuildingProfile } from "@/lib/buildings/matcher";
+import {
+  computeWhiteGlovePricingBreakdown,
+  normalizeWhiteGloveItemsFromQuoteInput,
+  whiteGloveDisplayCrewHours,
+} from "@/lib/quotes/white-glove-pricing";
 import { buildingComplexitySurchargePreTax } from "@/lib/buildings/complexity-pricing";
+import { matchBuildingProfile } from "@/lib/buildings/matcher";
 import { parseBuildingAccessFlags } from "@/lib/buildings/types";
 // ═══════════════════════════════════════════════
 // Types
@@ -181,6 +185,23 @@ interface QuoteInput {
   number_of_items?: number;
   // White glove
   declared_value?: number;
+  /** Multi-line curated delivery items (preferred). Legacy single-line fields remain as fallback. */
+  white_glove_items?: Array<{
+    id?: string;
+    description: string;
+    quantity?: number;
+    category?: string;
+    weight_class?: string;
+    assembly?: string;
+    is_fragile?: boolean;
+    is_high_value?: boolean;
+    notes?: string;
+  }>;
+  white_glove_debris_removal?: boolean;
+  /** When set (e.g. 2, 3, 4), adds guaranteed narrow-window line per platform_config. */
+  white_glove_guaranteed_window_hours?: number | null;
+  white_glove_building_requirements_note?: string;
+  white_glove_delivery_instructions?: string;
   // Specialty
   project_type?: string;
   timeline_hours?: number;
@@ -345,6 +366,7 @@ interface QuoteInput {
   /** Optional coordinator override for quotes.estimated_days (local_move scope flow). */
   move_scope?: {
     estimated_days_override?: number | null;
+    optional_additional_volume_day?: boolean;
   };
   /** Mapbox geocode (primary stop) for building profile proximity match */
   from_lat?: number;
@@ -2112,52 +2134,35 @@ async function calcWhiteGlove(
   distInfo: { distance_km: number; drive_time_min: number } | null,
   addonResult: Awaited<ReturnType<typeof calculateAddons>>,
 ) {
-  const crewRate = cfgNum(config, "white_glove_crew_rate", 95);
-  const { wrapQty, assemblyQty } = whiteGloveWrapAndAssemblyCounts({
-    inventory_items: input.inventory_items,
-    assembly_needed: input.assembly_needed,
-  });
+  const items = normalizeWhiteGloveItemsFromQuoteInput(input).filter((i) =>
+    (i.description || "").trim(),
+  );
   const distKm = distInfo?.distance_km ?? 0;
-  const hours =
-    input.white_glove_hours_override ??
-    estimateWhiteGloveHours({
-      inventory_items: input.inventory_items,
-      distance_km: distKm,
-      wrapQty,
-      assemblyQty,
-    });
-  const crew = Math.max(2, Math.min(8, input.white_glove_crew_override ?? 2));
-
-  let price = crew * hours * crewRate;
-  const wrapEach = cfgNum(config, "white_glove_wrap_per_item", 20);
-  const asmEach = cfgNum(config, "white_glove_assembly_per_item", 85);
-  price += wrapQty * wrapEach;
-  price += assemblyQty * asmEach;
-
-  const truckWg = normalizeTruckType(input.truck_type ?? "sprinter");
-  price += getTruckFeeSync(truckWg, config);
-
-  const distFreeWg = 15;
-  if (distKm > distFreeWg) {
-    price += (distKm - distFreeWg) * cfgNum(config, "white_glove_per_km", 4);
-  }
 
   const [fromWg, toWg] = await Promise.all([
     getAccessSurcharge(sb, input.from_access),
     getAccessSurcharge(sb, input.to_access),
   ]);
   const plcWg = parkingLongCarryLineTotal(config, input, "both");
-  price += fromWg + toWg + plcWg.total;
 
-  const wgDvThreshold = cfgNum(config, "white_glove_declared_value_threshold", 5000);
-  const wgDvPremium = cfgNum(config, "white_glove_declared_value_premium", 50);
-  const dvPrem = (input.declared_value ?? 0) > wgDvThreshold ? wgDvPremium : 0;
-  price += dvPrem;
+  const gwRaw = input.white_glove_guaranteed_window_hours;
+  const gwHours =
+    typeof gwRaw === "number" && Number.isFinite(gwRaw) && gwRaw > 0
+      ? gwRaw
+      : null;
 
-  const wgMin = cfgNum(config, "white_glove_minimum", cfgNum(config, "white_glove_minimum_price", 350));
-  price = Math.max(price, wgMin);
-  const roundingWg = cfgNum(config, "rounding_nearest", 50);
-  price = roundTo(price, roundingWg);
+  const breakdown = computeWhiteGlovePricingBreakdown(config, items, {
+    distKm,
+    fromAccessCharge: fromWg,
+    toAccessCharge: toWg,
+    parkingLongCarryTotal: plcWg.total,
+    declaredValue: input.declared_value,
+    debrisRemoval: input.white_glove_debris_removal === true,
+    guaranteedNarrowWindowhours: gwHours,
+    truckType: input.truck_type ?? "sprinter",
+  });
+
+  let price = breakdown.subtotalPreTax;
 
   price += addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
@@ -2167,11 +2172,18 @@ async function calcWhiteGlove(
   const wgFeatures = await fetchTierFeatures(sb, "white_glove", "custom");
   const whiteGloveIncludes = wgFeatures.length > 0 ? wgFeatures : [
     "Premium handling",
-    `Professional ${crew}-person crew`,
-    "Blanket & pad wrapping",
-    "Photo documentation (before/during/after)",
+    "Item-based white glove delivery",
+    "Blanket and pad wrapping",
     "Secure transport",
   ];
+
+  const itemCount = items.reduce(
+    (s, i) => s + Math.max(1, Math.min(99, Number(i.quantity) || 1)),
+    0,
+  );
+  const { crew, hours } = whiteGloveDisplayCrewHours(itemCount, distKm);
+
+  const truckWg = normalizeTruckType(input.truck_type ?? "sprinter");
 
   return {
     custom_price: {
@@ -2182,21 +2194,35 @@ async function calcWhiteGlove(
       includes: whiteGloveIncludes,
     } as TierResult,
     factors: {
-      white_glove_pricing: "hours_premium_crew",
-      white_glove_crew_rate: crewRate,
+      white_glove_pricing: "item_based",
+      white_glove_items: items,
+      white_glove_item_lines: breakdown.itemLines,
+      white_glove_items_subtotal: breakdown.itemsOrMinimum,
+      white_glove_assembly_total: breakdown.assemblyTotal,
+      white_glove_debris_fee: breakdown.debrisFee,
+      white_glove_distance_surcharge: breakdown.distanceSurcharge,
+      white_glove_declared_value_premium: breakdown.declaredValuePremium,
+      white_glove_guaranteed_window_fee: breakdown.guaranteedWindowFee,
+      white_glove_guaranteed_window_hours: gwHours,
+      white_glove_access_from: fromWg,
+      white_glove_access_to: toWg,
+      access_surcharge: fromWg + toWg,
+      white_glove_truck_surcharge: breakdown.truckSurcharge,
+      parking_long_carry_total: plcWg.total,
+      truck_recommended: truckWg,
+      truck_surcharge: breakdown.truckSurcharge,
+      white_glove_crew_rate: cfgNum(config, "white_glove_crew_rate", 95),
       white_glove_crew: crew,
       white_glove_hours: hours,
-      white_glove_wrap_qty: wrapQty,
-      white_glove_assembly_qty: assemblyQty,
-      white_glove_wrap_per_item: wrapEach,
-      white_glove_assembly_per_item: asmEach,
-      white_glove_declared_value_premium: dvPrem,
       distance_km: distKm,
-      truck_recommended: truckWg,
-      truck_surcharge: getTruckFeeSync(truckWg, config),
-      parking_long_carry_total: plcWg.total,
-      access_surcharge: fromWg + toWg,
-      labour_rate: crewRate,
+      item_description: items[0]?.description ?? input.item_description ?? null,
+      declared_value: input.declared_value ?? null,
+      white_glove_debris_removal: input.white_glove_debris_removal === true,
+      specialty_building_requirements: input.specialty_building_requirements ?? [],
+      white_glove_building_requirements_note:
+        input.white_glove_building_requirements_note?.trim() || null,
+      white_glove_delivery_instructions:
+        input.white_glove_delivery_instructions?.trim() || null,
     },
   };
 }
@@ -3377,6 +3403,16 @@ export async function POST(req: NextRequest) {
     input = { ...input, to_address: input.from_address };
   }
 
+  if (input.service_type === "white_glove") {
+    const wgRows = normalizeWhiteGloveItemsFromQuoteInput(input);
+    if (!wgRows.some((i) => (i.description || "").trim().length > 0)) {
+      return NextResponse.json(
+        { error: "White Glove quotes need at least one item with a description" },
+        { status: 400 },
+      );
+    }
+  }
+
   // B2B multi-stop: normalize primary pickup/delivery for distance + quote row
   if (
     (input.service_type === "b2b_delivery" || input.service_type === "b2b_oneoff") &&
@@ -3551,8 +3587,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Section 5: Batch all Mapbox distance calls (job route + deadhead + return trip)
-  /** Inventory scoring: local residential + white glove only (not long_distance). */
-  const useInventoryScoring = isLocalMove || input.service_type === "white_glove";
+  /** Inventory scoring: local residential only (not long_distance or white_glove). */
+  const useInventoryScoring = isLocalMove;
   const needsDeadheadReturn = isLocalMove;
   const b2bMultiStop =
     (input.service_type === "b2b_delivery" || input.service_type === "b2b_oneoff") &&
@@ -3575,18 +3611,20 @@ export async function POST(req: NextRequest) {
 
   // Pre-compute a rough base for percent-type add-ons (use base_rate as proxy)
   let roughBase = 1000;
-  if (isLocalMove || isLongDistance || input.service_type === "white_glove") {
+  if (isLocalMove || isLongDistance) {
     const { data: br } = await sb
       .from("base_rates")
       .select("base_price")
       .eq("move_size", input.move_size!)
       .single();
     roughBase = br?.base_price ?? 999;
+  } else if (input.service_type === "white_glove") {
+    roughBase = cfgNum(config, "white_glove_addon_rough_base", 800);
   }
 
   const addonResult = await calculateAddons(sb, input.selected_addons, roughBase);
 
-  // Inventory volume modifier (local_move + white_glove only)
+  // Inventory volume modifier (local_move only)
   const invResult = useInventoryScoring
     ? await calcInventoryModifier(
         sb,
@@ -3824,6 +3862,7 @@ export async function POST(req: NextRequest) {
       crating_required: !!(input.crating_pieces && input.crating_pieces.length > 0),
       addon_slugs: addonSlugs,
       estimated_days_override: clampEstimatedDaysOverride(input.move_scope?.estimated_days_override),
+      optional_additional_volume_day: !!input.move_scope?.optional_additional_volume_day,
     });
     estimatedDaysForQuoteRow = msScope.effectiveDays;
     dayBreakdownForQuoteRow = msScope.breakdownJson;
@@ -3843,6 +3882,9 @@ export async function POST(req: NextRequest) {
         estate: bumped.estate,
       };
     }
+    const clientMoveScopeSchedule = buildMoveScopeClientSchedule({
+      breakdown: msScope.breakdownJson,
+    })
     factors = {
       ...factors,
       move_scope_addon_lines: msScope.lines,
@@ -3850,6 +3892,55 @@ export async function POST(req: NextRequest) {
       move_scope_detected_days: msScope.detectedDays,
       move_scope_effective_days: msScope.effectiveDays,
       move_scope_day_summary: msScope.daySummaryParts,
+      ...(clientMoveScopeSchedule.dayLines.length > 0
+        ? {
+            move_scope_client_service_label: clientMoveScopeSchedule.serviceLabel,
+            move_scope_client_day_lines: clientMoveScopeSchedule.dayLines,
+          }
+        : {}),
+    };
+  }
+
+  if (svcType === "long_distance" && custom_price) {
+    const addonSlugsLd = addonResult.breakdown.map((b) => b.slug);
+    const msScopeLd = computeMoveScopeAddonPreTax(config, {
+      tier: normalizeRecommendedTierForDb(input.recommended_tier),
+      move_size: input.move_size ?? "2br",
+      specialty_items: input.specialty_items,
+      crating_required: !!(input.crating_pieces && input.crating_pieces.length > 0),
+      addon_slugs: addonSlugsLd,
+      estimated_days_override: clampEstimatedDaysOverride(input.move_scope?.estimated_days_override),
+      optional_additional_volume_day: !!input.move_scope?.optional_additional_volume_day,
+    });
+    estimatedDaysForQuoteRow = msScopeLd.effectiveDays;
+    dayBreakdownForQuoteRow = msScopeLd.breakdownJson;
+    if (msScopeLd.totalAddonPreTax > 0) {
+      const taxRLd = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
+      const newPriceLd = custom_price.price + msScopeLd.totalAddonPreTax;
+      const newTaxLd = Math.round(newPriceLd * taxRLd);
+      custom_price = {
+        ...custom_price,
+        price: newPriceLd,
+        tax: newTaxLd,
+        total: newPriceLd + newTaxLd,
+      };
+    }
+    const clientMoveScopeScheduleLd = buildMoveScopeClientSchedule({
+      breakdown: msScopeLd.breakdownJson,
+    });
+    factors = {
+      ...factors,
+      move_scope_addon_lines: msScopeLd.lines,
+      move_scope_addon_pre_tax_total: msScopeLd.totalAddonPreTax,
+      move_scope_detected_days: msScopeLd.detectedDays,
+      move_scope_effective_days: msScopeLd.effectiveDays,
+      move_scope_day_summary: msScopeLd.daySummaryParts,
+      ...(clientMoveScopeScheduleLd.dayLines.length > 0
+        ? {
+            move_scope_client_service_label: clientMoveScopeScheduleLd.serviceLabel,
+            move_scope_client_day_lines: clientMoveScopeScheduleLd.dayLines,
+          }
+        : {}),
     };
   }
 
@@ -4345,7 +4436,8 @@ export async function POST(req: NextRequest) {
     const multiLocQuote = extraPickCount > 0 || extraDropCount > 0;
     const isProjectQuote =
       mpForFlags.success ||
-      (svcType === "local_move" && (estimatedDaysForQuoteRow > 1 || multiLocQuote));
+      ((svcType === "local_move" || svcType === "long_distance") &&
+        (estimatedDaysForQuoteRow > 1 || multiLocQuote));
 
     const quotePayload = {
       hubspot_deal_id: input.hubspot_deal_id || null,
@@ -4357,12 +4449,12 @@ export async function POST(req: NextRequest) {
       is_project: isProjectQuote,
       origin_count: mpForFlags.success
         ? mpForFlags.data.origins.length
-        : svcType === "local_move"
+        : svcType === "local_move" || svcType === "long_distance"
           ? 1 + extraPickCount
           : null,
       destination_count: mpForFlags.success
         ? mpForFlags.data.destinations.length
-        : svcType === "local_move"
+        : svcType === "local_move" || svcType === "long_distance"
           ? 1 + extraDropCount
           : null,
       from_address: input.from_address,
@@ -4413,8 +4505,12 @@ export async function POST(req: NextRequest) {
       labour_validation_message: labour_validation_primary.message,
       labour_component: labour_validation_primary.labourComponent,
       non_labour_component: labour_validation_primary.nonLabourComponent,
-      estimated_days: svcType === "local_move" ? estimatedDaysForQuoteRow : 1,
-      day_breakdown: svcType === "local_move" ? dayBreakdownForQuoteRow : [],
+      estimated_days:
+        svcType === "local_move" || svcType === "long_distance"
+          ? estimatedDaysForQuoteRow
+          : 1,
+      day_breakdown:
+        svcType === "local_move" || svcType === "long_distance" ? dayBreakdownForQuoteRow : [],
       multi_location: multiLocQuote,
       additional_origins: input.additional_pickup_addresses ?? [],
       additional_destinations: input.additional_dropoff_addresses ?? [],

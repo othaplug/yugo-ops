@@ -21,6 +21,7 @@ import { ontarioHstBreakdownFromPreTax } from "@/lib/format-currency";
 import { autoCreateHubSpotDealForNewMove } from "@/lib/hubspot/auto-create-deal-for-move";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { getMoveDetailPath } from "@/lib/move-code";
+import { sanitizeMoveProjectSchedulePayload } from "@/lib/move-projects/planner-payload";
 
 /** DB `service_type` CHECK — align with `move_type` from Create Move. */
 const MOVE_TYPE_TO_SERVICE_TYPE: Record<string, string> = {
@@ -125,15 +126,44 @@ export async function POST(req: NextRequest) {
       }
       docFiles = formData.getAll("documents") as File[];
       const additionalStopsRaw = formData.get("additional_stops");
-      if (typeof additionalStopsRaw === "string" && additionalStopsRaw.trim()) {
+      const projectScheduleRaw = formData.get("project_schedule");
+      if (
+        typeof projectScheduleRaw === "string" &&
+        projectScheduleRaw.trim().length > 2
+      ) {
         try {
-          body.additional_stops = JSON.parse(additionalStopsRaw);
+          body.project_schedule = JSON.parse(projectScheduleRaw);
         } catch {
-          /* ignore */
+          /* ignore malformed JSON */
+        }
+      }
+      const wgItemsRaw = formData.get("white_glove_items") as string | null;
+      if (typeof wgItemsRaw === "string" && wgItemsRaw.trim().startsWith("[")) {
+        try {
+          body.white_glove_items = JSON.parse(wgItemsRaw);
+        } catch {
+          body.white_glove_items = [];
+        }
+      }
+      const specBuildRaw = formData.get(
+        "specialty_building_requirements",
+      ) as string | null;
+      if (
+        typeof specBuildRaw === "string" &&
+        specBuildRaw.trim().startsWith("[")
+      ) {
+        try {
+          body.specialty_building_requirements = JSON.parse(specBuildRaw);
+        } catch {
+          body.specialty_building_requirements = [];
         }
       }
     } else {
-      body = await req.json();
+      try {
+        body = (await req.json()) as Record<string, unknown>;
+      } catch {
+        body = {};
+      }
     }
 
     const rawMoveType = (body.move_type as string)?.trim()?.toLowerCase();
@@ -173,11 +203,33 @@ export async function POST(req: NextRequest) {
     let organizationId = partnerOrganizationIdFromRequest;
     const fromAccess = (body.from_access as string)?.trim() || null;
     const toAccess = (body.to_access as string)?.trim() || null;
+    const parseParking = (v: unknown): "dedicated" | "street" | "no_dedicated" => {
+      const s = typeof v === "string" ? v.trim() : "";
+      if (s === "street" || s === "no_dedicated") return s;
+      return "dedicated";
+    };
+    const fromParking = parseParking(body.from_parking);
+    const toParking = parseParking(body.to_parking);
+    const truthyFlag = (v: unknown) =>
+      v === true ||
+      v === "true" ||
+      v === "1" ||
+      v === "on";
+    const fromLongCarry = truthyFlag(body.from_long_carry);
+    const toLongCarry = truthyFlag(body.to_long_carry);
     const accessNotesRaw = (body.access_notes as string)?.trim() || null;
     const accessNotesWithAccess =
       [
         fromAccess && `From: ${fromAccess}`,
         toAccess && `To: ${toAccess}`,
+        fromParking && fromParking !== "dedicated"
+          ? `From parking: ${fromParking}`
+          : null,
+        toParking && toParking !== "dedicated"
+          ? `To parking: ${toParking}`
+          : null,
+        fromLongCarry ? "From long carry (50m+)" : null,
+        toLongCarry ? "To long carry (50m+)" : null,
         accessNotesRaw,
       ]
         .filter(Boolean)
@@ -217,6 +269,36 @@ export async function POST(req: NextRequest) {
         [internalNotesMerged, additionalStopsNote]
           .filter(Boolean)
           .join("\n\n") || null;
+    }
+
+    if (moveType === "white_glove") {
+      const wgNoteParts: string[] = [];
+      const wgDel = (body.white_glove_delivery_instructions as string)?.trim();
+      if (wgDel) wgNoteParts.push(`Delivery instructions: ${wgDel}`);
+      const wgBn = (body.white_glove_building_requirements_note as string)?.trim();
+      if (wgBn) wgNoteParts.push(`Building note: ${wgBn}`);
+      const wgBr = body.specialty_building_requirements;
+      if (Array.isArray(wgBr) && wgBr.length > 0) {
+        wgNoteParts.push(`Building checklist: ${wgBr.map(String).join(", ")}`);
+      }
+      if (
+        body.white_glove_debris_removal === true ||
+        body.white_glove_debris_removal === "true"
+      ) {
+        wgNoteParts.push("Debris removal requested");
+      }
+      const gwh = body.white_glove_guaranteed_window_hours;
+      const gwhN =
+        typeof gwh === "number" ? gwh : typeof gwh === "string" ? Number(gwh) : 0;
+      if (Number.isFinite(gwhN) && gwhN > 0) {
+        wgNoteParts.push(`Guaranteed ${gwhN} hour delivery window`);
+      }
+      if (wgNoteParts.length > 0) {
+        internalNotesMerged =
+          [internalNotesMerged, wgNoteParts.join("\n")]
+            .filter(Boolean)
+            .join("\n\n") || wgNoteParts.join("\n");
+      }
     }
 
     if (!clientName)
@@ -393,6 +475,15 @@ export async function POST(req: NextRequest) {
       moveAssignedCrewName = snap.assigned_crew_name;
     }
 
+    const inventoryItemsList = Array.isArray(body.items) ? body.items : [];
+    const whiteGloveItemsList = Array.isArray(body.white_glove_items)
+      ? body.white_glove_items
+      : [];
+    const itemsForMoveRow =
+      moveType === "white_glove" && whiteGloveItemsList.length > 0
+        ? whiteGloveItemsList
+        : inventoryItemsList;
+
     const { data: move, error: insertError } = await db
       .from("moves")
       .insert({
@@ -417,6 +508,10 @@ export async function POST(req: NextRequest) {
         scheduled_date: (body.scheduled_date as string)?.trim() || null,
         scheduled_time: (body.scheduled_time as string)?.trim() || null,
         arrival_window: (body.arrival_window as string)?.trim() || null,
+        from_long_carry: fromLongCarry,
+        to_long_carry: toLongCarry,
+        from_parking: fromParking,
+        to_parking: toParking,
         access_notes: accessNotesWithAccess,
         internal_notes: internalNotesMerged,
         preferred_contact: (body.preferred_contact as string)?.trim() || null,
@@ -428,7 +523,7 @@ export async function POST(req: NextRequest) {
         complexity_indicators: Array.isArray(body.complexity_indicators)
           ? body.complexity_indicators
           : [],
-        items: Array.isArray(body.items) ? body.items : [],
+        items: itemsForMoveRow,
         inventory_score:
           typeof body.inventory_score === "number"
             ? body.inventory_score
@@ -460,6 +555,41 @@ export async function POST(req: NextRequest) {
               setup_instructions:
                 (body.setup_instructions as string)?.trim() || null,
             }
+          : {}),
+        ...(moveType === "white_glove" && whiteGloveItemsList.length > 0
+          ? (() => {
+              const first = whiteGloveItemsList[0] as {
+                description?: string;
+                category?: string;
+                weight_class?: string;
+                assembly?: string;
+              };
+              const dvRaw = body.declared_value;
+              const dvStr =
+                dvRaw != null && dvRaw !== ""
+                  ? String(dvRaw).replace(/,/g, "").trim()
+                  : "";
+              const parsedDv = dvStr ? Number(dvStr) : NaN;
+              return {
+                item_description: first?.description?.trim() || null,
+                item_category:
+                  typeof first?.category === "string"
+                    ? first.category.trim() || null
+                    : null,
+                item_weight_class:
+                  typeof first?.weight_class === "string"
+                    ? first.weight_class.trim() || null
+                    : null,
+                assembly_needed:
+                  typeof first?.assembly === "string"
+                    ? first.assembly.trim() || null
+                    : null,
+                declared_value:
+                  Number.isFinite(parsedDv) && parsedDv > 0 ? parsedDv : null,
+                item_source: (body.item_source as string)?.trim() || null,
+                source_company: (body.source_company as string)?.trim() || null,
+              };
+            })()
           : {}),
         ...(labourResult ? { est_truck_size: labourResult.truckSize } : {}),
         est_margin_percent: estMarginPercent,
@@ -517,6 +647,12 @@ export async function POST(req: NextRequest) {
         const { attachMultiDayMoveProjectFromScope } = await import(
           "@/lib/move-projects/create-from-move-scope"
         );
+
+        const plannedSchedule = sanitizeMoveProjectSchedulePayload(
+          body.project_schedule,
+          scopedEstimatedDays,
+        );
+
         await attachMultiDayMoveProjectFromScope(db, {
           moveId,
           quoteUuid: resolvedQuoteUuid,
@@ -529,6 +665,7 @@ export async function POST(req: NextRequest) {
             new Date().toISOString().slice(0, 10),
           estimatedDays: scopedEstimatedDays,
           dayBreakdown: scopedDayBreakdown,
+          plannedSchedule,
         });
       }
 

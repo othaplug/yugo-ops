@@ -268,6 +268,8 @@ export function buildNotificationTitle(
     partner_pm_booking: "PM booking request",
     partner_pm_batch: "PM batch created",
     building_profile_pending: "Building profile review",
+    move_project_day_completed: "Multi-day move day finished",
+    move_project_day_started: "Multi-day move day underway",
   };
   return titles[slug] || "Notification";
 }
@@ -354,6 +356,9 @@ export function getNotificationIcon(slug: string): string {
     lead_new: "lightning",
     partner_pm_booking: "truck",
     quote_comparison_signal: "eye",
+    building_profile_pending: "building",
+    move_project_day_completed: "check",
+    move_project_day_started: "flag",
   };
   return icons[slug] || "bell";
 }
@@ -374,7 +379,9 @@ export function buildNotificationLink(
       slug === "crew_no_checkin" ||
       slug === "checklist_incomplete" ||
       slug === "crew_gps_offline" ||
-      slug === "crew_idle_off_route") &&
+      slug === "crew_idle_off_route" ||
+      slug === "move_project_day_completed" ||
+      slug === "move_project_day_started") &&
     data.moveId
   )
     return `/admin/moves/${data.moveId}`;
@@ -403,7 +410,9 @@ export function getSourceType(slug: string, data?: NotificationData): string {
     slug === "crew_checkin" ||
     slug === "crew_no_checkin" ||
     slug === "checklist_incomplete" ||
-    slug === "crew_gps_offline"
+    slug === "crew_gps_offline" ||
+    slug === "move_project_day_completed" ||
+    slug === "move_project_day_started"
   )
     return "move";
   if (

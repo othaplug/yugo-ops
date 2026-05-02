@@ -37,7 +37,18 @@ import InventoryInput, {
   type InventoryItemEntry,
 } from "@/components/inventory/InventoryInput";
 import { residentialInventoryLineScore } from "@/lib/pricing/weight-tiers";
-import { labelForDayType } from "@/lib/move-projects/day-types";
+import { MOVE_DAY_FORM_DEFAULTS } from "@/lib/move-projects/day-types";
+import {
+  ResidentialProjectPlannerSection,
+  reconcileResidentialScheduleRows,
+  defaultResidentialDayTypes,
+  type ResidentialScheduleDraftRow,
+} from "../create/ResidentialProjectPlannerSection";
+import {
+  WhiteGloveItemsEditor,
+  createDefaultWhiteGloveItem,
+  type WhiteGloveItemRow,
+} from "@/components/admin/WhiteGloveItemsEditor";
 
 interface Org {
   id: string;
@@ -150,7 +161,13 @@ const ITEM_SOURCE_OPTIONS = [
   "Estate",
   "Self",
 ];
-const WG_ASSEMBLY_OPTIONS = ["Full assembly", "Partial", "None"];
+
+const WG_BUILDING_REQUIREMENT_OPTIONS = [
+  { value: "elevator_booking", label: "Elevator booking required" },
+  { value: "insurance_certificate", label: "Insurance certificate required" },
+  { value: "restricted_hours", label: "Restricted move hours" },
+  { value: "loading_dock_booking", label: "Loading dock booking required" },
+] as const;
 
 // Specialty
 const PROJECT_TYPES = [
@@ -237,16 +254,24 @@ const fieldInput = "field-input-compact w-full";
 const accessSelectClass = `${fieldInput} min-h-[2.5rem] text-left text-[12px] text-[var(--tx)]`;
 /** Elevator / loading dock: unit field only (no floor). Gate / buzz: unit + floor. */
 const ACCESS_UNIT_ONLY = new Set<string>(["Elevator", "Loading dock"]);
+const ADDRESS_SECTION_H3 =
+  "text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx2)]";
+const ADDRESS_STOP_TITLE =
+  "text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx2)]";
+const ADDRESS_MICRO_LABEL =
+  "block text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)] mb-1";
+const UNIT_PLACEHOLDER_CLASS =
+  "flex min-h-[38px] items-center rounded-md border border-dashed border-[var(--brd)]/60 bg-[var(--card)]/50 px-2.5 text-[11px] text-[var(--tx3)]";
 
-function defaultResidentialDayBreakdown(
-  dayCount: number,
-): { day: number; type: string }[] {
-  const n = Math.max(1, Math.min(14, Math.round(dayCount)));
-  return Array.from({ length: n }, (_, i) => ({
-    day: i + 1,
-    type: i === n - 1 ? "move" : "pack",
-  }));
-}
+const CM_PARKING_OPTIONS = [
+  { value: "dedicated", label: "Dedicated / loading dock" },
+  { value: "street", label: "Street parking" },
+  { value: "no_dedicated", label: "No dedicated parking (+$75)" },
+] as const;
+
+type CreateMoveParking = (typeof CM_PARKING_OPTIONS)[number]["value"];
+
+const CM_CHECKBOX_CLASS = "h-4 w-4 accent-[#2C3E2D] shrink-0";
 
 interface ItemWeightRow {
   slug: string;
@@ -325,6 +350,11 @@ export default function CreateMoveForm({
   const [toFloor, setToFloor] = useState("");
   const [extraFromStops, setExtraFromStops] = useState<StopEntry[]>([]);
   const [extraToStops, setExtraToStops] = useState<StopEntry[]>([]);
+  const [fromParking, setFromParking] =
+    useState<CreateMoveParking>("dedicated");
+  const [toParking, setToParking] = useState<CreateMoveParking>("dedicated");
+  const [fromLongCarry, setFromLongCarry] = useState(false);
+  const [toLongCarry, setToLongCarry] = useState(false);
   const [estimate, setEstimate] = useState("");
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
@@ -364,9 +394,17 @@ export default function CreateMoveForm({
   /** Multi-day residential: optional quote link + persisted days (Create move API attaches move_projects) */
   const [linkedQuoteUuid, setLinkedQuoteUuid] = useState<string | null>(null);
   const [estimatedMoveDays, setEstimatedMoveDays] = useState(1);
-  const [dayBreakdownRows, setDayBreakdownRows] = useState<
-    { day: number; type: string }[]
+  const [quoteScheduleSeed, setQuoteScheduleSeed] = useState<
+    { day: number; type: string }[] | null
+  >(null);
+  const [residentialScheduleRows, setResidentialScheduleRows] = useState<
+    ResidentialScheduleDraftRow[]
   >([]);
+  const [planMultiDayToggled, setPlanMultiDayToggled] = useState(false);
+  const [plannerCrewMembers, setPlannerCrewMembers] = useState<
+    { id: string; name: string }[]
+  >([]);
+  const plannerScheduleEpochRef = useRef({ anchor: "", n: 0 });
   const [quoteScopeLoading, setQuoteScopeLoading] = useState(false);
 
   // Office-only state
@@ -426,15 +464,21 @@ export default function CreateMoveForm({
   const [siStairFlights, setSiStairFlights] = useState("1");
 
   // White Glove state
-  const [wgItemDescription, setWgItemDescription] = useState("");
+  const wgPrevMoveTypeRef = useRef<string | null>(null);
+  const [whiteGloveItemRows, setWhiteGloveItemRows] = useState<
+    WhiteGloveItemRow[]
+  >([]);
   const [wgDeclaredValue, setWgDeclaredValue] = useState("");
+  const [wgGuaranteedWindow, setWgGuaranteedWindow] = useState(false);
+  const [wgGuaranteedWindowHours, setWgGuaranteedWindowHours] = useState<
+    2 | 3 | 4
+  >(2);
+  const [wgDebrisRemoval, setWgDebrisRemoval] = useState(false);
+  const [wgBuildingReqs, setWgBuildingReqs] = useState<string[]>([]);
+  const [wgBuildingNote, setWgBuildingNote] = useState("");
+  const [wgDeliveryInstructions, setWgDeliveryInstructions] = useState("");
   const [wgItemSource, setWgItemSource] = useState("");
   const [wgSourceCompany, setWgSourceCompany] = useState("");
-  const [wgAssemblyRequired, setWgAssemblyRequired] = useState("");
-  const [wgPlacementSpec, setWgPlacementSpec] = useState("");
-  const [wgPackagingRemoval, setWgPackagingRemoval] = useState(true);
-  const [wgPhotoDocumentation, setWgPhotoDocumentation] = useState(true);
-  const [wgEnhancedInsurance, setWgEnhancedInsurance] = useState(false);
 
   // Specialty state
   const [spProjectType, setSpProjectType] = useState("");
@@ -501,9 +545,9 @@ export default function CreateMoveForm({
               type: safeType,
             };
           });
-          setDayBreakdownRows(rows);
+          setQuoteScheduleSeed(rows);
         } else if (days > 1) {
-          setDayBreakdownRows(defaultResidentialDayBreakdown(days));
+          setQuoteScheduleSeed(defaultResidentialDayTypes(days));
         }
       } finally {
         if (!cancelled) setQuoteScopeLoading(false);
@@ -515,21 +559,83 @@ export default function CreateMoveForm({
   }, [initialQuoteUuid]);
 
   useEffect(() => {
-    if (moveType !== "residential") return;
-    const n = Math.max(1, Math.min(14, estimatedMoveDays));
-    if (n <= 1) {
-      setDayBreakdownRows([]);
+    void (async () => {
+      try {
+        const res = await fetch("/api/admin/crew-members");
+        if (!res.ok) return;
+        const data = (await res.json()) as { id?: string; name?: string }[];
+        const list = Array.isArray(data)
+          ? data.filter(
+              (m) =>
+                typeof m?.id === "string" &&
+                typeof m?.name === "string" &&
+                m.id.trim() &&
+                m.name.trim(),
+            )
+          : [];
+        setPlannerCrewMembers(
+          list.map((m) => ({ id: String(m.id).trim(), name: String(m.name).trim() })),
+        );
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (moveType !== "residential") {
+      setResidentialScheduleRows([]);
+      setQuoteScheduleSeed(null);
+      setPlanMultiDayToggled(false);
+      plannerScheduleEpochRef.current = { anchor: "", n: 0 };
       return;
     }
-    setDayBreakdownRows((prev) => {
-      if (prev.length === n) return prev;
-      const seed = defaultResidentialDayBreakdown(n);
-      return seed.map((row, i) => ({
-        ...row,
-        type: prev[i]?.type ?? row.type,
-      }));
-    });
-  }, [moveType, estimatedMoveDays]);
+
+    const showPlannerUi = estimatedMoveDays > 1 || planMultiDayToggled;
+    if (!showPlannerUi) {
+      setResidentialScheduleRows([]);
+      setQuoteScheduleSeed(null);
+      plannerScheduleEpochRef.current = { anchor: "", n: 0 };
+      return;
+    }
+
+    const n = Math.max(2, Math.min(14, estimatedMoveDays));
+    const epoch = plannerScheduleEpochRef.current;
+    const anchor = scheduledDate?.trim()?.slice(0, 10) || "";
+    const resequenceDates = epoch.anchor !== anchor || epoch.n !== n;
+    plannerScheduleEpochRef.current = { anchor, n };
+
+    setResidentialScheduleRows((prev) =>
+      reconcileResidentialScheduleRows({
+        anchorDateIso:
+          /^\d{4}-\d{2}-\d{2}$/.test(anchor) ? anchor : new Date().toISOString().slice(0, 10),
+        estimatedMoveDays: n,
+        priorRows: prev,
+        resequenceDates,
+        seedTypes: quoteScheduleSeed ?? undefined,
+      }),
+    );
+
+    if (quoteScheduleSeed) setQuoteScheduleSeed(null);
+  }, [
+    moveType,
+    estimatedMoveDays,
+    planMultiDayToggled,
+    scheduledDate,
+    quoteScheduleSeed,
+  ]);
+
+  useEffect(() => {
+    if (
+      moveType === "white_glove" &&
+      wgPrevMoveTypeRef.current !== "white_glove"
+    ) {
+      setWhiteGloveItemRows((prev) =>
+        prev.length > 0 ? prev : [createDefaultWhiteGloveItem()],
+      );
+    }
+    wgPrevMoveTypeRef.current = moveType;
+  }, [moveType]);
 
   // Draft auto-save (track core fields only — type-specific fields are less critical)
   const draftState = useMemo(
@@ -759,9 +865,14 @@ export default function CreateMoveForm({
           return;
         }
       }
-      if (moveType === "white_glove" && !wgItemDescription.trim()) {
-        toast("Item description is required for white glove", "x");
-        return;
+      if (moveType === "white_glove") {
+        if (!whiteGloveItemRows.some((r) => r.description.trim())) {
+          toast(
+            "Add at least one delivery item with a description.",
+            "x",
+          );
+          return;
+        }
       }
       if (moveType === "specialty") {
         if (!spProjectType) {
@@ -896,6 +1007,10 @@ export default function CreateMoveForm({
       formData.append("organization_id", organizationId);
       formData.append("from_access", fromAccess);
       formData.append("to_access", toAccess);
+      formData.append("from_parking", fromParking);
+      formData.append("to_parking", toParking);
+      formData.append("from_long_carry", fromLongCarry ? "true" : "false");
+      formData.append("to_long_carry", toLongCarry ? "true" : "false");
       if (fromUnit.trim()) formData.append("from_unit", fromUnit.trim());
       if (fromFloor.trim()) formData.append("from_floor", fromFloor.trim());
       if (toUnit.trim()) formData.append("to_unit", toUnit.trim());
@@ -920,11 +1035,51 @@ export default function CreateMoveForm({
       }
       if (moveType === "residential" && estimatedMoveDays > 1) {
         formData.append("estimated_days", String(estimatedMoveDays));
-        const rows =
-          dayBreakdownRows.length === estimatedMoveDays
-            ? dayBreakdownRows
-            : defaultResidentialDayBreakdown(estimatedMoveDays);
-        formData.append("day_breakdown", JSON.stringify(rows));
+        const dayRowsBrief =
+          residentialScheduleRows.length === estimatedMoveDays && residentialScheduleRows.length > 1
+            ? residentialScheduleRows.map((r) => ({ day: r.day, type: r.type }))
+            : defaultResidentialDayTypes(estimatedMoveDays);
+        formData.append("day_breakdown", JSON.stringify(dayRowsBrief));
+
+        const fullPlan =
+          residentialScheduleRows.length === estimatedMoveDays && residentialScheduleRows.length > 1
+            ? {
+                days: residentialScheduleRows.map((r) => {
+                  const defs = MOVE_DAY_FORM_DEFAULTS[r.type] ?? MOVE_DAY_FORM_DEFAULTS.move;
+                  const hoursParsed = parseFloat(String(r.estHours).replace(",", "."));
+                  const crewParsed = parseInt(String(r.crewSize).trim(), 10);
+                  const truckTrim = typeof r.truck === "string" ? r.truck.trim() : "";
+                  return {
+                    day: r.day,
+                    type: r.type,
+                    date: r.date,
+                    start_time: r.startTime.trim() ? r.startTime.trim() : null,
+                    estimated_hours: Number.isFinite(hoursParsed) ? hoursParsed : defs.hours,
+                    crew_size: Number.isFinite(crewParsed)
+                      ? Math.max(1, Math.min(20, crewParsed))
+                      : defs.crewSize,
+                    crew_member_ids: r.crewMemberIds,
+                    truck: truckTrim.length > 0 ? truckTrim.slice(0, 48) : null,
+                    notes: r.notes.trim().slice(0, 1600) || null,
+                    packing_rooms:
+                      r.type === "pack"
+                        ? {
+                            kitchen: r.packKitchen,
+                            living: r.packLiving,
+                            bedrooms: r.packBedrooms,
+                            dining: r.packDining,
+                            garage: r.packGarage,
+                            storage: r.packStorage,
+                          }
+                        : null,
+                  };
+                }),
+              }
+            : null;
+
+        if (fullPlan?.days?.length) {
+          formData.append("project_schedule", JSON.stringify(fullPlan));
+        }
       }
       formData.append("scheduled_time", scheduledTime);
       formData.append("arrival_window", arrivalWindow);
@@ -957,14 +1112,22 @@ export default function CreateMoveForm({
       formData.append(
         "items",
         JSON.stringify(
-          inventoryItems.map((i) => ({
-            slug: i.slug,
-            name: i.name,
-            quantity: i.quantity,
-            weight_score: i.weight_score,
-            room: i.room || "other",
-            ...(i.weightNote ? { weightNote: i.weightNote } : {}),
-          })),
+          moveType === "white_glove"
+            ? whiteGloveItemRows
+                .filter((r) => r.description.trim())
+                .map((r) => ({
+                  name: r.description.trim(),
+                  quantity: r.quantity,
+                  room: "delivery",
+                }))
+            : inventoryItems.map((i) => ({
+                slug: i.slug,
+                name: i.name,
+                quantity: i.quantity,
+                weight_score: i.weight_score,
+                room: i.room || "other",
+                ...(i.weightNote ? { weightNote: i.weightNote } : {}),
+              })),
         ),
       );
       formData.append("inventory_score", String(inventoryScore));
@@ -1006,15 +1169,53 @@ export default function CreateMoveForm({
       }
       // White Glove fields
       if (moveType === "white_glove") {
-        formData.append("item_description", wgItemDescription);
+        const wgItems = whiteGloveItemRows
+          .filter((r) => r.description.trim())
+          .map((r) => ({
+            description: r.description.trim(),
+            quantity: r.quantity,
+            category: r.category,
+            weight_class: r.weight_class,
+            assembly: r.assembly,
+            is_fragile: r.is_fragile,
+            is_high_value: r.is_high_value,
+            notes: r.notes?.trim() || undefined,
+          }));
+        formData.append("white_glove_items", JSON.stringify(wgItems));
         formData.append("declared_value", wgDeclaredValue);
-        formData.append("item_source", wgItemSource);
-        formData.append("source_company", wgSourceCompany);
-        formData.append("assembly_needed", wgAssemblyRequired);
-        formData.append("placement_spec", wgPlacementSpec);
-        formData.append("packaging_removal", String(wgPackagingRemoval));
-        formData.append("photo_documentation", String(wgPhotoDocumentation));
-        formData.append("enhanced_insurance", String(wgEnhancedInsurance));
+        if (wgDebrisRemoval) {
+          formData.append("white_glove_debris_removal", "true");
+        }
+        if (wgGuaranteedWindow) {
+          formData.append(
+            "white_glove_guaranteed_window_hours",
+            String(wgGuaranteedWindowHours),
+          );
+        }
+        if (wgBuildingReqs.length > 0) {
+          formData.append(
+            "specialty_building_requirements",
+            JSON.stringify(wgBuildingReqs),
+          );
+        }
+        if (wgBuildingNote.trim()) {
+          formData.append(
+            "white_glove_building_requirements_note",
+            wgBuildingNote.trim(),
+          );
+        }
+        if (wgDeliveryInstructions.trim()) {
+          formData.append(
+            "white_glove_delivery_instructions",
+            wgDeliveryInstructions.trim(),
+          );
+        }
+        if (wgItemSource.trim()) {
+          formData.append("item_source", wgItemSource.trim());
+        }
+        if (wgSourceCompany.trim()) {
+          formData.append("source_company", wgSourceCompany.trim());
+        }
       }
       // Specialty fields
       if (moveType === "specialty") {
@@ -1104,7 +1305,7 @@ export default function CreateMoveForm({
         <BackButton label="Back" />
       </div>
       <div className="w-full">
-        <div className="mb-6 pb-6 border-b border-[var(--brd)]/70">
+        <div className="mb-6 pb-6">
           <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82 mb-1.5">
             Operations
           </p>
@@ -1661,61 +1862,6 @@ export default function CreateMoveForm({
                   </div>
                 </AnimatedSection>
 
-                {/* White Glove: item info */}
-                <AnimatedSection show={moveType === "white_glove"}>
-                  <div className="space-y-2">
-                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                      White Glove, Item Info
-                    </h3>
-                    <Field label="Item Description *">
-                      <input
-                        value={wgItemDescription}
-                        onChange={(e) => setWgItemDescription(e.target.value)}
-                        placeholder="Describe the item in detail"
-                        className={fieldInput}
-                      />
-                    </Field>
-                    <div className="grid sm:grid-cols-2 gap-2">
-                      <Field label="Retail / Declared Value ($)">
-                        <input
-                          type="text"
-                          value={wgDeclaredValue}
-                          onChange={(e) => setWgDeclaredValue(e.target.value)}
-                          onBlur={() => {
-                            const n = parseNumberInput(wgDeclaredValue);
-                            if (n > 0) setWgDeclaredValue(formatNumberInput(n));
-                          }}
-                          placeholder="For insurance, required for items over $2,000"
-                          inputMode="decimal"
-                          className={fieldInput}
-                        />
-                      </Field>
-                      <Field label="Item Source">
-                        <select
-                          value={wgItemSource}
-                          onChange={(e) => setWgItemSource(e.target.value)}
-                          className={fieldInput}
-                        >
-                          <option value="">Select…</option>
-                          {ITEM_SOURCE_OPTIONS.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                    </div>
-                    <Field label="Source Company">
-                      <input
-                        value={wgSourceCompany}
-                        onChange={(e) => setWgSourceCompany(e.target.value)}
-                        placeholder="If from a retailer, helps track B2B potential"
-                        className={fieldInput}
-                      />
-                    </Field>
-                  </div>
-                </AnimatedSection>
-
                 {/* Specialty: project info */}
                 <AnimatedSection show={moveType === "specialty"}>
                   <div className="space-y-2">
@@ -1841,10 +1987,8 @@ export default function CreateMoveForm({
             {flowStep === 1 && (
               <>
                 {/* Addresses */}
-                <div className="space-y-3">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                    Addresses
-                  </h3>
+                <div className="space-y-6">
+                  <h3 className={ADDRESS_SECTION_H3}>Addresses</h3>
                   {moveType === "labour_only" && (
                     <p className="text-[10px] text-[var(--tx3)]">
                       Work site or primary location, you can use the same
@@ -1852,328 +1996,527 @@ export default function CreateMoveForm({
                     </p>
                   )}
                   {moveType === "labour_only" ? (
-                    <div className="space-y-1.5">
-                      <div className="flex flex-col sm:flex-row gap-2 sm:items-start sm:gap-3">
-                        <div className="flex-1 min-w-0 w-full sm:max-w-lg">
-                          <AddressAutocomplete
-                            value={fromAddress}
-                            onRawChange={setFromAddress}
-                            onChange={(r) => {
-                              setFromAddress(r.fullAddress);
-                              setFromLat(r.lat);
-                              setFromLng(r.lng);
-                            }}
-                            placeholder="From address*"
-                            required
-                            className={fieldInput}
-                            name="from_address"
-                          />
+                    <div className="space-y-4">
+                      <div className="max-w-4xl space-y-3">
+                        <p className={ADDRESS_STOP_TITLE}>From</p>
+                        <AddressAutocomplete
+                          value={fromAddress}
+                          onRawChange={setFromAddress}
+                          onChange={(r) => {
+                            setFromAddress(r.fullAddress);
+                            setFromLat(r.lat);
+                            setFromLng(r.lng);
+                          }}
+                          placeholder="From address*"
+                          required
+                          className={fieldInput}
+                          name="from_address"
+                        />
+                        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4">
+                          <div className="w-full min-w-0 sm:w-[7.25rem] sm:shrink-0">
+                            <label
+                              htmlFor={
+                                ACCESS_UNIT_ONLY.has(fromAccess)
+                                  ? "cm-labour-from-unit"
+                                  : "cm-labour-from-unit-ph"
+                              }
+                              className={ADDRESS_MICRO_LABEL}
+                            >
+                              Unit
+                            </label>
+                            {ACCESS_UNIT_ONLY.has(fromAccess) ? (
+                              <input
+                                id="cm-labour-from-unit"
+                                type="text"
+                                value={fromUnit}
+                                onChange={(e) => setFromUnit(e.target.value)}
+                                placeholder="e.g. 1204"
+                                className={fieldInput}
+                                aria-label="Unit or suite, from address"
+                              />
+                            ) : fromAccess === "Gate / Buzz code" ? (
+                              <div
+                                id="cm-labour-from-unit-ph"
+                                className={UNIT_PLACEHOLDER_CLASS}
+                                role="status"
+                              >
+                                Enter unit and floor below
+                              </div>
+                            ) : (
+                              <div
+                                id="cm-labour-from-unit-ph"
+                                className={UNIT_PLACEHOLDER_CLASS}
+                                role="status"
+                              >
+                                Not required for this access type
+                              </div>
+                            )}
+                          </div>
+                          <div className="w-full min-w-0 sm:w-[11rem] sm:max-w-[13rem] sm:shrink-0">
+                            <label
+                              htmlFor="labour-from-access"
+                              className={ADDRESS_MICRO_LABEL}
+                            >
+                              Access
+                            </label>
+                            <select
+                              id="labour-from-access"
+                              name="from_access"
+                              value={fromAccess}
+                              onChange={(e) => setFromAccess(e.target.value)}
+                              className={accessSelectClass}
+                              aria-label="From access"
+                            >
+                              <option value="">From access*</option>
+                              <option value="Elevator">Elevator</option>
+                              <option value="Stairs">Stairs</option>
+                              <option value="Loading dock">Loading dock</option>
+                              <option value="Parking">Parking</option>
+                              <option value="Gate / Buzz code">
+                                Gate / Buzz code
+                              </option>
+                              <option value="Ground floor">Ground floor</option>
+                              <option value="Building access required">
+                                Building access required
+                              </option>
+                            </select>
+                          </div>
                         </div>
-                        <div className="w-full sm:w-[9.5rem] shrink-0 sm:pt-0.5">
-                          <label
-                            htmlFor="labour-from-access"
-                            className="sr-only"
-                          >
-                            From access
-                          </label>
-                          <select
-                            id="labour-from-access"
-                            name="from_access"
-                            value={fromAccess}
-                            onChange={(e) => setFromAccess(e.target.value)}
-                            className={accessSelectClass}
-                            aria-label="From access"
-                          >
-                            <option value="">From access*</option>
-                            <option value="Elevator">Elevator</option>
-                            <option value="Stairs">Stairs</option>
-                            <option value="Loading dock">Loading dock</option>
-                            <option value="Parking">Parking</option>
-                            <option value="Gate / Buzz code">
-                              Gate / Buzz code
-                            </option>
-                            <option value="Ground floor">Ground floor</option>
-                            <option value="Building access required">
-                              Building access required
-                            </option>
-                          </select>
-                        </div>
+                        {fromAccess === "Gate / Buzz code" && (
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:max-w-md">
+                            <input
+                              type="text"
+                              value={fromUnit}
+                              onChange={(e) => setFromUnit(e.target.value)}
+                              placeholder="Unit / suite (e.g. 1204)"
+                              className={fieldInput}
+                              aria-label="Unit or suite, from address"
+                            />
+                            <input
+                              type="text"
+                              value={fromFloor}
+                              onChange={(e) => setFromFloor(e.target.value)}
+                              placeholder="Floor (e.g. 12)"
+                              className={fieldInput}
+                              aria-label="Floor, from address"
+                            />
+                          </div>
+                        )}
                       </div>
-                      {ACCESS_UNIT_ONLY.has(fromAccess) && (
-                        <div className="w-full sm:max-w-md">
-                          <input
-                            type="text"
-                            value={fromUnit}
-                            onChange={(e) => setFromUnit(e.target.value)}
-                            placeholder="Unit / suite (e.g. 1204)"
-                            className={fieldInput}
-                            aria-label="Unit or suite, from address"
-                          />
+                      <div className="max-w-4xl space-y-3">
+                        <p className={ADDRESS_STOP_TITLE}>To</p>
+                        <AddressAutocomplete
+                          value={toAddress}
+                          onRawChange={setToAddress}
+                          onChange={(r) => {
+                            setToAddress(r.fullAddress);
+                            setToLat(r.lat);
+                            setToLng(r.lng);
+                          }}
+                          placeholder="To address*"
+                          required
+                          className={fieldInput}
+                          name="to_address"
+                        />
+                        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4">
+                          <div className="w-full min-w-0 sm:w-[7.25rem] sm:shrink-0">
+                            <label
+                              htmlFor={
+                                ACCESS_UNIT_ONLY.has(toAccess)
+                                  ? "cm-labour-to-unit"
+                                  : "cm-labour-to-unit-ph"
+                              }
+                              className={ADDRESS_MICRO_LABEL}
+                            >
+                              Unit
+                            </label>
+                            {ACCESS_UNIT_ONLY.has(toAccess) ? (
+                              <input
+                                id="cm-labour-to-unit"
+                                type="text"
+                                value={toUnit}
+                                onChange={(e) => setToUnit(e.target.value)}
+                                placeholder="e.g. 804"
+                                className={fieldInput}
+                                aria-label="Unit or suite, to address"
+                              />
+                            ) : toAccess === "Gate / Buzz code" ? (
+                              <div
+                                id="cm-labour-to-unit-ph"
+                                className={UNIT_PLACEHOLDER_CLASS}
+                                role="status"
+                              >
+                                Enter unit and floor below
+                              </div>
+                            ) : (
+                              <div
+                                id="cm-labour-to-unit-ph"
+                                className={UNIT_PLACEHOLDER_CLASS}
+                                role="status"
+                              >
+                                Not required for this access type
+                              </div>
+                            )}
+                          </div>
+                          <div className="w-full min-w-0 sm:w-[11rem] sm:max-w-[13rem] sm:shrink-0">
+                            <label
+                              htmlFor="labour-to-access"
+                              className={ADDRESS_MICRO_LABEL}
+                            >
+                              Access
+                            </label>
+                            <select
+                              id="labour-to-access"
+                              name="to_access"
+                              value={toAccess}
+                              onChange={(e) => setToAccess(e.target.value)}
+                              className={accessSelectClass}
+                              aria-label="To access"
+                            >
+                              <option value="">To access*</option>
+                              <option value="Elevator">Elevator</option>
+                              <option value="Stairs">Stairs</option>
+                              <option value="Loading dock">Loading dock</option>
+                              <option value="Parking">Parking</option>
+                              <option value="Gate / Buzz code">
+                                Gate / Buzz code
+                              </option>
+                              <option value="Ground floor">Ground floor</option>
+                              <option value="Building access required">
+                                Building access required
+                              </option>
+                            </select>
+                          </div>
                         </div>
-                      )}
-                      {fromAccess === "Gate / Buzz code" && (
-                        <div className="grid grid-cols-2 gap-2 sm:max-w-md">
-                          <input
-                            type="text"
-                            value={fromUnit}
-                            onChange={(e) => setFromUnit(e.target.value)}
-                            placeholder="Unit / suite (e.g. 1204)"
-                            className={fieldInput}
-                            aria-label="Unit or suite, from address"
-                          />
-                          <input
-                            type="text"
-                            value={fromFloor}
-                            onChange={(e) => setFromFloor(e.target.value)}
-                            placeholder="Floor (e.g. 12)"
-                            className={fieldInput}
-                            aria-label="Floor, from address"
-                          />
-                        </div>
-                      )}
-                      <div className="flex flex-col sm:flex-row gap-2 sm:items-start sm:gap-3">
-                        <div className="flex-1 min-w-0 w-full sm:max-w-lg">
-                          <AddressAutocomplete
-                            value={toAddress}
-                            onRawChange={setToAddress}
-                            onChange={(r) => {
-                              setToAddress(r.fullAddress);
-                              setToLat(r.lat);
-                              setToLng(r.lng);
-                            }}
-                            placeholder="To address*"
-                            required
-                            className={fieldInput}
-                            name="to_address"
-                          />
-                        </div>
-                        <div className="w-full sm:w-[9.5rem] shrink-0 sm:pt-0.5">
-                          <label htmlFor="labour-to-access" className="sr-only">
-                            To access
-                          </label>
-                          <select
-                            id="labour-to-access"
-                            name="to_access"
-                            value={toAccess}
-                            onChange={(e) => setToAccess(e.target.value)}
-                            className={accessSelectClass}
-                            aria-label="To access"
-                          >
-                            <option value="">To access*</option>
-                            <option value="Elevator">Elevator</option>
-                            <option value="Stairs">Stairs</option>
-                            <option value="Loading dock">Loading dock</option>
-                            <option value="Parking">Parking</option>
-                            <option value="Gate / Buzz code">
-                              Gate / Buzz code
-                            </option>
-                            <option value="Ground floor">Ground floor</option>
-                            <option value="Building access required">
-                              Building access required
-                            </option>
-                          </select>
-                        </div>
+                        {toAccess === "Gate / Buzz code" && (
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:max-w-md">
+                            <input
+                              type="text"
+                              value={toUnit}
+                              onChange={(e) => setToUnit(e.target.value)}
+                              placeholder="Unit / suite (e.g. 804)"
+                              className={fieldInput}
+                              aria-label="Unit or suite, to address"
+                            />
+                            <input
+                              type="text"
+                              value={toFloor}
+                              onChange={(e) => setToFloor(e.target.value)}
+                              placeholder="Floor (e.g. 8)"
+                              className={fieldInput}
+                              aria-label="Floor, to address"
+                            />
+                          </div>
+                        )}
                       </div>
-                      {ACCESS_UNIT_ONLY.has(toAccess) && (
-                        <div className="w-full sm:max-w-md">
-                          <input
-                            type="text"
-                            value={toUnit}
-                            onChange={(e) => setToUnit(e.target.value)}
-                            placeholder="Unit / suite (e.g. 804)"
-                            className={fieldInput}
-                            aria-label="Unit or suite, to address"
-                          />
-                        </div>
-                      )}
-                      {toAccess === "Gate / Buzz code" && (
-                        <div className="grid grid-cols-2 gap-2 sm:max-w-md">
-                          <input
-                            type="text"
-                            value={toUnit}
-                            onChange={(e) => setToUnit(e.target.value)}
-                            placeholder="Unit / suite (e.g. 804)"
-                            className={fieldInput}
-                            aria-label="Unit or suite, to address"
-                          />
-                          <input
-                            type="text"
-                            value={toFloor}
-                            onChange={(e) => setToFloor(e.target.value)}
-                            placeholder="Floor (e.g. 8)"
-                            className={fieldInput}
-                            aria-label="Floor, to address"
-                          />
-                        </div>
-                      )}
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      <div className="flex flex-col sm:flex-row gap-3 sm:items-start sm:gap-3">
-                        <div className="flex-1 min-w-0 w-full sm:max-w-lg">
-                          <MultiStopAddressField
-                            label="From"
-                            labelVisibility="sr-only"
-                            placeholder="From address*"
-                            stops={[
-                              {
-                                address: fromAddress,
-                                lat: fromLat,
-                                lng: fromLng,
-                              },
-                              ...extraFromStops,
-                            ]}
-                            onChange={(stops) => {
-                              const first = stops[0];
-                              setFromAddress(first?.address ?? "");
-                              setFromLat(first?.lat ?? null);
-                              setFromLng(first?.lng ?? null);
-                              setExtraFromStops(stops.slice(1));
-                            }}
-                            inputClassName={fieldInput}
-                          />
-                        </div>
-                        <div className="w-full sm:w-[9.5rem] shrink-0 sm:pt-0.5">
-                          <label htmlFor="ms-from-access" className="sr-only">
-                            From access
+                    <div className="space-y-4">
+                      <div className="max-w-4xl space-y-3">
+                        <p className={ADDRESS_STOP_TITLE}>From</p>
+                        <MultiStopAddressField
+                          label="From"
+                          labelVisibility="sr-only"
+                          placeholder="From address*"
+                          stops={[
+                            {
+                              address: fromAddress,
+                              lat: fromLat,
+                              lng: fromLng,
+                            },
+                            ...extraFromStops,
+                          ]}
+                          onChange={(stops) => {
+                            const first = stops[0];
+                            setFromAddress(first?.address ?? "");
+                            setFromLat(first?.lat ?? null);
+                            setFromLng(first?.lng ?? null);
+                            setExtraFromStops(stops.slice(1));
+                          }}
+                          inputClassName={fieldInput}
+                        />
+                        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4">
+                          <div className="w-full min-w-0 sm:w-[7.25rem] sm:shrink-0">
+                            <label
+                              htmlFor={
+                                ACCESS_UNIT_ONLY.has(fromAccess)
+                                  ? "cm-ms-from-unit"
+                                  : "cm-ms-from-unit-ph"
+                              }
+                              className={ADDRESS_MICRO_LABEL}
+                            >
+                              Unit
+                            </label>
+                            {ACCESS_UNIT_ONLY.has(fromAccess) ? (
+                              <input
+                                id="cm-ms-from-unit"
+                                type="text"
+                                value={fromUnit}
+                                onChange={(e) => setFromUnit(e.target.value)}
+                                placeholder="e.g. 1204"
+                                className={fieldInput}
+                                aria-label="Unit or suite, from address"
+                              />
+                            ) : fromAccess === "Gate / Buzz code" ? (
+                              <div
+                                id="cm-ms-from-unit-ph"
+                                className={UNIT_PLACEHOLDER_CLASS}
+                                role="status"
+                              >
+                                Enter unit and floor below
+                              </div>
+                            ) : (
+                              <div
+                                id="cm-ms-from-unit-ph"
+                                className={UNIT_PLACEHOLDER_CLASS}
+                                role="status"
+                              >
+                                Not required for this access type
+                              </div>
+                            )}
+                          </div>
+                          <div className="w-full min-w-0 sm:w-[11rem] sm:max-w-[13rem] sm:shrink-0">
+                            <label
+                              htmlFor="ms-from-access"
+                              className={ADDRESS_MICRO_LABEL}
+                            >
+                              Access
+                            </label>
+                            <select
+                              id="ms-from-access"
+                              name="from_access"
+                              value={fromAccess}
+                              onChange={(e) => setFromAccess(e.target.value)}
+                              className={accessSelectClass}
+                              aria-label="From access"
+                            >
+                              <option value="">From access*</option>
+                              <option value="Elevator">Elevator</option>
+                              <option value="Stairs">Stairs</option>
+                              <option value="Loading dock">Loading dock</option>
+                              <option value="Parking">Parking</option>
+                              <option value="Gate / Buzz code">
+                                Gate / Buzz code
+                              </option>
+                              <option value="Ground floor">Ground floor</option>
+                              <option value="Building access required">
+                                Building access required
+                              </option>
+                            </select>
+                          </div>
+                          <div className="w-full min-w-0 sm:min-w-[12rem] sm:max-w-[20rem] sm:flex-1">
+                            <label
+                              htmlFor="cm-ms-from-parking"
+                              className={ADDRESS_MICRO_LABEL}
+                            >
+                              Parking
+                            </label>
+                            <select
+                              id="cm-ms-from-parking"
+                              name="from_parking"
+                              value={fromParking}
+                              onChange={(e) =>
+                                setFromParking(
+                                  e.target
+                                    .value as CreateMoveParking,
+                                )
+                              }
+                              className={fieldInput}
+                              aria-label="From address parking"
+                            >
+                              {CM_PARKING_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {o.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <label className="mt-1 flex w-full min-w-full basis-full cursor-pointer items-center gap-2 text-[12px] text-[var(--tx2)] sm:mt-2">
+                            <input
+                              type="checkbox"
+                              checked={fromLongCarry}
+                              onChange={(e) =>
+                                setFromLongCarry(e.target.checked)
+                              }
+                              className={CM_CHECKBOX_CLASS}
+                            />
+                            From address: Long carry (50m+ from truck to
+                            entrance) (+$75)
                           </label>
-                          <select
-                            id="ms-from-access"
-                            name="from_access"
-                            value={fromAccess}
-                            onChange={(e) => setFromAccess(e.target.value)}
-                            className={accessSelectClass}
-                            aria-label="From access"
-                          >
-                            <option value="">From access*</option>
-                            <option value="Elevator">Elevator</option>
-                            <option value="Stairs">Stairs</option>
-                            <option value="Loading dock">Loading dock</option>
-                            <option value="Parking">Parking</option>
-                            <option value="Gate / Buzz code">
-                              Gate / Buzz code
-                            </option>
-                            <option value="Ground floor">Ground floor</option>
-                            <option value="Building access required">
-                              Building access required
-                            </option>
-                          </select>
                         </div>
+                        {fromAccess === "Gate / Buzz code" && (
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:max-w-md">
+                            <input
+                              type="text"
+                              value={fromUnit}
+                              onChange={(e) => setFromUnit(e.target.value)}
+                              placeholder="Unit / suite (e.g. 1204)"
+                              className={fieldInput}
+                              aria-label="Unit or suite, from address"
+                            />
+                            <input
+                              type="text"
+                              value={fromFloor}
+                              onChange={(e) => setFromFloor(e.target.value)}
+                              placeholder="Floor (e.g. 12)"
+                              className={fieldInput}
+                              aria-label="Floor, from address"
+                            />
+                          </div>
+                        )}
                       </div>
-                      {ACCESS_UNIT_ONLY.has(fromAccess) && (
-                        <div className="w-full sm:max-w-md">
-                          <input
-                            type="text"
-                            value={fromUnit}
-                            onChange={(e) => setFromUnit(e.target.value)}
-                            placeholder="Unit / suite (e.g. 1204)"
-                            className={fieldInput}
-                            aria-label="Unit or suite, from address"
-                          />
-                        </div>
-                      )}
-                      {fromAccess === "Gate / Buzz code" && (
-                        <div className="grid grid-cols-2 gap-2 sm:max-w-md">
-                          <input
-                            type="text"
-                            value={fromUnit}
-                            onChange={(e) => setFromUnit(e.target.value)}
-                            placeholder="Unit / suite (e.g. 1204)"
-                            className={fieldInput}
-                            aria-label="Unit or suite, from address"
-                          />
-                          <input
-                            type="text"
-                            value={fromFloor}
-                            onChange={(e) => setFromFloor(e.target.value)}
-                            placeholder="Floor (e.g. 12)"
-                            className={fieldInput}
-                            aria-label="Floor, from address"
-                          />
-                        </div>
-                      )}
-                      <div className="flex flex-col sm:flex-row gap-3 sm:items-start sm:gap-3">
-                        <div className="flex-1 min-w-0 w-full sm:max-w-lg">
-                          <MultiStopAddressField
-                            label="To"
-                            labelVisibility="sr-only"
-                            placeholder="To address*"
-                            stops={[
-                              { address: toAddress, lat: toLat, lng: toLng },
-                              ...extraToStops,
-                            ]}
-                            onChange={(stops) => {
-                              const first = stops[0];
-                              setToAddress(first?.address ?? "");
-                              setToLat(first?.lat ?? null);
-                              setToLng(first?.lng ?? null);
-                              setExtraToStops(stops.slice(1));
-                            }}
-                            inputClassName={fieldInput}
-                          />
-                        </div>
-                        <div className="w-full sm:w-[9.5rem] shrink-0 sm:pt-0.5">
-                          <label htmlFor="ms-to-access" className="sr-only">
-                            To access
+                      <div className="max-w-4xl space-y-3">
+                        <p className={ADDRESS_STOP_TITLE}>To</p>
+                        <MultiStopAddressField
+                          label="To"
+                          labelVisibility="sr-only"
+                          placeholder="To address*"
+                          stops={[
+                            { address: toAddress, lat: toLat, lng: toLng },
+                            ...extraToStops,
+                          ]}
+                          onChange={(stops) => {
+                            const first = stops[0];
+                            setToAddress(first?.address ?? "");
+                            setToLat(first?.lat ?? null);
+                            setToLng(first?.lng ?? null);
+                            setExtraToStops(stops.slice(1));
+                          }}
+                          inputClassName={fieldInput}
+                        />
+                        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4">
+                          <div className="w-full min-w-0 sm:w-[7.25rem] sm:shrink-0">
+                            <label
+                              htmlFor={
+                                ACCESS_UNIT_ONLY.has(toAccess)
+                                  ? "cm-ms-to-unit"
+                                  : "cm-ms-to-unit-ph"
+                              }
+                              className={ADDRESS_MICRO_LABEL}
+                            >
+                              Unit
+                            </label>
+                            {ACCESS_UNIT_ONLY.has(toAccess) ? (
+                              <input
+                                id="cm-ms-to-unit"
+                                type="text"
+                                value={toUnit}
+                                onChange={(e) => setToUnit(e.target.value)}
+                                placeholder="e.g. 804"
+                                className={fieldInput}
+                                aria-label="Unit or suite, to address"
+                              />
+                            ) : toAccess === "Gate / Buzz code" ? (
+                              <div
+                                id="cm-ms-to-unit-ph"
+                                className={UNIT_PLACEHOLDER_CLASS}
+                                role="status"
+                              >
+                                Enter unit and floor below
+                              </div>
+                            ) : (
+                              <div
+                                id="cm-ms-to-unit-ph"
+                                className={UNIT_PLACEHOLDER_CLASS}
+                                role="status"
+                              >
+                                Not required for this access type
+                              </div>
+                            )}
+                          </div>
+                          <div className="w-full min-w-0 sm:w-[11rem] sm:max-w-[13rem] sm:shrink-0">
+                            <label
+                              htmlFor="ms-to-access"
+                              className={ADDRESS_MICRO_LABEL}
+                            >
+                              Access
+                            </label>
+                            <select
+                              id="ms-to-access"
+                              name="to_access"
+                              value={toAccess}
+                              onChange={(e) => setToAccess(e.target.value)}
+                              className={accessSelectClass}
+                              aria-label="To access"
+                            >
+                              <option value="">To access*</option>
+                              <option value="Elevator">Elevator</option>
+                              <option value="Stairs">Stairs</option>
+                              <option value="Loading dock">Loading dock</option>
+                              <option value="Parking">Parking</option>
+                              <option value="Gate / Buzz code">
+                                Gate / Buzz code
+                              </option>
+                              <option value="Ground floor">Ground floor</option>
+                              <option value="Building access required">
+                                Building access required
+                              </option>
+                            </select>
+                          </div>
+                          <div className="w-full min-w-0 sm:min-w-[12rem] sm:max-w-[20rem] sm:flex-1">
+                            <label
+                              htmlFor="cm-ms-to-parking"
+                              className={ADDRESS_MICRO_LABEL}
+                            >
+                              Parking
+                            </label>
+                            <select
+                              id="cm-ms-to-parking"
+                              name="to_parking"
+                              value={toParking}
+                              onChange={(e) =>
+                                setToParking(
+                                  e.target
+                                    .value as CreateMoveParking,
+                                )
+                              }
+                              className={fieldInput}
+                              aria-label="To address parking"
+                            >
+                              {CM_PARKING_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {o.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <label className="mt-1 flex w-full min-w-full basis-full cursor-pointer items-center gap-2 text-[12px] text-[var(--tx2)] sm:mt-2">
+                            <input
+                              type="checkbox"
+                              checked={toLongCarry}
+                              onChange={(e) =>
+                                setToLongCarry(e.target.checked)
+                              }
+                              className={CM_CHECKBOX_CLASS}
+                            />
+                            To address: Long carry (50m+ from truck to
+                            entrance) (+$75)
                           </label>
-                          <select
-                            id="ms-to-access"
-                            name="to_access"
-                            value={toAccess}
-                            onChange={(e) => setToAccess(e.target.value)}
-                            className={accessSelectClass}
-                            aria-label="To access"
-                          >
-                            <option value="">To access*</option>
-                            <option value="Elevator">Elevator</option>
-                            <option value="Stairs">Stairs</option>
-                            <option value="Loading dock">Loading dock</option>
-                            <option value="Parking">Parking</option>
-                            <option value="Gate / Buzz code">
-                              Gate / Buzz code
-                            </option>
-                            <option value="Ground floor">Ground floor</option>
-                            <option value="Building access required">
-                              Building access required
-                            </option>
-                          </select>
                         </div>
+                        {toAccess === "Gate / Buzz code" && (
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:max-w-md">
+                            <input
+                              type="text"
+                              value={toUnit}
+                              onChange={(e) => setToUnit(e.target.value)}
+                              placeholder="Unit / suite (e.g. 804)"
+                              className={fieldInput}
+                              aria-label="Unit or suite, to address"
+                            />
+                            <input
+                              type="text"
+                              value={toFloor}
+                              onChange={(e) => setToFloor(e.target.value)}
+                              placeholder="Floor (e.g. 8)"
+                              className={fieldInput}
+                              aria-label="Floor, to address"
+                            />
+                          </div>
+                        )}
                       </div>
-                      {ACCESS_UNIT_ONLY.has(toAccess) && (
-                        <div className="w-full sm:max-w-md">
-                          <input
-                            type="text"
-                            value={toUnit}
-                            onChange={(e) => setToUnit(e.target.value)}
-                            placeholder="Unit / suite (e.g. 804)"
-                            className={fieldInput}
-                            aria-label="Unit or suite, to address"
-                          />
-                        </div>
-                      )}
-                      {toAccess === "Gate / Buzz code" && (
-                        <div className="grid grid-cols-2 gap-2 sm:max-w-md">
-                          <input
-                            type="text"
-                            value={toUnit}
-                            onChange={(e) => setToUnit(e.target.value)}
-                            placeholder="Unit / suite (e.g. 804)"
-                            className={fieldInput}
-                            aria-label="Unit or suite, to address"
-                          />
-                          <input
-                            type="text"
-                            value={toFloor}
-                            onChange={(e) => setToFloor(e.target.value)}
-                            placeholder="Floor (e.g. 8)"
-                            className={fieldInput}
-                            aria-label="Floor, to address"
-                          />
-                        </div>
-                      )}
                       {(extraFromStops.some((s) => s.address.trim()) ||
                         extraToStops.some((s) => s.address.trim())) && (
-                        <div className="rounded-lg border border-[var(--brd)]/60 bg-[var(--bg2)]/40 p-3 space-y-1.5">
+                        <div className="mt-2 rounded-lg border border-[var(--brd)]/60 bg-[var(--bg2)]/40 p-3 space-y-1.5">
                           <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)]">
                             Multi-location move
                           </p>
@@ -2656,109 +2999,139 @@ export default function CreateMoveForm({
 
                   {/* White Glove: after-address fields */}
                   <AnimatedSection show={moveType === "white_glove"}>
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
-                        White Glove, Service Details
+                        White glove delivery items
                       </h3>
+                      <WhiteGloveItemsEditor
+                        value={whiteGloveItemRows}
+                        onChange={setWhiteGloveItemRows}
+                        fieldInputClass={fieldInput}
+                        cargoCoverageHint="For insurance purposes. Standard cargo coverage is $100K."
+                        declaredValue={wgDeclaredValue}
+                        onDeclaredValueChange={setWgDeclaredValue}
+                        debrisRemoval={wgDebrisRemoval}
+                        onDebrisRemovalChange={setWgDebrisRemoval}
+                      />
                       <div className="grid sm:grid-cols-2 gap-2">
-                        <Field label="Assembly Required">
+                        <Field label="Item source (optional)">
                           <select
-                            value={wgAssemblyRequired}
-                            onChange={(e) =>
-                              setWgAssemblyRequired(e.target.value)
-                            }
+                            value={wgItemSource}
+                            onChange={(e) => setWgItemSource(e.target.value)}
                             className={fieldInput}
                           >
                             <option value="">Select…</option>
-                            {WG_ASSEMBLY_OPTIONS.map((a) => (
-                              <option key={a} value={a}>
-                                {a}
+                            {ITEM_SOURCE_OPTIONS.map((s) => (
+                              <option key={s} value={s}>
+                                {s}
                               </option>
                             ))}
                           </select>
                         </Field>
+                        <Field label="Source company (optional)">
+                          <input
+                            value={wgSourceCompany}
+                            onChange={(e) =>
+                              setWgSourceCompany(e.target.value)
+                            }
+                            placeholder="Retailer or consignor name"
+                            className={fieldInput}
+                          />
+                        </Field>
                       </div>
-                      <Field label="Placement Specification">
+                      <div className="rounded-lg border border-[var(--brd)] bg-[var(--card)]/60 p-3 space-y-2">
+                        <label className="flex items-start gap-2 text-[11px] text-[var(--tx2)] cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={wgGuaranteedWindow}
+                            onChange={(e) =>
+                              setWgGuaranteedWindow(e.target.checked)
+                            }
+                            className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
+                          />
+                          <span>
+                            <span className="font-medium text-[var(--tx)]">
+                              Guaranteed time window
+                            </span>
+                            <span className="block text-[10px] text-[var(--tx3)] mt-0.5">
+                              Delivery must complete inside a booked window
+                            </span>
+                          </span>
+                        </label>
+                        {wgGuaranteedWindow && (
+                          <div className="pl-6">
+                            <Field label="Window length">
+                              <select
+                                value={String(wgGuaranteedWindowHours)}
+                                onChange={(e) =>
+                                  setWgGuaranteedWindowHours(
+                                    Number(e.target.value) as 2 | 3 | 4,
+                                  )
+                                }
+                                className={fieldInput}
+                              >
+                                <option value="2">2 hours</option>
+                                <option value="3">3 hours</option>
+                                <option value="4">4 hours</option>
+                              </select>
+                            </Field>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                          Building / access requirements
+                        </h3>
+                        <div className="flex flex-wrap gap-1.5">
+                          {WG_BUILDING_REQUIREMENT_OPTIONS.map((req) => {
+                            const active = wgBuildingReqs.includes(req.value);
+                            return (
+                              <button
+                                key={req.value}
+                                type="button"
+                                onClick={() =>
+                                  setWgBuildingReqs((prev) =>
+                                    active
+                                      ? prev.filter((v) => v !== req.value)
+                                      : [...prev, req.value],
+                                  )
+                                }
+                                className={`px-2.5 py-1 rounded-md text-[9px] font-semibold border transition-colors ${
+                                  active
+                                    ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                                    : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
+                                }`}
+                              >
+                                {req.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {wgBuildingReqs.length > 0 && (
+                          <Field label="Building requirements note">
+                            <textarea
+                              value={wgBuildingNote}
+                              onChange={(e) =>
+                                setWgBuildingNote(e.target.value)
+                              }
+                              rows={2}
+                              placeholder="COI details, dock booking, hours…"
+                              className={`${fieldInput} resize-none`}
+                            />
+                          </Field>
+                        )}
+                      </div>
+                      <Field label="Delivery instructions">
                         <textarea
-                          value={wgPlacementSpec}
-                          onChange={(e) => setWgPlacementSpec(e.target.value)}
+                          value={wgDeliveryInstructions}
+                          onChange={(e) =>
+                            setWgDeliveryInstructions(e.target.value)
+                          }
                           rows={3}
-                          placeholder="Exact room, wall, position…"
+                          placeholder="Room of choice, concierge, phone on arrival…"
                           className={`${fieldInput} resize-none`}
                         />
                       </Field>
-                      <div className="grid sm:grid-cols-2 gap-x-3 gap-y-2">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="text-[11px] font-medium text-[var(--tx)]">
-                              Packaging Removal
-                            </span>
-                            <p className="text-[9px] text-[var(--tx3)]">
-                              Remove all packaging on-site
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            role="switch"
-                            aria-checked={wgPackagingRemoval}
-                            onClick={() =>
-                              setWgPackagingRemoval(!wgPackagingRemoval)
-                            }
-                            className={`relative w-9 h-5 rounded-full transition-colors ${wgPackagingRemoval ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                          >
-                            <span
-                              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${wgPackagingRemoval ? "translate-x-4" : ""}`}
-                            />
-                          </button>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="text-[11px] font-medium text-[var(--tx)]">
-                              Photo Documentation
-                            </span>
-                            <p className="text-[9px] text-[var(--tx3)]">
-                              Before, during, after photos
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            role="switch"
-                            aria-checked={wgPhotoDocumentation}
-                            onClick={() =>
-                              setWgPhotoDocumentation(!wgPhotoDocumentation)
-                            }
-                            className={`relative w-9 h-5 rounded-full transition-colors ${wgPhotoDocumentation ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                          >
-                            <span
-                              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${wgPhotoDocumentation ? "translate-x-4" : ""}`}
-                            />
-                          </button>
-                        </div>
-                        <div className="flex items-center justify-between sm:col-span-2">
-                          <div>
-                            <span className="text-[11px] font-medium text-[var(--tx)]">
-                              Enhanced Insurance
-                            </span>
-                            <p className="text-[9px] text-[var(--tx3)]">
-                              Full replacement value, recommended for items
-                              &gt;$5K
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            role="switch"
-                            aria-checked={wgEnhancedInsurance}
-                            onClick={() =>
-                              setWgEnhancedInsurance(!wgEnhancedInsurance)
-                            }
-                            className={`relative w-9 h-5 rounded-full transition-colors ${wgEnhancedInsurance ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                          >
-                            <span
-                              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${wgEnhancedInsurance ? "translate-x-4" : ""}`}
-                            />
-                          </button>
-                        </div>
-                      </div>
                     </div>
                   </AnimatedSection>
 
@@ -3005,89 +3378,34 @@ export default function CreateMoveForm({
                   </div>
 
                   {moveType === "residential" && (
-                    <div className="mt-4 rounded-lg border border-[var(--brd)] bg-[var(--bg2)]/35 px-4 py-3 space-y-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)]">
-                            Multi-day move plan
-                          </p>
-                          <p className="text-[11px] text-[var(--tx3)] mt-1 leading-snug">
-                            More than one calendar day creates linked move project days on save (first day starts from scheduled date above).
-                          </p>
-                        </div>
-                        {quoteScopeLoading ? (
-                          <span className="text-[10px] font-semibold text-[var(--tx3)]">
-                            Loading quote scope…
-                          </span>
-                        ) : linkedQuoteUuid ? (
-                          <span className="text-[10px] font-semibold text-[var(--yu-accent)]">
-                            Quote linked
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="max-w-[14rem]">
-                        <label
-                          htmlFor="est-move-days"
-                          className="admin-premium-label admin-premium-label--tight mb-1"
-                        >
-                          Calendar days on job
-                        </label>
-                        <input
-                          id="est-move-days"
-                          type="number"
-                          min={1}
-                          max={14}
-                          value={estimatedMoveDays}
-                          onChange={(e) => {
-                            const v = parseInt(e.target.value, 10);
-                            if (!Number.isFinite(v)) return;
-                            setEstimatedMoveDays(Math.max(1, Math.min(14, v)));
-                          }}
-                          className={fieldInput}
-                          aria-label="Estimated calendar days for this move"
-                        />
-                      </div>
-                      {estimatedMoveDays > 1 && dayBreakdownRows.length > 0 && (
-                        <div className="space-y-2">
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">
-                            Day types (editable)
-                          </p>
-                          <ul className="space-y-2" aria-label="Day breakdown">
-                            {dayBreakdownRows.map((row, idx) => (
-                              <li
-                                key={`day-${row.day}-${idx}`}
-                                className="flex flex-wrap items-center gap-2 text-[12px]"
-                              >
-                                <span className="text-[var(--tx2)] min-w-[4.5rem]">
-                                  Day {row.day}
-                                </span>
-                                <select
-                                  value={row.type}
-                                  onChange={(e) => {
-                                    const next = e.target.value;
-                                    setDayBreakdownRows((prev) =>
-                                      prev.map((r, i) =>
-                                        i === idx ? { ...r, type: next } : r,
-                                      ),
-                                    );
-                                  }}
-                                  className={`${fieldInput} max-w-[11rem]`}
-                                  aria-label={`Day ${row.day} type`}
-                                >
-                                  <option value="pack">Pack</option>
-                                  <option value="move">Move</option>
-                                  <option value="unpack">Unpack</option>
-                                  <option value="crating">Crating</option>
-                                  <option value="volume">Volume</option>
-                                </select>
-                                <span className="text-[11px] text-[var(--tx3)]">
-                                  {labelForDayType(row.type)}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                    <div className="mt-4 space-y-2">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)]">
+                        Multi-day move
+                      </p>
+                      <p className="text-[11px] text-[var(--tx3)] leading-snug">
+                        More than one calendar day saves linked move project days so dispatch and crew
+                        stay aligned. Dates default from the scheduled date above.
+                      </p>
+                      <ResidentialProjectPlannerSection
+                        quoteScopeLoading={quoteScopeLoading}
+                        linkedQuoteUuid={linkedQuoteUuid}
+                        showPlanner={estimatedMoveDays > 1 || planMultiDayToggled}
+                        estimatedMoveDays={estimatedMoveDays}
+                        onEstimatedMoveDaysChange={(next) =>
+                          setEstimatedMoveDays(Math.max(1, Math.min(14, next)))
+                        }
+                        planMultiDayToggled={planMultiDayToggled}
+                        onPlanMultiDayToggledChange={(next) => {
+                          setPlanMultiDayToggled(next);
+                          if (next && estimatedMoveDays < 2) setEstimatedMoveDays(2);
+                        }}
+                        rows={residentialScheduleRows}
+                        onRowsChange={(next) => setResidentialScheduleRows(next)}
+                        fromAddress={fromAddress}
+                        toAddress={toAddress}
+                        crewMembers={plannerCrewMembers}
+                        fieldInput={fieldInput}
+                      />
                     </div>
                   )}
                 </div>

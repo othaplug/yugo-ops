@@ -201,17 +201,43 @@ export async function createMoveFromQuote(
 
   const whiteGloveFields =
     quote.service_type === "white_glove"
-      ? {
-          item_description: (factors.item_description as string) ?? null,
-          item_category: (factors.item_category as string) ?? null,
-          item_weight_class: (factors.item_weight_class as string) ?? null,
-          assembly_needed: (factors.assembly_needed as string) ?? null,
-          declared_value: (factors.declared_value as number) ?? null,
-          enhanced_insurance: (factors.enhanced_insurance as boolean) ?? false,
-          item_source: (factors.item_source as string) ?? null,
-          source_company: (factors.source_company as string) ?? null,
-          placement_spec: (factors.placement_spec as string) ?? null,
-        }
+      ? (() => {
+          const rawList = factors.white_glove_items;
+          const fromFactors = Array.isArray(rawList) ? rawList : [];
+          const legacyDesc = (factors.item_description as string)?.trim() ?? "";
+          const itemsPayload =
+            fromFactors.length > 0
+              ? fromFactors
+              : legacyDesc
+                ? [
+                    {
+                      description: legacyDesc,
+                      quantity: 1,
+                    },
+                  ]
+                : [];
+          const first = itemsPayload[0] as {
+            description?: string;
+            category?: string;
+            weight_class?: string;
+            assembly?: string;
+          } | null;
+          return {
+            items: itemsPayload,
+            item_description:
+              (first?.description && String(first.description).trim()) ||
+              legacyDesc ||
+              null,
+            item_category: (first?.category as string) ?? null,
+            item_weight_class: (first?.weight_class as string) ?? null,
+            assembly_needed: (first?.assembly as string) ?? null,
+            declared_value: (factors.declared_value as number) ?? null,
+            enhanced_insurance: (factors.enhanced_insurance as boolean) ?? false,
+            item_source: (factors.item_source as string) ?? null,
+            source_company: (factors.source_company as string) ?? null,
+            placement_spec: (factors.placement_spec as string) ?? null,
+          };
+        })()
       : {};
 
   const specialtyFields =
@@ -538,6 +564,34 @@ export async function createMoveFromQuote(
           .join("\n\n")
       : null;
 
+    const wgFromQuoteNotes =
+      quote.service_type === "white_glove"
+        ? [
+            typeof factors.white_glove_delivery_instructions === "string" &&
+            factors.white_glove_delivery_instructions.trim()
+              ? `Delivery instructions: ${factors.white_glove_delivery_instructions.trim()}`
+              : "",
+            typeof factors.white_glove_building_requirements_note ===
+              "string" &&
+            factors.white_glove_building_requirements_note.trim()
+              ? `Building note: ${factors.white_glove_building_requirements_note.trim()}`
+              : "",
+            Array.isArray(factors.specialty_building_requirements) &&
+            (factors.specialty_building_requirements as string[]).length > 0
+              ? `Building checklist: ${(factors.specialty_building_requirements as string[]).join(", ")}`
+              : "",
+            factors.white_glove_debris_removal === true
+              ? "Debris removal requested"
+              : "",
+            typeof factors.white_glove_guaranteed_window_hours === "number" &&
+            factors.white_glove_guaranteed_window_hours > 0
+              ? `Guaranteed ${factors.white_glove_guaranteed_window_hours} hour delivery window`
+              : "",
+          ]
+            .filter((s) => typeof s === "string" && s.length > 0)
+            .join("\n")
+        : "";
+
     rowsToInsert = [
       {
         ...sharedStatic,
@@ -555,7 +609,8 @@ export async function createMoveFromQuote(
           (quote.est_hours as number) ??
           null,
         truck_primary: (quote.truck_primary as string) ?? null,
-        internal_notes: specNotes,
+        internal_notes:
+          [specNotes, wgFromQuoteNotes].filter(Boolean).join("\n\n") || null,
         complexity_indicators: specialtyB2b
           ? ["specialty_transport", "heavy_equipment_possible"]
           : [],

@@ -195,7 +195,14 @@ export default async function TrackMovePage({
     project: Record<string, unknown>;
     phases: {
       phase_name?: string;
-      days?: { date?: string; label?: string; status?: string }[];
+      days?: {
+        date?: string;
+        label?: string;
+        status?: string;
+        day_number?: number;
+        day_type?: string;
+        current_stage?: string | null;
+      }[];
     }[];
   } | null = null;
   const mpTrackId = (move as { move_project_id?: string | null }).move_project_id;

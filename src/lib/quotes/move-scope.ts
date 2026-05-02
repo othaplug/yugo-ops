@@ -18,6 +18,8 @@ export type MoveScopeDetectionInput = {
 export type MoveScopePricingInput = MoveScopeDetectionInput & {
   /** When set (1–14), replaces auto day count for quotes.estimated_days only. */
   estimated_days_override?: number | null
+  /** Coordinator adds another full move-style day (large volume) at multi_day_rate. */
+  optional_additional_volume_day?: boolean
 }
 
 const CRATING_SPECIALTY_TYPES = new Set([
@@ -68,10 +70,52 @@ export function detectDayCount(input: MoveScopeDetectionInput): number {
   return Math.min(Math.max(days, 1), 14)
 }
 
+function formatMoveSizeForReason(msNorm: string): string {
+  if (msNorm === "studio") return "Studio"
+  if (msNorm === "partial") return "Partial move"
+  if (msNorm === "5br_plus") return "5+ bedroom"
+  const m = msNorm.match(/^(\d)br$/)
+  if (m?.[1]) return `${m[1]} bedroom`
+  return msNorm.replace(/_/g, " ")
+}
+
+/** Human factors for the coordinator line under “Days needed”. */
+export function describeMoveScopeAutoReason(input: MoveScopeDetectionInput): string {
+  const parts: string[] = []
+  const tier = String(input.tier || "signature").toLowerCase()
+  if (tier === "estate") parts.push("Estate")
+  else if (tier === "essential") parts.push("Essential")
+  else parts.push("Signature")
+
+  const ms = normSize(input.move_size)
+  parts.push(formatMoveSizeForReason(ms))
+
+  const slugStr = input.addon_slugs.map((s) => s.toLowerCase()).join("|")
+  if (
+    slugStr.includes("full_packing") ||
+    slugStr.includes("full-packing") ||
+    (slugStr.includes("full") && slugStr.includes("pack") && !slugStr.includes("unpack"))
+  ) {
+    parts.push("full packing")
+  }
+  if (
+    slugStr.includes("unpacking") ||
+    slugStr.includes("unpack_setup") ||
+    (slugStr.includes("unpack") && !slugStr.includes("junk"))
+  ) {
+    parts.push("unpacking")
+  }
+  const hasSpecialtyCrating =
+    input.specialty_items?.some((it) => CRATING_SPECIALTY_TYPES.has(it.type)) ?? false
+  if (hasSpecialtyCrating && input.crating_required) parts.push("specialty crating")
+
+  return `${detectDayCount(input)} days (${parts.join(" · ")})`
+}
+
 export type ScopeAddonLine = {
   label: string
   amount: number
-  kind: "pack_day" | "unpack_day" | "crating_day" | "volume_day"
+  kind: "pack_day" | "unpack_day" | "crating_day" | "volume_day" | "schedule_buffer_day"
 }
 
 export type MoveScopePricingResult = {
@@ -155,7 +199,15 @@ export function computeMoveScopeAddonPreTax(
     })
   }
 
-  const totalAddonPreTax = lines.reduce((s, l) => s + l.amount, 0)
+  if (input.optional_additional_volume_day) {
+    lines.push({
+      kind: "volume_day",
+      label: "Additional move day",
+      amount: moveDayRate,
+    })
+  }
+
+  const totalAddonPreTaxBase = lines.reduce((s, l) => s + l.amount, 0)
 
   const detectedDays = detectDayCount(input)
 
@@ -177,15 +229,51 @@ export function computeMoveScopeAddonPreTax(
   if (ms === "5br_plus") {
     breakdownJson.push({ day: dayCursor++, type: "volume", rate: moveDayRate })
   }
+  if (input.optional_additional_volume_day) {
+    breakdownJson.push({
+      day: dayCursor++,
+      type: "volume",
+      rate: moveDayRate,
+    })
+  }
   breakdownJson.push({ day: dayCursor++, type: "move", rate: 0 })
   summary.push("Moving")
 
-  const plannedDays = breakdownJson.length
-  let effectiveDays = Math.max(detectedDays, plannedDays)
+  const plannedDaysBeforePad = breakdownJson.length
   const ov = input.estimated_days_override
+  let effectiveDays = Math.max(detectedDays, plannedDaysBeforePad)
   if (typeof ov === "number" && Number.isFinite(ov)) {
     effectiveDays = Math.min(14, Math.max(1, Math.round(ov)))
   }
+
+  let bufferAddon = 0
+  const padLines: ScopeAddonLine[] = []
+  if (effectiveDays > breakdownJson.length) {
+    const pad = effectiveDays - breakdownJson.length
+    bufferAddon = pad * moveDayRate
+    for (let p = 0; p < pad; p++) {
+      padLines.push({
+        kind: "schedule_buffer_day",
+        label: `Extra schedule day ${p + 1}`,
+        amount: moveDayRate,
+      })
+    }
+    const insertAt = Math.max(0, breakdownJson.length - 1)
+    for (let p = 0; p < pad; p++) {
+      breakdownJson.splice(insertAt, 0, {
+        day: 0,
+        type: "volume",
+        rate: moveDayRate,
+      })
+    }
+  }
+
+  breakdownJson.forEach((row, i) => {
+    row.day = i + 1
+  })
+
+  const combinedLines = lines.concat(padLines)
+  const totalAddonPreTax = totalAddonPreTaxBase + bufferAddon
 
   const daySummaryParts = summary.length > 0 ? summary : ["Moving"]
 
@@ -193,9 +281,37 @@ export function computeMoveScopeAddonPreTax(
     detectedDays,
     effectiveDays,
     totalAddonPreTax,
-    lines,
+    lines: combinedLines,
     breakdownJson,
     daySummaryParts,
+  }
+}
+
+const CLIENT_DAY_COPY: Record<string, string> = {
+  pack: "Professional packing",
+  move: "Moving day",
+  unpack: "Unpacking and setup",
+  crating: "Crating and specialty prep",
+  volume: "Additional load or volume day",
+}
+
+/** Short lines for client quote and email (no internal phase names). */
+export function buildMoveScopeClientSchedule(args: {
+  breakdown: Array<{ type?: string }>
+}): { serviceLabel: string; dayLines: string[] } {
+  const rows = args.breakdown.filter(Boolean)
+  if (rows.length <= 1) {
+    return { serviceLabel: "", dayLines: [] }
+  }
+  const dayLines = rows.map((r, i) => {
+    const t = String(r.type || "move").toLowerCase()
+    const label = CLIENT_DAY_COPY[t] ?? CLIENT_DAY_COPY.move!
+    return `Day ${i + 1}: ${label}`
+  })
+  const n = rows.length
+  return {
+    serviceLabel: `${n}-day service`,
+    dayLines,
   }
 }
 

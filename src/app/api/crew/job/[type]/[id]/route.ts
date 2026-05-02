@@ -721,6 +721,7 @@ export async function GET(
         currentStage: string | null;
         requiresProofOfDelivery: boolean;
         status: string;
+        crewDayState: Record<string, unknown>;
       }
     | null = null;
 
@@ -735,7 +736,7 @@ export async function GET(
     const { data: mpDays } = await admin
       .from("move_project_days")
       .select(
-        "id, day_number, date, label, day_type, status, stages, current_stage, requires_pod",
+        "id, day_number, date, label, day_type, status, stages, current_stage, requires_pod, crew_day_state",
       )
       .eq("move_id", m.id)
       .order("day_number", { ascending: true });
@@ -762,6 +763,12 @@ export async function GET(
           ? rawStages.filter((x): x is string => typeof x === "string")
           : [];
 
+        const rawCs = active.crew_day_state as unknown;
+        const crewDayState =
+          rawCs && typeof rawCs === "object" && !Array.isArray(rawCs)
+            ? (rawCs as Record<string, unknown>)
+            : {};
+
         moveProjectDay = {
           projectId: mpProj.id as string,
           projectName: String(mpProj.project_name || "Move project"),
@@ -778,6 +785,7 @@ export async function GET(
               : null,
           requiresProofOfDelivery: !!(active as { requires_pod?: boolean }).requires_pod,
           status: String(active.status || "scheduled"),
+          crewDayState,
         };
       }
     }

@@ -24,6 +24,7 @@ import { SafeText } from "@/components/SafeText";
 import { formatMoveDate, formatPlatformDisplay, parseDateOnly } from "@/lib/date-format";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
 import { formatAccessForDisplay, toTitleCase } from "@/lib/format-text";
+import { displayLabelForMoveProjectStage } from "@/lib/move-projects/day-types";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import YugoLogo from "@/components/YugoLogo";
 import YugoMarketingFooter from "@/components/YugoMarketingFooter";
@@ -552,7 +553,14 @@ export default function TrackMoveClient({
     project: Record<string, unknown>;
     phases: {
       phase_name?: string;
-      days?: { date?: string; label?: string; status?: string }[];
+      days?: {
+        date?: string;
+        label?: string;
+        status?: string;
+        day_number?: number;
+        day_type?: string;
+        current_stage?: string | null;
+      }[];
     }[];
   } | null;
   /** Preview routes: fill parent flex column instead of 100vh (banner above). */
@@ -1222,7 +1230,6 @@ export default function TrackMoveClient({
     const isCompleted = (s?: string) =>
       norm(s) === "completed" || norm(s) === "complete";
     const completed = flat.filter((d) => isCompleted(d.status));
-    const upcoming = flat.filter((d) => !isCompleted(d.status));
     const sched = move.scheduled_date as string | null | undefined;
     let currentIndex = 0;
     if (sched) {
@@ -1236,6 +1243,8 @@ export default function TrackMoveClient({
     const activePhase =
       flat.find((d) => !isCompleted(d.status))?.phaseName ||
       flat[flat.length - 1]?.phaseName;
+
+    const todayKey = new Date().toISOString().slice(0, 10);
 
     return (
       <div className="mb-5 space-y-3">
@@ -1260,7 +1269,7 @@ export default function TrackMoveClient({
             ) : null}
           </div>
           <p className="text-[15px] font-semibold mt-2" style={{ color: WINE }}>
-            Day {displayDay} of {total}
+            Coordinator plan · day {displayDay} of {total}
           </p>
           <div
             className="h-1.5 rounded-full mt-2 overflow-hidden"
@@ -1276,60 +1285,80 @@ export default function TrackMoveClient({
             />
           </div>
           <p className="text-[11px] mt-1.5 opacity-70" style={{ color: FOREST }}>
-            {completed.length} of {total} days marked complete
+            {completed.length} of {total} days complete in admin
           </p>
         </div>
-        {upcoming.length > 0 ? (
-          <div
-            className="rounded-xl border px-3 py-2.5"
-            style={{ borderColor: `${FOREST}18`, backgroundColor: `${FOREST}06` }}
+
+        <div
+          className="rounded-xl border px-3 py-3"
+          style={{ borderColor: `${FOREST}18`, backgroundColor: "#FFFBF7" }}
+        >
+          <p
+            className="text-[10px] font-bold uppercase tracking-[0.12em] mb-2"
+            style={{ color: `${FOREST}88` }}
           >
-            <p
-              className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1.5"
-              style={{ color: `${FOREST}88` }}
-            >
-              Upcoming
-            </p>
-            <ul className="space-y-1.5 text-[12px]" style={{ color: FOREST }}>
-              {upcoming.slice(0, 5).map((d) => (
-                <li key={d.date} className="flex justify-between gap-2">
-                  <span className="font-medium truncate">
-                    {d.label || "Day"}
-                  </span>
-                  <span className="shrink-0 opacity-70">
-                    {formatMoveDate(String(d.date))}
-                  </span>
+            Timeline
+          </p>
+          <ol className="space-y-0">
+            {flat.map((d, i) => {
+              const done = isCompleted(d.status);
+              const dateKey = String(d.date).slice(0, 10);
+              const isToday = dateKey === todayKey;
+              const stage =
+                typeof d.current_stage === "string" && d.current_stage.trim()
+                  ? displayLabelForMoveProjectStage(d.current_stage)
+                  : "";
+              const dayTypeLabel = toTitleCase(String(d.day_type || "move"));
+              const title =
+                (typeof d.label === "string" && d.label.trim()) ||
+                `${dayTypeLabel}${
+                  typeof d.day_number === "number" ? ` · day ${d.day_number}` : ""
+                }`;
+              const rowKey = `${dateKey}-${typeof d.day_number === "number" ? d.day_number : i}`;
+              return (
+                <li key={rowKey} className="flex gap-3">
+                  <div className="flex flex-col items-center pt-0.5">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{
+                        backgroundColor: done ? FOREST : isToday ? WINE : `${FOREST}55`,
+                      }}
+                      aria-hidden
+                    />
+                    {i < flat.length - 1 ? (
+                      <span
+                        className="w-px flex-1 grow min-h-[18px] mt-0.5"
+                        style={{ backgroundColor: `${FOREST}22` }}
+                        aria-hidden
+                      />
+                    ) : null}
+                  </div>
+                  <div
+                    className={`flex-1 min-w-0 pb-3 ${isToday ? "rounded-lg px-2 py-1 -mx-2 -mt-1" : ""}`}
+                    style={
+                      isToday
+                        ? { backgroundColor: `${WINE}10`, borderLeft: `3px solid ${WINE}` }
+                        : undefined
+                    }
+                  >
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                      <p className="text-[12px] font-semibold" style={{ color: FOREST }}>
+                        {title}
+                      </p>
+                      <p className="text-[11px] opacity-70 shrink-0" style={{ color: FOREST }}>
+                        {formatMoveDate(dateKey)}
+                        {isToday ? " · Today" : ""}
+                      </p>
+                    </div>
+                    <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}99` }}>
+                      {done ? "Complete" : stage ? `Crew status: ${stage}` : "Scheduled"}
+                    </p>
+                  </div>
                 </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-        {completed.length > 0 ? (
-          <div
-            className="rounded-xl border px-3 py-2.5"
-            style={{ borderColor: `${FOREST}14`, backgroundColor: "#FFFBF7" }}
-          >
-            <p
-              className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1.5"
-              style={{ color: `${FOREST}88` }}
-            >
-              Completed
-            </p>
-            <ul
-              className="space-y-1 text-[11px] opacity-80"
-              style={{ color: FOREST }}
-            >
-              {completed.slice(-5).map((d) => (
-                <li key={`c-${d.date}`} className="flex justify-between gap-2">
-                  <span className="truncate">{d.label || "Day"}</span>
-                  <span className="shrink-0">
-                    {formatMoveDate(String(d.date))}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+              );
+            })}
+          </ol>
+        </div>
       </div>
     );
   }, [
@@ -1338,6 +1367,31 @@ export default function TrackMoveClient({
     isNonMoveProductTrack,
     move.scheduled_date,
   ]);
+
+  const showLiveMovementMap = React.useMemo(() => {
+    if (!moveProjectForTrack || isLogisticsDeliveryTrack || isNonMoveProductTrack) {
+      return true;
+    }
+    const phases = moveProjectForTrack.phases;
+    const flat = phases
+      .flatMap((ph) => (Array.isArray(ph.days) ? ph.days : []))
+      .filter((d) => d.date)
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    if (flat.length === 0) return true;
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const norm = (s?: string) => (s || "").toLowerCase().replace(/\s+/g, "_");
+    const isDayDone = (s?: string) =>
+      norm(s) === "completed" || norm(s) === "complete";
+    const focus =
+      flat.find(
+        (d) => !isDayDone(d.status) && String(d.date || "").slice(0, 10) === todayKey,
+      ) ??
+      flat.find((d) => !isDayDone(d.status)) ??
+      flat[flat.length - 1] ??
+      null;
+    const dt = String(focus?.day_type || "move").toLowerCase().trim();
+    return dt === "move" || dt === "volume";
+  }, [moveProjectForTrack, isLogisticsDeliveryTrack, isNonMoveProductTrack]);
 
   const trackPageBg = "#F9EDE4";
   const trackPageInk = FOREST;
@@ -4303,7 +4357,7 @@ export default function TrackMoveClient({
                 >
                   Tracking is no longer active for this move.
                 </p>
-              ) : (
+              ) : showLiveMovementMap ? (
                 <TrackLiveMap
                   moveId={move.id}
                   token={token}
@@ -4314,6 +4368,22 @@ export default function TrackMoveClient({
                   crewAssigned={crewAssigned}
                   onLiveStageChange={setLiveStage}
                 />
+              ) : (
+                <div
+                  className="rounded-xl border px-4 py-8 text-center"
+                  style={{
+                    borderColor: `${FOREST}22`,
+                    backgroundColor: `${FOREST}06`,
+                  }}
+                >
+                  <p className="text-[13px] font-semibold mb-2" style={{ color: WINE }}>
+                    Live map rests on prep days
+                  </p>
+                  <p className="text-[12px] leading-relaxed px-2" style={{ color: FOREST }}>
+                    Tracking opens when crews are hauling between homes. Packing, unpacking,
+                    or staging visits stay off the map so you always see meaningful movement.
+                  </p>
+                </div>
               )}
             </div>
           )}

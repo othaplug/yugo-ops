@@ -1,4 +1,4 @@
-/** Auto qualification (size/tier/office) without the explicit “Enable multi-day” toggle. */
+/** Auto qualification (size/tier) without the explicit “Enable multi-day” toggle. */
 export function moveProjectPlannerAutoQualifies(args: {
   serviceType: string;
   moveSize: string;
@@ -9,7 +9,8 @@ export function moveProjectPlannerAutoQualifies(args: {
   /** Extra drop-off rows beyond the primary address */
   extraDropoffStopCount?: number;
 }): boolean {
-  if (args.serviceType === "office_move") return true;
+  /** Office relocation uses the simplified coordinator scope strip on Generate Quote. */
+  if (args.serviceType === "office_move") return false;
   if (args.serviceType !== "local_move" && args.serviceType !== "long_distance")
     return false;
   const extraPick = Math.max(0, args.extraPickupStopCount ?? 0);
@@ -32,7 +33,6 @@ export function describeAutoProjectModeReason(args: {
   extraPickupStopCount: number;
   extraDropoffStopCount: number;
 }): string {
-  if (args.serviceType === "office_move") return "Office moves use a project schedule"
   if (args.extraPickupStopCount > 0 && args.extraDropoffStopCount > 0) {
     return "Multiple pickups and multiple drop-offs"
   }
@@ -48,7 +48,7 @@ export function describeAutoProjectModeReason(args: {
   return "Project schedule"
 }
 
-/** When the legacy phase/day planner should appear on Generate Quote (office white-glove only). */
+/** When the legacy phase/day planner should appear on Generate Quote. */
 export function shouldShowMoveProjectPlanner(args: {
   serviceType: string;
   moveSize: string;
@@ -58,6 +58,7 @@ export function shouldShowMoveProjectPlanner(args: {
   extraPickupStopCount?: number;
   extraDropoffStopCount?: number;
 }): boolean {
+  if (args.serviceType === "office_move") return false;
   if (args.serviceType === "local_move" || args.serviceType === "long_distance") {
     return false;
   }

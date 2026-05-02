@@ -3949,6 +3949,12 @@ function ConfirmDetailsSection({
               </div>
               {selectedTier === "estate" &&
                 !hideEstateScheduleSummary &&
+                !(
+                  Array.isArray(faConfirm?.move_scope_client_day_lines) &&
+                  (
+                    faConfirm!.move_scope_client_day_lines as unknown[]
+                  ).length > 0
+                ) &&
                 (() => {
                   const plan = faConfirm?.estate_day_plan as
                     | { days?: number }
@@ -4017,6 +4023,73 @@ function ConfirmDetailsSection({
                     </div>
                   );
                 })()}
+              {quote.service_type === "local_move" &&
+                Array.isArray(faConfirm?.move_scope_client_day_lines) &&
+                (faConfirm.move_scope_client_day_lines as unknown[]).length >
+                  1 && (
+                  <div
+                    className="my-4 pt-4 border-t-2 text-center max-w-xl mx-auto"
+                    style={{ borderColor: ink }}
+                  >
+                    <Calendar
+                      className="w-4 h-4 shrink-0 mx-auto mb-2"
+                      style={{ color: inkMuted }}
+                      weight="duotone"
+                      aria-hidden
+                    />
+                    <div className="min-w-0 space-y-2.5">
+                      <p
+                        className={`${QUOTE_EYEBROW_CLASS}`}
+                        style={{ color: inkMuted }}
+                      >
+                        Your schedule
+                      </p>
+                      {typeof faConfirm.move_scope_client_service_label ===
+                        "string" &&
+                      String(faConfirm.move_scope_client_service_label).trim() ? (
+                        <p
+                          className="text-[13px] font-semibold leading-snug tracking-tight"
+                          style={{ color: ink }}
+                        >
+                          {String(faConfirm.move_scope_client_service_label).trim()}
+                        </p>
+                      ) : typeof faConfirm?.move_scope_effective_days === "number" ? (
+                        <p
+                          className="text-[13px] font-semibold leading-snug tracking-tight"
+                          style={{ color: ink }}
+                        >
+                          {Number(faConfirm.move_scope_effective_days)}-day plan
+                        </p>
+                      ) : null}
+                      <div className="space-y-2.5 text-left max-w-md mx-auto">
+                        {(faConfirm.move_scope_client_day_lines as string[]).map(
+                          (ln, i) => (
+                            <p
+                              key={i}
+                              className="text-[12px] leading-relaxed pl-3 border-l-2"
+                              style={{
+                                borderColor: premiumChrome
+                                  ? "rgba(102,20,61,0.55)"
+                                  : `${FOREST}45`,
+                                color: ink,
+                              }}
+                            >
+                              {ln}
+                            </p>
+                          ),
+                        )}
+                      </div>
+                      <p
+                        className="text-[12px] leading-snug pt-0.5 max-w-md mx-auto"
+                        style={{ color: inkBody }}
+                      >
+                        Your coordinator finalizes timing on booking. Packing and move
+                        days usually run on adjacent calendar days unless your planner sets
+                        otherwise.
+                      </p>
+                    </div>
+                  </div>
+                )}
             </div>
 
             <hr

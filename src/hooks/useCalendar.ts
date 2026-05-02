@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { ViewMode, CalendarRole, CalendarEvent, CalendarFilters, YearHeatData } from "@/lib/calendar/types";
 
@@ -112,22 +112,59 @@ export function useCalendar({ role, initialView = "month" }: UseCalendarOptions)
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
+  const realtimeDebounceRef = useRef<number | undefined>(undefined);
+
+  /** Coalesce realtime bursts (e.g. bulk shift updating many move_project_days rows). */
+  const scheduleRealtimeRefetch = useCallback(() => {
+    if (typeof window === "undefined") {
+      void fetchEvents();
+      return;
+    }
+    if (realtimeDebounceRef.current != null) {
+      window.clearTimeout(realtimeDebounceRef.current);
+      realtimeDebounceRef.current = undefined;
+    }
+    realtimeDebounceRef.current = window.setTimeout(() => {
+      realtimeDebounceRef.current = undefined;
+      void fetchEvents();
+    }, 150);
+  }, [fetchEvents]);
+
   useEffect(() => {
+    const channelName = `calendar-realtime-${Math.random().toString(36).slice(2, 10)}`;
     const channel = supabase
-      .channel("calendar-realtime")
+      .channel(channelName)
       .on("postgres_changes", { event: "*", schema: "public", table: "crew_schedule_blocks" }, () => {
-        fetchEvents();
+        scheduleRealtimeRefetch();
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "moves" }, () => {
-        fetchEvents();
+        scheduleRealtimeRefetch();
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "moves" }, () => {
+        scheduleRealtimeRefetch();
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "deliveries" }, () => {
-        fetchEvents();
+        scheduleRealtimeRefetch();
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "deliveries" }, () => {
+        scheduleRealtimeRefetch();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "move_project_days" }, () => {
+        scheduleRealtimeRefetch();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "move_projects" }, () => {
+        scheduleRealtimeRefetch();
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [supabase, fetchEvents]);
+    return () => {
+      if (realtimeDebounceRef.current != null) {
+        window.clearTimeout(realtimeDebounceRef.current);
+        realtimeDebounceRef.current = undefined;
+      }
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, scheduleRealtimeRefetch]);
 
   const eventsByDate = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};

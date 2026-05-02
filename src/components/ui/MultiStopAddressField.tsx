@@ -120,7 +120,7 @@ export default function MultiStopAddressField({
                   className={inputClassName}
                 />
               </div>
-              <div className="w-full shrink-0 sm:w-[9.5rem]">{trailingOnFirstRow}</div>
+              <div className="w-full shrink-0 sm:w-[11rem] sm:max-w-[13rem]">{trailingOnFirstRow}</div>
             </div>
           );
         }
@@ -164,10 +164,12 @@ export default function MultiStopAddressField({
         <button
           type="button"
           onClick={addStop}
-          className="flex items-center gap-1 text-[11px] text-[#492A1D] hover:underline font-medium transition-colors mt-0.5"
+          className="mt-3 flex w-full items-center justify-start gap-1 text-left text-[11px] font-medium text-[var(--tx3)] transition-colors hover:text-[var(--tx2)]"
         >
-          <Plus size={11} weight="bold" />
-          {addStopButtonText ?? `Add another ${label.toLowerCase()} address`}
+          <Plus size={11} weight="bold" className="shrink-0 opacity-80" aria-hidden />
+          <span className="underline-offset-2 hover:underline">
+            {addStopButtonText ?? `Add another ${label.toLowerCase()} address`}
+          </span>
         </button>
       )}
     </div>

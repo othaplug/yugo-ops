@@ -61,7 +61,7 @@ import {
   MOVE_DAY_ISSUE_OPTIONS,
   defaultUrgencyForIssue,
 } from "@/lib/crew/move-day-issues";
-import { displayLabelForMoveProjectStage } from "@/lib/move-projects/day-types";
+import { MOVE_DAY_STAGE_FLOW, displayLabelForMoveProjectStage } from "@/lib/move-projects/day-types";
 import { cn } from "@/lib/utils";
 
 const CrewNavigation = dynamic(
@@ -75,6 +75,15 @@ const WaiverFlow = dynamic(
     import("@/components/crew/WaiverFlow").then((m) => m.WaiverFlow),
   { ssr: false, loading: () => null },
 );
+
+const FOCUS_ROOM_KEYS: { key: string; label: string }[] = [
+  { key: "kitchen", label: "Kitchen" },
+  { key: "living", label: "Living room" },
+  { key: "bedrooms", label: "Bedrooms" },
+  { key: "dining", label: "Dining" },
+  { key: "garage", label: "Garage" },
+  { key: "storage", label: "Storage / utility" },
+];
 
 function isValidNavCoord(lat: unknown, lng: unknown): lat is number {
   return (
@@ -275,6 +284,7 @@ interface JobDetail {
     currentStage: string | null;
     requiresProofOfDelivery: boolean;
     status: string;
+    crewDayState: Record<string, unknown>;
   } | null;
 }
 
@@ -313,6 +323,7 @@ export default function CrewJobPage({
   const [actionError, setActionError] = useState("");
   const [advancing, setAdvancing] = useState(false);
   const [moveProjectStageSaving, setMoveProjectStageSaving] = useState(false);
+  const [completeProjectDayBusy, setCompleteProjectDayBusy] = useState(false);
   const [note, setNote] = useState("");
   const [locationPermission, setLocationPermission] =
     useState<GeoPermissionState>("unknown");
@@ -711,6 +722,98 @@ export default function CrewJobPage({
       setActionError("Network error while updating stage");
     } finally {
       setMoveProjectStageSaving(false);
+    }
+  };
+
+  const readRoomMap = (scope: "pack_rooms" | "unpack_rooms") => {
+    const raw = job?.moveProjectDay?.crewDayState?.[scope];
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {} as Record<string, boolean>;
+    const out: Record<string, boolean> = {};
+    for (const { key } of FOCUS_ROOM_KEYS) {
+      if (Object.prototype.hasOwnProperty.call(raw, key) && typeof (raw as Record<string, unknown>)[key] === "boolean") {
+        out[key] = (raw as Record<string, boolean>)[key] as boolean;
+      }
+    }
+    return out;
+  };
+
+  const persistFocusRooms = async (
+    scope: "pack_rooms" | "unpack_rooms",
+    map: Record<string, boolean>,
+  ) => {
+    if (!job?.moveProjectDay || moveProjectStageSaving) return;
+    setMoveProjectStageSaving(true);
+    setActionError("");
+    try {
+      const r = await fetch("/api/crew/move-project-day", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          move_id: job.id,
+          day_id: job.moveProjectDay.dayId,
+          crew_day_state: { [scope]: map },
+        }),
+      });
+      const d = (await r.json().catch(() => ({}))) as {
+        error?: string;
+        crew_day_state?: Record<string, unknown>;
+      };
+      if (!r.ok) {
+        setActionError(d.error || "Could not save checklist");
+        return;
+      }
+      setJob((prev) => {
+        if (!prev?.moveProjectDay) return prev;
+        return {
+          ...prev,
+          moveProjectDay: {
+            ...prev.moveProjectDay,
+            crewDayState:
+              d.crew_day_state && typeof d.crew_day_state === "object" && !Array.isArray(d.crew_day_state)
+                ? { ...prev.moveProjectDay.crewDayState, ...d.crew_day_state }
+                : { ...prev.moveProjectDay.crewDayState, [scope]: map },
+          },
+        };
+      });
+    } catch {
+      setActionError("Network error while saving checklist");
+    } finally {
+      setMoveProjectStageSaving(false);
+    }
+  };
+
+  const handleToggleFocusRoom = async (
+    scope: "pack_rooms" | "unpack_rooms",
+    key: string,
+    next: boolean,
+  ) => {
+    const cur = readRoomMap(scope);
+    await persistFocusRooms(scope, { ...cur, [key]: next });
+  };
+
+  const handleCompleteActiveProjectDay = async () => {
+    if (!job?.moveProjectDay || completeProjectDayBusy || isCompleted) return;
+    setCompleteProjectDayBusy(true);
+    setActionError("");
+    try {
+      const r = await fetch("/api/crew/move-project-day/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          move_id: job.id,
+          day_id: job.moveProjectDay.dayId,
+        }),
+      });
+      const d = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) {
+        setActionError(d.error || "Could not finish this project day");
+        return;
+      }
+      await fetchJob();
+    } catch {
+      setActionError("Network error while finishing day");
+    } finally {
+      setCompleteProjectDayBusy(false);
     }
   };
 
@@ -1149,6 +1252,82 @@ export default function CrewJobPage({
                 </div>
               </div>
             ) : null}
+            {(() => {
+              const ds = (job.moveProjectDay?.status || "").toLowerCase();
+              const projectDayDone = ds === "completed" || ds === "complete";
+              if (projectDayDone) {
+                return (
+                  <p className="text-[11px] font-semibold text-[var(--yu3-forest)] mt-3 [font-family:var(--font-body)]">
+                    Project day complete on your side. Coordinators can see the wrap up in admin.
+                  </p>
+                );
+              }
+              const flowDef = MOVE_DAY_STAGE_FLOW[job.moveProjectDay.dayType] ?? MOVE_DAY_STAGE_FLOW.move;
+              const flowStages =
+                job.moveProjectDay!.stages.length > 0
+                  ? job.moveProjectDay!.stages
+                  : flowDef.stages;
+              const finalStage =
+                flowStages.length > 0 ? flowStages[flowStages.length - 1] ?? null : null;
+              const readyToClose =
+                finalStage != null && (job.moveProjectDay!.currentStage || "") === finalStage;
+              const showPackFocus =
+                job.moveProjectDay!.dayType === "pack" &&
+                job.moveProjectDay!.currentStage === "packing_in_progress";
+              const showUnpackFocus =
+                job.moveProjectDay!.dayType === "unpack" &&
+                (job.moveProjectDay!.currentStage === "unpacking_in_progress" ||
+                  job.moveProjectDay!.currentStage === "setup_in_progress");
+
+              return (
+                <>
+                  {showPackFocus || showUnpackFocus ? (
+                    <div className="mt-3 pt-3 border-t border-[var(--yu3-line-subtle)]">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-ink-muted)] mb-2 [font-family:var(--font-body)] leading-none">
+                        {showPackFocus ? "Packing checklist" : "Unpack focus"}
+                      </p>
+                      <ul className="grid grid-cols-2 gap-1.5" aria-label={showPackFocus ? "Rooms packed checklist" : "Rooms to reset checklist"}>
+                        {FOCUS_ROOM_KEYS.map(({ key: rk, label: rl }) => {
+                          const scope = showPackFocus ? "pack_rooms" : "unpack_rooms";
+                          const map = readRoomMap(scope);
+                          const on = !!map[rk];
+                          return (
+                            <li key={rk}>
+                              <button
+                                type="button"
+                                disabled={moveProjectStageSaving || isCompleted}
+                                aria-pressed={on}
+                                onClick={() => void handleToggleFocusRoom(scope, rk, !on)}
+                                className={cn(
+                                  "w-full text-left text-[10px] font-bold uppercase tracking-[0.08em] px-2 py-2 rounded-md border transition-colors [font-family:var(--font-body)] leading-none",
+                                  on
+                                    ? "border-[var(--yu3-forest)] bg-[var(--yu3-forest)]/10 text-[var(--yu3-forest)]"
+                                    : "border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] text-[var(--yu3-ink-muted)]",
+                                )}
+                              >
+                                {rl}
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {readyToClose && !isCompleted ? (
+                    <div className="mt-3 pt-3 border-t border-[var(--yu3-line-subtle)]">
+                      <button
+                        type="button"
+                        disabled={completeProjectDayBusy || moveProjectStageSaving}
+                        onClick={() => void handleCompleteActiveProjectDay()}
+                        className="w-full text-center text-[11px] font-bold uppercase tracking-[0.12em] px-3 py-2.5 rounded-md border border-[var(--yu3-wine)] bg-[var(--yu3-wine)] text-[#F9EDE4] [font-family:var(--font-body)] leading-none"
+                      >
+                        {completeProjectDayBusy ? "Saving…" : "Mark project day complete"}
+                      </button>
+                    </div>
+                  ) : null}
+                </>
+              );
+            })()}
           </div>
         ) : null}
         <div className="flex items-start justify-between gap-3 mb-4">

@@ -26,8 +26,91 @@ import {
   quoteFormServiceDateLabel,
 } from "@/lib/quotes/quote-field-labels";
 import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
+import type {
+  WhiteGloveAssembly,
+  WhiteGloveItemCategory,
+  WhiteGloveWeightClass,
+} from "@/lib/quotes/white-glove-pricing";
+import {
+  normalizeWhiteGloveItemsFromQuoteInput,
+  WG_ASSEMBLY_OPTIONS,
+  WG_ITEM_CATEGORIES,
+  WG_WEIGHT_CLASS_OPTIONS,
+} from "@/lib/quotes/white-glove-pricing";
+import {
+  WhiteGloveItemsEditor,
+  createDefaultWhiteGloveItem,
+  type WhiteGloveItemRow,
+} from "@/components/admin/WhiteGloveItemsEditor";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+const WG_BUILDING_REQUIREMENT_OPTIONS = [
+  { value: "elevator_booking", label: "Elevator booking required" },
+  { value: "insurance_certificate", label: "Insurance certificate required" },
+  { value: "restricted_hours", label: "Restricted move hours" },
+  { value: "loading_dock_booking", label: "Loading dock booking required" },
+] as const;
+
+const WG_CAT_SET = new Set<string>(WG_ITEM_CATEGORIES.map((c) => c.value));
+const WG_WC_SET = new Set<string>(WG_WEIGHT_CLASS_OPTIONS.map((w) => w.value));
+const WG_ASM_SET = new Set<string>(WG_ASSEMBLY_OPTIONS.map((a) => a.value));
+
+function newWhiteGloveRowId(): string {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `wg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function coerceWhiteGloveRow(raw: {
+  description?: string;
+  quantity?: number;
+  category?: string;
+  weight_class?: string;
+  assembly?: string;
+  is_fragile?: boolean;
+  is_high_value?: boolean;
+  notes?: string;
+}): WhiteGloveItemRow {
+  const cat = (raw.category || "medium").toLowerCase();
+  const wc = (raw.weight_class || "50_150").toLowerCase();
+  const asm = (raw.assembly || "none").toLowerCase();
+  return {
+    id: newWhiteGloveRowId(),
+    description: String(raw.description ?? "").trim(),
+    quantity: Math.max(1, Math.min(99, Number(raw.quantity) || 1)),
+    category: (WG_CAT_SET.has(cat) ? cat : "medium") as WhiteGloveItemCategory,
+    weight_class: (WG_WC_SET.has(wc) ? wc : "50_150") as WhiteGloveWeightClass,
+    assembly: (WG_ASM_SET.has(asm) ? asm : "none") as WhiteGloveAssembly,
+    is_fragile: Boolean(raw.is_fragile),
+    is_high_value: Boolean(raw.is_high_value),
+    notes: String(raw.notes ?? ""),
+  };
+}
+
+function initialWhiteGloveRowsFromQuote(
+  factors: Record<string, any>,
+  oq: any,
+): WhiteGloveItemRow[] {
+  if (oq.service_type !== "white_glove") return [];
+  const dv =
+    typeof factors.declared_value === "number"
+      ? factors.declared_value
+      : typeof oq.declared_value === "number"
+        ? oq.declared_value
+        : null;
+  const normalized = normalizeWhiteGloveItemsFromQuoteInput({
+    white_glove_items: factors.white_glove_items,
+    item_description: factors.item_description ?? oq.item_description,
+    item_category: factors.item_category ?? oq.item_category,
+    item_weight_class: factors.item_weight_class ?? oq.item_weight_class,
+    assembly_needed: factors.assembly_needed ?? oq.assembly_needed,
+    number_of_items: factors.number_of_items ?? oq.number_of_items ?? null,
+    declared_value: dv,
+  });
+  if (normalized.length === 0) return [createDefaultWhiteGloveItem()];
+  return normalized.map(coerceWhiteGloveRow);
+}
 
 interface Addon {
   id: string;
@@ -117,6 +200,35 @@ function stableEditQuotePayloadFingerprint(
           `${b.slug ?? ""}\0${b.name}\0${b.quantity}`,
         ),
       );
+  }
+  if (Array.isArray(p.white_glove_items)) {
+    p.white_glove_items = [...p.white_glove_items]
+      .map((r: any) => ({
+        description: String(r.description ?? "").trim(),
+        quantity: Math.max(1, Math.min(99, Number(r.quantity) || 1)),
+        assembly: String(r.assembly ?? ""),
+        category: String(r.category ?? ""),
+        weight_class: String(r.weight_class ?? ""),
+        is_fragile: Boolean(r.is_fragile),
+        is_high_value: Boolean(r.is_high_value),
+        notes: String(r.notes ?? "").trim(),
+      }))
+      .sort((a, b) => a.description.localeCompare(b.description));
+  }
+  if (Array.isArray(p.specialty_building_requirements)) {
+    p.specialty_building_requirements = [
+      ...p.specialty_building_requirements,
+    ]
+      .map((x: any) => String(x).trim().toLowerCase())
+      .filter(Boolean)
+      .sort();
+  }
+  if (typeof p.white_glove_building_requirements_note === "string") {
+    p.white_glove_building_requirements_note = p.white_glove_building_requirements_note.trim();
+  }
+  if (typeof p.white_glove_delivery_instructions === "string") {
+    p.white_glove_delivery_instructions =
+      p.white_glove_delivery_instructions.trim();
   }
   if (Array.isArray(p.specialty_items)) {
     p.specialty_items = [...p.specialty_items]
@@ -248,6 +360,49 @@ export default function EditQuoteClient({
   );
   const [declaredValue, setDeclaredValue] = useState(
     String(factors.declared_value || oq.declared_value || ""),
+  );
+
+  const gwHoursRaw = factors.white_glove_guaranteed_window_hours;
+  const [whiteGloveItemRows, setWhiteGloveItemRows] = useState<
+    WhiteGloveItemRow[]
+  >(() => initialWhiteGloveRowsFromQuote(factors, oq));
+  const [wgGuaranteedWindow, setWgGuaranteedWindow] = useState(
+    () =>
+      oq.service_type === "white_glove" &&
+      typeof gwHoursRaw === "number" &&
+      gwHoursRaw > 0,
+  );
+  const [wgGuaranteedWindowHours, setWgGuaranteedWindowHours] = useState<
+    2 | 3 | 4
+  >(() => {
+    if (
+      typeof gwHoursRaw === "number" &&
+      gwHoursRaw >= 2 &&
+      gwHoursRaw <= 4
+    ) {
+      return gwHoursRaw as 2 | 3 | 4;
+    }
+    return 2;
+  });
+  const [wgDebrisRemoval, setWgDebrisRemoval] = useState(
+    () =>
+      oq.service_type === "white_glove" &&
+      factors.white_glove_debris_removal === true,
+  );
+  const [wgBuildingReqs, setWgBuildingReqs] = useState<string[]>(() => {
+    const br = factors.specialty_building_requirements;
+    if (oq.service_type !== "white_glove" || !Array.isArray(br)) return [];
+    return br.map(String).filter(Boolean);
+  });
+  const [wgBuildingNote, setWgBuildingNote] = useState(() =>
+    oq.service_type === "white_glove"
+      ? String(factors.white_glove_building_requirements_note ?? "")
+      : "",
+  );
+  const [wgDeliveryInstructions, setWgDeliveryInstructions] = useState(() =>
+    oq.service_type === "white_glove"
+      ? String(factors.white_glove_delivery_instructions ?? "")
+      : "",
   );
 
   // ── Specialty service fields ──────────────────────────────
@@ -490,11 +645,13 @@ export default function EditQuoteClient({
       from_access: fromAccess || undefined,
       to_access: toAccess || undefined,
       move_date: moveDate || undefined,
-      move_size: moveSize || undefined,
       contact_id: contact?.id || oq.contact_id,
       hubspot_deal_id: oq.hubspot_deal_id || undefined,
       selected_addons: Array.from(selectedAddons.values()),
     };
+    if (serviceType !== "white_glove" && moveSize) {
+      payload.move_size = moveSize;
+    }
 
     if (serviceType === "office_move") {
       if (squareFootage) payload.square_footage = Number(squareFootage);
@@ -506,14 +663,50 @@ export default function EditQuoteClient({
       if (timingPreference) payload.timing_preference = timingPreference;
     }
 
-    if (serviceType === "single_item" || serviceType === "white_glove") {
+    if (serviceType === "single_item") {
+      if (itemDescription.trim())
+        payload.item_description = itemDescription.trim();
       if (itemCategory) payload.item_category = itemCategory;
       if (itemWeightClass) payload.item_weight_class = itemWeightClass;
       if (assemblyNeeded) payload.assembly_needed = assemblyNeeded;
       payload.stair_carry = stairCarry;
       if (stairCarry) payload.stair_flights = Number(stairFlights);
-      if (serviceType === "white_glove" && declaredValue)
-        payload.declared_value = Number(declaredValue);
+    }
+
+    if (serviceType === "white_glove") {
+      const wgItems = whiteGloveItemRows
+        .filter((r) => r.description.trim())
+        .map((r) => ({
+          description: r.description.trim(),
+          quantity: r.quantity,
+          category: r.category,
+          weight_class: r.weight_class,
+          assembly: r.assembly,
+          is_fragile: r.is_fragile,
+          is_high_value: r.is_high_value,
+          notes: r.notes?.trim() || undefined,
+        }));
+      if (wgItems.length > 0) payload.white_glove_items = wgItems;
+      if (declaredValue.trim()) {
+        const n = Number(String(declaredValue).replace(/,/g, ""));
+        if (Number.isFinite(n) && n > 0) payload.declared_value = n;
+      }
+      if (wgDebrisRemoval) payload.white_glove_debris_removal = true;
+      if (wgGuaranteedWindow && wgGuaranteedWindowHours > 0) {
+        payload.white_glove_guaranteed_window_hours =
+          wgGuaranteedWindowHours;
+      }
+      if (wgBuildingReqs.length > 0) {
+        payload.specialty_building_requirements = wgBuildingReqs;
+      }
+      if (wgBuildingNote.trim()) {
+        payload.white_glove_building_requirements_note =
+          wgBuildingNote.trim();
+      }
+      if (wgDeliveryInstructions.trim()) {
+        payload.white_glove_delivery_instructions =
+          wgDeliveryInstructions.trim();
+      }
     }
 
     if (serviceType === "specialty") {
@@ -581,12 +774,20 @@ export default function EditQuoteClient({
     hasConferenceRoom,
     hasReceptionArea,
     timingPreference,
+    itemDescription,
     itemCategory,
     itemWeightClass,
     assemblyNeeded,
     stairCarry,
     stairFlights,
     declaredValue,
+    whiteGloveItemRows,
+    wgDebrisRemoval,
+    wgGuaranteedWindow,
+    wgGuaranteedWindowHours,
+    wgBuildingReqs,
+    wgBuildingNote,
+    wgDeliveryInstructions,
     projectType,
     timelineHours,
     customCratingPieces,
@@ -739,6 +940,15 @@ export default function EditQuoteClient({
       );
       return;
     }
+    if (
+      serviceType === "white_glove" &&
+      !whiteGloveItemRows.some((r) => r.description.trim())
+    ) {
+      setError(
+        "Add at least one delivery item with a description before re-generating.",
+      );
+      return;
+    }
     setGenerating(true);
     try {
       const res = await fetch("/api/quotes/generate", {
@@ -763,7 +973,13 @@ export default function EditQuoteClient({
     } finally {
       setGenerating(false);
     }
-  }, [buildPayload, oq.quote_id, replaceQuoteJobStops]);
+  }, [
+    buildPayload,
+    oq.quote_id,
+    replaceQuoteJobStops,
+    serviceType,
+    whiteGloveItemRows,
+  ]);
 
   const handleSendUpdate = useCallback(async () => {
     const quoteIdToSend = newQuoteId || oq.quote_id;
@@ -1241,8 +1457,113 @@ export default function EditQuoteClient({
           </div>
         )}
 
-        {/* ── Single item / White glove ── */}
-        {(serviceType === "single_item" || serviceType === "white_glove") && (
+        {/* ── White glove (multi-line items) ── */}
+        {serviceType === "white_glove" && (
+          <div className="space-y-4">
+            <SectionDivider label="White glove delivery" />
+            <WhiteGloveItemsEditor
+              value={whiteGloveItemRows}
+              onChange={setWhiteGloveItemRows}
+              fieldInputClass={inputClass}
+              cargoCoverageHint="For insurance purposes. Standard cargo coverage is $100K."
+              declaredValue={declaredValue}
+              onDeclaredValueChange={setDeclaredValue}
+              debrisRemoval={wgDebrisRemoval}
+              onDebrisRemovalChange={setWgDebrisRemoval}
+            />
+            <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)]/80 p-3 space-y-2">
+              <label className="flex items-start gap-2 text-[12px] text-[var(--tx2)] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={wgGuaranteedWindow}
+                  onChange={(e) => setWgGuaranteedWindow(e.target.checked)}
+                  className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
+                />
+                <span>
+                  <span className="font-medium text-[var(--tx)]">
+                    Guaranteed time window
+                  </span>
+                  <span className="block text-[11px] text-[var(--tx3)] mt-0.5">
+                    Delivery must complete inside a booked window
+                  </span>
+                </span>
+              </label>
+              {wgGuaranteedWindow && (
+                <div className="pl-6">
+                  <label className={labelClass}>Window length</label>
+                  <select
+                    value={String(wgGuaranteedWindowHours)}
+                    onChange={(e) =>
+                      setWgGuaranteedWindowHours(
+                        Number(e.target.value) as 2 | 3 | 4,
+                      )
+                    }
+                    className={`${inputClass} min-w-0 max-w-[12rem]`}
+                  >
+                    <option value="2">2 hours</option>
+                    <option value="3">3 hours</option>
+                    <option value="4">4 hours</option>
+                  </select>
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <p className="text-[10px] font-semibold text-[var(--tx3)] tracking-widest uppercase">
+                Building / access requirements
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {WG_BUILDING_REQUIREMENT_OPTIONS.map((req) => {
+                  const active = wgBuildingReqs.includes(req.value);
+                  return (
+                    <button
+                      key={req.value}
+                      type="button"
+                      onClick={() =>
+                        setWgBuildingReqs((prev) =>
+                          active
+                            ? prev.filter((v) => v !== req.value)
+                            : [...prev, req.value],
+                        )
+                      }
+                      className={`px-2.5 py-1 rounded-md text-[10px] font-semibold border transition-colors ${
+                        active
+                          ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                          : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
+                      }`}
+                    >
+                      {req.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {wgBuildingReqs.length > 0 && (
+                <div>
+                  <label className={labelClass}>Building requirements note</label>
+                  <textarea
+                    value={wgBuildingNote}
+                    onChange={(e) => setWgBuildingNote(e.target.value)}
+                    rows={2}
+                    placeholder="COI details, dock booking, hours…"
+                    className={`${inputClass} resize-none`}
+                  />
+                </div>
+              )}
+            </div>
+            <div>
+              <label className={labelClass}>Delivery instructions</label>
+              <textarea
+                value={wgDeliveryInstructions}
+                onChange={(e) => setWgDeliveryInstructions(e.target.value)}
+                rows={3}
+                placeholder="Room of choice, concierge, phone on arrival…"
+                className={`${inputClass} resize-none`}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ── Single item ── */}
+        {serviceType === "single_item" && (
           <div className="space-y-2">
             <SectionDivider label="Items" />
             <div>
@@ -1290,18 +1611,6 @@ export default function EditQuoteClient({
                   <option value="Over 500 lbs">Over 500 lbs (+$200)</option>
                 </select>
               </div>
-              {serviceType === "white_glove" && (
-                <div>
-                  <label className={labelClass}>Declared Value ($)</label>
-                  <input
-                    type="number"
-                    value={declaredValue}
-                    onChange={(e) => setDeclaredValue(e.target.value)}
-                    className={`${inputClass} w-24 min-w-0`}
-                    placeholder="e.g. 5000"
-                  />
-                </div>
-              )}
               <div>
                 <label className={labelClass}>Assembly</label>
                 <select
@@ -1315,7 +1624,7 @@ export default function EditQuoteClient({
                   <option value="both">Both</option>
                 </select>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 md:col-span-2">
                 <span className="text-[9px] font-bold uppercase text-[var(--tx3)] shrink-0">
                   Stair Carry
                 </span>

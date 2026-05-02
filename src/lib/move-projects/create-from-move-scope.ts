@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { addCalendarDaysIso } from "@/lib/quotes/estate-schedule";
+import type {
+  PackingRoomsPayload,
+  MoveProjectSchedulePayload,
+} from "@/lib/move-projects/planner-payload";
 import { labelForDayType, MOVE_DAY_STAGE_FLOW } from "@/lib/move-projects/day-types";
 
 type BreakdownRow = { day?: number; type?: string; rate?: number };
@@ -19,6 +23,53 @@ function normalizeBreakdown(rows: unknown): BreakdownRow[] {
   return out.sort((a, b) => (a.day ?? 0) - (b.day ?? 0));
 }
 
+function toPgTime(s: string | null | undefined): string | null {
+  if (!s || !String(s).trim()) return null;
+  const t = String(s).trim().slice(0, 8);
+  if (/^\d{2}:\d{2}$/.test(t)) return `${t}:00`;
+  if (/^\d{2}:\d{2}:\d{2}$/.test(t)) return t;
+  return null;
+}
+
+function planForDayRow(
+  plan: MoveProjectSchedulePayload | null | undefined,
+  dayNum: number,
+  index: number,
+) {
+  if (!plan?.days?.length) return null;
+  const byNum = plan.days.find((d) => d.day === dayNum);
+  return byNum ?? plan.days[index] ?? null;
+}
+
+function packingRoomsFromPayload(room: PackingRoomsPayload | null | undefined): Record<string, boolean> {
+  const out: Record<string, boolean> = {};
+  if (!room || typeof room !== "object") return out;
+  for (const key of ["kitchen", "living", "bedrooms", "dining", "garage", "storage"] as const) {
+    if (Object.prototype.hasOwnProperty.call(room, key)) {
+      const v = (room as Record<string, unknown>)[key];
+      if (typeof v === "boolean") out[key] = v;
+    }
+  }
+  return out;
+}
+
+function packingRoomsDescription(room: Record<string, boolean>): string | null {
+  const map: Record<string, string> = {
+    kitchen: "Kitchen",
+    living: "Living room",
+    bedrooms: "Bedrooms",
+    dining: "Dining",
+    garage: "Garage",
+    storage: "Storage / utility",
+  };
+  const on = Object.entries(room)
+    .filter(([, v]) => v === true)
+    .map(([k]) => map[k] || k);
+  return on.length > 0 ? `Planned packing focus: ${on.join(", ")}` : null;
+}
+
+const isCargoServiceDay = (t: string) => t === "move" || t === "volume";
+
 /**
  * After a moves row exists: create move_projects + phases + days from quote scope or coordinator breakdown.
  * Returns new move_projects id or null when skipped.
@@ -35,6 +86,7 @@ export async function attachMultiDayMoveProjectFromScope(
     scheduledDateIso: string;
     estimatedDays: number;
     dayBreakdown: unknown;
+    plannedSchedule?: MoveProjectSchedulePayload | null;
   },
 ): Promise<string | null> {
   const daysNeeded = Math.max(1, Math.min(14, Math.round(args.estimatedDays)));
@@ -50,25 +102,35 @@ export async function attachMultiDayMoveProjectFromScope(
           rate: undefined as number | undefined,
         }));
 
-  let lastMoveIndex = -1;
-  for (let j = rows.length - 1; j >= 0; j--) {
-    const t = (rows[j]?.type || "move").toLowerCase();
-    if (t === "move") {
-      lastMoveIndex = j;
-      break;
-    }
-  }
+
 
   const start = args.scheduledDateIso?.trim() || new Date().toISOString().slice(0, 10);
+  const planned = args.plannedSchedule;
 
   const projectName =
     `${args.clientName || "Move"}`.trim().slice(0, 120) ||
     `${args.fromAddress.slice(0, 40)} to ${args.toAddress.slice(0, 40)}`;
 
-  const endDate =
-    rows.length > 0
-      ? addCalendarDaysIso(start, Math.max(0, rows.length - 1))
-      : start;
+  const dateIsoForIndex = (i: number, planDate: string | null | undefined) => {
+    if (planDate && /^\d{4}-\d{2}-\d{2}$/.test(planDate.trim())) {
+      return planDate.trim().slice(0, 10);
+    }
+    return addCalendarDaysIso(start, i);
+  };
+
+  const endDateFromPlanOrDefault = () => {
+    if (planned?.days?.length) {
+      const ok = planned.days
+        .map((d) => d.date?.trim().slice(0, 10))
+        .filter((x): x is string => typeof x === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x));
+      if (ok.length > 0) {
+        return ok.reduce((a, b) => (a.localeCompare(b) >= 0 ? a : b));
+      }
+    }
+    return rows.length > 0 ? addCalendarDaysIso(start, Math.max(0, rows.length - 1)) : start;
+  };
+
+  const endDate = endDateFromPlanOrDefault();
 
   const { data: project, error: pErr } = await db
     .from("move_projects")
@@ -101,13 +163,42 @@ export async function attachMultiDayMoveProjectFromScope(
 
   const projectId = project.id as string;
 
+  const ALLOWED_DT = new Set(["pack", "move", "unpack", "crating", "volume"]);
+
+  const normalizedDayTypeFromInputs = (
+    planTypeExplicit: unknown,
+    fallbackRaw: unknown,
+  ): string => {
+    const t0 =
+      typeof planTypeExplicit === "string"
+        ? planTypeExplicit.trim().toLowerCase()
+        : ""
+    const t1 = ALLOWED_DT.has(t0) ? t0 : String(fallbackRaw || "move").trim().toLowerCase()
+    return ALLOWED_DT.has(t1) ? t1 : "move";
+  };
+
+  const resolvedDayTypes = rows.map((row, i) => {
+    const rowDayOrdinal = typeof row.day === "number" ? row.day : i + 1;
+    const pr = planForDayRow(planned ?? null, rowDayOrdinal, i);
+    return normalizedDayTypeFromInputs(pr?.type, row.type || "move");
+  });
+
+  let lastCargoIndexSeen = -1;
+  for (let k = 0; k < resolvedDayTypes.length; k++) {
+    if (isCargoServiceDay(resolvedDayTypes[k]!)) lastCargoIndexSeen = k;
+  }
+
   let dayNum = 1;
+
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i]!;
-    const dayType = (row.type || "move").toLowerCase();
+    const rowDayOrdinal = typeof row.day === "number" ? row.day : i + 1;
+    const planRow = planForDayRow(planned ?? null, rowDayOrdinal, i);
+    const dayType = resolvedDayTypes[i]!;
+
     const label = labelForDayType(dayType);
     const flow = MOVE_DAY_STAGE_FLOW[dayType] ?? MOVE_DAY_STAGE_FLOW.move;
-    const dateIso = addCalendarDaysIso(start, i);
+    const dateIso = dateIsoForIndex(i, planRow?.date ?? null);
 
     const { data: phaseRow, error: phErr } = await db
       .from("move_project_phases")
@@ -132,10 +223,58 @@ export async function attachMultiDayMoveProjectFromScope(
       continue;
     }
 
-    const crewDefault = dayType === "move" ? 4 : 3;
-    const hoursDefault = dayType === "move" ? 10 : 8;
-    const truck =
-      dayType === "move" ? "26ft" : null;
+    const crewDefault = isCargoServiceDay(dayType) ? 4 : 3;
+    const hoursDefault = isCargoServiceDay(dayType) ? 10 : 8;
+
+    let truckDefault: string | null = null;
+    if (isCargoServiceDay(dayType)) truckDefault = "26ft";
+
+    const crewSize =
+      typeof planRow?.crew_size === "number" && Number.isFinite(planRow.crew_size)
+        ? Math.max(1, Math.min(20, Math.round(planRow.crew_size)))
+        : crewDefault;
+
+    const estimatedHours =
+      typeof planRow?.estimated_hours === "number" && Number.isFinite(planRow.estimated_hours)
+        ? Math.max(0.25, Math.min(24, planRow.estimated_hours))
+        : hoursDefault;
+
+    let truckNormalized: string | null = truckDefault;
+    if (typeof planRow?.truck === "string") {
+      const tr = planRow.truck.trim();
+      truckNormalized = tr.length === 0 ? null : tr.slice(0, 48);
+    }
+
+    const crewAssigned =
+      Array.isArray(planRow?.crew_member_ids) && planRow.crew_member_ids.length > 0
+        ? planRow.crew_member_ids
+
+            .filter((x): x is string => typeof x === "string" && /^[0-9a-f-]{36}$/i.test(x.trim()))
+
+            .map((x) => x.trim())
+            .slice(0, 24)
+        : [];
+
+    const packRooms = packingRoomsFromPayload(planRow?.packing_rooms ?? null);
+    const packingLine = packingRoomsDescription(packRooms);
+    const planNotes =
+      typeof planRow?.notes === "string" ? planRow.notes.trim().slice(0, 1600) : "";
+    const descParts = [planNotes, packingLine].filter((x) => x && x.length > 0);
+    const descriptionOut = descParts.length > 0 ? descParts.join("\n\n") : null;
+
+    let destinationAddressRow = args.fromAddress;
+    if (dayType === "move" || dayType === "volume") destinationAddressRow = args.toAddress;
+    if (dayType === "unpack") destinationAddressRow = args.toAddress;
+
+    const locationResolved =
+      dayType === "move" || dayType === "volume"
+        ? `${args.fromAddress} to ${args.toAddress}`
+        : dayType === "unpack"
+          ? `${args.toAddress} (unpack and setup)`
+          : args.fromAddress;
+
+    const requiresPod =
+      (dayType === "move" || dayType === "volume") && i === lastCargoIndexSeen;
 
     const { error: dErr } = await db.from("move_project_days").insert({
       project_id: projectId,
@@ -144,16 +283,16 @@ export async function attachMultiDayMoveProjectFromScope(
       date: dateIso,
       day_type: dayType,
       label,
-      description: null,
-      crew_size: crewDefault,
+      description: descriptionOut,
+      crew_size: crewSize,
       crew_ids: null,
-      truck_type: truck,
+      truck_type: truckNormalized,
       truck_count: 1,
-      estimated_hours: hoursDefault,
+      estimated_hours: estimatedHours,
       origin_address: args.fromAddress,
-      destination_address: dayType === "move" ? args.toAddress : args.fromAddress,
+      destination_address: destinationAddressRow,
       arrival_window: null,
-      start_time: null,
+      start_time: toPgTime(planRow?.start_time ?? null),
       end_time: null,
       status: "scheduled",
       completion_notes: null,
@@ -161,10 +300,9 @@ export async function attachMultiDayMoveProjectFromScope(
       move_id: args.moveId,
       stages: flow.stages,
       current_stage: null,
-      requires_pod: dayType === "move" && i === lastMoveIndex,
-      crew_assigned: [],
-      location_address:
-        dayType === "move" ? `${args.fromAddress} to ${args.toAddress}` : args.fromAddress,
+      requires_pod: requiresPod,
+      crew_assigned: crewAssigned,
+      location_address: locationResolved,
     });
 
     if (dErr) {

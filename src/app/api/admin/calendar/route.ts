@@ -13,6 +13,7 @@ import {
   resolveDeliveryDisplayTimes,
   resolveMoveDisplayTimes,
 } from "@/lib/calendar/event-time-resolution";
+import { calendarColorForResidentialProjectDay } from "@/lib/calendar/residential-project-day-styles";
 
 export const dynamic = "force-dynamic";
 
@@ -123,7 +124,7 @@ export async function GET(req: NextRequest) {
       db
         .from("moves")
         .select(
-          "id, move_code, client_name, client_phone, client_email, move_type, move_size, est_hours, status, scheduled_date, scheduled_start, scheduled_end, scheduled_time, preferred_time, arrival_window, estimated_duration_minutes, crew_id, from_address, to_address, event_group_id, event_phase, event_name, contract_id, is_pm_move, organization_id, service_type, unit_number, pm_reason_code",
+          "id, move_code, move_project_id, client_name, client_phone, client_email, move_type, move_size, est_hours, status, scheduled_date, scheduled_start, scheduled_end, scheduled_time, preferred_time, arrival_window, estimated_duration_minutes, crew_id, from_address, to_address, event_group_id, event_phase, event_name, contract_id, is_pm_move, organization_id, service_type, unit_number, pm_reason_code",
         )
         .gte("scheduled_date", startDate)
         .lte("scheduled_date", endDate)
@@ -173,7 +174,7 @@ export async function GET(req: NextRequest) {
       db
         .from("move_project_days")
         .select(
-          "id, date, day_number, label, day_type, crew_size, crew_ids, truck_type, estimated_hours, status, project_id, origin_address, destination_address, start_time, end_time, arrival_window, move_id, move_projects(project_name), moves(move_code)",
+          "id, date, day_number, label, day_type, crew_size, crew_ids, truck_type, estimated_hours, status, project_id, origin_address, destination_address, start_time, end_time, arrival_window, move_id, move_projects(project_name, total_days), moves(move_code)",
         )
         .gte("date", startDate)
         .lte("date", endDate)
@@ -240,6 +241,9 @@ export async function GET(req: NextRequest) {
     }
 
     for (const m of moves || []) {
+      if ((m as { move_project_id?: string | null }).move_project_id) {
+        continue;
+      }
       const dk = toDateKey(m.scheduled_date as string | Date | null);
       if (!dk) continue;
       if (crewFilter && m.crew_id !== crewFilter) continue;
@@ -526,8 +530,14 @@ export async function GET(req: NextRequest) {
       }
       const mpRaw = row.move_projects as unknown;
       const mpName =
-        (Array.isArray(mpRaw) ? (mpRaw[0] as { project_name?: string } | undefined)?.project_name : (mpRaw as { project_name?: string } | null)?.project_name) ||
+        (Array.isArray(mpRaw)
+          ? (mpRaw[0] as { project_name?: string; total_days?: number } | undefined)?.project_name
+          : (mpRaw as { project_name?: string; total_days?: number } | null)?.project_name) ||
         "Move project";
+      const mpTotalEmbedded =
+        (Array.isArray(mpRaw)
+          ? (mpRaw[0] as { total_days?: number } | undefined)?.total_days
+          : (mpRaw as { total_days?: number } | null)?.total_days) ?? null;
       const moveEmbed = row.moves as unknown;
       const moveCodeRow =
         Array.isArray(moveEmbed)
@@ -539,6 +549,11 @@ export async function GET(req: NextRequest) {
           : "";
       const moveIdForHref = row.move_id as string | null | undefined;
       const dayNum = row.day_number != null ? Number(row.day_number) : 0;
+      let totalProjDays =
+        mpTotalEmbedded != null && Number.isFinite(Number(mpTotalEmbedded))
+          ? Math.max(1, Number(mpTotalEmbedded))
+          : 1;
+      if (totalProjDays <= 1 && dayNum > 1) totalProjDays = dayNum;
       const primaryCrewId = crewIds[0] ?? null;
       const crewN = primaryCrewId ? crewListForLookup.find((c) => c.id === primaryCrewId) : null;
       const startT = pgTimeToHHMM(row.start_time);
@@ -546,13 +561,20 @@ export async function GET(req: NextRequest) {
       const origin = (row.origin_address as string | null)?.trim() || null;
       const dest = (row.destination_address as string | null)?.trim() || null;
       const arrival = (row.arrival_window as string | null)?.trim();
-      const descParts = [toTitleCase(String(row.day_type || "day"))];
+      const dtKey = String(row.day_type || "day").toLowerCase().trim();
+      const dayTitle =
+        row.label?.trim()?.length ? String(row.label).trim() : toTitleCase(String(row.day_type || "day"));
+      const descParts = [
+        `${toTitleCase(dtKey)}${totalProjDays > 1 ? ` · day ${dayNum > 0 ? dayNum : "?"} of ${totalProjDays}` : ""}`,
+      ];
       if (arrival) descParts.push(`Window: ${arrival}`);
+      const nameParts = [`${mpName}`, `Day ${dayNum > 0 ? dayNum : "?"} of ${totalProjDays}`];
+      if (dayTitle) nameParts.push(dayTitle);
       events.push({
         id: String(row.id),
         type: "move_project_day",
         blockType: "move_project_day",
-        name: `${mpName} — ${String(row.label || "Day")}`,
+        name: nameParts.join(" · "),
         description: descParts.join(" · ").trim(),
         date: dk,
         start: startT,
@@ -568,13 +590,8 @@ export async function GET(req: NextRequest) {
           : rawSt === "cancelled"
             ? "cancelled"
             : "scheduled") as CalendarStatus,
-        color: JOB_COLORS.move_project_day,
-        href:
-          moveCode
-            ? getMoveDetailPath({ move_code: moveCode })
-            : moveIdForHref
-              ? getMoveDetailPath({ id: String(moveIdForHref) })
-              : `/admin/move-projects/${row.project_id}`,
+        color: calendarColorForResidentialProjectDay(row.day_type as string),
+        href: `${moveCode ? getMoveDetailPath({ move_code: moveCode }) : moveIdForHref ? getMoveDetailPath({ id: String(moveIdForHref) }) : `/admin/move-projects/${row.project_id}`}#mpd-${String(row.id)}`,
         clientName: mpName,
         fromAddress: origin,
         toAddress: dest,

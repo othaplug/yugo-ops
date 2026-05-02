@@ -22,6 +22,8 @@ export interface DispatchJob {
   clientPhone?: string | null;
   clientEmail?: string | null;
   tier?: string;
+  /** Multi-day residential: e.g. "PACK day (Day 1 / 3)" when this row is keyed off move_project_days. */
+  projectDayNote?: string;
   partnerName?: string;
   fromAddress: string;
   toAddress: string;
@@ -230,6 +232,11 @@ export default function JobCard({
         )}
         {job.partnerName && job.type === "delivery" && (
           <span className="text-sm text-[var(--tx3)]">{job.partnerName}</span>
+        )}
+        {job.projectDayNote && job.type === "move" && (
+          <span className="text-xs font-semibold text-[var(--tx2)] uppercase tracking-wide">
+            {job.projectDayNote}
+          </span>
         )}
       </div>
 

@@ -55,6 +55,7 @@ import {
 import { ProfitabilityBreakdownHint } from "@/components/admin/AdminContextHints";
 import PostCompletionPriceEdit from "../../components/PostCompletionPriceEdit";
 import MoveWaiversSection, { type MoveWaiverRow } from "./MoveWaiversSection";
+import MoveResidentialProjectPanel from "./MoveResidentialProjectPanel";
 import CrewJobTimer from "@/app/crew/components/CrewJobTimer";
 import { capMarginAlertMinutes } from "@/lib/jobs/duration-estimate";
 import type { OperationalJobAlerts } from "@/lib/jobs/operational-alerts";
@@ -216,6 +217,14 @@ interface MoveDetailClientProps {
     scheduled_date: string | null;
     client_name: string | null;
     status: string | null;
+  } | null;
+  residentialMoveProject?: {
+    project: Record<string, unknown>;
+    phases: {
+      phase_name?: string | null;
+      phase_type?: string | null;
+      days?: Record<string, unknown>[];
+    }[];
   } | null;
 }
 import {
@@ -494,6 +503,7 @@ export default function MoveDetailClient({
   postCompletionPriceEdits = [],
   moveWaivers = [],
   pmLinkedPeer = null,
+  residentialMoveProject = null,
 }: MoveDetailClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -1354,6 +1364,17 @@ export default function MoveDetailClient({
           </TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-3 pt-3">
+          {typeof move.move_project_id === "string" &&
+          move.move_project_id.trim() &&
+          residentialMoveProject?.project &&
+          residentialMoveProject.phases?.length ? (
+            <MoveResidentialProjectPanel
+              moveId={String(move.id)}
+              moveCode={move.move_code}
+              projectId={move.move_project_id.trim()}
+              tree={residentialMoveProject}
+            />
+          ) : null}
       {/* Live Crew Tracking Map - collapsible, collapsed by default */}
       {etaSmsLog.length > 0 && (
         <CollapsibleSection
