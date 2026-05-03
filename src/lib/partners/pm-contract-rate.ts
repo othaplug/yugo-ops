@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getContractPrice, type ContractRateCard } from "./contract-pricing";
+import { tryGetContractPrice, type ContractRateCard } from "./contract-pricing";
 
 export type PmRateCardRow = {
   base_rate: number;
@@ -29,6 +29,49 @@ const REASON_TO_LEGACY_KEY: Record<string, string> = {
   other: "tenant_move_gta",
   reno_bundle: "tenant_move_gta",
 };
+
+/**
+ * Ordered legacy JSON keys on partner_contracts.rate_card to attempt.
+ * Modern seeded cards use canonical reason_codes (reno_move_out, …); older cards used renovation_*.
+ */
+function legacyRateSectionKeys(reasonCode: string): string[] {
+  const keys: string[] = [];
+  const add = (k: string | undefined | null) => {
+    const t = String(k || "").trim();
+    if (!t || keys.includes(t)) return;
+    keys.push(t);
+  };
+
+  add(reasonCode);
+  add(REASON_TO_LEGACY_KEY[reasonCode]);
+
+  const renoDisplacementOut = ["reno_move_out", "unit_turnover", "storage_move", "destaging"];
+  if (renoDisplacementOut.includes(reasonCode)) {
+    add("reno_move_out");
+    add("renovation_move_out");
+  }
+
+  const renoDisplacementIn = ["reno_move_in", "staging"];
+  if (renoDisplacementIn.includes(reasonCode)) {
+    add("reno_move_in");
+    add("renovation_move_in");
+  }
+
+  if (reasonCode === "reno_bundle") {
+    add("reno_bundle");
+  }
+
+  if (reasonCode === "building_transfer" || reasonCode === "emergency_relocation") {
+    add("tenant_move_outside");
+    add("tenant_move_gta");
+  }
+
+  add("tenant_move_gta");
+  add("tenant_move_outside");
+  add("tenant_move_in");
+  add("tenant_move_out");
+  return keys;
+}
 
 function num(v: unknown): number {
   if (typeof v === "number" && !Number.isNaN(v)) return v;
@@ -116,13 +159,20 @@ export async function resolvePmMoveBasePrice(
     return { subtotal: matrix.base_rate, source: "matrix", row: matrix };
   }
 
-  const legacyKey = REASON_TO_LEGACY_KEY[reasonCode] || "tenant_move_gta";
-  const subtotal = getContractPrice(legacyRateCard as ContractRateCard, legacyKey, unitSize, {
-    weekend: false,
-    afterHours: false,
-    holiday: false,
-  });
-  return { subtotal, source: "legacy" };
+  const card = legacyRateCard as ContractRateCard;
+  const extras = { weekend: false, afterHours: false, holiday: false } as const;
+  const triedKeys: string[] = [];
+  for (const legacyKey of legacyRateSectionKeys(reasonCode)) {
+    triedKeys.push(legacyKey);
+    const subtotal = tryGetContractPrice(card, legacyKey, unitSize, extras);
+    if (subtotal != null) {
+      return { subtotal, source: "legacy" };
+    }
+  }
+
+  throw new Error(
+    `No rate for PM move (${reasonCode} / ${unitSize}). Tried rate card sections: ${triedKeys.join(", ")}. Add rows to pm_rate_cards for this contract or add one of those sections to the legacy rate card JSON.`,
+  );
 }
 
 export function applyPmSurchargesAndUrgency(

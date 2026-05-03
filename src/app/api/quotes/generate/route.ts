@@ -88,12 +88,23 @@ import { getResolvedMoveIncludeTitles } from "@/lib/quotes/residential-tier-quot
 import { normalizePhone } from "@/lib/phone";
 import {
   computeWhiteGlovePricingBreakdown,
+  estimateWhiteGloveHours,
+  getWhiteGloveClientInclusions,
   normalizeWhiteGloveItemsFromQuoteInput,
-  whiteGloveDisplayCrewHours,
+  recommendWhiteGloveCrew,
 } from "@/lib/quotes/white-glove-pricing";
 import { buildingComplexitySurchargePreTax } from "@/lib/buildings/complexity-pricing";
 import { matchBuildingProfile } from "@/lib/buildings/matcher";
 import { parseBuildingAccessFlags } from "@/lib/buildings/types";
+
+const WG_TRUCK_DISPLAY_LABEL: Record<string, string> = {
+  sprinter: "Dedicated Sprinter cargo van",
+  "16ft": "16ft climate-controlled box truck",
+  "20ft": "20ft dedicated delivery truck",
+  "24ft": "24ft delivery truck",
+  "26ft": "26ft delivery truck",
+};
+
 // ═══════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════
@@ -196,6 +207,8 @@ interface QuoteInput {
     is_fragile?: boolean;
     is_high_value?: boolean;
     notes?: string;
+    slug?: string;
+    is_custom?: boolean;
   }>;
   white_glove_debris_removal?: boolean;
   /** When set (e.g. 2, 3, 4), adds guaranteed narrow-window line per platform_config. */
@@ -1281,7 +1294,7 @@ async function calcResidential(
   const estateScheduleTruckLabel =
     ESTATE_SCHEDULE_TRUCK_LABELS[normalizeTruckType(recTruck)] ?? "dedicated moving truck";
 
-  const deadheadFreeKm = cfgNum(config, "deadhead_free_zone_km", cfgNum(config, "deadhead_free_km", 15));
+  const deadheadFreeKm = cfgNum(config, "deadhead_free_zone_km", cfgNum(config, "deadhead_free_km", 40));
   const deadheadPerKm  = cfgNum(config, "deadhead_rate_per_km", cfgNum(config, "deadhead_per_km", 3.0));
   const deadheadKmRaw = deadheadInfo?.distance_km ?? 0;
   const maxDeadheadKm = cfgNum(config, "max_deadhead_km", 100);
@@ -1860,7 +1873,7 @@ async function calcOffice(
   if (weekend) subtotal += cfgNum(config, "office_weekend_surcharge", 200);
 
   const distKm = distInfo?.distance_km ?? 0;
-  const distFree = 20;
+  const distFree = cfgNum(config, "office_dist_free_km", 40);
   if (distKm > distFree) {
     subtotal += (distKm - distFree) * cfgNum(config, "office_per_km", 4);
   }
@@ -2040,7 +2053,7 @@ async function calcSingleItem(
   let price =
     baseCat + (itemCount > 1 ? (itemCount - 1) * baseCat * addRate : 0);
 
-  const distFree = 15;
+  const distFree = cfgNum(config, "single_item_dist_free_km", 40);
   if (distKm > distFree) {
     price += (distKm - distFree) * cfgNum(config, "single_item_per_km", 3);
   }
@@ -2169,21 +2182,46 @@ async function calcWhiteGlove(
   const tax = Math.round(price * taxRate);
   const deposit = await calculateDeposit(sb, "white_glove", price);
 
+  const truckWg = normalizeTruckType(input.truck_type ?? "sprinter");
+  const truckDisplay =
+    WG_TRUCK_DISPLAY_LABEL[truckWg.toLowerCase()] ?? `${truckWg} delivery vehicle`;
+
+  let crew = recommendWhiteGloveCrew(items);
+  let hours = estimateWhiteGloveHours(
+    items,
+    distKm,
+    crew,
+    distInfo?.drive_time_min ?? null,
+  );
+  const crewOvr = input.white_glove_crew_override;
+  if (typeof crewOvr === "number" && Number.isFinite(crewOvr) && crewOvr > 0) {
+    crew = Math.max(1, Math.min(12, Math.round(crewOvr)));
+  }
+  const hoursOvr = input.white_glove_hours_override;
+  if (typeof hoursOvr === "number" && Number.isFinite(hoursOvr) && hoursOvr > 0) {
+    hours = Math.max(0.25, Math.round(hoursOvr * 2) / 2);
+  }
+
   const wgFeatures = await fetchTierFeatures(sb, "white_glove", "custom");
-  const whiteGloveIncludes = wgFeatures.length > 0 ? wgFeatures : [
+  const dynamicIncludes = getWhiteGloveClientInclusions({
+    items,
+    assemblyTotal: breakdown.assemblyTotal,
+    debrisRemoval: input.white_glove_debris_removal === true,
+    debrisFee: breakdown.debrisFee,
+    guaranteedWindowHours: gwHours,
+    truckDisplay,
+    crew,
+    hours,
+    distKm,
+  });
+  const fallbackIncludes = wgFeatures.length > 0 ? wgFeatures : [
     "Premium handling",
     "Item-based white glove delivery",
     "Blanket and pad wrapping",
     "Secure transport",
   ];
-
-  const itemCount = items.reduce(
-    (s, i) => s + Math.max(1, Math.min(99, Number(i.quantity) || 1)),
-    0,
-  );
-  const { crew, hours } = whiteGloveDisplayCrewHours(itemCount, distKm);
-
-  const truckWg = normalizeTruckType(input.truck_type ?? "sprinter");
+  const whiteGloveIncludes =
+    dynamicIncludes.length > 0 ? dynamicIncludes : fallbackIncludes;
 
   return {
     custom_price: {
@@ -2215,6 +2253,7 @@ async function calcWhiteGlove(
       white_glove_crew: crew,
       white_glove_hours: hours,
       distance_km: distKm,
+      includes: whiteGloveIncludes,
       item_description: items[0]?.description ?? input.item_description ?? null,
       declared_value: input.declared_value ?? null,
       white_glove_debris_removal: input.white_glove_debris_removal === true,
@@ -2886,7 +2925,7 @@ async function computeEventLegPrice(
 
   const deliveryLabour = Math.round(crewSize * billableHours * moverRate);
 
-  const freeKm = cfgNum(input.config, "event_free_km", 20);
+  const freeKm = cfgNum(input.config, "event_free_km", 40);
   const perKm = cfgNum(input.config, "event_per_km", 3);
   const distanceSurcharge =
     input.skipTruckSurcharge || distKm <= freeKm ? 0 : Math.round((distKm - freeKm) * perKm);

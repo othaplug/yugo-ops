@@ -16,6 +16,7 @@ import {
   partnerMayUseReason,
   zoneForAddresses,
 } from "@/lib/partners/pm-book-helpers";
+import { hubspotPortfolioMoveDealAfterInsert } from "@/lib/hubspot/hubspot-portfolio-move-after-insert";
 
 type Urgency = "standard" | "priority" | "emergency";
 
@@ -149,7 +150,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Return move date is required for this move type" }, { status: 400 });
   }
 
-  const { data: org } = await admin.from("organizations").select("name").eq("id", orgId).single();
+  const { data: org } = await admin
+    .from("organizations")
+    .select("name, email, billing_email")
+    .eq("id", orgId)
+    .single();
 
   const notesParts = [
     "Partner PM booking (pending approval)",
@@ -206,6 +211,23 @@ export async function POST(req: NextRequest) {
   const moveId = move.id as string;
   const moveCode = (move.move_code as string) || moveId;
   const partnerName = (org as { name?: string } | null)?.name || "Partner";
+  const orgRow = org as { email?: string | null; billing_email?: string | null } | null;
+
+  await hubspotPortfolioMoveDealAfterInsert(admin, {
+    moveId,
+    moveCode,
+    tenantEmail: tenantEmail || null,
+    partnerBillingEmail: orgRow?.billing_email,
+    partnerOrgEmail: orgRow?.email,
+    displayName: displayTenant,
+    tenantPhone: tenantPhone || null,
+    serviceType: "b2b_oneoff",
+    moveSize: unitType,
+    scheduledDate,
+    fromAddress,
+    toAddress,
+    estimate: subtotal,
+  });
 
   let returnMoveId: string | null = null;
   if (requiresReturn && returnScheduledDate) {
@@ -250,9 +272,27 @@ export async function POST(req: NextRequest) {
             .filter(Boolean)
             .join("\n"),
         })
-        .select("id")
+        .select("id, move_code")
         .single();
-      if (!retErr && retMove) returnMoveId = retMove.id as string;
+      if (!retErr && retMove?.id) {
+        returnMoveId = retMove.id as string;
+        const retCode = (retMove.move_code as string) || returnMoveId;
+        await hubspotPortfolioMoveDealAfterInsert(admin, {
+          moveId: returnMoveId,
+          moveCode: retCode,
+          tenantEmail: tenantEmail || null,
+          partnerBillingEmail: orgRow?.billing_email,
+          partnerOrgEmail: orgRow?.email,
+          displayName: displayTenant,
+          tenantPhone: tenantPhone || null,
+          serviceType: "b2b_oneoff",
+          moveSize: unitType,
+          scheduledDate: returnScheduledDate,
+          fromAddress: toAddress,
+          toAddress: fromAddress,
+          estimate: subR,
+        });
+      }
     }
   }
 

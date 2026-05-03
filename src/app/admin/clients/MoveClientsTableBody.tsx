@@ -59,7 +59,7 @@ export default function MoveClientsTableBody({ clients }: { clients: MoveClient[
     return (
       <tr>
         <td colSpan={7} className="px-4 py-12 text-center text-[12px] text-[var(--tx3)]">
-          No move clients yet. <Link href="/admin/clients/new" className="text-[var(--accent-text)] hover:underline">Add one</Link>
+          No move clients yet. Booking a move with a resident client generates these records.
         </td>
       </tr>
     );

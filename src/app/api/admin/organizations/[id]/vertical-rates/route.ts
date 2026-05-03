@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 import { logAudit } from "@/lib/audit";
+import { resolveVertical, isPropertyManagementDeliveryVertical } from "@/lib/partner-type";
+import {
+  clampToActiveDeliveryVerticalCode,
+  mapOrgVerticalToDeliveryVerticalCode,
+} from "@/lib/maps/vertical-config";
 
 export async function GET(
   _req: NextRequest,
@@ -13,14 +18,44 @@ export async function GET(
   const { id: organizationId } = await params;
   const db = createAdminClient();
 
-  const [{ data: verticals }, { data: rates }] = await Promise.all([
+  const [{ data: verticalsRows, error: vertErr }, orgRes, ratesRes] = await Promise.all([
     db.from("delivery_verticals").select("code, name").eq("active", true).order("sort_order"),
-    db.from("partner_vertical_rates").select("id, vertical_code, custom_rates, active").eq("organization_id", organizationId),
+    db.from("organizations").select("vertical, type").eq("id", organizationId).maybeSingle(),
+    db
+      .from("partner_vertical_rates")
+      .select("id, vertical_code, custom_rates, active")
+      .eq("organization_id", organizationId)
+      .order("vertical_code", { ascending: true }),
   ]);
 
+  const orgErr = orgRes.error;
+
+  if (vertErr || orgErr || ratesRes.error) {
+    return NextResponse.json(
+      { error: vertErr?.message || orgErr?.message || ratesRes.error?.message || "Lookup failed" },
+      { status: 500 },
+    );
+  }
+
+  const verticals = verticalsRows ?? [];
+  const rates = (ratesRes.data ?? []) as {
+    vertical_code: string;
+    custom_rates?: Record<string, unknown>;
+  }[];
+  const org = orgRes.data as { vertical?: string | null; type?: string | null } | null;
+
+  const codeOrder = verticals.map((v) => String(v.code ?? ""));
+  const slug = resolveVertical(String(org?.vertical ?? org?.type ?? ""));
+  const mapped = mapOrgVerticalToDeliveryVerticalCode(slug);
+  const recommended_vertical_code = clampToActiveDeliveryVerticalCode(mapped, codeOrder);
+
+  const portfolio_b2b_overrides_notice = isPropertyManagementDeliveryVertical(slug);
+
   return NextResponse.json({
-    verticals: verticals ?? [],
-    rates: rates ?? [],
+    verticals,
+    rates,
+    recommended_vertical_code,
+    portfolio_b2b_overrides_notice,
   });
 }
 

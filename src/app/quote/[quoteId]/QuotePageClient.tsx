@@ -173,49 +173,41 @@ const LOGISTICS_INCLUSION_FEATURES: TierFeature[] = [
     card: "Dedicated delivery vehicle",
     title: "Dedicated delivery vehicle",
     desc: "Climate-controlled transport, sized for your shipment",
-    iconName: "Truck",
   },
   {
     card: "Professional crew",
     title: "Professional crew",
     desc: "Licensed, insured logistics professionals",
-    iconName: "Users",
   },
   {
     card: "Protective wrapping",
     title: "Protective wrapping for freight",
     desc: "Blankets and pads to protect items in transit",
-    iconName: "Armchair",
   },
   {
     card: "Loading & unloading",
     title: "Trained loading & unloading",
     desc: "Careful handling at pickup and delivery",
-    iconName: "Wrench",
   },
   {
     card: "Site protection",
     title: "Floor & entryway protection",
     desc: "Runners, booties, and corner guards where needed",
-    iconName: "Home",
   },
   {
     card: "Equipment included",
     title: "Standard equipment included",
     desc: "Dollies, straps, and tools as required",
-    iconName: "Toolbox",
   },
   {
     card: "Valuation",
     title: "Valuation per your selection",
     desc: "Coverage as shown in Your Protection below",
-    iconName: "Shield",
   },
   {
     card: "Tracking",
     title: "Shipment visibility",
     desc: "Track your delivery status from your device",
-    iconName: "MapPin",
   },
 ];
 
@@ -225,7 +217,6 @@ const UNIVERSAL_LOGISTICS_FEATURES: TierFeature[] = [
     card: "Accountability",
     title: "Professional accountability",
     desc: "Your shipment, protected and documented",
-    iconName: "EggCrack",
   },
 ];
 
@@ -317,7 +308,9 @@ export default function QuotePageClient({
       ? "delivery"
       : "move";
 
-  const showCargoInsuranceTrust = quoteShowsCargoInsuranceTrust(quote.service_type)
+  const showCargoInsuranceTrust = quoteShowsCargoInsuranceTrust(
+    quote.service_type,
+  );
 
   const clientPickupRows = useMemo(() => {
     const fa = quote.factors_applied as Record<string, unknown> | null;
@@ -1256,7 +1249,10 @@ export default function QuotePageClient({
       return;
     }
     if (!contractSigned && contractRef.current) {
-      contractRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      contractRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
       return;
     }
     if (paymentRef.current) {
@@ -1271,11 +1267,12 @@ export default function QuotePageClient({
     [quote.factors_applied],
   );
 
-  const moveProjectQuoteBreakdown = useMemo((): ProjectQuoteBreakdown | null => {
-    const raw = factorsApplied?.project_quote_breakdown;
-    if (!raw || typeof raw !== "object") return null;
-    return raw as ProjectQuoteBreakdown;
-  }, [factorsApplied]);
+  const moveProjectQuoteBreakdown =
+    useMemo((): ProjectQuoteBreakdown | null => {
+      const raw = factorsApplied?.project_quote_breakdown;
+      if (!raw || typeof raw !== "object") return null;
+      return raw as ProjectQuoteBreakdown;
+    }, [factorsApplied]);
 
   /** Truck surcharge is included in the total; never show as a priced line to clients. */
   const truckBreakdownClientNote = useMemo(() => null as string | null, []);
@@ -1664,6 +1661,7 @@ export default function QuotePageClient({
                 truckSecondary={quote.truck_secondary}
                 crewSize={quote.est_crew_size}
                 variant="logistics"
+                logisticsClientPreset="white_glove"
                 truckPricingNote={truckBreakdownClientNote}
               />
               <WhiteGloveLayout
@@ -1671,6 +1669,23 @@ export default function QuotePageClient({
                 onConfirm={handleConfirm}
                 confirmed={confirmed}
               />
+              <div
+                className="mt-10 pt-8 border-t max-w-3xl mx-auto w-full"
+                style={{ borderColor: `${FOREST}18` }}
+              >
+                <p
+                  className={`${QUOTE_EYEBROW_CLASS} mb-3`}
+                  style={{ color: `${FOREST}70` }}
+                >
+                  Your inventory
+                </p>
+                <InventoryCollapsible
+                  quote={quoteForDisplay}
+                  selectedAddons={selectedAddons}
+                  omitOuterChrome
+                  premiumShellKind="none"
+                />
+              </div>
             </>
           ) : quote.service_type === "specialty" ? (
             <>
@@ -2741,6 +2756,11 @@ const InclusionsShowcase = React.forwardRef<
     truckPricingNote?: string | null;
     /** Estate wine / Signature green shell — use cream ink, not WINE/forest on dark */
     premiumShellKind?: PremiumShellKind;
+    /**
+     * Logistics-only: `white_glove` uses the same delivery grid and hydration as standard
+     * logistics, but skips the universal accountability row and any API `includes` merge.
+     */
+    logisticsClientPreset?: "standard" | "white_glove";
   }
 >(function InclusionsShowcase(
   {
@@ -2757,11 +2777,15 @@ const InclusionsShowcase = React.forwardRef<
     showEventSetupFeature = false,
     truckPricingNote = null,
     premiumShellKind = "none",
+    logisticsClientPreset = "standard",
   },
   ref,
 ) {
   const INITIAL_VISIBLE = 6;
   const [expanded, setExpanded] = React.useState(false);
+
+  const isWhiteGloveLogistics =
+    variant === "logistics" && logisticsClientPreset === "white_glove";
 
   const tier = (
     isResidential ? (selectedTier ?? "essential") : "essential"
@@ -2811,7 +2835,6 @@ const InclusionsShowcase = React.forwardRef<
             if (logisticsLeadPackage && i === 0) {
               return {
                 ...f,
-                iconName: "Package",
                 title: "Right-sized vehicle for your shipment",
                 desc: "Climate-controlled transport, assigned to this delivery",
               };
@@ -2859,8 +2882,8 @@ const InclusionsShowcase = React.forwardRef<
               return f;
             });
 
-  const allItems =
-    variant === "logistics"
+  let allItems: TierFeature[] =
+    variant === "logistics" && !isWhiteGloveLogistics
       ? mergeTierFeatureListsPreferLater(
           hydratedFeatures,
           UNIVERSAL_LOGISTICS_FEATURES,
@@ -3013,17 +3036,7 @@ const InclusionsShowcase = React.forwardRef<
                   : FOREST,
             }}
           >
-            {expanded ? (
-              <>
-                Show less
-                <ChevronUp className="w-3.5 h-3.5 shrink-0" aria-hidden />
-              </>
-            ) : (
-              <>
-                View all {allItems.length} features
-                <ChevronDown className="w-3.5 h-3.5 shrink-0" aria-hidden />
-              </>
-            )}
+            {expanded ? "Show less" : `View all ${allItems.length} features`}
           </button>
         )}
       </div>
@@ -3039,6 +3052,7 @@ const INV_SERVICE_TYPES = new Set([
   "local_move",
   "long_distance",
   "office_move",
+  "white_glove",
 ]);
 const ROOM_TRUNCATE = 5;
 
@@ -3951,9 +3965,8 @@ function ConfirmDetailsSection({
                 !hideEstateScheduleSummary &&
                 !(
                   Array.isArray(faConfirm?.move_scope_client_day_lines) &&
-                  (
-                    faConfirm!.move_scope_client_day_lines as unknown[]
-                  ).length > 0
+                  (faConfirm!.move_scope_client_day_lines as unknown[]).length >
+                    0
                 ) &&
                 (() => {
                   const plan = faConfirm?.estate_day_plan as
@@ -4046,14 +4059,19 @@ function ConfirmDetailsSection({
                       </p>
                       {typeof faConfirm.move_scope_client_service_label ===
                         "string" &&
-                      String(faConfirm.move_scope_client_service_label).trim() ? (
+                      String(
+                        faConfirm.move_scope_client_service_label,
+                      ).trim() ? (
                         <p
                           className="text-[13px] font-semibold leading-snug tracking-tight"
                           style={{ color: ink }}
                         >
-                          {String(faConfirm.move_scope_client_service_label).trim()}
+                          {String(
+                            faConfirm.move_scope_client_service_label,
+                          ).trim()}
                         </p>
-                      ) : typeof faConfirm?.move_scope_effective_days === "number" ? (
+                      ) : typeof faConfirm?.move_scope_effective_days ===
+                        "number" ? (
                         <p
                           className="text-[13px] font-semibold leading-snug tracking-tight"
                           style={{ color: ink }}
@@ -4062,30 +4080,30 @@ function ConfirmDetailsSection({
                         </p>
                       ) : null}
                       <div className="space-y-2.5 text-left max-w-md mx-auto">
-                        {(faConfirm.move_scope_client_day_lines as string[]).map(
-                          (ln, i) => (
-                            <p
-                              key={i}
-                              className="text-[12px] leading-relaxed pl-3 border-l-2"
-                              style={{
-                                borderColor: premiumChrome
-                                  ? "rgba(102,20,61,0.55)"
-                                  : `${FOREST}45`,
-                                color: ink,
-                              }}
-                            >
-                              {ln}
-                            </p>
-                          ),
-                        )}
+                        {(
+                          faConfirm.move_scope_client_day_lines as string[]
+                        ).map((ln, i) => (
+                          <p
+                            key={i}
+                            className="text-[12px] leading-relaxed pl-3 border-l-2"
+                            style={{
+                              borderColor: premiumChrome
+                                ? "rgba(102,20,61,0.55)"
+                                : `${FOREST}45`,
+                              color: ink,
+                            }}
+                          >
+                            {ln}
+                          </p>
+                        ))}
                       </div>
                       <p
                         className="text-[12px] leading-snug pt-0.5 max-w-md mx-auto"
                         style={{ color: inkBody }}
                       >
-                        Your coordinator finalizes timing on booking. Packing and move
-                        days usually run on adjacent calendar days unless your planner sets
-                        otherwise.
+                        Your coordinator finalizes timing on booking. Packing
+                        and move days usually run on adjacent calendar days
+                        unless your planner sets otherwise.
                       </p>
                     </div>
                   </div>

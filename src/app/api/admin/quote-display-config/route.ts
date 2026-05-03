@@ -16,11 +16,11 @@ function isValidTierFeatureRow(item: unknown): boolean {
   if (
     typeof o.card !== "string" ||
     typeof o.title !== "string" ||
-    typeof o.desc !== "string" ||
-    typeof o.iconName !== "string"
+    typeof o.desc !== "string"
   ) {
     return false;
   }
+  if (o.iconName !== undefined && typeof o.iconName !== "string") return false;
   if (o.key !== undefined && typeof o.key !== "string") return false;
   if (o.highlight !== undefined && typeof o.highlight !== "boolean") return false;
   return true;

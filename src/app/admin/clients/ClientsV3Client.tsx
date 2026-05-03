@@ -8,7 +8,7 @@ import { toTitleCase } from "@/lib/format-text";
 import { getStatusLabel } from "@/lib/move-status";
 
 import { PageHeader } from "@/design-system/admin/layout";
-import { Button, StatusPill, Avatar } from "@/design-system/admin/primitives";
+import { StatusPill, Avatar } from "@/design-system/admin/primitives";
 import {
   DataTable,
   type ColumnDef,
@@ -17,7 +17,6 @@ import {
   type ViewMode,
 } from "@/design-system/admin/table";
 import { KpiStrip } from "@/design-system/admin/dashboard";
-import { Plus } from "@phosphor-icons/react";
 
 type Client = {
   id: string;
@@ -239,15 +238,6 @@ export default function ClientsV3Client({
         eyebrow="CRM"
         title="Clients"
         description="Residential clients with move history and open balances."
-        actions={
-          <Button
-            variant="primary"
-            leadingIcon={<Plus size={16} />}
-            onClick={() => router.push("/admin/clients/new")}
-          >
-            New client
-          </Button>
-        }
       />
       <KpiStrip tiles={kpis} columns={3} />
       <DataTable<Row>

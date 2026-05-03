@@ -234,14 +234,9 @@ export const QUICK_ACTIONS: QuickAction[] = [
     description: "Schedule a move",
   },
   {
-    label: "New contact",
-    href: "/admin/clients/new",
-    description: "Add a person or org",
-  },
-  {
-    label: "New partner",
-    href: "/admin/partners/new",
-    description: "Onboard a B2B partner",
+    label: "Partner onboarding",
+    href: "/admin/partners/onboard",
+    description: "Add a B2B partner",
   },
   {
     label: "New delivery",

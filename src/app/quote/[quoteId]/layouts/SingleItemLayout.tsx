@@ -209,7 +209,7 @@ export default function SingleItemLayout({
           {fmtPrice(price)}
         </p>
         <p className="text-[12px] mt-1 mb-5" style={{ color: `${FOREST}70` }}>
-          +{fmtPrice(tax)} HST &middot; Total {fmtPrice(price + tax)}
+          +{fmtPrice(tax)} HST · Total {fmtPrice(price + tax)}
         </p>
         <button
           type="button"
@@ -224,15 +224,15 @@ export default function SingleItemLayout({
               <Check className="w-4 h-4" /> SELECTED
             </span>
           ) : isFullPayment ? (
-            `CONFIRM DELIVERY — ${fmtPrice(price + tax)}`
+            `CONFIRM DELIVERY · ${fmtPrice(price + tax)}`
           ) : (
-            `CONFIRM DELIVERY — ${fmtPrice(deposit)} DEPOSIT`
+            `CONFIRM DELIVERY · ${fmtPrice(deposit)} DEPOSIT`
           )}
         </button>
         <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
           {isFullPayment
-            ? "Full payment required to confirm booking."
-            : "Deposit due now; remaining balance due on delivery per your quote."}
+            ? "Full payment is due no later than 48 hours before your scheduled delivery."
+            : "Deposit due now. Remaining balance is due no later than 48 hours before your scheduled delivery."}
         </p>
       </div>
     </section>

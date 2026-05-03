@@ -320,14 +320,22 @@ function getOnboardingFlow(state: Pick<WizardState, "profile" | "type">): Onboar
 }
 
 interface PartnerOnboardingWizardProps {
-  open: boolean;
+  /** Full-page layout (embedded in `/admin/partners/onboard`). Default is modal overlay. */
+  variant?: "modal" | "page";
+  /** When `variant` is `"modal"`, controls dialog visibility. */
+  open?: boolean;
   onClose: () => void;
 }
 
 const inputCls = "admin-premium-input w-full";
 const labelCls = "admin-premium-label";
 
-export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboardingWizardProps) {
+export default function PartnerOnboardingWizard({
+  variant = "modal",
+  open = false,
+  onClose,
+}: PartnerOnboardingWizardProps) {
+  const isPage = variant === "page";
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -338,13 +346,12 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
   const phoneInput = usePhoneInput(state.phone, (v) => setState((s) => ({ ...s, phone: v })));
 
   useEffect(() => {
-    if (open) {
-      fetch("/api/admin/rate-templates")
-        .then((r) => r.json())
-        .then((d) => { if (Array.isArray(d)) setTemplates(d); })
-        .catch(() => {});
-    }
-  }, [open]);
+    if (!isPage && !open) return;
+    fetch("/api/admin/rate-templates")
+      .then((r) => r.json())
+      .then((d) => { if (Array.isArray(d)) setTemplates(d); })
+      .catch(() => {});
+  }, [isPage, open]);
 
   useEffect(() => {
     if (success) {
@@ -689,29 +696,39 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
 
   const currentStep = steps[step - 1]!;
 
+  const successBody = (
+    <div className="py-16 px-8 flex flex-col items-center justify-center text-center">
+      <div className="w-20 h-20 rounded-full bg-[var(--grn)]/10 border border-[var(--grn)]/30 flex items-center justify-center mb-6">
+        <Icon name="check" className="w-9 h-9 text-[var(--grn)]" />
+      </div>
+      <h3 className="font-heading text-[22px] font-bold text-[var(--tx)] mb-2">Partner onboarded</h3>
+      <p className="text-[var(--text-base)] text-[var(--tx3)] max-w-xs leading-relaxed">
+        {state.createPortalLogin && partnerHasSelfServePortal(state.type)
+          ? "An invitation email has been sent with their portal login credentials."
+          : !partnerHasSelfServePortal(state.type)
+            ? "Partner record is ready. This vertical is coordinated without a self-serve partner portal."
+            : "Partner saved as draft. Portal access can be added at any time."}
+      </p>
+    </div>
+  );
+
   if (success) {
+    if (isPage) {
+      return (
+        <div className="flex min-h-[min(520px,calc(100dvh-8rem))] w-full flex-col overflow-hidden rounded-2xl border border-[var(--brd)]/60 bg-[var(--bg)] shadow-sm">
+          {successBody}
+        </div>
+      );
+    }
     return (
       <ModalOverlay open={open} onClose={handleClose} title="Partner Onboarded" maxWidth="4xl" noPadding>
-        <div className="py-16 px-8 flex flex-col items-center justify-center text-center">
-          <div className="w-20 h-20 rounded-full bg-[var(--grn)]/10 border border-[var(--grn)]/30 flex items-center justify-center mb-6">
-            <Icon name="check" className="w-9 h-9 text-[var(--grn)]" />
-          </div>
-          <h3 className="font-heading text-[22px] font-bold text-[var(--tx)] mb-2">Partner onboarded</h3>
-          <p className="text-[var(--text-base)] text-[var(--tx3)] max-w-xs leading-relaxed">
-            {state.createPortalLogin && partnerHasSelfServePortal(state.type)
-              ? "An invitation email has been sent with their portal login credentials."
-              : !partnerHasSelfServePortal(state.type)
-                ? "Partner record is ready. This vertical is coordinated without a self-serve partner portal."
-                : "Partner saved as draft. Portal access can be added at any time."}
-          </p>
-        </div>
+        {successBody}
       </ModalOverlay>
     );
   }
 
-  return (
-    <ModalOverlay open={open} onClose={handleClose} title="" maxWidth="4xl" noHeader noPadding>
-      <div className="flex flex-col flex-1 min-h-0">
+  const wizardShell = (
+    <div className="flex flex-col flex-1 min-h-0">
 
         {/* Header */}
         <div className="px-7 pt-7 pb-6 border-b border-[var(--brd)]/60 shrink-0">
@@ -734,7 +751,7 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
             </button>
           </div>
 
-          {/* Step progress — centered row, connectors flex to spread across modal width */}
+          {/* Step progress — centered row with flexible connectors */}
           <div className="flex w-full justify-center pt-1">
             <div className="flex w-full items-start px-1 sm:px-2 md:px-4">
               {steps.map((s, i) => {
@@ -895,6 +912,19 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
           )}
         </div>
       </div>
+  );
+
+  if (isPage) {
+    return (
+      <div className="mx-auto flex w-full max-w-5xl min-h-[min(720px,calc(100dvh-8rem))] flex-col overflow-hidden rounded-2xl border border-[var(--brd)]/60 bg-[var(--bg)] shadow-sm">
+        {wizardShell}
+      </div>
+    );
+  }
+
+  return (
+    <ModalOverlay open={open} onClose={handleClose} title="" maxWidth="4xl" noHeader noPadding>
+      {wizardShell}
     </ModalOverlay>
   );
 }
@@ -2459,9 +2489,9 @@ function Step5Summary({ state, flow }: { state: WizardState; flow: OnboardingFlo
         </SummarySection>
       )}
 
-      <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl bg-amber-500/8 border border-amber-500/15">
-        <Icon name="alertTriangle" className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-        <p className="text-[12px] text-amber-200/80 leading-relaxed">
+      <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl border bg-amber-500/12 border-amber-600/28">
+        <Icon name="alertTriangle" className="w-4 h-4 shrink-0 mt-0.5 text-amber-800 dark:text-amber-200" aria-hidden />
+        <p className="text-[12px] leading-relaxed text-[var(--tx)]">
           {partnerHasSelfServePortal(state.type) && state.createPortalLogin
             ? "Review everything above. An invitation email will be sent immediately upon activation."
             : partnerHasSelfServePortal(state.type)

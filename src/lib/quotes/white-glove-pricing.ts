@@ -35,6 +35,127 @@ export type WhiteGloveItemInput = {
   is_fragile?: boolean
   is_high_value?: boolean
   notes?: string
+  /** item_weights.slug when line came from the catalog */
+  slug?: string
+  /** True when coordinator entered manually (not from item_weights) */
+  is_custom?: boolean
+}
+
+/** Minimal row from item_weights for browse / paste */
+export type WhiteGloveItemWeightSource = {
+  slug: string
+  item_name: string
+  weight_score: number
+  category?: string
+  room?: string
+  active?: boolean
+}
+
+export const WHITE_GLOVE_BROWSE_TABS = [
+  { key: "living", label: "Living Room" },
+  { key: "bedroom", label: "Bedroom" },
+  { key: "dining", label: "Dining" },
+  { key: "office", label: "Office" },
+  { key: "electronics", label: "Electronics" },
+  { key: "appliances", label: "Appliances" },
+  { key: "decor", label: "Art / Decor" },
+  { key: "all", label: "All" },
+] as const
+
+export type WhiteGloveBrowseTabKey = (typeof WHITE_GLOVE_BROWSE_TABS)[number]["key"]
+
+export function mapWeightScoreToWhiteGloveCategory(weightScore: number): WhiteGloveItemCategory {
+  const s = Number(weightScore)
+  if (!Number.isFinite(s) || s <= 0) return "medium"
+  if (s <= 0.5) return "small"
+  if (s <= 1.0) return "medium"
+  if (s <= 2.0) return "large"
+  return "extra_heavy"
+}
+
+export function mapWeightScoreToWhiteGloveWeightClass(weightScore: number): WhiteGloveWeightClass {
+  const s = Number(weightScore)
+  if (!Number.isFinite(s) || s <= 0) return "50_150"
+  if (s <= 0.5) return "under_50"
+  if (s <= 1.0) return "50_150"
+  if (s <= 2.0) return "150_300"
+  return "300_500"
+}
+
+/** Kitchen slugs that should map to heavy_appliance instead of extra_heavy */
+const WG_APPLIANCE_SLUG_HINTS =
+  /refrigerator|stove-range|dishwasher|washer|dryer|freezer|microwave/
+
+export function whiteGloveDefaultsFromItemWeight(row: WhiteGloveItemWeightSource): {
+  description: string
+  category: WhiteGloveItemCategory
+  weight_class: WhiteGloveWeightClass
+  is_fragile: boolean
+  slug: string
+  is_custom: false
+} {
+  const ws = Number(row.weight_score)
+  let category = mapWeightScoreToWhiteGloveCategory(ws)
+  if (category === "extra_heavy" && WG_APPLIANCE_SLUG_HINTS.test(row.slug)) {
+    category = "heavy_appliance"
+  }
+  const slugLower = row.slug.toLowerCase()
+  const nameLower = row.item_name.toLowerCase()
+  const fragileFromName =
+    /tv|television|glass|mirror|crystal|artwork|framed|marble|aquarium|sculpture|porcelain|antique/i.test(
+      nameLower + " " + slugLower,
+    )
+  return {
+    description: row.item_name.trim(),
+    category: fragileFromName && category !== "extra_heavy" ? "fragile" : category,
+    weight_class: mapWeightScoreToWhiteGloveWeightClass(ws),
+    is_fragile: fragileFromName,
+    slug: row.slug,
+    is_custom: false,
+  }
+}
+
+export function itemWeightMatchesWhiteGloveTab(
+  w: WhiteGloveItemWeightSource,
+  tab: WhiteGloveBrowseTabKey,
+): boolean {
+  if (tab === "all") return true
+  const room = (w.room || "other").toLowerCase()
+  const slug = w.slug.toLowerCase()
+  const cat = (w.category || "").toLowerCase()
+  if (tab === "living") return room === "living_room"
+  if (tab === "bedroom") return room === "bedroom"
+  if (tab === "dining") return room === "dining_room"
+  if (tab === "office") return room === "office"
+  if (tab === "electronics") {
+    return (
+      slug.includes("tv") ||
+      slug.includes("monitor") ||
+      slug.includes("printer") ||
+      slug.includes("computer") ||
+      (slug.includes("speaker") && !slug.includes("bookshelf"))
+    )
+  }
+  if (tab === "appliances") {
+    return (
+      room === "kitchen" ||
+      WG_APPLIANCE_SLUG_HINTS.test(slug) ||
+      cat === "appliance"
+    )
+  }
+  if (tab === "decor") {
+    return (
+      slug.includes("lamp") ||
+      slug.includes("mirror") ||
+      slug.includes("rug") ||
+      slug.includes("artwork") ||
+      slug.includes("sculpture") ||
+      slug.includes("curio") ||
+      slug.includes("cabinet-hutch") ||
+      room === "specialty"
+    )
+  }
+  return false
 }
 
 export const WG_ITEM_CATEGORIES: {
@@ -253,7 +374,11 @@ export function normalizeWhiteGloveItemsFromQuoteInput(input: {
 }): WhiteGloveItemInput[] {
   const rows = input.white_glove_items
   if (Array.isArray(rows) && rows.length > 0) {
-    return rows.map((r) => ({ ...r }))
+    return rows.map((r) => ({
+      ...r,
+      slug: typeof r.slug === "string" && r.slug.trim() ? r.slug.trim() : undefined,
+      is_custom: r.is_custom === true,
+    }))
   }
   const desc = (input.item_description || "").trim()
   if (!desc) return []
@@ -303,6 +428,26 @@ function categoryLabel(cat: string): string {
   return WG_ITEM_CATEGORIES.find((c) => c.value === cat)?.label ?? cat
 }
 
+/** Distance surcharge: prefer white_glove_free_radius_km / white_glove_distance_rate when present in config. */
+function whiteGloveDistanceChargeParams(config: Map<string, string>): {
+  distFreeKm: number
+  perKm: number
+} {
+  const hasFreeRadius =
+    config.has("white_glove_free_radius_km") &&
+    String(config.get("white_glove_free_radius_km") ?? "").trim() !== ""
+  const distFreeKm = hasFreeRadius
+    ? cfgNum(config, "white_glove_free_radius_km", 50)
+    : cfgNum(config, "white_glove_dist_free_km", 50)
+  const hasDistRate =
+    config.has("white_glove_distance_rate") &&
+    String(config.get("white_glove_distance_rate") ?? "").trim() !== ""
+  const perKm = hasDistRate
+    ? cfgNum(config, "white_glove_distance_rate", 2)
+    : cfgNum(config, "white_glove_per_km", 2)
+  return { distFreeKm, perKm }
+}
+
 export function computeWhiteGlovePricingBreakdown(
   config: Map<string, string>,
   itemsIn: WhiteGloveItemInput[],
@@ -319,8 +464,7 @@ export function computeWhiteGlovePricingBreakdown(
 ): WhiteGlovePricingBreakdown {
   const baseRate = cfgNum(config, "white_glove_base_rate", 199)
   const distKm = Math.max(0, opts.distKm)
-  const distFree = cfgNum(config, "white_glove_dist_free_km", 15)
-  const perKm = cfgNum(config, "white_glove_per_km", 4)
+  const { distFreeKm, perKm } = whiteGloveDistanceChargeParams(config)
   const debrisFee =
     opts.debrisRemoval === true
       ? cfgNum(config, "white_glove_debris_removal_fee", 50)
@@ -371,7 +515,9 @@ export function computeWhiteGlovePricingBreakdown(
     opts.fromAccessCharge + opts.toAccessCharge + opts.parkingLongCarryTotal
 
   const distanceSurcharge =
-    distKm > distFree ? Math.round((distKm - distFree) * perKm * 100) / 100 : 0
+    distKm > distFreeKm
+      ? Math.round((distKm - distFreeKm) * perKm * 100) / 100
+      : 0
 
   const truckT = (opts.truckType || "sprinter").toLowerCase()
   const truckSurcharge =
@@ -407,18 +553,203 @@ export function computeWhiteGlovePricingBreakdown(
   }
 }
 
-/** Crew / hours hints for coordinator UI (not billed as labour line in item model). */
-export function whiteGloveDisplayCrewHours(itemCount: number, distKm: number): {
+/** Category load minutes per unit (handling only; assembly time is estimated separately for hours). */
+const WG_LOAD_MINUTES_PER_UNIT: Record<WhiteGloveItemCategory, number> = {
+  small: 5,
+  medium: 10,
+  large: 15,
+  heavy_appliance: 20,
+  extra_heavy: 30,
+  fragile: 15,
+}
+
+const WG_ASSEMBLY_MINUTES_PER_UNIT: Record<WhiteGloveAssembly, number> = {
+  none: 0,
+  disassembly: 20,
+  assembly: 25,
+  both: 40,
+}
+
+const WG_CATEGORY_VALUE_SET = new Set(WG_ITEM_CATEGORIES.map((c) => c.value))
+
+function coerceWhiteGloveItemCategory(row: WhiteGloveItemInput): WhiteGloveItemCategory {
+  const raw = String(row.category ?? "").trim().toLowerCase()
+  if (WG_CATEGORY_VALUE_SET.has(raw as WhiteGloveItemCategory))
+    return raw as WhiteGloveItemCategory
+  return mapLegacyItemCategoryToWhiteGlove(row.category)
+}
+
+function whiteGloveRowLoadMinutes(row: WhiteGloveItemInput): number {
+  const qty = Math.max(1, Math.min(99, Number(row.quantity) || 1))
+  const cat = coerceWhiteGloveItemCategory(row)
+  let perUnit = WG_LOAD_MINUTES_PER_UNIT[cat]
+  if (row.is_fragile === true && cat !== "fragile") perUnit += 4
+  return qty * perUnit
+}
+
+export function whiteGloveTotalLoadMinutes(items: WhiteGloveItemInput[]): number {
+  let total = 0
+  for (const row of items) {
+    if (!(row.description || "").trim()) continue
+    total += whiteGloveRowLoadMinutes(row)
+  }
+  return total
+}
+
+/**
+ * White Glove crew: item volume and true extra-heavy scope only.
+ * Assembly line count must not bump crew (that inflated hours and implied rates).
+ */
+export function recommendWhiteGloveCrew(items: WhiteGloveItemInput[]): number {
+  let crew = 2
+  let heavyCount = 0
+  let totalItems = 0
+  let hasExtraHeavy = false
+
+  for (const row of items) {
+    if (!(row.description || "").trim()) continue
+    const qty = Math.max(1, Math.min(99, Number(row.quantity) || 1))
+    totalItems += qty
+    const cat = coerceWhiteGloveItemCategory(row)
+    const wc = String(row.weight_class ?? "").toLowerCase()
+    if (cat === "extra_heavy" || wc === "over_500" || wc.includes("over_500")) {
+      hasExtraHeavy = true
+    }
+    if (cat === "large" || cat === "heavy_appliance" || cat === "extra_heavy") {
+      heavyCount += qty
+    }
+  }
+
+  if (heavyCount >= 5 || hasExtraHeavy) crew = 3
+  if (totalItems >= 15 && heavyCount >= 8) crew = 4
+
+  return Math.min(8, crew)
+}
+
+const WG_HOURS_CREW_LOAD_MODIFIER: Record<number, number> = {
+  1: 1.5,
+  2: 1.0,
+  3: 0.78,
+  4: 0.62,
+}
+
+/**
+ * Wall-clock hours: load, drive, unload (crew-scaled), assembly (not crew-scaled), debris.
+ * Prefer Mapbox drive minutes when provided.
+ */
+export function estimateWhiteGloveHours(
+  items: WhiteGloveItemInput[],
+  distKm: number,
+  crewSize: number,
+  driveTimeMinutes?: number | null,
+): number {
+  let loadMinutes = 0
+  let assemblyMinutes = 0
+
+  for (const row of items) {
+    if (!(row.description || "").trim()) continue
+    const qty = Math.max(1, Math.min(99, Number(row.quantity) || 1))
+    loadMinutes += whiteGloveRowLoadMinutes(row)
+    const asm = mapLegacyAssemblyToWhiteGlove(row.assembly)
+    assemblyMinutes += (WG_ASSEMBLY_MINUTES_PER_UNIT[asm] ?? 0) * qty
+  }
+
+  const driveMinutes =
+    driveTimeMinutes != null &&
+    Number.isFinite(driveTimeMinutes) &&
+    driveTimeMinutes > 0
+      ? driveTimeMinutes
+      : Math.max(0, distKm) * 2
+
+  const unloadMinutes = loadMinutes * 0.85
+  const debrisMinutes = 15
+
+  const crew = Math.max(1, Math.min(8, Math.round(crewSize)))
+  const hourMod = WG_HOURS_CREW_LOAD_MODIFIER[crew] ?? 1
+
+  const totalMinutes =
+    loadMinutes * hourMod +
+    driveMinutes +
+    unloadMinutes * hourMod +
+    assemblyMinutes +
+    debrisMinutes
+
+  const hours = Math.round(totalMinutes / 30) / 2
+  return Math.max(2, hours)
+}
+
+export type WhiteGloveClientInclusionInput = {
+  items: WhiteGloveItemInput[]
+  assemblyTotal: number
+  debrisRemoval: boolean
+  debrisFee: number
+  guaranteedWindowHours: number | null
+  truckDisplay: string
   crew: number
   hours: number
-} {
-  const n = Math.max(1, itemCount)
-  const crew = Math.min(8, Math.max(2, 2 + Math.floor(n / 5)))
-  let hours = 2 + Math.min(6, n) * 0.35
-  if (distKm > 25) hours += 0.5
-  if (distKm > 45) hours += 0.5
-  return {
-    crew,
-    hours: Math.max(2, Math.round(hours * 2) / 2),
+  distKm: number
+}
+
+/** Client-facing inclusion bullets from actual scope (fallback to DB tier features when this returns empty). */
+export function getWhiteGloveClientInclusions(input: WhiteGloveClientInclusionInput): string[] {
+  const items = input.items.filter((i) => (i.description || "").trim())
+  if (items.length === 0) return []
+
+  const itemCount = items.reduce(
+    (s, i) => s + Math.max(1, Math.min(99, Number(i.quantity) || 1)),
+    0,
+  )
+  const lines: string[] = []
+  lines.push(
+    itemCount === 1
+      ? "White glove handling for 1 quoted item"
+      : `White glove handling for ${itemCount} quoted items`,
+  )
+
+  let assemblyLines = 0
+  for (const row of items) {
+    const asm = String(row.assembly ?? "none").toLowerCase()
+    if (asm !== "none" && asm !== "") {
+      assemblyLines += Math.max(1, Math.min(99, Number(row.quantity) || 1))
+    }
   }
+  if (assemblyLines > 0) {
+    lines.push(
+      assemblyLines === 1
+        ? "Assembly or disassembly on 1 line item"
+        : `Assembly or disassembly on ${assemblyLines} line items`,
+    )
+  } else if (input.assemblyTotal > 0) {
+    lines.push("Assembly or disassembly (quoted)")
+  }
+
+  if (input.debrisRemoval && input.debrisFee > 0) {
+    lines.push("Debris removal at delivery")
+  }
+
+  if (
+    typeof input.guaranteedWindowHours === "number" &&
+    Number.isFinite(input.guaranteedWindowHours) &&
+    input.guaranteedWindowHours > 0
+  ) {
+    lines.push(
+      `Guaranteed ${input.guaranteedWindowHours}-hour arrival window (quoted add-on)`,
+    )
+  }
+
+  lines.push(
+    `${input.crew}-person crew, about ${input.hours} hours on site (estimate)`,
+  )
+
+  const truckLine = input.truckDisplay.trim()
+  if (truckLine) lines.push(`Vehicle: ${truckLine}`)
+
+  if (input.distKm > 0) {
+    lines.push(`Route distance about ${Math.round(input.distKm)} km`)
+  }
+
+  lines.push("Blanket and pad wrapping in transit")
+  lines.push("Floor and entryway protection as needed")
+
+  return lines
 }

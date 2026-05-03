@@ -19,7 +19,19 @@ export function parseQuantityFromLine(text: string): { name: string; qty: number
   }
   const trailingNum = t.match(/(.+?)\s*[x×]\s*(\d+)/i);
   if (trailingNum) {
-    return { name: trailingNum[1].trim(), qty: parseInt(trailingNum[2], 10) };
+    const qty = parseInt(trailingNum[2], 10);
+    const name = trailingNum[1].trim();
+    const idx = trailingNum.index ?? 0;
+    const after = t.slice(idx + trailingNum[0].length);
+    const looksLikeDimensions =
+      /^\s*["']/.test(after) ||
+      /^\s*["']?\s*(?:deep|wide|high|long|tall)\b/i.test(after) ||
+      /^\s*(?:cm|mm|in\.|in\b|ft\.|ft\b)\b/i.test(after) ||
+      (/\d\s*["']/.test(t) && qty > 8) ||
+      (qty > 24 && /\b(wide|deep|high|tall|long|sectional|sofa|desk|table)\b/i.test(t));
+    if (!looksLikeDimensions && qty >= 1 && qty <= 99) {
+      return { name, qty };
+    }
   }
   return { name: t, qty: 1 };
 }

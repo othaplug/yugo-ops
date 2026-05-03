@@ -15,6 +15,13 @@ import {
   pricePmBatchLine,
   type PmBatchLineInput,
 } from "@/lib/partners/pm-batch-create";
+import { hubspotPortfolioMoveDealAfterInsert } from "@/lib/hubspot/hubspot-portfolio-move-after-insert";
+import {
+  buildPmBatchPartnerEmailHtml,
+  buildPmBatchStaffNotifyBody,
+  lookupPmReasonLabel,
+  type PmBatchMailDetailRow,
+} from "@/lib/email/pm-batch-email-detail";
 
 const PM_VERTICALS = [
   "property_management_residential",
@@ -142,6 +149,7 @@ export async function POST(req: NextRequest) {
   const { user, error: authError } = await requireStaff();
   if (authError) return authError;
 
+  try {
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -183,7 +191,11 @@ export async function POST(req: NextRequest) {
   const contractId = contract.id as string;
   const legacyRateCard = contract.rate_card;
 
-  const { data: org } = await admin.from("organizations").select("id, name, email").eq("id", partnerId).single();
+  const { data: org } = await admin
+    .from("organizations")
+    .select("id, name, email, billing_email")
+    .eq("id", partnerId)
+    .single();
   const partnerName = (org as { name?: string } | null)?.name || "Partner";
 
   const propRows = await admin
@@ -192,6 +204,18 @@ export async function POST(req: NextRequest) {
     .eq("partner_id", partnerId);
 
   const propById = new Map((propRows.data ?? []).map((p) => [p.id as string, p]));
+
+  const [{ data: reasonGlobals }, { data: reasonCustoms }] = await Promise.all([
+    admin.from("pm_move_reasons").select("reason_code, label").is("partner_id", null),
+    admin
+      .from("pm_move_reasons")
+      .select("reason_code, label")
+      .eq("partner_id", partnerId)
+      .eq("active", true),
+  ]);
+  const reasonLabels: Record<string, string> = {};
+  for (const g of reasonGlobals ?? []) reasonLabels[g.reason_code as string] = g.label as string;
+  for (const c of reasonCustoms ?? []) reasonLabels[c.reason_code as string] = c.label as string;
 
   for (const line of lines) {
     const allowed = await partnerMayUseReason(admin, partnerId, contractId, line.reason_code);
@@ -209,6 +233,7 @@ export async function POST(req: NextRequest) {
 
   type Created = { id: string; move_code: string | null };
   const created: Created[] = [];
+  const batchMailRows: PmBatchMailDetailRow[] = [];
 
   const status = draft ? "pending_approval" : "confirmed";
   const coordinatorName = user?.email?.trim() || "Coordinator";
@@ -223,10 +248,24 @@ export async function POST(req: NextRequest) {
     const hold = String(line.holding_unit || "").trim();
     const toAddress = hold ? `${hold} (holding)` : addr;
 
-    const { subtotal, zone } = await pricePmBatchLine(admin, contractId, legacyRateCard, line, {
-      address: addr,
-      service_region: (pr.service_region as string | null) ?? null,
-    });
+    let subtotal: number;
+    let zone: string;
+    try {
+      const priced = await pricePmBatchLine(admin, contractId, legacyRateCard, line, {
+        address: addr,
+        service_region: (pr.service_region as string | null) ?? null,
+      });
+      subtotal = priced.subtotal;
+      zone = priced.zone;
+    } catch (err) {
+      const hint = err instanceof Error ? err.message : "Pricing lookup failed";
+      return NextResponse.json(
+        {
+          error: `${hint.endsWith(".") ? hint : `${hint}.`} Row ${i + 1}: move type ${line.reason_code}, unit size ${line.unit_type}, unit ${unit}. Add matching rows to the portfolio rate matrix or legacy rate card for this contract.`,
+        },
+        { status: 400 },
+      );
+    }
 
     const displayTenant = line.tenant_name || "Tenant";
 
@@ -253,7 +292,7 @@ export async function POST(req: NextRequest) {
       from_address: fromAddress,
       to_address: toAddress,
       scheduled_date: line.scheduled_date,
-      scheduled_time: "8 AM – 10 AM",
+      scheduled_time: "8 AM to 10 AM",
       status,
       service_type: "b2b_oneoff",
       move_type: "residential",
@@ -283,7 +322,49 @@ export async function POST(req: NextRequest) {
     if (insErr || !move) {
       return NextResponse.json({ error: insErr?.message || "Insert failed" }, { status: 400 });
     }
-    created.push({ id: move.id as string, move_code: (move.move_code as string) || null });
+    const newId = move.id as string;
+    const newCode = (move.move_code as string) || null;
+    created.push({ id: newId, move_code: newCode });
+
+    batchMailRows.push({
+      moveCode: (newCode || newId).toString(),
+      unit,
+      unitSize: line.unit_type,
+      tenantName: displayTenant,
+      tenantPhone: line.tenant_phone ?? null,
+      tenantEmail: line.tenant_email ?? null,
+      buildingName,
+      propertyAddress: addr,
+      scheduledDate: line.scheduled_date,
+      arrivalWindowLabel: "8 AM to 10 AM",
+      reasonLabel: lookupPmReasonLabel(line.reason_code, reasonLabels),
+      reasonCode: line.reason_code,
+      zone,
+      estimatedPreTax: subtotal,
+      packingRequired: !!line.packing_required,
+      holdingUnit: hold || null,
+      afterHours: !!line.after_hours,
+      holidaySurcharge: !!line.holiday,
+      tenantMayNotBeOnSite: line.tenant_present === false,
+    });
+
+    const orgRow = org as { billing_email?: string | null; email?: string | null } | null;
+    await hubspotPortfolioMoveDealAfterInsert(admin, {
+      moveId: newId,
+      moveCode: newCode,
+      tenantEmail: line.tenant_email,
+      partnerBillingEmail: orgRow?.billing_email,
+      partnerOrgEmail: orgRow?.email,
+      displayName: displayTenant,
+      tenantPhone: line.tenant_phone,
+      serviceType: "b2b_oneoff",
+      moveSize: line.unit_type,
+      scheduledDate: line.scheduled_date,
+      fromAddress,
+      toAddress,
+      estimate: subtotal,
+      tierSelected: "essential",
+    });
   }
 
   for (let i = 0; i < lines.length; i++) {
@@ -308,17 +389,45 @@ export async function POST(req: NextRequest) {
       .eq("id", b.id);
   }
 
+  for (let i = 0; i < lines.length; i++) {
+    const li = lines[i]!.linked_batch_index;
+    if (li == null || li < 0 || li >= lines.length || li === i) continue;
+    const peerCode =
+      created[li]?.move_code != null ? String(created[li]?.move_code) : "";
+    if (batchMailRows[i]) {
+      batchMailRows[i] = {
+        ...batchMailRows[i]!,
+        linkedMoveCode: peerCode.trim() || created[li]?.id || null,
+      };
+    }
+  }
+
   const earliest = lines.map((l) => l.scheduled_date).sort()[0];
   const latest = lines.map((l) => l.scheduled_date).sort().slice(-1)[0];
   const uniqueTenants = new Set(lines.map((l) => l.tenant_name.trim().toLowerCase()).filter(Boolean)).size;
 
-  await notifyAdmins("partner_pm_batch", {
-    subject: `${draft ? "Draft " : ""}PM batch: ${partnerName}`,
-    body: `${created.length} moves · ${uniqueTenants} tenants · ${earliest} to ${latest}`,
-    moveId: created[0]?.id,
-    sourceId: created[0]?.id,
-    partnerName,
-  });
+  try {
+    const staffBody = buildPmBatchStaffNotifyBody({
+      partnerName,
+      coordinatorLabel: coordinatorName,
+      draft,
+      earliestDate: earliest,
+      latestDate: latest,
+      moveCount: created.length,
+      uniqueTenantCount: uniqueTenants,
+      rows: batchMailRows,
+    });
+    await notifyAdmins("partner_pm_batch", {
+      subject: `${draft ? "Draft " : ""}PM batch: ${partnerName} (${created.length} move${created.length === 1 ? "" : "s"})`,
+      body: staffBody,
+      description: `${created.length} moves · ${uniqueTenants} tenant profiles · ${earliest} to ${latest}`,
+      moveId: created[0]?.id,
+      sourceId: created[0]?.id,
+      partnerName,
+    });
+  } catch (e) {
+    console.error("[pm-batch] notifyAdmins failed (moves already created)", e);
+  }
 
   const contractPrefYugo =
     String((contract as { tenant_comms_by?: string }).tenant_comms_by || "").toLowerCase() ===
@@ -333,38 +442,38 @@ export async function POST(req: NextRequest) {
       if (!phone) continue;
       const digits = phone.replace(/\D/g, "");
       if (digits.length < 10) continue;
-      const trackUrl = `${baseUrl}/track/move/${getTrackMoveSlug({ move_code: move.move_code, id: move.id })}?token=${signTrackToken("move", move.id)}`;
-      const msg = [
-        `Hi ${line.tenant_name || "there"},`,
-        `Your building management has scheduled a move for unit ${line.unit_number} on ${line.scheduled_date}.`,
-        `Track your move: ${trackUrl}`,
-        `Questions? Call (647) 370-4525.`,
-      ].join("\n");
       try {
+        const trackUrl = `${baseUrl}/track/move/${getTrackMoveSlug({ move_code: move.move_code, id: move.id })}?token=${signTrackToken("move", move.id)}`;
+        const msg = [
+          `Hi ${line.tenant_name || "there"},`,
+          `Your building management has scheduled a move for unit ${line.unit_number} on ${line.scheduled_date}.`,
+          `Track your move: ${trackUrl}`,
+          `Questions? Call (647) 370-4525.`,
+        ].join("\n");
         await sendSMS(
           digits.length === 11 && digits.startsWith("1") ? `+${digits}` : `+1${digits.slice(-10)}`,
           msg,
         );
-      } catch {
-        /* non-fatal */
+      } catch (smsErr) {
+        console.warn("[pm-batch] tenant SMS skipped (signing or carrier)", smsErr);
       }
     }
   }
 
-  const partnerEmail = String((org as { email?: string | null })?.email || "").trim();
+  const orgEmails = org as { email?: string | null; billing_email?: string | null } | null;
+  const partnerEmail = ((orgEmails?.billing_email ?? orgEmails?.email) ?? "").trim();
   if (!draft && partnerEmail) {
-    const linesHtml = created
-      .map((m, idx) => {
-        const u = lines[idx]?.unit_number || "";
-        const code = m.move_code || m.id;
-        return `<li style="margin:6px 0"><strong>${code}</strong> · Unit ${u}</li>`;
-      })
-      .join("");
     try {
+      const partnerHtml = buildPmBatchPartnerEmailHtml({
+        partnerName,
+        adminBaseUrl: getEmailBaseUrl(),
+        moveCount: created.length,
+        rows: batchMailRows,
+      });
       await sendEmail({
         to: partnerEmail,
-        subject: `Yugo PM batch created (${created.length} moves)`,
-        html: `<p style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;color:#1a1f1b">${partnerName}, we created <strong>${created.length}</strong> scheduled moves from your coordinator batch.</p><ul style="font-family:system-ui,sans-serif;font-size:14px;color:#1a1f1b;padding-left:18px">${linesHtml}</ul><p style="font-family:system-ui,sans-serif;font-size:14px;color:#1a1f1b">Open <a href="${getEmailBaseUrl().replace(/\/$/, "")}/partner" style="color:#2C3E2D;font-weight:600">your partner portal</a> for status.</p>`,
+        subject: `Yugo portfolio batch · ${created.length} scheduled move${created.length === 1 ? "" : "s"} (${partnerName})`,
+        html: partnerHtml,
       });
     } catch {
       /* non-fatal */
@@ -377,4 +486,14 @@ export async function POST(req: NextRequest) {
     move_ids: created.map((c) => c.id),
     move_codes: created.map((c) => c.move_code),
   });
+  } catch (e) {
+    console.error("[pm-batch] POST uncaught:", e);
+    return NextResponse.json(
+      {
+        error:
+          e instanceof Error ? e.message : "Unexpected server error creating PM batch. Check logs.",
+      },
+      { status: 500 },
+    );
+  }
 }

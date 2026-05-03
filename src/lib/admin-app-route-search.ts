@@ -460,8 +460,7 @@ const ENTRIES: AppSearchEntry[] = [
   },
   { name: "New quote", href: "/admin/quotes/new", type: "Action", sub: "Create a quote", k: ["new", "quote", "create", "start"] },
   { name: "New move", href: "/admin/moves/create", type: "Action", sub: "Schedule a move", k: ["new", "move", "create", "book"] },
-  { name: "New contact", href: "/admin/clients/new", type: "Action", sub: "Add a client", k: ["new", "contact", "client", "person", "add"] },
-  { name: "New partner", href: "/admin/partners/new", type: "Action", k: ["new", "partner", "onboard", "b2b"] },
+  { name: "Partner onboarding", href: "/admin/partners/onboard", type: "Action", sub: "B2B partner wizard", k: ["new", "partner", "onboard", "b2b", "invite", "add partner"] },
   { name: "New delivery", href: "/admin/deliveries/new", type: "Action", k: ["new", "delivery", "job", "create", "b2b"] },
   { name: "New invoice", href: "/admin/finance/invoices/new", type: "Action", k: ["new", "invoice", "bill", "ar"] },
 ]

@@ -115,7 +115,7 @@ export function calcTieredLabourDelta(
 // ═══════════════════════════════════════════════
 
 export function calcDeadheadCost(distanceFromHqKm: number, config: ConfigMap): number {
-  const freeZone = cfgNum(config, "deadhead_free_zone_km", cfgNum(config, "deadhead_free_km", 15));
+  const freeZone = cfgNum(config, "deadhead_free_zone_km", cfgNum(config, "deadhead_free_km", 40));
   const rate = cfgNum(config, "deadhead_rate_per_km", cfgNum(config, "deadhead_per_km", 3.0));
   if (distanceFromHqKm <= freeZone) return 0;
   return Math.round((distanceFromHqKm - freeZone) * rate);

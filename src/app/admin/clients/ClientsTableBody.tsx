@@ -56,7 +56,7 @@ export default function ClientsTableBody({ clients }: { clients: Client[] }) {
     return (
       <tr>
         <td colSpan={6} className="px-4 py-12 text-center text-[12px] text-[var(--tx3)]">
-          No clients yet. <Link href="/admin/clients/new" className="text-[var(--accent-text)] hover:underline">Add one</Link>
+          No clients yet. Residential clients attach when booking moves from quotes or intake.
         </td>
       </tr>
     );

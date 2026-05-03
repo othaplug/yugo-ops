@@ -70,7 +70,7 @@ import {
   createDefaultWhiteGloveItem,
   type WhiteGloveItemRow,
 } from "@/components/admin/WhiteGloveItemsEditor";
-import { computeWhiteGlovePricingBreakdown } from "@/lib/quotes/white-glove-pricing";
+import { computeWhiteGlovePricingBreakdown, estimateWhiteGloveHours, recommendWhiteGloveCrew } from "@/lib/quotes/white-glove-pricing";
 import OfficeMoveScopeSection from "./OfficeMoveScopeSection";
 import BuildingProfileQuoteAlert from "./BuildingProfileQuoteAlert";
 import type { BuildingAccessFlag } from "@/lib/buildings/types";
@@ -302,15 +302,27 @@ type PhotoReviewQuoteHandoffShape = {
 
 // ─── Constants ──────────────────────────────────
 
+/** Shown on Step 1 service grid only (other flows may still set these via URL, copy-prefill, or lead). */
+const QUOTE_SERVICE_TYPES_HIDDEN_FROM_STEP1_PICKER = new Set([
+  "b2b_delivery",
+  "bin_rental",
+]);
+
 const SERVICE_TYPES: {
   value: string
   label: string
   desc: string
-}[] = QUOTE_SERVICE_TYPE_DEFINITIONS.map((d) => ({
+}[] = QUOTE_SERVICE_TYPE_DEFINITIONS.filter(
+  (d) => !QUOTE_SERVICE_TYPES_HIDDEN_FROM_STEP1_PICKER.has(d.value),
+).map((d) => ({
   value: d.value,
   label: d.label,
   desc: d.description,
 }));
+
+function isDefinedQuoteServiceType(value: string): boolean {
+  return QUOTE_SERVICE_TYPE_DEFINITIONS.some((d) => d.value === value);
+}
 
 const MOVE_SIZES = [
   { value: "studio", label: "Studio" },
@@ -1448,7 +1460,7 @@ export default function QuoteFormClient({
   useEffect(() => {
     if (serviceTypeUrlAppliedRef.current) return;
     if (!serviceTypeFromUrl) return;
-    if (!SERVICE_TYPES.some((x) => x.value === serviceTypeFromUrl)) return;
+    if (!isDefinedQuoteServiceType(serviceTypeFromUrl)) return;
     serviceTypeUrlAppliedRef.current = true;
     setServiceType(serviceTypeFromUrl);
   }, [serviceTypeFromUrl]);
@@ -1612,6 +1624,7 @@ export default function QuoteFormClient({
 
   /** Mapbox driving distance for specialty suggested range (km) */
   const [specialtyRouteKm, setSpecialtyRouteKm] = useState<number | null>(null);
+  const [specialtyDriveMin, setSpecialtyDriveMin] = useState<number | null>(null);
   const [specialtyRouteLoading, setSpecialtyRouteLoading] = useState(false);
 
   // B2B One-Off fields (dimensional engine)
@@ -2494,7 +2507,7 @@ export default function QuoteFormClient({
         const st = String(Q.service_type || "");
         const nextService =
           st === "b2b_oneoff" || st === "b2b_delivery" ? "b2b_delivery" : st;
-        if (nextService && SERVICE_TYPES.some((x) => x.value === nextService)) {
+        if (nextService && isDefinedQuoteServiceType(nextService)) {
           setServiceType(nextService);
         }
         const contacts = Q.contacts as
@@ -2623,7 +2636,7 @@ export default function QuoteFormClient({
         const st = str(L.service_type);
         if (st === "b2b_oneoff") {
           setServiceType("b2b_delivery");
-        } else if (st && SERVICE_TYPES.some((x) => x.value === st)) {
+        } else if (st && isDefinedQuoteServiceType(st)) {
           setServiceType(st);
         }
         const pwm =
@@ -2788,7 +2801,7 @@ export default function QuoteFormClient({
         if (
           typeof stHand === "string" &&
           stHand.trim() &&
-          SERVICE_TYPES.some((x) => x.value === stHand.trim())
+          isDefinedQuoteServiceType(stHand.trim())
         ) {
           serviceFromHandoff = stHand.trim();
         }
@@ -3118,12 +3131,14 @@ export default function QuoteFormClient({
   useEffect(() => {
     if (serviceType !== "specialty" && serviceType !== "white_glove") {
       setSpecialtyRouteKm(null);
+      setSpecialtyDriveMin(null);
       return;
     }
     const from = fromAddress.trim();
     const to = toAddress.trim();
     if (from.length < 8 || to.length < 8) {
       setSpecialtyRouteKm(null);
+      setSpecialtyDriveMin(null);
       return;
     }
     const handle = window.setTimeout(async () => {
@@ -3134,14 +3149,24 @@ export default function QuoteFormClient({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ from_address: from, to_address: to }),
         });
-        const data = await res.json();
+        const data = (await res.json()) as {
+          distance_km?: number
+          drive_time_min?: number
+        };
         if (res.ok && typeof data.distance_km === "number") {
           setSpecialtyRouteKm(data.distance_km);
+          setSpecialtyDriveMin(
+            typeof data.drive_time_min === "number"
+              ? data.drive_time_min
+              : null,
+          );
         } else {
           setSpecialtyRouteKm(null);
+          setSpecialtyDriveMin(null);
         }
       } catch {
         setSpecialtyRouteKm(null);
+        setSpecialtyDriveMin(null);
       } finally {
         setSpecialtyRouteLoading(false);
       }
@@ -3273,10 +3298,19 @@ export default function QuoteFormClient({
         : null,
       truckType: "sprinter",
     });
+    const crew = recommendWhiteGloveCrew(items);
+    const hours = estimateWhiteGloveHours(
+      items,
+      specialtyRouteKm ?? 0,
+      crew,
+      specialtyDriveMin,
+    );
     const taxR = cfgNum(config, "tax_rate", TAX_RATE);
     const tax = Math.round(bd.subtotalPreTax * taxR * 100) / 100;
     return {
       bd,
+      crew,
+      hours,
       tax,
       total: bd.subtotalPreTax + tax,
       distKm: specialtyRouteKm,
@@ -3296,6 +3330,7 @@ export default function QuoteFormClient({
     wgGuaranteedWindow,
     wgGuaranteedWindowHours,
     specialtyRouteKm,
+    specialtyDriveMin,
     specialtyRouteLoading,
   ]);
 
@@ -4122,6 +4157,8 @@ export default function QuoteFormClient({
             is_fragile: r.is_fragile,
             is_high_value: r.is_high_value,
             notes: r.notes?.trim() || undefined,
+            slug: r.slug?.trim() || undefined,
+            is_custom: r.is_custom === true ? true : undefined,
           }));
         base.white_glove_items = items.length > 0 ? items : undefined;
         base.declared_value = Number(declaredValue) || undefined;
@@ -5379,68 +5416,48 @@ export default function QuoteFormClient({
             <div className="p-5 space-y-0">
               {/* ── 1. Service type ── */}
               {quoteFlowStep === 0 && (
-              <div>
-                <label
-                  className={
-                    isV2
-                      ? "mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-fg-subtle"
-                      : "block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx2)] mb-2"
-                  }
-                >
-                  Service Type
-                </label>
-                <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
-                  {SERVICE_TYPES.map((card) => {
-                    const sel = serviceType === card.value;
-                    const cardV2 = sel
-                      ? "border-[var(--yu3-wine)] bg-[var(--yu3-wine)] text-[var(--yu3-on-wine)] shadow-md shadow-[color-mix(in_srgb,var(--yu3-wine)_32%,transparent)]"
-                      : "border-line bg-surface shadow-sm hover:border-[color-mix(in_srgb,var(--yu3-wine)_45%,var(--yu3-line))] hover:bg-surface-subtle"
-                    const cardV1 = sel
-                      ? "bg-gradient-to-br from-[#2C3E2D] to-[#5C1A33] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
-                      : "bg-[var(--card)] border-[1.5px] border-[var(--brd)] shadow-sm shadow-black/[0.04] hover:border-[var(--gold)]/50 hover:bg-[var(--bg)]"
-                    return (
-                      <button
-                        key={card.value}
-                        type="button"
-                        onClick={() => {
-                          setServiceType(card.value);
-                          if (card.value === "specialty") {
-                            setSpecialtyBuilderOpen(true);
-                          }
-                        }}
-                        className={`relative rounded-lg border px-3 py-2 text-left transition-all duration-200 ${
-                          isV2 ? cardV2 : cardV1
-                        }`}
-                      >
-                        <div className="min-w-0">
-                            <div
-                              className={`text-[11px] font-semibold leading-tight tracking-tight ${
-                                sel
-                                  ? "text-[var(--yu3-on-wine)]"
-                                  : isV2
-                                    ? "text-fg"
-                                    : "text-[var(--tx)]"
-                              }`}
-                            >
-                              {card.label}
+                <div className="pb-1 sm:pb-2">
+                  <label className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-2">
+                    Service Type
+                  </label>
+                  <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                    {SERVICE_TYPES.map((card) => {
+                      const sel = serviceType === card.value;
+                      return (
+                        <button
+                          key={card.value}
+                          type="button"
+                          onClick={() => {
+                            setServiceType(card.value);
+                            if (card.value === "specialty") {
+                              setSpecialtyBuilderOpen(true);
+                            }
+                          }}
+                          className={`relative min-w-[min(100%,9.5rem)] flex-1 sm:max-w-[calc(50%-0.25rem)] lg:max-w-[calc(25%-0.375rem)] text-left px-3 py-2 rounded-lg border transition-all duration-200 ${
+                            sel
+                              ? "bg-gradient-to-br from-[#2C3E2D] to-[#5C1A33] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
+                              : "bg-[var(--card)] border-[var(--brd)] hover:border-[#2C3E2D]/40 hover:bg-[var(--bg)]"
+                          }`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div
+                                className={`text-[11px] leading-tight tracking-tight font-semibold ${sel ? "text-white" : "text-[var(--tx)]"}`}
+                              >
+                                {card.label}
+                              </div>
+                              <div
+                                className={`text-[9px] mt-0.5 leading-snug ${sel ? "text-white/90" : "text-[var(--tx3)]"}`}
+                              >
+                                {card.desc}
+                              </div>
                             </div>
-                            <div
-                              className={`mt-0.5 text-[9px] leading-snug ${
-                                sel
-                                  ? "text-[color-mix(in_srgb,var(--yu3-on-wine)_90%,transparent)]"
-                                  : isV2
-                                    ? "text-fg-muted"
-                                    : "text-[var(--tx2)]/90"
-                              }`}
-                            >
-                              {card.desc}
-                            </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
               )}
 
               {!isB2bEmbed && quoteFlowStep === 1 && (
@@ -7587,6 +7604,7 @@ export default function QuoteFormClient({
                     value={whiteGloveItemRows}
                     onChange={setWhiteGloveItemRows}
                     fieldInputClass={fieldInput}
+                    itemWeights={itemWeights}
                     cargoCoverageHint="For insurance purposes. Standard cargo coverage is $100K."
                     declaredValue={declaredValue}
                     onDeclaredValueChange={setDeclaredValue}
@@ -9846,7 +9864,7 @@ export default function QuoteFormClient({
               <button
                 type="button"
                 onClick={handleQuoteFlowContinue}
-                className="admin-btn admin-btn-primary flex-1"
+                className="admin-btn admin-btn-secondary flex-1"
               >
                 Continue
                 <ChevronRight className="w-3.5 h-3.5" weight="bold" aria-hidden />
@@ -10787,6 +10805,13 @@ export default function QuoteFormClient({
                               ? "Calculating distance…"
                               : "Add addresses for distance adjustment"}
                         </p>
+                        <p className="text-[10px] text-[var(--tx2)]">
+                          Suggested crew / hours (estimate):{" "}
+                          <span className="font-medium text-[var(--tx)]">
+                            {whiteGloveLivePreview.crew} movers ·{" "}
+                            {whiteGloveLivePreview.hours} hr
+                          </span>
+                        </p>
                         {whiteGloveLivePreview.bd.itemLines.length > 0 ? (
                           <ul className="text-[11px] text-[var(--tx2)] space-y-0.5 list-disc pl-4">
                             {whiteGloveLivePreview.bd.itemLines.map(
@@ -10942,6 +10967,59 @@ export default function QuoteFormClient({
                     {quoteResult.move_date || "-"}
                   </span>
                 </div>
+                {quoteResult.service_type === "white_glove" &&
+                  Array.isArray(
+                    (quoteResult.factors as Record<string, unknown> | null)
+                      ?.white_glove_items,
+                  ) &&
+                  (
+                    (quoteResult.factors as Record<string, unknown>)
+                      .white_glove_items as unknown[]
+                  ).length > 0 && (
+                    <div className="pt-2 border-t border-[var(--brd)]/50">
+                      <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+                        Quoted items
+                      </p>
+                      <ol className="space-y-2 list-decimal pl-4 text-[10px] text-[var(--tx)]">
+                        {(
+                          (quoteResult.factors as Record<string, unknown>)
+                            .white_glove_items as Array<Record<string, unknown>>
+                        ).flatMap((row, idx) => {
+                          const desc = String(row.description ?? "").trim();
+                          if (!desc) return [];
+                          const qty = Math.max(
+                            1,
+                            Math.min(99, Number(row.quantity) || 1),
+                          );
+                          const flags: string[] = [];
+                          if (row.is_fragile === true) flags.push("Fragile");
+                          if (row.is_high_value === true)
+                            flags.push("High value");
+                          const asmRaw = String(row.assembly ?? "none");
+                          if (
+                            asmRaw &&
+                            asmRaw !== "none" &&
+                            asmRaw.toLowerCase() !== "none"
+                          ) {
+                            flags.push("Assembly");
+                          }
+                          return [
+                            <li key={`${idx}-${desc.slice(0, 24)}`}>
+                              <span className="font-medium">
+                                {qty}× {desc}
+                              </span>
+                              {flags.length > 0 ? (
+                                <span className="text-[var(--tx3)]">
+                                  {" "}
+                                  ({flags.join(", ")})
+                                </span>
+                              ) : null}
+                            </li>,
+                          ];
+                        })}
+                      </ol>
+                    </div>
+                  )}
                 {(serviceType === "local_move" ||
                   serviceType === "long_distance" ||
                   serviceType === "white_glove") && (
@@ -11152,7 +11230,84 @@ export default function QuoteFormClient({
                 <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
                   Valuation Protection
                 </h4>
-                {["essential", "signature", "estate"].map((pkg) => {
+                {serviceType === "white_glove"
+                  ? (() => {
+                      type ValTierRow = {
+                        tier_slug?: string;
+                        display_name?: string;
+                        rate_description?: string;
+                      };
+                      const tiers = (quoteResult.valuation?.tiers ??
+                        []) as ValTierRow[];
+                      const order = [
+                        "released",
+                        "enhanced",
+                        "full_replacement",
+                      ] as const;
+                      const labelFor = (slug: string) => {
+                        if (slug === "released") return "Standard";
+                        if (slug === "enhanced") return "Enhanced";
+                        if (slug === "full_replacement")
+                          return "Full replacement";
+                        return slug.replace(/_/g, " ");
+                      };
+                      const rows = order
+                        .map((slug) => {
+                          const t = tiers.find(
+                            (x) =>
+                              String(x.tier_slug ?? "").toLowerCase() === slug,
+                          );
+                          if (!t) return null;
+                          const body =
+                            typeof t.rate_description === "string" &&
+                            t.rate_description.trim()
+                              ? t.rate_description.trim()
+                              : typeof t.display_name === "string" &&
+                                  t.display_name.trim()
+                                ? t.display_name.trim()
+                                : null;
+                          return {
+                            slug,
+                            title: labelFor(slug),
+                            body,
+                          };
+                        })
+                        .filter(
+                          (
+                            r,
+                          ): r is {
+                            slug: (typeof order)[number];
+                            title: string;
+                            body: string | null;
+                          } => r != null,
+                        );
+                      if (rows.length === 0) {
+                        return (
+                          <p className="text-[10px] text-[var(--tx3)] leading-snug">
+                            Valuation catalogue rows not loaded. Regenerate the
+                            quote or check valuation tiers in admin.
+                          </p>
+                        );
+                      }
+                      return rows.map((row) => (
+                        <div
+                          key={row.slug}
+                          className="flex items-start justify-between gap-3"
+                        >
+                          <span className="text-[var(--tx3)] font-medium shrink-0">
+                            {row.title}
+                          </span>
+                          <span className="text-[var(--tx)] text-right text-[10px] leading-snug max-w-[65%]">
+                            {row.body ?? (
+                              <span className="text-[var(--tx3)]">
+                                See Your Protection on the client quote
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      ));
+                    })()
+                  : ["essential", "signature", "estate"].map((pkg) => {
                   const included =
                     {
                       essential: "Released Value",
@@ -13231,6 +13386,84 @@ function BinRentalFactorsSummary({
   );
 }
 
+function WhiteGloveAdminFactorsSummary({
+  factors,
+  distance,
+}: {
+  factors: Record<string, unknown>;
+  distance: number | null;
+}) {
+  const n = (k: string) =>
+    typeof factors[k] === "number" && Number.isFinite(factors[k] as number)
+      ? (factors[k] as number)
+      : 0;
+  const crew =
+    typeof factors.white_glove_crew === "number" ? factors.white_glove_crew : null;
+  const hours =
+    typeof factors.white_glove_hours === "number"
+      ? factors.white_glove_hours
+      : null;
+  const distKm =
+    typeof factors.distance_km === "number" &&
+    Number.isFinite(factors.distance_km as number)
+      ? (factors.distance_km as number)
+      : distance;
+  const rows: { label: string; amount: number }[] = [
+    {
+      label: "Item handling (minimum may apply)",
+      amount: n("white_glove_items_subtotal"),
+    },
+    { label: "Assembly / disassembly", amount: n("white_glove_assembly_total") },
+    {
+      label: "Building access (pickup + drop-off)",
+      amount: n("access_surcharge"),
+    },
+    { label: "Parking / long carry", amount: n("parking_long_carry_total") },
+    { label: "Distance surcharge", amount: n("white_glove_distance_surcharge") },
+    { label: "Debris removal", amount: n("white_glove_debris_fee") },
+    {
+      label: "Declared value premium",
+      amount: n("white_glove_declared_value_premium"),
+    },
+    { label: "Guaranteed window", amount: n("white_glove_guaranteed_window_fee") },
+    { label: "Truck", amount: n("white_glove_truck_surcharge") },
+  ];
+  const filtered = rows.filter((r) => r.amount > 0);
+  return (
+    <div className="space-y-2 text-[10px]">
+      {typeof distKm === "number" && (
+        <div className="flex justify-between text-[var(--tx3)]">
+          <span>Route distance</span>
+          <span className="text-[var(--tx)] font-medium tabular-nums">
+            {distKm} km
+          </span>
+        </div>
+      )}
+      {crew != null && hours != null && (
+        <div className="flex justify-between text-[var(--tx3)] pb-1 border-b border-[var(--brd)]/40">
+          <span>Crew / hours (estimate)</span>
+          <span className="text-[var(--tx)] font-medium">
+            {crew} movers · {hours} hr
+          </span>
+        </div>
+      )}
+      {filtered.map((r, i) => (
+        <div key={i} className="flex justify-between gap-2">
+          <span className="text-[var(--tx3)] text-left shrink min-w-0">
+            {r.label}
+          </span>
+          <span className="text-[var(--tx)] font-medium shrink-0">
+            {fmtPrice(r.amount)}
+          </span>
+        </div>
+      ))}
+      <p className="text-[9px] text-[var(--tx3)] leading-snug pt-1">
+        Subtotal before tax follows server rounding. Raw pricing lists every factor key.
+      </p>
+    </div>
+  );
+}
+
 function FactorsDisplayCollapsible({
   factors,
   distance,
@@ -13249,6 +13482,7 @@ function FactorsDisplayCollapsible({
   const isBinRental =
     factors.service_family === "bin_rental" ||
     typeof factors.bin_bundle_type === "string";
+  const isWhiteGloveItemBased = factors.white_glove_pricing === "item_based";
   // Use rich residential breakdown when the new formula fields are present (distance_modifier)
   const isNewResidential = typeof factors.distance_modifier === "number";
   const hasContent =
@@ -13277,6 +13511,27 @@ function FactorsDisplayCollapsible({
             signaturePrice={tiers?.signature?.price}
             estatePrice={tiers?.estate?.price}
           />
+        ) : isWhiteGloveItemBased ? (
+          <div className="space-y-3">
+            <WhiteGloveAdminFactorsSummary
+              factors={factors}
+              distance={distance}
+            />
+            <details className="group rounded-lg border border-[var(--brd)]/60 bg-[var(--bg2)]/40">
+              <summary className="cursor-pointer select-none text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
+                <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
+                Show raw pricing data
+              </summary>
+              <div className="px-3 pb-3 pt-0">
+                <LegacyFactorsDisplay
+                  factors={factors}
+                  distance={distance}
+                  time={time}
+                  showMultipliers={showMultipliers}
+                />
+              </div>
+            </details>
+          </div>
         ) : (
           <LegacyFactorsDisplay
             factors={factors}

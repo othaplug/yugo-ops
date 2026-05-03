@@ -84,8 +84,8 @@ export interface TierFeature {
   title: string;
   /** Description shown under the title in the expanded section. */
   desc: string;
-  /** Lucide icon name for the expanded section. Falls back to CheckCircle if unknown. */
-  iconName: string;
+  /** Optional icon name for tooling / legacy tier cards (quote inclusions grid is text-only). */
+  iconName?: string;
 }
 
 export interface TierData {

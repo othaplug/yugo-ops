@@ -41,3 +41,17 @@ export function getContractPrice(
 
   return total;
 }
+
+/** Like getContractPrice but returns null instead of throwing (unknown section/unit). */
+export function tryGetContractPrice(
+  rateCard: ContractRateCard | null | undefined,
+  moveType: string,
+  unitSize: string,
+  extras: { weekend?: boolean; afterHours?: boolean; holiday?: boolean },
+): number | null {
+  try {
+    return getContractPrice(rateCard, moveType, unitSize, extras);
+  } catch {
+    return null;
+  }
+}

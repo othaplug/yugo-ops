@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useToast } from "../components/Toast";
 import { Icon } from "@/components/AppIcons";
-import InvitePartnerModal from "./InvitePartnerModal";
 import PartnerVerticalRatesEditor from "./PartnerVerticalRatesEditor";
 import ModalOverlay from "../components/ModalOverlay";
 import { CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
@@ -71,7 +70,6 @@ export default function PartnersManagement() {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterAccess, setFilterAccess] = useState<"all" | "active" | "none">("all");
-  const [inviteOpen, setInviteOpen] = useState(false);
   const [expandedOrg, setExpandedOrg] = useState<string | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
   const [resetTarget, setResetTarget] = useState<{ orgId: string; user: PortalUser } | null>(null);
@@ -276,12 +274,9 @@ export default function PartnersManagement() {
             >
               Provision All Partners
             </button>
-            <button
-              onClick={() => setInviteOpen(true)}
-              className="admin-btn admin-btn-sm admin-btn-primary shrink-0"
-            >
+            <Link href="/admin/partners/onboard" className="admin-btn admin-btn-sm admin-btn-primary shrink-0 inline-flex items-center justify-center">
               + Invite New Partner
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -509,11 +504,6 @@ export default function PartnersManagement() {
       </div>
 
       {/* Invite New Partner Modal */}
-      <InvitePartnerModal
-        open={inviteOpen}
-        onClose={() => { setInviteOpen(false); fetchData(); }}
-      />
-
       {/* Reset Password Modal */}
       <ModalOverlay
         open={!!resetTarget}

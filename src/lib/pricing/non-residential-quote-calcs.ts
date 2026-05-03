@@ -125,17 +125,3 @@ export function whiteGloveWrapAndAssemblyCounts(input: {
   return { wrapQty, assemblyQty };
 }
 
-export function estimateWhiteGloveHours(input: {
-  inventory_items?: { quantity?: number }[];
-  distance_km: number;
-  wrapQty: number;
-  assemblyQty: number;
-}): number {
-  const n = input.inventory_items?.reduce((s, r) => s + Math.max(1, Number(r.quantity) || 1), 0) ?? 1;
-  let h = 2 + Math.min(6, n) * 0.35;
-  if (input.distance_km > 25) h += 0.5;
-  if (input.distance_km > 45) h += 0.5;
-  h += input.wrapQty * 0.15;
-  h += input.assemblyQty * 0.5;
-  return Math.max(Math.round(h * 2) / 2, 2);
-}

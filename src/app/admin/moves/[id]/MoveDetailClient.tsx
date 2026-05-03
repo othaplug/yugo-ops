@@ -137,6 +137,7 @@ interface MoveRecord {
   payment_marked_paid_at?: string | null;
   balance_paid_at?: string | null;
   completed_at?: string | null;
+  is_pm_move?: boolean | null;
   created_at?: string | null;
   updated_at?: string | null;
   contact_id?: string | null;
@@ -293,7 +294,8 @@ import {
   calcHST,
   contractTaxLines,
 } from "@/lib/format-currency";
-import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
+import { portfolioPmMoveServiceLabel } from "@/lib/displayLabels";
+import { portfolioPmStatementInvoiceDueIso } from "@/lib/partners/portfolio-pm-statement-due-date";
 import { formatAccessForDisplay, toTitleCase } from "@/lib/format-text";
 
 const VEHICLE_LABELS: Record<string, string> = {
@@ -1961,6 +1963,40 @@ export default function MoveDetailClient({
       {/* Financial Snapshot */}
       {(() => {
         const PAY_TOTAL_EPS = 0.05;
+        const portfolioPmBilling = !!move?.is_pm_move;
+        const completedAtForPortfolio =
+          (typeof move.completed_at === "string" && move.completed_at.trim()
+            ? move.completed_at
+            : "") ||
+          (typeof stepTimestamps.completed === "string" &&
+          stepTimestamps.completed.trim()
+            ? stepTimestamps.completed
+            : "");
+
+        let portfolioFinanceDueIso: string | null = null;
+        if (
+          portfolioPmBilling &&
+          isCompleted &&
+          completedAtForPortfolio.trim().length > 0
+        ) {
+          portfolioFinanceDueIso =
+            portfolioPmStatementInvoiceDueIso(completedAtForPortfolio.trim());
+        }
+        const financeDuePortfolioLabel =
+          portfolioFinanceDueIso != null && portfolioFinanceDueIso.trim()
+            ? formatPlatformDisplay(
+                new Date(`${portfolioFinanceDueIso}T12:00:00`),
+                {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                },
+                "",
+              ).trim()
+            : null;
+        const consumerPaymentOverdueUi = portfolioPmBilling
+          ? false
+          : balanceUnpaid;
         const ctl = contractTaxLines(estimate, Number(move.amount ?? 0));
         const quoteTotal =
           ctl.inclusive > 0
@@ -2088,15 +2124,15 @@ export default function MoveDetailClient({
                 ) : null}
                 {(() => {
                   const label = tierDisplayLabel(move.tier_selected);
-                  return label ? (
+                  return label && !portfolioPmBilling ? (
                     <span className="dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">
                       {label}
                     </span>
                   ) : null;
                 })()}
-                {move.service_type && (
+                {(move.service_type || portfolioPmBilling) && (
                   <span className="text-[9px] text-[var(--yu3-ink-muted)]">
-                    {serviceTypeDisplayLabel(move.service_type)}
+                    {portfolioPmMoveServiceLabel(move)}
                   </span>
                 )}
               </div>
@@ -2111,7 +2147,11 @@ export default function MoveDetailClient({
                     <span className="dt-badge tracking-[0.04em] text-[var(--grn)]">
                       Paid
                     </span>
-                  ) : balanceUnpaid ? (
+                  ) : portfolioPmBilling ? (
+                    <span className="dt-badge tracking-[0.04em] text-[var(--yu3-wine)]/90">
+                      Partner statement
+                    </span>
+                  ) : consumerPaymentOverdueUi ? (
                     <span className="dt-badge tracking-[0.04em] text-[var(--red)]">
                       Overdue
                     </span>
@@ -2125,16 +2165,20 @@ export default function MoveDetailClient({
                   className={`font-heading text-[32px] font-bold leading-none tracking-tight ${
                     fullyPaid
                       ? "text-[var(--grn)]"
-                      : balanceUnpaid
-                        ? "text-[var(--red)]"
-                        : "text-[var(--yu3-ink)]"
+                      : portfolioPmBilling
+                        ? "text-[var(--yu3-ink)]"
+                        : consumerPaymentOverdueUi
+                          ? "text-[var(--red)]"
+                          : "text-[var(--yu3-ink)]"
                   }`}
                 >
                   {fullyPaid
                     ? formatCurrency(
                         ctl.inclusive > 0 ? ctl.inclusive : quoteTotal,
                       )
-                    : formatCurrency(balanceDue)}
+                    : portfolioPmBilling
+                      ? formatCurrency(contractInclForLabels || quoteTotal)
+                      : formatCurrency(balanceDue)}
                 </div>
                 {fullyPaid && ctl.hst > 0 && (
                   <p className="mt-1.5 text-[11px] font-medium text-[var(--yu3-ink-muted)] leading-snug">
@@ -2146,28 +2190,49 @@ export default function MoveDetailClient({
                 <div className="mt-1.5 flex items-center gap-2">
                   <span className="text-[10px] text-[var(--yu3-ink-muted)]/82">
                     {fullyPaid
-                      ? `Total collected (incl. HST)${move.balance_method ? ` · Card${move.balance_auto_charged ? " (auto)" : ""}` : ""}`
-                      : `Balance due · +${formatCurrency(calcHST(balanceDue))} HST`}
+                      ? `Total collected (incl. HST)${
+                          move.balance_method ? ` · Card${move.balance_auto_charged ? " (auto)" : ""}` : ""
+                        }`
+                      : portfolioPmBilling && !fullyPaid && ctl.inclusive > 0
+                        ? `Contract total incl. Ontario HST (${formatCurrency(ctl.preTax)} + ${formatCurrency(ctl.hst)})`
+                        : `Balance due · +${formatCurrency(calcHST(balanceDue))} HST`}
                   </span>
                 </div>
+                {portfolioPmBilling && !fullyPaid && (
+                  <p className="mt-2 text-[10px] text-[var(--yu3-ink-muted)] leading-snug max-w-md">
+                    {isCompleted && financeDuePortfolioLabel
+                      ? `Invoicing should show on the invoices list when completion posts, with partner payment targeting ${financeDuePortfolioLabel}.`
+                      : `Invoicing posts when crew marks this move complete. Partner payment follows the portfolio 15 / 30 schedule from that completion date.`}
+                  </p>
+                )}
               </div>
 
               {/* Progress bar */}
               <div className="mt-4">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[9px] text-[var(--yu3-ink-muted)]">
-                    {formatCurrency(collectedAmount)} collected
-                  </span>
-                  <span className="text-[9px] text-[var(--yu3-ink-muted)]">
-                    {formatCurrency(contractInclForLabels)} contract (incl. HST)
-                  </span>
-                </div>
-                <div className="h-1.5 rounded-full bg-[var(--yu3-line-subtle)] overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${fullyPaid ? "bg-[var(--grn)]" : balanceUnpaid ? "bg-[var(--red)]" : "bg-[var(--admin-primary-fill)]"}`}
-                    style={{ width: `${progressPct}%` }}
-                  />
-                </div>
+                {!portfolioPmBilling ? (
+                  <>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[9px] text-[var(--yu3-ink-muted)]">
+                        {formatCurrency(collectedAmount)} collected
+                      </span>
+                      <span className="text-[9px] text-[var(--yu3-ink-muted)]">
+                        {formatCurrency(contractInclForLabels)} contract (incl.
+                        HST)
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-[var(--yu3-line-subtle)] overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${fullyPaid ? "bg-[var(--grn)]" : consumerPaymentOverdueUi ? "bg-[var(--red)]" : "bg-[var(--admin-primary-fill)]"}`}
+                        style={{ width: `${progressPct}%` }}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-[9px] text-[var(--yu3-ink-muted)] leading-snug">
+                    Settlement is logged when the portfolio invoice reads paid in Invoices.
+                    Prefer that list over card or deposit workflows for this partner.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -2237,7 +2302,10 @@ export default function MoveDetailClient({
             )}
 
             {/* Action row, only when action is needed */}
-            {!fullyPaid && !balanceJustSettled && !isBalancePaid && (
+            {!portfolioPmBilling &&
+              !fullyPaid &&
+              !balanceJustSettled &&
+              !isBalancePaid && (
               <div className="px-4 py-3 border-t border-[var(--yu3-line-subtle)] flex flex-wrap items-center gap-2">
                 {!move.deposit_paid_at && depositPaid > 0 && (
                   <button

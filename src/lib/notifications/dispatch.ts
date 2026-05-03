@@ -309,6 +309,12 @@ export function buildNotificationBody(
   if (slug === "crew_idle_off_route") {
     return (data.description as string) || "";
   }
+  if (slug === "partner_pm_batch") {
+    const b = (data.body as string)?.trim();
+    if (b) return b.slice(0, 4000);
+    const short = `${data.partnerName ? String(data.partnerName) : "Partner"} PM batch`;
+    return (data.description as string) || short;
+  }
   if (slug === "partner_pm_booking") {
     return (data.body as string) || "";
   }
@@ -355,6 +361,7 @@ export function getNotificationIcon(slug: string): string {
     crew_idle_off_route: "mapPin",
     lead_new: "lightning",
     partner_pm_booking: "truck",
+    partner_pm_batch: "truck",
     quote_comparison_signal: "eye",
     building_profile_pending: "building",
     move_project_day_completed: "check",
@@ -369,6 +376,8 @@ export function buildNotificationLink(
 ): string {
   if ((slug.startsWith("quote_") || slug === "quote_comparison_signal") && data.quoteId)
     return `/admin/quotes/${data.quoteId}`;
+  if (slug === "partner_pm_batch" && data.moveId)
+    return `/admin/moves/${data.moveId}`;
   if (slug.startsWith("partner_") && data.deliveryId)
     return `/admin/deliveries/${data.deliveryId}`;
   if (
@@ -421,6 +430,7 @@ export function getSourceType(slug: string, data?: NotificationData): string {
     slug === "tip_received"
   )
     return "payment";
+  if (slug === "partner_pm_batch") return "move";
   if (slug.startsWith("partner_")) return "delivery";
   if (slug === "claim_submitted") return "claim";
   if (slug === "lead_new") return "lead";

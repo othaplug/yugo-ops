@@ -71,10 +71,14 @@ function coerceWhiteGloveRow(raw: {
   is_fragile?: boolean;
   is_high_value?: boolean;
   notes?: string;
+  slug?: string;
+  is_custom?: boolean;
 }): WhiteGloveItemRow {
   const cat = (raw.category || "medium").toLowerCase();
   const wc = (raw.weight_class || "50_150").toLowerCase();
   const asm = (raw.assembly || "none").toLowerCase();
+  const slugStr =
+    typeof raw.slug === "string" && raw.slug.trim() ? raw.slug.trim() : undefined;
   return {
     id: newWhiteGloveRowId(),
     description: String(raw.description ?? "").trim(),
@@ -85,6 +89,9 @@ function coerceWhiteGloveRow(raw: {
     is_fragile: Boolean(raw.is_fragile),
     is_high_value: Boolean(raw.is_high_value),
     notes: String(raw.notes ?? ""),
+    slug: slugStr,
+    is_custom:
+      raw.is_custom === true || (!slugStr && Boolean(String(raw.description ?? "").trim())),
   };
 }
 
@@ -685,6 +692,8 @@ export default function EditQuoteClient({
           is_fragile: r.is_fragile,
           is_high_value: r.is_high_value,
           notes: r.notes?.trim() || undefined,
+          slug: r.slug?.trim() || undefined,
+          is_custom: r.is_custom === true ? true : undefined,
         }));
       if (wgItems.length > 0) payload.white_glove_items = wgItems;
       if (declaredValue.trim()) {
@@ -1465,6 +1474,7 @@ export default function EditQuoteClient({
               value={whiteGloveItemRows}
               onChange={setWhiteGloveItemRows}
               fieldInputClass={inputClass}
+              itemWeights={itemWeights}
               cargoCoverageHint="For insurance purposes. Standard cargo coverage is $100K."
               declaredValue={declaredValue}
               onDeclaredValueChange={setDeclaredValue}

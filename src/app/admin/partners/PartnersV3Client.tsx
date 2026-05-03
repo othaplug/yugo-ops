@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { formatAdminCreatedAt } from "@/lib/date-format";
 import { organizationTypeLabel } from "@/lib/partner-type";
 
@@ -102,6 +102,7 @@ function partnerStatusTone(
 
 export default function PartnersV3Client() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [partners, setPartners] = React.useState<Partner[]>([]);
   const [realtors, setRealtors] = React.useState<RealtorRow[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -116,6 +117,11 @@ export default function PartnersV3Client() {
     at_risk: number;
     cold: number;
   } | null>(null);
+
+  React.useEffect(() => {
+    if (searchParams.get("invite") !== "1") return;
+    router.replace("/admin/partners/onboard");
+  }, [searchParams, router]);
 
   React.useEffect(() => {
     fetch("/api/admin/partners/health")
@@ -423,7 +429,7 @@ export default function PartnersV3Client() {
             <Button
               variant="primary"
               leadingIcon={<Plus size={16} />}
-              onClick={() => router.push("/admin/partners/new")}
+              onClick={() => router.push("/admin/partners/onboard")}
             >
               Add partner
             </Button>

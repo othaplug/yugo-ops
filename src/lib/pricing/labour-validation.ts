@@ -140,7 +140,7 @@ function resolveCeilingKey(serviceType: string, tier: string): keyof LabourRateC
 function suppliesEstimate(serviceType: string, tier: string): number {
   const st = (serviceType || "").toLowerCase()
   if (st === "event") return 20
-  if (st === "white_glove") return 60
+  if (st === "white_glove") return 0
   const t = (tier || "").toLowerCase()
   if (t === "estate") return 120
   if (t === "signature") return 80
@@ -265,13 +265,12 @@ export function aggregateSpecialtySurchargesForLabourValidation(
     s += num(factors.crating_surcharge) + num(factors.climate_surcharge)
   }
   if (st === "white_glove") {
+    // Item subtotal and assembly are priced as labour in the WG item model; only pass-through / access style lines count as non-labour here.
     s +=
-      num(factors.white_glove_assembly_total) +
       num(factors.white_glove_debris_fee) +
       num(factors.white_glove_declared_value_premium) +
       num(factors.white_glove_guaranteed_window_fee) +
-      num(factors.white_glove_distance_surcharge) +
-      num(factors.white_glove_items_subtotal)
+      num(factors.white_glove_distance_surcharge)
   }
   if (st === "b2b_delivery" || st === "b2b_oneoff") {
     s += num(factors.weight_surcharge)

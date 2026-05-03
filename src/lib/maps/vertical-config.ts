@@ -325,6 +325,32 @@ export function mapOrgVerticalToDeliveryVerticalCode(
     restaurant: "restaurant_hospitality",
   };
   if (table[v]) return table[v];
+  /** Portfolio & referral CRM verticals don't map to catalog furniture rows; use dimensional "custom". */
+  if (
+    v === "property_management_residential" ||
+    v === "property_management_commercial" ||
+    v === "developer_builder" ||
+    v === "realtor" ||
+    v === "property_manager"
+  ) {
+    return "custom";
+  }
   if (v in VERTICAL_CONFIG) return v;
   return "custom";
+}
+
+/**
+ * Ensure the preferred catalog code exists among active verticals before defaulting UI.
+ */
+export function clampToActiveDeliveryVerticalCode(
+  preferred: string | null | undefined,
+  /** Codes in `delivery_verticals.sort_order` sequence */
+  activeCodesOrdered: readonly string[],
+): string {
+  const ordered = [...activeCodesOrdered].filter(Boolean);
+  if (ordered.length === 0) return "";
+  const p = typeof preferred === "string" ? preferred.trim() : "";
+  if (p && ordered.includes(p)) return p;
+  if (ordered.includes("custom")) return "custom";
+  return ordered[0] ?? "";
 }

@@ -16,6 +16,26 @@ const createMovesLabel = (n: number) =>
 
 type PartnerOption = { id: string; name: string | null; vertical: string | null };
 
+async function parseResponseJson(res: Response): Promise<Record<string, unknown>> {
+  const raw = await res.text();
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    if (!res.ok) {
+      throw new Error(`Request failed (${res.status}). Empty response from server.`);
+    }
+    return {};
+  }
+  try {
+    return JSON.parse(trimmed) as Record<string, unknown>;
+  } catch {
+    throw new Error(
+      res.ok
+        ? "Unexpected server response while saving your batch. Check All moves in case it still went through."
+        : `Request failed (${res.status}). Server did not return valid JSON.`,
+    );
+  }
+}
+
 type Bootstrap = {
   org: { id: string; name: string | null; vertical: string | null };
   contract: { id: string; rate_card?: unknown } | null;
@@ -51,9 +71,9 @@ export function PMBatchClient({
     (async () => {
       try {
         const res = await fetch("/api/admin/moves/pm-batch");
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to load partners");
-        if (!cancelled) setPartners(data.partners || []);
+        const data = await parseResponseJson(res);
+        if (!res.ok) throw new Error(String(data.error ?? "Failed to load partners"));
+        if (!cancelled) setPartners((Array.isArray(data.partners) ? data.partners : []) as PartnerOption[]);
       } catch (e) {
         if (!cancelled) {
           toast(e instanceof Error ? e.message : "Could not load partners", "x");
@@ -91,9 +111,9 @@ export function PMBatchClient({
       setLoadingBoot(true);
       try {
         const res = await fetch(`/api/admin/moves/pm-batch?partner_id=${encodeURIComponent(pid)}`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to load partner");
-        setBootstrap(data as Bootstrap);
+        const data = await parseResponseJson(res);
+        if (!res.ok) throw new Error(String(data.error ?? "Failed to load partner"));
+        setBootstrap(data as unknown as Bootstrap);
       } catch (e) {
         toast(e instanceof Error ? e.message : "Could not load buildings", "x");
         setBootstrap(null);
@@ -184,12 +204,14 @@ export function PMBatchClient({
           })),
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Batch failed");
+      const data = await parseResponseJson(res);
+      if (!res.ok) throw new Error(String(data.error ?? "Batch failed"));
+      const moveCodes = data.move_codes;
+      const count = Array.isArray(moveCodes) ? moveCodes.length : 0;
       toast(
         draft
-          ? `Draft saved (${data.move_codes?.length ?? 0} moves)`
-          : `Created ${data.move_codes?.length ?? 0} moves`,
+          ? `Draft saved (${count} moves)`
+          : `Created ${count} moves`,
         "check",
       );
       router.push("/admin/moves?segment=pm");

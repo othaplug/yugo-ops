@@ -29,6 +29,27 @@ export function serviceTypeDisplayLabel(value: string | null | undefined): strin
   return fromMap || displayLabel(v);
 }
 
+const isB2bOneOffSlug = (raw: string | null | undefined) => {
+  const v = typeof raw === "string" ? raw.trim().toLowerCase() : "";
+  return v === "b2b_oneoff" || v === "b2b_one_off";
+};
+
+/** Portfolio PM batches store `service_type` b2b_oneoff but admin copy must not read as delivery. */
+export function portfolioPmMoveServiceLabel(move: {
+  service_type?: string | null;
+  is_pm_move?: boolean | null;
+}): string {
+  if (move.is_pm_move && isB2bOneOffSlug(move.service_type)) {
+    return "Property management move";
+  }
+  if (move.is_pm_move) {
+    const st = serviceTypeDisplayLabel(move.service_type);
+    if (!st.trim() || st === "—") return "Property management move";
+    return st;
+  }
+  return serviceTypeDisplayLabel(move.service_type);
+}
+
 // Move statuses
 export const MOVE_STATUS_LABELS: Record<string, string> = {
   draft: "Preparing",

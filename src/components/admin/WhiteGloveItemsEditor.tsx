@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
-import { CaretDown, CaretRight, Plus, Wrench } from "@phosphor-icons/react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CaretDown, CaretRight, MagnifyingGlass as Search, Plus, Wrench } from "@phosphor-icons/react";
 import type {
   WhiteGloveAssembly,
   WhiteGloveItemCategory,
@@ -10,9 +10,20 @@ import type {
 import {
   WG_ASSEMBLY_OPTIONS,
   WG_ITEM_CATEGORIES,
-  WG_QUICK_ADD,
   WG_WEIGHT_CLASS_OPTIONS,
+  WHITE_GLOVE_BROWSE_TABS,
+  itemWeightMatchesWhiteGloveTab,
+  whiteGloveDefaultsFromItemWeight,
+  type WhiteGloveBrowseTabKey,
+  type WhiteGloveItemWeightSource,
 } from "@/lib/quotes/white-glove-pricing";
+import {
+  fuzzyFilterItemWeights,
+  matchPastedLineToItem,
+  nameImpliesFragile,
+  parseQuantityFromLine,
+  type MatchConfidence,
+} from "@/lib/inventory-search";
 
 export interface WhiteGloveItemRow {
   id: string;
@@ -24,6 +35,8 @@ export interface WhiteGloveItemRow {
   is_fragile: boolean;
   is_high_value: boolean;
   notes: string;
+  slug?: string;
+  is_custom?: boolean;
 }
 
 const newId = () =>
@@ -42,7 +55,14 @@ export function createDefaultWhiteGloveItem(): WhiteGloveItemRow {
     is_fragile: false,
     is_high_value: false,
     notes: "",
+    is_custom: true,
   };
+}
+
+function quickChipLabel(itemName: string) {
+  const t = itemName.trim();
+  if (t.includes(" / ")) return t.split(" / ")[0].trim();
+  return t.length > 42 ? `${t.slice(0, 40)}…` : t;
 }
 
 type FieldProps = { label: string; children: React.ReactNode };
@@ -62,7 +82,7 @@ export type WhiteGloveItemsEditorProps = {
   value: WhiteGloveItemRow[];
   onChange: (next: WhiteGloveItemRow[]) => void;
   fieldInputClass: string;
-  /** Shown under declared value */
+  itemWeights: WhiteGloveItemWeightSource[];
   cargoCoverageHint?: string;
   declaredValue: string;
   onDeclaredValueChange: (v: string) => void;
@@ -70,21 +90,149 @@ export type WhiteGloveItemsEditorProps = {
   onDebrisRemovalChange: (v: boolean) => void;
 };
 
+type PasteRow = {
+  id: string;
+  raw: string;
+  parsedName: string;
+  qty: number;
+  match: WhiteGloveItemWeightSource | null;
+  confidence: MatchConfidence;
+};
+
 export const WhiteGloveItemsEditor: React.FC<WhiteGloveItemsEditorProps> = ({
   value,
   onChange,
   fieldInputClass,
+  itemWeights,
   cargoCoverageHint,
   declaredValue,
   onDeclaredValueChange,
   debrisRemoval,
   onDebrisRemovalChange,
 }) => {
+  const activeWeights = useMemo(
+    () => itemWeights.filter((w) => w.active !== false),
+    [itemWeights],
+  );
+
+  const [activeTab, setActiveTab] = useState<WhiteGloveBrowseTabKey>("living");
+  const [search, setSearch] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const [showAllChips, setShowAllChips] = useState(false);
+
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+  const [pasteRows, setPasteRows] = useState<PasteRow[]>([]);
+
+  const [showCustomPanel, setShowCustomPanel] = useState(false);
+  const [customDesc, setCustomDesc] = useState("");
+  const [customCategory, setCustomCategory] = useState<WhiteGloveItemCategory>("medium");
+  const [customWeightClass, setCustomWeightClass] = useState<WhiteGloveWeightClass>("50_150");
+
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
     for (const row of value) init[row.id] = true;
     return init;
   });
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (!searchRef.current?.contains(e.target as Node)) setShowDropdown(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  const tabItems = useMemo(() => {
+    const pool = activeWeights.filter((w) => itemWeightMatchesWhiteGloveTab(w, activeTab));
+    return [...pool].sort((a, b) => {
+      const ao = (a as { display_order?: number }).display_order ?? 0;
+      const bo = (b as { display_order?: number }).display_order ?? 0;
+      return ao - bo;
+    });
+  }, [activeWeights, activeTab]);
+
+  const visibleChips = showAllChips ? tabItems : tabItems.slice(0, 28);
+
+  const filteredSearch = useMemo(() => {
+    return fuzzyFilterItemWeights(search, activeWeights).slice(0, 80);
+  }, [search, activeWeights]);
+
+  const addOrMergeFromCatalog = useCallback(
+    (src: WhiteGloveItemWeightSource, qty: number) => {
+      const d = whiteGloveDefaultsFromItemWeight(src);
+      const q = Math.max(1, Math.min(99, qty));
+      const bySlug = value.find((r) => r.slug === d.slug);
+      if (bySlug) {
+        onChange(
+          value.map((r) =>
+            r.id === bySlug.id ? { ...r, quantity: Math.min(99, r.quantity + q) } : r,
+          ),
+        );
+        return;
+      }
+      const fragileExtra = nameImpliesFragile(d.description) ? true : d.is_fragile;
+      const row: WhiteGloveItemRow = {
+        id: newId(),
+        description: d.description,
+        quantity: q,
+        category: fragileExtra && d.category !== "extra_heavy" ? "fragile" : d.category,
+        weight_class: d.weight_class,
+        assembly: "none",
+        is_fragile: fragileExtra,
+        is_high_value: false,
+        notes: "",
+        slug: d.slug,
+        is_custom: false,
+      };
+      onChange([...value, row]);
+      setExpanded((prev) => ({ ...prev, [row.id]: true }));
+    },
+    [onChange, value],
+  );
+
+  /** Single state update: loop must not call onChange per row (stale `value` closures). */
+  const addPasteMatchedRowsBatched = useCallback(
+    (rows: PasteRow[]) => {
+      const matched = rows.filter((r) => r.match);
+      if (matched.length === 0) return;
+      let next = [...value];
+      const newExpanded: Record<string, boolean> = {};
+      for (const pr of matched) {
+        const d = whiteGloveDefaultsFromItemWeight(pr.match!);
+        const q = Math.max(1, Math.min(99, pr.qty));
+        const bySlug = next.find((r) => r.slug === d.slug);
+        if (bySlug) {
+          next = next.map((r) =>
+            r.id === bySlug.id ? { ...r, quantity: Math.min(99, r.quantity + q) } : r,
+          );
+        } else {
+          const fragileExtra = nameImpliesFragile(d.description) ? true : d.is_fragile;
+          const row: WhiteGloveItemRow = {
+            id: newId(),
+            description: d.description,
+            quantity: q,
+            category: fragileExtra && d.category !== "extra_heavy" ? "fragile" : d.category,
+            weight_class: d.weight_class,
+            assembly: "none",
+            is_fragile: fragileExtra,
+            is_high_value: false,
+            notes: "",
+            slug: d.slug,
+            is_custom: false,
+          };
+          next = [...next, row];
+          newExpanded[row.id] = true;
+        }
+      }
+      onChange(next);
+      if (Object.keys(newExpanded).length > 0) {
+        setExpanded((prev) => ({ ...prev, ...newExpanded }));
+      }
+    },
+    [onChange, value],
+  );
 
   const toggleExpanded = useCallback((id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -109,32 +257,26 @@ export const WhiteGloveItemsEditor: React.FC<WhiteGloveItemsEditorProps> = ({
     [onChange, value],
   );
 
-  const handleAddRow = useCallback(() => {
-    const row = createDefaultWhiteGloveItem();
+  const handleAddCustomFromPanel = useCallback(() => {
+    const desc = customDesc.trim();
+    if (!desc) return;
+    const row: WhiteGloveItemRow = {
+      id: newId(),
+      description: desc,
+      quantity: 1,
+      category: customCategory,
+      weight_class: customWeightClass,
+      assembly: "none",
+      is_fragile: nameImpliesFragile(desc),
+      is_high_value: false,
+      notes: "",
+      is_custom: true,
+    };
     onChange([...value, row]);
     setExpanded((prev) => ({ ...prev, [row.id]: true }));
-  }, [onChange, value]);
-
-  const handleQuickAdd = useCallback(
-    (key: string) => {
-      const preset = WG_QUICK_ADD[key];
-      if (!preset) return;
-      const row: WhiteGloveItemRow = {
-        id: newId(),
-        description: preset.description,
-        quantity: 1,
-        category: preset.category,
-        weight_class: preset.weight,
-        assembly: preset.assembly,
-        is_fragile: preset.is_fragile ?? false,
-        is_high_value: preset.is_high_value ?? false,
-        notes: "",
-      };
-      onChange([...value, row]);
-      setExpanded((prev) => ({ ...prev, [row.id]: true }));
-    },
-    [onChange, value],
-  );
+    setCustomDesc("");
+    setShowCustomPanel(false);
+  }, [customCategory, customDesc, customWeightClass, onChange, value]);
 
   const summary = useMemo(() => {
     let totalQty = 0;
@@ -158,20 +300,239 @@ export const WhiteGloveItemsEditor: React.FC<WhiteGloveItemsEditorProps> = ({
       <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
         Items
       </h3>
+
+      <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-3 space-y-3">
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] w-full sm:w-auto">
+            Browse items
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {WHITE_GLOVE_BROWSE_TABS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => {
+                setActiveTab(t.key);
+                setShowAllChips(false);
+              }}
+              className={`px-2.5 py-1 rounded-md text-[9px] font-semibold border transition-colors ${
+                activeTab === t.key
+                  ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                  : "bg-[var(--card)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {activeWeights.length > 0 ? (
+          <div className="space-y-2">
+            <p className="text-[10px] text-[var(--tx3)]">
+              {WHITE_GLOVE_BROWSE_TABS.find((x) => x.key === activeTab)?.label}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {visibleChips.map((w) => (
+                <button
+                  key={w.slug}
+                  type="button"
+                  onClick={() => addOrMergeFromCatalog(w, 1)}
+                  className="px-2 py-1 rounded-md text-[9px] font-semibold border bg-[var(--card)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40 max-w-[11rem] truncate"
+                  title={w.item_name}
+                >
+                  {quickChipLabel(w.item_name)}
+                </button>
+              ))}
+            </div>
+            {tabItems.length > 28 && (
+              <button
+                type="button"
+                onClick={() => setShowAllChips((s) => !s)}
+                className="text-[9px] font-semibold text-[var(--accent-text)] hover:underline"
+              >
+                {showAllChips ? "Show fewer items" : `Show all ${tabItems.length} items`}
+              </button>
+            )}
+            {tabItems.length === 0 && (
+              <p className="text-[10px] text-[var(--tx3)]">No catalog items in this tab.</p>
+            )}
+          </div>
+        ) : (
+          <p className="text-[10px] text-amber-600 dark:text-amber-400">
+            Item catalog not loaded. Refresh or contact support.
+          </p>
+        )}
+
+        <div ref={searchRef} className="relative pt-1">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">
+            Search items
+          </p>
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 size-4 shrink-0 -translate-y-1/2 text-[var(--tx2)]"
+              aria-hidden
+            />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setShowDropdown(true);
+              }}
+              onFocus={() => setShowDropdown(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (filteredSearch[0] && !e.nativeEvent.isComposing) {
+                    const { qty } = parseQuantityFromLine(search);
+                    addOrMergeFromCatalog(filteredSearch[0], Math.max(1, qty));
+                    setSearch("");
+                    setShowDropdown(false);
+                  }
+                }
+              }}
+              placeholder="Can't find an item? Type to search the catalog…"
+              className={`${fieldInputClass} w-full pl-9`}
+              aria-label="Search item catalog"
+            />
+          </div>
+          {showDropdown && filteredSearch.length > 0 && (
+            <div className="absolute z-20 top-full left-0 right-0 mt-1 max-h-[240px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-lg">
+              {filteredSearch.map((w) => (
+                <button
+                  key={w.slug}
+                  type="button"
+                  onClick={() => {
+                    const { qty } = parseQuantityFromLine(search);
+                    addOrMergeFromCatalog(w, Math.max(1, qty));
+                    setSearch("");
+                    setShowDropdown(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)]/50 last:border-0 flex items-center justify-between gap-2"
+                >
+                  <span className="min-w-0 truncate">{w.item_name}</span>
+                  <span className="text-[9px] font-mono tabular-nums text-[var(--tx3)] shrink-0">
+                    ×{w.weight_score}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2 pt-1 border-t border-[var(--brd)]/60">
+          <button
+            type="button"
+            onClick={() => setPasteOpen((o) => !o)}
+            className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--accent-text)] hover:opacity-90"
+          >
+            <span>{pasteOpen ? "Hide paste inventory" : "Paste inventory list"}</span>
+            <CaretDown className={`size-3 transition-transform ${pasteOpen ? "rotate-180" : ""}`} />
+          </button>
+          {pasteOpen && (
+            <div className="rounded-lg border border-[var(--brd)] p-3 space-y-2 bg-[var(--card)]">
+              <p className="text-[9px] text-[var(--tx3)] leading-snug">
+                One item per line. Quantities: &quot;4 dining chairs&quot; or &quot;sofa x2&quot;.
+              </p>
+              <textarea
+                value={pasteText}
+                onChange={(e) => setPasteText(e.target.value)}
+                rows={6}
+                placeholder={"queen mattress\n1x TV stand\nsectional sofa"}
+                className={`${fieldInputClass} resize-y min-h-[100px]`}
+              />
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const lines = pasteText
+                      .split(/\n/)
+                      .map((l) => l.trim())
+                      .filter(Boolean);
+                    const rows: PasteRow[] = lines.map((raw, i) => {
+                      const { name, qty } = parseQuantityFromLine(raw);
+                      const { item, confidence } = matchPastedLineToItem(name, activeWeights);
+                      return {
+                        id: `p${i}`,
+                        raw,
+                        parsedName: name,
+                        qty,
+                        match: item,
+                        confidence,
+                      };
+                    });
+                    setPasteRows(rows);
+                  }}
+                  className="admin-btn admin-btn-sm admin-btn-primary"
+                >
+                  Parse and map items
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPasteText("");
+                    setPasteRows([]);
+                  }}
+                  className="text-[10px] text-[var(--tx3)] hover:text-[var(--tx)]"
+                >
+                  Clear
+                </button>
+              </div>
+              {pasteRows.length > 0 && (
+                <div className="space-y-1 max-h-52 overflow-y-auto border border-[var(--brd)]/50 rounded-md p-2">
+                  {pasteRows.map((row) => (
+                    <div
+                      key={row.id}
+                      className="text-[10px] flex flex-wrap gap-x-2 gap-y-0.5 items-baseline border-b border-[var(--brd)]/30 last:border-0 py-1.5"
+                    >
+                      <span className="text-[var(--tx2)] shrink-0">{row.raw}</span>
+                      <span className="text-[var(--tx3)]">→</span>
+                      {row.match ? (
+                        <span className="text-[var(--tx)] font-medium">{row.match.item_name}</span>
+                      ) : (
+                        <span className="text-amber-600 dark:text-amber-400">
+                          No match, add manually below
+                        </span>
+                      )}
+                      <span className="text-[var(--tx3)] ml-auto">×{row.qty}</span>
+                      <span className="text-[var(--tx3)] uppercase">({row.confidence})</span>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      addPasteMatchedRowsBatched(pasteRows);
+                      setPasteOpen(false);
+                      setPasteText("");
+                      setPasteRows([]);
+                    }}
+                    className="admin-btn admin-btn-sm admin-btn-primary mt-2 w-full"
+                  >
+                    Add matched items to list
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] px-0.5">
+        Your items
+      </p>
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] divide-y divide-[var(--brd)]">
         {value.length === 0 ? (
           <p className="p-3 text-[11px] text-[var(--tx3)]">
-            Add at least one item. Use quick add or &quot;Add item&quot;.
+            Use browse, search, or paste above to add catalog items, or add a custom item.
           </p>
         ) : (
           value.map((row, idx) => {
             const isOpen = expanded[row.id] !== false;
             const catLabel =
-              WG_ITEM_CATEGORIES.find((c) => c.value === row.category)?.label ??
-              row.category;
+              WG_ITEM_CATEGORIES.find((c) => c.value === row.category)?.label ?? row.category;
             const asmLabel =
-              WG_ASSEMBLY_OPTIONS.find((a) => a.value === row.assembly)
-                ?.label ?? row.assembly;
+              WG_ASSEMBLY_OPTIONS.find((a) => a.value === row.assembly)?.label ?? row.assembly;
             return (
               <div key={row.id} className="p-3 space-y-2">
                 <div className="flex flex-wrap items-start gap-2">
@@ -180,9 +541,7 @@ export const WhiteGloveItemsEditor: React.FC<WhiteGloveItemsEditorProps> = ({
                     onClick={() => toggleExpanded(row.id)}
                     className="mt-1 flex size-7 shrink-0 items-center justify-center rounded-md border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--card)]"
                     aria-expanded={isOpen}
-                    aria-label={
-                      isOpen ? "Collapse item row" : "Expand item row"
-                    }
+                    aria-label={isOpen ? "Collapse item row" : "Expand item row"}
                   >
                     {isOpen ? (
                       <CaretDown className="size-4" weight="bold" aria-hidden />
@@ -232,8 +591,7 @@ export const WhiteGloveItemsEditor: React.FC<WhiteGloveItemsEditorProps> = ({
                           value={row.category}
                           onChange={(e) =>
                             patchRow(row.id, {
-                              category: e.target
-                                .value as WhiteGloveItemCategory,
+                              category: e.target.value as WhiteGloveItemCategory,
                             })
                           }
                           className={fieldInputClass}
@@ -253,8 +611,7 @@ export const WhiteGloveItemsEditor: React.FC<WhiteGloveItemsEditorProps> = ({
                           value={row.weight_class}
                           onChange={(e) =>
                             patchRow(row.id, {
-                              weight_class: e.target
-                                .value as WhiteGloveWeightClass,
+                              weight_class: e.target.value as WhiteGloveWeightClass,
                             })
                           }
                           className={fieldInputClass}
@@ -281,8 +638,10 @@ export const WhiteGloveItemsEditor: React.FC<WhiteGloveItemsEditorProps> = ({
                 {!isOpen && (
                   <p className="pl-9 text-[10px] text-[var(--tx2)] flex flex-wrap items-center gap-2">
                     <span>
-                      {row.quantity}× {row.description.trim() || "…"} ·{" "}
-                      {catLabel}
+                      {row.quantity}× {row.description.trim() || "…"} · {catLabel}
+                      {row.slug && !row.is_custom ? (
+                        <span className="text-[var(--tx3)]"> · catalog</span>
+                      ) : null}
                     </span>
                     {row.assembly !== "none" && (
                       <Wrench
@@ -359,38 +718,80 @@ export const WhiteGloveItemsEditor: React.FC<WhiteGloveItemsEditorProps> = ({
 
       <button
         type="button"
-        onClick={handleAddRow}
+        onClick={() => setShowCustomPanel((s) => !s)}
         className="flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline"
       >
         <Plus className="w-3.5 h-3.5" weight="bold" aria-hidden />
-        Add item
+        Add custom item
       </button>
 
-      <div>
-        <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1.5">
-          Quick add
-        </p>
-        <div className="flex flex-wrap gap-1.5">
-          {Object.keys(WG_QUICK_ADD).map((key) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => handleQuickAdd(key)}
-              className="px-2.5 py-1 rounded-md text-[9px] font-semibold border transition-colors bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
-            >
-              + {key}
-            </button>
-          ))}
+      {showCustomPanel && (
+        <div className="rounded-lg border border-[var(--brd)] bg-[var(--card)] p-3 space-y-3">
+          <p className="text-[10px] text-[var(--tx3)]">
+            For pieces not in the catalog. You can still adjust category and weight after adding.
+          </p>
+          <Field label="Description *">
+            <input
+              value={customDesc}
+              onChange={(e) => setCustomDesc(e.target.value)}
+              className={fieldInputClass}
+              placeholder="Item name"
+            />
+          </Field>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Field label="Category">
+              <select
+                value={customCategory}
+                onChange={(e) =>
+                  setCustomCategory(e.target.value as WhiteGloveItemCategory)
+                }
+                className={fieldInputClass}
+              >
+                {WG_ITEM_CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Weight">
+              <select
+                value={customWeightClass}
+                onChange={(e) =>
+                  setCustomWeightClass(e.target.value as WhiteGloveWeightClass)
+                }
+                className={fieldInputClass}
+              >
+                {WG_WEIGHT_CLASS_OPTIONS.map((w) => (
+                  <option key={w.value} value={w.value}>
+                    {w.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+          <button
+            type="button"
+            onClick={handleAddCustomFromPanel}
+            disabled={!customDesc.trim()}
+            className="admin-btn admin-btn-sm admin-btn-primary"
+          >
+            Add to list
+          </button>
         </div>
-      </div>
+      )}
 
       <div className="rounded-lg border border-[var(--brd)] bg-[var(--card)] p-3 space-y-1 text-[11px] text-[var(--tx2)]">
         <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">
           Summary
         </p>
-        <p>Total items: {summary.totalQty}</p>
-        <p>Assembly required: {summary.assemblyN} items</p>
-        <p>Fragile items: {summary.fragileN}</p>
+        <p>
+          {summary.totalQty} item{summary.totalQty === 1 ? "" : "s"}
+          {summary.assemblyN > 0
+            ? ` · ${summary.assemblyN} need${summary.assemblyN === 1 ? "s" : ""} assembly`
+            : ""}
+          {summary.fragileN > 0 ? ` · ${summary.fragileN} fragile` : ""}
+        </p>
       </div>
 
       <Field label="Declared value (total)">
@@ -405,9 +806,7 @@ export const WhiteGloveItemsEditor: React.FC<WhiteGloveItemsEditorProps> = ({
         />
       </Field>
       {cargoCoverageHint ? (
-        <p className="text-[10px] text-[var(--tx3)] leading-snug">
-          {cargoCoverageHint}
-        </p>
+        <p className="text-[10px] text-[var(--tx3)] leading-snug">{cargoCoverageHint}</p>
       ) : null}
 
       <label className="flex items-start gap-2 text-[11px] text-[var(--tx2)] cursor-pointer">

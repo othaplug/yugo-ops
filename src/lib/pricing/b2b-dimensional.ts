@@ -774,7 +774,7 @@ export function calculateB2BDimensionalPrice(args: {
       });
     }
   } else {
-    const freeKm = num(vc.distance_free_km, 15);
+    const freeKm = num(vc.distance_free_km, 40);
     const perKm = num(vc.distance_per_km, 3);
     const chargeableKm = Math.max(0, distKm - freeKm);
 

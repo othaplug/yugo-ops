@@ -954,7 +954,8 @@ function SingleItemSection() {
           { key: "single_item_extra_heavy", label: "Extra heavy base ($)" },
           { key: "single_item_fragile", label: "Fragile base ($)" },
           { key: "single_item_additional_item_rate", label: "Additional item rate (0–1)" },
-          { key: "single_item_per_km", label: "$/km over 15km" },
+          { key: "single_item_dist_free_km", label: "Single item: free km before per-km", hint: "First N km have no single-item distance surcharge (default 40). Overrides hardcoded behaviour when set." },
+          { key: "single_item_per_km", label: "$/km beyond free km threshold" },
           { key: "single_item_assembly", label: "Assembly/disassembly ($)" },
           { key: "single_item_walk_up_2nd", label: "Walk-up 2nd ($)" },
           { key: "single_item_walk_up_3rd", label: "Walk-up 3rd ($)" },
@@ -2681,7 +2682,7 @@ function DistanceDeadheadSection() {
 
   const deadheadFreeKmRow = getRow("deadhead_free_km");
   const deadheadPerKmRow  = getRow("deadhead_per_km");
-  const deadheadFreeKm    = getNum("deadhead_free_km", 15);
+  const deadheadFreeKm    = getNum("deadhead_free_km", 40);
   const deadheadPerKm     = getNum("deadhead_per_km", 2.50);
 
   return (
@@ -2822,6 +2823,7 @@ function WhiteGlovePricingSection() {
   if (loading) return <Skeleton />;
 
   const fields = [
+    { key: "white_glove_dist_free_km", label: "Free km before per-km surcharge", hint: "First N kilometres have no white glove distance line (default 40)." },
     { key: "white_glove_declared_value_threshold", label: "Declared value threshold ($)", hint: "Above this, the premium below is added to the Essential-tier price." },
     { key: "white_glove_declared_value_premium", label: "Declared value premium ($)", hint: "Flat add-on when declared value exceeds the threshold." },
     { key: "white_glove_minimum_price", label: "Minimum subtotal ($)", hint: "Floor before tax; uses same residential base + tier multipliers as local moves." },
@@ -3350,9 +3352,10 @@ function EngineConfigSection() {
     { key: "labour_rate_essential", label: "Labour Rate, Essential ($/mover-hr)", hint: "Hourly rate applied to extra mover-hours above baseline for Essential tier." },
     { key: "labour_rate_signature", label: "Labour Rate, Signature ($/mover-hr)", hint: "Higher rate for Signature tier overages, premium clients pay more for extra time." },
     { key: "labour_rate_estate", label: "Labour Rate, Estate ($/mover-hr)", hint: "Highest rate for Estate tier overages." },
+    { key: "office_dist_free_km", label: "Office move: free km before per-km", hint: "First N km have no office distance surcharge (default 40)." },
     // Deadhead
     { key: "deadhead_rate_per_km", label: "Deadhead Rate ($/km)", hint: "Cost per km beyond the free zone. Crew travel from 507 King St E." },
-    { key: "deadhead_free_zone_km", label: "Deadhead Free Zone (km)", hint: "Jobs within this radius from HQ have no deadhead charge (default 15 km)." },
+    { key: "deadhead_free_zone_km", label: "Deadhead Free Zone (km)", hint: "Jobs within this radius from HQ have no deadhead charge (default 40 km)." },
     // Mobilization
     { key: "mobilization_25_35", label: "Mobilization Fee, 25–35 km ($)", hint: "Flat fee for jobs 25–35 km from HQ." },
     { key: "mobilization_35_50", label: "Mobilization Fee, 35–50 km ($)", hint: "Flat fee for jobs 35–50 km from HQ." },

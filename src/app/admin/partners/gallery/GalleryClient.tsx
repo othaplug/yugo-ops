@@ -107,7 +107,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
           <CreateDeliveryDropdown
             type="gallery"
             createProjectOnClick={() => setCreatingProject(true)}
-            addPartnerHref="/admin/partners/new?partnerType=gallery"
+            addPartnerHref="/admin/partners/onboard"
           />
         </div>
       </div>
@@ -253,10 +253,10 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                 <div className="px-4 py-10 text-center">
                   <p className="text-[13px] text-[var(--tx3)]">No gallery partners yet.</p>
                   <Link
-                    href="/admin/partners/new?partnerType=gallery"
+                    href="/admin/partners/onboard"
                     className="text-[12px] font-semibold text-[var(--accent-text)] hover:underline mt-1 inline-block"
                   >
-                    Add your first partner
+                    Start partner onboarding
                   </Link>
                 </div>
               ) : galleryPartners.map((p) => (

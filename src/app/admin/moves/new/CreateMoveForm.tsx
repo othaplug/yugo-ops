@@ -1180,6 +1180,8 @@ export default function CreateMoveForm({
             is_fragile: r.is_fragile,
             is_high_value: r.is_high_value,
             notes: r.notes?.trim() || undefined,
+            slug: r.slug?.trim() || undefined,
+            is_custom: r.is_custom === true ? true : undefined,
           }));
         formData.append("white_glove_items", JSON.stringify(wgItems));
         formData.append("declared_value", wgDeclaredValue);
@@ -3003,11 +3005,12 @@ export default function CreateMoveForm({
                       <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
                         White glove delivery items
                       </h3>
-                      <WhiteGloveItemsEditor
-                        value={whiteGloveItemRows}
-                        onChange={setWhiteGloveItemRows}
-                        fieldInputClass={fieldInput}
-                        cargoCoverageHint="For insurance purposes. Standard cargo coverage is $100K."
+                  <WhiteGloveItemsEditor
+                    value={whiteGloveItemRows}
+                    onChange={setWhiteGloveItemRows}
+                    fieldInputClass={fieldInput}
+                    itemWeights={itemWeights}
+                    cargoCoverageHint="For insurance purposes. Standard cargo coverage is $100K."
                         declaredValue={wgDeclaredValue}
                         onDeclaredValueChange={setWgDeclaredValue}
                         debrisRemoval={wgDebrisRemoval}

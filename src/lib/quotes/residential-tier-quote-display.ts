@@ -829,12 +829,12 @@ function parseTierFeatureRow(item: unknown): TierFeature | null {
   if (
     typeof o.card !== "string" ||
     typeof o.title !== "string" ||
-    typeof o.desc !== "string" ||
-    typeof o.iconName !== "string"
+    typeof o.desc !== "string"
   ) {
     return null;
   }
-  const row: TierFeature = { card: o.card, title: o.title, desc: o.desc, iconName: o.iconName };
+  const row: TierFeature = { card: o.card, title: o.title, desc: o.desc };
+  if (typeof o.iconName === "string") row.iconName = o.iconName;
   if (typeof o.key === "string" && o.key.trim()) row.key = o.key.trim();
   if (o.highlight === true) row.highlight = true;
   return row;
@@ -958,7 +958,7 @@ function tierFeatureContentEqual(a: TierFeature, b: TierFeature): boolean {
     a.card === b.card &&
     a.title === b.title &&
     a.desc === b.desc &&
-    a.iconName === b.iconName &&
+    (a.iconName ?? "") === (b.iconName ?? "") &&
     a.key === b.key &&
     a.highlight === b.highlight
   );
