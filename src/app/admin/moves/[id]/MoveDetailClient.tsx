@@ -294,7 +294,7 @@ import {
   calcHST,
   contractTaxLines,
 } from "@/lib/format-currency";
-import { portfolioPmMoveServiceLabel } from "@/lib/displayLabels";
+import { portfolioPmMoveServiceLabel, serviceTypeDisplayLabel } from "@/lib/displayLabels";
 import { portfolioPmStatementInvoiceDueIso } from "@/lib/partners/portfolio-pm-statement-due-date";
 import { formatAccessForDisplay, toTitleCase } from "@/lib/format-text";
 
@@ -856,12 +856,8 @@ export default function MoveDetailClient({
     move as { operationalAlerts?: OperationalJobAlerts | null }
   ).operationalAlerts;
 
-  const serviceEyebrow =
-    String(move.service_type || "").toLowerCase() === "bin_rental"
-      ? "Operations · Bin rental"
-      : isOffice
-        ? "Operations · Office move"
-        : "Operations · Residential move";
+  const serviceLabel = serviceTypeDisplayLabel(move.service_type);
+  const serviceEyebrow = `Operations · ${serviceLabel}`;
 
   const kpiTiles = useMemo(
     () => [
@@ -929,9 +925,7 @@ export default function MoveDetailClient({
               </span>
             ) : null}
             <StatusPill tone="wine">
-              {String(move.service_type || "").toLowerCase() === "bin_rental"
-                ? "Bin rental"
-                : `${isOffice ? "Office" : "Residential"} move`}
+              {serviceLabel}
             </StatusPill>
           </div>
         }

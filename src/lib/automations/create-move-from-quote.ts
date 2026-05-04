@@ -6,6 +6,7 @@ import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
 import { generateWelcomePackageToken } from "@/lib/welcome-package-token";
 import { estimateMoveDurationFromQuoteRow } from "@/lib/jobs/duration-estimate";
 import { convertedRecordCodeFromQuoteId } from "@/lib/quotes/quote-id";
+import { serviceTypeHasTiers } from "@/lib/quote-service-types";
 
 /* ═══════════════════════════════════════════════════════════
    createMoveFromQuote
@@ -42,7 +43,7 @@ export interface CreateMoveResult {
   relatedMoveCount?: number;
 }
 
-/** Only these values satisfy moves_tier_selected_check; everything else (e.g. "custom") must be NULL. */
+/** DB-level allowed tier slugs — must match moves_tier_selected_check constraint. */
 const VALID_MOVE_TIERS = new Set(["essential", "signature", "estate"]);
 
 const SERVICE_TO_MOVE_TYPE: Record<string, string> = {
@@ -129,7 +130,11 @@ export async function createMoveFromQuote(
   const clientEmail = input.clientEmail || contact?.email || "";
   const clientPhone = contact?.phone || "";
 
-  const selectedTier = input.selectedTier ?? quote.selected_tier;
+  // Only local_move and long_distance use tier-based pricing.
+  // For all other service types (white_glove, office, specialty, etc.) tier is always null.
+  const rawTier = input.selectedTier ?? quote.selected_tier;
+  const selectedTier = serviceTypeHasTiers(quote.service_type) ? rawTier : null;
+
   let basePrice: number;
   let totalWithTax: number;
 

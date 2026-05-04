@@ -14,8 +14,15 @@ export type QuoteServiceTypeDefinition = {
 export const QUOTE_SERVICE_TYPE_DEFINITIONS: readonly QuoteServiceTypeDefinition[] = [
   {
     value: "local_move",
-    label: "Residential",
-    description: "Local or long distance home move",
+    label: "Residential (Local)",
+    description: "Local home move with tier packages",
+    hasTiers: true,
+    hasInventory: true,
+  },
+  {
+    value: "long_distance",
+    label: "Long Distance",
+    description: "Inter-city or provincial home move with tier packages",
     hasTiers: true,
     hasInventory: true,
   },
@@ -23,7 +30,7 @@ export const QUOTE_SERVICE_TYPE_DEFINITIONS: readonly QuoteServiceTypeDefinition
     value: "office_move",
     label: "Office",
     description: "Business, retail, salon, clinic relocation",
-    hasTiers: true,
+    hasTiers: false,
     hasInventory: true,
   },
   {
@@ -36,8 +43,8 @@ export const QUOTE_SERVICE_TYPE_DEFINITIONS: readonly QuoteServiceTypeDefinition
   {
     value: "white_glove",
     label: "White Glove",
-    description: "Premium handling, assembly, placement",
-    hasTiers: true,
+    description: "Premium item-based handling, assembly, placement",
+    hasTiers: false,
     hasInventory: true,
   },
   {
@@ -76,3 +83,16 @@ export const QUOTE_SERVICE_TYPE_DEFINITIONS: readonly QuoteServiceTypeDefinition
     hasInventory: false,
   },
 ] as const;
+
+/** Returns true only for service types that use Essential / Signature / Estate tier packages. */
+export function serviceTypeHasTiers(serviceType: string | null | undefined): boolean {
+  const v = typeof serviceType === "string" ? serviceType.trim() : "";
+  const def = QUOTE_SERVICE_TYPE_DEFINITIONS.find((d) => d.value === v);
+  // local_move and long_distance are the only tiered service types.
+  return def?.hasTiers ?? false;
+}
+
+/** The set of service types that use tier-based pricing, for guards and DB writes. */
+export const TIERED_SERVICE_TYPES = new Set(
+  QUOTE_SERVICE_TYPE_DEFINITIONS.filter((d) => d.hasTiers).map((d) => d.value),
+);
