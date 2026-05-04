@@ -56,28 +56,35 @@ export async function GET() {
     const supabase = createAdminClient();
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
 
+    const QUOTE_FIELDS =
+      "id, status, selected_tier, recommended_tier, factors_applied, created_at, service_type, custom_price, override_price, system_price, tiers, essential_price, labour_rate_per_mover, labour_validation_status, loss_reason";
+
     const [
-      { data: recentQuotes },
+      { count: quotesLast30 },
       { count: movesLast30 },
+      { data: allQuotesData },
     ] = await Promise.all([
       supabase
         .from("quotes")
-        .select(
-          "id, status, selected_tier, recommended_tier, factors_applied, created_at, service_type, custom_price, override_price, system_price, tiers, essential_price, labour_rate_per_mover, labour_validation_status, loss_reason",
-        )
+        .select("id", { count: "exact", head: true })
         .gte("created_at", thirtyDaysAgo),
       supabase
         .from("moves")
         .select("id", { count: "exact", head: true })
         .gte("created_at", thirtyDaysAgo),
+      supabase
+        .from("quotes")
+        .select(QUOTE_FIELDS)
+        .order("created_at", { ascending: false })
+        .limit(5000),
     ]);
 
-    const quotes = recentQuotes || [];
-    const total = quotes.length;
-    const acceptedLast30 = quotes.filter((q) => q.status === "accepted").length;
-    const decidedLast30 = quotes.filter((q) => DECIDED_STATUSES.has(String(q.status))).length;
+    const quotes = allQuotesData || [];
+    const total = quotesLast30 ?? 0;
+    const acceptedAll = quotes.filter((q) => q.status === "accepted").length;
+    const decidedAll = quotes.filter((q) => DECIDED_STATUSES.has(String(q.status))).length;
     const conversionRate =
-      decidedLast30 > 0 ? Math.round((acceptedLast30 / decidedLast30) * 100) : 0;
+      decidedAll > 0 ? Math.round((acceptedAll / decidedAll) * 100) : 0;
 
     const tierCounts: Record<string, number> = {};
     for (const q of quotes) {
@@ -114,8 +121,7 @@ export async function GET() {
 
     const { data: analytics } = await supabase
       .from("quote_analytics")
-      .select("outcome, lost_reason, quoted_amount, neighbourhood_tier")
-      .gte("created_at", thirtyDaysAgo);
+      .select("outcome, lost_reason, quoted_amount, neighbourhood_tier");
 
     const rows = analytics || [];
 

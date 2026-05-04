@@ -3553,67 +3553,84 @@ const PRICING_QUICK_NAV_GROUPS: { title: string; ids: (typeof PRICING_SECTIONS)[
   },
 ]
 
+/** Combined search index: pricing sections + platform settings tab shortcuts */
+const PLATFORM_SEARCH_ITEMS = [
+  ...PRICING_SECTIONS.map((s) => ({ id: s.id, label: s.label, href: `#${s.id}`, badge: "Pricing" as const })),
+  { id: "tab-app",       label: "App Settings",      href: "?tab=app",                badge: "Settings" as const },
+  { id: "tab-hubspot",   label: "HubSpot Integration",href: "?tab=app",               badge: "Settings" as const },
+  { id: "tab-templates", label: "Rate Templates",     href: "?tab=rate-templates",    badge: "Settings" as const },
+  { id: "tab-teams",     label: "Teams",              href: "?tab=crews",             badge: "Settings" as const },
+  { id: "tab-devices",   label: "Devices & Fleet",    href: "?tab=devices",           badge: "Settings" as const },
+  { id: "tab-b2b",       label: "B2B Verticals",      href: "?tab=delivery-verticals",badge: "Settings" as const },
+  { id: "tab-partners",  label: "Partners",           href: "?tab=partners",          badge: "Settings" as const },
+  { id: "tab-users",     label: "Users & Roles",      href: "?tab=users",             badge: "Settings" as const },
+  { id: "tab-audit",     label: "Audit Log",          href: "?tab=audit",             badge: "Settings" as const },
+]
+
 export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
-  const [jumpNavOpen, setJumpNavOpen] = useState(false)
+  const [sectionSearch, setSectionSearch] = useState("")
+
+  const searchResults = sectionSearch.trim()
+    ? PLATFORM_SEARCH_ITEMS.filter((item) =>
+        item.label.toLowerCase().includes(sectionSearch.trim().toLowerCase()),
+      )
+    : []
 
   return (
     <PricingAdminContext.Provider value={{ isSuperAdmin }}>
     <div className="space-y-2.5">
-      {/* Section quick-navigation: grouped, collapsible */}
+      {/* Section search — jump to any pricing section or settings tab */}
       <nav
-        className="mb-1 rounded-2xl border border-[var(--brd)]/60 bg-[var(--card)]/95 backdrop-blur-sm shadow-[0_1px_0_rgba(0,0,0,0.04)] overflow-hidden"
-        aria-label="Jump to pricing section"
+        className="mb-1 rounded-2xl border border-[var(--brd)]/60 bg-[var(--card)]/95 backdrop-blur-sm shadow-[0_1px_0_rgba(0,0,0,0.04)]"
+        aria-label="Search platform sections"
       >
-        <button
-          type="button"
-          id="pricing-jump-nav-toggle"
-          onClick={() => setJumpNavOpen((o) => !o)}
-          aria-expanded={jumpNavOpen}
-          aria-controls="pricing-jump-nav-content"
-          className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-[var(--yu3-wine-wash)]/25 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--yu3-wine)]/35"
-        >
-          <span className="sr-only">{jumpNavOpen ? "Collapse " : "Expand "}</span>
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)]">
-            Jump to section
+        <div className="flex items-center gap-2.5 px-4 py-2.5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)] shrink-0 select-none">
+            Search
           </p>
-          <CaretDown
-            size={16}
-            weight="bold"
-            className={`shrink-0 text-[var(--tx3)] transition-transform duration-200 ${jumpNavOpen ? "rotate-180" : ""}`}
-            aria-hidden
+          <input
+            type="search"
+            value={sectionSearch}
+            onChange={(e) => setSectionSearch(e.target.value)}
+            placeholder="Base rates, HubSpot, templates, tiers…"
+            className="flex-1 min-w-0 bg-transparent border-none outline-none text-[11px] text-[var(--tx1)] placeholder:text-[var(--tx3)]"
+            aria-label="Search platform sections"
           />
-        </button>
-        <div
-          id="pricing-jump-nav-content"
-          hidden={!jumpNavOpen}
-          className="px-4 pb-4 border-t border-[var(--brd)]/40"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 pt-3">
-            {PRICING_QUICK_NAV_GROUPS.map((group) => (
-              <div key={group.title} className="min-w-0">
-                <h2 className="text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)] mb-2 pb-1.5 border-b border-[var(--brd)]/45">
-                  {group.title}
-                </h2>
-                <ul className="space-y-0.5">
-                  {group.ids.map((id) => {
-                    const s = PRICING_SECTIONS.find((x) => x.id === id)
-                    if (!s) return null
-                    return (
-                      <li key={id}>
-                        <a
-                          href={`#${id}`}
-                          className="block rounded-md px-1.5 py-1 text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.05em] text-[var(--tx2)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] hover:bg-[var(--yu3-wine-wash)] hover:text-[var(--yu3-wine)]"
-                        >
-                          {s.label}
-                        </a>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </div>
-            ))}
-          </div>
+          {sectionSearch && (
+            <button
+              type="button"
+              onClick={() => setSectionSearch("")}
+              className="shrink-0 text-[var(--tx3)] hover:text-[var(--tx1)] transition-colors"
+              aria-label="Clear search"
+            >
+              <X size={12} weight="bold" />
+            </button>
+          )}
         </div>
+        {searchResults.length > 0 && (
+          <div className="px-4 pb-3 border-t border-[var(--brd)]/40 pt-2.5">
+            <div className="flex flex-wrap gap-1.5">
+              {searchResults.map((item) => (
+                <a
+                  key={item.id}
+                  href={item.href}
+                  onClick={() => setSectionSearch("")}
+                  className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[10px] font-semibold text-[var(--tx2)] border border-[var(--brd)]/60 hover:bg-[var(--yu3-wine-wash)] hover:text-[var(--yu3-wine)] hover:border-[var(--yu3-wine)]/30 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--yu3-wine)]/35"
+                >
+                  {item.label}
+                  <span className={`text-[8px] font-bold uppercase tracking-wider px-1 py-0.5 rounded ${item.badge === "Pricing" ? "bg-[var(--yu3-wine-wash)] text-[var(--yu3-wine)]" : "bg-[var(--brd)]/60 text-[var(--tx3)]"}`}>
+                    {item.badge}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+        {sectionSearch.trim() && searchResults.length === 0 && (
+          <div className="px-4 pb-3 border-t border-[var(--brd)]/40 pt-2.5">
+            <p className="text-[10px] text-[var(--tx3)]">No sections match &ldquo;{sectionSearch}&rdquo;</p>
+          </div>
+        )}
       </nav>
 
       <AnalyticsDashboard />

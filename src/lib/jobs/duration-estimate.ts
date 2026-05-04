@@ -89,6 +89,15 @@ const CREW_EFF: Record<number, number> = {
   6: 0.45,
 }
 
+// Service types where the estimation model has no coverage — coordinator's explicit
+// est_hours is used directly as the total job duration when provided.
+const EXPLICIT_HOURS_SERVICE_TYPES = new Set([
+  "white_glove",
+  "specialty",
+  "office_move",
+  "office",
+])
+
 export function estimateJobDuration(input: {
   serviceType: string
   inventoryScore: number
@@ -109,6 +118,51 @@ export function estimateJobDuration(input: {
   buildingUnloadingExtraMinutes?: number
 }): JobDurationEstimate {
   const st = (input.serviceType || "").toLowerCase()
+
+  // When coordinator explicitly sets hours for a non-modeled service type, treat
+  // that value as the total job duration (loading + drive + unloading combined).
+  if (EXPLICIT_HOURS_SERVICE_TYPES.has(st) && input.bookedHours != null && input.bookedHours > 0) {
+    const dk = input.distanceKm ?? 0
+    const driveMinutes = Math.round(
+      input.driveTimeMinutes != null && input.driveTimeMinutes > 0
+        ? input.driveTimeMinutes
+        : dk > 0
+          ? estimateDriveTimeFromKm(dk)
+          : 0,
+    )
+    const totalMinutes = Math.round(input.bookedHours * 60)
+    const nonDriveMinutes = Math.max(0, totalMinutes - driveMinutes)
+    const lm = Math.round(nonDriveMinutes * 0.55)
+    const um = nonDriveMinutes - lm
+    const totalHours = totalMinutes / 60
+    const crewHourlyRate = 28
+    const estimatedCost =
+      input.crewSize * totalHours * crewHourlyRate +
+      estimateTruckCost(input.truckType, totalHours) +
+      estimateFuelCost(dk)
+    const grossRevenue = Math.max(0, input.grossRevenue)
+    const grossMargin = grossRevenue - estimatedCost
+    const marginPercent = grossRevenue > 0 ? Math.round((grossMargin / grossRevenue) * 100) : 0
+    const costPerMin = (input.crewSize * crewHourlyRate) / 60
+    const uncapped = Math.round(
+      totalMinutes + Math.max(0, costPerMin > 0 ? (grossMargin * 0.5) / costPerMin : 0),
+    )
+    return {
+      loadingMinutes: lm,
+      driveMinutes,
+      unloadingMinutes: um,
+      bufferMinutes: 0,
+      totalMinutes,
+      totalHours: Math.round(totalHours * 10) / 10,
+      displayTime: formatDurationMinutes(totalMinutes),
+      grossRevenue,
+      estimatedCost: Math.round(estimatedCost),
+      grossMargin: Math.round(grossMargin),
+      marginPercent,
+      maxMinutesBeforeMarginAlert: capMarginAlertMinutes(totalMinutes, uncapped),
+    }
+  }
+
   let loadingMinutes = 60
 
   if (st === "residential" || st === "local_move" || st === "long_distance") {
