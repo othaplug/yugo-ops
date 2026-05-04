@@ -907,6 +907,7 @@ export default function CrewJobPage({
   const useLogisticsCopy =
     jobType === "delivery" ||
     (() => {
+      if (jobType === "move" && job?.isPmContractMove) return false;
       const st = (job?.serviceType || "").toLowerCase();
       return st === "b2b_delivery" || st === "b2b_oneoff";
     })();
@@ -1360,14 +1361,26 @@ export default function CrewJobPage({
                 : [];
               const showCrew = n != null && n >= 3;
               const st = (job.serviceType || "").toLowerCase();
-              const b2b =
-                st === "b2b_delivery" ||
-                st === "b2b_oneoff" ||
-                (jobType === "delivery" && !!job.partnerVertical?.trim());
-              if (!showCrew && badges.length === 0 && !b2b) return null;
+              const isB2bServiceSlug =
+                st === "b2b_delivery" || st === "b2b_oneoff";
+              const pmB2b =
+                jobType === "move" &&
+                !!job.isPmContractMove &&
+                isB2bServiceSlug;
+              const b2bDeliveryBadge =
+                !pmB2b &&
+                (isB2bServiceSlug ||
+                  (jobType === "delivery" && !!job.partnerVertical?.trim()));
+              if (!showCrew && badges.length === 0 && !pmB2b && !b2bDeliveryBadge)
+                return null;
               return (
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {b2b ? (
+                  {pmB2b ? (
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[var(--yu3-wine)]/30 bg-[var(--yu3-wine-tint)] text-[var(--yu3-wine)] [font-family:var(--font-body)]">
+                      B2B property management
+                    </span>
+                  ) : null}
+                  {b2bDeliveryBadge ? (
                     <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[var(--yu3-wine)]/30 bg-[var(--yu3-wine-tint)] text-[var(--yu3-wine)] [font-family:var(--font-body)]">
                       B2B delivery
                     </span>

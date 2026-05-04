@@ -7,14 +7,7 @@ import { logActivity } from "@/lib/activity";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 import { notifyPartnerDeliveryBooked } from "@/lib/partner-job-comms";
 import { ensureB2bDeliverySchedule, isDeliveryB2bCategory } from "@/lib/calendar/ensure-b2b-delivery-schedule";
-
-const VALID_CATEGORIES = new Set(["retail", "b2b", "b2c", "designer", "hospitality", "realtor", "stager", "other"]);
-function normalizeCategory(raw: string): string {
-  const lower = raw.toLowerCase().trim();
-  if (VALID_CATEGORIES.has(lower)) return lower;
-  if (lower.startsWith("b2b")) return "b2b";
-  return "retail";
-}
+import { normalizeDeliveryCategory } from "@/lib/partners/delivery-category";
 
 /** POST /api/admin/deliveries/create — Create delivery as admin (e.g. day rate with skip-approval). */
 export async function POST(req: NextRequest) {
@@ -123,7 +116,11 @@ export async function POST(req: NextRequest) {
           : String(body.status || "").toLowerCase() === "confirmed"
             ? "confirmed"
             : "scheduled",
-      category: normalizeCategory((body.category || org?.type || "retail").trim() || "retail"),
+      category: organizationId
+        ? normalizeDeliveryCategory(org?.type)
+        : normalizeDeliveryCategory(
+            typeof body.category === "string" ? body.category : "retail",
+          ),
       created_by_source: "admin",
       created_by_user: null,
       booking_type: isB2BOneOff ? "one_off" : (body.booking_type || null),

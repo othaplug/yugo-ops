@@ -8,6 +8,7 @@ import {
 import type { CreateMoveFromQuoteInput } from "@/lib/automations/create-move-from-quote";
 import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
 import { ensureB2bDeliverySchedule } from "@/lib/calendar/ensure-b2b-delivery-schedule";
+import { normalizeDeliveryCategory } from "@/lib/partners/delivery-category";
 
 export type CreateDeliveryFromB2BQuoteResult = {
   deliveryId: string;
@@ -113,6 +114,16 @@ export async function createDeliveryFromB2BQuote(
 
   const paidAt = input.squarePaymentId ? new Date().toISOString() : null;
 
+  let partnerOrgType: string | null = null;
+  if (partnerOrgId) {
+    const { data: orgRow } = await supabase
+      .from("organizations")
+      .select("type")
+      .eq("id", partnerOrgId)
+      .maybeSingle();
+    partnerOrgType = (orgRow?.type as string | null) ?? null;
+  }
+
   const insertPayload: Record<string, unknown> = {
     delivery_number: deliveryNumber,
     organization_id: partnerOrgId,
@@ -131,7 +142,9 @@ export async function createDeliveryFromB2BQuote(
     items: itemsFinal,
     instructions: (factors.b2b_special_instructions as string)?.trim() || null,
     status: "scheduled",
-    category: "b2b",
+    category: partnerOrgId
+      ? normalizeDeliveryCategory(partnerOrgType)
+      : normalizeDeliveryCategory("b2b"),
     created_by_source: "quote",
     booking_type: isOneOff ? "one_off" : null,
     rate_card_id: rateLookup.rateCardId || null,

@@ -12,6 +12,7 @@ const SOURCE_TAGS: Record<string, { label: string; color: string; bg: string }> 
   move: { label: "Move", color: "#2D9F5A", bg: "rgba(45,159,90,0.12)" },
   payment: { label: "Payment", color: "#2D9F5A", bg: "rgba(45,159,90,0.12)" },
   claim: { label: "Claim", color: "#EF4444", bg: "rgba(239,68,68,0.12)" },
+  building: { label: "Building", color: "#6B635C", bg: "rgba(107,99,92,0.14)" },
   system: { label: "System", color: "var(--tx3)", bg: "var(--gdim)" },
 };
 
@@ -38,6 +39,7 @@ export default function NotificationDropdown() {
     if (notif.source_type === "move") return "/admin/moves";
     if (notif.source_type === "payment") return "/admin/invoices";
     if (notif.source_type === "claim") return "/admin/claims";
+    if (notif.source_type === "building") return "/admin/buildings";
     return "/admin";
   }
 

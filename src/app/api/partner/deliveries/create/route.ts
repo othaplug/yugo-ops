@@ -6,6 +6,7 @@ import { generateDeliveryNumber } from "@/lib/delivery-number";
 import { isPropertyManagementDeliveryVertical } from "@/lib/partner-type";
 import { ensureB2bDeliverySchedule, isDeliveryB2bCategory } from "@/lib/calendar/ensure-b2b-delivery-schedule";
 import { serverDebug } from "@/lib/server-log";
+import { normalizeDeliveryCategory } from "@/lib/partners/delivery-category";
 
 export async function POST(req: NextRequest) {
   const { primaryOrgId, userId, error } = await requirePartner();
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
       instructions: (body.instructions || "").trim() || null,
       special_handling: !!body.special_handling,
       status: isDraft ? "draft" : "pending_approval",
-      category: org?.type || "retail",
+      category: normalizeDeliveryCategory(org?.type),
       created_by_source: "partner_portal",
       created_by_user: userId || null,
       // Pricing fields

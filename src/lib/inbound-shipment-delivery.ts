@@ -2,6 +2,7 @@ import { generateDeliveryNumber } from "@/lib/delivery-number";
 import { computeB2BDimensionalForOrg } from "@/lib/pricing/b2b-partner-preview";
 import type { B2BQuoteLineItem } from "@/lib/pricing/b2b-dimensional";
 import type { createAdminClient } from "@/lib/supabase/admin";
+import { normalizeDeliveryCategory } from "@/lib/partners/delivery-category";
 
 type Admin = ReturnType<typeof createAdminClient>;
 
@@ -82,9 +83,17 @@ export async function ensureDeliveryForInboundShipment(
   if (!priced) return null;
 
   let clientName = String(shipment.partner_name || shipment.business_name || "").trim();
-  if (orgId && !clientName) {
-    const { data: org } = await admin.from("organizations").select("name").eq("id", orgId).maybeSingle();
-    clientName = String(org?.name || "").trim();
+  let orgTypeForCategory: string | null = null;
+  if (orgId) {
+    const { data: org } = await admin
+      .from("organizations")
+      .select("name, type")
+      .eq("id", orgId)
+      .maybeSingle();
+    orgTypeForCategory = (org?.type as string | null) ?? null;
+    if (!clientName) {
+      clientName = String(org?.name || "").trim();
+    }
   }
 
   const deliveryNumber = await generateDeliveryNumber(admin);
@@ -107,7 +116,9 @@ export async function ensureDeliveryForInboundShipment(
     items: items.map((i) => `${i.description}${i.quantity > 1 ? ` ×${i.quantity}` : ""}`),
     instructions: String(shipment.special_instructions || "").trim() || null,
     status: "pending_approval",
-    category: "retail",
+    category: orgId
+      ? normalizeDeliveryCategory(orgTypeForCategory)
+      : normalizeDeliveryCategory("retail"),
     created_by_source: "rissd",
     vertical_code: priced.vertical.code,
     b2b_line_items: items,

@@ -438,3 +438,141 @@ export function tipReceivedAdminEmailHtml(params: {
   `;
   return adminNotificationLayout(inner, undefined);
 }
+
+const ORG_TYPE_LABELS: Record<string, string> = {
+  designer: "Designer",
+  interior_designer: "Interior designer",
+  retail: "Retail",
+  furniture_retailer: "Furniture retail",
+  b2b: "B2B",
+  b2c: "B2C",
+  hospitality: "Hospitality",
+  gallery: "Gallery",
+  art_gallery: "Art gallery",
+  realtor: "Realtor",
+  stager: "Stager",
+  property_manager: "Property manager",
+  property_management_residential: "Property management (residential)",
+  property_management_commercial: "Property management (commercial)",
+  developer: "Developer",
+  developer_builder: "Developer",
+  other: "Partner",
+}
+
+function organizationTypeLabel(raw: string | null | undefined): string {
+  const k = (raw || "").toLowerCase().trim();
+  if (!k) return "";
+  return ORG_TYPE_LABELS[k] || k.replace(/_/g, " ");
+}
+
+const CREW_BUILDING_ELEVATOR_LABELS: Record<string, string> = {
+  standard: "Standard (direct to floor)",
+  split_transfer: "Split transfer",
+  multi_transfer: "Multiple transfers",
+  no_freight: "No freight elevator",
+  stairs_only: "Stairs only",
+};
+
+/** Crew-submitted building profile: coordinator email with context and CTA to verify. */
+export function buildingProfileCrewReportAdminEmailHtml(params: {
+  isUpdate: boolean;
+  address: string;
+  buildingProfileId: string;
+  complexityRating: number;
+  elevatorSystemKey: string;
+  estimatedExtraMinutesPerTrip: number;
+  accessSummaryLines: string[];
+  crewNotes: string | null;
+  photoCount: number;
+  timesReportedByCrew: number;
+  moveCode: string | null;
+  clientName: string | null;
+  fromAddress: string | null;
+  toAddress: string | null;
+  partnerOrgName: string | null;
+  partnerOrgType: string | null;
+}): string {
+  const baseUrl = getEmailBaseUrl();
+  const viewUrl = `${baseUrl}/admin/buildings/${encodeURIComponent(params.buildingProfileId)}`;
+  const elevatorLabel =
+    CREW_BUILDING_ELEVATOR_LABELS[params.elevatorSystemKey] ||
+    params.elevatorSystemKey.replace(/_/g, " ");
+  const typeLbl = organizationTypeLabel(params.partnerOrgType);
+  const partnerLine =
+    params.partnerOrgName && typeLbl
+      ? `${params.partnerOrgName} · ${typeLbl}`
+      : params.partnerOrgName
+        ? params.partnerOrgName
+        : typeLbl
+          ? `Partner type: ${typeLbl}`
+          : "";
+  const notesRaw = params.crewNotes?.trim() || ""
+  const notesForEmail =
+    notesRaw.length > 1200 ? `${notesRaw.slice(0, 1200)}\u2026` : notesRaw
+  const notesBlock = notesForEmail
+    ? `<tr><td style="${ADMIN_LABEL_TD};vertical-align:top;">Crew notes</td><td style="color:${TEXT};font-size:13px;padding:4px 0;line-height:1.5;">${escapeHtml(notesForEmail)}</td></tr>`
+    : "";
+  const routeBlock =
+    params.fromAddress || params.toAddress
+      ? `<tr><td style="${ADMIN_LABEL_TD};vertical-align:top;">Job route</td><td style="color:${TEXT};font-size:13px;padding:4px 0;line-height:1.45;">${
+        params.fromAddress
+          ? `<span style="display:block;">Origin: ${escapeHtml(params.fromAddress)}</span>`
+          : ""
+      }${
+        params.toAddress
+          ? `<span style="display:block;margin-top:6px;">Destination: ${escapeHtml(params.toAddress)}</span>`
+          : ""
+      }</td></tr>`
+      : "";
+  const moveBlock =
+    params.moveCode || params.clientName
+      ? `<tr><td style="${ADMIN_LABEL_TD};vertical-align:top;">Related move</td><td style="color:${TEXT};font-weight:600;padding:4px 0;">${
+        params.moveCode ? escapeHtml(params.moveCode) : "—"
+      }${
+        params.clientName
+          ? `<span style="display:block;font-weight:500;margin-top:4px;font-size:13px;color:${TEXT_MUTED};">Client: ${escapeHtml(params.clientName)}</span>`
+          : ""
+      }</td></tr>`
+      : "";
+  const partnerRow = partnerLine
+    ? `<tr><td style="${ADMIN_LABEL_TD}">Partner</td><td style="color:${TEXT};padding:4px 0;">${escapeHtml(partnerLine)}</td></tr>`
+    : "";
+  const flagsHtml =
+    params.accessSummaryLines.length > 0
+      ? `<ul style="margin:6px 0 0;padding-left:18px;color:${TEXT};font-size:13px;line-height:1.5;">${params.accessSummaryLines.map((l) => `<li>${escapeHtml(l)}</li>`).join("")}</ul>`
+      : `<span style="color:${TEXT_MUTED};">None flagged</span>`;
+
+  const intro = params.isUpdate
+    ? "A crew finished the on-site building report for this address. The building record was updated and <strong>must be verified</strong> before planners rely on it for future quotes and jobs."
+    : "A crew submitted a <strong>new</strong> building profile for this address. It is <strong>unverified</strong> until a coordinator reviews it in Ops+.";
+
+  const inner = `
+    <div style="${ADMIN_KICKER}">Crew building report</div>
+    <h1 style="font-size:20px;font-weight:700;color:${TEXT};margin:0 0 10px;line-height:1.25;">${escapeHtml(params.address)}</h1>
+    <p style="font-size:14px;color:${TEXT_MUTED};line-height:1.6;margin:0 0 18px;">${intro}</p>
+    <p style="font-size:13px;color:${TEXT};line-height:1.55;margin:0 0 16px;padding:12px 14px;background:${DETAIL_BAND_BG};border-left:3px solid ${EMAIL_FOREST};">
+      <strong style="color:${EMAIL_FOREST};">Complexity ${params.complexityRating} of 5.</strong>
+      This is the crew&apos;s difficulty rating for access and vertical transport at this site.
+      Compare it to your experience and adjust in the building editor if needed.
+    </p>
+    <p style="font-size:12px;font-weight:600;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.08em;margin:0 0 10px;font-family:${BTN_FONT};">Summary</p>
+    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border-radius:0;padding:16px 20px;margin-bottom:20px;">
+      <table style="width:100%;font-size:13px;border-collapse:collapse;font-family:${BTN_FONT};">
+        ${moveBlock}
+        ${partnerRow}
+        ${routeBlock}
+        <tr><td style="${ADMIN_LABEL_TD}">Elevator / vertical</td><td style="color:${TEXT};padding:4px 0;">${escapeHtml(elevatorLabel)}</td></tr>
+        <tr><td style="${ADMIN_LABEL_TD}">Extra time (est.)</td><td style="color:${TEXT};padding:4px 0;">${params.estimatedExtraMinutesPerTrip} minutes per trip (model estimate from crew inputs)</td></tr>
+        <tr><td style="${ADMIN_LABEL_TD};vertical-align:top;">Site flags</td><td style="padding:4px 0;">${flagsHtml}</td></tr>
+        <tr><td style="${ADMIN_LABEL_TD}">Photos attached</td><td style="color:${TEXT};padding:4px 0;">${params.photoCount} file${params.photoCount === 1 ? "" : "s"}</td></tr>
+        <tr><td style="${ADMIN_LABEL_TD}">Crew reports on file</td><td style="color:${TEXT};padding:4px 0;">${params.timesReportedByCrew} (includes this submission)</td></tr>
+        ${notesBlock}
+      </table>
+    </div>
+    <p style="font-size:13px;color:${TEXT_MUTED};line-height:1.55;margin:0 0 20px;">
+      Open the building profile to confirm details, set <strong>verified</strong> when accurate, and tune notes for future coordinators and quotes.
+    </p>
+    <a class="yugo-admin-cta" href="${viewUrl}" style="${emailPrimaryCtaStyle(BTN_FONT, "inline-block")}">REVIEW BUILDING IN OPS</a>
+  `;
+  return adminNotificationLayout(inner, undefined);
+}

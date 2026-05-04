@@ -4,6 +4,7 @@ import { generateDeliveryNumber } from "@/lib/delivery-number";
 import { getTodayString } from "@/lib/business-timezone";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 import { ensureB2bDeliverySchedule } from "@/lib/calendar/ensure-b2b-delivery-schedule";
+import { normalizeDeliveryCategory } from "@/lib/partners/delivery-category";
 
 /**
  * App table is `recurring_delivery_schedules` (not `recurring_schedules`).
@@ -172,7 +173,7 @@ export async function GET(req: NextRequest) {
         pickup_address: pickup,
         delivery_address: null,
         items: [],
-        category: (org?.type || "b2b").trim() || "b2b",
+        category: normalizeDeliveryCategory(org?.type),
         notes: `Auto-generated from recurring schedule. ${marker}`,
         source_recurring_delivery_schedule_id: schedule.id,
         created_by_source: "recurring_schedule",

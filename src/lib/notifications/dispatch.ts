@@ -227,8 +227,15 @@ export async function notifyAdmins(
 
 export function buildNotificationTitle(
   slug: string,
-  _data: NotificationData
+  data: NotificationData
 ): string {
+  if (
+    slug === "building_profile_pending" &&
+    typeof data.subject === "string" &&
+    data.subject.trim()
+  ) {
+    return data.subject.trim();
+  }
   const titles: Record<string, string> = {
     quote_requested: "New quote request",
     quote_viewed: "Quote viewed",
@@ -279,7 +286,11 @@ export function buildNotificationBody(
   data: NotificationData
 ): string {
   if (slug === "building_profile_pending") {
-    return typeof data.description === "string" ? data.description : "A building access report needs verification";
+    const b = (data.body as string | undefined)?.trim();
+    if (b) return b.slice(0, 500);
+    return typeof data.description === "string"
+      ? data.description
+      : "A building access report needs verification";
   }
   if (slug === "partner_job_request") {
     const parts: string[] = [];
@@ -401,6 +412,8 @@ export function buildNotificationLink(
   if (slug === "payment_failed" && data.quoteId) return `/admin/quotes/${data.quoteId}`;
   if (slug === "payment_received" || slug === "deposit_received") return "/admin/invoices";
   if (slug === "tip_received") return "/admin/tips";
+  if (slug === "building_profile_pending" && data.sourceId)
+    return `/admin/buildings/${data.sourceId}`;
   if (slug === "lead_new" && data.sourceId) return `/admin/leads/${data.sourceId}`;
   if (slug === "partner_pm_booking" && data.moveId) return `/admin/moves/${data.moveId}`;
   if (slug === "in_job_margin_alert" || slug === "in_job_schedule_alert") {
@@ -434,6 +447,7 @@ export function getSourceType(slug: string, data?: NotificationData): string {
   if (slug.startsWith("partner_")) return "delivery";
   if (slug === "claim_submitted") return "claim";
   if (slug === "lead_new") return "lead";
+  if (slug === "building_profile_pending") return "building";
   if (slug === "partner_pm_booking") return "move";
   if (slug === "crew_idle_off_route") return "system";
   if (slug === "in_job_margin_alert" || slug === "in_job_schedule_alert") {

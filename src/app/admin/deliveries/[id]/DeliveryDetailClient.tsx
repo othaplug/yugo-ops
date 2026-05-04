@@ -143,6 +143,27 @@ const CATEGORY_BADGE: Record<
   },
   gallery: { text: "text-[#4A7CE5]", label: "Gallery", accent: "#4A7CE5" },
   b2c: { text: "text-[#2D9F5A]", label: "B2C", accent: "#2D9F5A" },
+  /** Stored for org-linked jobs when `organizations.type` is `b2b` (treat org vertical/rates as source of truth). */
+  b2b: {
+    text: "text-[var(--gold)]",
+    label: "B2B",
+    accent: "var(--gold)",
+  },
+  realtor: {
+    text: "text-[#4A7CE5]",
+    label: "Realtor",
+    accent: "#4A7CE5",
+  },
+  stager: {
+    text: "text-[#D48A29]",
+    label: "Stager",
+    accent: "#D48A29",
+  },
+  other: {
+    text: "text-[var(--tx3)]",
+    label: "Partner",
+    accent: "var(--tx3)",
+  },
 };
 
 /* ═══════════════════════════════════════════════════

@@ -26,6 +26,7 @@ const SOURCE_FILTERS = [
   { key: "delivery", label: "Deliveries" },
   { key: "payment", label: "Payments" },
   { key: "claim", label: "Claims" },
+  { key: "building", label: "Buildings" },
   { key: "system", label: "System" },
 ];
 
@@ -35,6 +36,7 @@ const SOURCE_COLORS: Record<string, { color: string; bg: string }> = {
   move: { color: "#2D9F5A", bg: "rgba(45,159,90,0.12)" },
   payment: { color: "#2D9F5A", bg: "rgba(45,159,90,0.12)" },
   claim: { color: "#EF4444", bg: "rgba(239,68,68,0.12)" },
+  building: { color: "#6B635C", bg: "rgba(107,99,92,0.14)" },
   system: { color: "var(--tx3)", bg: "var(--gdim)" },
 };
 
