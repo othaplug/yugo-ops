@@ -42,6 +42,9 @@ export interface CreateMoveResult {
   relatedMoveCount?: number;
 }
 
+/** Only these values satisfy moves_tier_selected_check; everything else (e.g. "custom") must be NULL. */
+const VALID_MOVE_TIERS = new Set(["essential", "signature", "estate"]);
+
 const SERVICE_TO_MOVE_TYPE: Record<string, string> = {
   local_move: "residential",
   long_distance: "residential",
@@ -376,10 +379,12 @@ export async function createMoveFromQuote(
 
   type RowInsert = Record<string, unknown>;
 
+  const safeTier = selectedTier && VALID_MOVE_TIERS.has(selectedTier) ? selectedTier : null;
+
   const buildFinancialPrimary = (): RowInsert => ({
     amount: totalWithTax,
     estimate: basePrice,
-    tier_selected: selectedTier ?? null,
+    tier_selected: safeTier,
     deposit_amount: input.depositAmount,
     deposit_paid_at: new Date().toISOString(),
     balance_amount: balanceAmount,
@@ -387,7 +392,7 @@ export async function createMoveFromQuote(
     square_card_id: input.squareCardId ?? null,
     square_payment_id: input.squarePaymentId ?? null,
     square_receipt_url: input.squareReceiptUrl ?? null,
-    ...(selectedTier === "estate"
+    ...(safeTier === "estate"
       ? { welcome_package_token: generateWelcomePackageToken() }
       : {}),
   });
@@ -648,7 +653,7 @@ export async function createMoveFromQuote(
       toAccess: quote.to_access,
       fromLongCarry: !!(quote as { from_long_carry?: boolean }).from_long_carry,
       toLongCarry: !!(quote as { to_long_carry?: boolean }).to_long_carry,
-      tierSelected: selectedTier,
+      tierSelected: safeTier,
       truckPrimary: (row.truck_primary as string | null) ?? (quote.truck_primary as string | null),
       grossRevenue: grossForDuration,
       factors,

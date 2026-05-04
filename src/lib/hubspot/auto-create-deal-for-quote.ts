@@ -215,7 +215,7 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
     ];
   }
 
-  const dealRes = await fetch(HS_DEALS, {
+  let dealRes = await fetch(HS_DEALS, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -225,13 +225,46 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
   });
 
   if (!dealRes.ok) {
-    const t = await dealRes.text();
-    console.error(
-      `[HubSpot] create deal failed for quote ${quoteIdText}:`,
-      dealRes.status,
-      t.slice(0, 2000),
-    )
-    return null;
+    const errText = await dealRes.text();
+    const isPropertyError =
+      dealRes.status === 400 &&
+      (errText.includes("does not exist") || errText.includes("PROPERTY_DOESNT_EXIST"));
+
+    if (isPropertyError) {
+      // Custom deal properties haven't been created in this HubSpot portal yet.
+      // Fall back to standard properties only so the deal still gets created.
+      console.warn(
+        `[HubSpot] Custom deal properties missing for ${quoteIdText} — retrying with standard properties only. Error: ${errText.slice(0, 500)}`,
+      );
+      const standardBody: Record<string, unknown> = {
+        properties: {
+          dealname: properties.dealname,
+          pipeline: properties.pipeline,
+          dealstage: properties.dealstage,
+          ...(properties.amount ? { amount: properties.amount } : {}),
+        },
+      };
+      if (body.associations) standardBody.associations = body.associations;
+
+      dealRes = await fetch(HS_DEALS, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(standardBody),
+      });
+    }
+
+    if (!dealRes.ok) {
+      const t = isPropertyError ? await dealRes.text() : errText;
+      console.error(
+        `[HubSpot] create deal failed for quote ${quoteIdText}:`,
+        dealRes.status,
+        t.slice(0, 2000),
+      );
+      return null;
+    }
   }
 
   const dealData = (await dealRes.json()) as { id?: string };

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createHash } from "crypto";
 import { squareClient } from "@/lib/square";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -144,118 +145,141 @@ export async function POST(req: Request) {
 
     const retryCount = Number((quote as { payment_retry_count?: number }).payment_retry_count ?? 0);
 
-    // ── 3. Store Card on File ──
-    let squareCardId: string | undefined;
-
-    try {
-      const cardRes = await squareClient.cards.create({
-        sourceId,
-        card: {
-          customerId: squareCustomerId!,
-        },
-        idempotencyKey: `card-${quoteId}-v${retryCount}`,
-      });
-      squareCardId = cardRes.card?.id;
-    } catch (e) {
-      console.error("[Square] card storage failed:", e);
-      // Fall through — we can still charge with the nonce directly
-    }
-
-    // ── 4. Create Payment ──
-    const { locationId } = await getSquarePaymentConfig();
-    if (!locationId) {
-      return NextResponse.json(
-        { error: "Payment is not configured. Please contact support." },
-        { status: 503 }
-      );
-    }
-    const paymentSourceId = squareCardId ?? sourceId;
-    let squarePaymentId: string | undefined;
+    // ── Idempotency guard: if a previous attempt captured a Square payment but
+    //    move creation crashed, skip Square entirely and go straight to job creation.
+    const priorPaymentId = (quote as { square_payment_id?: string | null }).square_payment_id;
+    let squarePaymentId: string | undefined = priorPaymentId ?? undefined;
     let squareReceiptUrl: string | null = null;
+    let squareCardId: string | undefined = (quote as { square_card_id?: string | null }).square_card_id ?? undefined;
 
-    const payIdempotencyKey = `pay-${quoteId}-v${retryCount}`;
-
-    try {
-      const paymentRes = await squareClient.payments.create({
-        sourceId: paymentSourceId,
-        amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
-        customerId: squareCustomerId,
-        referenceId: quoteId,
-        note:
-          String(quote.service_type) === "b2b_oneoff" || String(quote.service_type) === "b2b_delivery"
-            ? `YUGO B2B delivery payment ${quoteId}`
-            : `YUGO deposit ${quoteId}`,
-        idempotencyKey: payIdempotencyKey,
-        locationId,
-      });
-      squarePaymentId = paymentRes.payment?.id;
-      squareReceiptUrl = (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
-
-      if (!squarePaymentId) {
-        return NextResponse.json({ error: "Payment was not completed" }, { status: 500 });
-      }
-    } catch (e) {
-      console.error("[Square] payment failed:", e);
-      const msg = squareThrownErrorMessage(e);
-      const nextRetry = retryCount + 1;
-      const failedAt = new Date().toISOString();
-      await supabase
-        .from("quotes")
-        .update({
-          status: "payment_failed",
-          payment_error: msg,
-          payment_failed_at: failedAt,
-          payment_retry_count: nextRetry,
-          updated_at: failedAt,
-        })
-        .eq("id", quote.id);
-
-      notifyAdmins("payment_failed", {
-        quoteId,
-        sourceId: quote.id,
-        subject: "Quote payment failed",
-        description: `${quoteId} — ${clientEmail}: ${msg}`,
-        clientName: clientName,
-        excludeRecipientEmails: clientEmail.trim()
-          ? [clientEmail.trim().toLowerCase()]
-          : [],
-      }).catch(() => {});
-
-      const firstPayName = clientName.trim().split(/\s+/)[0] || "there";
-      buildPaymentFailedClientEmailHtml({
-        firstName: firstPayName,
-        quoteId,
-        friendlyReason: msg,
-      })
-        .then((html) =>
-          sendEmail({
-            to: clientEmail,
-            subject: "We could not process your payment — quick fix needed",
-            html,
-          }),
-        )
-        .catch(() => {});
-
-      const remindAt = new Date();
-      remindAt.setHours(remindAt.getHours() + 24);
-      const { data: existingRem } = await supabase
-        .from("scheduled_emails")
-        .select("id")
-        .eq("quote_id", quote.id)
-        .eq("type", "payment_retry_reminder")
-        .eq("status", "pending")
-        .limit(1);
-      if (!existingRem?.length) {
-        await supabase.from("scheduled_emails").insert({
-          quote_id: quote.id,
-          type: "payment_retry_reminder",
-          scheduled_for: remindAt.toISOString(),
-          status: "pending",
+    if (!squarePaymentId) {
+      // ── 3. Store Card on File ──
+      // Idempotency key includes a hash of the nonce so that a new nonce (new browser
+      // session / retry) gets its own unique card-creation attempt instead of hitting
+      // IDEMPOTENCY_KEY_REUSED, which caused the fallthrough-to-raw-nonce double-charge bug.
+      const nonceHash = createHash("sha256").update(sourceId).digest("hex").slice(0, 16);
+      try {
+        const cardRes = await squareClient.cards.create({
+          sourceId,
+          card: { customerId: squareCustomerId! },
+          idempotencyKey: `card-${quoteId}-${nonceHash}`,
         });
+        squareCardId = cardRes.card?.id;
+      } catch (e) {
+        console.error("[Square] card storage failed:", e);
+        // Fall through — we can still charge with the nonce directly
       }
 
-      return NextResponse.json({ error: msg }, { status: 402 });
-    }
+      // ── 4. Create Payment ──
+      const { locationId } = await getSquarePaymentConfig();
+      if (!locationId) {
+        return NextResponse.json(
+          { error: "Payment is not configured. Please contact support." },
+          { status: 503 }
+        );
+      }
+      const paymentSourceId = squareCardId ?? sourceId;
+      // When using a stored card, key off the card ID so the same card is always
+      // idempotent regardless of retryCount. When falling back to the raw nonce,
+      // key off the nonce hash so each unique nonce is idempotent on its own.
+      const payIdempotencyKey = squareCardId
+        ? `pay-${quoteId}-card-${squareCardId}`
+        : `pay-${quoteId}-nonce-${nonceHash}`;
+
+      try {
+        const paymentRes = await squareClient.payments.create({
+          sourceId: paymentSourceId,
+          amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
+          customerId: squareCustomerId,
+          referenceId: quoteId,
+          note:
+            String(quote.service_type) === "b2b_oneoff" || String(quote.service_type) === "b2b_delivery"
+              ? `YUGO B2B delivery payment ${quoteId}`
+              : `YUGO deposit ${quoteId}`,
+          idempotencyKey: payIdempotencyKey,
+          locationId,
+        });
+        squarePaymentId = paymentRes.payment?.id;
+        squareReceiptUrl = (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
+
+        if (!squarePaymentId) {
+          return NextResponse.json({ error: "Payment was not completed" }, { status: 500 });
+        }
+
+        // Persist payment details on the quote immediately so that if move creation
+        // crashes below, a subsequent client retry finds these and skips Square.
+        await supabase
+          .from("quotes")
+          .update({
+            square_payment_id: squarePaymentId,
+            square_customer_id: squareCustomerId ?? null,
+            square_card_id: squareCardId ?? null,
+            deposit_amount: amount,
+          })
+          .eq("id", quote.id);
+      } catch (e) {
+        console.error("[Square] payment failed:", e);
+        const msg = squareThrownErrorMessage(e);
+        const nextRetry = retryCount + 1;
+        const failedAt = new Date().toISOString();
+        await supabase
+          .from("quotes")
+          .update({
+            status: "payment_failed",
+            payment_error: msg,
+            payment_failed_at: failedAt,
+            payment_retry_count: nextRetry,
+            updated_at: failedAt,
+          })
+          .eq("id", quote.id);
+
+        notifyAdmins("payment_failed", {
+          quoteId,
+          sourceId: quote.id,
+          subject: "Quote payment failed",
+          description: `${quoteId} — ${clientEmail}: ${msg}`,
+          clientName: clientName,
+          excludeRecipientEmails: clientEmail.trim()
+            ? [clientEmail.trim().toLowerCase()]
+            : [],
+        }).catch(() => {});
+
+        const firstPayName = clientName.trim().split(/\s+/)[0] || "there";
+        buildPaymentFailedClientEmailHtml({
+          firstName: firstPayName,
+          quoteId,
+          friendlyReason: msg,
+        })
+          .then((html) =>
+            sendEmail({
+              to: clientEmail,
+              subject: "We could not process your payment — quick fix needed",
+              html,
+            }),
+          )
+          .catch(() => {});
+
+        const remindAt = new Date();
+        remindAt.setHours(remindAt.getHours() + 24);
+        const { data: existingRem } = await supabase
+          .from("scheduled_emails")
+          .select("id")
+          .eq("quote_id", quote.id)
+          .eq("type", "payment_retry_reminder")
+          .eq("status", "pending")
+          .limit(1);
+        if (!existingRem?.length) {
+          await supabase.from("scheduled_emails").insert({
+            quote_id: quote.id,
+            type: "payment_retry_reminder",
+            scheduled_for: remindAt.toISOString(),
+            status: "pending",
+          });
+        }
+
+        return NextResponse.json({ error: msg }, { status: 402 });
+      }
+    } // end if (!priorPaymentId)
 
     const svcType = String(quote.service_type ?? "");
     const isB2bPay = isB2BDeliveryQuoteServiceType(svcType);
