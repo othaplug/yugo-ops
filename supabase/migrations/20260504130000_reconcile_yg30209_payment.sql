@@ -47,21 +47,9 @@ BEGIN
     payment_retry_count = 0,
     -- Set square_payment_id to the FIRST of the two Square charges.
     -- Retrieve this from the Square Dashboard (the earlier timestamp).
-    square_payment_id   = 'FILL_IN_FIRST_SQUARE_PAYMENT_ID',
+    square_payment_id   = 's5C7XyruHEpzpFhaHy6UhPW16s8YY',
     deposit_amount      = 150
   WHERE id = v_quote_pk;
-
-  -- Log the duplicate charge event so staff know to refund it
-  INSERT INTO public.quote_events (quote_id, event_type, metadata)
-  VALUES (
-    v_quote_id,
-    'duplicate_payment_detected',
-    jsonb_build_object(
-      'note', 'Client was charged twice due to idempotency bug on 2026-05-04. First payment is the valid deposit. Second payment must be refunded via Square Dashboard.',
-      'action_required', 'refund_second_square_payment'
-    )
-  )
-  ON CONFLICT DO NOTHING;
 
   RAISE NOTICE 'YG-30209 marked accepted — run recover-move and refund duplicate charge';
 END $$;
