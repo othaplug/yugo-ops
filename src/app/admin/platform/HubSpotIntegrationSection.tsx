@@ -30,6 +30,7 @@ export default function HubSpotIntegrationSection() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [autoConfigLoading, setAutoConfigLoading] = useState(false)
   const [diagLoading, setDiagLoading] = useState(false)
   const [diag, setDiag] = useState<string | null>(null)
   const [values, setValues] = useState<Record<string, string>>({})
@@ -82,6 +83,30 @@ export default function HubSpotIntegrationSection() {
       toast("Save failed", "x")
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleAutoConfig = async () => {
+    setAutoConfigLoading(true)
+    setDiag(null)
+    try {
+      const res = await fetch("/api/admin/hubspot/configure-pipeline", {
+        method: "POST",
+        credentials: "same-origin",
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast((data as { error?: string }).error ?? "Auto-configure failed", "x")
+        setDiag(JSON.stringify(data, null, 2))
+        return
+      }
+      toast(`Configured ${(data as { configured?: unknown[] }).configured?.length ?? 0} stage IDs from HubSpot`, "check")
+      setDiag(JSON.stringify(data, null, 2))
+      void load()
+    } catch {
+      toast("Auto-configure request failed", "x")
+    } finally {
+      setAutoConfigLoading(false)
     }
   }
 
@@ -156,9 +181,17 @@ export default function HubSpotIntegrationSection() {
           </button>
           <button
             type="button"
+            onClick={() => void handleAutoConfig()}
+            disabled={autoConfigLoading}
+            className="px-4 py-2 rounded-lg border border-[var(--admin-primary-fill)] text-[var(--accent-text)] text-[12px] font-semibold hover:bg-[var(--admin-primary-fill)]/10 disabled:opacity-60"
+          >
+            {autoConfigLoading ? "Fetching from HubSpot…" : "Auto-configure stages from HubSpot"}
+          </button>
+          <button
+            type="button"
             onClick={() => void handleDiagnose()}
             disabled={diagLoading}
-            className="px-4 py-2 rounded-lg border border-[var(--admin-primary-fill)] text-[var(--accent-text)] text-[12px] font-semibold hover:bg-[var(--admin-primary-fill)]/10 disabled:opacity-60"
+            className="px-4 py-2 rounded-lg border border-[var(--brd)] text-[var(--tx2)] text-[12px] font-semibold hover:bg-[var(--bg)] disabled:opacity-60"
           >
             {diagLoading ? "Running…" : "Run diagnostic"}
           </button>
