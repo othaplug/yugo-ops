@@ -113,7 +113,7 @@ export default async function TrackMovePage({
     "change_request_max_items_per_request",
   ]);
   const [{ data: itemWeights }, { data: pendingIcRows }, { data: latestInvAdj }, { data: crewPendingRows }] = await Promise.all([
-    supabase.from("item_weights").select("slug, item_name, weight_score, active").eq("active", true).limit(2000),
+    supabase.from("item_weights").select("slug, item_name, weight_score, active, num_people_min").eq("active", true).limit(2000),
     supabase
       .from("inventory_change_requests")
       .select("id, status, submitted_at, source")

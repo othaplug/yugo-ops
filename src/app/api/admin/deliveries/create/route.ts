@@ -8,6 +8,13 @@ import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 import { notifyPartnerDeliveryBooked } from "@/lib/partner-job-comms";
 import { ensureB2bDeliverySchedule, isDeliveryB2bCategory } from "@/lib/calendar/ensure-b2b-delivery-schedule";
 import { normalizeDeliveryCategory } from "@/lib/partners/delivery-category";
+import { autoCreateHubSpotDealForNewDelivery } from "@/lib/hubspot/auto-create-deal-for-delivery";
+import { getEmailBaseUrl } from "@/lib/email-base-url";
+import { getDeliveryDetailPath } from "@/lib/move-code";
+import {
+  syncDealStage,
+  deliveryStatusToHubspotTrigger,
+} from "@/lib/hubspot/sync-deal-stage";
 
 /** POST /api/admin/deliveries/create — Create delivery as admin (e.g. day rate with skip-approval). */
 export async function POST(req: NextRequest) {
@@ -410,7 +417,100 @@ export async function POST(req: NextRequest) {
       notifyPartnerDeliveryBooked(created.id).catch(() => {});
     }
 
-    return NextResponse.json({ ok: true, delivery: created });
+    let hubspotDuplicate:
+      | { dealId: string; dealName: string; dealStageId: string }
+      | undefined;
+    let hubspotAutoCreateFailed = false;
+
+    const hubSpotToken = process.env.HUBSPOT_ACCESS_TOKEN;
+    const emailForHs = (
+      (insertPayload.contact_email as string)?.trim() ||
+      (insertPayload.customer_email as string)?.trim() ||
+      (insertPayload.end_customer_email as string)?.trim() ||
+      ""
+    ).toLowerCase();
+
+    if (
+      emailForHs &&
+      hubSpotToken &&
+      created &&
+      createdStatus !== "draft"
+    ) {
+      const bookingType = String(insertPayload.booking_type || "").toLowerCase();
+      const primaryContactLabel =
+        bookingType === "one_off"
+          ? String(insertPayload.contact_name || insertPayload.customer_name || customerName || "")
+              .trim() || customerName
+          : String(insertPayload.customer_name || insertPayload.contact_name || customerName || "")
+              .trim() || customerName;
+      const nameParts = primaryContactLabel.split(/\s+/);
+      const fName = nameParts[0]?.trim() || "Contact";
+      const lName = nameParts.slice(1).join(" ").trim();
+      const base = getEmailBaseUrl();
+      const path = getDeliveryDetailPath({
+        delivery_number: created.delivery_number as string | undefined,
+        id: created.id as string,
+      });
+      const deliveryAdminUrl = `${base}${path}`;
+
+      const createdHs = await autoCreateHubSpotDealForNewDelivery({
+        sb: admin,
+        delivery: {
+          id: created.id as string,
+          scheduled_date: insertPayload.scheduled_date as string | null,
+          pickup_address: insertPayload.pickup_address as string | null,
+          delivery_address: insertPayload.delivery_address as string | null,
+          pickup_access: insertPayload.pickup_access as string | null,
+          delivery_access: insertPayload.delivery_access as string | null,
+          calculated_price:
+            insertPayload.calculated_price != null
+              ? Number(insertPayload.calculated_price)
+              : null,
+          quoted_price:
+            insertPayload.quoted_price != null ? Number(insertPayload.quoted_price) : null,
+          total_price:
+            insertPayload.total_price != null ? Number(insertPayload.total_price) : null,
+          booking_type: insertPayload.booking_type as string | null,
+          vertical_code: insertPayload.vertical_code as string | null,
+          business_name: insertPayload.business_name as string | null,
+          client_name: insertPayload.client_name as string | null,
+          contact_name: insertPayload.contact_name as string | null,
+        },
+        deliveryNumber: String(created.delivery_number || ""),
+        clientEmail: emailForHs,
+        firstName: fName,
+        lastName: lName,
+        clientPhone:
+          (insertPayload.contact_phone as string)?.trim() ||
+          (insertPayload.customer_phone as string)?.trim() ||
+          null,
+        deliveryAdminUrl,
+      });
+
+      if (createdHs?.status === "created" && createdHs.dealId) {
+        await admin
+          .from("deliveries")
+          .update({ hubspot_deal_id: createdHs.dealId })
+          .eq("id", created.id);
+        const trig = deliveryStatusToHubspotTrigger(insertPayload.status as string | null);
+        if (trig) await syncDealStage(createdHs.dealId, trig).catch(() => {});
+      } else if (createdHs?.status === "duplicate") {
+        hubspotDuplicate = {
+          dealId: createdHs.existingDealId,
+          dealName: createdHs.existingDealName,
+          dealStageId: createdHs.existingDealStageId,
+        };
+      } else if (createdHs == null) {
+        hubspotAutoCreateFailed = true;
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      delivery: created,
+      ...(hubspotDuplicate ? { hubspotDuplicate } : {}),
+      ...(hubspotAutoCreateFailed ? { hubspotAutoCreateFailed: true } : {}),
+    });
   } catch (err: unknown) {
     console.error("[admin-delivery-create] EXCEPTION:", err instanceof Error ? err.message : err);
     return NextResponse.json(

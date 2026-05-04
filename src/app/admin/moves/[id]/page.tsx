@@ -148,7 +148,7 @@ export default async function MoveDetailPage({
     db
       .from("item_weights")
       .select(
-        "slug, item_name, weight_score, category, room, is_common, display_order, active",
+        "slug, item_name, weight_score, category, room, is_common, display_order, active, num_people_min",
       )
       .eq("active", true)
       .order("display_order"),

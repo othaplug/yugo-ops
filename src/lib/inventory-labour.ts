@@ -50,6 +50,31 @@ export interface LabourOptions {
   whiteGloveHoursMultiplier?: boolean;
   /** When set, truck tier uses this score (items + explicit boxes); hours/crew still use `inventoryScore`. */
   truckInventoryScore?: number;
+  /** Floor crew count from catalog rows (`num_people_min`), clamped with score rules in estimateLabourFromScore. */
+  catalogMinCrew?: number;
+}
+
+export type InventorySlugLine = { slug?: string | null; quantity?: number | null };
+
+/** Minimum crew floor from item_weights.num_people_min across matched catalog lines (quotes/moves inventory). */
+export function catalogMinCrewFromInventorySlugs(
+  lines: InventorySlugLine[],
+  weights: Array<{ slug: string; num_people_min?: number | null }>,
+): number {
+  let min = 2;
+  const bySlug = new Map(
+    weights.map((w) => [
+      w.slug.trim().toLowerCase(),
+      Math.max(1, Math.floor(Number(w.num_people_min) || 1)),
+    ]),
+  );
+  for (const line of lines) {
+    const slug = line.slug?.trim().toLowerCase();
+    if (!slug) continue;
+    const need = bySlug.get(slug);
+    if (need != null) min = Math.max(min, need);
+  }
+  return Math.min(8, min);
 }
 
 export function estimateLabourFromScore(
@@ -75,6 +100,11 @@ export function estimateLabourFromScore(
   const hasAnySpecialty = specialtyItems.some((i) => (i.qty ?? 0) > 0);
   if (hasHeavySpecialty) crewSize = Math.max(crewSize, 4);
   else if (hasAnySpecialty) crewSize = Math.max(crewSize, 3);
+
+  const catalogFloor = options?.catalogMinCrew;
+  if (catalogFloor != null && Number.isFinite(catalogFloor) && catalogFloor > 0) {
+    crewSize = Math.max(crewSize, Math.round(catalogFloor));
+  }
 
   // Hard access: walk-up 3rd floor or higher adds +1 at that end
   // Include walk_up_4th_plus — matches access_scores table and QuoteForm dropdown

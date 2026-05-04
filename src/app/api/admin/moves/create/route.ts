@@ -10,7 +10,7 @@ import { logActivity } from "@/lib/activity";
 import { getDistance } from "@/lib/maps/distance";
 
 import { isSuperAdminEmail } from "@/lib/super-admin";
-import { estimateLabourFromScore } from "@/lib/inventory-labour";
+import { catalogMinCrewFromInventorySlugs, estimateLabourFromScore } from "@/lib/inventory-labour";
 import {
   calcEstimatedCost,
   calcEstimatedMarginPct,
@@ -392,6 +392,33 @@ export async function POST(req: NextRequest) {
 
     const serviceType = MOVE_TYPE_TO_SERVICE_TYPE[moveType] ?? "local_move";
 
+    const inventoryItemsList = Array.isArray(body.items) ? body.items : [];
+    const whiteGloveItemsList = Array.isArray(body.white_glove_items)
+      ? body.white_glove_items
+      : [];
+
+    let catalogMinCrewFromItems: number | undefined;
+    if (
+      inventoryScore != null &&
+      inventoryScore > 0 &&
+      (inventoryItemsList.length > 0 || whiteGloveItemsList.length > 0)
+    ) {
+      const itemsForCatalogCrew =
+        moveType === "white_glove" && whiteGloveItemsList.length > 0
+          ? whiteGloveItemsList
+          : inventoryItemsList;
+      if (itemsForCatalogCrew.length > 0) {
+        const { data: iwMin } = await db
+          .from("item_weights")
+          .select("slug, num_people_min")
+          .eq("active", true);
+        catalogMinCrewFromItems = catalogMinCrewFromInventorySlugs(
+          itemsForCatalogCrew as { slug?: string | null; quantity?: number | null }[],
+          iwMin ?? [],
+        );
+      }
+    }
+
     // Compute estimated margin at creation time
     let estMarginPercent: number | null = null;
     let estCostTotal: number | null = null;
@@ -420,6 +447,7 @@ export async function POST(req: NextRequest) {
             (body.from_access as string) || undefined,
             (body.to_access as string) || undefined,
             (body.move_size as string) || undefined,
+            { catalogMinCrew: catalogMinCrewFromItems },
           );
           labourHours = labour.estimatedHours;
           labourCrew = labour.crewSize;
@@ -460,6 +488,7 @@ export async function POST(req: NextRequest) {
             (body.from_access as string) || undefined,
             (body.to_access as string) || undefined,
             (body.move_size as string) || undefined,
+            { catalogMinCrew: catalogMinCrewFromItems },
           )
         : null;
 
@@ -475,10 +504,6 @@ export async function POST(req: NextRequest) {
       moveAssignedCrewName = snap.assigned_crew_name;
     }
 
-    const inventoryItemsList = Array.isArray(body.items) ? body.items : [];
-    const whiteGloveItemsList = Array.isArray(body.white_glove_items)
-      ? body.white_glove_items
-      : [];
     const itemsForMoveRow =
       moveType === "white_glove" && whiteGloveItemsList.length > 0
         ? whiteGloveItemsList

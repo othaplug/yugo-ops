@@ -129,6 +129,8 @@ export function itemWeightMatchesWhiteGloveTab(
   if (tab === "office") return room === "office"
   if (tab === "electronics") {
     return (
+      slug.includes("soundbar") ||
+      slug.includes("subwoofer") ||
       slug.includes("tv") ||
       slug.includes("monitor") ||
       slug.includes("printer") ||

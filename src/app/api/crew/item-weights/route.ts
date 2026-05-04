@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("item_weights")
-    .select("id, item_name, slug, weight_score, category")
+    .select("id, item_name, slug, weight_score, category, num_people_min")
     .eq("active", true)
     .ilike("item_name", `%${q}%`)
     .order("is_common", { ascending: false })

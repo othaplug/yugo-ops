@@ -35,7 +35,7 @@ export default async function EditQuotePage({ params }: Props) {
       .eq("active", true)
       .order("display_order"),
     db.from("platform_config").select("key, value"),
-    db.from("item_weights").select("slug, item_name, weight_score, category, room, is_common, display_order, active").eq("active", true).order("display_order"),
+    db.from("item_weights").select("slug, item_name, weight_score, category, room, is_common, display_order, active, num_people_min").eq("active", true).order("display_order"),
   ]);
 
   const config: Record<string, string> = {};

@@ -2,7 +2,10 @@
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { MagnifyingGlass as Search, Plus, Minus, CaretDown as ChevronDown, Note as StickyNote } from "@phosphor-icons/react";
-import { estimateLabourFromScore } from "@/lib/inventory-labour";
+import {
+  catalogMinCrewFromInventorySlugs,
+  estimateLabourFromScore,
+} from "@/lib/inventory-labour";
 import { validateInventoryQuantity } from "@/lib/inventory-quantity-validation";
 import {
   fuzzyFilterItemWeights,
@@ -50,6 +53,7 @@ export interface ItemWeightRow {
   is_common: boolean;
   display_order?: number;
   active?: boolean;
+  num_people_min?: number | null;
 }
 
 const ROOM_TABS = [
@@ -369,12 +373,26 @@ export default function InventoryInput({
     [value]
   );
 
+  const catalogMinCrew = useMemo(
+    () => catalogMinCrewFromInventorySlugs(value, itemWeights),
+    [value, itemWeights],
+  );
+
   const labourEstimate = useMemo(() => {
     if (!showLabourEstimate || labourScore <= 0) return null;
     return estimateLabourFromScore(labourScore, distanceKm, fromAccess, toAccess, moveSize, {
       hoursEstimateMode: "client_on_job",
+      catalogMinCrew,
     });
-  }, [showLabourEstimate, labourScore, distanceKm, fromAccess, toAccess, moveSize]);
+  }, [
+    showLabourEstimate,
+    labourScore,
+    distanceKm,
+    fromAccess,
+    toAccess,
+    moveSize,
+    catalogMinCrew,
+  ]);
 
   const internalBoxCount = boxCount ?? 0;
 

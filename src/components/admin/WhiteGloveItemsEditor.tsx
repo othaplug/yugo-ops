@@ -24,6 +24,7 @@ import {
   parseQuantityFromLine,
   type MatchConfidence,
 } from "@/lib/inventory-search";
+import { cn } from "@/lib/utils";
 
 export interface WhiteGloveItemRow {
   id: string;
@@ -370,7 +371,7 @@ export const WhiteGloveItemsEditor: React.FC<WhiteGloveItemsEditorProps> = ({
           </p>
           <div className="relative">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 size-4 shrink-0 -translate-y-1/2 text-[var(--tx2)]"
+              className="pointer-events-none absolute left-3 top-1/2 z-1 size-4 shrink-0 -translate-y-1/2 text-[var(--tx2)]"
               aria-hidden
             />
             <input
@@ -393,7 +394,10 @@ export const WhiteGloveItemsEditor: React.FC<WhiteGloveItemsEditorProps> = ({
                 }
               }}
               placeholder="Can't find an item? Type to search the catalog…"
-              className={`${fieldInputClass} w-full pl-9`}
+              className={cn(
+                fieldInputClass,
+                "field-input--leading w-full pl-10",
+              )}
               aria-label="Search item catalog"
             />
           </div>

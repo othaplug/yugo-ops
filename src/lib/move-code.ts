@@ -77,6 +77,16 @@ export function moveNumericJobNoForHubSpot(moveCode: string | null | undefined):
   return null;
 }
 
+/** Digits from delivery_number (DLV-30203) for HubSpot job_no; null if not parseable. */
+export function deliveryNumericJobNoForHubSpot(
+  deliveryNumber: string | null | undefined,
+): string | null {
+  if (!deliveryNumber) return null;
+  const normalized = normalizeDeliveryNumber(deliveryNumber);
+  const m = normalized.match(/^DLV-(\d+)$/i);
+  return m?.[1] ?? null;
+}
+
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

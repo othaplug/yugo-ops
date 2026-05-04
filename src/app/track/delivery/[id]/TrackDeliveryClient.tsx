@@ -309,7 +309,7 @@ export default function TrackDeliveryClient({
   b2bAudience = null,
   b2bCoBrand = null,
   b2bPodImageUrl = null,
-  b2bItemSummary = null,
+  b2bItemSummary: _b2bItemSummary = null,
   b2bCrewSize = null,
   b2bAssembly = false,
   b2bDebrisRemoval = false,
@@ -518,6 +518,12 @@ export default function TrackDeliveryClient({
   const timeWindow = delivery.delivery_window || delivery.time_slot || null;
   const pickupAddr = delivery.pickup_address || delivery.from_address;
   const dropoffAddr = delivery.delivery_address || delivery.to_address;
+  const trackHeaderEyebrow =
+    b2bAudience === "recipient" && b2bCoBrand
+      ? `${b2bCoBrand} · Yugo`
+      : b2bAudience === "business"
+        ? null
+        : "Delivery Tracking";
 
   /* ── Fullscreen map overlay ── */
   if (isFullscreen) {
@@ -608,16 +614,14 @@ export default function TrackDeliveryClient({
 
         {/* Header */}
         <div className="mb-5 anim-slide-up anim-delay-1">
-          <p
-            className={`${QUOTE_EYEBROW_CLASS} mb-1.5`}
-            style={{ color: FOREST_MUTED }}
-          >
-            {b2bAudience === "recipient" && b2bCoBrand
-              ? `${b2bCoBrand} · Yugo`
-              : b2bAudience === "business"
-                ? "Your delivery from Yugo"
-                : "Delivery Tracking"}
-          </p>
+          {trackHeaderEyebrow ? (
+            <p
+              className={`${QUOTE_EYEBROW_CLASS} mb-1.5`}
+              style={{ color: FOREST_MUTED }}
+            >
+              {trackHeaderEyebrow}
+            </p>
+          ) : null}
           <h1
             className={`${QUOTE_SECTION_H2_CLASS} font-semibold`}
             style={{ color: WINE }}
@@ -634,46 +638,6 @@ export default function TrackDeliveryClient({
               style={{ color: FOREST_BODY }}
             >
               {delivery.project_name.trim()}
-            </p>
-          ) : null}
-          {b2bItemSummary ? (
-            <p
-              className="text-[13px] mt-2 font-medium leading-relaxed"
-              style={{ color: FOREST_BODY }}
-            >
-              Item: {b2bItemSummary}
-            </p>
-          ) : null}
-          {b2bAudience ? (
-            <p
-              className="text-[12px] mt-3 font-semibold"
-              style={{ color: FOREST }}
-            >
-              <span
-                className={`${QUOTE_EYEBROW_CLASS} mr-2`}
-                style={{ color: FOREST_MUTED }}
-              >
-                Status
-              </span>
-              {(() => {
-                const st = (delivery.status || "")
-                  .toLowerCase()
-                  .replace(/-/g, "_");
-                if (isCompleted || st === "delivered") return "Delivered";
-                if (st === "confirmed" || st === "scheduled")
-                  return "Confirmed";
-                if (st === "pending" || st === "pending_approval")
-                  return "Pending";
-                if (isInProgress || st === "in_progress") {
-                  if (
-                    normalizedStage === "en_route_to_pickup" ||
-                    normalizedStage === "arrived_at_pickup"
-                  )
-                    return "Dispatched";
-                  return "In transit";
-                }
-                return "Confirmed";
-              })()}
             </p>
           ) : null}
           {b2bAudience && b2bCrewSize != null && b2bCrewSize > 0 ? (

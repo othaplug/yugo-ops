@@ -5,7 +5,10 @@ import { isSuperAdminEmail } from "@/lib/super-admin";
 import { logAudit } from "@/lib/audit";
 import { logActivity } from "@/lib/activity";
 import { validateInventoryQuantities } from "@/lib/inventory-quantity-validation";
-import { estimateLabourFromScore } from "@/lib/inventory-labour";
+import {
+  catalogMinCrewFromInventorySlugs,
+  estimateLabourFromScore,
+} from "@/lib/inventory-labour";
 import { getDrivingDistance, getMultiStopDrivingDistance, straightLineKmFromGtaCore } from "@/lib/mapbox/driving-distance";
 import {
   calculateB2BDimensionalPrice,
@@ -964,6 +967,7 @@ const LEGACY_SLUG_MAP: Record<string, string> = {
   "shoe-rack": "shoe-rack-storage",
   "small-table": "side-end-table",
   monitor: "computer-monitor",
+  "pillows-bedding-linens-small": "pillows-set",
 };
 
 async function getItemWeight(sb: SupabaseAdmin, slugOrName: string): Promise<number> {
@@ -3723,6 +3727,20 @@ export async function POST(req: NextRequest) {
   let labourClient: { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } | null = null;
 
   if (adjustedScore > 0) {
+    let catalogMinCrew: number | undefined;
+    if ((input.inventory_items?.length ?? 0) > 0) {
+      const { data: iwMin } = await sb
+        .from("item_weights")
+        .select("slug, num_people_min")
+        .eq("active", true);
+      const linesForCatalogCrew = (input.inventory_items ?? []).map((line) => {
+        const raw = line.slug?.trim();
+        if (!raw) return line;
+        const mapped = LEGACY_SLUG_MAP[raw] ?? LEGACY_SLUG_MAP[raw.toLowerCase()];
+        return mapped ? { ...line, slug: mapped } : line;
+      });
+      catalogMinCrew = catalogMinCrewFromInventorySlugs(linesForCatalogCrew, iwMin ?? []);
+    }
     labourClient = estimateLabourFromScore(
       adjustedScore,
       distInfo?.distance_km ?? 0,
@@ -3735,6 +3753,7 @@ export async function POST(req: NextRequest) {
         whiteGloveHoursMultiplier: false,
         hoursEstimateMode: "client_on_job",
         truckInventoryScore: truckInventoryScoreForLabour,
+        catalogMinCrew,
       },
     );
   } else if (isLocalMove) {

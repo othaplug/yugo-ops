@@ -63,7 +63,7 @@ export async function createLeadFromParsedCapture(
 
   const { data: weightRows } = await sb
     .from("item_weights")
-    .select("slug, item_name, weight_score, active")
+    .select("slug, item_name, weight_score, active, num_people_min")
     .eq("active", true);
 
   const weights = (weightRows || []) as ItemWeightLike[];

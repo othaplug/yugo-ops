@@ -26,7 +26,7 @@ export default async function CreateMovePage() {
     db.from("crews").select("id, name, members").order("name"),
     db
       .from("item_weights")
-      .select("slug, item_name, weight_score, category, room, is_common, display_order, active")
+      .select("slug, item_name, weight_score, category, room, is_common, display_order, active, num_people_min")
       .eq("active", true)
       .order("display_order"),
   ]);
