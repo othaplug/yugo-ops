@@ -42,6 +42,7 @@ interface Quote {
   accepted_at: string | null;
   expires_at: string | null;
   created_at: string;
+  loss_reason?: string | null;
 }
 
 /* ── Helpers ───────────────────────────────────────────────────────────── */
@@ -149,6 +150,32 @@ export default function QuotesListV3Client({
       const i = expiryInfo(q.expires_at, q.status);
       return i?.tone === "danger" || i?.tone === "warning";
     }).length;
+
+    const DECIDED = new Set(["accepted", "confirmed", "booked", "paid", "expired", "declined", "lost", "cold"]);
+    const decided = quotes.filter((q) => DECIDED.has(q.status)).length;
+    const won = quotes.filter((q) => ["accepted", "confirmed", "booked", "paid"].includes(q.status)).length;
+    const conversionRate = decided > 0 ? Math.round((won / decided) * 100) : 0;
+
+    const amounts = quotes.map((q) => quoteAmountRaw(q)).filter((v): v is number => v != null && v > 0);
+    const avgQuote = amounts.length > 0 ? Math.round(amounts.reduce((a, b) => a + b, 0) / amounts.length) : 0;
+
+    const lostCounts: Record<string, number> = {};
+    for (const q of quotes) {
+      if (q.loss_reason) {
+        const key = q.loss_reason.trim().split(":")[0]?.trim().toLowerCase() || "";
+        if (key) lostCounts[key] = (lostCounts[key] || 0) + 1;
+      }
+    }
+    const LOSS_LABEL: Record<string, string> = {
+      competitor: "Competitor",
+      postponed: "Postponed",
+      budget: "Over budget",
+      no_response: "No response",
+      other: "Other",
+    };
+    const topLost = Object.entries(lostCounts).sort((a, b) => b[1] - a[1])[0];
+    const topLostReason = topLost ? (LOSS_LABEL[topLost[0]] ?? topLost[0]) : "—";
+
     return [
       {
         id: "total",
@@ -171,6 +198,22 @@ export default function QuotesListV3Client({
         label: "Accepted",
         value: accepted.toString(),
         hint: `${expiring} expiring soon`,
+      },
+      {
+        id: "conversion",
+        label: "Conversion",
+        value: `${conversionRate}%`,
+        hint: `${won} won of ${decided} decided`,
+      },
+      {
+        id: "avg-quote",
+        label: "Avg quote",
+        value: formatCurrency(avgQuote),
+      },
+      {
+        id: "lost-reason",
+        label: "Top lost reason",
+        value: topLostReason,
       },
     ];
   }, [quotes]);

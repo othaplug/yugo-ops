@@ -22,6 +22,7 @@ import DeliveryVerticalsPanel from "./DeliveryVerticalsPanel";
 import RateTemplatesPanel from "./RateTemplatesPanel";
 import QuoteResidentialDisplaySection from "./QuoteResidentialDisplaySection";
 import HubSpotIntegrationSection from "./HubSpotIntegrationSection";
+import GoogleCalendarSection from "./GoogleCalendarSection";
 import AppSettingsCollapsibleSection from "./AppSettingsCollapsibleSection";
 import { useRouter } from "next/navigation";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
@@ -639,7 +640,7 @@ function BusinessInfoSection() {
             Email Configuration
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {inp("notifications_from_email", "Notifications 'From' Email", "notifications@opsplus.co", "email")}
+            {inp("notifications_from_email", "Notifications 'From' Email", "notifications@yugoplus.co", "email")}
             {inp("admin_notification_email", "Admin Notification Email", "admin@example.com", "email")}
           </div>
           <p className="text-[10px] text-[var(--tx3)] mt-2">The &quot;From&quot; email must be verified in your email provider (Resend). Admin notification email receives payment failures, tips, etc.</p>
@@ -2582,6 +2583,8 @@ export default function PlatformSettingsClient({
       <EmailTemplatesSection />
 
       <HubSpotIntegrationSection />
+
+      <GoogleCalendarSection />
 
       {/* Readiness Checklist - configurable items for crew pre-trip check */}
       <ReadinessChecklistSection />

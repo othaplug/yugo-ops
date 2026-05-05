@@ -18,7 +18,7 @@ export default async function AllMovesPage() {
 
   const movesSelect =
     // Keep this select compatible with older DB schemas (avoid newer columns that may not exist yet)
-    "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, status, move_type, service_type, tier_selected, crew_id, created_at, margin_percent, margin_flag, est_margin_percent, contract_id, is_pm_move";
+    "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, status, move_type, service_type, tier_selected, neighbourhood_tier, crew_id, created_at, margin_percent, margin_flag, est_margin_percent, contract_id, is_pm_move";
 
   const minimalMovesSelect =
     // Fallback if extended columns are missing in an older DB schema

@@ -87,7 +87,7 @@ export async function getNotificationsFromEmail(): Promise<string> {
       ? envAddr
       : await getConfig(
           "notifications_from_email",
-          "notifications@opsplus.co",
+          "notifications@yugoplus.co",
         );
   return `${name} <${email}>`;
 }

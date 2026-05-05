@@ -45,6 +45,7 @@ interface Move {
   display_status?: string | null;
   contract_id?: string | null;
   is_pm_move?: boolean | null;
+  neighbourhood_tier?: string | null;
 }
 
 interface Quote {
@@ -185,14 +186,42 @@ export default function AllMovesV3Client({
         effective(m).toLowerCase(),
       ),
     ).length;
-    const completed = moves.filter((m) =>
+    const completedMoves = moves.filter((m) =>
       ["completed", "delivered", "paid"].includes(effective(m).toLowerCase()),
-    ).length;
+    );
+    const completed = completedMoves.length;
     const avgMargin =
       moves
         .map((m) => Number(m.margin_percent ?? m.est_margin_percent ?? 0))
         .filter((n) => n > 0)
         .reduce((a, b, _, arr) => a + b / arr.length, 0) || 0;
+
+    const bookedOrCompleted = moves.filter((m) =>
+      ["booked", "confirmed", "scheduled", "in_progress", "completed", "delivered", "paid"].includes(
+        effective(m).toLowerCase(),
+      ),
+    );
+    const tierCounts: Record<string, number> = {};
+    for (const m of bookedOrCompleted) {
+      const t = (m.tier_selected || "").trim();
+      if (t) tierCounts[t] = (tierCounts[t] || 0) + 1;
+    }
+    const TIER_LABEL: Record<string, string> = {
+      essential: "Essential",
+      signature: "Signature",
+      estate: "Estate",
+    };
+    const topTierEntry = Object.entries(tierCounts).sort((a, b) => b[1] - a[1])[0];
+    const topTier = topTierEntry ? (TIER_LABEL[topTierEntry[0]] ?? topTierEntry[0]) : "—";
+
+    const hoodCounts: Record<string, number> = {};
+    for (const m of completedMoves) {
+      const h = (m.neighbourhood_tier || "").trim();
+      if (h) hoodCounts[h] = (hoodCounts[h] || 0) + 1;
+    }
+    const topHoodEntry = Object.entries(hoodCounts).sort((a, b) => b[1] - a[1])[0];
+    const topHood = topHoodEntry ? topHoodEntry[0] : "—";
+
     return [
       {
         id: "total",
@@ -219,6 +248,18 @@ export default function AllMovesV3Client({
         id: "revenue",
         label: "Booked estimate",
         value: formatCurrency(totalEstimate),
+      },
+      {
+        id: "top-tier",
+        label: "Top tier",
+        value: topTier,
+        hint: "most booked/completed tier",
+      },
+      {
+        id: "best-hood",
+        label: "Best hood",
+        value: topHood,
+        hint: "most common neighbourhood on completed moves",
       },
     ];
   }, [moves]);
