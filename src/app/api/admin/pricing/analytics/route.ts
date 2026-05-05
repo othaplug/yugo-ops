@@ -3,8 +3,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 import { quotePipelineListedValue } from "@/lib/finance/revenue-forecast-amounts";
 
-/** Same terminal set as admin home quote pipeline conversion (see `src/app/admin/page.tsx`). */
-const DECIDED_STATUSES = new Set(["accepted", "expired", "declined"]);
+/** All terminal quote outcomes that count toward conversion denominator. */
+const DECIDED_STATUSES = new Set([
+  // positive
+  "accepted", "confirmed", "booked", "paid",
+  // negative / coordinator-marked
+  "expired", "declined", "lost", "cold",
+]);
 
 /** Hood win rate includes coordinator terminal outcomes so priced quotes are not dropped from geography stats. */
 const HOOD_DECIDED_STATUSES = new Set([
@@ -22,6 +27,27 @@ const LOSS_REASON_LABEL: Record<string, string> = {
   no_response: "No response",
   other: "Other",
 };
+
+/** Extract the best available price for a quote row, including factors_applied fallback. */
+function extractQuotePrice(q: {
+  custom_price?: unknown;
+  override_price?: unknown;
+  system_price?: unknown;
+  tiers?: unknown;
+  essential_price?: unknown;
+  factors_applied?: unknown;
+}): number {
+  const base = quotePipelineListedValue(q);
+  if (base > 0) return base;
+  const f = q.factors_applied;
+  if (!f || typeof f !== "object") return 0;
+  const factors = f as Record<string, unknown>;
+  const sp = Number(factors.system_price);
+  if (Number.isFinite(sp) && sp > 0) return sp;
+  const cp = Number(factors.custom_price);
+  if (Number.isFinite(cp) && cp > 0) return cp;
+  return 0;
+}
 
 function neighbourhoodTierFromQuote(q: { factors_applied?: unknown }): string | null {
   const raw = q.factors_applied;
@@ -62,7 +88,8 @@ export async function GET() {
     const [
       { count: quotesLast30 },
       { count: movesLast30 },
-      { data: allQuotesData },
+      { count: deliveriesLast30 },
+      { data: allQuotesData, error: quotesErr },
     ] = await Promise.all([
       supabase
         .from("quotes")
@@ -73,11 +100,19 @@ export async function GET() {
         .select("id", { count: "exact", head: true })
         .gte("created_at", thirtyDaysAgo),
       supabase
+        .from("deliveries")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", thirtyDaysAgo),
+      supabase
         .from("quotes")
         .select(QUOTE_FIELDS)
         .order("created_at", { ascending: false })
         .limit(5000),
     ]);
+
+    if (quotesErr) {
+      console.error("[analytics] quotes query failed:", quotesErr.message);
+    }
 
     const quotes = allQuotesData || [];
     const total = quotesLast30 ?? 0;
@@ -94,7 +129,7 @@ export async function GET() {
     }
     const mostQuotedTier = Object.entries(tierCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "-";
 
-    const listedAmounts = quotes.map((q) => quotePipelineListedValue(q)).filter((v) => v > 0);
+    const listedAmounts = quotes.map((q) => extractQuotePrice(q)).filter((v) => v > 0);
     const avgQuoteAmount =
       listedAmounts.length > 0
         ? Math.round(listedAmounts.reduce((s, v) => s + v, 0) / listedAmounts.length)
@@ -177,7 +212,7 @@ export async function GET() {
 
     return NextResponse.json({
       quotesSent: total,
-      movesLast30: movesLast30 ?? 0,
+      movesLast30: (movesLast30 ?? 0) + (deliveriesLast30 ?? 0),
       conversionRate,
       avgQuoteAmount,
       mostQuotedTier,
