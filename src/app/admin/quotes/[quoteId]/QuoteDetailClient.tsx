@@ -427,9 +427,10 @@ export default function QuoteDetailClient({
     hubspotDealId?.trim() ? hubspotDealId.trim() : null,
   );
   const [hubspotRetryBusy, setHubspotRetryBusy] = useState(false);
-  const [hubspotRetryError, setHubspotRetryError] = useState<string | null>(
-    null,
-  );
+  const [hubspotRetryError, setHubspotRetryError] = useState<string | null>(null);
+  const [hubspotDuplicateDealId, setHubspotDuplicateDealId] = useState<string | null>(null);
+  const [hubspotDuplicateDealName, setHubspotDuplicateDealName] = useState<string | null>(null);
+  const [hubspotResolveBusy, setHubspotResolveBusy] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showRecoverConfirm, setShowRecoverConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -506,6 +507,8 @@ export default function QuoteDetailClient({
   const handleHubspotRetry = async () => {
     setHubspotRetryBusy(true);
     setHubspotRetryError(null);
+    setHubspotDuplicateDealId(null);
+    setHubspotDuplicateDealName(null);
     try {
       const res = await fetch(
         `/api/admin/quotes/${encodeURIComponent(quote.quote_id)}/hubspot-retry`,
@@ -517,10 +520,16 @@ export default function QuoteDetailClient({
         code?: string;
         hubspot_error?: string;
         http_status?: number;
+        existingDealId?: string;
+        existingDealName?: string;
       };
       if (!res.ok) {
-        // Show the most specific error available — HubSpot's own message first,
-        // then the route message, then a generic fallback.
+        if (data.code === "DUPLICATE_OPEN_DEAL" && data.existingDealId) {
+          setHubspotDuplicateDealId(data.existingDealId);
+          setHubspotDuplicateDealName(data.existingDealName ?? null);
+          setHubspotRetryError(null);
+          return;
+        }
         const detail = data.hubspot_error
           ? `HubSpot (${data.http_status ?? res.status}): ${data.hubspot_error}`
           : typeof data.message === "string"
@@ -537,6 +546,40 @@ export default function QuoteDetailClient({
       setHubspotRetryError("Request failed — check network connection");
     } finally {
       setHubspotRetryBusy(false);
+    }
+  };
+
+  const handleHubspotResolve = async (action: "link" | "create_new") => {
+    setHubspotResolveBusy(true);
+    setHubspotRetryError(null);
+    try {
+      const res = await fetch(
+        `/api/admin/quotes/${encodeURIComponent(quote.quote_id)}/hubspot-duplicate-resolution`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            action,
+            ...(action === "link" && hubspotDuplicateDealId ? { dealId: hubspotDuplicateDealId } : {}),
+          }),
+        },
+      );
+      const data = (await res.json().catch(() => ({}))) as { message?: string; dealId?: string };
+      if (!res.ok) {
+        setHubspotRetryError(data.message ?? "Resolution failed");
+        return;
+      }
+      if (data.dealId) {
+        setHubspotLinkedId(String(data.dealId));
+        setHubspotDuplicateDealId(null);
+        setHubspotDuplicateDealName(null);
+        router.refresh();
+      }
+    } catch {
+      setHubspotRetryError("Request failed — check network connection");
+    } finally {
+      setHubspotResolveBusy(false);
     }
   };
 
@@ -866,7 +909,32 @@ export default function QuoteDetailClient({
                       </p>
                     </div>
                   </div>
-                  {hubspotRetryError ? (
+                  {hubspotDuplicateDealId ? (
+                    <div className="pl-6 space-y-2">
+                      <p className="text-[11px] text-amber-700 leading-relaxed">
+                        HubSpot already has an open deal
+                        {hubspotDuplicateDealName ? ` "${hubspotDuplicateDealName}"` : ` #${hubspotDuplicateDealId}`} for this contact. Link it to this quote, or create a separate new deal.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void handleHubspotResolve("link")}
+                          disabled={hubspotResolveBusy}
+                          className="admin-btn admin-btn-sm admin-btn-primary"
+                        >
+                          {hubspotResolveBusy ? "Working…" : "Link existing deal"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleHubspotResolve("create_new")}
+                          disabled={hubspotResolveBusy}
+                          className="admin-btn admin-btn-sm"
+                        >
+                          Force create new deal
+                        </button>
+                      </div>
+                    </div>
+                  ) : hubspotRetryError ? (
                     <p className="text-[11px] text-red-600 pl-6">
                       {hubspotRetryError}
                     </p>
@@ -875,7 +943,7 @@ export default function QuoteDetailClient({
                     <button
                       type="button"
                       onClick={() => void handleHubspotRetry()}
-                      disabled={hubspotRetryBusy}
+                      disabled={hubspotRetryBusy || hubspotResolveBusy}
                       className="admin-btn admin-btn-sm admin-btn-primary"
                     >
                       {hubspotRetryBusy ? "Working…" : "Create HubSpot deal"}

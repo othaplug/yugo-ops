@@ -332,175 +332,6 @@ function Skeleton() {
   return <div className="space-y-2 py-4">{[1, 2, 3].map((i) => <div key={i} className="h-8 bg-[var(--bg)] rounded-lg animate-pulse" />)}</div>;
 }
 
-/* ────────── ANALYTICS ────────── */
-const DEFAULT_PRICING_ANALYTICS: Record<string, string | number | Record<string, unknown>> = {
-  quotesSent: 0,
-  movesLast30: 0,
-  conversionRate: 0,
-  avgQuoteAmount: 0,
-  mostQuotedTier: "",
-  highestConvertingHood: "",
-  topLostReason: "",
-}
-
-function normalizePricingAnalyticsJson(raw: unknown): Record<string, string | number | Record<string, unknown>> {
-  if (!raw || typeof raw !== "object" || (raw as { error?: string }).error) {
-    return { ...DEFAULT_PRICING_ANALYTICS }
-  }
-  const o = raw as Record<string, unknown>
-  return {
-    ...DEFAULT_PRICING_ANALYTICS,
-    quotesSent: Number(o.quotesSent) || 0,
-    movesLast30: Number(o.movesLast30) || 0,
-    conversionRate: Number(o.conversionRate) || 0,
-    avgQuoteAmount: Number(o.avgQuoteAmount) || 0,
-    mostQuotedTier: o.mostQuotedTier != null ? String(o.mostQuotedTier) : "",
-    highestConvertingHood: o.highestConvertingHood != null ? String(o.highestConvertingHood) : "",
-    topLostReason: o.topLostReason != null ? String(o.topLostReason) : "",
-    ...(o.labourAnalytics && typeof o.labourAnalytics === "object"
-      ? { labourAnalytics: o.labourAnalytics as Record<string, unknown> }
-      : {}),
-  }
-}
-
-function AnalyticsDashboard() {
-  const [data, setData] = useState<Record<string, string | number | Record<string, unknown>>>(() => ({
-    ...DEFAULT_PRICING_ANALYTICS,
-  }));
-
-  useEffect(() => {
-    let cancelled = false
-    void fetch("/api/admin/pricing/analytics", { credentials: "same-origin", cache: "no-store" })
-      .then(async (r) => {
-        const raw = (await r.json().catch(() => ({}))) as unknown
-        if (cancelled) return
-        setData(normalizePricingAnalyticsJson(r.ok ? raw : { error: "unavailable" }))
-      })
-      .catch(() => {
-        if (!cancelled) setData({ ...DEFAULT_PRICING_ANALYTICS })
-      })
-    return () => {
-      cancelled = true
-    }
-  }, []);
-
-  const la = data.labourAnalytics as
-    | {
-        quotesWithLabourCheck?: number
-        pctAboveCeiling?: number
-        pctBelowFloor?: number
-        countAboveCeiling?: number
-        countBelowFloor?: number
-        avgRateByService?: Record<string, number>
-        topAboveCeilingService?: { service_type: string; count: number } | null
-      }
-    | undefined
-
-  const movesN = Number(data.movesLast30) || 0
-  const qN = Number(data.quotesSent) || 0
-  const metrics: { label: string; value: string | number }[] = [
-    { label: "Quotes (30d)", value: qN },
-    { label: "Moves (30d)", value: movesN },
-    { label: "Conversion", value: `${data.conversionRate || 0}%` },
-    {
-      label: "Avg quote",
-      value: qN > 0 ? currency(Number(data.avgQuoteAmount) || 0) : "$0",
-    },
-    {
-      label: "Top tier",
-      value:
-        qN > 0
-          ? TIER_LABEL[String(data.mostQuotedTier || "")] || String(data.mostQuotedTier || "")
-          : "",
-    },
-    {
-      label: "Best hood",
-      value: String(data.highestConvertingHood ?? ""),
-    },
-    { label: "Lost reason", value: String(data.topLostReason ?? "") },
-  ];
-
-  const labourMetrics =
-    la && (la.quotesWithLabourCheck ?? 0) > 0
-      ? [
-          {
-            label: "Labour check (30d)",
-            value: `${la.quotesWithLabourCheck ?? 0} quotes`,
-          },
-          {
-            label: "Above ceiling",
-            value: `${la.pctAboveCeiling ?? 0}% (${la.countAboveCeiling ?? 0})`,
-          },
-          {
-            label: "Below floor",
-            value: `${la.pctBelowFloor ?? 0}% (${la.countBelowFloor ?? 0})`,
-          },
-          {
-            label: "Top above-ceiling type",
-            value: la.topAboveCeilingService
-              ? `${la.topAboveCeilingService.service_type} (${la.topAboveCeilingService.count})`
-              : "",
-          },
-        ]
-      : [];
-
-  return (
-    <div className="space-y-4 mb-6">
-      <p className="text-[11px] text-[var(--tx3)] leading-relaxed max-w-3xl">
-        Quote and pricing analytics use{" "}
-        <span className="text-[var(--tx2)] font-medium">quotes created</span> in the last 30 days.{" "}
-        <span className="text-[var(--tx2)] font-medium">Moves (30d)</span> counts new move records in the same window, so
-        you still see recent operations when no new quotes were created.
-      </p>
-      <div className="flex flex-wrap gap-px rounded-xl overflow-hidden border border-[var(--brd)] bg-[var(--brd)]">
-        {metrics.map((m) => (
-          <div
-            key={m.label}
-            className="flex-1 min-w-[100px] bg-[var(--card)] px-4 py-3 flex flex-col gap-1"
-          >
-            <div className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[var(--tx3)] leading-none">
-              {m.label}
-            </div>
-            <div className="text-[18px] font-bold font-heading text-[var(--tx)] leading-tight break-words">
-              {m.value}
-            </div>
-          </div>
-        ))}
-      </div>
-      {labourMetrics.length > 0 ? (
-        <div>
-          <p className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[var(--tx3)] mb-2">
-            Labour rate validation (diagnostic)
-          </p>
-          <div className="flex flex-wrap gap-px rounded-xl overflow-hidden border border-[var(--brd)] bg-[var(--brd)]">
-            {labourMetrics.map((m) => (
-              <div
-                key={m.label}
-                className="flex-1 min-w-[100px] bg-[var(--card)] px-4 py-3 flex flex-col gap-1"
-              >
-                <div className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[var(--tx3)] leading-none">
-                  {m.label}
-                </div>
-                <div className="text-[14px] font-bold font-heading text-[var(--tx)] leading-tight break-words">
-                  {m.value}
-                </div>
-              </div>
-            ))}
-          </div>
-          {la?.avgRateByService && Object.keys(la.avgRateByService).length > 0 ? (
-            <p className="text-[10px] text-[var(--tx3)] mt-2 leading-relaxed">
-              Avg implied rate by service:{" "}
-              {Object.entries(la.avgRateByService)
-                .map(([k, v]) => `${k} $${v}/hr`)
-                .join(" · ")}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 /* ────────── S1: BASE RATES ────────── */
 function BaseRatesSection() {
   const { rows, loading, save, undo, add, remove, updateRow, saving } = useSection("base-rates");
@@ -3558,6 +3389,7 @@ const PLATFORM_SEARCH_ITEMS = [
   ...PRICING_SECTIONS.map((s) => ({ id: s.id, label: s.label, href: `#${s.id}`, badge: "Pricing" as const })),
   { id: "tab-app",       label: "App Settings",      href: "?tab=app",                badge: "Settings" as const },
   { id: "tab-hubspot",   label: "HubSpot Integration",href: "?tab=app",               badge: "Settings" as const },
+  { id: "tab-gcal",     label: "Google Calendar",     href: "?tab=app",               badge: "Settings" as const },
   { id: "tab-templates", label: "Rate Templates",     href: "?tab=rate-templates",    badge: "Settings" as const },
   { id: "tab-teams",     label: "Teams",              href: "?tab=crews",             badge: "Settings" as const },
   { id: "tab-devices",   label: "Devices & Fleet",    href: "?tab=devices",           badge: "Settings" as const },
@@ -3632,8 +3464,6 @@ export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperA
           </div>
         )}
       </nav>
-
-      <AnalyticsDashboard />
 
       <Accordion id="s-base-rates" title="Base Rates (Residential)" subtitle="Move size to base price, crew, hours" defaultOpen>
         <BaseRatesSection />

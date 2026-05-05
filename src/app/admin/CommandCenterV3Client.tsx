@@ -647,7 +647,7 @@ export default function CommandCenterV3Client({
           <MetricCard
             eyebrow="Quote pipeline"
             title="Conversion"
-            value={`${Math.round((quotePipeline.conversionRate || 0) * 100)}%`}
+            value={`${quotePipeline.conversionRate || 0}%`}
             valueHint={
               <>
                 {quotePipeline.acceptedThisWeek} accepted this week ·{" "}

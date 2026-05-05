@@ -1,4 +1,6 @@
 import { randomBytes } from "crypto";
+import { syncJobToGCal } from "@/lib/google-calendar/sync-job";
+import { isGCalConfigured } from "@/lib/google-calendar/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { getResend } from "@/lib/resend";
@@ -758,7 +760,6 @@ export async function runPostPaymentActions(
           const referrerFirstName =
             (ref.referrer_name || "").split(" ")[0] || "there";
           const referredFirstName = clientName.split(" ")[0] || "Your friend";
-
           const referrerHtml = equinoxPromoLayout(
             `
             <h1 style="font-size:30px;font-weight:700;color:#3A3532;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${referrerFirstName}, your referral just booked.</h1>
@@ -779,6 +780,33 @@ export async function runPostPaymentActions(
             html: referrerHtml,
             headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
           });
+        }
+      },
+    },
+    /* ── Google Calendar event ── */
+    {
+      name: "gcal_sync",
+      critical: false,
+      fn: async () => {
+        if (!isGCalConfigured()) return;
+        const result = await syncJobToGCal({
+          jobType: "move",
+          jobId: input.moveId,
+          jobCode: input.moveCode,
+          clientName,
+          serviceType: String(quote.service_type || move.service_type || move.move_type || "residential"),
+          status: "confirmed",
+          scheduledDate: move.scheduled_date ? String(move.scheduled_date).slice(0, 10) : null,
+          startTime: move.scheduled_start ? String(move.scheduled_start).slice(0, 5) : null,
+          estimatedDurationMinutes: move.estimated_duration_minutes != null ? Number(move.estimated_duration_minutes) : null,
+          fromAddress: move.from_address ? String(move.from_address) : null,
+          toAddress: move.to_address ? String(move.to_address) : null,
+          crewName: null,
+          notes: move.notes ? String(move.notes) : null,
+          existingEventId: (move as { gcal_event_id?: string | null }).gcal_event_id ?? null,
+        });
+        if (result.eventId !== undefined) {
+          await supabase.from("moves").update({ gcal_event_id: result.eventId }).eq("id", input.moveId);
         }
       },
     },
@@ -977,6 +1005,39 @@ export async function runPostPaymentActionsB2BDelivery(
           subject: `[B2B Delivery] Paid: ${input.deliveryNumber} — ${clientName || "Client"}`,
           html: `<p>B2B quote <strong>${input.quoteId}</strong> paid. Delivery <strong>${input.deliveryNumber}</strong>.</p><p><a href="${base}/admin/deliveries/${encodeURIComponent(input.deliveryNumber)}">Open in admin</a></p>`,
         });
+      },
+    },
+    /* ── Google Calendar event ── */
+    {
+      name: "gcal_sync",
+      critical: false,
+      fn: async () => {
+        if (!isGCalConfigured()) return;
+        const { data: delivery } = await supabase
+          .from("deliveries")
+          .select("id, scheduled_date, time_slot, estimated_duration_minutes, from_address, to_address, gcal_event_id")
+          .eq("delivery_number", input.deliveryNumber)
+          .single();
+        if (!delivery) return;
+        const result = await syncJobToGCal({
+          jobType: "delivery",
+          jobId: String(delivery.id),
+          jobCode: input.deliveryNumber,
+          clientName,
+          serviceType: String(quote.service_type || "b2b_delivery"),
+          status: "confirmed",
+          scheduledDate: delivery.scheduled_date ? String(delivery.scheduled_date).slice(0, 10) : null,
+          startTime: delivery.time_slot ? String(delivery.time_slot).slice(0, 5) : null,
+          estimatedDurationMinutes: delivery.estimated_duration_minutes != null ? Number(delivery.estimated_duration_minutes) : null,
+          fromAddress: delivery.from_address ? String(delivery.from_address) : null,
+          toAddress: delivery.to_address ? String(delivery.to_address) : null,
+          crewName: null,
+          notes: null,
+          existingEventId: (delivery as { gcal_event_id?: string | null }).gcal_event_id ?? null,
+        });
+        if (result.eventId !== undefined) {
+          await supabase.from("deliveries").update({ gcal_event_id: result.eventId }).eq("id", delivery.id);
+        }
       },
     },
   ];

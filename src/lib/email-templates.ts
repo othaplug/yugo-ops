@@ -201,7 +201,7 @@ function emailCardLogoEstateWine(): string {
 function getContactEmail(): string {
   return (
     (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_EMAIL) ||
-    "notifications@opsplus.co"
+    "notifications@yugoplus.co"
   );
 }
 function getContactPhone(): string {

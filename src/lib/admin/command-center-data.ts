@@ -253,11 +253,11 @@ export const loadCommandCenterData = async () => {
     admin
       .from("quotes")
       .select(
-        "id, quote_number, status, custom_price, tiers, client_name, viewed_at, accepted_at, created_at, expires_at",
+        "id, quote_id, status, custom_price, tiers, client_name, viewed_at, accepted_at, created_at, expires_at",
       )
-      .in("status", ["sent", "viewed", "accepted", "expired", "declined"])
+      .in("status", ["sent", "viewed", "accepted", "confirmed", "booked", "paid", "expired", "declined", "lost", "cold"])
       .order("created_at", { ascending: false })
-      .limit(200),
+      .limit(500),
     (async () => {
       try {
         return await admin
@@ -958,9 +958,11 @@ export const loadCommandCenterData = async () => {
   const last30 = allQuotesExpanded.filter(
     (q) => new Date(String(q.created_at)) >= thirtyDaysAgo,
   )
-  const acceptedLast30 = last30.filter((q) => q.status === "accepted").length
+  const acceptedLast30 = last30.filter((q) =>
+    ["accepted", "confirmed", "booked", "paid"].includes(String(q.status)),
+  ).length
   const decidedLast30 = last30.filter((q) =>
-    ["accepted", "expired", "declined"].includes(String(q.status)),
+    ["accepted", "confirmed", "booked", "paid", "expired", "declined", "lost", "cold"].includes(String(q.status)),
   ).length
   const conversionRate =
     decidedLast30 > 0 ? Math.round((acceptedLast30 / decidedLast30) * 100) : 0

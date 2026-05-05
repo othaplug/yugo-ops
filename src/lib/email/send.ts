@@ -62,7 +62,7 @@ import {
 
 export { finalizeClientEmailHtml } from "@/lib/email/finalize-client-html";
 
-const DEFAULT_FROM = "Yugo <notifications@opsplus.co>";
+const DEFAULT_FROM = "Yugo <notifications@yugoplus.co>";
 
 export type TemplateName =
   | "quote-residential"
