@@ -330,6 +330,14 @@ export default function EditMoveDetailsModal({
       onClose();
       router.refresh();
       toast("Move details updated", "check");
+      // Fire-and-forget GCal sync whenever scheduling fields are saved
+      if (section !== "notes") {
+        fetch("/api/admin/gcal/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobType: "move", jobId: moveId }),
+        }).catch(() => {});
+      }
     }
   };
 

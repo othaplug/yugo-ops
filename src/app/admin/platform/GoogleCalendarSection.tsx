@@ -7,11 +7,21 @@ import AppSettingsCollapsibleSection from "./AppSettingsCollapsibleSection"
 
 type SyncCount = { created: number; updated: number; deleted: number; skipped: number; error: number }
 type SyncResult = { id: string; code: string; action: string; error?: string }
+type StatusData = {
+  configured: boolean
+  calendarId: string | null
+  clientEmail: string | null
+  testOk?: boolean
+  testError?: string
+  calendarSummary?: string | null
+  hint?: string | null
+}
 
 export default function GoogleCalendarSection() {
   const { toast } = useToast()
-  const [status, setStatus] = useState<{ configured: boolean; calendarId: string | null; clientEmail: string | null } | null>(null)
+  const [status, setStatus] = useState<StatusData | null>(null)
   const [syncing, setSyncing] = useState(false)
+  const [testing, setTesting] = useState(false)
   const [lastSync, setLastSync] = useState<{ counts: SyncCount; results: SyncResult[] } | null>(null)
   const [showDetails, setShowDetails] = useState(false)
 
@@ -19,7 +29,7 @@ export default function GoogleCalendarSection() {
     try {
       const res = await fetch("/api/admin/gcal/sync", { credentials: "same-origin" })
       if (res.ok) {
-        const d = await res.json() as { configured: boolean; calendarId: string | null; clientEmail: string | null }
+        const d = await res.json() as StatusData
         setStatus(d)
       }
     } catch {
@@ -28,6 +38,24 @@ export default function GoogleCalendarSection() {
   }, [])
 
   useEffect(() => { void loadStatus() }, [loadStatus])
+
+  const handleTestConnection = async () => {
+    setTesting(true)
+    try {
+      const res = await fetch("/api/admin/gcal/sync?test=true", { credentials: "same-origin" })
+      const d = await res.json() as StatusData
+      setStatus(d)
+      if (d.testOk) {
+        toast(`Connected — calendar: ${d.calendarSummary || d.calendarId}`, "check")
+      } else {
+        toast(d.testError ?? "Connection failed", "x")
+      }
+    } catch {
+      toast("Test request failed", "x")
+    } finally {
+      setTesting(false)
+    }
+  }
 
   const handleSync = async () => {
     setSyncing(true)
@@ -69,19 +97,45 @@ export default function GoogleCalendarSection() {
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
 
         {/* Status */}
-        <div className="flex items-start gap-3">
-          <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${configured ? "bg-green-500" : "bg-amber-400"}`} />
-          <div className="space-y-0.5">
-            <p className="text-[12px] font-semibold text-[var(--tx)]">
-              {configured ? "Connected" : "Not configured"}
-            </p>
-            {status?.clientEmail ? (
-              <p className="text-[11px] text-[var(--tx3)] font-mono">{status.clientEmail}</p>
-            ) : null}
-            {status?.calendarId ? (
-              <p className="text-[11px] text-[var(--tx3)] font-mono">{status.calendarId}</p>
-            ) : null}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${
+              status?.testOk === true ? "bg-green-500" :
+              status?.testOk === false ? "bg-red-500" :
+              configured ? "bg-green-500" : "bg-amber-400"
+            }`} />
+            <div className="space-y-0.5">
+              <p className="text-[12px] font-semibold text-[var(--tx)]">
+                {status?.testOk === true
+                  ? `Connected · ${status.calendarSummary || "Calendar found"}`
+                  : status?.testOk === false
+                  ? "Connection failed"
+                  : configured ? "Env vars set — not tested yet" : "Not configured"}
+              </p>
+              {status?.clientEmail ? (
+                <p className="text-[11px] text-[var(--tx3)] font-mono">{status.clientEmail}</p>
+              ) : null}
+              {status?.calendarId ? (
+                <p className="text-[11px] text-[var(--tx3)] font-mono">{status.calendarId}</p>
+              ) : null}
+              {status?.testError ? (
+                <p className="text-[11px] text-red-500 font-mono mt-1">{status.testError}</p>
+              ) : null}
+              {status?.hint ? (
+                <p className="text-[11px] text-amber-500 mt-1">{status.hint}</p>
+              ) : null}
+            </div>
           </div>
+          {configured && (
+            <button
+              type="button"
+              onClick={() => void handleTestConnection()}
+              disabled={testing}
+              className="shrink-0 text-[10px] font-semibold uppercase tracking-wide border border-[var(--brd)] px-2 py-1 rounded text-[var(--tx2)] hover:bg-[var(--bg2)] disabled:opacity-50"
+            >
+              {testing ? "Testing…" : "Test connection"}
+            </button>
+          )}
         </div>
 
         {/* Setup instructions when not configured */}
