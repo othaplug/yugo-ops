@@ -587,6 +587,30 @@ export default function CrewJobPage({
     onPermissionChange: setLocationPermission,
   });
 
+  // Screen wake lock — keep the screen on while the job session is active
+  useEffect(() => {
+    if (!session?.isActive || isCompleted) return;
+    if (!("wakeLock" in navigator)) return;
+    let lock: WakeLockSentinel | null = null;
+    let released = false;
+    const acquire = async () => {
+      try {
+        lock = await (navigator.wakeLock as WakeLock).request("screen");
+        lock.addEventListener("release", () => {
+          if (!released) void acquire(); // re-acquire if released by system
+        });
+      } catch { /* browser may deny on low battery — silent */ }
+    };
+    void acquire();
+    const onVisible = () => { if (document.visibilityState === "visible") void acquire(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      released = true;
+      document.removeEventListener("visibilitychange", onVisible);
+      lock?.release().catch(() => {});
+    };
+  }, [session?.isActive, isCompleted]);
+
   const blockedByLocation =
     locationPermission === "denied" || locationPermission === "unsupported";
 

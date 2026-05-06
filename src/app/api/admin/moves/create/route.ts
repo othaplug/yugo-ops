@@ -8,6 +8,7 @@ import { getEmailFrom } from "@/lib/email/send";
 import { logAudit } from "@/lib/audit";
 import { logActivity } from "@/lib/activity";
 import { getDistance } from "@/lib/maps/distance";
+import { triggerMoveGCalSync } from "@/lib/google-calendar/sync-utils";
 
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import { catalogMinCrewFromInventorySlugs, estimateLabourFromScore } from "@/lib/inventory-labour";
@@ -929,6 +930,9 @@ export async function POST(req: NextRequest) {
         hubspotAutoCreateFailed = true;
       }
     }
+
+    // Sync to Google Calendar (fire-and-forget)
+    triggerMoveGCalSync(moveId);
 
     return NextResponse.json({
       ok: true,
