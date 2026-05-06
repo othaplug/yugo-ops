@@ -7,6 +7,7 @@ import { collectB2BDeliveryCalibrationData } from "@/lib/learning/engine";
 import { syncDealStageByDeliveryId } from "@/lib/hubspot/sync-deal-stage";
 import { ensureB2bDeliverySchedule } from "@/lib/calendar/ensure-b2b-delivery-schedule";
 import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
+import { triggerDeliveryGCalSync } from "@/lib/google-calendar/sync-utils";
 
 const STATUS_NOTIFICATIONS: Record<string, { title: (label: string) => string; icon: string }> = {
   confirmed: { title: (l) => `Delivery confirmed: ${l}`, icon: "check" },
@@ -269,6 +270,12 @@ export async function PATCH(
   await ensureB2bDeliverySchedule(admin, id).catch((e) =>
     console.error("[deliveries/patch] ensureB2bDeliverySchedule:", e),
   );
+
+  // GCal sync whenever scheduling-relevant fields change
+  const schedulingKeys = ["scheduled_date", "time_slot", "status", "crew_id", "from_address", "to_address", "pickup_address", "delivery_address"];
+  if (schedulingKeys.some((k) => k in updates)) {
+    triggerDeliveryGCalSync(id);
+  }
 
   const { data: refreshed } = await admin.from("deliveries").select("*").eq("id", id).single();
 

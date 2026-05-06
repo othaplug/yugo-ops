@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/check-role";
+import { triggerDeliveryGCalSync } from "@/lib/google-calendar/sync-utils";
 import { getActiveRateCardLookup } from "@/lib/partners/calculateDeliveryPrice";
 import { generateDeliveryNumber } from "@/lib/delivery-number";
 import { logActivity } from "@/lib/activity";
@@ -504,6 +505,9 @@ export async function POST(req: NextRequest) {
         hubspotAutoCreateFailed = true;
       }
     }
+
+    // Sync to Google Calendar (fire-and-forget)
+    triggerDeliveryGCalSync(String(created.id));
 
     return NextResponse.json({
       ok: true,

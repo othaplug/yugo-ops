@@ -5,8 +5,7 @@ import { changeRequestNotificationEmail } from "@/lib/email-templates";
 import { getResend } from "@/lib/resend";
 import { buildPublicMoveTrackUrl } from "@/lib/notifications/public-track-url";
 import { getEmailFrom } from "@/lib/email/send";
-import { isGCalConfigured } from "@/lib/google-calendar/client";
-import { syncJobToGCal } from "@/lib/google-calendar/sync-job";
+import { triggerMoveGCalSync } from "@/lib/google-calendar/sync-utils";
 
 /** Parse and apply approved change request to move data globally */
 async function applyApprovedChange(
@@ -83,17 +82,7 @@ async function applyApprovedChange(
         dateStr = `${y}-${m}-${d}`;
       }
       await admin.from("moves").update({ scheduled_date: dateStr }).eq("id", moveId);
-      // Fire-and-forget GCal sync after date change
-      if (isGCalConfigured()) {
-        void (async () => {
-          try {
-            const { data: m } = await admin.from("moves").select("id, move_code, client_name, service_type, move_type, status, scheduled_date, scheduled_start, estimated_duration_minutes, from_address, to_address, notes, gcal_event_id").eq("id", moveId).single();
-            if (!m) return;
-            const result = await syncJobToGCal({ jobType: "move", jobId: moveId, jobCode: String(m.move_code || moveId), clientName: String(m.client_name || ""), serviceType: String(m.service_type || m.move_type || "residential"), status: String(m.status || "confirmed"), scheduledDate: m.scheduled_date ? String(m.scheduled_date).slice(0, 10) : null, startTime: m.scheduled_start ? String(m.scheduled_start).slice(0, 5) : null, estimatedDurationMinutes: m.estimated_duration_minutes != null ? Number(m.estimated_duration_minutes) : null, fromAddress: m.from_address ? String(m.from_address) : null, toAddress: m.to_address ? String(m.to_address) : null, crewName: null, notes: m.notes ? String(m.notes) : null, existingEventId: (m as { gcal_event_id?: string | null }).gcal_event_id ?? null });
-            if (result.eventId !== undefined) await admin.from("moves").update({ gcal_event_id: result.eventId }).eq("id", moveId);
-          } catch { /* non-critical */ }
-        })();
-      }
+      triggerMoveGCalSync(moveId);
     }
     return;
   }

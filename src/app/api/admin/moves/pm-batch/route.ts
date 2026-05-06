@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
+import { triggerMoveGCalSync } from "@/lib/google-calendar/sync-utils";
 import { sendEmail } from "@/lib/email/send";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
@@ -478,6 +479,11 @@ export async function POST(req: NextRequest) {
     } catch {
       /* non-fatal */
     }
+  }
+
+  // GCal sync for all created moves (fire-and-forget, only for non-draft)
+  if (!draft) {
+    created.forEach((c) => triggerMoveGCalSync(String(c.id)));
   }
 
   return NextResponse.json({

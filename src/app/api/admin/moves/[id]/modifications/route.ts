@@ -3,8 +3,7 @@ import { randomBytes } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { movePatchFromModificationChanges } from "@/lib/moves/move-modification-apply";
-import { isGCalConfigured } from "@/lib/google-calendar/client";
-import { syncJobToGCal } from "@/lib/google-calendar/sync-job";
+import { triggerMoveGCalSync } from "@/lib/google-calendar/sync-utils";
 
 /**
  * POST — record a booking modification (coordinator). Price increase defaults to pending client approval.
@@ -91,35 +90,9 @@ export async function POST(
       })
       .eq("id", row.id);
 
-    // GCal sync when date or addresses change
-    if (isGCalConfigured() && (patch.scheduled_date || patch.from_address || patch.to_address)) {
-      const { data: updatedMove } = await sb
-        .from("moves")
-        .select("id, move_code, client_name, service_type, move_type, status, scheduled_date, scheduled_start, estimated_duration_minutes, from_address, to_address, notes, gcal_event_id")
-        .eq("id", moveId)
-        .single();
-      if (updatedMove) {
-        syncJobToGCal({
-          jobType: "move",
-          jobId: moveId,
-          jobCode: String(updatedMove.move_code || moveId),
-          clientName: String(updatedMove.client_name || ""),
-          serviceType: String(updatedMove.service_type || updatedMove.move_type || "residential"),
-          status: String(updatedMove.status || "confirmed"),
-          scheduledDate: updatedMove.scheduled_date ? String(updatedMove.scheduled_date).slice(0, 10) : null,
-          startTime: updatedMove.scheduled_start ? String(updatedMove.scheduled_start).slice(0, 5) : null,
-          estimatedDurationMinutes: updatedMove.estimated_duration_minutes != null ? Number(updatedMove.estimated_duration_minutes) : null,
-          fromAddress: updatedMove.from_address ? String(updatedMove.from_address) : null,
-          toAddress: updatedMove.to_address ? String(updatedMove.to_address) : null,
-          crewName: null,
-          notes: updatedMove.notes ? String(updatedMove.notes) : null,
-          existingEventId: (updatedMove as { gcal_event_id?: string | null }).gcal_event_id ?? null,
-        }).then(async (result) => {
-          if (result.eventId !== undefined) {
-            await sb.from("moves").update({ gcal_event_id: result.eventId }).eq("id", moveId);
-          }
-        }).catch(() => {});
-      }
+    // GCal sync whenever scheduling-relevant fields change
+    if (patch.scheduled_date || patch.from_address || patch.to_address || patch.amount !== undefined) {
+      triggerMoveGCalSync(moveId);
     }
   }
 
