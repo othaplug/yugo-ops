@@ -1,5 +1,5 @@
 import "server-only";
-import { createSign } from "crypto";
+import { createSign, createPrivateKey } from "crypto";
 
 const GCAL_SCOPE = "https://www.googleapis.com/auth/calendar";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -29,7 +29,7 @@ function buildJwt(clientEmail: string, privateKey: string): string {
   );
   const sign = createSign("RSA-SHA256");
   sign.update(`${header}.${payload}`);
-  const sig = base64url(sign.sign(privateKey));
+  const sig = base64url(sign.sign(createPrivateKey(privateKey)));
   return `${header}.${payload}.${sig}`;
 }
 

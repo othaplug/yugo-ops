@@ -75,9 +75,17 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const amount = Number(
-    delivery.admin_adjusted_price ?? delivery.total_price ?? delivery.quoted_price ?? 0
-  );
+  // Use pre-tax amount: admin_adjusted_price or quoted_price (both pre-tax).
+  // total_price is post-tax (includes HST), so back-calculate if it's the only option.
+  const rawAmount =
+    delivery.admin_adjusted_price != null
+      ? Number(delivery.admin_adjusted_price)
+      : delivery.quoted_price != null
+        ? Number(delivery.quoted_price)
+        : delivery.total_price != null
+          ? Math.round((Number(delivery.total_price) / 1.13) * 100) / 100
+          : 0;
+  const amount = Number.isFinite(rawAmount) ? rawAmount : 0;
 
   const orgEmail = org.email ?? null;
   const orgName = org.name || delivery.client_name || "Partner";

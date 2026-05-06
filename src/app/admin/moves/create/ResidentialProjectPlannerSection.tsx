@@ -133,11 +133,8 @@ type CrewMemberOption = { id: string; name: string };
 type ResidentialProjectPlannerSectionProps = {
   quoteScopeLoading: boolean;
   linkedQuoteUuid: string | null;
-  showPlanner: boolean;
   estimatedMoveDays: number;
   onEstimatedMoveDaysChange: (next: number) => void;
-  planMultiDayToggled: boolean;
-  onPlanMultiDayToggledChange: (next: boolean) => void;
   rows: ResidentialScheduleDraftRow[];
   onRowsChange: (next: ResidentialScheduleDraftRow[]) => void;
   fromAddress: string;
@@ -160,11 +157,8 @@ function formatPlannerHeadingDate(iso: string): string {
 export function ResidentialProjectPlannerSection({
   quoteScopeLoading,
   linkedQuoteUuid,
-  showPlanner,
   estimatedMoveDays,
   onEstimatedMoveDaysChange,
-  planMultiDayToggled,
-  onPlanMultiDayToggledChange,
   rows,
   onRowsChange,
   fromAddress,
@@ -192,36 +186,8 @@ export function ResidentialProjectPlannerSection({
     onEstimatedMoveDaysChange(nextCount);
   }, [estimatedMoveDays, onEstimatedMoveDaysChange]);
 
-  if (!showPlanner) return null;
-
   return (
     <div className="mt-4 rounded-lg border border-[var(--brd)] bg-[var(--bg2)]/35 px-4 py-3 space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)]">
-            Project schedule
-          </p>
-          <p className="text-[11px] text-[var(--tx3)] mt-1 leading-snug">
-            Plan each calendar day below. Saves as linked move project days with crew and trucks.
-          </p>
-        </div>
-        {quoteScopeLoading ? (
-          <span className="text-[10px] font-semibold text-[var(--tx3)]">Loading quote scope…</span>
-        ) : linkedQuoteUuid ? (
-          <span className="text-[10px] font-semibold text-[var(--yu-accent)]">Quote linked</span>
-        ) : null}
-      </div>
-
-      <label className="flex items-center gap-2 text-[11px] text-[var(--tx2)] cursor-pointer select-none">
-        <input
-          type="checkbox"
-          className="h-4 w-4 accent-[#2C3E2D] shrink-0"
-          checked={planMultiDayToggled}
-          onChange={(e) => onPlanMultiDayToggledChange(e.target.checked)}
-        />
-        Customize multi-day project schedule when the booking is quoted as one calendar day
-      </label>
-
       <div className="flex flex-wrap items-end gap-3">
         <div className="max-w-[14rem]">
           <label
@@ -233,30 +199,42 @@ export function ResidentialProjectPlannerSection({
           <input
             id="est-move-days"
             type="number"
-            min={planMultiDayToggled ? 2 : 1}
+            min={1}
             max={14}
             value={estimatedMoveDays}
             onChange={(e) => {
               const v = parseInt(e.target.value, 10);
               if (!Number.isFinite(v)) return;
-              let next = Math.max(1, Math.min(14, v));
-              if (planMultiDayToggled && next < 2) next = 2;
+              const next = Math.max(1, Math.min(14, v));
               onEstimatedMoveDaysChange(next);
             }}
             className={fieldInput}
             aria-label="Estimated calendar days for this move"
           />
         </div>
-        <button
-          type="button"
-          onClick={handleAddDay}
-          disabled={estimatedMoveDays >= 14}
-          className="inline-flex items-center gap-1 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg2)] disabled:opacity-40"
-        >
-          <Plus className="h-3.5 w-3.5" weight="bold" aria-hidden />
-          Add day
-        </button>
+        {estimatedMoveDays > 1 && (
+          <button
+            type="button"
+            onClick={handleAddDay}
+            disabled={estimatedMoveDays >= 14}
+            className="inline-flex items-center gap-1 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg2)] disabled:opacity-40"
+          >
+            <Plus className="h-3.5 w-3.5" weight="bold" aria-hidden />
+            Add day
+          </button>
+        )}
+        {quoteScopeLoading ? (
+          <span className="text-[10px] font-semibold text-[var(--tx3)]">Loading quote scope…</span>
+        ) : linkedQuoteUuid ? (
+          <span className="text-[10px] font-semibold text-[var(--yu-accent)]">Quote linked</span>
+        ) : null}
       </div>
+
+      {estimatedMoveDays > 1 && (
+        <p className="text-[11px] text-[var(--tx3)] leading-snug">
+          Plan each calendar day below. Saves as linked move project days with crew and trucks.
+        </p>
+      )}
 
       {estimatedMoveDays > 1 && rows.length > 0 && (
         <div className="space-y-4">

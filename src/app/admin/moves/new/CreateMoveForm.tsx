@@ -400,7 +400,6 @@ export default function CreateMoveForm({
   const [residentialScheduleRows, setResidentialScheduleRows] = useState<
     ResidentialScheduleDraftRow[]
   >([]);
-  const [planMultiDayToggled, setPlanMultiDayToggled] = useState(false);
   const [plannerCrewMembers, setPlannerCrewMembers] = useState<
     { id: string; name: string }[]
   >([]);
@@ -583,16 +582,7 @@ export default function CreateMoveForm({
   }, []);
 
   useEffect(() => {
-    if (moveType !== "residential") {
-      setResidentialScheduleRows([]);
-      setQuoteScheduleSeed(null);
-      setPlanMultiDayToggled(false);
-      plannerScheduleEpochRef.current = { anchor: "", n: 0 };
-      return;
-    }
-
-    const showPlannerUi = estimatedMoveDays > 1 || planMultiDayToggled;
-    if (!showPlannerUi) {
+    if (moveType !== "residential" || estimatedMoveDays <= 1) {
       setResidentialScheduleRows([]);
       setQuoteScheduleSeed(null);
       plannerScheduleEpochRef.current = { anchor: "", n: 0 };
@@ -620,7 +610,6 @@ export default function CreateMoveForm({
   }, [
     moveType,
     estimatedMoveDays,
-    planMultiDayToggled,
     scheduledDate,
     quoteScheduleSeed,
   ]);
@@ -636,6 +625,21 @@ export default function CreateMoveForm({
     }
     wgPrevMoveTypeRef.current = moveType;
   }, [moveType]);
+
+  // Estate tier forces full packing & unpacking and opens the multi-day planner
+  useEffect(() => {
+    if (serviceTier === "estate") {
+      setPackingService("Full packing & unpacking");
+      setEstimatedMoveDays((prev) => Math.max(prev, 2));
+    }
+  }, [serviceTier]);
+
+  // Full packing & unpacking always opens the multi-day planner
+  useEffect(() => {
+    if (packingService === "Full packing & unpacking") {
+      setEstimatedMoveDays((prev) => Math.max(prev, 2));
+    }
+  }, [packingService]);
 
   // Draft auto-save (track core fields only — type-specific fields are less critical)
   const draftState = useMemo(
@@ -2625,8 +2629,11 @@ export default function CreateMoveForm({
                           <select
                             id="res-packing"
                             value={packingService}
-                            onChange={(e) => setPackingService(e.target.value)}
-                            className={fieldInput}
+                            onChange={(e) => {
+                              if (serviceTier !== "estate") setPackingService(e.target.value);
+                            }}
+                            disabled={serviceTier === "estate"}
+                            className={`${fieldInput} ${serviceTier === "estate" ? "opacity-70 cursor-not-allowed" : ""}`}
                             aria-label="Packing service"
                           >
                             <option value="">
@@ -3392,16 +3399,10 @@ export default function CreateMoveForm({
                       <ResidentialProjectPlannerSection
                         quoteScopeLoading={quoteScopeLoading}
                         linkedQuoteUuid={linkedQuoteUuid}
-                        showPlanner={estimatedMoveDays > 1 || planMultiDayToggled}
                         estimatedMoveDays={estimatedMoveDays}
                         onEstimatedMoveDaysChange={(next) =>
                           setEstimatedMoveDays(Math.max(1, Math.min(14, next)))
                         }
-                        planMultiDayToggled={planMultiDayToggled}
-                        onPlanMultiDayToggledChange={(next) => {
-                          setPlanMultiDayToggled(next);
-                          if (next && estimatedMoveDays < 2) setEstimatedMoveDays(2);
-                        }}
                         rows={residentialScheduleRows}
                         onRowsChange={(next) => setResidentialScheduleRows(next)}
                         fromAddress={fromAddress}

@@ -649,7 +649,7 @@ export default function ClientSignOffPage({
         setSubmitting(false);
         return;
       }
-      setPhase(5);
+      setPhase(6); // client sees thank-you first; crew reports tip via button on that screen
     } catch {
       setError("Connection error");
     }
@@ -699,16 +699,19 @@ export default function ClientSignOffPage({
     }
   };
 
+  // When crew presses "Report tip" from the thank-you screen (phase 6 → 5),
+  // check if tip was already reported; if so skip straight back to dashboard.
+  const [tipAlreadyReported, setTipAlreadyReported] = useState(false);
   useEffect(() => {
-    if (phase !== 5) return;
+    if (phase !== 6) return;
     let cancelled = false;
     fetch(
       `/api/crew/tips/report?jobId=${encodeURIComponent(id)}&jobType=${encodeURIComponent(jobType)}`,
     )
       .then((r) => (r.ok ? r.json() : null))
       .then((d: { needsReport?: boolean } | null) => {
-        if (cancelled || !d || d.needsReport !== false) return;
-        setPhase(6);
+        if (cancelled) return;
+        if (d && d.needsReport === false) setTipAlreadyReported(true);
       })
       .catch(() => {});
     return () => {
@@ -746,7 +749,7 @@ export default function ClientSignOffPage({
         setTipSubmitting(false);
         return;
       }
-      setPhase(6);
+      router.push(`/crew/dashboard/job/${jobType}/${id}`);
     } catch {
       setTipError("Connection error");
     }
@@ -858,7 +861,10 @@ export default function ClientSignOffPage({
       ? true
       : hasIssuesOrConcerns && feedbackNote.trim().length > 0);
 
-  const STEP_LABELS = ["Condition", "Items", "Experience", "Sign"];
+  const STEP_LABELS =
+    jobType === "delivery"
+      ? ["Condition", "Items", "Sign"]
+      : ["Condition", "Items", "Experience", "Sign"];
 
   return (
     <main className="min-h-[100dvh] bg-[var(--yu3-bg-canvas)] [font-family:var(--font-body)]">
@@ -899,8 +905,11 @@ export default function ClientSignOffPage({
           <div className="flex items-center gap-1.5 mb-8">
             {STEP_LABELS.map((label, i) => {
               const step = i + 1;
-              const done = phase > step;
-              const active = phase === step;
+              // For deliveries phase 4 maps to visual step 3 (no experience step)
+              const currentStep =
+                jobType === "delivery" && phase === 4 ? 3 : phase;
+              const done = currentStep > step;
+              const active = currentStep === step;
               return (
                 <div
                   key={label}
@@ -930,7 +939,7 @@ export default function ClientSignOffPage({
                       className="flex-1 h-px transition-colors duration-300 mt-[-14px]"
                       style={{
                         backgroundColor:
-                          phase > step ? "rgba(92, 26, 51, 0.35)" : BORDER,
+                          currentStep > step ? "rgba(92, 26, 51, 0.35)" : BORDER,
                       }}
                     />
                   )}
@@ -1283,11 +1292,11 @@ export default function ClientSignOffPage({
 
             <button
               type="button"
-              onClick={() => setPhase(3)}
+              onClick={() => setPhase(jobType === "delivery" ? 4 : 3)}
               disabled={!phase2Valid}
               className={SIGNOFF_SOLID_WINE_CTA}
             >
-              Continue to rating
+              {jobType === "delivery" ? "Continue to sign" : "Continue to rating"}
               <PhCaretRight
                 size={14}
                 weight="bold"
@@ -1299,7 +1308,7 @@ export default function ClientSignOffPage({
           </div>
         )}
 
-        {/* ── Phase 3: Experience + NPS ── */}
+        {/* ── Phase 3: Experience + NPS (moves only; deliveries skip to phase 4) ── */}
         {phase === 3 && (
           <div className="phase-enter">
             <div className="mb-7">
@@ -1575,7 +1584,7 @@ export default function ClientSignOffPage({
                 className="text-[9px] font-bold tracking-[0.14em] uppercase mb-2 [font-family:var(--font-body)] leading-none"
                 style={{ color: MUTED }}
               >
-                Step 4 of 4
+                {jobType === "delivery" ? "Step 3 of 3" : "Step 4 of 4"}
               </p>
               <h1
                 className="font-hero text-[26px] sm:text-[28px] font-normal leading-tight tracking-tight"
@@ -1723,7 +1732,7 @@ export default function ClientSignOffPage({
           </div>
         )}
 
-        {/* ── Phase 5: Crew tip (after sign-off saved, before client thank-you) ── */}
+        {/* ── Phase 5: Crew tip (crew-only, after client sees thank-you at phase 6) ── */}
         {phase === 5 && (
           <div className="phase-enter space-y-4">
             <div>
@@ -1914,6 +1923,26 @@ export default function ClientSignOffPage({
               />
               Back to job
             </Link>
+
+            {/* Crew-only tip reporting — appears below the client thank-you */}
+            {!tipAlreadyReported && (
+              <div className="mt-10 pt-8 border-t border-[var(--yu3-line-subtle)]">
+                <p
+                  className="text-[9px] font-bold uppercase tracking-[0.14em] mb-3 [font-family:var(--font-body)] leading-none"
+                  style={{ color: MUTED }}
+                >
+                  Crew only
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setPhase(5)}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-wine)] transition-colors [font-family:var(--font-body)] hover:opacity-80"
+                >
+                  Report tip received
+                  <PhCaretRight size={12} weight="bold" color={WINE} aria-hidden />
+                </button>
+              </div>
+            )}
           </div>
         )}
 
