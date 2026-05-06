@@ -94,16 +94,55 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ success: true, counts, results });
 }
 
-/** GET — configuration status check */
-export async function GET() {
+/** GET — configuration status check. Add ?test=true to verify the connection against the real Google API. */
+export async function GET(req: NextRequest) {
   const { error: authErr } = await requireAdmin();
   if (authErr) return authErr;
 
-  return NextResponse.json({
-    configured: isGCalConfigured(),
+  const configured = isGCalConfigured();
+  const base = {
+    configured,
     calendarId: process.env.GOOGLE_CALENDAR_ID ?? null,
     clientEmail: process.env.GOOGLE_CALENDAR_CLIENT_EMAIL ?? null,
-  });
+  };
+
+  if (!configured || req.nextUrl.searchParams.get("test") !== "true") {
+    return NextResponse.json(base);
+  }
+
+  // Live test: try to fetch the calendar from Google API
+  try {
+    const { callGCal, getGCalId } = await import("@/lib/google-calendar/client");
+    const calId = encodeURIComponent(getGCalId());
+    const result = await callGCal<{ id: string; summary: string }>(`/calendars/${calId}`);
+    if (!result.ok) {
+      return NextResponse.json({
+        ...base,
+        testOk: false,
+        testError: result.error ?? `HTTP ${result.status}`,
+        hint: result.status === 404
+          ? "Calendar not found. Check GOOGLE_CALENDAR_ID and that the service account has been shared on the calendar."
+          : result.status === 401 || result.status === 403
+          ? "Authentication failed. Check GOOGLE_CALENDAR_PRIVATE_KEY format and that the service account has permission on the calendar."
+          : null,
+      });
+    }
+    return NextResponse.json({
+      ...base,
+      testOk: true,
+      calendarSummary: result.data?.summary ?? null,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({
+      ...base,
+      testOk: false,
+      testError: msg,
+      hint: msg.includes("private key") || msg.includes("PEM")
+        ? "Private key format issue. Ensure GOOGLE_CALENDAR_PRIVATE_KEY is the full RSA key with \\n for newlines."
+        : null,
+    });
+  }
 }
 
 /* ── Row → GCalJobInput ───────────────────────────────────────────────────── */
