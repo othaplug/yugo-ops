@@ -20,7 +20,7 @@ export async function GET(
         .select("id, type, title, storage_path, external_url, created_at")
         .eq("move_id", moveId)
         .order("created_at", { ascending: false }),
-      admin.from("moves").select("move_code, summary_pdf_url, invoice_pdf_url, receipt_pdf_url, square_receipt_url").eq("id", moveId).single(),
+      admin.from("moves").select("move_code, summary_pdf_url, invoice_pdf_url, receipt_pdf_url, square_receipt_url, contract_pdf_url, quote_id").eq("id", moveId).single(),
     ]);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
@@ -37,7 +37,7 @@ export async function GET(
       })
     );
 
-    const moveRow = move as { move_code?: string | null; summary_pdf_url?: string | null; invoice_pdf_url?: string | null; receipt_pdf_url?: string | null } | null;
+    const moveRow = move as { move_code?: string | null; summary_pdf_url?: string | null; invoice_pdf_url?: string | null; receipt_pdf_url?: string | null; contract_pdf_url?: string | null; quote_id?: string | null } | null;
     const displayId = moveRow?.move_code || `MV-${moveId.slice(0, 8).toUpperCase()}`;
     const code = moveRow?.move_code || moveId.slice(0, 8).toUpperCase();
 
@@ -72,6 +72,23 @@ export async function GET(
     if (receiptSigned.data?.signedUrl) {
       autoDocs.push({ id: "receipt-pdf", type: "document", title: `Payment Receipt, ${code}.pdf`, view_url: `/api/admin/moves/${moveId}/documents/receipt`, external_url: null, created_at: new Date().toISOString() });
     }
+    // Contract PDF: try stored URL first, then scan storage for contracts/{quoteId}/
+    const contractPdfUrl = moveRow?.contract_pdf_url ?? null;
+    const quoteId = moveRow?.quote_id ?? null;
+    if (contractPdfUrl && contractPdfUrl.startsWith("http")) {
+      autoDocs.unshift({ id: "contract-pdf", type: "contract", title: `Signed Agreement, ${code}.pdf`, view_url: contractPdfUrl, external_url: null, created_at: new Date().toISOString() });
+    } else if (quoteId) {
+      const { data: contractFiles } = await admin.storage.from(bucket).list(`contracts/${quoteId}`, { limit: 5, sortBy: { column: "created_at", order: "desc" } });
+      if (contractFiles && contractFiles.length > 0) {
+        const newest = contractFiles[0];
+        const path = `contracts/${quoteId}/${newest.name}`;
+        const { data: contractSigned } = await admin.storage.from(bucket).createSignedUrl(path, 3600);
+        if (contractSigned?.signedUrl) {
+          autoDocs.unshift({ id: "contract-pdf", type: "contract", title: `Signed Agreement, ${code}.pdf`, view_url: contractSigned.signedUrl, external_url: null, created_at: newest.created_at || new Date().toISOString() });
+        }
+      }
+    }
+
     const allDocuments = [...autoDocs, ...withUrls];
     const squareReceiptUrl = (move as { square_receipt_url?: string | null } | null)?.square_receipt_url ?? null;
 

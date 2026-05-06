@@ -945,27 +945,24 @@ export const loadCommandCenterData = async () => {
   const openValue = openQuotes.reduce((s, q) => s + getQuoteValue(q), 0)
   const sevenDaysAgo = new Date()
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-  const thirtyDaysAgo = new Date()
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
   const acceptedThisWeek = allQuotesExpanded.filter(
     (q) =>
-      q.status === "accepted" &&
+      (q.status === "accepted" || q.status === "booked" || q.status === "confirmed" || q.status === "paid") &&
       q.accepted_at &&
       new Date(String(q.accepted_at)) >= sevenDaysAgo,
   ).length
 
-  const last30 = allQuotesExpanded.filter(
-    (q) => new Date(String(q.created_at)) >= thirtyDaysAgo,
-  )
-  const acceptedLast30 = last30.filter((q) =>
+  // Conversion rate from all quotes that have reached a terminal state (no time window —
+  // avoids 0% when the only accepted quote was created >30 days ago).
+  const acceptedAll = allQuotesExpanded.filter((q) =>
     ["accepted", "confirmed", "booked", "paid"].includes(String(q.status)),
   ).length
-  const decidedLast30 = last30.filter((q) =>
+  const decidedAll = allQuotesExpanded.filter((q) =>
     ["accepted", "confirmed", "booked", "paid", "expired", "declined", "lost", "cold"].includes(String(q.status)),
   ).length
   const conversionRate =
-    decidedLast30 > 0 ? Math.round((acceptedLast30 / decidedLast30) * 100) : 0
+    decidedAll > 0 ? Math.round((acceptedAll / decidedAll) * 100) : 0
 
   const expiringToday = openQuotes.filter((q) => {
     const exp = String(q.expires_at || "").slice(0, 10)

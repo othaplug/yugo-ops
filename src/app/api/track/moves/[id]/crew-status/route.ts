@@ -79,11 +79,8 @@ export async function GET(
 
     if (!move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
 
-    let crewDisplayName = "Your crew";
-    if (move.crew_id) {
-      const { data: crow } = await admin.from("crews").select("name").eq("id", move.crew_id).maybeSingle();
-      if (crow?.name?.trim()) crewDisplayName = crow.name.trim();
-    }
+    // Always use neutral client-facing label — never expose internal team names (e.g. "Alpha")
+    const crewDisplayName = "Your moving crew";
 
     let crew: { current_lat: number; current_lng: number; name: string } | null = null;
     let liveStage: string | null = move.stage || null;

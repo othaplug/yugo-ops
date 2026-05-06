@@ -21,7 +21,29 @@
       "Bash(grep -n \"cancelled\\\\|status.*change\\\\|onChange.*e\\\\.\\\\|select.*status\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/admin/moves/[id]/MoveDetailClient.tsx)",
       "Bash(grep -n \"cancelConfirm\\\\|cancelOverride\\\\|setCancelConfirm\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/admin/moves/[id]/MoveDetailClient.tsx)",
       "Bash(grep -n \"useState\\\\|const \\\\[\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/admin/moves/[id]/MoveDetailClient.tsx)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git pull *)",
+      "Bash(git restore *)",
+      "mcp__cb39b654-68d0-43ed-98d1-d4cf2fe2b271__get_runtime_logs",
+      "Bash(npx tsc *)",
+      "Bash(git commit -m ' *)",
+      "Read(//Users/kog/Developer/yugo-ops/**)",
+      "Bash(supabase db *)",
+      "Bash(supabase migration *)",
+      "Bash(git push *)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(k,v\\) for k,v in {**d.get\\('dependencies',{}\\), **d.get\\('devDependencies',{}\\)}.items\\(\\) if any\\(x in k for x in ['jose','jwt','crypto','google','auth']\\)]\")",
+      "Bash(xargs ls *)",
+      "Bash(xargs -I {} sh -c 'echo \"=== {} ===\" && grep -L \"getUser\\\\|getAuth\\\\|requireAuth\\\\|verifyAuth\" {} || echo \"NO AUTH CHECK\"')",
+      "Bash(grep -E \"return\\\\s+\\(null|<>|undefined\\)\\\\s*$\")",
+      "mcp__cb39b654-68d0-43ed-98d1-d4cf2fe2b271__deploy_to_vercel",
+      "mcp__cb39b654-68d0-43ed-98d1-d4cf2fe2b271__list_deployments",
+      "Bash(supabase --version)",
+      "Bash(supabase status *)",
+      "Bash(cp /Users/kog/Developer/yugo-ops/.claude/worktrees/intelligent-bhaskara-9bb934/supabase/migrations/20260506100000_google_calendar_event_id.sql /Users/kog/Developer/yugo-ops/supabase/migrations/)",
+      "Bash(cp /Users/kog/Developer/yugo-ops/.claude/worktrees/intelligent-bhaskara-9bb934/supabase/migrations/20260506110000_rebrand_domain_opsplus_to_yugoplus.sql /Users/kog/Developer/yugo-ops/supabase/migrations/)",
+      "Bash(gh pr create --title 'feat: quote pipeline fix, HubSpot dupe resolution, GCal integration, domain rebrand' --base main --head claude/intelligent-bhaskara-9bb934 --body ' *)",
+      "Bash(gh pr *)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")"
     ]
   }
 }

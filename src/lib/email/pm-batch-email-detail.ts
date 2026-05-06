@@ -111,7 +111,18 @@ export function buildPmBatchStaffNotifyBody(opts: {
   return blocks.join("\n\n");
 }
 
-/** Partner-facing confirmation HTML. */
+// ─── Design tokens (mirrors email-templates.ts premium shell) ─────────────────
+const FONT = "system-ui,'Segoe UI',Helvetica,Arial,sans-serif";
+const SERIF = "'Instrument Serif',Georgia,'Times New Roman',serif";
+const PAGE = "#FCF9F4";
+const BODY = "#3A3532";
+const MUTED = "#6B635C";
+const FAINT = "#9B928B";
+const RULE = "rgba(44,62,45,0.15)";
+const ISLAND = "rgba(44,62,45,0.06)";
+const WINE = "#2B0416";
+
+/** Partner-facing confirmation HTML — premium design system. */
 export function buildPmBatchPartnerEmailHtml(opts: {
   partnerName: string;
   adminBaseUrl: string;
@@ -119,53 +130,107 @@ export function buildPmBatchPartnerEmailHtml(opts: {
   rows: PmBatchMailDetailRow[];
 }): string {
   const base = opts.adminBaseUrl.replace(/\/$/, "");
-  const font = "system-ui,Segoe UI,sans-serif";
+  const logoUrl = `${base}/images/yugo-logo-wine.png`;
+  const partnerUrl = `${base}/partner`;
+  const n = opts.moveCount;
+  const nameEsc = escapeHtml(opts.partnerName);
+
   const rowsHtml = opts.rows
     .map((r, i) => {
-      const phone = r.tenantPhone?.trim()
-        ? `<div style="margin:2px 0">Phone · ${escapeHtml(r.tenantPhone.trim())}</div>`
-        : "";
-      const email = r.tenantEmail?.trim()
-        ? `<div style="margin:2px 0">Email · ${escapeHtml(r.tenantEmail.trim())}</div>`
-        : `<div style="margin:2px 0;color:#704c00">Tenant email blank · SMS may be the easiest path until Operations adds contacts</div>`;
+      const flags: string[] = [];
+      if (r.packingRequired) flags.push("Packing scoped");
+      if (r.afterHours) flags.push("After-hours premium");
+      if (r.holidaySurcharge) flags.push("Holiday window");
+      if (r.holdingUnit?.trim()) flags.push(`Holding route ${escapeHtml(r.holdingUnit.trim())}`);
+      if (r.linkedMoveCode?.trim()) flags.push(`Linked with ${escapeHtml(String(r.linkedMoveCode).trim())}`);
+      if (r.tenantMayNotBeOnSite) flags.push("Tenant walkthrough unconfirmed");
 
-      const badges: string[] = [];
-      if (r.packingRequired) badges.push("Packing scoped");
-      if (r.afterHours) badges.push("After hours premium");
-      if (r.holidaySurcharge) badges.push("Holiday window");
-      if (r.holdingUnit?.trim()) badges.push(`Holding ${escapeHtml(r.holdingUnit.trim())}`);
-      if (r.linkedMoveCode?.trim())
-        badges.push(`Linked · ${escapeHtml(String(r.linkedMoveCode).trim())}`);
-
-      const badgeHtml = badges.length
-        ? `<div style="margin-top:8px;font-size:11px;color:#705c50">${escapeHtml(badges.join(" · "))}</div>`
+      const flagHtml = flags.length
+        ? `<tr><td colspan="2" style="padding:6px 0 0;font-size:11px;color:${FAINT};font-family:${FONT};line-height:1.5;">${flags.join("&nbsp;·&nbsp;")}</td></tr>`
         : "";
+
+      const kvRow = (label: string, value: string, top = true) =>
+        `<tr>
+          <td style="padding:${top ? "8" : "4"}px 10px ${top ? "4" : "2"}px 0;font-size:11px;font-weight:700;color:${MUTED};text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;vertical-align:top;font-family:${FONT};width:38%;">${label}</td>
+          <td style="padding:${top ? "8" : "4"}px 0 ${top ? "4" : "2"}px;font-size:12px;font-weight:600;color:${BODY};text-align:right;vertical-align:top;font-family:${FONT};">${value}</td>
+        </tr>`;
+
+      const contactLines: string[] = [];
+      if (r.tenantPhone?.trim()) contactLines.push(escapeHtml(r.tenantPhone.trim()));
+      if (r.tenantEmail?.trim()) contactLines.push(escapeHtml(r.tenantEmail.trim().toLowerCase()));
+      const contactValue = contactLines.length ? contactLines.join("<br>") : `<span style="color:${FAINT}">No contact on file</span>`;
 
       return `
-<tr>
-  <td style="padding:16px;border-bottom:1px solid #eae5df;vertical-align:top;font-family:${font}">
-    <div style="font-size:13px;font-weight:700;color:#1a1a1a">Move ${i + 1} · ${escapeHtml(r.moveCode)}</div>
-    <div style="font-size:12px;color:#555;margin-top:4px;line-height:1.5">${escapeHtml(r.reasonLabel)}</div>
-    <div style="font-size:12px;margin-top:8px;line-height:1.55;color:#1b1f1e">
-      <strong>Tenant</strong> · ${escapeHtml(r.tenantName)}
-      ${phone}
-      ${email}
-      <div style="margin-top:8px"><strong>Building</strong> · ${escapeHtml(r.buildingName)} · Unit ${escapeHtml(r.unit)} · ${escapeHtml(r.unitSize.replace(/_/g, " "))}</div>
-      <div style="margin-top:6px">${escapeHtml(r.propertyAddress)}</div>
-      <div style="margin-top:10px"><strong>Schedule</strong> · ${escapeHtml(r.scheduledDate)} · Window ${escapeHtml(r.arrivalWindowLabel)} · Zone ${escapeHtml(r.zone)}</div>
-      <div style="margin-top:6px"><strong>Estimate pre-tax</strong> · ${escapeHtml(formatPmBatchCad(r.estimatedPreTax))}</div>
-      ${badgeHtml}
-    </div>
-  </td>
-</tr>`;
+<tr><td style="padding:20px 0 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;background:${ISLAND};border:1px solid ${RULE};padding:0;">
+    <tr><td style="padding:12px 14px 10px;">
+      <div style="font-size:10px;font-weight:700;color:${MUTED};text-transform:uppercase;letter-spacing:0.1em;font-family:${FONT};margin-bottom:4px;">Move ${i + 1}</div>
+      <div style="font-size:16px;font-weight:700;color:${WINE};font-family:${SERIF};letter-spacing:0;margin-bottom:2px;">${escapeHtml(r.tenantName)}</div>
+      <div style="font-size:12px;color:${MUTED};font-family:${FONT};">${escapeHtml(r.reasonLabel)} &nbsp;·&nbsp; ${escapeHtml(r.moveCode)}</div>
+    </td></tr>
+    <tr><td style="padding:0 14px 14px;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;border-top:1px solid ${RULE};margin-top:6px;">
+        ${kvRow("Building", `${escapeHtml(r.buildingName)} · Unit ${escapeHtml(r.unit)} (${escapeHtml(r.unitSize.replace(/_/g, " "))})`)}
+        ${kvRow("Address", escapeHtml(r.propertyAddress), false)}
+        ${kvRow("Scheduled", escapeHtml(r.scheduledDate), false)}
+        ${kvRow("Window", escapeHtml(r.arrivalWindowLabel), false)}
+        ${kvRow("Zone", escapeHtml(r.zone), false)}
+        ${kvRow("Contact", contactValue, false)}
+        ${kvRow("Estimate (pre-tax)", escapeHtml(formatPmBatchCad(r.estimatedPreTax)), false)}
+        ${flagHtml}
+      </table>
+    </td></tr>
+  </table>
+</td></tr>`;
     })
     .join("");
 
-  return `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;font-family:${font}">
-<tr><td style="padding-bottom:14px;font-size:15px;line-height:1.55;color:#1a1f1b">${escapeHtml(
-    opts.partnerName,
-  )}, Operations confirmed <strong>${opts.moveCount}</strong> scheduled portfolio move${opts.moveCount === 1 ? "" : "s"} from your batch. Each line is below.</td></tr>
-<tr><td><table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border:1px solid #eae5df;border-radius:10px;overflow:hidden;background:#fffdfb">${rowsHtml}</table></td></tr>
-<tr><td style="padding-top:16px;font-size:13px;line-height:1.55;color:#4a463f">If anything needs correcting, reply to your coordinator thread or open <a href="${escapeHtml(`${base}/partner`)}" style="color:#2C3E2D;font-weight:600;text-decoration:none">partner workspace</a> for statuses.</td></tr>
-</table>`;
+  const ctaStyle = `display:inline-block;background:${WINE};color:#FFFBF7;font-family:${FONT};font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;text-decoration:none;padding:12px 24px;border:1px solid rgba(0,0,0,0.35);`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Portfolio batch · ${nameEsc}</title></head>
+<body style="margin:0;padding:0;background:${PAGE};-webkit-font-smoothing:antialiased;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;background:${PAGE};">
+  <tr><td align="center" style="padding:32px 16px 48px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;max-width:560px;">
+
+      <!-- Logo -->
+      <tr><td style="padding-bottom:28px;text-align:center;">
+        <img src="${logoUrl}" alt="Yugo" width="80" height="22" style="display:inline-block;border:0;max-width:80px;" />
+      </td></tr>
+
+      <!-- Eyebrow + headline -->
+      <tr><td style="padding-bottom:6px;">
+        <div style="font-size:11px;font-weight:700;color:${WINE};letter-spacing:0.1em;text-transform:uppercase;font-family:${FONT};margin-bottom:10px;">Portfolio batch confirmed</div>
+        <div style="font-size:26px;font-weight:400;color:${BODY};font-family:${SERIF};letter-spacing:0;line-height:1.2;margin-bottom:16px;">${n} move${n === 1 ? "" : "s"} scheduled for ${nameEsc}</div>
+        <p style="font-size:14px;color:${MUTED};line-height:1.65;margin:0 0 0;">${nameEsc}, Operations has confirmed and logged the ${n} portfolio move${n === 1 ? "" : "s"} below. Each job is live in the system with a unique move code, tenant profile, and scheduled window.</p>
+      </td></tr>
+
+      <!-- Move cards -->
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;">${rowsHtml}</table>
+
+      <!-- Rule -->
+      <tr><td style="padding:28px 0 0;"><div style="height:1px;background:${RULE};"></div></td></tr>
+
+      <!-- CTA -->
+      <tr><td style="padding:24px 0 0;text-align:center;">
+        <a href="${escapeHtml(partnerUrl)}" style="${ctaStyle}">Open partner workspace</a>
+      </td></tr>
+
+      <!-- Footer note -->
+      <tr><td style="padding-top:24px;">
+        <p style="font-size:12px;color:${FAINT};line-height:1.6;font-family:${FONT};margin:0;">Move codes and billing details are accessible in your partner workspace. If anything needs correcting, reply to your coordinator or reach us at (647)&nbsp;370-4525.</p>
+      </td></tr>
+
+      <!-- Yugo footer -->
+      <tr><td style="padding-top:28px;text-align:center;border-top:1px solid ${RULE};margin-top:28px;">
+        <p style="font-size:11px;color:${FAINT};font-family:${FONT};margin:16px 0 0;">Yugo Moving &amp; Logistics &nbsp;·&nbsp; Toronto, ON &nbsp;·&nbsp; <a href="https://helloyugo.com" style="color:${FAINT};text-decoration:none;">helloyugo.com</a></p>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
 }

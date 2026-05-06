@@ -113,13 +113,19 @@ function quickAddButtonLabel(itemName: string) {
 
 const BOX_RANGES = [
   { label: "No boxes", value: 0 },
-  { label: "1-5 boxes", value: 5 },
-  { label: "5-10 boxes", value: 10 },
-  { label: "10-20 boxes", value: 20 },
-  { label: "20-30 boxes", value: 30 },
-  { label: "30-40 boxes", value: 40 },
-  { label: "40-50 boxes", value: 50 },
-  { label: "50-100 boxes", value: 75 },
+  { label: "1-5 boxes", value: 3 },
+  { label: "5-10 boxes", value: 8 },
+  { label: "10-20 boxes", value: 15 },
+  { label: "20-30 boxes", value: 25 },
+  { label: "30-40 boxes", value: 35 },
+  { label: "40-50 boxes", value: 45 },
+  { label: "50-60 boxes", value: 55 },
+  { label: "60-70 boxes", value: 65 },
+  { label: "70-80 boxes", value: 75 },
+  { label: "80-90 boxes", value: 85 },
+  { label: "90-100 boxes", value: 95 },
+  { label: "100-130 boxes", value: 115 },
+  { label: "130+ boxes", value: 155 },
   { label: "Custom amount", value: -1 },
 ] as const;
 
