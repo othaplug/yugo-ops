@@ -367,6 +367,8 @@ export default function CreateMoveForm({
   const [customComplexity, setCustomComplexity] = useState("");
   const [preferredContact, setPreferredContact] = useState("email");
   const [coordinatorName, setCoordinatorName] = useState("");
+  const [coordinatorPhone, setCoordinatorPhone] = useState("");
+  const [coordinatorEmail, setCoordinatorEmail] = useState("");
   const [crewId, setCrewId] = useState("");
   const [truckPrimary, setTruckPrimary] = useState("");
   const [estCrewSize, setEstCrewSize] = useState("2");
@@ -1104,6 +1106,8 @@ export default function CreateMoveForm({
       );
       formData.append("preferred_contact", preferredContact);
       formData.append("coordinator_name", coordinatorName.trim());
+      formData.append("coordinator_phone", coordinatorPhone.trim());
+      formData.append("coordinator_email", coordinatorEmail.trim());
       formData.append("tier_selected", serviceTier);
       formData.append("crew_id", crewId);
       formData.append(
@@ -1698,6 +1702,34 @@ export default function CreateMoveForm({
                           className={fieldInput}
                         />
                       </div>
+                      {serviceTier === "estate" && (
+                        <>
+                          <div className="w-full min-w-0 sm:max-w-[11rem]">
+                            <label className="sr-only" htmlFor="create-move-coordinator-phone">Coordinator phone</label>
+                            <input
+                              id="create-move-coordinator-phone"
+                              type="tel"
+                              name="coordinator_phone"
+                              value={coordinatorPhone}
+                              onChange={(e) => setCoordinatorPhone(e.target.value)}
+                              placeholder="Coordinator phone"
+                              className={fieldInput}
+                            />
+                          </div>
+                          <div className="w-full min-w-0 sm:max-w-xs">
+                            <label className="sr-only" htmlFor="create-move-coordinator-email">Coordinator email</label>
+                            <input
+                              id="create-move-coordinator-email"
+                              type="email"
+                              name="coordinator_email"
+                              value={coordinatorEmail}
+                              onChange={(e) => setCoordinatorEmail(e.target.value)}
+                              placeholder="Coordinator email"
+                              className={fieldInput}
+                            />
+                          </div>
+                        </>
+                      )}
                       <div className="w-full min-w-0 sm:w-[11rem] sm:shrink-0">
                         <label
                           className="sr-only"
