@@ -4899,7 +4899,7 @@ export default function QuoteFormClient({
           amount: price,
           total_price: total,
           taxes: tax,
-          quote_url: `${window.location.origin}/quote/${quoteId}`,
+          quote_url: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/quote/${quoteId}`,
           dealstage: "quote_sent",
         };
         const idPrefix = (config.quote_id_prefix || "YG-").trim() || "YG-";

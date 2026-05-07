@@ -6,6 +6,40 @@ import { useToast } from "../components/Toast"
 import { HUBSPOT_PLATFORM_CONFIG_KEYS } from "@/lib/hubspot/hubspot-config-keys"
 import AppSettingsCollapsibleSection from "./AppSettingsCollapsibleSection"
 
+function GenerateQuoteUrlBanner() {
+  const [copied, setCopied] = useState(false)
+  const url = `${process.env.NEXT_PUBLIC_APP_URL || (typeof window !== "undefined" ? window.location.origin : "")}/admin/quotes/new?hubspot_deal_id={DEAL_ID}`
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(() => {})
+  }
+
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-1.5">
+      <p className="text-[11px] font-semibold text-amber-800">HubSpot CRM Card — Generate Quote URL</p>
+      <p className="text-[11px] text-amber-700 leading-relaxed">
+        If your HubSpot &quot;Generate Quote&quot; button is not opening or is loading the wrong domain, update the button URL in your HubSpot CRM card settings to:
+      </p>
+      <div className="flex items-center gap-2">
+        <code className="flex-1 text-[10px] font-mono bg-white border border-amber-200 rounded px-2 py-1.5 text-amber-900 break-all">
+          {url}
+        </code>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="shrink-0 px-2.5 py-1.5 rounded-lg bg-amber-100 border border-amber-200 text-[10px] font-semibold text-amber-800 hover:bg-amber-200 transition-colors"
+        >
+          {copied ? "Copied!" : "Copy"}
+        </button>
+      </div>
+      <p className="text-[10px] text-amber-600">Replace <code className="font-mono">{"{DEAL_ID}"}</code> with your HubSpot deal ID token (e.g. <code className="font-mono">{"{{deal.hs_object_id}}"}</code>).</p>
+    </div>
+  )
+}
+
 const FIELD_HELP: Record<string, { label: string; hint: string }> = {
   hubspot_pipeline_id: {
     label: "Pipeline ID",
@@ -149,6 +183,7 @@ export default function HubSpotIntegrationSection() {
       subtitle="Pipeline and deal stage IDs for HubSpot CRM sync. Token stays in server environment (HUBSPOT_ACCESS_TOKEN)."
     >
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
+        <GenerateQuoteUrlBanner />
         <div className="space-y-3">
           {HUBSPOT_PLATFORM_CONFIG_KEYS.map((key) => {
             const meta = FIELD_HELP[key] ?? { label: key, hint: "" }
