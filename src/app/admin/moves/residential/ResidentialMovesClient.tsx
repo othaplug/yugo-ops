@@ -22,6 +22,8 @@ type Move = {
   status?: string;
   move_type?: string;
   estimate?: number;
+  final_amount?: number | null;
+  total_price?: number | null;
   created_at?: string;
 };
 
@@ -98,13 +100,16 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
     return moves.filter((m) => (m.scheduled_date || "") >= pt && (m.scheduled_date || "") < today).length;
   })();
 
-  const totalRevenue = moves.reduce((sum, m) => sum + Number(m.estimate || 0), 0);
+  const effectivePrice = (m: { final_amount?: number | null; total_price?: number | null; estimate?: number }) =>
+    Number(m.final_amount ?? m.total_price ?? m.estimate ?? 0);
+
+  const totalRevenue = moves.reduce((sum, m) => sum + effectivePrice(m), 0);
   const totalRevenuePrev = moves
     .filter((m) => {
       const d = m.scheduled_date || "";
       return d >= lastMonthStart && d <= lastMonthEnd;
     })
-    .reduce((sum, m) => sum + Number(m.estimate || 0), 0);
+    .reduce((sum, m) => sum + effectivePrice(m), 0);
 
   const avgPerMove = moves.length > 0 ? totalRevenue / moves.length : 0;
   const avgPerMovePrev = totalMovesPrev > 0
@@ -113,7 +118,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
           const d = m.scheduled_date || "";
           return d >= lastMonthStart && d <= lastMonthEnd;
         })
-        .reduce((sum, m) => sum + Number(m.estimate || 0), 0) / totalMovesPrev
+        .reduce((sum, m) => sum + effectivePrice(m), 0) / totalMovesPrev
     : 0;
 
   const hasActiveFilters = !!(statusFilter || moveDatePreset);
@@ -274,7 +279,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
                   leftSecondary={formatMoveDate(m.scheduled_date)}
                   status={getStatusLabel(m.status ?? null)}
                   title={m.client_name || "-"}
-                  price={formatCurrency(m.estimate ?? 0)}
+                  price={formatCurrency(m.final_amount ?? m.total_price ?? m.estimate ?? 0)}
                   subtitle={truncateAddress(m.from_address, m.to_address)}
                 />
               </div>

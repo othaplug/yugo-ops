@@ -18,11 +18,11 @@ export default async function AllMovesPage() {
 
   const movesSelect =
     // Keep this select compatible with older DB schemas (avoid newer columns that may not exist yet)
-    "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, status, move_type, service_type, tier_selected, neighbourhood_tier, crew_id, created_at, margin_percent, margin_flag, est_margin_percent, contract_id, is_pm_move";
+    "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, neighbourhood_tier, crew_id, created_at, margin_percent, margin_flag, est_margin_percent, contract_id, is_pm_move";
 
   const minimalMovesSelect =
     // Fallback if extended columns are missing in an older DB schema
-    "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, status, move_type, service_type, tier_selected, crew_id, created_at";
+    "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, crew_id, created_at";
 
   const [movesResp, quotesResp] = await Promise.all([
     db.from("moves").select(movesSelect).order("created_at", { ascending: false }),
@@ -116,8 +116,9 @@ export default async function AllMovesPage() {
       latestSessionByMoveId[m.id]?.status ?? null,
     );
     const isCompleted = ["completed", "delivered", "paid"].includes(String(display || "").toLowerCase());
-    if (isCompleted) return m.margin_percent == null && Number(m.estimate || 0) > 0;
-    return m.est_margin_percent == null && Number(m.estimate || 0) > 0;
+    const price = Number((m as { final_amount?: number | null; total_price?: number | null }).final_amount ?? (m as { total_price?: number | null }).total_price ?? m.estimate ?? 0);
+    if (isCompleted) return m.margin_percent == null && price > 0;
+    return m.est_margin_percent == null && price > 0;
   });
 
   let config: Record<string, string> = {};
@@ -136,7 +137,8 @@ export default async function AllMovesPage() {
     let margin_percent = m.margin_percent ?? null;
     let est_margin_percent = m.est_margin_percent ?? null;
 
-    if (Object.keys(config).length > 0 && Number(m.estimate || 0) > 0) {
+    const effectivePrice = Number((m as { final_amount?: number | null; total_price?: number | null }).final_amount ?? (m as { total_price?: number | null }).total_price ?? m.estimate ?? 0);
+    if (Object.keys(config).length > 0 && effectivePrice > 0) {
       // Fallback: estimate margin from config defaults so the table always shows margins,
       // even when the DB schema doesn't yet have the richer profitability inputs.
       if (est_margin_percent == null) {
@@ -155,7 +157,7 @@ export default async function AllMovesPage() {
           },
           config,
         );
-        est_margin_percent = calcEstimatedMarginPct(Number(m.estimate || 0), cost);
+        est_margin_percent = calcEstimatedMarginPct(effectivePrice, cost);
       }
 
       // If we don't have an actual recorded margin for completed moves, at least show the estimate.
