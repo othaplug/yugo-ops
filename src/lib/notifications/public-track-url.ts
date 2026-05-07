@@ -21,3 +21,12 @@ export const buildPublicDeliveryTrackUrl = (delivery: {
   const slug = getTrackDeliverySlug(delivery);
   return `${base}/track/delivery/${slug}?token=${signTrackToken("delivery", delivery.id)}`;
 };
+
+/**
+ * Short SMS-safe tracking URL — /t/[code] signs token server-side on redirect.
+ * Keeps SMS links clean and readable.
+ */
+export const buildSmsTrackUrl = (code: string): string => {
+  const base = getEmailBaseUrl().replace(/\/$/, "");
+  return `${base}/t/${encodeURIComponent(code.toUpperCase())}`;
+};

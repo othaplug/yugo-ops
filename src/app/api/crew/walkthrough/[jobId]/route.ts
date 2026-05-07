@@ -8,7 +8,7 @@ import { normalizePhone } from "@/lib/phone";
 import { getResend } from "@/lib/resend";
 import { getEmailFrom } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
-import { buildPublicMoveTrackUrl } from "@/lib/notifications/public-track-url";
+import { buildPublicMoveTrackUrl, buildSmsTrackUrl } from "@/lib/notifications/public-track-url";
 import { getMoveCode, formatJobId } from "@/lib/move-code";
 import {
   buildTruckAssessment,
@@ -173,10 +173,9 @@ export async function POST(
   const moveCode = formatJobId(getMoveCode(move as Parameters<typeof getMoveCode>[0]), "move");
   const baseUrl = getEmailBaseUrl();
   const adminUrl = `${baseUrl}/admin/moves/${encodeURIComponent(moveCode)}`;
-  const trackUrl = buildPublicMoveTrackUrl({
-    id: moveId,
-    move_code: (move.move_code as string | null | undefined) ?? null,
-  });
+  const trackUrl = (move.move_code as string | null)
+    ? buildSmsTrackUrl(move.move_code as string)
+    : buildPublicMoveTrackUrl({ id: moveId, move_code: (move.move_code as string | null | undefined) ?? null });
 
   // ── Admin SMS (only when there are changes) ──
   if ((added.length > 0 || removed.length > 0) && insertedId) {
@@ -235,9 +234,9 @@ ${removed.length > 0 ? `<p><strong>Missing items:</strong><br>${missingLines.rep
         const total = Math.round((autoDelta + hst) * 100) / 100;
         const clientSms = [
           `Hi ${moveData.client_name?.split(" ")[0] ?? "there"},`,
-          `Your Yugo crew found items not on your original quote.`,
-          `Additional charge: $${total > 0 ? total.toFixed(2) : "0"} (incl. HST).`,
-          `Review and approve here:\n${trackUrl}`,
+          `During your walkthrough, your crew identified a few items not included in your original quote. We want to keep you fully informed before proceeding.`,
+          `Adjusted charge: $${total > 0 ? total.toFixed(2) : "0"} (incl. HST).`,
+          `Review and approve at your convenience:\n${trackUrl}`,
         ].join("\n\n");
         await sendSMS(normalizePhone(moveData.client_phone), clientSms);
       }

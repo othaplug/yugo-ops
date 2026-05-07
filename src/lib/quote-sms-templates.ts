@@ -19,38 +19,35 @@ export function buildQuoteSmsBody(params: {
     const label = ev ? ev : "your event";
     return [
       greet,
-      `Your Yugo quote for ${label} is ready whenever you are.`,
+      `Your Yugo quote for ${label} is ready. We have put together a tailored proposal just for you.`,
       `View your quote:\n${params.quoteUrl}`,
       `We are happy to answer any questions. Reply here or call (647) 370-4525.`,
-      `The Yugo Team`,
     ].join("\n\n");
   }
 
   if (isClientLogisticsDeliveryServiceType(st)) {
     return [
       greet,
-      `Your delivery quote from Yugo is ready.`,
-      `View and book at your convenience:\n${params.quoteUrl}`,
-      `The Yugo Team`,
+      `Your delivery quote from Yugo is ready. We have everything lined up whenever you are.`,
+      `View your quote:\n${params.quoteUrl}`,
+      `Questions? We are here. Reply or call (647) 370-4525.`,
     ].join("\n\n");
   }
 
   if (st === "bin_rental") {
     return [
       greet,
-      `Your Yugo bin rental quote is ready.`,
+      `Your Yugo bin rental quote is ready and waiting.`,
       `View your quote:\n${params.quoteUrl}`,
-      `We are here if you have any questions. Reply or call (647) 370-4525.`,
-      `The Yugo Team`,
+      `Questions? Reply here or call (647) 370-4525.`,
     ].join("\n\n");
   }
 
   return [
     greet,
-    `Your Yugo moving quote is ready.`,
+    `Your Yugo moving quote is ready. We have crafted a plan tailored to your move.`,
     `View your quote:\n${params.quoteUrl}`,
-    `We are here if you have any questions. Reply or call (647) 370-4525.`,
-    `The Yugo Team`,
+    `Questions? We are here. Reply or call (647) 370-4525.`,
   ].join("\n\n");
 }
 
@@ -65,14 +62,16 @@ export function buildQuoteFollowupSmsBody(params: {
 }): string {
   const name = params.firstName?.trim() || "there";
   const url = params.quoteUrl;
+
   if (params.followupNumber === 1) {
     return [
       `Hi ${name},`,
-      `Your Yugo quote is still available whenever you are ready.`,
-      `Happy to answer any questions.`,
-      `Open your quote:\n${url}`,
+      `Your Yugo quote is still available whenever you are ready. We would love to take care of your move.`,
+      `Happy to answer any questions you may have.`,
+      `View your quote:\n${url}`,
     ].join("\n\n");
   }
+
   if (params.followupNumber === 2) {
     const daysLeft = params.expiresAt
       ? Math.max(1, Math.ceil((new Date(params.expiresAt).getTime() - Date.now()) / 86_400_000))
@@ -80,21 +79,22 @@ export function buildQuoteFollowupSmsBody(params: {
     const n = daysLeft ?? 7;
     return [
       `Hi ${name},`,
-      `Your Yugo quote is valid for ${n} more day${n === 1 ? "" : "s"}.`,
-      `Lock in your date and rate when you are ready.`,
-      `View quote:\n${url}`,
+      `Just a heads up — your Yugo quote is valid for ${n} more day${n === 1 ? "" : "s"}.`,
+      `Lock in your date and rate whenever you are ready.`,
+      `View your quote:\n${url}`,
     ].join("\n\n");
   }
+
   const st = params.serviceType;
   const closingLine = isClientLogisticsDeliveryServiceType(st)
     ? `We would love to complete your delivery.`
     : st === "bin_rental"
-      ? `We would love to complete your bin rental.`
+      ? `We would love to take care of your bin rental.`
       : `We would love to take care of your move.`;
+
   return [
     `Hi ${name},`,
-    `A gentle reminder that your Yugo quote expires tomorrow.`,
-    closingLine,
-    `View quote:\n${url}`,
+    `A gentle reminder that your Yugo quote expires tomorrow. ${closingLine}`,
+    `View your quote:\n${url}`,
   ].join("\n\n");
 }
