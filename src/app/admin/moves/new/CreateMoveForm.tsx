@@ -3722,7 +3722,7 @@ export default function CreateMoveForm({
               <button
                 type="button"
                 onClick={handleFlowBack}
-                className="flex-1 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[#2C3E2D]/45 hover:text-[var(--tx)] transition-colors"
+                className="admin-btn admin-btn-secondary flex-1"
               >
                 Back
               </button>
@@ -3739,7 +3739,7 @@ export default function CreateMoveForm({
               <button
                 type="button"
                 onClick={handleFlowContinue}
-                className="admin-btn admin-btn-secondary flex-1"
+                className="admin-btn admin-btn-primary flex-1"
               >
                 Continue
                 <CaretRight className="w-3.5 h-3.5" weight="bold" aria-hidden />
@@ -3751,7 +3751,7 @@ export default function CreateMoveForm({
                   void submitCreateMove();
                 }}
                 disabled={loading || !createMoveUnlocked}
-                className="admin-btn admin-btn-primary flex-1 disabled:pointer-events-none disabled:opacity-50"
+                className="admin-btn admin-btn-primary admin-btn-lg flex-1 disabled:pointer-events-none disabled:opacity-50"
               >
                 {loading ? "Creating…" : "Create Move"}
               </button>
