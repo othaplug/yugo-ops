@@ -71,7 +71,7 @@ export default function DeliveryDayForm({
     Array.from({ length: MIN_STOPS }, () => createEmptyStop())
   );
   const [itemSelectorOpen, setItemSelectorOpen] = useState<number | null>(null);
-  const [itemCategory, setItemCategory] = useState<ItemSize>("large");
+  const [itemCategory, setItemCategory] = useState<ItemSize>("medium");
   const [recVehicle, setRecVehicle] = useState<VehicleType>(initialVehicle);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleType>(initialVehicle);
   const [recDayType, setRecDayType] = useState<DayType>(initialDayType);
@@ -444,7 +444,7 @@ export default function DeliveryDayForm({
                     type="button"
                     onClick={() => {
                       setItemSelectorOpen(itemSelectorOpen === idx ? null : idx);
-                      setItemCategory("large");
+                      setItemCategory("medium");
                     }}
                     className="text-[11px] font-semibold text-[var(--accent-text)] hover:opacity-75 flex items-center gap-1 transition-colors"
                   >
