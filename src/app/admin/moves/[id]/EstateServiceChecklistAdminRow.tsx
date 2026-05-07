@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useCallback } from "react";
+import { useToast } from "../../components/Toast";
 import { buildEstateServiceChecklistItems } from "@/lib/estate-service-checklist";
 import { deriveEstateServiceChecklistAutomation } from "@/lib/estate-service-checklist-automation";
 import { calculateEstateDays } from "@/lib/quotes/estate-schedule";
@@ -66,6 +67,7 @@ export default function EstateServiceChecklistAdminRow({
     return out;
   }, [stored, auto]);
 
+  const { toast } = useToast();
   const [saving, setSaving] = useState<string | null>(null);
 
   const setItem = useCallback(
@@ -81,18 +83,23 @@ export default function EstateServiceChecklistAdminRow({
           },
         );
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) return;
+        if (!res.ok) {
+          toast(data?.error || "Failed to update checklist", "alertTriangle");
+          return;
+        }
         if (data.checklist) {
           setMove((prev: MoveSlice) => ({
             ...prev,
             estate_service_checklist: data.checklist,
           }));
         }
+      } catch {
+        toast("Network error updating checklist", "alertTriangle");
       } finally {
         setSaving(null);
       }
     },
-    [move.id, setMove],
+    [move.id, setMove, toast],
   );
 
   const done = items.filter((i) => merged[i.id]).length;
