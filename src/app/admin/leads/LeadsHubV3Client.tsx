@@ -129,6 +129,48 @@ function fullName(lead: LeadRow) {
   );
 }
 
+function exportLeadsCSV(rows: LeadRow[]) {
+  const esc = (v: unknown) => {
+    const s = v == null ? "" : String(v);
+    return s.includes(",") || s.includes('"') || s.includes("\n")
+      ? `"${s.replace(/"/g, '""')}"`
+      : s;
+  };
+  const headers = ["Lead #","Name","Email","Phone","Status","Source","Service","Move Size","From","To","Preferred Date","Created At","Response Min","Est. Value"];
+  const lines = [
+    headers.join(","),
+    ...rows.map((r) =>
+      [
+        r.lead_number,
+        fullName(r),
+        r.email ?? "",
+        r.phone ?? "",
+        r.status,
+        sourceLabel(r.source, r.source_detail),
+        r.service_type ?? "",
+        r.move_size ?? "",
+        r.from_address ?? "",
+        r.to_address ?? "",
+        r.preferred_date ?? "",
+        r.created_at.slice(0, 10),
+        r.first_response_at
+          ? Math.round((new Date(r.first_response_at).getTime() - new Date(r.created_at).getTime()) / 60000)
+          : "",
+        r.estimated_value ?? "",
+      ]
+        .map(esc)
+        .join(","),
+    ),
+  ];
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `yugo-leads-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function sourceLabel(source: string, detail: string | null | undefined) {
   const d = (detail || "").trim();
   if (d) return d;
@@ -516,7 +558,11 @@ export default function LeadsHubV3Client({
         label: "Assign",
         icon: <User size={13} />,
         run: (rows) => {
-          toast(`Assign flow for ${rows.length} leads (coming soon)`, "check");
+          if (rows.length === 1 && rows[0]) {
+            router.push(`/admin/leads/${rows[0].id}`);
+          } else {
+            toast(`Open each lead to assign — bulk assign not yet supported`, "alertTriangle");
+          }
         },
       },
       {
@@ -891,7 +937,7 @@ export default function LeadsHubV3Client({
           stageForRow: toStage,
           renderCard: (row) => <LeadMiniCard lead={row} />,
         }}
-        onExport={() => toast("Export coming soon", "check")}
+        onExport={() => { exportLeadsCSV(list); toast(`Exported ${list.length} leads`, "check"); }}
         onNewRecord={() => router.push("/admin/leads/new")}
       />
     </div>
