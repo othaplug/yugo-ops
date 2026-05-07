@@ -41,19 +41,6 @@ const RATING_LABELS: Record<number, string> = {
   5: "Exceptional",
 };
 
-const NPS_LABELS: Record<number, string> = {
-  0: "Not at all likely",
-  1: "Very unlikely",
-  2: "Unlikely",
-  3: "Somewhat unlikely",
-  4: "Neutral",
-  5: "Neutral",
-  6: "Somewhat likely",
-  7: "Likely",
-  8: "Very likely",
-  9: "Extremely likely",
-  10: "Absolutely!",
-};
 
 // ── Delivery copy keyed by partner vertical ───────────────────────────────
 type DeliveryCopy = {
@@ -368,13 +355,11 @@ export default function ClientSignOffPage({
 
   // Phase 2
   const [rating, setRating] = useState<number | null>(null);
-  const [npsScore, setNpsScore] = useState<number | null>(null);
   const [noIssuesDuringMove, setNoIssuesDuringMove] = useState(false);
   const [noDamages, setNoDamages] = useState(false);
   const [walkthroughCompleted, setWalkthroughCompleted] = useState(false);
   const [crewConductedProfessionally, setCrewConductedProfessionally] =
     useState(false);
-  const [crewWoreProtection, setCrewWoreProtection] = useState(false);
   const [furnitureReassembled, setFurnitureReassembled] = useState<
     boolean | null
   >(null);
@@ -614,12 +599,10 @@ export default function ClientSignOffPage({
           photosReviewedByClient:
             jobPhotos.length > 0 ? photosReviewedByClient : true,
           satisfactionRating: rating,
-          npsScore,
           noIssuesDuringMove,
           noDamages,
           walkthroughCompleted,
           crewConductedProfessionally,
-          crewWoreProtection,
           furnitureReassembled:
             furnitureReassembled === null ? null : furnitureReassembled,
           itemsPlacedCorrectly,
@@ -840,7 +823,6 @@ export default function ClientSignOffPage({
     noPropertyDamage &&
     walkthroughCompleted &&
     crewConductedProfessionally &&
-    crewWoreProtection &&
     itemsPlacedCorrectly &&
     propertyLeftClean &&
     furnitureReassembled !== false;
@@ -850,21 +832,16 @@ export default function ClientSignOffPage({
     !noPropertyDamage ||
     !walkthroughCompleted ||
     !crewConductedProfessionally ||
-    !crewWoreProtection ||
     !itemsPlacedCorrectly ||
     !propertyLeftClean ||
     furnitureReassembled === false;
   const phase3Valid =
     !!rating &&
-    npsScore !== null &&
     (allConfirmed
       ? true
       : hasIssuesOrConcerns && feedbackNote.trim().length > 0);
 
-  const STEP_LABELS =
-    jobType === "delivery"
-      ? ["Condition", "Items", "Sign"]
-      : ["Condition", "Items", "Experience", "Sign"];
+  const STEP_LABELS = ["Condition", "Items", "Experience", "Sign"];
 
   return (
     <main className="min-h-[100dvh] bg-[var(--yu3-bg-canvas)] [font-family:var(--font-body)]">
@@ -905,9 +882,7 @@ export default function ClientSignOffPage({
           <div className="flex items-center gap-1.5 mb-8">
             {STEP_LABELS.map((label, i) => {
               const step = i + 1;
-              // For deliveries phase 4 maps to visual step 3 (no experience step)
-              const currentStep =
-                jobType === "delivery" && phase === 4 ? 3 : phase;
+              const currentStep = phase;
               const done = currentStep > step;
               const active = currentStep === step;
               return (
@@ -1292,7 +1267,7 @@ export default function ClientSignOffPage({
 
             <button
               type="button"
-              onClick={() => setPhase(jobType === "delivery" ? 4 : 3)}
+              onClick={() => setPhase(3)}
               disabled={!phase2Valid}
               className={SIGNOFF_SOLID_WINE_CTA}
             >
@@ -1308,7 +1283,7 @@ export default function ClientSignOffPage({
           </div>
         )}
 
-        {/* ── Phase 3: Experience + NPS (moves only; deliveries skip to phase 4) ── */}
+        {/* ── Phase 3: Experience ── */}
         {phase === 3 && (
           <div className="phase-enter">
             <div className="mb-7">
@@ -1365,65 +1340,6 @@ export default function ClientSignOffPage({
               )}
             </div>
 
-            {/* NPS */}
-            <div className="mb-6">
-              <p
-                className="text-[13px] font-semibold mb-0.5"
-                style={{ color: INK }}
-              >
-                How likely are you to recommend us?
-              </p>
-              <p className="text-[11px] mb-3.5" style={{ color: MUTED }}>
-                0 = Not at all &nbsp;·&nbsp; 10 = Absolutely
-              </p>
-              <div className="flex flex-nowrap justify-center gap-1">
-                {Array.from({ length: 11 }, (_, i) => i).map((n) => {
-                  const isSelected = npsScore === n;
-                  let bg = NOTE_FILL;
-                  let textC = MUTED;
-                  let bd = "1px solid rgba(44, 62, 45, 0.15)";
-                  if (isSelected) {
-                    bd = "1px solid transparent";
-                    if (n <= 6) {
-                      bg = "#EF4444";
-                      textC = "var(--yu3-on-wine)";
-                    } else if (n <= 8) {
-                      bg = "#B45309";
-                      textC = "var(--yu3-on-wine)";
-                    } else {
-                      bg = WINE;
-                      textC = "var(--yu3-on-wine)";
-                    }
-                  }
-                  return (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setNpsScore(n)}
-                      className={`shrink-0 w-7 h-7 text-[11px] font-bold transition-all [font-family:var(--font-body)] ${isSelected ? "scale-110 shadow-sm" : "hover:opacity-80"}`}
-                      style={{ backgroundColor: bg, color: textC, border: bd }}
-                    >
-                      {n}
-                    </button>
-                  );
-                })}
-              </div>
-              {npsScore !== null && (
-                <p
-                  className="text-center text-[11px] mt-2 font-semibold pop-in"
-                  style={{
-                    color:
-                      npsScore >= 9
-                        ? WINE
-                        : npsScore >= 7
-                          ? "#B45309"
-                          : "#EF4444",
-                  }}
-                >
-                  {NPS_LABELS[npsScore]}
-                </p>
-              )}
-            </div>
 
             {/* Confirmation checkboxes */}
             <div className="mb-5">
@@ -1465,11 +1381,6 @@ export default function ClientSignOffPage({
                   checked={crewConductedProfessionally}
                   onChange={setCrewConductedProfessionally}
                   label="Crew conducted themselves professionally"
-                />
-                <ToggleCard
-                  checked={crewWoreProtection}
-                  onChange={setCrewWoreProtection}
-                  label="Crew used floor and wall protection"
                 />
 
                 {/* Furniture reassembly */}

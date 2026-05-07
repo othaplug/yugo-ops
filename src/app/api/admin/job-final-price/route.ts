@@ -71,7 +71,15 @@ export async function POST(req: NextRequest) {
       .eq("id", jobId)
       .single();
 
-    if (dErr || !delivery) {
+    if (dErr) {
+      console.error("[job-final-price] delivery fetch", dErr);
+      const isNotFound = (dErr as { code?: string }).code === "PGRST116";
+      return NextResponse.json(
+        { error: isNotFound ? "Delivery not found" : (dErr.message || "Failed to load delivery") },
+        { status: isNotFound ? 404 : 500 },
+      );
+    }
+    if (!delivery) {
       return NextResponse.json({ error: "Delivery not found" }, { status: 404 });
     }
     if (!isDeliveryDone(delivery.status)) {
@@ -144,13 +152,19 @@ export async function POST(req: NextRequest) {
 
   const { data: move, error: mErr } = await db
     .from("moves")
-    .select(
-      "id, status, amount, total_price, final_amount, estimate, move_code",
-    )
+    .select("id, status, amount, total_price, final_amount, estimate, move_code")
     .eq("id", jobId)
     .single();
 
-  if (mErr || !move) {
+  if (mErr) {
+    console.error("[job-final-price] move fetch", mErr);
+    const isNotFound = (mErr as { code?: string }).code === "PGRST116";
+    return NextResponse.json(
+      { error: isNotFound ? "Move not found" : (mErr.message || "Failed to load move") },
+      { status: isNotFound ? 404 : 500 },
+    );
+  }
+  if (!move) {
     return NextResponse.json({ error: "Move not found" }, { status: 404 });
   }
   if (!isMoveStatusCompleted(move.status)) {
