@@ -1488,7 +1488,7 @@ export default function QuoteFormClient({
 
   // Single item fields
   const [itemDescription, setItemDescription] = useState("");
-  const [itemCategory, setItemCategory] = useState("large_heavy");
+  const [itemCategory, setItemCategory] = useState("standard_furniture");
   const [itemWeight, setItemWeight] = useState("");
   const [assembly, setAssembly] = useState("None");
   const [stairCarry, setStairCarry] = useState(false);
@@ -3051,7 +3051,7 @@ export default function QuoteFormClient({
     setOfficeKitchen(false);
     setOfficeTruckCount(1);
     setItemDescription("");
-    setItemCategory("large_heavy");
+    setItemCategory("standard_furniture");
     setItemWeight("");
     setAssembly("None");
     setStairCarry(false);
