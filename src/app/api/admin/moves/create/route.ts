@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
-import { moveNotificationEmail } from "@/lib/email-templates";
+import { moveNotificationEmail, estateConfirmationEmail } from "@/lib/email-templates";
+import { generateWelcomePackageToken } from "@/lib/welcome-package-token";
 import { signTrackToken } from "@/lib/track-token";
 import { requireAuth } from "@/lib/api-auth";
 import { getEmailFrom } from "@/lib/email/send";
@@ -543,6 +544,8 @@ export async function POST(req: NextRequest) {
         preferred_contact: (body.preferred_contact as string)?.trim() || null,
         crew_id: moveCrewId,
         coordinator_name: (body.coordinator_name as string)?.trim() || null,
+        coordinator_phone: (body.coordinator_phone as string)?.trim() || null,
+        coordinator_email: (body.coordinator_email as string)?.trim() || null,
         tier_selected: tierSelected,
         assigned_members: moveAssignedMembers,
         assigned_crew_name: moveAssignedCrewName,
@@ -776,6 +779,12 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      // Generate welcome package token for estate moves (used in confirmation email + /estate/welcome page).
+      if (tierSelected === "estate") {
+        const wpToken = generateWelcomePackageToken();
+        await db.from("moves").update({ welcome_package_token: wpToken }).eq("id", moveId);
+      }
+
       // Mark the source quote as booked when a move is created from it,
       // so the quote pipeline conversion rate reflects this win.
       if (resolvedQuoteUuid) {
@@ -806,33 +815,90 @@ export async function POST(req: NextRequest) {
         const { getEmailBaseUrl } = await import("@/lib/email-base-url");
         const { getMoveCode, formatJobId, getTrackMoveSlug } =
           await import("@/lib/move-code");
+        const baseUrl = getEmailBaseUrl();
         const moveCode = move.move_code || getMoveCode({ id: moveId });
         const jobIdDisplay = formatJobId(moveCode, "move");
         const depositPaid = Math.round(estimate * 0.25);
-        const trackUrl = `${getEmailBaseUrl()}/track/move/${getTrackMoveSlug({ move_code: move.move_code, id: moveId })}?token=${signTrackToken("move", moveId)}`;
+        const trackUrl = `${baseUrl}/track/move/${getTrackMoveSlug({ move_code: move.move_code, id: moveId })}?token=${signTrackToken("move", moveId)}`;
 
-        const html = moveNotificationEmail({
-          move_id: moveId,
-          move_number: jobIdDisplay,
-          client_name: clientName || emailTrimmed,
-          move_type: moveType,
-          status: "pending",
-          stage: "quote",
-          from_address: fromAddress,
-          to_address: toAddress,
-          scheduled_date: (body.scheduled_date as string)?.trim() || "",
-          estimate,
-          deposit_paid: depositPaid,
-          balance_due: estimate - depositPaid,
-          trackUrl,
-          notificationKind: "welcome",
-        });
+        let html: string;
+        let subject: string;
+
+        if (tierSelected === "estate") {
+          // Fetch the freshly-written welcome_package_token for the estate guide link.
+          const { data: estateRow } = await db
+            .from("moves")
+            .select("welcome_package_token, coordinator_name, coordinator_phone, coordinator_email")
+            .eq("id", moveId)
+            .single();
+
+          const wpToken = (estateRow as { welcome_package_token?: string | null } | null)?.welcome_package_token ?? "";
+          const welcomePackageUrl = wpToken ? `${baseUrl}/estate/welcome/${wpToken}` : null;
+
+          const TRUCK_DISPLAY: Record<string, string> = {
+            sprinter: "Extended Sprinter Van",
+            "16ft": "16ft Fully Equipped Truck",
+            "20ft": "20ft Dedicated Moving Truck",
+            "24ft": "24ft Full-Size Moving Truck",
+            "26ft": "26ft Maximum-Capacity Truck",
+          };
+          const truckKey = (body.truck_primary as string)?.trim() || "";
+          const truckDisplayName = TRUCK_DISPLAY[truckKey] || truckKey || "Dedicated moving truck";
+          const crewSize = body.est_crew_size ? Number(body.est_crew_size) : 3;
+          const scheduledDate = (body.scheduled_date as string)?.trim() || "";
+          const estateDateLabel = scheduledDate
+            ? new Date(scheduledDate + "T00:00:00").toLocaleDateString("en-CA", {
+                weekday: "long", month: "long", day: "numeric", year: "numeric",
+              })
+            : jobIdDisplay;
+
+          html = estateConfirmationEmail({
+            clientName: clientName || emailTrimmed,
+            moveCode: jobIdDisplay,
+            moveDate: scheduledDate || null,
+            timeWindow: (body.arrival_window as string)?.trim() || "Morning (7 AM – 12 PM)",
+            fromAddress,
+            toAddress,
+            tierLabel: "Estate",
+            serviceLabel: "Estate Move",
+            crewSize,
+            truckDisplayName,
+            totalWithTax: estimate,
+            depositPaid,
+            balanceRemaining: estimate - depositPaid,
+            trackingUrl: trackUrl,
+            includes: [],
+            coordinatorName: (estateRow as { coordinator_name?: string | null } | null)?.coordinator_name ?? null,
+            coordinatorPhone: (estateRow as { coordinator_phone?: string | null } | null)?.coordinator_phone ?? null,
+            coordinatorEmail: (estateRow as { coordinator_email?: string | null } | null)?.coordinator_email ?? null,
+            welcomePackageUrl,
+          });
+          subject = `Welcome to your Yugo Estate experience, ${estateDateLabel}`;
+        } else {
+          html = moveNotificationEmail({
+            move_id: moveId,
+            move_number: jobIdDisplay,
+            client_name: clientName || emailTrimmed,
+            move_type: moveType,
+            status: "pending",
+            stage: "quote",
+            from_address: fromAddress,
+            to_address: toAddress,
+            scheduled_date: (body.scheduled_date as string)?.trim() || "",
+            estimate,
+            deposit_paid: depositPaid,
+            balance_due: estimate - depositPaid,
+            trackUrl,
+            notificationKind: "welcome",
+          });
+          subject = "Your move is confirmed.";
+        }
 
         const emailFrom = await getEmailFrom();
         const sendResult = await resend.emails.send({
           from: emailFrom,
           to: emailTrimmed,
-          subject: "Your move is confirmed.",
+          subject,
           html,
           headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
         });
