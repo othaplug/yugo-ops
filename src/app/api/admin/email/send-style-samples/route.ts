@@ -9,7 +9,7 @@ import {
   getStyleSampleTemplateJobs,
 } from "@/lib/email/style-sample-jobs";
 
-const DEFAULT_TO = "oche@helloyugo.com";
+const DEFAULT_TO = "othaplug@gmail.com";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

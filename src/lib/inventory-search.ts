@@ -23,25 +23,84 @@ type GuardRule = { test: RegExp; slug: string; skip?: RegExp }
 
 /** Highest-specificity substring guards so paste lines resolve before generic fuzzy scoring (global: quotes, moves, WG paste). */
 const GUARD_SLUG_RULES: GuardRule[] = [
+  // ── AV / Electronics ─────────────────────────────────────────────────
   {
     test: /\bsoundbar\b.*\bsubwoofer\b|\bsubwoofer\b.*\bsoundbar\b|\bwireless\s+subwoofer\b/i,
     slug: "soundbar-subwoofer",
   },
   { test: /\bsoundbar\b/i, slug: "soundbar" },
   { test: /\bsubwoofer\b/i, slug: "subwoofer" },
+
+  // ── Bedding / soft goods (must precede "table", "stand" etc.) ─────────
   { test: /\bbedding\s+bundle\b/i, slug: "bedding-bundle" },
-  { test: /\bsheet\s+set\b/i, slug: "sheet-set" },
+  { test: /\bsheet\s+set\b|\bbed\s+sheet/i, slug: "sheet-set" },
   { test: /\bbedding\b/i, slug: "bedding-bundle" },
-  { test: /\bmattress\s+(protector|topper)\b/i, slug: "mattress-protector" },
-  { test: /\bduvet\b|\bcomforter\b|\bshams?\b|\blinen\b/i, slug: "duvet" },
-  { test: /\bpillow|\bpillows\b/i, slug: "pillows-set" },
+  { test: /\bmattress\s+(protector|topper|pad|cover)\b/i, slug: "mattress-protector" },
+  { test: /\bduvet\b|\bcomforter\b|\bshams?\b|\bquilt\b/i, slug: "duvet" },
+  { test: /\bpillow(s|case|cover)?\b/i, slug: "pillows-set" },
+
+  // ── Bedroom furniture ─────────────────────────────────────────────────
   {
     test: /\bnight\s+table\b|\bnightstand\b|\bnight\s+stand\b|\bbedside\b|\bbed\s+side\b/i,
     slug: "nightstand",
   },
+  { test: /\badjustable\s+base\b|\bpower\s+base\b|\bmotorized\s+base\b/i, slug: "adjustable-base-queen" },
+
+  // ── Lamps / lighting (must precede generic "table" matching) ──────────
+  { test: /\btable\s+lamp(s)?\b|\bdesk\s+lamp(s)?\b/i, slug: "table-lamp" },
+  { test: /\bfloor\s+lamp(s)?\b|\btorchiere\b/i, slug: "floor-lamp" },
+  { test: /\bpendant\s+lamp\b|\bpendant\s+light\b/i, slug: "pendant-lamp" },
+  { test: /\blamp(s)?\b/i, slug: "table-lamp" },
+
+  // ── Cabinets (kitchen/bathroom/storage — NOT china cabinet) ───────────
+  {
+    test: /\bkitchen\s+cabinet(s)?\b|\bcabinet(s)?.*kitchen|\bupper\s+cabinet\b|\blower\s+cabinet\b/i,
+    slug: "cabinet-kitchen",
+  },
+  {
+    test: /\bbathroom\s+cabinet(s)?\b|\bvanity\s+cabinet\b|\bmedicine\s+cabinet\b/i,
+    slug: "cabinet-bathroom",
+  },
+  {
+    test: /\blinen\s+cabinet\b|\bstorage\s+cabinet\b|\blaundry\s+cabinet\b/i,
+    slug: "cabinet-storage",
+  },
+  // china/display cabinet — after the specific ones so "kitchen cabinet" doesn't match here
+  {
+    test: /\bchina\s+cabinet\b|\bdisplay\s+cabinet\b|\bcurio\b/i,
+    slug: "china-cabinet",
+    skip: /\bkitchen\b|\bbathroom\b|\bvanity\b|\blinen\b|\bstorage\b/i,
+  },
+
+  // ── Art / picture frames (must precede generic "art" matching) ────────
+  {
+    test: /\bpicture\s+frame(s)?\b|\bphoto\s+frame(s)?\b|\bart\s+frame(s)?\b|\bframed\s+(art|photo|picture)\b/i,
+    slug: "artwork-framed-medium",
+  },
+  { test: /\bwall\s+art\b|\bcanvas\b/i, slug: "artwork-framed-medium" },
+  { test: /\bsculpture\b|\bartwork\b/i, slug: "artwork-sculpture",
+    skip: /\bframe\b|\bframed\b/i },
+  { test: /\bpainting(s)?\b/i, slug: "artwork-framed-large",
+    skip: /\bframe\b/i },
+
+  // ── Dining chairs (before generic "chair" matching) ───────────────────
+  { test: /\bdining\s+chair(s)?\b/i, slug: "dining-chair" },
+  { test: /\bbar\s+stool(s)?\b|\bcounter\s+stool(s)?\b/i, slug: "bar-stool" },
+
+  // ── Recliners / specialty seating ─────────────────────────────────────
+  { test: /\blazy\s*boy\b|\bla\s*z\s*boy\b|\brecliner\s+chair\b/i, slug: "recliner-manual" },
+  { test: /\bpower\s+recliner\b|\belectric\s+recliner\b/i, slug: "recliner-power" },
+  { test: /\brecliner\s+sofa\b|\breclining\s+sofa\b|\breclining\s+sectional\b/i, slug: "sectional-recliner" },
+  { test: /\bsofa\s+bed\b|\bpull.?out\s+sofa\b|\bsleeper\s+sofa\b/i, slug: "sleeper-sofa" },
+
+  // ── Fans ──────────────────────────────────────────────────────────────
+  { test: /\bstanding\s+fan\b|\bfloor\s+fan\b|\btower\s+fan\b/i, slug: "standing-fan" },
+  { test: /\bceiling\s+fan\b/i, slug: "ceiling-fan" },
+
+  // ── Tables (side/end — must NOT catch dining, coffee, console, kitchen)
   {
     test: /\bside\s+table\b|\bend\s+table\b/i,
-    slug: "side-end-table",
+    slug: "side-table",
     skip: /\bcoffee\s+table\b|\bdining\s+table\b|\bconsole\s+table\b|\bkitchen\s+table\b/i,
   },
 ]
@@ -168,15 +227,15 @@ function contextualSlugHints(line: string): string[] {
     !tvFurnitureCue
 
   if (tvPanelCue) {
+    // "small tv" / "little tv" / "tiny tv" → prefer tv-small
+    const smallCue = /\bsmall\b|\blittle\b|\btiny\b|\bcompact\b|\bmini\b/i.test(l)
     const xlCue =
-      /\b(?:77|83|85|86)\b|\b75\b|"?\s*7[5-9]\d?\s*"|inch.*\b(?:7[5-9]|8[0-9])\b|\btv\b.*\b(?:7[5-9]|8[0-6])\b/i.test(
-        l,
-      )
+      /\b(?:77|83|85|86)\b|\b75\b|"?\s*7[5-9]\d?\s*"|inch.*\b(?:7[5-9]|8[0-9])\b|\btv\b.*\b(?:7[5-9]|8[0-6])\b/i.test(l)
     const sixtyFiveCue =
-      /\b(?:65|70)\b|"?\s*6[5-9]\d?\s*"|inch.*\b6[5-9]\b|\btv\b.*\b6[5-9]\b|\b6[5-9]\s*(?:inch|\")?\s*\btv\b/i.test(
-        l,
-      )
-    if (xlCue) {
+      /\b(?:65|70)\b|"?\s*6[5-9]\d?\s*"|inch.*\b6[5-9]\b|\btv\b.*\b6[5-9]\b|\b6[5-9]\s*(?:inch|\")?\s*\btv\b/i.test(l)
+    if (smallCue && !xlCue && !sixtyFiveCue) {
+      hints.push("tv-small", "tv-medium", "tv-mounted-flat")
+    } else if (xlCue) {
       hints.push("tv-xl", "tv-large", "tv-large-65", "tv-mounted-flat")
     } else if (sixtyFiveCue) {
       hints.push("tv-large-65", "tv-large", "tv-medium", "tv-mounted-flat")
@@ -196,11 +255,25 @@ function contextualSlugHints(line: string): string[] {
   })
 }
 
+/** Minimal suffix stemming so "chairs" matches "chair", "sofas" → "sofa", etc. */
+function stemWord(w: string): string {
+  if (w.endsWith("ves")) return w.slice(0, -3) + "f" // leaves → leaf
+  if (w.endsWith("ies") && w.length > 4) return w.slice(0, -3) + "y" // puppies → puppy
+  if (w.endsWith("ses") || w.endsWith("xes") || w.endsWith("zes")) return w.slice(0, -2) // boxes → box
+  if (w.endsWith("s") && w.length > 3) return w.slice(0, -1) // chairs → chair, sofas → sofa
+  return w
+}
+
 function normalizeWordTokens(lower: string): string[] {
   return lower
     .split(/\s+/)
     .map((w) => w.replace(/^[^\w]+|[^\w]+$/g, "").toLowerCase())
     .filter((w) => w.length > 1 && !STOP_WORDS.has(w))
+    .flatMap((w) => {
+      const stem = stemWord(w)
+      return stem !== w ? [w, stem] : [w]
+    })
+    .filter((w, i, arr) => arr.indexOf(w) === i) // deduplicate
 }
 
 function slugLooksLikeTvStandish(slug: string): boolean {

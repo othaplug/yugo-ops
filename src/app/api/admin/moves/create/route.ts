@@ -775,6 +775,16 @@ export async function POST(req: NextRequest) {
           }
         }
       }
+
+      // Mark the source quote as booked when a move is created from it,
+      // so the quote pipeline conversion rate reflects this win.
+      if (resolvedQuoteUuid) {
+        await db
+          .from("quotes")
+          .update({ status: "booked", accepted_at: new Date().toISOString() })
+          .eq("id", resolvedQuoteUuid)
+          .in("status", ["sent", "viewed", "accepted"]);
+      }
     } catch (postErr) {
       console.error(
         "Create move post-insert step failed (move was created):",
