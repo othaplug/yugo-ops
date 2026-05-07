@@ -14,7 +14,7 @@ import {
 } from "@/lib/email-templates";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatCurrency } from "@/lib/format-currency";
-import { getCompanyDisplayName } from "@/lib/config";
+import { getCompanyDisplayName, getAdminNotificationEmail } from "@/lib/config";
 import { autoScheduleMove } from "@/lib/scheduling/auto-schedule";
 import { generateWelcomePackageToken } from "@/lib/welcome-package-token";
 import {
@@ -578,7 +578,7 @@ export async function runPostPaymentActions(
       name: "admin_notification",
       critical: false,
       fn: async () => {
-        const adminEmail = process.env.SUPER_ADMIN_EMAIL;
+        const adminEmail = await getAdminNotificationEmail();
         if (!adminEmail) return;
 
         const resend = getResend();
