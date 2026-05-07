@@ -3,16 +3,6 @@ import { requireStaff } from "@/lib/api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAllowedEstateServiceChecklistItem } from "@/lib/estate-service-checklist";
 
-function isEstateMoveRow(move: {
-  tier_selected?: string | null;
-  service_tier?: string | null;
-}): boolean {
-  const t = String(move.tier_selected || move.service_tier || "")
-    .toLowerCase()
-    .trim();
-  return t === "estate";
-}
-
 /** Staff/coordinator: set an Estate milestone checkbox on the client track checklist. */
 export async function PATCH(
   req: NextRequest,
@@ -34,18 +24,12 @@ export async function PATCH(
   const admin = createAdminClient();
   const { data: move, error: fetchErr } = await admin
     .from("moves")
-    .select("id, estate_service_checklist, tier_selected, service_tier")
+    .select("id, estate_service_checklist")
     .eq("id", moveId)
     .single();
 
   if (fetchErr || !move) {
     return NextResponse.json({ error: "Move not found" }, { status: 404 });
-  }
-  if (!isEstateMoveRow(move)) {
-    return NextResponse.json(
-      { error: "Estate checklist is only for Estate moves" },
-      { status: 400 },
-    );
   }
 
   const current =
