@@ -14,10 +14,12 @@ export async function GET() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
 
-  const { data: monthLeads, error: mErr } = await sb
+  // Fetch all leads (all-time) so the top-level RECEIVED/CONVERSION counters
+  // reflect total pipeline health, not just the current month.
+  const { data: allLeads, error: mErr } = await sb
     .from("leads")
     .select("id, status, source, created_at, first_response_at, response_time_seconds, estimated_value")
-    .gte("created_at", monthStart + "T00:00:00.000Z");
+    .order("created_at", { ascending: false });
 
   if (mErr) {
     return NextResponse.json({ error: mErr.message }, { status: 500 });
@@ -31,7 +33,7 @@ export async function GET() {
     .order("created_at", { ascending: false })
     .limit(20);
 
-  const leads = monthLeads ?? [];
+  const leads = allLeads ?? [];
   const todayLeads = leads.filter((l) => String(l.created_at || "").slice(0, 10) === today);
 
   const todayByStatus: Record<string, number> = {};
