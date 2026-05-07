@@ -9864,7 +9864,7 @@ export default function QuoteFormClient({
               <button
                 type="button"
                 onClick={handleQuoteFlowContinue}
-                className="admin-btn admin-btn-secondary flex-1"
+                className="admin-btn admin-btn-primary flex-1"
               >
                 Continue
                 <ChevronRight className="w-3.5 h-3.5" weight="bold" aria-hidden />
@@ -9880,7 +9880,7 @@ export default function QuoteFormClient({
                   serviceType === "b2b_delivery" ||
                   serviceType === "b2b_oneoff"
                 }
-                className="admin-btn admin-btn-primary flex-1"
+                className="admin-btn admin-btn-primary admin-btn-lg flex-1"
               >
                 {generating ? (
                   <>
@@ -9906,7 +9906,7 @@ export default function QuoteFormClient({
                   serviceType === "b2b_delivery" ||
                   serviceType === "b2b_oneoff"
                 }
-                className={`admin-btn flex-1 ${
+                className={`admin-btn admin-btn-lg flex-1 ${
                   sendSuccess
                     ? "border-[var(--grn)] bg-[var(--grn)]/10 text-[var(--grn)] cursor-default"
                     : "admin-btn-secondary"
@@ -9943,11 +9943,7 @@ export default function QuoteFormClient({
                   window.open(`/quote/${quoteResult.quote_id}`, "_blank")
                 }
                 disabled={!quoteResult}
-                className={
-                  isV2
-                    ? "flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-line px-4 py-2.5 text-[11px] font-semibold text-fg-muted transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto touch-manipulation sm:shrink-0"
-                    : "admin-btn admin-btn-secondary w-full sm:w-auto sm:shrink-0"
-                }
+                className="admin-btn admin-btn-lg admin-btn-secondary w-full sm:w-auto sm:shrink-0"
               >
                 <Eye className="w-3.5 h-3.5" /> Preview
               </button>
