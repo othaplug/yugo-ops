@@ -6,6 +6,7 @@ import { EMAIL_FOREST } from "@/lib/email/email-brand-tokens";
 import { emailNestedKvRow } from "@/lib/email/email-kv-layout";
 import { escapeHtmlEmail } from "@/lib/email/email-link-utils";
 import { emailLayout, PREMIUM_FONT } from "@/lib/email-templates";
+import { getAdminNotificationEmail } from "@/lib/config";
 
 interface ExtraItemNotifyPayload {
   jobId: string;
@@ -42,7 +43,7 @@ export async function notifyExtraItemRequest(payload: ExtraItemNotifyPayload): P
 
   if (!process.env.RESEND_API_KEY) return;
 
-  const adminEmail = (process.env.ADMIN_NOTIFICATION_EMAIL || process.env.NEXT_PUBLIC_YUGO_EMAIL || "").trim();
+  const adminEmail = (await getAdminNotificationEmail()).trim();
   if (!adminEmail) return;
 
   try {
