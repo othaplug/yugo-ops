@@ -13,6 +13,37 @@ function base64url(buf: Buffer): string {
   return buf.toString("base64url");
 }
 
+/**
+ * Canonicalize a PEM private key for OpenSSL 3.x compatibility.
+ *
+ * OpenSSL 3.x (Node.js 18+) is strict about RFC 7468 PEM format:
+ * - No trailing spaces, no Windows-style \r\n, exactly 64 base64 chars per line.
+ * OpenSSL 1.x silently accepted any line length. Env vars stored in Vercel or
+ * .env files often have the wrong line length or mixed line endings, causing
+ * the "DECODER routines::unsupported" error on OpenSSL 3.x.
+ *
+ * Fix: strip the base64 body to a single token and re-wrap at 64 chars.
+ */
+function normalizePemKey(rawKey: string): string {
+  // Convert escaped newlines from env var storage (e.g. Vercel, dotenv)
+  const withNewlines = rawKey.replace(/\\n/g, "\n").replace(/\r\n/g, "\n");
+
+  const headerMatch = withNewlines.match(/-----BEGIN ([^-]+)-----/);
+  const footerMatch = withNewlines.match(/-----END ([^-]+)-----/);
+  if (!headerMatch || !footerMatch) return withNewlines;
+
+  const keyType = headerMatch[1].trim();
+
+  // Strip all whitespace from the base64 body then re-wrap at exactly 64 chars
+  const base64 = withNewlines
+    .replace(/-----BEGIN [^-]+-----/, "")
+    .replace(/-----END [^-]+-----/, "")
+    .replace(/\s/g, "");
+
+  const wrapped = (base64.match(/.{1,64}/g) ?? []).join("\n");
+  return `-----BEGIN ${keyType}-----\n${wrapped}\n-----END ${keyType}-----\n`;
+}
+
 function buildJwt(clientEmail: string, privateKey: string): string {
   const now = Math.floor(Date.now() / 1000);
   const header = base64url(Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })));
@@ -29,7 +60,9 @@ function buildJwt(clientEmail: string, privateKey: string): string {
   );
   const sign = createSign("RSA-SHA256");
   sign.update(`${header}.${payload}`);
-  const sig = base64url(sign.sign(createPrivateKey(privateKey)));
+  // Use explicit KeyObject so OpenSSL 3.x accepts PKCS8 ("BEGIN PRIVATE KEY") keys.
+  const keyObj = createPrivateKey({ key: Buffer.from(privateKey, "utf8"), format: "pem" });
+  const sig = base64url(sign.sign(keyObj));
   return `${header}.${payload}.${sig}`;
 }
 
@@ -41,7 +74,7 @@ export async function getGCalAccessToken(): Promise<string> {
   if (!clientEmail || !rawKey) {
     throw new Error("GOOGLE_CALENDAR_CLIENT_EMAIL or GOOGLE_CALENDAR_PRIVATE_KEY not configured");
   }
-  const privateKey = rawKey.replace(/\\n/g, "\n");
+  const privateKey = normalizePemKey(rawKey);
   const jwt = buildJwt(clientEmail, privateKey);
 
   const res = await fetch(TOKEN_URL, {
