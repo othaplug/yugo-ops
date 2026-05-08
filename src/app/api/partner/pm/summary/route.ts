@@ -72,7 +72,7 @@ export async function GET() {
       .eq("active", true),
     admin
       .from("moves")
-      .select("id, status, amount, estimate, scheduled_date, unit_number, tenant_name, partner_property_id, contract_id")
+      .select("id, status, final_amount, total_price, amount, estimate, scheduled_date, unit_number, tenant_name, partner_property_id, contract_id")
       .eq("organization_id", orgId)
       .not("contract_id", "is", null)
       .gte("scheduled_date", startStr),
@@ -89,7 +89,7 @@ export async function GET() {
     admin
       .from("moves")
       .select(
-        "id, move_code, status, scheduled_date, unit_number, tenant_name, partner_property_id, pm_reason_code, pm_move_kind, amount, estimate"
+        "id, move_code, status, scheduled_date, unit_number, tenant_name, partner_property_id, pm_reason_code, pm_move_kind, final_amount, total_price, amount, estimate"
       )
       .eq("organization_id", orgId)
       .not("contract_id", "is", null)
@@ -131,7 +131,7 @@ export async function GET() {
   const totalUnits = props.reduce((s, p) => s + (Number(p.total_units) || 0), 0);
   const monthRows = movesMonth ?? [];
   const completed = monthRows.filter((m) => ["completed", "paid", "delivered"].includes(String(m.status || "").toLowerCase())).length;
-  const revenue = monthRows.reduce((s, m) => s + (Number(m.amount ?? m.estimate) || 0), 0);
+  const revenue = monthRows.reduce((s, m) => s + (Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate) || 0), 0);
 
   const propById = new Map(props.map((p) => [p.id, p]));
 

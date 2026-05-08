@@ -33,7 +33,7 @@ export async function GET() {
   const { data: allMoves } = await admin
     .from("moves")
     .select(
-      "id, move_code, status, scheduled_date, scheduled_time, unit_number, tenant_name, partner_property_id, pm_reason_code, pm_move_kind, amount, estimate",
+      "id, move_code, status, scheduled_date, scheduled_time, unit_number, tenant_name, partner_property_id, pm_reason_code, pm_move_kind, final_amount, total_price, amount, estimate",
     )
     .eq("organization_id", orgId)
     .not("contract_id", "is", null)
@@ -71,7 +71,7 @@ export async function GET() {
           "Move",
         tenant_name: m.tenant_name,
         status: m.status,
-        price: Number(m.amount ?? m.estimate) || 0,
+        price: Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate) || 0,
       }));
 
     const unitTypes = (p.unit_types as string[] | null) ?? [];

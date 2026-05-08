@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
   let q = admin
     .from("moves")
     .select(
-      "id, move_code, status, scheduled_date, scheduled_time, completed_at, unit_number, tenant_name, partner_property_id, pm_reason_code, pm_move_kind, amount, estimate",
+      "id, move_code, status, scheduled_date, scheduled_time, completed_at, unit_number, tenant_name, partner_property_id, pm_reason_code, pm_move_kind, final_amount, total_price, amount, estimate",
     )
     .eq("organization_id", orgId)
     .not("contract_id", "is", null)
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
       reason_code: rc,
       tenant_name: m.tenant_name as string | null,
       status: m.status as string | null,
-      price: Number(m.amount ?? m.estimate) || 0,
+      price: Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate) || 0,
       pod_url: completed ? podByMove.get(m.id as string) ?? null : null,
       tracking_url:
         !completed && m.id
