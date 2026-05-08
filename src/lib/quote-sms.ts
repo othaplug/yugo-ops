@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { getPublicQuoteUrl } from "@/lib/quote-public-url";
 import { buildQuoteSmsBody, buildQuoteFollowupSmsBody } from "@/lib/quote-sms-templates";
+import { buildSmsTrackUrl } from "@/lib/notifications/public-track-url";
 
 function toE164NorthAmerica(digitsRaw: string): string | null {
   const digits = digitsRaw.replace(/\D/g, "");
@@ -142,29 +143,31 @@ export async function sendMoveReminderSms(params: {
   const fmtDate = formatMoveDate(params.moveDate);
   const firstName = params.clientName ? params.clientName.split(" ")[0] : "";
   const greet = firstName ? `Hi ${firstName},` : "Hi,";
+  const smsUrl = /^[A-Z]{2,}-\d+$/.test(params.moveCode.toUpperCase())
+    ? buildSmsTrackUrl(params.moveCode)
+    : params.trackingUrl;
 
   let body: string;
   if (params.reminderType === "confirmation") {
     body = [
       greet,
-      `Your Yugo move is confirmed for ${fmtDate}.`,
-      `Track your move details:\n${params.trackingUrl}`,
+      `Your move with Yugo is confirmed for ${fmtDate}. We are looking forward to taking great care of you.`,
+      `Track your move details:\n${smsUrl}`,
     ].join("\n\n");
   } else if (params.reminderType === "72hr") {
-    const parts = [
-      greet,
-      `Your move with Yugo is in 3 days (${fmtDate}).`,
-      ...(params.scheduledTime ? [`Start time: ${params.scheduledTime}.`] : []),
-      `Questions? Call (647) 370-4525.`,
-    ];
-    body = parts.join("\n\n");
-  } else {
-    const crewLine = `Crew of ${params.crewSize ?? "2–3"}${params.scheduledTime ? `, arriving ${params.scheduledTime}` : ""}.`;
+    const timeLine = params.scheduledTime ? `\n\nStart time: ${params.scheduledTime}.` : "";
     body = [
       greet,
-      `Your Yugo move is tomorrow!`,
+      `Your move with Yugo is in 3 days, on ${fmtDate}.${timeLine}`,
+      `Questions before the big day? Reply here or call (647) 370-4525 — we are happy to help.`,
+    ].join("\n\n");
+  } else {
+    const crewLine = `Your crew of ${params.crewSize ?? "2–3"} will be arriving${params.scheduledTime ? ` at ${params.scheduledTime}` : ""}.`;
+    body = [
+      greet,
+      `Your Yugo move is tomorrow. We have everything ready for a smooth day.`,
       crewLine,
-      `Track your move live:\n${params.trackingUrl}`,
+      `Track your crew live:\n${smsUrl}`,
     ].join("\n\n");
   }
 

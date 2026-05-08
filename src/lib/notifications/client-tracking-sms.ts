@@ -6,7 +6,7 @@ function digitsOnly(phone: string): string {
   return (phone || "").replace(/\D/g, "");
 }
 
-function trackingSmsFirstName(clientName: string | null | undefined): string {
+function firstName(clientName: string | null | undefined): string {
   const s = (clientName || "").trim().split(/\s+/)[0];
   return s || "there";
 }
@@ -18,69 +18,72 @@ function clientSmsBody(
   trackUrl: string | undefined,
   estateMove: boolean,
 ): string {
-  const hi = trackingSmsFirstName(clientName);
+  const name = firstName(clientName);
   const link = trackUrl ? `\n${trackUrl}` : "";
+
   if (jobType === "move") {
     if (estateMove) {
       switch (status) {
         case "en_route_to_pickup":
         case "en_route":
-          return `Hi ${hi}, your Estate crew is on the way. We will keep you posted.${link}`;
+          return `Hi ${name},\n\nYour Estate crew is on the way. We will keep you updated every step of the journey.${link}`;
         case "arrived_at_pickup":
-          return `Hi ${hi}, your crew has arrived and is ready to begin your Estate move.${link}`;
+          return `Hi ${name},\n\nYour crew has arrived and is ready to begin your Estate move. Everything is in good hands.`;
         case "inventory_check":
         case "loading":
         case "wrapping":
-          return `Hi ${hi}, your crew is working on site. We will update you at the next step.${link}`;
+          return `Hi ${name},\n\nYour crew is on site and taking exceptional care of your belongings. We will update you at the next milestone.${link}`;
         case "en_route_to_destination":
-          return `Hi ${hi}, your load is on the way to your new home.${link}`;
+          return `Hi ${name},\n\nYour belongings are on the way to your new home. Your crew is handling every item with the utmost care.${link}`;
         case "arrived_at_destination":
-          return `Hi ${hi}, your crew has arrived and is ready to unload.${link}`;
+          return `Hi ${name},\n\nYour crew has arrived at your new home and is ready to begin unloading. Almost there.`;
         case "completed":
-          return `Hi ${hi}, your Estate move is complete. Thank you for choosing Yugo.`;
+          return `Hi ${name},\n\nYour Estate move is complete. It was a true privilege taking care of you today.\n\nWarm regards, Yugo`;
         case "arrived":
-          return `Hi ${hi}, your crew has arrived.${link}`;
+          return `Hi ${name},\n\nYour crew has arrived.${link}`;
         default:
-          return `Hi ${hi}, here is a quick update on your Estate move.${link}`;
+          return `Hi ${name},\n\nA quick update on your Estate move.${link}`;
       }
     }
+
     switch (status) {
       case "en_route_to_pickup":
       case "en_route":
-        return `Hi ${hi}, your moving team is on the way. We will keep you posted.${link}`;
+        return `Hi ${name},\n\nYour moving crew is on the way. We will keep you updated as things progress.${link}`;
       case "arrived_at_pickup":
-        return `Hi ${hi}, your crew has arrived at pickup.${link}`;
+        return `Hi ${name},\n\nYour crew has arrived and is ready to begin. You are in great hands.`;
       case "inventory_check":
       case "loading":
       case "wrapping":
-        return `Hi ${hi}, your crew is working on site. We will update you at the next step.${link}`;
+        return `Hi ${name},\n\nYour crew is on site and taking good care of your belongings. We will check in again at the next step.${link}`;
       case "en_route_to_destination":
-        return `Hi ${hi}, your belongings are on the way to your new home.${link}`;
+        return `Hi ${name},\n\nYour belongings are on the way to your new home.${link}`;
       case "arrived_at_destination":
-        return `Hi ${hi}, your crew has arrived at your new home.${link}`;
+        return `Hi ${name},\n\nYour crew has arrived at your new home and is ready to unload.`;
       case "completed":
-        return `Hi ${hi}, your move is complete. Thank you for choosing Yugo.`;
+        return `Hi ${name},\n\nYour move is complete. It was a pleasure taking care of you today.\n\nWarm regards, Yugo`;
       case "arrived":
-        return `Hi ${hi}, your crew has arrived.${link}`;
+        return `Hi ${name},\n\nYour crew has arrived.${link}`;
       default:
-        return `Hi ${hi}, here is a quick update from Yugo.${link}`;
+        return `Hi ${name},\n\nA quick update from Yugo.${link}`;
     }
   }
+
   switch (status) {
     case "en_route_to_pickup":
     case "en_route":
-      return `Hi ${hi}, your delivery crew is on the way. We will keep you posted.${link}`;
+      return `Hi ${name},\n\nYour delivery crew is on the way. We will keep you posted.${link}`;
     case "arrived_at_pickup":
-      return `Hi ${hi}, your crew has arrived at pickup.${link}`;
+      return `Hi ${name},\n\nYour crew has arrived at the pickup location and is preparing your delivery.`;
     case "en_route_to_destination":
-      return `Hi ${hi}, your delivery is on the way to you.${link}`;
+      return `Hi ${name},\n\nYour delivery is on the way to you.${link}`;
     case "arrived_at_destination":
     case "arrived":
-      return `Hi ${hi}, your crew has arrived with your delivery.${link}`;
+      return `Hi ${name},\n\nYour crew has arrived with your delivery. We hope everything is perfect.`;
     case "completed":
-      return `Hi ${hi}, your delivery is complete. Thank you for choosing Yugo.`;
+      return `Hi ${name},\n\nYour delivery is complete. Thank you for trusting Yugo.\n\nWarm regards, Yugo`;
     default:
-      return `Hi ${hi}, here is a quick delivery update from Yugo.${link}`;
+      return `Hi ${name},\n\nA quick update on your delivery from Yugo.${link}`;
   }
 }
 

@@ -60,8 +60,16 @@ export async function GET(req: NextRequest) {
     const firstName = (move.client_name || "there").trim().split(/\s+/)[0] || "there";
     const body =
       row.kind === "en_route_checkin"
-        ? `Hi ${firstName}, just checking in. Your belongings are on the way to your new home and your crew is making great progress. If you need anything at all, call or text us at (647) 370-4525. We are here for you.`
-        : `Hi ${firstName}, your crew has arrived at your new home and is beginning to unload. Almost there! If you need anything, please let us know. We want everything just right.`;
+        ? [
+            `Hi ${firstName},`,
+            `Your belongings are on the way to your new home and your crew is making excellent progress.`,
+            `If you need anything at all, reply here or call us at (647) 370-4525. We are with you every step.`,
+          ].join("\n\n")
+        : [
+            `Hi ${firstName},`,
+            `Your crew has arrived at your new home and is beginning to unload. Almost there.`,
+            `If you have any requests or need anything arranged, just let us know. We want everything to be just right.`,
+          ].join("\n\n");
 
     if (!smsEnabled) {
       await admin

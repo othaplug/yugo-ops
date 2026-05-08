@@ -62,9 +62,14 @@ export async function POST(
   const clientEmail = move.client_email as string | null;
   const coordinatorPhone = move.coordinator_phone as string | null;
 
-  const smsBody = coordinatorPhone
-    ? `Hi ${firstName}, your Yugo crew has arrived but we missed you. Please complete a quick walkthrough at the link below so your crew can get started. ${walkthroughUrl} Questions? Call your coordinator: ${coordinatorPhone}`
-    : `Hi ${firstName}, your Yugo crew has arrived but we missed you. Please complete a quick walkthrough at the link below so your crew can get started. ${walkthroughUrl}`;
+  const coordinatorLine = coordinatorPhone
+    ? `\n\nQuestions? Reach your coordinator directly at ${coordinatorPhone}.`
+    : "";
+  const smsBody = [
+    `Hi ${firstName},`,
+    `Your Yugo crew has arrived at the pickup address, but we were unable to reach you on site.`,
+    `Please complete a brief walkthrough so your crew can get started:\n${walkthroughUrl}${coordinatorLine}`,
+  ].join("\n\n");
 
   if (clientPhone) {
     await sendSMS(normalizePhone(clientPhone), smsBody).catch((err) => {

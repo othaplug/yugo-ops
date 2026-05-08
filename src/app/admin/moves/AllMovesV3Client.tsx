@@ -33,6 +33,8 @@ interface Move {
   to_address?: string;
   scheduled_date?: string;
   estimate?: number;
+  final_amount?: number | null;
+  total_price?: number | null;
   status?: string;
   move_type?: string;
   service_type?: string;
@@ -180,7 +182,7 @@ export default function AllMovesV3Client({
   );
 
   const kpis = React.useMemo(() => {
-    const totalEstimate = moves.reduce((a, m) => a + (m.estimate || 0), 0);
+    const totalEstimate = moves.reduce((a, m) => a + (Number(m.final_amount ?? m.total_price ?? m.estimate) || 0), 0);
     const confirmed = moves.filter((m) =>
       ["confirmed", "scheduled", "in_progress"].includes(
         effective(m).toLowerCase(),
@@ -377,16 +379,19 @@ export default function AllMovesV3Client({
         id: "estimate",
         shortLabel: "Estimate",
         header: "Estimate",
-        accessor: (m) => Number(m.estimate || 0),
+        accessor: (m) => Number(m.final_amount ?? m.total_price ?? m.estimate ?? 0),
         align: "right",
         sortable: true,
         numeric: true,
         width: 120,
-        cell: (m) => (
-          <span className="yu3-num text-[13px] font-semibold text-[var(--yu3-ink-strong)]">
-            {m.estimate ? formatCurrency(m.estimate) : ""}
-          </span>
-        ),
+        cell: (m) => {
+          const price = m.final_amount ?? m.total_price ?? m.estimate;
+          return (
+            <span className="yu3-num text-[13px] font-semibold text-[var(--yu3-ink-strong)]">
+              {price ? formatCurrency(price) : ""}
+            </span>
+          );
+        },
       },
       {
         id: "margin",
@@ -439,7 +444,7 @@ export default function AllMovesV3Client({
                 r.client_name,
                 effective(r),
                 r.scheduled_date,
-                r.estimate,
+                r.final_amount ?? r.total_price ?? r.estimate,
               ]
                 .map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`)
                 .join(","),

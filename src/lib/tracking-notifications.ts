@@ -4,6 +4,7 @@ import { getEmailFrom, sendEmail } from "@/lib/email/send";
 import {
   buildPublicDeliveryTrackUrl,
   buildPublicMoveTrackUrl,
+  buildSmsTrackUrl,
 } from "@/lib/notifications/public-track-url";
 import { formatJobId } from "@/lib/move-code";
 import {
@@ -262,6 +263,7 @@ export async function notifyOnCheckpoint(
   let clientEmail: string | null = null;
   let partnerEmail: string | null = null;
   let trackUrl: string | undefined;
+  let smsTrackUrl: string | undefined;
   let moveCode: string | undefined;
   let moveFromAddress: string | undefined;
   let moveToAddress: string | undefined;
@@ -327,6 +329,7 @@ export async function notifyOnCheckpoint(
         move_code: (move as { move_code?: string | null }).move_code,
       });
       moveCode = move.move_code || move.id;
+      smsTrackUrl = move.move_code ? buildSmsTrackUrl(move.move_code) : trackUrl;
       moveFromAddress = move.from_address || undefined;
       moveToAddress = move.to_address || undefined;
       moveClientName = move.client_name || undefined;
@@ -397,6 +400,7 @@ export async function notifyOnCheckpoint(
         delivery_number: delivery.delivery_number,
       });
       moveCode = delivery.delivery_number;
+      smsTrackUrl = delivery.delivery_number ? buildSmsTrackUrl(delivery.delivery_number) : trackUrl;
       deliveryClientName = (
         (delivery as { customer_name?: string | null }).customer_name ||
         delivery.client_name ||
@@ -594,7 +598,7 @@ export async function notifyOnCheckpoint(
           jobType === "move"
             ? moveClientName
             : deliveryClientName ?? undefined,
-        trackUrl,
+        trackUrl: smsTrackUrl ?? trackUrl,
         estateMove: estateMove && jobType === "move",
         jobUuid: jobId,
       }).catch(() => {});

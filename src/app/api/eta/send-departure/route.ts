@@ -6,6 +6,7 @@ import { buildETAMessage } from "@/lib/sms/etaMessages";
 import {
   buildPublicDeliveryTrackUrl,
   buildPublicMoveTrackUrl,
+  buildSmsTrackUrl,
 } from "@/lib/notifications/public-track-url";
 
 const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
@@ -67,10 +68,9 @@ export async function POST(req: NextRequest) {
         etaMinutes = await getETAMinutes(crewLat || 0, crewLng || 0, destLat, destLng);
       }
 
-      const trackingLink = buildPublicMoveTrackUrl({
-        id: move.id,
-        move_code: (move as { move_code?: string | null }).move_code,
-      });
+      const trackingLink = (move as { move_code?: string | null }).move_code
+        ? buildSmsTrackUrl((move as { move_code: string }).move_code)
+        : buildPublicMoveTrackUrl({ id: move.id, move_code: (move as { move_code?: string | null }).move_code });
 
       if (smsEnabled) {
         const tier = move.tier_selected || "";
@@ -158,11 +158,9 @@ export async function POST(req: NextRequest) {
       etaMinutes = await getETAMinutes(crewLat || 0, crewLng || 0, destLat, destLng);
     }
 
-    const trackingLink = buildPublicDeliveryTrackUrl({
-      id: delivery.id,
-      delivery_number: (delivery as { delivery_number?: string | null })
-        .delivery_number,
-    });
+    const trackingLink = (delivery as { delivery_number?: string | null }).delivery_number
+      ? buildSmsTrackUrl((delivery as { delivery_number: string }).delivery_number)
+      : buildPublicDeliveryTrackUrl({ id: delivery.id, delivery_number: (delivery as { delivery_number?: string | null }).delivery_number });
     const partnerName = org?.name || "";
 
     const canSendDeliveryEta =
