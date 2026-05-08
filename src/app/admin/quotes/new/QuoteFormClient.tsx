@@ -45,13 +45,6 @@ import {
   XCircle,
   CheckCircle,
   X,
-  House,
-  Buildings,
-  Package,
-  Star,
-  Archive,
-  CalendarBlank,
-  Wrench,
 } from "@phosphor-icons/react";
 import {
   B2B_ACCESS_PILLS,
@@ -327,16 +320,6 @@ const SERVICE_TYPES: {
   desc: d.description,
 }));
 
-const SERVICE_TYPE_ICONS: Record<string, React.ElementType> = {
-  local_move: House,
-  long_distance: Truck,
-  office_move: Buildings,
-  single_item: Package,
-  white_glove: Star,
-  specialty: Archive,
-  event: CalendarBlank,
-  labour_only: Wrench,
-};
 
 function isDefinedQuoteServiceType(value: string): boolean {
   return QUOTE_SERVICE_TYPE_DEFINITIONS.some((d) => d.value === value);
@@ -5441,7 +5424,6 @@ export default function QuoteFormClient({
                   <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                     {SERVICE_TYPES.map((card) => {
                       const sel = serviceType === card.value;
-                      const Icon = SERVICE_TYPE_ICONS[card.value] ?? Package;
                       return (
                         <button
                           key={card.value}
@@ -5452,18 +5434,13 @@ export default function QuoteFormClient({
                               setSpecialtyBuilderOpen(true);
                             }
                           }}
-                          className={`relative min-w-[min(100%,9.5rem)] flex-1 sm:max-w-[calc(50%-0.25rem)] lg:max-w-[calc(25%-0.375rem)] text-left px-3 py-3 rounded-xl border transition-all duration-200 ${
+                          className={`relative min-w-[min(100%,9.5rem)] flex-1 sm:max-w-[calc(50%-0.25rem)] lg:max-w-[calc(25%-0.375rem)] text-left px-3 py-2.5 rounded-lg border transition-all duration-200 ${
                             sel
                               ? "bg-gradient-to-br from-[#2C3E2D] to-[#5C1A33] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
                               : "bg-[var(--card)] border-[var(--brd)] hover:border-[#2C3E2D]/40 hover:bg-[var(--bg)]"
                           }`}
                         >
-                          <div className="flex flex-col gap-1.5">
-                            <Icon
-                              className={`w-4 h-4 ${sel ? "text-white/80" : "text-[var(--yu3-wine)]"}`}
-                              weight="duotone"
-                              aria-hidden
-                            />
+                          <div className="flex flex-col gap-0.5">
                             <div
                               className={`text-[11px] leading-tight tracking-tight font-semibold ${sel ? "text-white" : "text-[var(--tx)]"}`}
                             >
