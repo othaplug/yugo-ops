@@ -78,7 +78,10 @@ export async function POST(req: NextRequest) {
 
   for (const job of [...moveJobs, ...deliveryJobs]) {
     const result = await syncJobToGCal(job.input);
-    results.push({ id: job.id, code: job.code, action: result.action, error: result.error });
+    const friendlyError = result.error
+      ? translateGCalError(result.error)
+      : undefined;
+    results.push({ id: job.id, code: job.code, action: result.action, error: friendlyError });
 
     if (result.eventId !== undefined) {
       const table = job.input.jobType === "move" ? "moves" : "deliveries";
@@ -91,7 +94,58 @@ export async function POST(req: NextRequest) {
     { created: 0, updated: 0, deleted: 0, skipped: 0, error: 0 },
   );
 
-  return NextResponse.json({ success: true, counts, results });
+  // If every job failed with the same "writer access" error, surface a top-level
+  // remediation message so the UI can show one clear banner instead of N rows.
+  const allErrors = results.filter((r) => r.action === "error");
+  const writerAccessFailures = allErrors.filter((r) =>
+    /writer access/i.test(r.error || ""),
+  );
+  const sharedFix =
+    allErrors.length > 0 && writerAccessFailures.length === allErrors.length
+      ? buildWriterAccessFixHint()
+      : null;
+
+  return NextResponse.json({
+    success: counts.error === 0 || counts.created + counts.updated > 0,
+    counts,
+    results,
+    fix: sharedFix,
+  });
+}
+
+/** Translate raw Google API errors into actionable copy for the admin UI. */
+function translateGCalError(raw: string): string {
+  if (/writer access/i.test(raw)) {
+    return "Service account is missing writer access. Share the calendar with " +
+      `${process.env.GOOGLE_CALENDAR_CLIENT_EMAIL || "the service account"} and grant "Make changes to events" permission.`;
+  }
+  if (/forbidden/i.test(raw) && /403/.test(raw)) {
+    return "Permission denied by Google Calendar. Verify the calendar is shared with the service account.";
+  }
+  if (/not found/i.test(raw) && /404/.test(raw)) {
+    return "Calendar not found. Check that GOOGLE_CALENDAR_ID matches the shared calendar's ID.";
+  }
+  return raw;
+}
+
+function buildWriterAccessFixHint(): {
+  title: string;
+  steps: string[];
+  shareEmail: string | null;
+  calendarId: string | null;
+} {
+  return {
+    title: "Service account needs writer access to the calendar",
+    steps: [
+      "Open Google Calendar in a browser (calendar.google.com).",
+      "In the left sidebar, hover over the shared calendar and click ⋮ → Settings and sharing.",
+      "Under \"Share with specific people or groups\", click + Add people and groups.",
+      `Paste ${process.env.GOOGLE_CALENDAR_CLIENT_EMAIL || "the service account email"} and set permissions to "Make changes to events".`,
+      "Save, then click Sync all booked jobs now.",
+    ],
+    shareEmail: process.env.GOOGLE_CALENDAR_CLIENT_EMAIL || null,
+    calendarId: process.env.GOOGLE_CALENDAR_ID || null,
+  };
 }
 
 /** GET — configuration status check. Add ?test=true to verify the connection against the real Google API. */
@@ -110,27 +164,72 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(base);
   }
 
-  // Live test: try to fetch the calendar from Google API
+  // Live test: read the calendar (auth + read access) and create+delete a probe
+  // event to verify writer access. This catches "Connected" but-can't-write
+  // configs where the service account was added as Reader instead of Writer.
   try {
     const { callGCal, getGCalId } = await import("@/lib/google-calendar/client");
     const calId = encodeURIComponent(getGCalId());
-    const result = await callGCal<{ id: string; summary: string }>(`/calendars/${calId}`);
-    if (!result.ok) {
+
+    // Step 1: read the calendar (token + read access)
+    const read = await callGCal<{ id: string; summary: string }>(`/calendars/${calId}`);
+    if (!read.ok) {
       return NextResponse.json({
         ...base,
         testOk: false,
-        testError: result.error ?? `HTTP ${result.status}`,
-        hint: result.status === 404
+        testError: read.error ?? `HTTP ${read.status}`,
+        hint: read.status === 404
           ? "Calendar not found. Check GOOGLE_CALENDAR_ID and that the service account has been shared on the calendar."
-          : result.status === 401 || result.status === 403
+          : read.status === 401 || read.status === 403
           ? "Authentication failed. Check GOOGLE_CALENDAR_PRIVATE_KEY format and that the service account has permission on the calendar."
           : null,
       });
     }
+
+    // Step 2: create a probe event in the past so it doesn't pollute the user's
+    // visible calendar, then immediately delete it. This is the canonical way to
+    // confirm writer access for a service account.
+    const probeStart = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000); // -1 year
+    const probeEnd = new Date(probeStart.getTime() + 60 * 1000);
+    const probe = await callGCal<{ id: string }>(
+      `/calendars/${calId}/events`,
+      "POST",
+      {
+        summary: "Yugo OPS+ connection test (delete me)",
+        description: "Auto-generated by Yugo OPS+ to verify writer access.",
+        start: { dateTime: probeStart.toISOString() },
+        end: { dateTime: probeEnd.toISOString() },
+      },
+    );
+
+    if (!probe.ok) {
+      const writerIssue =
+        probe.status === 403 || /writer access|forbidden/i.test(probe.error || "");
+      return NextResponse.json({
+        ...base,
+        testOk: false,
+        testError: probe.error ?? `HTTP ${probe.status}`,
+        calendarSummary: read.data?.summary ?? null,
+        fix: writerIssue ? buildWriterAccessFixHint() : null,
+        hint: writerIssue
+          ? `Calendar shared as Reader. Re-share with "${process.env.GOOGLE_CALENDAR_CLIENT_EMAIL || "the service account"}" set to "Make changes to events".`
+          : null,
+      });
+    }
+
+    // Cleanup the probe event (best-effort)
+    if (probe.data?.id) {
+      await callGCal(
+        `/calendars/${calId}/events/${encodeURIComponent(probe.data.id)}`,
+        "DELETE",
+      ).catch(() => {});
+    }
+
     return NextResponse.json({
       ...base,
       testOk: true,
-      calendarSummary: result.data?.summary ?? null,
+      writeOk: true,
+      calendarSummary: read.data?.summary ?? null,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

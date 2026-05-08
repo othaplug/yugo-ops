@@ -7,14 +7,29 @@ import AppSettingsCollapsibleSection from "./AppSettingsCollapsibleSection"
 
 type SyncCount = { created: number; updated: number; deleted: number; skipped: number; error: number }
 type SyncResult = { id: string; code: string; action: string; error?: string }
+type FixHint = {
+  title: string
+  steps: string[]
+  shareEmail: string | null
+  calendarId: string | null
+}
 type StatusData = {
   configured: boolean
   calendarId: string | null
   clientEmail: string | null
   testOk?: boolean
+  writeOk?: boolean
   testError?: string
   calendarSummary?: string | null
   hint?: string | null
+  fix?: FixHint | null
+}
+type SyncResponse = {
+  success?: boolean
+  error?: string
+  counts?: SyncCount
+  results?: SyncResult[]
+  fix?: FixHint | null
 }
 
 export default function GoogleCalendarSection() {
@@ -22,7 +37,7 @@ export default function GoogleCalendarSection() {
   const [status, setStatus] = useState<StatusData | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [testing, setTesting] = useState(false)
-  const [lastSync, setLastSync] = useState<{ counts: SyncCount; results: SyncResult[] } | null>(null)
+  const [lastSync, setLastSync] = useState<{ counts: SyncCount; results: SyncResult[]; fix?: FixHint | null } | null>(null)
   const [showDetails, setShowDetails] = useState(false)
 
   const loadStatus = useCallback(async () => {
@@ -65,12 +80,12 @@ export default function GoogleCalendarSection() {
         method: "POST",
         credentials: "same-origin",
       })
-      const data = await res.json().catch(() => ({})) as { success?: boolean; error?: string; counts?: SyncCount; results?: SyncResult[] }
-      if (!res.ok || !data.success) {
+      const data = await res.json().catch(() => ({})) as SyncResponse
+      if (!res.ok || (!data.success && !data.counts)) {
         toast(data.error ?? "Sync failed", "x")
         return
       }
-      setLastSync({ counts: data.counts!, results: data.results ?? [] })
+      setLastSync({ counts: data.counts!, results: data.results ?? [], fix: data.fix ?? null })
       const c = data.counts!
       toast(`Synced: ${c.created} created · ${c.updated} updated · ${c.error} errors`, c.error > 0 ? "alertTriangle" : "check")
     } catch {
@@ -166,6 +181,53 @@ export default function GoogleCalendarSection() {
             </ol>
           </div>
         )}
+
+        {/* Inline fix banner: writer-access remediation steps. Surfaces when the
+            test connection or bulk sync detects the service account is missing
+            "Make changes to events" permission on the calendar. */}
+        {(status?.fix || lastSync?.fix) && (() => {
+          const fix = (lastSync?.fix ?? status?.fix) as FixHint;
+          return (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Icon name="alertTriangle" className="w-[14px] h-[14px] text-amber-700" />
+                <p className="text-[12px] font-bold text-amber-900">{fix.title}</p>
+              </div>
+              <ol className="list-decimal list-inside space-y-1 text-[11px] text-amber-900 leading-relaxed">
+                {fix.steps.map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ol>
+              {fix.shareEmail ? (
+                <div className="flex items-center gap-2 mt-2">
+                  <code className="flex-1 text-[10px] font-mono bg-white border border-amber-200 rounded px-2 py-1.5 text-amber-900 break-all">
+                    {fix.shareEmail}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(fix.shareEmail!).catch(() => {})
+                      toast("Service account email copied", "check")
+                    }}
+                    className="shrink-0 px-2.5 py-1.5 rounded-md bg-amber-100 border border-amber-200 text-[10px] font-semibold text-amber-900 hover:bg-amber-200"
+                  >
+                    Copy
+                  </button>
+                </div>
+              ) : null}
+              <div className="flex gap-2 mt-2">
+                <a
+                  href="https://calendar.google.com/calendar/u/0/r/settings/calendar"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] font-semibold text-amber-900 underline underline-offset-2 hover:text-amber-700"
+                >
+                  Open Google Calendar settings →
+                </a>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Sync controls */}
         {configured && (
