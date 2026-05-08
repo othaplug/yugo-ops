@@ -32,6 +32,13 @@ import {
   FileText,
   CaretRight,
   Check,
+  House,
+  Buildings,
+  Package,
+  Star,
+  Archive,
+  CalendarBlank,
+  Wrench,
 } from "@phosphor-icons/react";
 import InventoryInput, {
   type InventoryItemEntry,
@@ -1324,56 +1331,62 @@ export default function CreateMoveForm({
             Move through each step in order. Earlier sections stay saved in the
             form state while you continue.
           </p>
-          <nav
-            className="mt-5 flex flex-wrap gap-2"
-            aria-label="Create move steps"
-          >
-            {CREATE_MOVE_FLOW_STEP_LABELS.map((label, i) => {
-              const done = i < flowStep;
-              const active = i === flowStep;
-              const canJumpBack = i < flowStep;
-              return (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => {
-                    if (canJumpBack) setFlowStep(i);
-                  }}
-                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition-all duration-300 ease-out ${
-                    active
-                      ? "border-[var(--yu3-wine)] bg-[var(--yu3-wine-wash)] text-[var(--tx)] shadow-sm"
-                      : done
-                        ? "border-[var(--brd)] bg-[var(--bg)] text-[var(--tx2)] hover:border-[var(--yu3-wine)]/40 cursor-pointer"
-                        : "border-[var(--brd)]/60 text-[var(--tx3)] opacity-75 cursor-default"
-                  }`}
-                  disabled={!canJumpBack && !active}
-                  aria-current={active ? "step" : undefined}
-                >
-                  <span
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-                      active
-                        ? "bg-[var(--yu3-wine)] text-[var(--yu3-on-wine)]"
-                        : done
-                          ? "bg-[var(--yu3-wine)]/85 text-[var(--yu3-on-wine)]"
-                          : "bg-[var(--brd)] text-[var(--tx3)]"
-                    }`}
-                  >
-                    {done ? (
-                      <Check
-                        className="w-3.5 h-3.5"
-                        weight="bold"
+          <nav className="mt-6 w-full" aria-label="Create move steps">
+            <div className="flex w-full min-w-0 items-start gap-0">
+              {CREATE_MOVE_FLOW_STEP_LABELS.map((label, i) => {
+                const done = i < flowStep;
+                const active = i === flowStep;
+                const canJumpBack = i < flowStep;
+                const segmentFilled = flowStep > i;
+                return (
+                  <React.Fragment key={label}>
+                    <button
+                      type="button"
+                      onClick={() => { if (canJumpBack) setFlowStep(i); }}
+                      disabled={!canJumpBack && !active}
+                      aria-current={active ? "step" : undefined}
+                      className={`flex min-w-0 flex-1 flex-col items-center gap-2 px-0.5 text-center transition-colors duration-300 ${
+                        active
+                          ? "text-[var(--tx)]"
+                          : done
+                            ? "text-[var(--tx2)]"
+                            : "text-[var(--tx2)]/75"
+                      } ${canJumpBack ? "cursor-pointer hover:text-[var(--tx)]" : !active ? "cursor-default" : ""}`}
+                    >
+                      <span
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-all duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] ${
+                          active
+                            ? "bg-[var(--yu3-wine-wash)] text-[var(--yu3-wine)] ring-2 ring-[var(--yu3-wine)]/30 ring-offset-2 ring-offset-[var(--color-canvas)]"
+                            : done
+                              ? "border border-[var(--brd)] bg-[var(--card)] text-[var(--yu3-wine)]"
+                              : "border border-[var(--brd)] bg-[var(--card)] text-[var(--tx3)]"
+                        }`}
+                      >
+                        {done ? (
+                          <Check className="w-3.5 h-3.5" weight="bold" aria-hidden />
+                        ) : (
+                          <span aria-hidden>{i + 1}</span>
+                        )}
+                      </span>
+                      <span className="text-[9px] min-[480px]:text-[10px] font-bold uppercase tracking-[0.12em] leading-snug max-w-full">
+                        {label}
+                      </span>
+                    </button>
+                    {i < CREATE_MOVE_FLOW_STEP_LABELS.length - 1 ? (
+                      <div
+                        className="pointer-events-none mt-[13px] h-[3px] w-2 min-[380px]:w-4 sm:flex-1 sm:max-w-[6rem] shrink-0 self-start overflow-hidden rounded-full bg-[var(--brd)]/65"
                         aria-hidden
-                      />
-                    ) : (
-                      i + 1
-                    )}
-                  </span>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] leading-tight max-w-[148px] sm:max-w-[200px]">
-                    {label}
-                  </span>
-                </button>
-              );
-            })}
+                      >
+                        <div
+                          className="h-full w-full origin-left rounded-full transition-transform duration-700 ease-out [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] bg-gradient-to-r from-[var(--yu3-wine)]/50 via-[var(--yu3-wine)]/30 to-[var(--yu3-wine)]/15"
+                          style={{ transform: segmentFilled ? "scaleX(1)" : "scaleX(0)" }}
+                        />
+                      </div>
+                    ) : null}
+                  </React.Fragment>
+                );
+              })}
+            </div>
           </nav>
         </div>
         <form noValidate onSubmit={blockFormNativeSubmit} className="space-y-0">
@@ -1410,62 +1423,72 @@ export default function CreateMoveForm({
                     ).map((val) => {
                       const META: Record<
                         string,
-                        { label: string; desc: string }
+                        { label: string; desc: string; icon: React.ElementType }
                       > = {
                         residential: {
                           label: "Residential",
                           desc: "Local or long distance home move",
+                          icon: House,
                         },
                         office: {
                           label: "Office / Commercial",
                           desc: "Business, retail, salon, clinic relocation",
+                          icon: Buildings,
                         },
                         single_item: {
                           label: "Single Item",
                           desc: "One item or small batch delivery",
+                          icon: Package,
                         },
                         white_glove: {
                           label: "White Glove",
                           desc: "Premium handling, assembly, placement",
+                          icon: Star,
                         },
                         specialty: {
                           label: "Specialty",
                           desc: "Piano, art, antiques, estate, trade show",
+                          icon: Archive,
                         },
                         event: {
                           label: "Event logistics",
                           desc: "Venue delivery, setup, and return for events",
+                          icon: CalendarBlank,
                         },
                         labour_only: {
                           label: "Labour only",
                           desc: "Crew hours on-site; use same address if one location",
+                          icon: Wrench,
                         },
                       };
-                      const { label, desc } = META[val];
+                      const { label, desc, icon: Icon } = META[val];
                       const sel = moveType === val;
                       return (
                         <button
                           key={val}
                           type="button"
                           onClick={() => setMoveType(val)}
-                          className={`relative min-w-[min(100%,9.5rem)] flex-1 sm:max-w-[calc(50%-0.25rem)] lg:max-w-[calc(25%-0.375rem)] text-left px-3 py-2 rounded-lg border transition-all duration-200 ${
+                          className={`relative min-w-[min(100%,9.5rem)] flex-1 sm:max-w-[calc(50%-0.25rem)] lg:max-w-[calc(25%-0.375rem)] text-left px-3 py-3 rounded-xl border transition-all duration-200 ${
                             sel
                               ? "bg-gradient-to-br from-[#2C3E2D] to-[#5C1A33] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
                               : "bg-[var(--card)] border-[var(--brd)] hover:border-[#2C3E2D]/40 hover:bg-[var(--bg)]"
                           }`}
                         >
-                          <div className="flex items-start gap-2">
-                            <div className="min-w-0 flex-1">
-                              <div
-                                className={`text-[11px] leading-tight tracking-tight font-semibold ${sel ? "text-white" : "text-[var(--tx)]"}`}
-                              >
-                                {label}
-                              </div>
-                              <div
-                                className={`text-[9px] mt-0.5 leading-snug ${sel ? "text-white/90" : "text-[var(--tx3)]"}`}
-                              >
-                                {desc}
-                              </div>
+                          <div className="flex flex-col gap-1.5">
+                            <Icon
+                              className={`w-4 h-4 ${sel ? "text-white/80" : "text-[var(--yu3-wine)]"}`}
+                              weight="duotone"
+                              aria-hidden
+                            />
+                            <div
+                              className={`text-[11px] leading-tight tracking-tight font-semibold ${sel ? "text-white" : "text-[var(--tx)]"}`}
+                            >
+                              {label}
+                            </div>
+                            <div
+                              className={`text-[9px] leading-snug ${sel ? "text-white/80" : "text-[var(--tx3)]"}`}
+                            >
+                              {desc}
                             </div>
                           </div>
                         </button>
