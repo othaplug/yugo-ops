@@ -667,9 +667,22 @@ export async function createMoveFromQuote(
 
   const grossForDuration = totalWithTax;
   const attachDurationFields = (row: RowInsert): RowInsert => {
-    const rowEstHours = row.est_hours as number | null;
-    const hasExplicitHours =
-      rowEstHours != null && Number.isFinite(rowEstHours) && rowEstHours > 0;
+    // Read est_hours from quote directly (authoritative source — same value the
+    // quote page displays). We bypass row.est_hours to avoid type-coercion issues
+    // and priority bugs where factors.est_job_hours could shadow the quoted hours.
+    const rawQEH = quote.est_hours;
+    const quoteEstHours =
+      rawQEH != null && Number.isFinite(Number(rawQEH)) && Number(rawQEH) > 0
+        ? Number(rawQEH)
+        : null;
+    // Fallback: row-level est_hours (e.g. event leg hours set explicitly)
+    const rawREH = row.est_hours;
+    const rowEstHours =
+      rawREH != null && Number.isFinite(Number(rawREH)) && Number(rawREH) > 0
+        ? Number(rawREH)
+        : null;
+    // Quote display hours take priority — guarantees move shows same Xh as quote.
+    const effectiveHours = quoteEstHours ?? rowEstHours;
 
     const dEst = estimateMoveDurationFromQuoteRow({
       serviceType: String(quote.service_type ?? ""),
@@ -681,11 +694,9 @@ export async function createMoveFromQuote(
       estCrewSize:
         (row.est_crew_size as number | null) ??
         (quote.est_crew_size as number | null),
-      estHours:
-        (row.est_hours as number | null) ??
-        (typeof factors.est_job_hours === "number"
-          ? factors.est_job_hours
-          : null),
+      // Pass effectiveHours so local_move (now in EXPLICIT_HOURS_SERVICE_TYPES) uses
+      // est_hours × 60 as totalMinutes and calculates margin alert correctly.
+      estHours: effectiveHours,
       inventoryScore: (quote.inventory_score as number | null) ?? null,
       fromAccess: quote.from_access,
       toAccess: quote.to_access,
@@ -698,17 +709,10 @@ export async function createMoveFromQuote(
     });
     if (!dEst) return row;
 
-    // When the coordinator explicitly set est_hours on the quote, use that value
-    // as estimated_duration_minutes so the move detail shows the same time as
-    // the quote (quote shows "~Xh"; move should show the same Xh, not an
-    // inventory-model total that includes drive time and buffer).
-    const estimatedMinutes = hasExplicitHours
-      ? Math.round(rowEstHours! * 60)
-      : dEst.totalMinutes;
-
     return {
       ...row,
-      estimated_duration_minutes: estimatedMinutes,
+      est_hours: effectiveHours ?? rowEstHours,
+      estimated_duration_minutes: dEst.totalMinutes,
       estimated_internal_cost: dEst.estimatedCost,
       margin_alert_minutes: dEst.maxMinutesBeforeMarginAlert,
     };

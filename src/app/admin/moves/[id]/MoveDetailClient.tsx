@@ -789,43 +789,41 @@ export default function MoveDetailClient({
       })()
     : null;
 
-  /** Allocated on-site work time: DB column, else quote `est_hours` only (never derived from arrival window). */
+  /** Allocated on-site work time.
+   * Priority: est_hours (always in sync with the quote's displayed ~Xh) →
+   * then estimated_duration_minutes (manual admin override or legacy model value).
+   * Using est_hours first ensures the move page always shows the same duration
+   * as the quote page, even for older moves created before this was fixed. */
   const jobTimeTracker = useMemo((): {
     minutes: number;
     margin: number;
   } | null => {
-    const raw = move.estimated_duration_minutes;
-    const rawN = typeof raw === "string" ? Number.parseFloat(raw) : Number(raw);
-    if (Number.isFinite(rawN) && rawN > 0) {
-      const m = Math.round(rawN);
-      const margRaw = move.margin_alert_minutes;
-      const margN =
-        typeof margRaw === "string"
-          ? Number.parseFloat(margRaw)
-          : Number(margRaw);
-      const uncapped =
-        Number.isFinite(margN) && margN > 0 ? Math.round(margN) : m;
-      return {
-        minutes: m,
-        margin: capMarginAlertMinutes(m, uncapped),
-      };
+    const parseNum = (v: unknown): number | null => {
+      const n = typeof v === "string" ? Number.parseFloat(v) : Number(v);
+      return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+    };
+    const margRaw = parseNum(move.margin_alert_minutes);
+
+    // 1. est_hours is the authoritative quoted duration (matches quote page).
+    const ehN = parseNum(
+      typeof move.est_hours === "string"
+        ? Number.parseFloat(move.est_hours)
+        : move.est_hours,
+    );
+    if (ehN != null) {
+      const m = ehN * 60;
+      const uncapped = margRaw != null ? margRaw : m;
+      return { minutes: m, margin: capMarginAlertMinutes(m, uncapped) };
     }
-    const eh = move.est_hours;
-    const ehN = typeof eh === "string" ? Number.parseFloat(eh) : Number(eh);
-    if (Number.isFinite(ehN) && ehN > 0) {
-      const m = Math.round(ehN * 60);
-      const margRaw = move.margin_alert_minutes;
-      const margN =
-        typeof margRaw === "string"
-          ? Number.parseFloat(margRaw)
-          : Number(margRaw);
-      const uncapped =
-        Number.isFinite(margN) && margN > 0 ? Math.round(margN) : m;
-      return {
-        minutes: m,
-        margin: capMarginAlertMinutes(m, uncapped),
-      };
+
+    // 2. Fall back to estimated_duration_minutes for moves without est_hours
+    //    (manual jobs created outside the quote flow, B2B jobs, etc.).
+    const rawN = parseNum(move.estimated_duration_minutes);
+    if (rawN != null) {
+      const uncapped = margRaw != null ? margRaw : rawN;
+      return { minutes: rawN, margin: capMarginAlertMinutes(rawN, uncapped) };
     }
+
     return null;
   }, [move]);
 

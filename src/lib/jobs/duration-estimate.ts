@@ -89,13 +89,15 @@ const CREW_EFF: Record<number, number> = {
   6: 0.45,
 }
 
-// Service types where the estimation model has no coverage — coordinator's explicit
-// est_hours is used directly as the total job duration when provided.
+// Service types where the coordinator's explicit est_hours is used directly as the
+// total job duration (matching the quote page display) instead of the inventory model.
+// local_move is included: quote page shows ~Xh and the move must show the same Xh.
 const EXPLICIT_HOURS_SERVICE_TYPES = new Set([
   "white_glove",
   "specialty",
   "office_move",
   "office",
+  "local_move",
 ])
 
 export function estimateJobDuration(input: {

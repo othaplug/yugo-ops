@@ -4595,6 +4595,23 @@ export async function POST(req: NextRequest) {
       if (updateErr) {
         return NextResponse.json({ error: updateErr.message }, { status: 500 });
       }
+      // Propagate est_hours change to any linked move so the move page always
+      // displays the same duration as the quote page.
+      const newEstHours = quotePayload.est_hours as number | null;
+      if (newEstHours != null && Number.isFinite(newEstHours) && newEstHours > 0) {
+        const { data: qRow } = await sb.from("quotes").select("id").eq("quote_id", quoteId).maybeSingle();
+        if (qRow?.id) {
+          const newMins = Math.round(newEstHours * 60);
+          await sb
+            .from("moves")
+            .update({
+              est_hours: newEstHours,
+              estimated_duration_minutes: newMins,
+            })
+            .eq("quote_id", qRow.id)
+            .in("status", ["pending", "pending_approval", "confirmed"]);
+        }
+      }
     } else {
       const prefixForHubSpot = await getQuoteIdPrefix(sb);
       const MAX_INSERT_ATTEMPTS = 6;

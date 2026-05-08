@@ -248,6 +248,7 @@ export default function EditMoveDetailsModal({
       const trimmedAlloc = allocatedJobHhMm.trim();
       if (trimmedAlloc === "") {
         Object.assign(updatePayload, {
+          est_hours: null,
           estimated_duration_minutes: null,
           margin_alert_minutes: null,
         });
@@ -264,7 +265,10 @@ export default function EditMoveDetailsModal({
           typeof prev === "string" ? Number.parseFloat(prev) : Number(prev);
         const uncapped =
           Number.isFinite(prevN) && prevN > 0 ? Math.max(prevN, M) : M * 2;
+        // Keep est_hours in sync with the manually-set duration so the display
+        // always reads from est_hours (the authoritative field).
         Object.assign(updatePayload, {
+          est_hours: Math.round((M / 60) * 100) / 100,
           estimated_duration_minutes: M,
           margin_alert_minutes: capMarginAlertMinutes(M, uncapped),
         });
