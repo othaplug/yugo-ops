@@ -32,13 +32,6 @@ import {
   FileText,
   CaretRight,
   Check,
-  House,
-  Buildings,
-  Package,
-  Star,
-  Archive,
-  CalendarBlank,
-  Wrench,
 } from "@phosphor-icons/react";
 import InventoryInput, {
   type InventoryItemEntry,
@@ -1423,63 +1416,51 @@ export default function CreateMoveForm({
                     ).map((val) => {
                       const META: Record<
                         string,
-                        { label: string; desc: string; icon: React.ElementType }
+                        { label: string; desc: string }
                       > = {
                         residential: {
                           label: "Residential",
                           desc: "Local or long distance home move",
-                          icon: House,
                         },
                         office: {
                           label: "Office / Commercial",
                           desc: "Business, retail, salon, clinic relocation",
-                          icon: Buildings,
                         },
                         single_item: {
                           label: "Single Item",
                           desc: "One item or small batch delivery",
-                          icon: Package,
                         },
                         white_glove: {
                           label: "White Glove",
                           desc: "Premium handling, assembly, placement",
-                          icon: Star,
                         },
                         specialty: {
                           label: "Specialty",
                           desc: "Piano, art, antiques, estate, trade show",
-                          icon: Archive,
                         },
                         event: {
                           label: "Event logistics",
                           desc: "Venue delivery, setup, and return for events",
-                          icon: CalendarBlank,
                         },
                         labour_only: {
                           label: "Labour only",
                           desc: "Crew hours on-site; use same address if one location",
-                          icon: Wrench,
                         },
                       };
-                      const { label, desc, icon: Icon } = META[val];
+                      const { label, desc } = META[val];
                       const sel = moveType === val;
                       return (
                         <button
                           key={val}
                           type="button"
                           onClick={() => setMoveType(val)}
-                          className={`relative min-w-[min(100%,9.5rem)] flex-1 sm:max-w-[calc(50%-0.25rem)] lg:max-w-[calc(25%-0.375rem)] text-left px-3 py-3 rounded-xl border transition-all duration-200 ${
+                          className={`relative min-w-[min(100%,9.5rem)] flex-1 sm:max-w-[calc(50%-0.25rem)] lg:max-w-[calc(25%-0.375rem)] text-left px-3 py-2.5 rounded-lg border transition-all duration-200 ${
                             sel
                               ? "bg-gradient-to-br from-[#2C3E2D] to-[#5C1A33] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
                               : "bg-[var(--card)] border-[var(--brd)] hover:border-[#2C3E2D]/40 hover:bg-[var(--bg)]"
                           }`}
                         >
-                          <div className="flex flex-col gap-1.5">
-                            <Icon
-                              className={`w-4 h-4 ${sel ? "text-white/80" : "text-[var(--yu3-wine)]"}`}
-                              weight="duotone"
-                              aria-hidden
-                            />
+                          <div className="flex flex-col gap-0.5">
                             <div
                               className={`text-[11px] leading-tight tracking-tight font-semibold ${sel ? "text-white" : "text-[var(--tx)]"}`}
                             >
