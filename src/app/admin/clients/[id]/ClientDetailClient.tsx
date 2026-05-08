@@ -396,7 +396,18 @@ export default function ClientDetailClient({
       )}
 
       {!isClient && isAdmin && portfolioPartner && activeTab === "buildings" && (
-        <PartnerBuildingsTab partnerId={client.id} properties={partnerProperties} moves={partnerMoves} />
+        <PartnerBuildingsTab
+          partnerId={client.id}
+          properties={partnerProperties}
+          moves={partnerMoves}
+          onViewMoves={(buildingId) => {
+            setActiveTab("moves");
+            const next = new URLSearchParams(searchParams.toString());
+            next.set("tab", "moves");
+            next.set("building", buildingId);
+            router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+          }}
+        />
       )}
 
       {!isClient && isAdmin && portfolioPartner && activeTab === "moves" && (

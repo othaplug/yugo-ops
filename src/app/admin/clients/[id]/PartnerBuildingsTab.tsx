@@ -126,10 +126,12 @@ export default function PartnerBuildingsTab({
   partnerId,
   properties,
   moves = [],
+  onViewMoves,
 }: {
   partnerId: string;
   properties: PartnerPropertyRow[];
   moves?: PartnerMoveForBuilding[];
+  onViewMoves?: (propertyId: string) => void;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -228,7 +230,11 @@ export default function PartnerBuildingsTab({
   }, [editingId, form, partnerId, pathname, router, toast, urlSearchParams]);
 
   const viewMoves = (propertyId: string) => {
-    router.push(`/admin/clients/${partnerId}?tab=moves&building=${encodeURIComponent(propertyId)}`);
+    if (onViewMoves) {
+      onViewMoves(propertyId);
+    } else {
+      router.push(`/admin/clients/${partnerId}?tab=moves&building=${encodeURIComponent(propertyId)}`);
+    }
   };
 
   return (

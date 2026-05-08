@@ -78,13 +78,15 @@ function isPublic(pathname: string): boolean {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const response = NextResponse.next({
-    request: { headers: new Headers(request.headers) },
-  });
+  // Use a mutable ref so token-refresh in setAll can swap in an updated response
+  // that carries the new cookies in the *request* forwarded downstream.
+  // This is the Supabase SSR standard pattern — without it, the proxy consumes
+  // the refresh token but the downstream route handler still sees the old expired
+  // access token, causing spurious 401 "Unauthorized" errors on API calls.
+  let supabaseResponse = NextResponse.next({ request });
+  supabaseResponse.headers.set("x-next-pathname", pathname);
 
-  response.headers.set("x-next-pathname", pathname);
-
-  if (isPublic(pathname)) return response;
+  if (isPublic(pathname)) return supabaseResponse;
 
   // ── Crew routes: validate custom HMAC session cookie ─────────────────────
   if (pathname.startsWith("/crew/")) {
@@ -94,7 +96,7 @@ export async function proxy(request: NextRequest) {
       url.pathname = "/crew/login";
       return NextResponse.redirect(url);
     }
-    return response;
+    return supabaseResponse;
   }
 
   const { url: supabaseUrl, anonKey: supabaseAnonKey } = supabaseUrlAndAnonFromEnv();
@@ -117,9 +119,17 @@ export async function proxy(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        for (const { name, value, options } of cookiesToSet) {
-          response.cookies.set(name, value, options);
-        }
+        // 1. Update the request cookies so the downstream route handler sees
+        //    the refreshed token (not just the now-expired original token).
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        // 2. Recreate the forwarded response with the updated request so the
+        //    Next.js runtime passes the new cookies to page/route handlers.
+        supabaseResponse = NextResponse.next({ request });
+        supabaseResponse.headers.set("x-next-pathname", pathname);
+        // 3. Also set new cookies in the response so the browser stores them.
+        cookiesToSet.forEach(({ name, value, options }) =>
+          supabaseResponse.cookies.set(name, value, options)
+        );
       },
     },
   });
@@ -165,7 +175,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  return response;
+  return supabaseResponse;
 }
 
 /** Next.js 16: matchers live on `proxy.ts` (do not add `middleware.ts`; both files conflict). */
