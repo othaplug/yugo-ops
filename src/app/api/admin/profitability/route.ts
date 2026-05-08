@@ -203,7 +203,7 @@ export async function GET(req: NextRequest) {
     // Prefer live session hours → stored actual_hours → est_hours
     const trackedHours = sessionHoursMap[m.id] ?? null;
     const moveCostInput = {
-      estimate: Number(m.estimate ?? m.amount ?? 0) || 0,
+      estimate: Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0) || 0,
       actual_hours: trackedHours ?? m.actual_hours ?? null,
       est_hours: m.est_hours ?? m.quoted_hours ?? null,
       actual_crew_count: m.actual_crew_count ?? null,
