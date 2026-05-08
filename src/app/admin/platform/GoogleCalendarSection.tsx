@@ -39,6 +39,8 @@ export default function GoogleCalendarSection() {
   const [testing, setTesting] = useState(false)
   const [lastSync, setLastSync] = useState<{ counts: SyncCount; results: SyncResult[]; fix?: FixHint | null } | null>(null)
   const [showDetails, setShowDetails] = useState(false)
+  const [creatingCalendar, setCreatingCalendar] = useState(false)
+  const [shareEmail, setShareEmail] = useState("")
 
   const loadStatus = useCallback(async () => {
     try {
@@ -69,6 +71,49 @@ export default function GoogleCalendarSection() {
       toast("Test request failed", "x")
     } finally {
       setTesting(false)
+    }
+  }
+
+  const handleCreateCalendar = async () => {
+    if (
+      !window.confirm(
+        "Create a new calendar owned by the OPS+ service account? " +
+          "Your existing calendar will not be deleted, but OPS+ will switch to using the new one for all syncs.",
+      )
+    ) {
+      return
+    }
+    setCreatingCalendar(true)
+    try {
+      const trimmed = shareEmail.trim()
+      const res = await fetch("/api/admin/gcal/create-calendar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          summary: "Yugo OPS+ Jobs",
+          shareWithEmails: trimmed ? [trimmed] : [],
+        }),
+      })
+      const data = await res.json().catch(() => ({})) as {
+        success?: boolean
+        error?: string
+        calendarId?: string
+        sharedWith?: { email: string; ok: boolean; error?: string }[]
+      }
+      if (!res.ok || !data.success) {
+        toast(data.error ?? "Calendar creation failed", "x")
+        return
+      }
+      toast(
+        `Created new calendar (${data.calendarId?.slice(0, 16)}…). OPS+ will now sync to it.`,
+        "check",
+      )
+      void loadStatus()
+    } catch {
+      toast("Calendar creation request failed", "x")
+    } finally {
+      setCreatingCalendar(false)
     }
   }
 
@@ -224,6 +269,40 @@ export default function GoogleCalendarSection() {
                 >
                   Open Google Calendar settings →
                 </a>
+              </div>
+
+              {/* Workspace-restriction workaround: Workspace orgs commonly grey out
+                  "Make changes to events" for external service accounts. The
+                  service account can sidestep this by creating a calendar of
+                  its own, where it's the owner with full write access. */}
+              <div className="mt-3 pt-3 border-t border-amber-300 space-y-2">
+                <p className="text-[11px] font-bold text-amber-900">
+                  Greyed out and can&apos;t change it?
+                </p>
+                <p className="text-[11px] text-amber-900 leading-relaxed">
+                  Your Workspace admin has restricted external sharing. Skip the policy
+                  fight: have the service account create its own calendar (it becomes
+                  the owner with full write access — no admin permission needed).
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                  <input
+                    type="email"
+                    value={shareEmail}
+                    onChange={(e) => setShareEmail(e.target.value)}
+                    placeholder="optional: your email to receive read access"
+                    className="flex-1 text-[11px] font-mono bg-white border border-amber-200 rounded px-2 py-1.5 text-amber-900 placeholder:text-amber-700/50"
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleCreateCalendar()}
+                    disabled={creatingCalendar}
+                    className="shrink-0 px-3 py-1.5 rounded-md bg-amber-900 text-amber-50 text-[11px] font-semibold hover:bg-amber-800 disabled:opacity-50"
+                  >
+                    {creatingCalendar ? "Creating…" : "Create OPS+ calendar"}
+                  </button>
+                </div>
               </div>
             </div>
           );

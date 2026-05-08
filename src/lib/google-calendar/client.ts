@@ -227,14 +227,30 @@ export async function getGCalAccessToken(): Promise<string> {
   return access_token;
 }
 
+/**
+ * Resolve the calendar ID to use for sync.
+ *
+ * Priority: in-memory override (set by `setGCalIdOverride`) → env var.
+ * The override path lets `/api/admin/gcal/create-calendar` switch to a newly
+ * created calendar without requiring a redeploy. The override is persisted in
+ * platform_config (key: `gcal_calendar_id`) and re-loaded on cold start by the
+ * sync route.
+ */
+let runtimeCalendarId: string | null = null;
+
 export function getGCalId(): string {
-  const id = process.env.GOOGLE_CALENDAR_ID;
+  const id = runtimeCalendarId || process.env.GOOGLE_CALENDAR_ID;
   if (!id) throw new Error("GOOGLE_CALENDAR_ID not configured");
   return id;
 }
 
+export function setGCalIdOverride(id: string | null): void {
+  runtimeCalendarId = id?.trim() || null;
+}
+
 export function isGCalConfigured(): boolean {
-  if (!process.env.GOOGLE_CALENDAR_ID) return false;
+  // Calendar ID can come from runtime override (platform_config) or env
+  if (!runtimeCalendarId && !process.env.GOOGLE_CALENDAR_ID) return false;
   if (process.env.GOOGLE_CALENDAR_SERVICE_ACCOUNT_B64) return true;
   return !!(process.env.GOOGLE_CALENDAR_CLIENT_EMAIL && process.env.GOOGLE_CALENDAR_PRIVATE_KEY);
 }

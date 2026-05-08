@@ -1,9 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isGCalConfigured } from "@/lib/google-calendar/client";
+import { isGCalConfigured, setGCalIdOverride } from "@/lib/google-calendar/client";
 import { syncJobToGCal, type GCalJobInput } from "@/lib/google-calendar/sync-job";
 import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
+
+/** Load the calendar ID override from platform_config (set by /create-calendar). */
+async function applyConfiguredCalendarOverride(): Promise<void> {
+  try {
+    const db = createAdminClient();
+    const { data } = await db
+      .from("platform_config")
+      .select("value")
+      .eq("key", "gcal_calendar_id")
+      .maybeSingle();
+    setGCalIdOverride(data?.value?.trim() || null);
+  } catch {
+    /* fall back to env var */
+  }
+}
 
 const BOOKABLE_MOVE_STATUSES = ["confirmed", "booked", "scheduled", "deposit_paid", "paid", "in_progress"];
 const BOOKABLE_DELIVERY_STATUSES = ["confirmed", "booked", "scheduled", "deposit_paid", "paid", "in_progress", "pending"];
@@ -17,6 +32,8 @@ const BOOKABLE_DELIVERY_STATUSES = ["confirmed", "booked", "scheduled", "deposit
 export async function POST(req: NextRequest) {
   const { error: authErr } = await requireAdmin();
   if (authErr) return authErr;
+
+  await applyConfiguredCalendarOverride();
 
   if (!isGCalConfigured()) {
     return NextResponse.json(
@@ -153,10 +170,21 @@ export async function GET(req: NextRequest) {
   const { error: authErr } = await requireAdmin();
   if (authErr) return authErr;
 
+  await applyConfiguredCalendarOverride();
+
   const configured = isGCalConfigured();
+  // Reflect the runtime override (set by /create-calendar) when present,
+  // so the UI shows the actively used calendar ID.
+  let activeCalendarId: string | null = process.env.GOOGLE_CALENDAR_ID ?? null;
+  try {
+    const { getGCalId } = await import("@/lib/google-calendar/client");
+    activeCalendarId = getGCalId();
+  } catch {
+    /* not configured — leave env value as-is */
+  }
   const base = {
     configured,
-    calendarId: process.env.GOOGLE_CALENDAR_ID ?? null,
+    calendarId: activeCalendarId,
     clientEmail: process.env.GOOGLE_CALENDAR_CLIENT_EMAIL ?? null,
   };
 
