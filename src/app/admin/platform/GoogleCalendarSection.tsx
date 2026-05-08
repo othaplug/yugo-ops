@@ -16,6 +16,7 @@ type FixHint = {
 type StatusData = {
   configured: boolean
   calendarId: string | null
+  calendarLink: string | null
   clientEmail: string | null
   testOk?: boolean
   writeOk?: boolean
@@ -41,6 +42,7 @@ export default function GoogleCalendarSection() {
   const [showDetails, setShowDetails] = useState(false)
   const [creatingCalendar, setCreatingCalendar] = useState(false)
   const [shareEmail, setShareEmail] = useState("")
+  const [createdCalendarId, setCreatedCalendarId] = useState<string | null>(null)
 
   const loadStatus = useCallback(async () => {
     try {
@@ -105,6 +107,7 @@ export default function GoogleCalendarSection() {
         toast(data.error ?? "Calendar creation failed", "x")
         return
       }
+      setCreatedCalendarId(data.calendarId ?? null)
       toast(
         `Created new calendar (${data.calendarId?.slice(0, 16)}…). OPS+ will now sync to it.`,
         "check",
@@ -176,7 +179,19 @@ export default function GoogleCalendarSection() {
                 <p className="text-[11px] text-[var(--tx3)] font-mono">{status.clientEmail}</p>
               ) : null}
               {status?.calendarId ? (
-                <p className="text-[11px] text-[var(--tx3)] font-mono">{status.calendarId}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <p className="text-[11px] text-[var(--tx3)] font-mono">{status.calendarId}</p>
+                  {status.calendarLink && (
+                    <a
+                      href={status.calendarLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] font-semibold text-blue-500 hover:text-blue-600 underline underline-offset-2 shrink-0"
+                    >
+                      Open →
+                    </a>
+                  )}
+                </div>
               ) : null}
               {status?.testError ? (
                 <p className="text-[11px] text-red-500 font-mono mt-1">{status.testError}</p>
@@ -308,13 +323,55 @@ export default function GoogleCalendarSection() {
           );
         })()}
 
+        {/* Post-creation subscribe banner */}
+        {createdCalendarId && (() => {
+          const subscribeLink = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(createdCalendarId)}`;
+          return (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Icon name="check" className="w-[13px] h-[13px] text-blue-700" />
+                <p className="text-[12px] font-bold text-blue-900">Calendar created — add it to your Google Calendar</p>
+              </div>
+              <p className="text-[11px] text-blue-900 leading-relaxed">
+                The service account now owns this calendar and can write to it freely.
+                {shareEmail.trim()
+                  ? ` An invitation was sent to ${shareEmail.trim()} — check your email and click "Add to calendar".`
+                  : " To view it, open the link below and click \"Add calendar\", or enter your email above and recreate."}
+              </p>
+              <a
+                href={subscribeLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-900"
+              >
+                Open &quot;Yugo OPS+ Jobs&quot; in Google Calendar →
+              </a>
+              <div className="mt-1">
+                <code className="text-[10px] font-mono text-blue-700 break-all">{createdCalendarId}</code>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Sync controls */}
         {configured && (
           <div className="space-y-3">
-            <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
-              Syncs all confirmed and booked moves and B2B deliveries to the shared calendar.
-              New jobs are added automatically on payment. Use this button to backfill existing jobs or fix drift.
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
+                Syncs all confirmed and booked moves and B2B deliveries to the shared calendar.
+                New jobs are added automatically on payment. Use this button to backfill existing jobs or fix drift.
+              </p>
+              {status?.calendarLink && (
+                <a
+                  href={status.calendarLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 text-[10px] font-semibold text-[var(--tx3)] underline underline-offset-2 hover:text-[var(--tx)]"
+                >
+                  Open calendar →
+                </a>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => void handleSync()}

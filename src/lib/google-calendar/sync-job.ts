@@ -40,6 +40,7 @@ const BOOKABLE_STATUSES = new Set([
   "deposit_received",
   "paid",
   "in_progress",
+  "pending",
 ]);
 
 const CANCELLED_STATUSES = new Set([
