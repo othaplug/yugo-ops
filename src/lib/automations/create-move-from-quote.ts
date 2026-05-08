@@ -114,6 +114,28 @@ export async function createMoveFromQuote(
     throw new Error(`Quote not found: ${input.quoteId}`);
   }
 
+  // Multi-scenario: if an accepted scenario exists, use its date and price
+  const acceptedScenarioId = (quote as { accepted_scenario_id?: string | null }).accepted_scenario_id ?? null;
+  let scenarioDate: string | null = null;
+  let scenarioPreTaxPrice: number | null = null;
+  let scenarioTotalWithTax: number | null = null;
+
+  let scenarioTime: string | null = null;
+
+  if (acceptedScenarioId) {
+    const { data: scenario } = await supabase
+      .from("quote_scenarios")
+      .select("scenario_date, scenario_time, price, total_price")
+      .eq("id", acceptedScenarioId)
+      .maybeSingle();
+    if (scenario) {
+      scenarioDate = (scenario.scenario_date as string | null) ?? null;
+      scenarioTime = (scenario.scenario_time as string | null) ?? null;
+      scenarioPreTaxPrice = typeof scenario.price === "number" ? scenario.price : null;
+      scenarioTotalWithTax = typeof scenario.total_price === "number" ? scenario.total_price : null;
+    }
+  }
+
   if (isB2BDeliveryQuoteServiceType(String(quote.service_type ?? ""))) {
     throw new Error(
       "B2B quotes must be converted with createDeliveryFromB2BQuote, not createMoveFromQuote",
@@ -138,7 +160,11 @@ export async function createMoveFromQuote(
   let basePrice: number;
   let totalWithTax: number;
 
-  if (selectedTier && quote.tiers) {
+  if (scenarioPreTaxPrice != null) {
+    // Multi-scenario: use the accepted scenario's price
+    basePrice = scenarioPreTaxPrice;
+    totalWithTax = scenarioTotalWithTax ?? Math.round(basePrice * 1.13);
+  } else if (selectedTier && quote.tiers) {
     const tierData = (
       quote.tiers as Record<string, { price: number; total: number }>
     )[selectedTier];
@@ -323,10 +349,13 @@ export async function createMoveFromQuote(
   ).preferred_time;
   const quoteWindowRaw = (quote as { arrival_window?: string | null })
     .arrival_window;
+  // Scenario time takes precedence over the quote's preferred_time
   const preferredTime =
-    quotePreferredRaw != null && String(quotePreferredRaw).trim() !== ""
-      ? String(quotePreferredRaw).trim()
-      : null;
+    scenarioTime && scenarioTime.trim()
+      ? scenarioTime.trim()
+      : quotePreferredRaw != null && String(quotePreferredRaw).trim() !== ""
+        ? String(quotePreferredRaw).trim()
+        : null;
   const arrivalWindow =
     quoteWindowRaw != null && String(quoteWindowRaw).trim() !== ""
       ? String(quoteWindowRaw).trim()
@@ -609,7 +638,7 @@ export async function createMoveFromQuote(
         from_address: quote.from_address,
         to_address: quote.to_address,
         delivery_address: quote.to_address,
-        scheduled_date: quote.move_date,
+        scheduled_date: scenarioDate ?? quote.move_date,
         distance_km: quote.distance_km ?? null,
         est_crew_size: (quote.est_crew_size as number) ?? null,
         est_hours:

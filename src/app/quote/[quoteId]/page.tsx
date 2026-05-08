@@ -11,6 +11,7 @@ import {
   QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY,
 } from "@/lib/quotes/residential-tier-quote-display";
 import QuotePageClient from "./QuotePageClient";
+import MultiScenarioSelector, { type QuoteScenario } from "./MultiScenarioSelector";
 import { fetchMoveProjectWithTree } from "@/lib/move-projects/fetch";
 import type { MoveProjectQuotePayload } from "./MoveProjectQuoteTimeline";
 import QuoteExpired from "./QuoteExpired";
@@ -245,6 +246,37 @@ export default async function QuotePage({
         phases: mpRes.phases as MoveProjectQuotePayload["phases"],
       };
     }
+  }
+
+  // Multi-scenario: show selector when is_multi_scenario=true and no scenario accepted yet
+  const isMultiScenario = !!(quote as { is_multi_scenario?: boolean }).is_multi_scenario;
+  const acceptedScenarioId = (quote as { accepted_scenario_id?: string | null }).accepted_scenario_id ?? null;
+
+  if (isMultiScenario && !acceptedScenarioId) {
+    const { data: scenarios } = await admin
+      .from("quote_scenarios")
+      .select("*")
+      .eq("quote_id", quote.id)
+      .order("scenario_number");
+
+    const { getQuoteTotalWithTaxFromRow, calculateDeposit } = await import("./quote-shared");
+    const { totalWithTax } = getQuoteTotalWithTaxFromRow(quote);
+    const baseTotalWithTax = totalWithTax > 0 ? totalWithTax : null;
+    const serviceTypeStr = String((quote as { service_type?: string | null }).service_type ?? "local_move");
+    const baseDepositAmount = baseTotalWithTax != null ? calculateDeposit(serviceTypeStr, baseTotalWithTax) : null;
+
+    return (
+      <MultiScenarioSelector
+        quoteId={quoteId}
+        publicActionToken={publicActionToken!}
+        scenarios={(scenarios ?? []) as QuoteScenario[]}
+        basePrice={(quote as { custom_price?: number | null }).custom_price ?? null}
+        baseTotalWithTax={baseTotalWithTax}
+        baseDepositAmount={baseDepositAmount}
+        moveDate={(quote as { move_date?: string | null }).move_date ?? null}
+        onSelected={() => {}}
+      />
+    );
   }
 
   return (

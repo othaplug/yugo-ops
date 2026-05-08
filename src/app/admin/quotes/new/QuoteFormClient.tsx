@@ -2243,6 +2243,36 @@ export default function QuoteFormClient({
     }
   };
 
+  // Multi-scenario state
+  interface ScenarioInput {
+    label: string;
+    description: string;
+    scenario_date: string;
+    scenario_time: string;
+    price: string;
+    is_recommended: boolean;
+  }
+  const emptyScenario = (n: number): ScenarioInput => ({
+    label: `Option ${n}`,
+    description: "",
+    scenario_date: "",
+    scenario_time: "",
+    price: "",
+    is_recommended: n === 1,
+  });
+  const [isMultiScenario, setIsMultiScenario] = useState(false);
+  const [scenarios, setScenarios] = useState<ScenarioInput[]>([emptyScenario(1), emptyScenario(2)]);
+
+  const updateScenario = (idx: number, patch: Partial<ScenarioInput>) => {
+    setScenarios((prev) => {
+      const next = prev.map((s, i) => (i === idx ? { ...s, ...patch } : s));
+      if (patch.is_recommended === true) {
+        return next.map((s, i) => ({ ...s, is_recommended: i === idx }));
+      }
+      return next;
+    });
+  };
+
   // Quote result (set only after successful generate; required for Send)
   const [quoteResult, setQuoteResult] = useState<QuoteResult | null>(null);
   const [quoteId, setQuoteId] = useState<string | null>(null);
@@ -4465,6 +4495,21 @@ export default function QuoteFormClient({
         base.source_request_id = widgetRequestIdParam;
       }
 
+      // Multi-scenario
+      if (isMultiScenario && scenarios.length >= 2) {
+        base.is_multi_scenario = true;
+        base.scenarios = scenarios.map((s, i) => ({
+          scenario_number: i + 1,
+          label: s.label.trim() || `Option ${i + 1}`,
+          description: s.description.trim() || undefined,
+          is_recommended: s.is_recommended,
+          scenario_date: s.scenario_date || undefined,
+          scenario_time: s.scenario_time || undefined,
+          price: s.price.trim() ? Number(s.price.trim()) : undefined,
+          conditions_note: undefined,
+        }));
+      }
+
       return base;
     },
     [
@@ -4610,6 +4655,8 @@ export default function QuoteFormClient({
       wgBuildingReqs,
       wgBuildingNote,
       wgDeliveryInstructions,
+      isMultiScenario,
+      scenarios,
     ],
   );
 
@@ -9835,6 +9882,120 @@ export default function QuoteFormClient({
 
               <div className="h-4" />
 
+              {/* ── Multi-scenario scheduling options ── */}
+              {serviceType !== "b2b_delivery" && serviceType !== "b2b_oneoff" && (
+                <div className="px-0 sm:px-0 pb-3 space-y-3 pt-2 mt-2 border-t border-[var(--brd)]/40">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={isMultiScenario}
+                      onChange={(e) => setIsMultiScenario(e.target.checked)}
+                      className="accent-[var(--admin-primary-fill)] w-3.5 h-3.5"
+                    />
+                    <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                      Multi-scenario quote
+                    </span>
+                    <span className="text-[10px] text-[var(--tx3)]">— offer 2+ scheduling options</span>
+                  </label>
+
+                  {isMultiScenario && (
+                    <div className="space-y-3">
+                      <p className="text-[10px] text-[var(--tx3)] leading-snug">
+                        Each scenario is a separate date/price option the client picks from. Leave price blank to inherit the generated quote price.
+                      </p>
+                      {scenarios.map((sc, idx) => (
+                        <div
+                          key={idx}
+                          className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] p-3 space-y-2.5"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+                                Scenario {idx + 1}
+                              </span>
+                              <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="scenario_recommended"
+                                  checked={sc.is_recommended}
+                                  onChange={() => updateScenario(idx, { is_recommended: true })}
+                                  className="accent-[var(--admin-primary-fill)]"
+                                />
+                                <span className="text-[10px] text-[var(--tx3)]">Recommended</span>
+                              </label>
+                            </div>
+                            {scenarios.length > 2 && (
+                              <button
+                                type="button"
+                                onClick={() => setScenarios((prev) => prev.filter((_, i) => i !== idx))}
+                                className="text-[10px] text-[var(--tx3)] hover:text-[var(--red)] transition-colors"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <Field label="Label">
+                              <input
+                                type="text"
+                                value={sc.label}
+                                onChange={(e) => updateScenario(idx, { label: e.target.value })}
+                                placeholder={`Option ${idx + 1}`}
+                                className={`${fieldInput} border-b-[rgba(250,247,242,0.42)] focus:border-b-[rgba(250,247,242,0.88)]`}
+                              />
+                            </Field>
+                            <Field label="Date">
+                              <input
+                                type="date"
+                                value={sc.scenario_date}
+                                onChange={(e) => updateScenario(idx, { scenario_date: e.target.value })}
+                                className={`${fieldInput} border-b-[rgba(250,247,242,0.42)] focus:border-b-[rgba(250,247,242,0.88)]`}
+                              />
+                            </Field>
+                            <Field label="Start time">
+                              <input
+                                type="time"
+                                value={sc.scenario_time}
+                                onChange={(e) => updateScenario(idx, { scenario_time: e.target.value })}
+                                className={`${fieldInput} border-b-[rgba(250,247,242,0.42)] focus:border-b-[rgba(250,247,242,0.88)]`}
+                              />
+                            </Field>
+                            <Field label="Price override ($, pre-tax)">
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                value={sc.price}
+                                onChange={(e) => updateScenario(idx, { price: e.target.value })}
+                                placeholder="Leave blank to use generated price"
+                                className={`${fieldInput} border-b-[rgba(250,247,242,0.42)] focus:border-b-[rgba(250,247,242,0.88)]`}
+                              />
+                            </Field>
+                          </div>
+                          <Field label="Description / conditions (optional)">
+                            <input
+                              type="text"
+                              value={sc.description}
+                              onChange={(e) => updateScenario(idx, { description: e.target.value })}
+                              placeholder="e.g. Peak weekend rate, includes full packing"
+                              className={`${fieldInput} border-b-[rgba(250,247,242,0.42)] focus:border-b-[rgba(250,247,242,0.88)]`}
+                            />
+                          </Field>
+                        </div>
+                      ))}
+                      {scenarios.length < 4 && (
+                        <button
+                          type="button"
+                          onClick={() => setScenarios((prev) => [...prev, emptyScenario(prev.length + 1)])}
+                          className="text-[10px] font-semibold text-[var(--admin-primary-fill)] hover:opacity-80 transition-opacity"
+                        >
+                          + Add another scenario
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               </>
               )}
             </div>
@@ -10068,6 +10229,26 @@ export default function QuoteFormClient({
                         Dismiss
                       </button>
                     </div>
+                  </div>
+                )}
+
+                {/* ── Multi-scenario preview ── */}
+                {isMultiScenario && scenarios.length >= 2 && (
+                  <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2.5 space-y-2">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">
+                      Scenarios ({scenarios.length})
+                    </p>
+                    {scenarios.map((sc, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-[11px]">
+                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 bg-[var(--admin-primary-fill)]" />
+                        <div className="min-w-0">
+                          <span className="font-medium text-[var(--tx)]">{sc.label || `Option ${idx + 1}`}</span>
+                          {sc.scenario_date && <span className="text-[var(--tx3)] ml-1.5">· {sc.scenario_date}</span>}
+                          {sc.price && <span className="text-[var(--tx2)] ml-1.5">· ${sc.price}</span>}
+                          {sc.is_recommended && <span className="ml-1.5 text-[9px] font-semibold text-[var(--admin-primary-fill)] uppercase tracking-wider">Recommended</span>}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
 

@@ -392,6 +392,22 @@ interface QuoteInput {
   /** When no DB profile, coordinator-reported access flags (origin / destination) */
   origin_building_access_flags?: string[];
   destination_building_access_flags?: string[];
+  /** Multi-scenario: when true, scenarios[] below are saved and the client picks one */
+  is_multi_scenario?: boolean;
+  scenarios?: QuoteScenarioInput[];
+}
+
+/** One scheduling/pricing scenario for multi-scenario quotes. */
+export interface QuoteScenarioInput {
+  scenario_number: number;
+  label?: string;
+  description?: string;
+  is_recommended?: boolean;
+  scenario_date?: string;
+  scenario_time?: string;
+  /** Pre-tax price (optional — falls back to quote base price when omitted) */
+  price?: number | null;
+  conditions_note?: string;
 }
 
 /** Payload line for event inventory (admin quote form + generate API). */
@@ -4677,6 +4693,36 @@ export async function POST(req: NextRequest) {
           status: "quote_sent",
         })
         .eq("id", reqId);
+    }
+
+    // ── Multi-scenario: persist scenarios and flag the quote ──
+    if (!isPreview && qUuidRow?.id && input.is_multi_scenario && Array.isArray(input.scenarios) && input.scenarios.length >= 2) {
+      await sb.from("quote_scenarios").delete().eq("quote_id", qUuidRow.id);
+      const HST_RATE = 0.13;
+      const rows = input.scenarios.map((s) => {
+        const priceNum = typeof s.price === "number" && s.price > 0 ? s.price : null;
+        const hst = priceNum != null ? Math.round(priceNum * HST_RATE) : null;
+        const totalPrice = priceNum != null ? priceNum + (hst ?? 0) : null;
+        return {
+          quote_id: qUuidRow.id,
+          scenario_number: s.scenario_number,
+          label: s.label?.trim() || `Option ${s.scenario_number}`,
+          description: s.description?.trim() || null,
+          is_recommended: s.is_recommended ?? false,
+          scenario_date: s.scenario_date || null,
+          scenario_time: s.scenario_time || null,
+          price: priceNum,
+          hst,
+          total_price: totalPrice,
+          conditions_note: s.conditions_note?.trim() || null,
+          status: "pending",
+        };
+      });
+      await sb.from("quote_scenarios").insert(rows);
+      await sb.from("quotes").update({ is_multi_scenario: true }).eq("id", qUuidRow.id);
+    } else if (!isPreview && qUuidRow?.id && !input.is_multi_scenario) {
+      // Cleared multi-scenario on regenerate
+      await sb.from("quotes").update({ is_multi_scenario: false, accepted_scenario_id: null }).eq("id", qUuidRow.id);
     }
   }
 

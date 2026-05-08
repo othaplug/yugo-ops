@@ -93,6 +93,12 @@ export default async function QuoteDetailPage({ params }: Props) {
     .limit(1)
     .maybeSingle();
 
+  const { data: scenariosData } = await db
+    .from("quote_scenarios")
+    .select("id, scenario_number, label, description, is_recommended, scenario_date, scenario_time, price, hst, total_price, deposit_amount, conditions_note, status, selected_at, created_at")
+    .eq("quote_id", quote.id)
+    .order("scenario_number");
+
   const { data: linkedDelRow } = await db
     .from("deliveries")
     .select("delivery_number")
@@ -122,6 +128,8 @@ export default async function QuoteDetailPage({ params }: Props) {
         hubspotDealId={hubspotDealId}
         hubspotEligible={quoteRowEligibleForHubSpotDeal(quote as Record<string, unknown>)}
         hasTierRange={hasTierRange}
+        scenarios={scenariosData ?? []}
+        acceptedScenarioId={(quote as { accepted_scenario_id?: string | null }).accepted_scenario_id ?? null}
       />
     </div>
   );

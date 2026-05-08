@@ -79,6 +79,21 @@ interface Props {
   hubspotEligible?: boolean;
   /** True when the quote has tier pricing but no confirmed tier — external booking flow required */
   hasTierRange?: boolean;
+  scenarios?: Array<{
+    id: string;
+    scenario_number: number;
+    label: string | null;
+    description: string | null;
+    is_recommended: boolean;
+    scenario_date: string | null;
+    scenario_time: string | null;
+    price: number | null;
+    total_price: number | null;
+    conditions_note: string | null;
+    status: string;
+    selected_at: string | null;
+  }>;
+  acceptedScenarioId?: string | null;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -425,6 +440,8 @@ export default function QuoteDetailClient({
   hubspotDealId = null,
   hubspotEligible = true,
   hasTierRange = false,
+  scenarios = [],
+  acceptedScenarioId = null,
 }: Props) {
   const router = useRouter();
   const [hubspotLinkedId, setHubspotLinkedId] = useState<string | null>(
@@ -1406,6 +1423,74 @@ export default function QuoteDetailClient({
             }
           }}
         />
+
+        {/* Multi-scenario status panel */}
+        {scenarios.length > 0 && (
+          <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 md:p-5 space-y-3">
+            <h2 className="admin-section-h2">Scheduling Scenarios</h2>
+            {acceptedScenarioId ? (
+              <p className="text-[11px] text-emerald-500 font-medium">
+                Client selected a scenario
+              </p>
+            ) : (
+              <p className="text-[11px] text-amber-500 font-medium">
+                Awaiting client selection
+              </p>
+            )}
+            <div className="space-y-2">
+              {scenarios.map((sc) => {
+                const isAccepted = sc.id === acceptedScenarioId;
+                return (
+                  <div
+                    key={sc.id}
+                    className={`rounded-lg border px-3 py-2.5 space-y-0.5 ${
+                      isAccepted
+                        ? "border-emerald-500/40 bg-emerald-500/5"
+                        : "border-[var(--brd)] bg-[var(--bg)]"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-semibold text-[var(--tx)]">
+                        {sc.label ?? `Option ${sc.scenario_number}`}
+                      </span>
+                      {sc.is_recommended && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--admin-primary-fill)]">
+                          Recommended
+                        </span>
+                      )}
+                      {isAccepted && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-500">
+                          Selected
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-[var(--tx3)]">
+                      {sc.scenario_date && (
+                        <span>
+                          {new Date(sc.scenario_date + "T00:00:00").toLocaleDateString("en-CA", {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                          {sc.scenario_time ? ` · ${sc.scenario_time}` : ""}
+                        </span>
+                      )}
+                      {sc.total_price != null && (
+                        <span>${Math.round(sc.total_price).toLocaleString()} total</span>
+                      )}
+                      {sc.price != null && (
+                        <span>${Math.round(sc.price).toLocaleString()} pre-tax</span>
+                      )}
+                    </div>
+                    {sc.description && (
+                      <p className="text-[10px] text-[var(--tx3)]">{sc.description}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left: Quote Details */}
