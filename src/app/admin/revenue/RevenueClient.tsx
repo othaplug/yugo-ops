@@ -81,6 +81,8 @@ interface PaidMove {
   move_code: string | null;
   client_name: string | null;
   estimate: number | null;
+  final_amount: number | null;
+  total_price: number | null;
   amount: number | null;
   deposit_amount: number | null;
   balance_amount: number | null;
@@ -314,7 +316,7 @@ export default function RevenueClient({
     isPartnerChannelInvoice(i, orgIdToType, clientTypeMap),
   );
   const moveRevenue = paidMovesList.reduce(
-    (s, m) => s + Number(m.amount ?? m.estimate ?? 0),
+    (s, m) => s + Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate ?? 0),
     0,
   );
   const paidTotal = invoiceRevenue + moveRevenue;
@@ -334,7 +336,7 @@ export default function RevenueClient({
   paidMovesList.forEach((m) => {
     const name = m.client_name || "-";
     byClient[name] =
-      (byClient[name] || 0) + Number(m.amount ?? m.estimate ?? 0);
+      (byClient[name] || 0) + Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate ?? 0);
   });
   const topClients = Object.entries(byClient)
     .sort((a, b) => b[1] - a[1])
@@ -360,7 +362,7 @@ export default function RevenueClient({
           const d = getMoveRevenueDate(move);
           return d.getFullYear() === y && d.getMonth() === mo;
         })
-        .reduce((s, move) => s + Number(move.amount ?? move.estimate ?? 0), 0);
+        .reduce((s, move) => s + Number(move.final_amount ?? move.total_price ?? move.amount ?? move.estimate ?? 0), 0);
 
     const partnerInMonth = (y: number, mo: number) =>
       partnerRevenueTotalForMonth(
@@ -449,7 +451,7 @@ export default function RevenueClient({
         if (d.getFullYear() === year && d.getMonth() === month) {
           const day = d.getDate();
           byDayMoves[day] =
-            (byDayMoves[day] || 0) + Number(m.amount ?? m.estimate ?? 0);
+            (byDayMoves[day] || 0) + Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate ?? 0);
         }
       });
       const covered = deliveryIdsCoveredByAnyInvoice(all);
@@ -620,7 +622,7 @@ export default function RevenueClient({
         const d = getMoveRevenueDate(move);
         return d.getFullYear() === y && d.getMonth() === m;
       })
-      .reduce((s, mov) => s + Number(mov.amount ?? mov.estimate ?? 0), 0);
+      .reduce((s, mov) => s + Number(mov.final_amount ?? mov.total_price ?? mov.amount ?? mov.estimate ?? 0), 0);
     return partnerSum + moveSum;
   }, [
     all,
@@ -650,7 +652,7 @@ export default function RevenueClient({
         const d = getMoveRevenueDate(move);
         return d.getFullYear() === y && d.getMonth() === m;
       })
-      .reduce((s, mov) => s + Number(mov.amount ?? mov.estimate ?? 0), 0);
+      .reduce((s, mov) => s + Number(mov.final_amount ?? mov.total_price ?? mov.amount ?? mov.estimate ?? 0), 0);
     return partnerSum + moveSum;
   }, [
     all,
@@ -679,7 +681,7 @@ export default function RevenueClient({
     }
     const moveSum = paidMovesList
       .filter((move) => getMoveRevenueDate(move).getFullYear() === y)
-      .reduce((s, mov) => s + Number(mov.amount ?? mov.estimate ?? 0), 0);
+      .reduce((s, mov) => s + Number(mov.final_amount ?? mov.total_price ?? mov.amount ?? mov.estimate ?? 0), 0);
     return partnerY + moveSum;
   }, [
     all,

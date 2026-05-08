@@ -21,7 +21,7 @@ export default async function RevenuePage() {
       db
         .from("moves")
         .select(
-          "id, move_code, client_name, estimate, amount, deposit_amount, balance_amount, payment_marked_paid_at",
+          "id, move_code, client_name, estimate, final_amount, total_price, amount, deposit_amount, balance_amount, payment_marked_paid_at",
         )
         .eq("payment_marked_paid", true)
         .not("payment_marked_paid_at", "is", null),
