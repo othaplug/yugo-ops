@@ -1,8 +1,16 @@
 import "./globals.css";
+import { Inter } from "next/font/google";
 import { ToastProvider } from "@/app/admin/components/Toast";
 import { AppNavigationChrome } from "@/components/providers/AppNavigationChrome";
 import OfflineBanner from "@/components/ui/OfflineBanner";
 import PhosphorProvider from "@/components/ui/PhosphorProvider";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-admin-sans",
+  weight: ["400", "500", "600", "700"],
+});
 import { getConfig } from "@/lib/config";
 import { DISPLAY_DATE_LOCALE_CONFIG_KEY } from "@/lib/display-date-locale";
 import {
@@ -45,7 +53,7 @@ export default async function RootLayout({
   );
   const formatJson = JSON.stringify(displayDateFormat);
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <head>
         <script
           dangerouslySetInnerHTML={{

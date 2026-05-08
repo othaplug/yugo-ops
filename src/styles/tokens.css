@@ -1,194 +1,320 @@
-/* ==========================================================================
-   Yugo+ admin (v1) — PR 1 Design Tokens (foundation)
-   ==========================================================================
-   Purpose: single source of truth for type scale, color roles, spacing,
-   radius, and shadows. Nothing in the codebase consumes these yet; later
-   PRs migrate components onto these tokens.
+/* ============================================================================
+ * Yugo+ Admin Design Tokens — PRD §2.1
+ * ----------------------------------------------------------------------------
+ * Scope: `.yugo-admin` (applied to the new AdminShell root).
+ *   Legacy wine/gold palette in globals.css remains default for client-facing
+ *   routes (/quote, /estate, /track, /welcome) and any legacy admin pages not
+ *   yet migrated.
+ * Dark mode: `<html data-theme="dark">`. Default is light (screenshot parity).
+ * Tailwind v4 @theme forwards these vars as utilities: bg-surface-page,
+ *   text-primary, bg-accent, text-success-fg, shadow-md, rounded-lg,
+ *   duration-normal, ease-standard. Because @theme values reference CSS vars,
+ *   utilities are reactive to the `.yugo-admin` scope AND to data-theme.
+ * ============================================================================ */
 
-   Do not introduce new hex values or type sizes. If a need arises, discuss
-   with the team first and extend this file. See /docs/design-tokens.md.
-   ========================================================================== */
+/* -------------------------- Light (default, admin scope) ------------------- */
+.yugo-admin {
+  color-scheme: light;
 
-:root {
-  /* ──────────────────────────────────────────────────────────────────────
-     Font stacks
-     ──────────────────────────────────────────────────────────────────── */
-  /* Reserved for page titles only ("Quotes", "Sandra Warren", "Alpha").
-     Season Mix Display is not yet loaded in the repo; Instrument Serif is
-     the current brand serif. Swap the first entry when Season Mix ships. */
-  --font-display:
-    "Season Mix Display", "Instrument Serif", "Georgia", "Times New Roman",
-    serif;
-
-  --font-sans:
-    "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
-    "Brown", "Helvetica Neue", Arial, sans-serif;
-
-  /* Same glyphs as --font-sans but consumers pair it with `tnum` features
-     for aligned monetary / numeric columns. */
-  --font-mono-numeric:
-    "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
-    sans-serif;
-
-  /* ──────────────────────────────────────────────────────────────────────
-     Type scale — 5 sizes + 1 numeric feature + 1 annotation
-     Each treatment exposes size / line-height / weight / letter-spacing as
-     separate atoms so typography utilities can assemble them. The `font`
-     shorthand does not carry letter-spacing, which is why we split.
-     ──────────────────────────────────────────────────────────────────── */
-
-  /* Display — page titles only */
-  --font-size-display: 28px;
-  --line-height-display: 36px;
-  --font-weight-display: 600;
-  --letter-spacing-display: -0.01em;
-
-  /* Heading — section titles inside pages */
-  --font-size-heading: 18px;
-  --line-height-heading: 26px;
-  --font-weight-heading: 600;
-  --letter-spacing-heading: 0;
-
-  /* Body — default reading text */
-  --font-size-body: 14px;
-  --line-height-body: 20px;
-  --font-weight-body: 400;
-  --letter-spacing-body: 0;
-
-  /* Label — column headers, section eyebrows, uppercase */
-  --font-size-label: 11px;
-  --line-height-label: 14px;
-  --font-weight-label: 600;
-  --letter-spacing-label: 0.08em;
-
-  /* Annotation — metadata, timestamps, small helper copy */
-  --font-size-annotation: 12px;
-  --line-height-annotation: 16px;
-  --font-weight-annotation: 500;
-  --letter-spacing-annotation: 0;
-
-  /* Numeric — not a size, a feature. Apply alongside any size token. */
-  --font-feature-numeric: "tnum" 1, "cv11" 1;
-
-  /* ──────────────────────────────────────────────────────────────────────
-     Color roles — light (default)
-     ──────────────────────────────────────────────────────────────────── */
-
-  /* Brand wine. Used ONLY for brand chrome and primary CTAs. Not for
-     money, not for status, not decorative. */
-  --color-wine: #66143D;
-  --color-wine-hover: #4F0F2D;
-  --color-wine-subtle: #FAF0F4; /* active nav wash — NOT a wine fill */
-
-  /* Surfaces. */
-  --color-canvas: #FAFAFA;
-  --color-surface: #FFFFFF;
-  --color-surface-subtle: #F7F7F7;
-  --color-surface-sunken: #F1F1F2;
+  /* Surfaces */
+  --surface-page: #F7F8FA;
+  --surface-card: #FFFFFF;
+  --surface-raised: #FFFFFF;
+  --surface-sunken: #F2F4F7;
+  --surface-overlay: rgba(16, 24, 40, 0.40);
+  --surface-hover: rgba(16, 24, 40, 0.04);
+  --surface-active: rgba(16, 24, 40, 0.08);
 
   /* Borders */
-  --color-border: #EAEAEC;
-  --color-border-strong: #D4D4D8;
+  --border-subtle: #EAECF0;
+  --border-default: #D0D5DD;
+  --border-strong: #98A2B3;
+  --border-focus: #5E56F0;
 
   /* Text */
-  --color-text-primary: #0A0A0B;
-  --color-text-secondary: #52525B;
-  --color-text-tertiary: #A1A1AA;
+  --text-primary: #101828;
+  --text-secondary: #475467;
+  --text-tertiary: #667085;
+  --text-quaternary: #98A2B3;
+  --text-disabled: #D0D5DD;
+  --text-inverse: #FFFFFF;
+  --text-link: #5E56F0;
 
-  /* Status — only for status chips, never decorative */
-  --color-success-fg: #0F7A3F;
-  --color-success-bg: #DCFCE7;
-  --color-warning-fg: #92400E;
-  --color-warning-bg: #FEF3C7;
-  --color-danger-fg: #B91C1C;
-  --color-danger-bg: #FEE2E2;
-  --color-info-fg: #1E3A8A;
-  --color-info-bg: #DBEAFE;
-  --color-neutral-fg: #3F3F46;
-  --color-neutral-bg: #F4F4F5;
+  /* Brand / Accent — purple */
+  --accent: #5E56F0;
+  --accent-hover: #4A42D8;
+  --accent-active: #3E37B8;
+  --accent-subtle: #EEEBFF;
+  --accent-subtle-hover: #DDD7FF;
+  --accent-fg: #FFFFFF;
+  --accent-border: #BFB6FF;
 
-  /* Money — deltas and totals. Use for numeric change, NOT decoration. */
-  --color-money-positive: #0F7A3F;
-  --color-money-negative: #B91C1C;
+  /* Status — Success */
+  --success-fg: #067647;
+  --success-bg: #ECFDF3;
+  --success-border: #ABEFC6;
+  --success-solid: #17B26A;
 
-  /* ──────────────────────────────────────────────────────────────────────
-     Stage colors — crew / delivery workflow chart palette
-     Used by Recharts bars/lines and stage chips on /admin/crew/analytics.
-     Tuned for both light and dark admin themes.
-     ──────────────────────────────────────────────────────────────────── */
-  --color-stage-pickup-route: #3B82F6;
-  --color-stage-pickup-arrived: #8B5CF6;
-  --color-stage-loading: #F59E0B;
-  --color-stage-destination-route: #06B6D4;
-  --color-stage-destination-arrived: #10B981;
-  --color-stage-unloading: #F97316;
-  --color-stage-completed: #22C55E;
-  --color-stage-idle: #64748B;
-  --color-stage-fallback: #6B7280;
+  /* Status — Warning */
+  --warning-fg: #B54708;
+  --warning-bg: #FFFAEB;
+  --warning-border: #FEDF89;
+  --warning-solid: #F79009;
 
-  /* ──────────────────────────────────────────────────────────────────────
-     Spacing — 4px base unit
-     ──────────────────────────────────────────────────────────────────── */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-10: 40px;
-  --space-12: 48px;
-  --space-16: 64px;
+  /* Status — Danger */
+  --danger-fg: #B42318;
+  --danger-bg: #FEF3F2;
+  --danger-border: #FECDCA;
+  --danger-solid: #F04438;
 
-  /* ──────────────────────────────────────────────────────────────────────
-     Radius
-     ──────────────────────────────────────────────────────────────────── */
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-full: 9999px;
+  /* Status — Info */
+  --info-fg: #175CD3;
+  --info-bg: #EFF8FF;
+  --info-border: #B2DDFF;
+  --info-solid: #2E90FA;
 
-  /* ──────────────────────────────────────────────────────────────────────
-     Shadows
-     ──────────────────────────────────────────────────────────────────── */
-  --shadow-sm: 0 1px 2px rgba(10, 10, 11, 0.04);
-  --shadow-md: 0 4px 12px rgba(10, 10, 11, 0.08);
-  --shadow-lg: 0 16px 40px rgba(10, 10, 11, 0.12);
+  /* Status — Neutral (muted chip) */
+  --neutral-fg: #344054;
+  --neutral-bg: #F2F4F7;
+  --neutral-border: #EAECF0;
+  --neutral-solid: #667085;
+
+  /* Graph palette (categorical, 8-way) */
+  --graph-1: #5E56F0;
+  --graph-2: #17B26A;
+  --graph-3: #F79009;
+  --graph-4: #2E90FA;
+  --graph-5: #F04438;
+  --graph-6: #7A5AF8;
+  --graph-7: #EE46BC;
+  --graph-8: #15B79E;
+
+  /* Elevation shadows */
+  --admin-shadow-xs: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
+  --admin-shadow-sm: 0 1px 3px 0 rgba(16, 24, 40, 0.10), 0 1px 2px -1px rgba(16, 24, 40, 0.06);
+  --admin-shadow-md: 0 4px 8px -2px rgba(16, 24, 40, 0.10), 0 2px 4px -2px rgba(16, 24, 40, 0.06);
+  --admin-shadow-lg: 0 12px 16px -4px rgba(16, 24, 40, 0.08), 0 4px 6px -2px rgba(16, 24, 40, 0.03);
+  --admin-shadow-xl: 0 20px 24px -4px rgba(16, 24, 40, 0.08), 0 8px 8px -4px rgba(16, 24, 40, 0.03);
+  --admin-shadow-focus: 0 0 0 4px rgba(94, 86, 240, 0.16);
+  --admin-shadow-focus-danger: 0 0 0 4px rgba(240, 68, 56, 0.16);
 }
 
-/* ==========================================================================
-   Dark mode overrides
-   Applies to html[data-theme="dark"] / .dark. Shared-name values here
-   match admin-tokens.css dark values, so order of imports is irrelevant
-   for dark rendering.
-   ========================================================================== */
+/* -------------------------- Dark (admin scope) ----------------------------- */
+[data-theme="dark"] .yugo-admin,
+.yugo-admin[data-theme="dark"] {
+  color-scheme: dark;
 
-:where(html[data-theme="dark"], html.dark, [data-theme="dark"]) {
-  --color-canvas: #09090B;
-  --color-surface: #18181B;
-  --color-surface-subtle: #1F1F23;
-  --color-surface-sunken: #27272A;
+  --surface-page: #0B0B0F;
+  --surface-card: #14141A;
+  --surface-raised: #1C1C24;
+  --surface-sunken: #09090D;
+  --surface-overlay: rgba(0, 0, 0, 0.60);
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --surface-active: rgba(255, 255, 255, 0.10);
 
-  --color-border: #27272A;
-  --color-border-strong: #3F3F46;
+  --border-subtle: #1F1F28;
+  --border-default: #2A2A34;
+  --border-strong: #3D3D4A;
+  --border-focus: #7C74FF;
 
-  --color-text-primary: #FAFAFA;
-  --color-text-secondary: #A1A1AA;
-  --color-text-tertiary: #52525B;
+  --text-primary: #F5F5F7;
+  --text-secondary: #B4B4BE;
+  --text-tertiary: #8B8B96;
+  --text-quaternary: #6B6B78;
+  --text-disabled: #3D3D4A;
+  --text-inverse: #0B0B0F;
+  --text-link: #9089FF;
 
-  --color-wine-subtle: #2A0E1A;
+  --accent: #7C74FF;
+  --accent-hover: #918BFF;
+  --accent-active: #A69FFF;
+  --accent-subtle: #1F1A4D;
+  --accent-subtle-hover: #2A2460;
+  --accent-fg: #FFFFFF;
+  --accent-border: #3E37B8;
 
-  /* Status backgrounds tuned for dark surfaces; foregrounds remain
-     readable on their backgrounds without re-tinting. */
-  --color-success-bg: #0F2E1F;
-  --color-warning-bg: #3B2A0E;
-  --color-danger-bg: #3A1414;
-  --color-info-bg: #1A2847;
-  --color-neutral-bg: #27272A;
+  --success-fg: #75E0A7;
+  --success-bg: #0E2A1D;
+  --success-border: #1F5B3D;
+  --success-solid: #17B26A;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+  --warning-fg: #FDB022;
+  --warning-bg: #2B1D06;
+  --warning-border: #6B4A10;
+  --warning-solid: #F79009;
+
+  --danger-fg: #FDA29B;
+  --danger-bg: #2B0F0C;
+  --danger-border: #6B1F18;
+  --danger-solid: #F04438;
+
+  --info-fg: #84CAFF;
+  --info-bg: #08204A;
+  --info-border: #1849A9;
+  --info-solid: #2E90FA;
+
+  --neutral-fg: #CECFD2;
+  --neutral-bg: #1F1F28;
+  --neutral-border: #2A2A34;
+  --neutral-solid: #8B8B96;
+
+  --graph-1: #7C74FF;
+  --graph-2: #32D583;
+  --graph-3: #FDB022;
+  --graph-4: #53B1FD;
+  --graph-5: #F97066;
+  --graph-6: #9E77ED;
+  --graph-7: #F670C7;
+  --graph-8: #2ED3B7;
+
+  --admin-shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.30);
+  --admin-shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.40), 0 1px 2px -1px rgba(0, 0, 0, 0.30);
+  --admin-shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.40), 0 2px 4px -2px rgba(0, 0, 0, 0.25);
+  --admin-shadow-lg: 0 12px 16px -4px rgba(0, 0, 0, 0.45), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+  --admin-shadow-xl: 0 20px 24px -4px rgba(0, 0, 0, 0.50), 0 8px 8px -4px rgba(0, 0, 0, 0.30);
+  --admin-shadow-focus: 0 0 0 4px rgba(124, 116, 255, 0.24);
+  --admin-shadow-focus-danger: 0 0 0 4px rgba(249, 112, 102, 0.24);
+}
+
+/* -------------------------- Motion (global, mode-agnostic) ----------------- */
+.yugo-admin {
+  --duration-instant: 80ms;
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 500ms;
+
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ============================================================================
+ * Tailwind v4 @theme bridge
+ * ----------------------------------------------------------------------------
+ * @theme must be top-level. Each --color-* here maps to a CSS var resolved at
+ * the consuming element — which means utilities are live-bound to whatever
+ * scope the element is inside (e.g. `.yugo-admin`). Elements outside the
+ * admin scope will inherit the wine/gold legacy vars from globals.css, which
+ * is the desired behavior for client-facing routes.
+ *
+ * NOTE: we namespace admin tokens with `admin-` prefix for colors that could
+ * collide with existing `--text-primary` / `--surface-card` in globals.css.
+ * Utilities are named `bg-admin-surface`, `text-admin-primary`, etc.
+ * ============================================================================ */
+@theme {
+  /* Surfaces */
+  --color-admin-surface: var(--surface-page);
+  --color-admin-card: var(--surface-card);
+  --color-admin-raised: var(--surface-raised);
+  --color-admin-sunken: var(--surface-sunken);
+  --color-admin-hover: var(--surface-hover);
+  --color-admin-active: var(--surface-active);
+
+  /* Borders */
+  --color-admin-border: var(--border-default);
+  --color-admin-border-subtle: var(--border-subtle);
+  --color-admin-border-strong: var(--border-strong);
+  --color-admin-border-focus: var(--border-focus);
+
+  /* Text */
+  --color-admin-fg: var(--text-primary);
+  --color-admin-fg-secondary: var(--text-secondary);
+  --color-admin-fg-tertiary: var(--text-tertiary);
+  --color-admin-fg-quaternary: var(--text-quaternary);
+  --color-admin-fg-disabled: var(--text-disabled);
+  --color-admin-fg-inverse: var(--text-inverse);
+  --color-admin-fg-link: var(--text-link);
+
+  /* Accent */
+  --color-admin-accent: var(--accent);
+  --color-admin-accent-hover: var(--accent-hover);
+  --color-admin-accent-active: var(--accent-active);
+  --color-admin-accent-subtle: var(--accent-subtle);
+  --color-admin-accent-subtle-hover: var(--accent-subtle-hover);
+  --color-admin-accent-fg: var(--accent-fg);
+  --color-admin-accent-border: var(--accent-border);
+
+  /* Status */
+  --color-admin-success-fg: var(--success-fg);
+  --color-admin-success-bg: var(--success-bg);
+  --color-admin-success-border: var(--success-border);
+  --color-admin-success-solid: var(--success-solid);
+
+  --color-admin-warning-fg: var(--warning-fg);
+  --color-admin-warning-bg: var(--warning-bg);
+  --color-admin-warning-border: var(--warning-border);
+  --color-admin-warning-solid: var(--warning-solid);
+
+  --color-admin-danger-fg: var(--danger-fg);
+  --color-admin-danger-bg: var(--danger-bg);
+  --color-admin-danger-border: var(--danger-border);
+  --color-admin-danger-solid: var(--danger-solid);
+
+  --color-admin-info-fg: var(--info-fg);
+  --color-admin-info-bg: var(--info-bg);
+  --color-admin-info-border: var(--info-border);
+  --color-admin-info-solid: var(--info-solid);
+
+  --color-admin-neutral-fg: var(--neutral-fg);
+  --color-admin-neutral-bg: var(--neutral-bg);
+  --color-admin-neutral-border: var(--neutral-border);
+  --color-admin-neutral-solid: var(--neutral-solid);
+
+  /* Graph */
+  --color-admin-graph-1: var(--graph-1);
+  --color-admin-graph-2: var(--graph-2);
+  --color-admin-graph-3: var(--graph-3);
+  --color-admin-graph-4: var(--graph-4);
+  --color-admin-graph-5: var(--graph-5);
+  --color-admin-graph-6: var(--graph-6);
+  --color-admin-graph-7: var(--graph-7);
+  --color-admin-graph-8: var(--graph-8);
+
+  /* Radius */
+  --radius-admin-xs: 4px;
+  --radius-admin-sm: 6px;
+  --radius-admin-md: 8px;
+  --radius-admin-lg: 12px;
+  --radius-admin-xl: 16px;
+  --radius-admin-2xl: 20px;
+  --radius-admin-full: 9999px;
+
+  /* Shadows */
+  --shadow-admin-xs: var(--admin-shadow-xs);
+  --shadow-admin-sm: var(--admin-shadow-sm);
+  --shadow-admin-md: var(--admin-shadow-md);
+  --shadow-admin-lg: var(--admin-shadow-lg);
+  --shadow-admin-xl: var(--admin-shadow-xl);
+  --shadow-admin-focus: var(--admin-shadow-focus);
+  --shadow-admin-focus-danger: var(--admin-shadow-focus-danger);
+
+  /* Fonts */
+  --font-admin-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-admin-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* Motion */
+  --duration-admin-instant: 80ms;
+  --duration-admin-fast: 120ms;
+  --duration-admin-normal: 200ms;
+  --duration-admin-slow: 300ms;
+  --duration-admin-slower: 500ms;
+
+  --ease-admin-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-admin-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-admin-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-admin-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-admin-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* -------------------------- Focus ring utility ----------------------------- */
+.yugo-admin .focus-ring {
+  outline: none;
+  box-shadow: var(--admin-shadow-focus);
+}
+.yugo-admin .focus-ring-danger {
+  outline: none;
+  box-shadow: var(--admin-shadow-focus-danger);
 }

@@ -1,188 +1,168 @@
 # Yugo+ Admin Rebuild — Phase 0 Audit
 
-Read-only. No code changed.
+Baseline snapshot of the repository before the rebuild begins. Every finding below is derived from the current working tree on branch `claude/cool-noether-708d9a` (worktree of `feat/admin-rebuild` target).
 
-## 1. Environment snapshot
+## 1. Stack reality vs. PRD assumptions
 
-| Thing | PRD assumes | Repo reality |
+| Area | PRD / prompt says | Actual |
 |---|---|---|
-| Root path prefix | `/app`, `/components`, `/lib`, `/types`, `/styles` | `src/app`, `src/components`, `src/lib` (no `/src/types`, no `/src/styles`) |
-| Tailwind | v3 (`theme.extend` in `tailwind.config.ts`) | v4 (`@import "tailwindcss"` in `globals.css`, no `tailwind.config.ts` theme block) |
-| Icons | Lucide React | Phosphor (`@phosphor-icons/react@2.1.10`) — already wired via `PhosphorProvider.tsx` |
-| Next | n/a | Next 16.1.6, React 19.2.3, React Compiler enabled |
-| Package manager | `pnpm` | `npm` (see `package-lock.json`, no `pnpm-lock.yaml`) |
-| Server state | TanStack Query | Not installed |
-| Client state | Zustand | Not installed |
-| Radix | all listed packages | None installed |
-| Forms | react-hook-form + zod | zod only; forms currently hand-rolled |
-| date-fns | required | Not installed |
-| cmdk | required | Not installed (existing `CommandPalette.tsx` is hand-rolled) |
-| cva / clsx / tailwind-merge | required | Not installed |
-| Theme | Light default, dark toggle, neutral + purple `#5E56F0` | Dark default, gold `#c9a962` (+ wine tokens for B2B/brand strips) |
-| Supabase types | `/types/supabase.ts` (codegen) | Does not exist |
-| Branch | `feat/admin-rebuild` | Working on `main` (per `always-main-yugo-ops.mdc` user rule) |
+| Next.js | 14 (App Router) | **16.1.6** (App Router) |
+| React | implied 18 | **19.2.3** |
+| TypeScript | strict | strict (tsconfig `"strict": true`) |
+| Path alias | `/app`, `/components` (root) | **`@/*` → `./src/*`**. All new code must use `src/` layout and `@/` imports. |
+| Tailwind | v3 with `tailwind.config.ts` | **v4** (`@import "tailwindcss"` + `@tailwindcss/postcss`). No `tailwind.config.ts` exists. Theme is declared via `@theme` blocks in `src/app/globals.css`. |
+| Icons | Lucide (PRD §1.2 rule 11, Phase 1.6) | **`@phosphor-icons/react` ^2.1.10**. Lucide not installed. |
+| Package manager | `pnpm` (prompt) | Repo uses `npm` (`package-lock.json` committed, `npm run dev`). |
+| Supabase client | `/lib/api/*` | `@/lib/supabase/{server,client}.ts` already in place |
+| Database types | `/types/supabase.ts` | **Does not exist.** No generated `Database` type anywhere under `src/`. Existing queries are largely untyped (`from("table")`). |
 
-## 2. Current admin routes (`src/app/admin`)
+**Implication:** strict adherence to the prompt's dependency list and folder layout is not possible. Several decisions now need confirmation — see `questions.md`.
 
-74 `page.tsx` files, 332 total `.ts`/`.tsx` files in `src/app/admin`. Top-level route segments:
+## 2. Current admin routes (existing)
+
+Under `src/app/admin/`:
 
 ```
-activity         drafts             leads              platform
-audit-log        finance            move-projects      projects
-bin-rentals      inbound-shipments  moves              quotes
-buildings        inbox              notifications      reports
-calendar         invoices           partners           revenue
-change-requests  (root page.tsx)    perks              sales
-claims           (layout.tsx)       settings           tips
-clients                              widget-leads      users
-crew                                 components/       dispatch
-deliveries                          -- (ignore)        -- (ignore)
+/admin                       (page.tsx — dashboard)
+/admin/activity
+/admin/audit-log
+/admin/bin-rentals           + [id], new
+/admin/buildings             + [id], new
+/admin/calendar
+/admin/change-requests
+/admin/claims                + [id], new
+/admin/clients               + [id], [id]/revenue, new
+/admin/crew                  + analytics
+/admin/deliveries            + [id], new
+/admin/dispatch
+/admin/drafts
+/admin/finance/forecast
+/admin/finance/profitability
+/admin/inbound-shipments     + [id], new
+/admin/inbox
+/admin/invoices              + new
+/admin/leads                 + [id], all, mine
+/admin/move-projects         + [id]
+/admin/moves                 + [id], new, office, residential
+/admin/notifications
+/admin/partners              + designers, designers/[id], designers/projects,
+                               gallery, health, hospitality, new, realtors,
+                               retail, statements/[statementId], [partnerId]/billing
+/admin/perks
+/admin/platform
+/admin/projects              + [projectId], new
+/admin/quotes                + [quoteId], [quoteId]/edit, new
+/admin/reports
+/admin/revenue
+/admin/sales/pricing-map
+/admin/settings              + [tab]
+/admin/tips
+/admin/users
+/admin/widget-leads          + [id]
 ```
 
-None of these line up 1:1 with the PRD module list. The PRD calls for: Dashboard, Inbox, My Work, Calendar, Leads, Quotes, Moves, Invoices, Customers, B2B Partners, Property Management, Buildings, Crew, Fleet, Dispatch, Analytics, Pricing Engine, Reports, Platform Settings. See §5 (conflicts) below.
+There is **no `(shell)` route group**. Shell wiring lives in `src/app/admin/layout.tsx` → `src/app/admin/components/AdminShell.tsx`.
 
-## 3. Existing admin components (key inventory)
+## 3. Component inventory (existing)
 
-In `src/app/admin/components/` — 30 files, shell-level:
+### `src/components/admin/`
+- `AdminContextHints.tsx`, `CancelMoveModal.tsx`, **`DataTable.tsx`** (bespoke, phosphor-based, with columns, bulk actions, mobile card layout), `InternalConfigKeyHint.tsx`, `PartnerPortalFeaturesCard.tsx`, `ReferralPartnersOverviewHint.tsx`, `RevenueForecastWidget.tsx`, `SchedulingSuggestion.tsx`, `SectionError.tsx`, `b2b/` (subdir).
 
-- `AdminShell.tsx` — 1037 lines. Current left sidebar + chrome + mobile nav. Replaces PRD §4.1/§4.4.
-- `Sidebar.tsx` — 146 lines. Static sidebar.
-- `CommandPalette.tsx` — 315 lines. Hand-rolled (no `cmdk`). Replaces PRD §7.2.
-- `NotificationDropdown.tsx`, `NotificationContext.tsx`, `RealtimeListener.tsx` — existing notification system. Would be replaced by PRD §7.3 drawer.
-- `Badge.tsx`, `FilterBar.tsx`, `SearchBox.tsx`, `CreateButton.tsx`, `SegmentedProgressBar.tsx`, `StatPctChange.tsx` — small primitives/composites already shipped.
-- `ProfileDropdown.tsx`, `SessionTimeout.tsx`, `TwoFAGate.tsx`, `ChangePasswordGate.tsx` — auth chrome that PRD never mentions. Must be preserved.
-- `LiveActivityFeed.tsx`, `LiveOperationsCard.tsx`, `ScheduleItem.tsx` — dashboard content currently in use.
-- `PostCompletionPriceEdit.tsx`, `IncidentsSection.tsx`, `ContactDetailsModal.tsx` — domain-specific widgets.
+### `src/components/ui/`
+- `AddressAutocomplete.tsx`, `ConfirmDialog.tsx`, `DraftBanner.tsx`, `InfoHint.tsx`, **`KpiCard.tsx`**, **`Modal.tsx`**, `ModalDialogFrame.tsx`, `MultiStopAddressField.tsx`, `OfflineBanner.tsx`, `PhosphorProvider.tsx`, `SectionDivider.tsx`.
 
-In `src/components/admin/`:
+### `src/app/admin/components/` (route-local)
+- `AdminShell.tsx`, `Sidebar.tsx`, `Topbar.tsx`, `ThemeContext.tsx`, `Toast.tsx`, `SearchBox.tsx`, `CommandPalette.tsx` (cmdk-style exists already), `NotificationDropdown.tsx`, `NotificationContext.tsx`, `ProfileDropdown.tsx`, `CreateButton.tsx`, `CreateDeliveryDropdown.tsx`, `CreateMovesDropdown.tsx`, `FilterBar.tsx`, `Badge.tsx`, `BackButton.tsx`, `LiveActivityFeed.tsx`, `LiveOperationsCard.tsx`, `ScheduleItem.tsx`, `SegmentedProgressBar.tsx`, `SessionTimeout.tsx`, `SidebarIcons.tsx`, `ModalOverlay.tsx`, `MoveDateFilter.tsx`, `ChangePasswordGate.tsx`, `TwoFAGate.tsx`, `ClientDate.tsx`, `ContactDetailsModal.tsx`, `IncidentsSection.tsx`, `PostCompletionPriceEdit.tsx`, `PendingChangeRequestsContext.tsx`, `RealtimeListener.tsx`, `StatPctChange.tsx`.
 
-- `DataTable.tsx` — **1332 lines**. Already the sole table engine in admin. Directly conflicts with PRD §5 DataTable rebuild.
-- `SchedulingSuggestion.tsx`, `RevenueForecastWidget.tsx`, `PartnerPortalFeaturesCard.tsx`, `CancelMoveModal.tsx`, `SectionError.tsx`, `AdminContextHints.tsx`, `InternalConfigKeyHint.tsx`, `ReferralPartnersOverviewHint.tsx` — current module surfaces.
-- `b2b/` — B2B-specific views.
+### Top-level `src/components/`
+- `AppIcons.tsx`, `CollapsibleSection.tsx`, `DeliveryProgressBar.tsx`, `EmbedQuoteCalculator.tsx`, `ProofOfDeliverySection.tsx`, `SafeText.tsx`, `SeasonalPricingPreview.tsx`, `StageProgressBar.tsx`, `TruckMarker.tsx`, `VendorStatusCompactTable.tsx`, `YugoBetaBanner.tsx`, `YugoLogo.tsx`, `YugoMarketingFooter.tsx`, plus module folders: `booking/`, `crew/`, `delivery-day/`, `dispatch/`, `inventory/`, `maps/`, `partner/`, `payments/`, `tracking/`.
 
-In `src/components/ui/` — shared primitives across admin+client: `KpiCard.tsx`, `Modal.tsx`, `ConfirmDialog.tsx`, `InfoHint.tsx`, `MultiStopAddressField.tsx`, `AddressAutocomplete.tsx`, `SectionDivider.tsx`, `PhosphorProvider.tsx`, `OfflineBanner.tsx`, `DraftBanner.tsx`, `ModalDialogFrame.tsx`. Used by client pages too — can't wipe.
+None of these primitives match the PRD contract (variants, cva, Radix-backed). Chip/Button/Tabs/Tooltip/Popover/Switch/Radio/ToggleGroup/Dropdown primitives do not exist.
 
-## 4. Supabase table → PRD module mapping
+## 4. Design system reality vs PRD §2.1
 
-No `/types/supabase.ts` codegen file exists. Tables below are observed from `.from("…")` calls in `src/lib` plus migration filenames.
+`src/app/globals.css` currently defines a **dark wine/gold admin theme** (see `--yu-bg-page: #2b0416`, `--yu-accent: #8b1a3a`, `--gold: #c9a962`). The PRD explicitly forbids wine/rose in admin and mandates a **neutral + purple (#5E56F0)** system with light default.
 
-| PRD module | Tables that map | Notes |
+Other conflicts:
+- Fonts: `Instrument Sans` / `Instrument Serif` (current) vs **Inter** (PRD).
+- Typography scale uses 12/13/16/18/20/22/26/32/40, vs PRD scale with explicit tokens `display-xl` … `numeric-sm`.
+- Spacing tokens are not formalized in CSS variables today — ad-hoc Tailwind utilities.
+- Theme is currently **dark-default**; PRD requires light-default with dark toggleable.
+
+## 5. Database tables mapped to PRD modules
+
+Table names confirmed by grepping `CREATE TABLE` across `supabase/migrations/` (301 migrations). Subset relevant to PRD modules:
+
+| PRD module | Primary table(s) | Notes |
 |---|---|---|
-| Leads | `leads` (confirmed via migrations + `src/lib/leads/*`), `widget_leads`, `client_referrals` | Leads table exists. |
-| Quotes | `quotes`, `quote_events`, `quote_analytics`, `quote_engagement`, `quote_addons`/`addons` | Rich schema already. |
-| Moves | `moves`, `move_inventory`, `move_change_requests`, `move_photos`, `move_documents`, `extra_items`, `incidents`, `status_events`, `tracking_sessions` | |
-| Customers (B2C) | `contacts` | No dedicated `customers` table; `contacts` plays that role. |
-| Customers (B2B / PM) | `organizations` (+ `partners` views) | PRD's "B2B Partners" and "Property Management" are both `organizations` rows segmented by type. |
-| Crew | `crews` (members stored as JSON/array), `crew_tracking_*`, `crew_sessions` | No normalized per-member table surfaced. |
-| Invoices | `invoices` | Square linked via `square_invoice_id`. |
-| Buildings | `building_profiles` | |
-| Deliveries / Bin rentals | `deliveries`, `bin_orders` | **PRD does not mention these — they are active modules.** |
-| Platform / Settings | `platform_users`, `platform_config`, `notification_preferences`, `in_app_notifications`, `login_history`, `webhook_logs` | |
-| Dispatch | Derived from `moves` + `tracking_sessions` | No dedicated table; fine. |
-| Analytics | Aggregates over all of the above | |
+| Leads | `leads`, `lead_activities` | present (`20260329120002_leads_management.sql`) |
+| Quotes | `quotes`, `quote_events`, `quote_engagement`, `quote_analytics_*` | present |
+| Moves | `moves`, `move_inventory`, `move_photos`, `move_documents`, `move_change_requests`, `move_projects`, `move_waivers`, `move_survey_photos`, `move_modifications` | present |
+| Invoices | `invoices`, plus payment-tracking columns | present |
+| Customers (B2C) | `clients` (existing admin route) | PRD uses "customers" terminology. Mapping: `/admin/customers` → existing `clients` table. |
+| B2B Partners | `partners` + partner_* tables; verticals as `/admin/partners/designers`, `hospitality`, `realtors`, `retail`, `gallery` | present |
+| Property Management | no dedicated `pm_*` tables found in quick grep; likely reuses `partners` with a type flag + `building_profiles` | **needs confirmation**. PRD §5.8 calls for a PM table; current schema may not have one. |
+| Buildings | `building_profiles` (`20260418140000_building_profiles.sql`) | present |
+| Crew | `crew_members`, `crews`, `crew_locations`, `crew_location_history`, `crew_schedule_blocks`, `crew_session_*` | present |
+| Dispatch | `crew_locations` + `moves` status fields; no dedicated dispatch table | present by composition |
+| Calendar | `crew_schedule_blocks`, `duration_defaults` | present |
+| Pricing Engine | `platform_settings`, `platform_config` (pricing), `rate_cards_*`, `platform_truck_fees`, `core_pricing_schema` | present |
+| Analytics | no single table — composed from `quote_events`, `notification_log`, `moves`, `invoices`, etc. | derived |
+| Audit log | `audit.ts` lib + audit rows on domain tables | present |
+| Settings → Integrations | none centralized; integrations (HubSpot, Square, Twilio, Mapbox) are config/env-driven | out of DB |
 
-## 5. Gaps (PRD says yes, repo says no)
+A full table inventory is larger than needed for Phase 0; the first-200 grep is at `_yugo-rebuild/_tables-first-200.txt` if regenerated. All modules the PRD requires have a corresponding table or derivable composition.
 
-1. **No dedicated `customers` table.** PRD Customers module has to sit on `contacts` (B2C) + `organizations` (B2B/PM). This works but every customer query is a union.
-2. **No normalized crew-member table.** Crew rows store `members` as JSON. PRD crew columns (per-member status, rating, damage rate) will need either (a) a new `crew_members` table, or (b) computed views over `crews.members`. Raise this before Phase 5.1.
-3. **No `deals`/`pipeline_stage` table.** PRD funnel metrics (New → Contacted → Quoted → Closing → Won) assume a single status field on `leads`. We'll need to confirm the current `leads.status` enum covers all five stages.
-4. **No Analytics tables.** PRD "MRR" chart assumes subscription-style data. Yugo+ is transactional (per-move revenue). MRR is the wrong chart shape here — repurpose as "Revenue trend" or "Monthly revenue". Confirmed with repo: there is no subscription or ARR surface.
-5. **No `notifications` table per PRD §7.3.** Repo uses `in_app_notifications`. Same idea, different name — reuse.
-6. **No `audit_log` table per PRD §7.1.** Repo has `webhook_logs` + `login_history` + status events. A unified `audit_log` doesn't exist yet. Decision needed before Settings/Audit log page.
+## 6. Gaps (PRD requires X, repo is missing X)
 
-## 6. Conflicts (PRD and repo disagree on direction)
+1. **No generated Supabase types.** `/types/supabase.ts` does not exist. Phase 1 / 4 will need `supabase gen types typescript` (or a local types file checked in) before module pages can be strongly typed.
+2. **No Radix primitives installed.** `@radix-ui/*` packages absent. All of the Phase 1.6 atoms (Checkbox, Switch, Radio, Tooltip, Dropdown, Popover, Tabs, ToggleGroup, Dialog-based Drawer/Modal) need the dependency block from Phase 1.1.
+3. **No TanStack Query, Zustand, sonner, cva, tailwind-merge, clsx, react-hook-form, zod-resolvers, react-virtual, date-fns, cmdk.** Some (zod, recharts, mapbox-gl) are already present and reusable.
+4. **No design-token stylesheet matching PRD §2.1.** `tokens.css` does not exist. Current tokens are a different system entirely.
+5. **No `components/primitives`, `components/composites`, `components/layout`, `components/modules`, `components/providers` folders.** All new code will create these.
+6. **No column-driven DataTable matching PRD §5.** Existing `src/components/admin/DataTable.tsx` is column-driven but uses a different contract (`ColumnDef<T>` w/ accessor/render, not `ColumnConfig<T>` w/ type). It does not support sparkline/indicator/identity cell types, saved views as tabs, URL-synced state, or virtualization.
+7. **No `/app/admin/(shell)` route group.** Existing admin layout is flat.
+8. **No PM (Property Management) route** at `/admin/pm`. PRD §6.2 requires one.
+9. **No `/admin/b2b` route.** PRD §6.1 requires one; current code has per-vertical routes under `/admin/partners/*`.
+10. **No `/admin/analytics` route.** Reports exist at `/admin/reports`, revenue at `/admin/revenue`, finance at `/admin/finance/*`.
+11. **No `/admin/pricing` top-level route.** Pricing data lives under `/admin/platform` and `/admin/sales/pricing-map`.
+12. **No `/admin/fleet`, `/admin/help` routes** (PRD sidebar config includes Fleet; §7.4 requires a shortcuts help page).
+13. **No Inter font load.** Current font stack is Instrument Sans/Serif via `next/font` (needs verification in `src/app/layout.tsx`).
+14. **No `data-theme="dark"` mechanism.** A `ThemeContext` exists but its contract and persistence key are not `yugo-theme`.
+15. **No `feat/admin-rebuild` branch.** Current work is on `claude/cool-noether-708d9a` (worktree).
 
-These need your call before Phase 1 starts. Each is a ship-blocker.
+## 7. Conflicts (existing X does not match PRD §Y)
 
-### C1. Icons: Phosphor vs Lucide — **RESOLVED by user**
-PRD §10.1 mandates Lucide. User override: keep Phosphor. Every PRD/execution-guide mention of Lucide icons gets translated to Phosphor equivalents. Icon primitive will wrap `@phosphor-icons/react`, not `lucide-react`. `lucide-react` will not be installed.
+| # | Conflict | PRD reference | Resolution (default) |
+|---|---|---|---|
+| C1 | Icons: Phosphor everywhere vs Lucide-only | PRD §1.2 (rule 11), Phase 1.6 | **Open question.** Ripping Phosphor out of ~60+ files is a separate, large refactor. Default: install Lucide for *new* primitives and new module pages; leave Phosphor usages untouched in out-of-scope legacy files. Document migration as a separate task. |
+| C2 | Dark wine/gold theme vs neutral + purple #5E56F0 | PRD §0, §2.1 | **Open question.** New `tokens.css` and admin shell must replace the wine palette wholesale. Conflicting CSS in `globals.css` must be removed or scoped so the two systems don't collide. |
+| C3 | Tailwind v4 (no config.ts) vs prompt's `tailwind.config.ts` snippet | Phase 1.3 | Use Tailwind v4 `@theme` block in `tokens.css` or `globals.css` instead of a `tailwind.config.ts`. Semantic utility names (`bg-surface`, `text-primary`, etc.) achievable via `@theme` custom properties. |
+| C4 | Existing `DataTable` (`src/components/admin/DataTable.tsx`) contract ≠ PRD §10.4 | PRD §5, §10.4 | Build new DataTable at `src/components/composites/DataTable/` per PRD. Migrate call sites module-by-module during Phase 4-7. Old component stays until all callers are migrated, then deleted. |
+| C5 | Existing `Modal`, `KpiCard`, `ConfirmDialog`, `CommandPalette` primitives | PRD §3, §7 | Replace incrementally. New versions at `components/primitives/` and `components/composites/`. Old ones stay until route migration. |
+| C6 | Existing `AdminShell` / `Sidebar` / `Topbar` at `src/app/admin/components/` vs PRD `components/layout/` | PRD §4, Phase 2.2 | Build PRD-spec shell at `src/components/layout/AdminShell.tsx`. Switch `src/app/admin/layout.tsx` to use it only after the new shell reaches parity with the existing (notifications, command palette, 2FA/change-password gates, realtime listener, session timeout). |
+| C7 | `npm` vs `pnpm` in Phase 1.1 | Phase 1.1 | Use `npm install` for dependencies. |
+| C8 | Terminology: PRD "Customers" vs repo "Clients" (`/admin/clients`, `clients` table) | PRD §5.8, §7.3 | **Open question.** Keep DB table name `clients`, alias to "Customers" in UI. New route at `/admin/customers` acts as the PRD canonical surface; existing `/admin/clients` can redirect or coexist. |
+| C9 | PRD B2B: single `/admin/b2b` with 11 verticals in table vs repo's per-vertical routes (`designers`, `hospitality`, `realtors`, `retail`, `gallery`) | PRD §6.1 | Build unified `/admin/b2b` with `VERTICAL` column filter. Keep per-vertical routes as pinned saved views (PRD §5.7). |
+| C10 | PRD "Fleet" sidebar item; repo has no `/admin/fleet` route | PRD §4.2 | Create stub route during Phase 5 (or defer to questions). Table `fleet_vehicles_and_allocation` exists (`20250281000000`) so data is available. |
+| C11 | Existing `src/app/admin/layout.tsx` is async server component with auth gates (2FA, password change); PRD `(shell)/layout.tsx` is silent on these | Phase 2.3 | Preserve existing auth/gate logic. The new shell wraps *inside* those gates. Do not remove `ChangePasswordGate` / `TwoFAGate`. |
+| C12 | Existing `ThemeContext` and its persist key | Phase 1.5 | Replace with Zustand-persist ThemeProvider. Migrate existing `ThemeContext` consumers in a dedicated commit. |
+| C13 | Current default theme is dark; PRD mandates light-default | PRD §0 | Flip default on rebuild cutover. Persisted-dark for existing users keeps their preference. |
+| C14 | PRD "No em dashes in copy" but prompt itself contains several; many existing UI strings use them | PRD quality rule 6 | New components: no em dashes. Legacy copy: linted and fixed during polish pass (Phase 7.4). |
+| C15 | PRD "No emoji in UI"; verify none in existing strings | PRD §1.2 rule 11 | Scan in Phase 7.4 polish. |
 
-### C2. Colors: gold+wine (current) vs neutral+purple (PRD) — **RESOLVED**
-User confirmed no wine, no gold in admin. README line 72 agrees: "No Yugo brand colors in admin. Wine/Rose are Estate-only." PRD §2.1 purple `#5E56F0` accent stands. Existing `--yu-*`, `--gold`, `--gold2`, `--yugo-accent` tokens in `globals.css` stay for client/estate surfaces and are **not** used in rebuilt admin. Admin gets a new token layer (`--ygo-admin-*` or similar) that cohabits `globals.css`.
+## 8. Suggested sequencing adjustments
 
-### C3. Tailwind v4, not v3. — **Needs decision**
-PRD Prompt 1.3 says to edit `tailwind.config.ts` with `theme.extend`. Repo uses Tailwind v4, which is configured in CSS via `@theme`. I'll implement tokens through `@theme` in a new `styles/admin-tokens.css` (imported inside `globals.css`) and skip the config file rewrite. This matches your stack; no behavior change from the PRD's intent.
+1. Before Phase 1 starts, resolve the blocking questions in `_yugo-rebuild/questions.md`. A rebuild of this scope built on wrong answers is wasteful.
+2. Phase 1 must add: generate Supabase types, install deps (adjusted list for TW v4 / no `tailwind.config.ts`), author `tokens.css` via `@theme`.
+3. Phase 2's `(shell)` route group can be introduced as a sibling of the existing `admin/layout.tsx` via the Next.js route-group convention, so the old and new shells can be toggled per route during migration. Alternative: build the new shell first and swap in a single commit.
+4. DataTable migration (Phase 3 → Phase 4-7) should go module by module, deleting the old component only after every call site moves.
+5. Branch: create `feat/admin-rebuild` and push the audit commit there.
 
-### C4. `/styles/tokens.css` vs existing `src/app/globals.css` — **Needs decision**
-`globals.css` is 3638 lines. It carries tokens for the client-facing premium quote system (wine, gold, Instrument Serif hero fonts), estate, crew, tracking, etc. Your user rule says "do not alter our premium design system on add or upgrade." I will **not** edit existing variables or move them. Admin tokens will live in a **new** `src/styles/admin-tokens.css` scoped under `.ygo-admin-scope` (or `[data-admin]`) on the admin shell root, so existing surfaces are untouched. Agreed?
+## 9. Acceptance-check notes
 
-### C5. Existing `DataTable.tsx` (1332 lines) vs new PRD DataTable. — **Needs decision**
-Current admin uses this single table everywhere. Two paths:
-- **(a) Parallel build**: new table at `src/components/admin-v2/data-table/` behind a feature flag; migrate each module by swapping the import as we rebuild that module's page.
-- **(b) Rip and replace**: delete the old table day one, every module that imports it breaks until its page is rebuilt.
-I recommend **(a)** — keeps the app shippable. Each module PR flips its own imports when its new page lands.
+- No `_yugo-rebuild/audit.md` existed prior. Now present.
+- `git status` clean before writing audit.
+- `git log --oneline -20` shows 20 recent commits on the worktree branch (all named `"update"` — consider more descriptive messages going forward per the Conventional Commits rule).
 
-### C6. Existing `AdminShell.tsx` (1037 lines) vs new PRD shell. — **Needs decision**
-Same choice. Recommend parallel: new shell mounts at `src/app/admin/(shell-v2)/layout.tsx` using a route group, we migrate pages into it page by page. When every module is migrated, the old shell is deleted and `(shell-v2)` is renamed. The current `admin/layout.tsx` auth wrapping (TwoFAGate, ChangePasswordGate) stays — that is auth, not chrome.
-
-### C7. Module route names differ from PRD.
-Current uses `/admin/clients` for what the PRD calls `Customers`. Current has `/admin/partners` nested under hospitality/gallery/health/designers — PRD collapses into `/admin/b2b`. Current has `/admin/deliveries`, `/admin/bin-rentals`, `/admin/inbound-shipments` — PRD never mentions any of these. Options:
-- **(a) Rename to match PRD** and leave 301 redirects from old paths (changes every internal link).
-- **(b) Keep current URLs** and only update the Sidebar labels/config to match PRD semantics. Less churn, no broken bookmarks.
-Recommend **(b)**. Customers=`/admin/clients`, B2B=`/admin/partners/*`, Deliveries/Bin Rentals/Inbound Shipments survive as additional PRD-missing modules added to the nav under a "Logistics" group.
-
-### C8. Scope out-of-band: Bin rentals, Deliveries, Inbound shipments, Projects, Perks, Tips, Finance, Revenue, Reports, Sales, Widget leads, Claims, Move projects, Activity, Change requests.
-Fifteen live modules exist that the PRD does not mention. They are **in production**. We cannot delete them. Options per module:
-- Keep current page under new shell without redesign (low effort, inconsistent UX).
-- Rebuild under the PRD DataTable/Drawer pattern (consistent, but adds ~2 weeks).
-- Archive (remove from nav, keep routes live for deep-links).
-I need your call on each group. My default: **keep + visually re-skin under new shell, full rebuild only when someone requests**.
-
-### C9. Package manager.
-PRD prompts use `pnpm add …`. Repo uses `npm`. I'll translate every `pnpm` command to `npm install …` and use `npm run typecheck` / `npm run lint`. No `pnpm-lock.yaml` will be added.
-
-### C10. `@radix-ui/react-*` individual packages vs shadcn/ui.
-PRD §10.1 mentions "shadcn/ui as component primitive base (Radix under the hood)" but the execution guide installs raw Radix packages. I'll install raw Radix only. No `shadcn/ui` CLI/init. Reason: shadcn copies component source into your repo; you already have your own primitives system to maintain; adding shadcn would add a third style dialect.
-
-### C11. Dark mode baseline.
-Current admin is **dark by default, gold accent**. PRD mandates **light by default, dark toggle**. Most admin users are currently signed in to dark. This is a visible change. Do you want:
-- **(a)** Flip to light by default (PRD-compliant) and users can toggle to dark.
-- **(b)** Honor the user's current preference on first load, default light for fresh installs.
-Recommend **(b)** for continuity.
-
-### C12. Recharts is v3 (shipping), PRD assumes v2. Minor — non-blocking. The chart APIs we need (`LineChart`, `Line`, `Tooltip`, `YAxis`, `XAxis`, `Legend`, `CartesianGrid`) are stable. No action.
-
-### C13. No Storybook in repo. PRD §10.8 quality gate #1 says "Storybook story for every new component." Adding Storybook to this stack (Next 16, React 19, React Compiler, Tailwind v4) is a week of its own. Options:
-- Skip Storybook; use the `/admin/_dev/primitives` test harness (Prompt 1.6) as the review surface.
-- Install Storybook.
-Recommend **skip**; use the dev harness. Raise later if desired.
-
-### C14. Em-dashes + emoji in existing copy.
-User rule is strict: no em dashes anywhere in UI, no emoji. PRD audit sweep §7.4 agrees. Existing admin copy likely still has both. Phase 7.4 sweep will catch and fix. Not a Phase 1 blocker.
-
-### C15. PRD demands every mutation be "optimistic + rollback + toast".
-This is a correctness constraint, not a styling one, and it requires `@tanstack/react-query` + `sonner`. Doable, but every existing hand-rolled fetch in the modules we rebuild needs a migration. I'll only apply this to **newly rebuilt** module pages; legacy pages stay as-is until migrated.
-
-## 7. Realistic scope assessment
-
-Per the PRD itself, this is a **10-week** project. The execution guide is ~40 sub-prompts, each non-trivial. Specific time sinks:
-
-- Phase 1 (tokens + 12 primitives + dev harness): 4–6 days.
-- Phase 2 (composites + shell + drawer + modal + floating bar): 3–4 days.
-- Phase 3 (DataTable engine, virtualized, URL-synced, responsive card fallback): 4–6 days.
-- Phase 4 (Dashboard + 4 core modules): 10–14 days.
-- Phase 5 (Crew + Invoices + Dispatch + Calendar): 7–10 days.
-- Phase 6 (B2B + PM + Buildings + Analytics + Pricing Engine): 10–14 days.
-- Phase 7 (Settings, Search, Notifications, audit sweep, shortcuts): 4–6 days.
-
-Total conservative estimate: **42–60 working days of focused engineering.**
-
-Single chat sessions cannot safely execute this. I need a clear cadence: one sub-prompt at a time, commit + review, next sub-prompt. I will not cram multiple phases into one turn.
-
-## 8. My recommended path forward
-
-1. You answer C3–C11 (7 decisions).
-2. I start **Phase 1.1** only: install missing deps (translated to `npm`, Phosphor replaces Lucide), no code changes beyond `package.json`.
-3. Run typecheck. Fix peer conflicts. Commit.
-4. **Phase 1.2**: admin-scoped token layer in a new file (`src/styles/admin-tokens.css`), imported under an `.ygo-admin` or `[data-admin]` selector. Light + dark. Do **not** touch existing tokens.
-5. **Phase 1.3**: skip (Tailwind v4). Instead, add the `@theme` block to the same tokens file so Tailwind v4 sees the semantic color names.
-6. **Phase 1.4**: theme provider + Zustand store, applied only inside the admin shell-v2 route group.
-7. **Phase 1.5.x**: primitives (Phosphor-based Icon, Button, Chip, Avatar/Stack, Input, Checkbox/Switch/Radio, Dropdown/Popover/Tooltip, Tabs/ToggleGroup/Badge/Skeleton/EmptyState). One file at a time. Each visible in the dev harness before moving on.
-8. **Phase 1.6**: `src/app/admin/_dev/primitives/page.tsx` — dev-only — you eyeball everything.
-9. Review. Then we talk about Phase 2.
-
-Every phase lands on `main` under `always-main-yugo-ops.mdc`. Commit messages follow your convention: `feat(admin): <what>` — no em dashes in subjects.
-
----
-
-End of audit. Awaiting decisions on C3, C4, C5, C6, C7, C8, C11. The rest are flagged but have sensible defaults noted above.
+*End of audit.*
