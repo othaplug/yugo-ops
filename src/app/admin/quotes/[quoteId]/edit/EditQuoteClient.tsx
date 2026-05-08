@@ -25,7 +25,7 @@ import {
   quoteDetailDateLabel,
   quoteFormServiceDateLabel,
 } from "@/lib/quotes/quote-field-labels";
-import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
+import { serviceTypeDisplayLabel, getDisplayLabel } from "@/lib/displayLabels";
 import type {
   WhiteGloveAssembly,
   WhiteGloveItemCategory,
@@ -1125,7 +1125,7 @@ export default function EditQuoteClient({
           <div>
             <div className="text-[var(--tx3)] text-[11px]">Status</div>
             <div className="text-[var(--tx)] font-medium uppercase">
-              {oq.status}
+              {getDisplayLabel(oq.status, "quote") || oq.status}
             </div>
           </div>
         </div>

@@ -15,6 +15,7 @@ import {
 } from "@phosphor-icons/react";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/client-timezone";
+import { moveSizeDisplayLabel } from "@/lib/displayLabels";
 import { formatMoveHoursLabel } from "@/utils/format-move-hours";
 import PartnerSignOut from "@/app/partner/PartnerSignOut";
 import { InfoHint } from "@/components/ui/InfoHint";
@@ -1552,7 +1553,7 @@ export function PartnerPmProjectsTab({ setTab }: { setTab: (t: PmTabId) => void 
               <ul className={`${pmMeta} space-y-1`}>
                 {unitRows.map((u, i) => (
                   <li key={i}>
-                    Unit {u.unit_number} — {u.unit_type} · Out {u.outbound_date || "—"} · Return{" "}
+                    Unit {u.unit_number} — {moveSizeDisplayLabel(u.unit_type)} · Out {u.outbound_date || "—"} · Return{" "}
                     {u.return_date || "—"}
                   </li>
                 ))}

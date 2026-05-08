@@ -34,6 +34,7 @@ import {
   MANUAL_LEAD_TEXTAREA_CLASS,
   REFERRER_OR_SITE_LABEL,
 } from "@/lib/leads/manual-lead-ui";
+import { moveSizeDisplayLabel } from "@/lib/displayLabels";
 
 export type LeadRow = {
   id: string;
@@ -420,7 +421,7 @@ export default function LeadsHubClient({
               {lead.status === "follow_up_sent" ? " · Follow-up sent" : ""}
             </p>
             <p className="text-[11px] text-[var(--tx3)] mt-1">
-              {[lead.phone, lead.move_size, lead.preferred_date].filter(Boolean).join(" | ")}
+              {[lead.phone, lead.move_size ? moveSizeDisplayLabel(lead.move_size) : null, lead.preferred_date].filter(Boolean).join(" | ")}
             </p>
             {lead.intelligence_summary ? (
               <p className="text-[10px] text-[var(--tx2)] mt-1 line-clamp-2">

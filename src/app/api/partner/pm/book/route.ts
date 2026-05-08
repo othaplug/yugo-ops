@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
 import { sendEmail } from "@/lib/email/send";
+import { adminNotificationLayout } from "@/lib/email/admin-templates";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
 import { signTrackToken } from "@/lib/track-token";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
@@ -337,7 +338,10 @@ export async function POST(req: NextRequest) {
         await sendEmail({
           to: pmEmail,
           subject: `Yugo move booked — ${moveCode} (forward to tenant if needed)`,
-          html: `<p style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;color:#1a1f1b">Your booking for unit <strong>${unitNumber}</strong> on <strong>${scheduledDate}</strong> (${scheduledTime}) is pending Yugo confirmation.</p><p style="font-family:system-ui,sans-serif;font-size:15px"><a href="${trackUrl}" style="color:#2C3E2D;font-weight:600">Open tracking link</a> — share with the tenant when you are ready.</p>`,
+          html: adminNotificationLayout(
+            `<p style="font-size:14px;color:#6B635C;line-height:1.6;margin:0 0 16px;">Your booking for unit <strong style="color:#1C1917;">${unitNumber}</strong> on <strong style="color:#1C1917;">${scheduledDate}</strong> (${scheduledTime}) is pending Yugo confirmation.</p><p style="margin:0;"><a href="${trackUrl}" style="color:#2C3E2D;font-weight:700;font-size:13px;">Open tracking link</a> &mdash; share with the tenant when you are ready.</p>`,
+            `Move booked — ${moveCode}`
+          ),
         });
       } catch {
         /* non-fatal */

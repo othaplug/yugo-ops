@@ -1,9 +1,9 @@
 /**
  * Styled HTML templates for admin/coordinator notification emails.
- * All use light background and dark text for readability (no bare plain-text emails).
- * Typography: forest kickers 12px uppercase; primary buttons match transactional forest CTA.
+ * Premium Yugo-branded shell: cream page, white card, WINE top bar, forest section accents.
+ * Typography: 12px uppercase kickers; forest primary CTAs (matches transactional client mail).
  */
-import { getEmailFooterStandaloneFragment } from "@/lib/email/client-email-footer";
+import { getClientEmailFooterTrs } from "@/lib/email/client-email-footer";
 import {
   EMAIL_SANS_STACK,
   EMAIL_FOREST,
@@ -13,50 +13,122 @@ import {
   EMAIL_WINE,
   emailPrimaryCtaStyle,
 } from "@/lib/email/email-brand-tokens";
+import { EMAIL_FLUID_MAX_WIDTH_PX } from "@/lib/email/email-responsive-css";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import {
   EMAIL_LOGO_BLACK_H,
   EMAIL_LOGO_BLACK_W,
   getEmailLogoWineUrl,
 } from "@/lib/email-templates";
-const ACCENT_ROSE = "#9E4A5C";
-/** Full-bleed admin shell — same cream as client transactional mail. */
-const SHELL_BG = EMAIL_PREMIUM_PAGE;
-const DETAIL_BAND_BG = EMAIL_PREMIUM_MUTED_FILL;
-const TEXT = "#1a1a1a";
-const TEXT_MUTED = "#555";
-const BTN_FONT = EMAIL_SANS_STACK;
-/** Structured row labels (quote parity). */
-const ADMIN_LABEL_TD = `color:#6B635C;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;padding:5px 12px 5px 0;vertical-align:top;width:38%;font-family:${BTN_FONT}`;
-const ADMIN_KICKER = `font-size:12px;font-weight:700;color:${ACCENT_ROSE};letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;font-family:${BTN_FONT}`;
 
-/** Full document wrapper for admin notifications: full-width cream shell (no outer gutter, no card border). */
+/* ─── Shared palette ───────────────────────────────────────────────── */
+/** White card surface inside the cream page (matches premium island). */
+const CARD_BG = "#FFFFFF";
+/** Outer page — cream, matching client transactional shell. */
+const SHELL_BG = EMAIL_PREMIUM_PAGE;
+/** Muted fill for detail bands / summary tables (forest-tinted; readable on white card). */
+const DETAIL_BAND_BG = EMAIL_PREMIUM_MUTED_FILL;
+/** Primary ink. */
+const TEXT = "#1C1917";
+/** Secondary / muted ink. */
+const TEXT_MUTED = "#6B635C";
+const BTN_FONT = EMAIL_SANS_STACK;
+/** Card outer border (forest tint, consistent with premium client mail). */
+const CARD_BORDER = "rgba(44,62,45,0.13)";
+/** Section divider inside card. */
+const SECTION_RULE = `rgba(44,62,45,0.10)`;
+
+/** Structured row labels — matches client quote KV tables. */
+const ADMIN_LABEL_TD = `color:#6B635C;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;padding:6px 14px 6px 0;vertical-align:top;width:38%;font-family:${BTN_FONT}`;
+/** Section kicker — WINE, 12px uppercase, matching lifecycle templates. */
+const ADMIN_KICKER = `font-size:12px;font-weight:700;color:${EMAIL_WINE};letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;font-family:${BTN_FONT}`;
+
+/* ─── Mobile CSS ───────────────────────────────────────────────────── */
+const ADMIN_MOBILE_CSS = `<style type="text/css">
+@media only screen and (max-width:600px){
+  .ya-outer{padding:16px 0 40px !important;}
+  .ya-card{width:100% !important;max-width:100% !important;border-left:none !important;border-right:none !important;}
+  .ya-content{padding:24px 18px 28px !important;}
+  .ya-header{padding:18px 18px 16px !important;}
+  .ya-footer-band{padding:14px 18px 16px !important;}
+}
+</style>`;
+
+/**
+ * Premium admin notification shell: cream page → white card with WINE top bar → forest-accented sections.
+ * All admin notifications use this wrapper.
+ */
 export function adminNotificationLayout(
   innerHtml: string,
   title?: string,
 ): string {
+  const logoUrl = getEmailLogoWineUrl();
   const heading = title
-    ? `<h1 style="font-size:18px;font-weight:700;color:${TEXT};margin:0 0 16px;">${escapeHtml(title)}</h1>`
+    ? `<h1 style="font-size:20px;font-weight:700;color:${TEXT};margin:0 0 18px;line-height:1.25;font-family:${BTN_FONT};">${escapeHtml(title)}</h1>`
     : "";
   return `<!DOCTYPE html>
 <html lang="en" style="color-scheme:only light;">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="only light"><meta name="supported-color-schemes" content="light"></head>
-<body class="yugo-light-email-doc" style="margin:0;padding:0;background:${SHELL_BG};font-family:${BTN_FONT};color:${TEXT};-webkit-text-fill-color:${TEXT};color-scheme:only light;" bgcolor="${SHELL_BG}" data-ogsb="${SHELL_BG}" data-ogsc="${TEXT}">
-<div class="yugo-admin-email-shell" bgcolor="${SHELL_BG}" style="width:100%;max-width:100%;margin:0;padding:0;box-sizing:border-box;background-color:${SHELL_BG};">
-  <div class="yugo-admin-email-card" bgcolor="${SHELL_BG}" style="background:${SHELL_BG};padding:16px;box-sizing:border-box;border:none;box-shadow:none;">
-    <div style="text-align:center;margin-bottom:22px;">
-      <img src="${getEmailLogoWineUrl()}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:inline-block;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;border:0;" />
-    </div>
-    ${heading}
-    <div class="yugo-admin-email-body" style="font-size:14px;color:${TEXT};line-height:1.6;">
-      ${innerHtml}
-    </div>
-  </div>
-  <p class="yugo-admin-footer-note" style="margin:0;padding:12px 16px 0;font-size:11px;color:${TEXT_MUTED};text-align:center;width:100%;box-sizing:border-box;line-height:1.5;">
-    Do not forward this notification outside authorized channels. It may contain sensitive operational information.
-  </p>
-</div>
-${getEmailFooterStandaloneFragment()}
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="only light">
+  <meta name="supported-color-schemes" content="light">
+  ${ADMIN_MOBILE_CSS}
+</head>
+<body style="margin:0;padding:0;background-color:${SHELL_BG};font-family:${BTN_FONT};color:${TEXT};-webkit-text-fill-color:${TEXT};color-scheme:only light;" bgcolor="${SHELL_BG}">
+
+<!-- Outer cream page -->
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${SHELL_BG}" style="background-color:${SHELL_BG};color-scheme:only light;">
+  <tr>
+    <td class="ya-outer" align="center" bgcolor="${SHELL_BG}" style="padding:32px 20px 48px;background-color:${SHELL_BG};">
+
+      <!-- 600px white card -->
+      <table class="ya-card" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${CARD_BG}" style="max-width:${EMAIL_FLUID_MAX_WIDTH_PX}px;width:100%;background-color:${CARD_BG};border:1px solid ${CARD_BORDER};">
+
+        <!-- WINE top accent bar -->
+        <tr>
+          <td style="background-color:${EMAIL_WINE};height:4px;font-size:0;line-height:0;mso-line-height-rule:exactly;">&nbsp;</td>
+        </tr>
+
+        <!-- Header: logo + "Internal" label -->
+        <tr>
+          <td class="ya-header" style="padding:22px 28px 18px;background-color:${CARD_BG};border-bottom:1px solid ${SECTION_RULE};">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+              <tr>
+                <td style="vertical-align:middle;">
+                  <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;" />
+                </td>
+                <td align="right" style="text-align:right;vertical-align:middle;">
+                  <span style="display:inline-block;background-color:${EMAIL_PREMIUM_MUTED_FILL};color:${TEXT_MUTED};font-size:9px;font-weight:700;letter-spacing:0.10em;text-transform:uppercase;padding:4px 8px;font-family:${BTN_FONT};">Internal</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td class="ya-content" style="padding:28px 28px 32px;background-color:${CARD_BG};font-family:${BTN_FONT};color:${TEXT};font-size:14px;line-height:1.6;">
+            ${heading}
+            ${innerHtml}
+          </td>
+        </tr>
+
+        <!-- Footer band inside card -->
+        <tr>
+          <td class="ya-footer-band" style="padding:14px 28px 18px;background-color:${SHELL_BG};border-top:1px solid ${SECTION_RULE};">
+            <p style="margin:0;font-size:11px;color:${TEXT_MUTED};line-height:1.55;font-family:${BTN_FONT};">Internal notification — do not forward outside authorized channels.</p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+
+  <!-- Branded footer -->
+  ${getClientEmailFooterTrs({ whyReceiving: "generic" })}
+
+</table>
 </body>
 </html>`;
 }
@@ -88,7 +160,7 @@ export function newClaimAdminEmailHtml(params: {
     <div style="${ADMIN_KICKER}">New damage claim</div>
     <h1 style="font-size:22px;font-weight:700;color:${TEXT};margin:0 0 8px;">${escapeHtml(params.claimNumber)}</h1>
     <p style="font-size:14px;color:${TEXT_MUTED};line-height:1.6;margin:0 0 20px;">A damage claim was ${source}.</p>
-    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border-radius:0;padding:20px;margin-bottom:24px;">
+    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border:1px solid rgba(44,62,45,0.10);padding:20px;margin-bottom:24px;">
       <table style="width:100%;font-size:14px;border-collapse:collapse;font-family:${BTN_FONT};">
         <tr><td style="${ADMIN_LABEL_TD}">Client</td><td style="color:${TEXT};font-weight:600;padding:4px 0;">${escapeHtml(params.clientName)}</td></tr>
         <tr><td style="${ADMIN_LABEL_TD}">Items</td><td style="color:${TEXT};padding:4px 0;">${params.itemCount} item${params.itemCount !== 1 ? "s" : ""}</td></tr>
@@ -118,7 +190,7 @@ export function widgetLeadAdminEmailHtml(params: {
     <div style="${ADMIN_KICKER}">New widget lead</div>
     <h1 style="font-size:20px;font-weight:700;color:${TEXT};margin:0 0 4px;">${escapeHtml(params.name)}</h1>
     <p style="font-size:13px;color:${TEXT_MUTED};margin:0 0 16px;">Quote request from the instant quote widget.</p>
-    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border-radius:0;padding:16px 20px;margin-bottom:20px;">
+    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border:1px solid rgba(44,62,45,0.10);padding:16px 20px;margin-bottom:20px;">
       <table style="width:100%;font-size:13px;border-collapse:collapse;font-family:${BTN_FONT};">
         <tr><td style="${ADMIN_LABEL_TD};padding:4px 12px 6px 0;">Type</td><td style="color:${TEXT};font-weight:500;padding:4px 0 6px;">${escapeHtml(params.typeLabel)} · ${escapeHtml(params.sizeLabel)}</td></tr>
         <tr><td style="${ADMIN_LABEL_TD};padding:4px 12px 6px 0;">Estimate</td><td style="color:${EMAIL_FOREST};font-weight:600;padding:4px 0 6px;">${escapeHtml(params.priceStr)}</td></tr>
@@ -178,7 +250,7 @@ export function newLeadAdminEmailHtml(params: {
       A new lead just came in. Please respond as soon as you can, ideally within 5 minutes during business hours.
     </p>
     <p style="font-size:12px;font-weight:600;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.08em;margin:0 0 10px;font-family:${BTN_FONT};">Lead details</p>
-    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border:1px solid rgba(44,62,45,0.12);border-radius:0;padding:18px 20px;margin-bottom:14px;">
+    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border:1px solid rgba(44,62,45,0.10);padding:18px 20px;margin-bottom:14px;">
       <table style="width:100%;font-size:14px;border-collapse:collapse;font-family:${BTN_FONT};">
         <tr><td style="${ADMIN_LABEL_TD}">Name</td><td style="color:${TEXT};font-weight:600;padding:4px 0;">${escapeHtml(params.clientName)}</td></tr>
         <tr><td style="${ADMIN_LABEL_TD}">Service</td><td style="color:${TEXT};padding:4px 0;">${escapeHtml(params.serviceLabel)}</td></tr>
@@ -230,7 +302,7 @@ export function preMoveChecklistCompleteAdminEmailHtml(params: {
     <p style="font-size:14px;color:${TEXT_MUTED};line-height:1.6;margin:0 0 16px;">
       The client finished every item on the pre-move checklist in their tracking link.
     </p>
-    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border-radius:0;padding:16px 20px;margin-bottom:20px;">
+    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border:1px solid rgba(44,62,45,0.10);padding:16px 20px;margin-bottom:20px;">
       <table style="width:100%;font-size:13px;border-collapse:collapse;font-family:${BTN_FONT};">
         <tr><td style="${ADMIN_LABEL_TD}">Move</td><td style="color:${TEXT};font-weight:600;padding:4px 0;">${escapeHtml(params.moveCode)}</td></tr>
         <tr><td style="${ADMIN_LABEL_TD}">Client</td><td style="color:${TEXT};padding:4px 0;">${escapeHtml(params.clientName)}</td></tr>
@@ -330,7 +402,7 @@ export function quoteComparisonSignalAdminEmailHtml(params: {
           <span style="font-size:13px;font-weight:600;color:${TEXT};text-transform:capitalize;">${tier}</span>
         </td>
         <td style="padding:6px 8px;vertical-align:middle;font-family:${BTN_FONT};">
-          <div class="yugo-admin-meter-track" style="background:${DETAIL_BAND_BG};border-radius:0;height:8px;overflow:hidden;">
+          <div class="yugo-admin-meter-track" style="background:rgba(44,62,45,0.08);height:8px;overflow:hidden;">
             <div class="yugo-admin-tier-bar-fill ${barClass}" style="background:${barColor[tier]};height:8px;width:${pct}%;max-width:100%;"></div>
           </div>
         </td>
@@ -370,8 +442,8 @@ export function quoteComparisonSignalAdminEmailHtml(params: {
       ${params.moveDateLabel ? ` · ${escapeHtml(params.moveDateLabel)}` : ""}
     </p>
 
-    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border-radius:0;padding:16px 18px;margin-bottom:20px;font-family:${BTN_FONT};">
-      <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:${ACCENT_ROSE};letter-spacing:0.08em;text-transform:uppercase;">Engagement snapshot</p>
+    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border:1px solid rgba(44,62,45,0.10);padding:16px 18px;margin-bottom:20px;font-family:${BTN_FONT};">
+      <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:${EMAIL_WINE};letter-spacing:0.08em;text-transform:uppercase;">Engagement snapshot</p>
       <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:13px;color:${TEXT};">
         <tr>
           <td style="padding:8px 10px 8px 0;width:25%;vertical-align:top;"><strong style="display:block;font-size:18px;color:${EMAIL_FOREST};">${params.viewCount}</strong><span style="font-size:11px;color:${TEXT_MUTED};">Page views</span></td>
@@ -382,22 +454,22 @@ export function quoteComparisonSignalAdminEmailHtml(params: {
       </table>
     </div>
 
-    <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:${ACCENT_ROSE};letter-spacing:0.08em;text-transform:uppercase;font-family:${BTN_FONT};">Tier interest</p>
+    <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:${EMAIL_WINE};letter-spacing:0.08em;text-transform:uppercase;font-family:${BTN_FONT};">Tier interest</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin-bottom:22px;font-family:${BTN_FONT};">
       ${tierRows}
     </table>
 
-    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border-radius:0;padding:16px 18px;margin-bottom:20px;font-family:${BTN_FONT};">
+    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border:1px solid rgba(44,62,45,0.10);padding:16px 18px;margin-bottom:20px;font-family:${BTN_FONT};">
       <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:13px;">
         <tr>
           <td style="vertical-align:top;width:50%;padding-right:12px;">
-            <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:${ACCENT_ROSE};letter-spacing:0.08em;text-transform:uppercase;">Client</p>
+            <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:${EMAIL_WINE};letter-spacing:0.08em;text-transform:uppercase;">Client</p>
             <p style="margin:0;color:${TEXT};font-weight:600;">${escapeHtml(params.clientFullName)}</p>
             <p style="margin:6px 0 0;color:${TEXT_MUTED};font-size:12px;">${escapeHtml(params.clientPhone || "—")}</p>
             <p style="margin:4px 0 0;color:${TEXT_MUTED};font-size:12px;">${escapeHtml(params.clientEmail || "—")}</p>
           </td>
           <td style="vertical-align:top;width:50%;padding-left:12px;">
-            <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:${ACCENT_ROSE};letter-spacing:0.08em;text-transform:uppercase;">Move</p>
+            <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:${EMAIL_WINE};letter-spacing:0.08em;text-transform:uppercase;">Move</p>
             <p style="margin:0;color:${TEXT};font-size:12px;line-height:1.5;">${escapeHtml(params.fromAddress || "—")}</p>
             <p style="margin:8px 0 0;color:${TEXT};font-size:12px;line-height:1.5;">${escapeHtml(params.toAddress || "—")}</p>
           </td>
@@ -405,7 +477,7 @@ export function quoteComparisonSignalAdminEmailHtml(params: {
       </table>
     </div>
 
-    <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:${ACCENT_ROSE};letter-spacing:0.08em;text-transform:uppercase;font-family:${BTN_FONT};">Recommended action</p>
+    <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:${EMAIL_WINE};letter-spacing:0.08em;text-transform:uppercase;font-family:${BTN_FONT};">Recommended action</p>
     <p style="margin:0 0 22px;font-size:14px;color:${TEXT};line-height:1.6;font-family:${BTN_FONT};">
       ${actionCopy}
     </p>
@@ -556,7 +628,7 @@ export function buildingProfileCrewReportAdminEmailHtml(params: {
       Compare it to your experience and adjust in the building editor if needed.
     </p>
     <p style="font-size:12px;font-weight:600;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.08em;margin:0 0 10px;font-family:${BTN_FONT};">Summary</p>
-    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border-radius:0;padding:16px 20px;margin-bottom:20px;">
+    <div class="yugo-admin-muted-fill" style="background:${DETAIL_BAND_BG};border:1px solid rgba(44,62,45,0.10);padding:16px 20px;margin-bottom:20px;">
       <table style="width:100%;font-size:13px;border-collapse:collapse;font-family:${BTN_FONT};">
         ${moveBlock}
         ${partnerRow}

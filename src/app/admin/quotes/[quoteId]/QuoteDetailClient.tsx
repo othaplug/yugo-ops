@@ -30,7 +30,7 @@ import {
 import { formatPlatformDisplay } from "@/lib/date-format";
 import { QuotesFollowupAutomationHint } from "@/components/admin/AdminContextHints";
 import { toTitleCase } from "@/lib/format-text";
-import { displayLabel, serviceTypeDisplayLabel } from "@/lib/displayLabels";
+import { displayLabel, serviceTypeDisplayLabel, moveSizeDisplayLabel, getDisplayLabel } from "@/lib/displayLabels";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { formatPhone } from "@/lib/phone";
 import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
@@ -865,7 +865,7 @@ export default function QuoteDetailClient({
             <span
               className={`dt-badge tracking-[0.04em] shrink-0 ${STATUS_COLORS[quote.status] ?? STATUS_COLORS.draft}`}
             >
-              {toTitleCase(quote.status)}
+              {getDisplayLabel(quote.status, "quote") || toTitleCase(quote.status)}
             </span>
           </div>
 
@@ -2016,7 +2016,7 @@ export default function QuoteDetailClient({
                   <div className="flex justify-between">
                     <span className="text-[var(--tx3)]">Size</span>
                     <span className="text-[var(--tx)] font-medium">
-                      {quote.move_size}
+                      {moveSizeDisplayLabel(quote.move_size)}
                     </span>
                   </div>
                 )}

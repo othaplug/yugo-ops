@@ -52,6 +52,7 @@ import {
 } from "@/design-system/admin/icons";
 import { useToast } from "../components/Toast";
 import { LeadsNavTabs } from "./LeadsNavTabs";
+import { moveSizeDisplayLabel } from "@/lib/displayLabels";
 
 export type LeadRow = {
   id: string;
@@ -1030,7 +1031,7 @@ function AttentionCard({
         <div>
           <div className="yu3-t-eyebrow">Size</div>
           <div className="yu3-num text-[var(--yu3-ink)]">
-            {lead.move_size || ""}
+            {lead.move_size ? moveSizeDisplayLabel(lead.move_size) : "—"}
           </div>
         </div>
         <div>

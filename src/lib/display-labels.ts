@@ -10,4 +10,6 @@ export {
   MOVE_STATUS_LABELS,
   QUOTE_STATUS_LABELS,
   TIER_LABELS,
+  MOVE_SIZE_LABELS,
+  moveSizeDisplayLabel,
 } from "./displayLabels";

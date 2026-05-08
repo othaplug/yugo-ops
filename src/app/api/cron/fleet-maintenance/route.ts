@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
+import { adminNotificationLayout } from "@/lib/email/admin-templates";
 import { getTodayString } from "@/lib/business-timezone";
 
 type FleetRow = Record<string, unknown>;
@@ -74,18 +75,22 @@ export async function GET(req: NextRequest) {
     const rowsHtml = flagged
       .map(
         (f) =>
-          `<tr><td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(f.label)}</td><td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(f.reason)}</td></tr>`,
+          `<tr><td style="padding:8px 14px;font-size:13px;color:#1C1917;border-bottom:1px solid rgba(44,62,45,0.08);">${escapeHtml(f.label)}</td><td style="padding:8px 14px;font-size:13px;color:#6B635C;border-bottom:1px solid rgba(44,62,45,0.08);">${escapeHtml(f.reason)}</td></tr>`,
       )
       .join("");
-    const html = `
-      <div style="font-family:system-ui,sans-serif;max-width:640px;">
-        <h2 style="margin:0 0 12px;">Fleet maintenance</h2>
-        <p style="color:#444;margin:0 0 16px;">${flagged.length} vehicle(s) need attention as of ${today} (app timezone).</p>
-        <table style="width:100%;border-collapse:collapse;font-size:14px;">
-          <thead><tr><th align="left" style="padding:8px;border-bottom:2px solid #ccc;">Vehicle</th><th align="left" style="padding:8px;border-bottom:2px solid #ccc;">Reason</th></tr></thead>
+    const html = adminNotificationLayout(
+      `<p style="font-size:14px;color:#6B635C;line-height:1.6;margin:0 0 20px;">${flagged.length} vehicle${flagged.length !== 1 ? "s" : ""} need attention as of ${today}.</p>
+      <div style="background:rgba(44,62,45,0.06);border:1px solid rgba(44,62,45,0.10);padding:0;margin-bottom:20px;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead><tr>
+            <th align="left" style="padding:10px 14px;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#6B635C;border-bottom:1px solid rgba(44,62,45,0.10);">Vehicle</th>
+            <th align="left" style="padding:10px 14px;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#6B635C;border-bottom:1px solid rgba(44,62,45,0.10);">Reason</th>
+          </tr></thead>
           <tbody>${rowsHtml}</tbody>
         </table>
-      </div>`;
+      </div>`,
+      `Fleet — ${flagged.length} vehicle${flagged.length !== 1 ? "s" : ""} need attention`
+    );
     await sendEmail({
       to: adminTo,
       subject: `[Fleet] ${flagged.length} vehicle(s) need maintenance attention`,

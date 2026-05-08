@@ -1373,7 +1373,7 @@ export default function MoveDetailClient({
           <div className="rounded-xl border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] p-4 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)]">
-                {toTitleCase(move.service_type?.replace(/_/g, " ") ?? "Move")}
+                {serviceLabel}
               </span>
               <span
                 className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
@@ -1384,7 +1384,7 @@ export default function MoveDetailClient({
                   color: isCompleted ? "var(--yu3-sage)" : "var(--yu3-wine)",
                 }}
               >
-                {toTitleCase(move.status ?? "")}
+                {getStatusLabel(move.status) || toTitleCase(move.status ?? "")}
               </span>
             </div>
 

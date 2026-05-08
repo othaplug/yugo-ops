@@ -1,3 +1,31 @@
+// Move / home sizes (DB slugs → human labels)
+export const MOVE_SIZE_LABELS: Record<string, string> = {
+  studio: "Studio",
+  bachelor: "Bachelor",
+  partial: "Partial",
+  "1br": "1 Bedroom",
+  "2br": "2 Bedrooms",
+  "3br": "3 Bedrooms",
+  "4br": "4 Bedrooms",
+  "4br_plus": "4+ Bedrooms",
+  "5br": "5 Bedrooms",
+  "5br_plus": "5+ Bedrooms",
+  custom: "Custom",
+  office_small: "Small Office",
+  office_medium: "Medium Office",
+  office_large: "Large Office",
+};
+
+/**
+ * Convert a move_size / home_size slug to a human-readable label.
+ * Falls back to title-casing with underscore replacement.
+ */
+export function moveSizeDisplayLabel(value: string | null | undefined): string {
+  if (!value) return "—";
+  const v = value.trim();
+  return MOVE_SIZE_LABELS[v] ?? v.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 // Service types
 export const SERVICE_TYPE_LABELS: Record<string, string> = {
   residential: "Residential Move",

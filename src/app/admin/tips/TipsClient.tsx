@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { formatCurrency } from "@/lib/format-currency"
 import { formatAdminCreatedAt } from "@/lib/date-format"
+import { serviceTypeDisplayLabel } from "@/lib/displayLabels"
 import { csvField } from "@/lib/admin-csv-field"
 import {
   DataTable,
@@ -136,7 +137,7 @@ export default function TipsClient({
         width: 120,
         cell: (r) => (
           <span className="text-[11px] text-[var(--yu3-ink-muted)]">
-            {r.service_type || "—"}
+            {serviceTypeDisplayLabel(r.service_type) || "—"}
           </span>
         ),
       },

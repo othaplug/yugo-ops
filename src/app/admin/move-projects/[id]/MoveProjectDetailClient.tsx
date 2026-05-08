@@ -6,6 +6,8 @@ import Link from "next/link";
 import { formatMoveDate } from "@/lib/date-format";
 import { useToast } from "@/app/admin/components/Toast";
 import { CheckCircle, Circle, MapPin, CaretDown, CaretRight } from "@phosphor-icons/react";
+import { moveSizeDisplayLabel, getDisplayLabel } from "@/lib/displayLabels";
+import { toTitleCase, formatAccessForDisplay } from "@/lib/format-text";
 
 type AddressStop = {
   address?: string;
@@ -329,7 +331,7 @@ export default function MoveProjectDetailClient({
             <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)] mb-1">Project</p>
             <p className="text-[11px] text-[var(--tx2)]">
               {STATUS_LABEL[String(project.status)] ?? String(project.status ?? "")}
-              {project.project_type ? ` · ${String(project.project_type).replace(/_/g, " ")}` : ""}
+              {project.project_type ? ` · ${toTitleCase(String(project.project_type))}` : ""}
             </p>
             {project.coordinator_name ? (
               <p className="text-[11px] text-[var(--tx3)] mt-1">Coordinator: {String(project.coordinator_name)}</p>
@@ -373,8 +375,8 @@ export default function MoveProjectDetailClient({
                       <p className="text-[11px] text-[var(--tx3)] mt-0.5">{o.address || "—"}</p>
                       <div className="flex flex-wrap gap-2 mt-1 text-[10px] text-[var(--tx3)]">
                         {o.is_partial ? <span>Partial</span> : null}
-                        {o.move_size ? <span>{o.move_size}</span> : null}
-                        {o.access ? <span>{o.access}</span> : null}
+                        {o.move_size ? <span>{moveSizeDisplayLabel(o.move_size)}</span> : null}
+                        {o.access ? <span>{formatAccessForDisplay(o.access)}</span> : null}
                       </div>
                     </li>
                   ))}
@@ -440,7 +442,7 @@ export default function MoveProjectDetailClient({
                     <p className="text-[11px] text-[var(--tx2)] mt-1 leading-snug">{String(ph.description)}</p>
                   ) : null}
                 </div>
-                <span className="text-[10px] uppercase font-bold text-[var(--tx3)]">{String(ph.status ?? "")}</span>
+                <span className="text-[10px] uppercase font-bold text-[var(--tx3)]">{STATUS_LABEL[String(ph.status ?? "")] ?? toTitleCase(String(ph.status ?? ""))}</span>
               </div>
               <ul className="space-y-3">
                 {(ph.days ?? []).map((d) => {
