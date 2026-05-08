@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (action === "resend") {
     const { error } = await admin
       .from("quotes")
-      .update({ status: "sent", sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .update({ status: "sent", sent_at: new Date().toISOString(), updated_at: new Date().toISOString(), expires_at: new Date(Date.now() + 7 * 86_400_000).toISOString() })
       .in("id", ids);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true, updated: ids.length });

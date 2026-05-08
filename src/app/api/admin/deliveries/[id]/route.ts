@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { createPartnerNotification } from "@/lib/notifications";
+import { logActivity } from "@/lib/activity";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 import { collectB2BDeliveryCalibrationData } from "@/lib/learning/engine";
 import { syncDealStageByDeliveryId } from "@/lib/hubspot/sync-deal-stage";
@@ -178,6 +179,17 @@ export async function PATCH(
 
   if ("status" in updates && data?.status && data.status !== existing?.status) {
     syncDealStageByDeliveryId(id, String(data.status)).catch(() => {});
+  }
+
+  if ("override_price" in updates && updates.override_price != null) {
+    const label = data?.delivery_number || existing?.delivery_number || id;
+    logActivity({
+      entity_type: "delivery",
+      entity_id: id,
+      event_type: "price_override",
+      description: `Price override set to $${updates.override_price} for delivery ${label}. Reason: ${updates.override_reason || "—"}`,
+      icon: "dollar",
+    }).catch(() => {});
   }
 
   // Send partner notification if status changed

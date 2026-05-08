@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireOwner } from "@/lib/auth/check-role";
 import { getPlatformToggles, getOfficeLocation } from "@/lib/platform-settings";
+import { logActivity } from "@/lib/activity";
 
 /** GET: Return platform toggles + office location (owner only). */
 export async function GET() {
@@ -55,6 +56,22 @@ export async function PATCH(req: NextRequest) {
       .select("crew_tracking, partner_portal, auto_invoicing")
       .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    const changed: string[] = [];
+    if (crew_tracking !== undefined) changed.push(`crew_tracking=${crew_tracking}`);
+    if (partner_portal !== undefined) changed.push(`partner_portal=${partner_portal}`);
+    if (auto_invoicing !== undefined) changed.push(`auto_invoicing=${auto_invoicing}`);
+    if (hasOffice) changed.push("office_location");
+    if (changed.length > 0) {
+      logActivity({
+        entity_type: "settings",
+        entity_id: "platform",
+        event_type: "settings_changed",
+        description: `Platform settings updated: ${changed.join(", ")}`,
+        icon: "pen",
+      }).catch(() => {});
+    }
+
     return NextResponse.json({
       crewTracking: data?.crew_tracking ?? true,
       partnerPortal: data?.partner_portal ?? false,

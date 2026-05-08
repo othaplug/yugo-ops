@@ -42,5 +42,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .eq("id", dayId);
 
   if (uErr) return NextResponse.json({ error: uErr.message }, { status: 500 });
+
+  // Cascade: if all days are now complete/cancelled, mark the project itself completed
+  const { data: allDays } = await db
+    .from("move_project_days")
+    .select("id, status")
+    .eq("project_id", projectId);
+
+  const terminalStatuses = new Set(["completed", "cancelled"]);
+  const allDone =
+    allDays &&
+    allDays.length > 0 &&
+    allDays.every((d) => terminalStatuses.has((d.status as string) || ""));
+
+  if (allDone) {
+    await db
+      .from("move_projects")
+      .update({ status: "completed", updated_at: new Date().toISOString() })
+      .eq("id", projectId);
+  }
+
   return NextResponse.json({ ok: true });
 }
