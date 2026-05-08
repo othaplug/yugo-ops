@@ -4,6 +4,8 @@ import { resolveHubSpotStageInternalId } from "@/lib/hubspot/resolve-hubspot-sta
 import { findExistingOpenDealForContactEmail } from "@/lib/hubspot/find-existing-open-deal"
 import { findOrCreateHubSpotContact } from "@/lib/hubspot/auto-create-deal-for-quote"
 import { patchHubSpotDealJobNo } from "@/lib/hubspot/sync-deal-job-no"
+import { buildHubSpotDealName } from "@/lib/hubspot/deal-name"
+import { yugoJobProperties } from "@/lib/hubspot/deal-properties"
 import type { HubSpotAutoCreateDealResult } from "@/lib/hubspot/auto-create-deal-types"
 import { deliveryNumericJobNoForHubSpot } from "@/lib/move-code"
 
@@ -30,19 +32,6 @@ function deliveryServiceLabel(delivery: {
   return "b2b_delivery"
 }
 
-function humanDealLabel(delivery: {
-  booking_type?: string | null
-  vertical_code?: string | null
-}): string {
-  const bt = String(delivery.booking_type || "").trim().toLowerCase()
-  if (bt === "one_off") return "B2B one off delivery"
-  if (bt === "day_rate") return "Day rate delivery"
-  const vc = String(delivery.vertical_code || "")
-    .trim()
-    .replace(/_/g, " ")
-  if (vc) return vc
-  return "B2B delivery"
-}
 
 function preTaxAmountForHubSpot(delivery: {
   calculated_price?: number | null
@@ -110,7 +99,9 @@ export async function autoCreateHubSpotDealForNewDelivery(opts: {
   } = opts
 
   if (!skipDuplicateCheck) {
-    const existing = await findExistingOpenDealForContactEmail(sb, token, clientEmail)
+    const existing = await findExistingOpenDealForContactEmail(sb, token, clientEmail, {
+      serviceTypeCat: "b2b",
+    })
     if (existing) {
       return {
         status: "duplicate",
@@ -135,14 +126,17 @@ export async function autoCreateHubSpotDealForNewDelivery(opts: {
   }
 
   const svc = deliveryServiceLabel(delivery)
-  const labelHuman = humanDealLabel(delivery)
-  const biz = String(delivery.business_name || "").trim()
-  const person = [firstName, lastName].map((x) => String(x).trim()).filter(Boolean).join(" ")
-  const dealName = [biz || null, person || null, labelHuman, delivery.scheduled_date || ""]
-    .map((x) => String(x ?? "").trim())
-    .filter(Boolean)
-    .join(" · ")
-    .trim() || `Delivery ${deliveryNumber}`
+  const jobNo = deliveryNumericJobNoForHubSpot(deliveryNumber)
+
+  const dealName = buildHubSpotDealName({
+    serviceType: svc,
+    isPmMove: false,
+    firstName,
+    lastName,
+    businessName: String(delivery.business_name || "").trim() || undefined,
+    date: String(delivery.scheduled_date ?? "").trim() || undefined,
+    fallbackCode: `Delivery ${deliveryNumber}`,
+  })
 
   const contactId = await findOrCreateHubSpotContact(token, {
     email: clientEmail,
@@ -152,7 +146,7 @@ export async function autoCreateHubSpotDealForNewDelivery(opts: {
   })
 
   const properties: Record<string, string> = {
-    dealname: dealName.slice(0, 200),
+    dealname: dealName,
     pipeline: pipelineId,
     dealstage: stageId,
     quote_url: deliveryAdminUrl,
@@ -171,12 +165,12 @@ export async function autoCreateHubSpotDealForNewDelivery(opts: {
     firstname: firstName,
     lastname: lastName,
     package_type: "b2b",
+    ...yugoJobProperties({ jobId: deliveryNumber, jobNo, serviceType: svc }),
   }
 
   const amount = preTaxAmountForHubSpot(delivery)
   if (amount != null) properties.amount = String(amount)
 
-  const jobNo = deliveryNumericJobNoForHubSpot(deliveryNumber)
   if (jobNo) properties.job_no = jobNo
 
   const body: Record<string, unknown> = { properties }

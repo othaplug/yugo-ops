@@ -65,6 +65,7 @@ export default function HubSpotIntegrationSection() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [autoConfigLoading, setAutoConfigLoading] = useState(false)
+  const [setupPropsLoading, setSetupPropsLoading] = useState(false)
   const [diagLoading, setDiagLoading] = useState(false)
   const [diag, setDiag] = useState<string | null>(null)
   const [values, setValues] = useState<Record<string, string>>({})
@@ -141,6 +142,39 @@ export default function HubSpotIntegrationSection() {
       toast("Auto-configure request failed", "x")
     } finally {
       setAutoConfigLoading(false)
+    }
+  }
+
+  const handleSetupProps = async () => {
+    setSetupPropsLoading(true)
+    setDiag(null)
+    try {
+      const res = await fetch("/api/admin/hubspot/setup-properties", {
+        method: "POST",
+        credentials: "same-origin",
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok && res.status !== 207) {
+        toast((data as { error?: string }).error ?? "Setup failed", "x")
+        setDiag(JSON.stringify(data, null, 2))
+        return
+      }
+      const r = data as { created?: string[]; existing?: string[]; failed?: string[] }
+      if (r.failed?.length) {
+        toast(`${r.failed.length} propert${r.failed.length === 1 ? "y" : "ies"} failed — see details`, "x")
+      } else {
+        toast(
+          r.created?.length
+            ? `Created ${r.created.length} custom deal propert${r.created.length === 1 ? "y" : "ies"}`
+            : "Custom deal properties already set up",
+          "check",
+        )
+      }
+      setDiag(JSON.stringify(data, null, 2))
+    } catch {
+      toast("Setup request failed", "x")
+    } finally {
+      setSetupPropsLoading(false)
     }
   }
 
@@ -221,6 +255,14 @@ export default function HubSpotIntegrationSection() {
             className="px-4 py-2 rounded-lg border border-[var(--admin-primary-fill)] text-[var(--accent-text)] text-[12px] font-semibold hover:bg-[var(--admin-primary-fill)]/10 disabled:opacity-60"
           >
             {autoConfigLoading ? "Fetching from HubSpot…" : "Auto-configure stages from HubSpot"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleSetupProps()}
+            disabled={setupPropsLoading}
+            className="px-4 py-2 rounded-lg border border-[var(--brd)] text-[var(--tx2)] text-[12px] font-semibold hover:bg-[var(--bg)] disabled:opacity-60"
+          >
+            {setupPropsLoading ? "Setting up…" : "Setup deal properties"}
           </button>
           <button
             type="button"

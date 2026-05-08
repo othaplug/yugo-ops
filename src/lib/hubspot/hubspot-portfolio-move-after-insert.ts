@@ -67,6 +67,7 @@ export async function hubspotPortfolioMoveDealAfterInsert(
         to_access: opts.toAccess ?? null,
         estimate: opts.estimate ?? null,
         tier_selected: opts.tierSelected ?? null,
+        is_pm_move: true,
       },
       moveCode: refCode,
       clientEmail: contactEmail,

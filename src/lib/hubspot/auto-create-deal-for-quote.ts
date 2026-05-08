@@ -3,6 +3,9 @@ import { getQuoteIdPrefix, quoteNumericSuffixForHubSpot } from "@/lib/quotes/quo
 import { resolveHubSpotPipelineId } from "@/lib/hubspot/hubspot-pipeline";
 import { resolveHubSpotStageInternalId } from "@/lib/hubspot/resolve-hubspot-stage-id";
 import { findExistingOpenDealForContactEmail } from "@/lib/hubspot/find-existing-open-deal";
+import { buildHubSpotDealName, serviceCategory } from "@/lib/hubspot/deal-name";
+import { dealPackageType, yugoJobProperties } from "@/lib/hubspot/deal-properties";
+import { resolveStageFromStatus } from "@/lib/hubspot/stage-mapping";
 import type { HubSpotAutoCreateDealResult } from "@/lib/hubspot/auto-create-deal-types";
 
 const HS_CONTACTS_SEARCH = "https://api.hubapi.com/crm/v3/objects/contacts/search";
@@ -14,13 +17,6 @@ function dealToContactAssociationTypeId(): number {
   const raw = process.env.HUBSPOT_DEAL_CONTACT_ASSOCIATION_TYPE_ID;
   const n = raw ? parseInt(raw, 10) : NaN;
   return Number.isFinite(n) && n > 0 ? n : 3;
-}
-
-function tierOrServiceLabel(quote: Record<string, unknown>): string {
-  const rt = (quote.recommended_tier as string)?.trim();
-  if (rt) return rt.replace(/_/g, " ");
-  const st = (quote.service_type as string)?.trim() || "move";
-  return st.replace(/_/g, " ");
 }
 
 function essentialPrice(quote: Record<string, unknown>): number | null {
@@ -109,6 +105,13 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
   clientPhone?: string | null;
   /** Skip open-deal check (e.g. coordinator chose "Create new deal anyway"). */
   skipDuplicateCheck?: boolean;
+  /**
+   * OPS+ quote status at time of deal creation.
+   * Defaults to "sent" when called from the quote send route.
+   * Pass the actual status (e.g. "accepted") for backfill / retroactive creation
+   * so the HubSpot stage reflects the current pipeline position.
+   */
+  currentStatus?: string | null;
 }): Promise<HubSpotAutoCreateDealResult> {
   const token = process.env.HUBSPOT_ACCESS_TOKEN;
   if (!token) {
@@ -126,10 +129,16 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
     lastName,
     clientPhone,
     skipDuplicateCheck,
+    currentStatus,
   } = opts;
 
+  const svcType = String(quote.service_type ?? "").trim();
+  const svcCat = serviceCategory(svcType, false);
+
   if (!skipDuplicateCheck) {
-    const existing = await findExistingOpenDealForContactEmail(sb, token, clientEmail);
+    const existing = await findExistingOpenDealForContactEmail(sb, token, clientEmail, {
+      serviceTypeCat: svcCat,
+    });
     if (existing) {
       const quotePk = String(quote.id ?? "").trim();
       if (quotePk) {
@@ -161,7 +170,8 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
     return null
   }
 
-  const stageId = await resolveHubSpotStageInternalId(sb, "quote_sent");
+  const logicalStage = resolveStageFromStatus(currentStatus ?? "sent");
+  const stageId = await resolveHubSpotStageInternalId(sb, logicalStage);
   if (!stageId) {
     return null
   }
@@ -169,10 +179,18 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
   const prefix = await getQuoteIdPrefix(sb);
   const jobNo = quoteNumericSuffixForHubSpot(quoteIdText, prefix);
   const price = essentialPrice(quote);
-  const dealName = [firstName, lastName, tierOrServiceLabel(quote), quote.move_date || ""]
-    .filter((x) => String(x).trim().length > 0)
-    .join(" · ")
-    .trim() || `Quote ${quoteIdText}`;
+
+  const tierLabel = String(quote.recommended_tier ?? "").trim().replace(/_/g, " ") || undefined;
+  const dealName = buildHubSpotDealName({
+    serviceType: svcType || undefined,
+    isPmMove: false,
+    firstName,
+    lastName,
+    businessName: String(quote.b2b_business_name ?? "").trim() || undefined,
+    tierLabel,
+    date: String(quote.move_date ?? "").trim() || undefined,
+    fallbackCode: `Quote ${quoteIdText}`,
+  });
 
   const contactId = await findOrCreateHubSpotContact(token, {
     email: clientEmail,
@@ -182,11 +200,11 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
   });
 
   const properties: Record<string, string> = {
-    dealname: dealName.slice(0, 200),
+    dealname: dealName,
     pipeline: pipelineId,
     dealstage: stageId,
     quote_url: quoteUrl,
-    service_type: String(quote.service_type || "").trim(),
+    service_type: svcType,
     move_date: String(quote.move_date || "").trim(),
     move_size: String(quote.move_size || "").trim().toLowerCase(),
     pick_up_address: String(quote.from_address || "").trim(),
@@ -195,7 +213,8 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
     access_to: String(quote.to_access || "").trim().toLowerCase().replace(/\s+/g, "_"),
     firstname: firstName,
     lastname: lastName,
-    package_type: String(quote.recommended_tier || "signature").trim(),
+    package_type: dealPackageType(svcType, false, String(quote.recommended_tier ?? "").trim()),
+    ...yugoJobProperties({ jobId: quoteIdText, jobNo, serviceType: svcType }),
   };
   if (price != null) properties.amount = String(price);
   if (jobNo) properties.job_no = jobNo;

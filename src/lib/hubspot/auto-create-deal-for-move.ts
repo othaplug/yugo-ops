@@ -4,6 +4,8 @@ import { resolveHubSpotStageInternalId } from "@/lib/hubspot/resolve-hubspot-sta
 import { findExistingOpenDealForContactEmail } from "@/lib/hubspot/find-existing-open-deal"
 import { findOrCreateHubSpotContact } from "@/lib/hubspot/auto-create-deal-for-quote"
 import { patchHubSpotDealJobNo } from "@/lib/hubspot/sync-deal-job-no"
+import { buildHubSpotDealName, serviceCategory } from "@/lib/hubspot/deal-name"
+import { dealPackageType, yugoJobProperties } from "@/lib/hubspot/deal-properties"
 import type { HubSpotAutoCreateDealResult } from "@/lib/hubspot/auto-create-deal-types"
 import { moveNumericJobNoForHubSpot } from "@/lib/move-code"
 
@@ -33,11 +35,15 @@ export async function autoCreateHubSpotDealForNewMove(opts: {
     to_access?: string | null
     estimate?: number | null
     tier_selected?: string | null
+    /** Portfolio PM moves — affects deal name prefix and package_type. */
+    is_pm_move?: boolean | null
   }
   moveCode: string
   clientEmail: string
   firstName: string
   lastName: string
+  /** Company / organisation name — used as B2B deal name subject when set. */
+  businessName?: string | null
   clientPhone?: string | null
   /** Admin move detail URL; stored in deal quote_url (shared HubSpot field). */
   moveAdminUrl: string
@@ -57,13 +63,19 @@ export async function autoCreateHubSpotDealForNewMove(opts: {
     clientEmail,
     firstName,
     lastName,
+    businessName,
     clientPhone,
     moveAdminUrl,
     skipDuplicateCheck,
   } = opts
 
+  const svcType = String(move.service_type || "local_move").trim()
+  const svcCat = serviceCategory(svcType, move.is_pm_move)
+
   if (!skipDuplicateCheck) {
-    const existing = await findExistingOpenDealForContactEmail(sb, token, clientEmail)
+    const existing = await findExistingOpenDealForContactEmail(sb, token, clientEmail, {
+      serviceTypeCat: svcCat,
+    })
     if (existing) {
       return {
         status: "duplicate",
@@ -87,13 +99,16 @@ export async function autoCreateHubSpotDealForNewMove(opts: {
     return null
   }
 
-  const st = String(move.service_type || "local_move").trim()
-  const serviceLabel = st.replace(/_/g, " ")
-  const dealName = [firstName, lastName, serviceLabel, move.scheduled_date || ""]
-    .map((x) => String(x).trim())
-    .filter(Boolean)
-    .join(" · ")
-    .trim() || `Move ${moveCode}`
+  const dealName = buildHubSpotDealName({
+    serviceType: svcType,
+    isPmMove: move.is_pm_move,
+    firstName,
+    lastName,
+    businessName: businessName ?? undefined,
+    tierLabel: String(move.tier_selected ?? "").trim().replace(/_/g, " ") || undefined,
+    date: String(move.scheduled_date ?? "").trim() || undefined,
+    fallbackCode: `Move ${moveCode}`,
+  })
 
   const contactId = await findOrCreateHubSpotContact(token, {
     email: clientEmail,
@@ -102,12 +117,14 @@ export async function autoCreateHubSpotDealForNewMove(opts: {
     phone: clientPhone ?? null,
   })
 
+  const jobNo = moveNumericJobNoForHubSpot(moveCode)
+
   const properties: Record<string, string> = {
-    dealname: dealName.slice(0, 200),
+    dealname: dealName,
     pipeline: pipelineId,
     dealstage: stageId,
     quote_url: moveAdminUrl,
-    service_type: st,
+    service_type: svcType,
     move_date: String(move.scheduled_date || "").trim(),
     move_size: String(move.move_size || "").trim().toLowerCase(),
     pick_up_address: String(move.from_address || "").trim(),
@@ -122,7 +139,8 @@ export async function autoCreateHubSpotDealForNewMove(opts: {
       .replace(/\s+/g, "_"),
     firstname: firstName,
     lastname: lastName,
-    package_type: String(move.tier_selected || "signature").trim(),
+    package_type: dealPackageType(svcType, move.is_pm_move, String(move.tier_selected ?? "").trim()),
+    ...yugoJobProperties({ jobId: moveCode, jobNo, serviceType: svcType }),
   }
 
   const est = move.estimate
@@ -130,7 +148,6 @@ export async function autoCreateHubSpotDealForNewMove(opts: {
     properties.amount = String(Math.round(Number(est)))
   }
 
-  const jobNo = moveNumericJobNoForHubSpot(moveCode)
   if (jobNo) properties.job_no = jobNo
 
   const body: Record<string, unknown> = { properties }
