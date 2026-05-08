@@ -182,11 +182,9 @@ export async function GET(req: NextRequest) {
   } catch {
     /* not configured — leave env value as-is */
   }
-  // Build a Google Calendar subscribe link so the UI can show a direct "Open calendar" button.
-  // Format: https://calendar.google.com/calendar/r?cid=<URL-encoded-id>
-  const calendarLink = activeCalendarId
-    ? `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(activeCalendarId)}`
-    : null;
+  // Direct link to Google Calendar (not cid= — that throws "access denied" for ACL-shared
+  // group calendars even when the user already has the calendar subscribed).
+  const calendarLink = activeCalendarId ? "https://calendar.google.com/calendar/r" : null;
 
   const base = {
     configured,

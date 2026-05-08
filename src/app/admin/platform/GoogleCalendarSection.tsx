@@ -324,34 +324,21 @@ export default function GoogleCalendarSection() {
         })()}
 
         {/* Post-creation subscribe banner */}
-        {createdCalendarId && (() => {
-          const subscribeLink = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(createdCalendarId)}`;
-          return (
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <Icon name="check" className="w-[13px] h-[13px] text-blue-700" />
-                <p className="text-[12px] font-bold text-blue-900">Calendar created — add it to your Google Calendar</p>
-              </div>
-              <p className="text-[11px] text-blue-900 leading-relaxed">
-                The service account now owns this calendar and can write to it freely.
-                {shareEmail.trim()
-                  ? ` An invitation was sent to ${shareEmail.trim()} — check your email and click "Add to calendar".`
-                  : " To view it, open the link below and click \"Add calendar\", or enter your email above and recreate."}
-              </p>
-              <a
-                href={subscribeLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-900"
-              >
-                Open &quot;Yugo OPS+ Jobs&quot; in Google Calendar →
-              </a>
-              <div className="mt-1">
-                <code className="text-[10px] font-mono text-blue-700 break-all">{createdCalendarId}</code>
-              </div>
+        {createdCalendarId && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <Icon name="check" className="w-[13px] h-[13px] text-blue-700" />
+              <p className="text-[12px] font-bold text-blue-900">Calendar created — check Google Calendar</p>
             </div>
-          );
-        })()}
+            <p className="text-[11px] text-blue-900 leading-relaxed">
+              The service account now owns this calendar and has full write access.
+              {shareEmail.trim()
+                ? ` An invitation was sent to ${shareEmail.trim()} — check your email and click "Add to calendar". It will appear under "Other calendars" in the sidebar.`
+                : " Check your Google Calendar sidebar under \"Other calendars\" — it should appear there if you entered your email before creating."}
+            </p>
+            <code className="block text-[10px] font-mono text-blue-700 break-all">{createdCalendarId}</code>
+          </div>
+        )}
 
         {/* Sync controls */}
         {configured && (
