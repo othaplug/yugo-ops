@@ -14,31 +14,116 @@ function base64url(buf: Buffer): string {
 }
 
 /**
+ * Resolve the service account credentials, supporting all common env var formats:
+ *
+ * 1. Standard split vars (preferred):
+ *    - GOOGLE_CALENDAR_CLIENT_EMAIL = "x@y.iam.gserviceaccount.com"
+ *    - GOOGLE_CALENDAR_PRIVATE_KEY  = PEM with literal \n escapes
+ *
+ * 2. JSON service account in GOOGLE_CALENDAR_PRIVATE_KEY (paste-the-json case):
+ *    - GOOGLE_CALENDAR_PRIVATE_KEY = '{"type":"service_account","client_email":"...","private_key":"..."}'
+ *
+ * 3. Base64-encoded JSON service account (recommended for Vercel env vars to avoid escaping):
+ *    - GOOGLE_CALENDAR_SERVICE_ACCOUNT_B64 = base64(<service-account.json>)
+ */
+function resolveCredentials(): { clientEmail: string; privateKey: string } {
+  const b64 = process.env.GOOGLE_CALENDAR_SERVICE_ACCOUNT_B64?.trim();
+  if (b64) {
+    try {
+      const json = JSON.parse(Buffer.from(b64, "base64").toString("utf8")) as {
+        client_email?: string;
+        private_key?: string;
+      };
+      if (json.client_email && json.private_key) {
+        return { clientEmail: json.client_email, privateKey: json.private_key };
+      }
+    } catch {
+      throw new Error("GOOGLE_CALENDAR_SERVICE_ACCOUNT_B64 is not valid base64-encoded JSON");
+    }
+  }
+
+  const rawKey = process.env.GOOGLE_CALENDAR_PRIVATE_KEY?.trim();
+  let clientEmail = process.env.GOOGLE_CALENDAR_CLIENT_EMAIL?.trim() ?? "";
+
+  if (!rawKey) {
+    throw new Error("GOOGLE_CALENDAR_PRIVATE_KEY (or GOOGLE_CALENDAR_SERVICE_ACCOUNT_B64) is not configured");
+  }
+
+  // If the env var is the full JSON service account
+  if (rawKey.startsWith("{")) {
+    try {
+      const json = JSON.parse(rawKey) as { client_email?: string; private_key?: string };
+      if (json.private_key) {
+        if (!clientEmail && json.client_email) clientEmail = json.client_email;
+        if (!clientEmail) {
+          throw new Error("GOOGLE_CALENDAR_CLIENT_EMAIL is not configured");
+        }
+        return { clientEmail, privateKey: json.private_key };
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("CLIENT_EMAIL")) throw err;
+      throw new Error("GOOGLE_CALENDAR_PRIVATE_KEY looks like JSON but failed to parse");
+    }
+  }
+
+  if (!clientEmail) {
+    throw new Error("GOOGLE_CALENDAR_CLIENT_EMAIL is not configured");
+  }
+
+  return { clientEmail, privateKey: rawKey };
+}
+
+/**
  * Canonicalize a PEM private key for OpenSSL 3.x compatibility.
  *
  * OpenSSL 3.x (Node.js 18+) is strict about RFC 7468 PEM format:
  * - No trailing spaces, no Windows-style \r\n, exactly 64 base64 chars per line.
- * OpenSSL 1.x silently accepted any line length. Env vars stored in Vercel or
- * .env files often have the wrong line length or mixed line endings, causing
- * the "DECODER routines::unsupported" error on OpenSSL 3.x.
  *
- * Fix: strip the base64 body to a single token and re-wrap at 64 chars.
+ * This handles every common env var encoding seen in the wild:
+ * - Literal "\n" escapes (Vercel single-line storage)
+ * - JSON-double-escaped "\\n"
+ * - Surrounding double or single quotes
+ * - Stray BOM, NBSP, or zero-width chars from copy/paste
+ * - Mixed line endings (\r\n)
+ * - Headers with extra whitespace or wrong line wrapping
  */
 function normalizePemKey(rawKey: string): string {
-  // Convert escaped newlines from env var storage (e.g. Vercel, dotenv)
-  const withNewlines = rawKey.replace(/\\n/g, "\n").replace(/\r\n/g, "\n");
+  let key = rawKey;
 
-  const headerMatch = withNewlines.match(/-----BEGIN ([^-]+)-----/);
-  const footerMatch = withNewlines.match(/-----END ([^-]+)-----/);
-  if (!headerMatch || !footerMatch) return withNewlines;
+  // 1. Strip surrounding quotes (a common copy/paste issue)
+  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+    key = key.slice(1, -1);
+  }
+
+  // 2. Strip BOM and zero-width chars
+  key = key.replace(/^﻿/, "").replace(/[​-‍⁠]/g, "");
+
+  // 3. Replace NBSP with regular space, normalize line endings
+  key = key.replace(/ /g, " ").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+  // 4. Convert escaped newlines (handle both single and double-escaped)
+  key = key.replace(/\\\\n/g, "\n").replace(/\\n/g, "\n");
+
+  const headerMatch = key.match(/-----BEGIN ([A-Z0-9 ]+)-----/);
+  const footerMatch = key.match(/-----END ([A-Z0-9 ]+)-----/);
+  if (!headerMatch || !footerMatch) {
+    throw new Error(
+      "Private key is missing PEM headers (expected '-----BEGIN PRIVATE KEY-----'). " +
+        "If you stored a JSON service account, use GOOGLE_CALENDAR_SERVICE_ACCOUNT_B64 (base64-encoded JSON).",
+    );
+  }
 
   const keyType = headerMatch[1].trim();
 
   // Strip all whitespace from the base64 body then re-wrap at exactly 64 chars
-  const base64 = withNewlines
-    .replace(/-----BEGIN [^-]+-----/, "")
-    .replace(/-----END [^-]+-----/, "")
-    .replace(/\s/g, "");
+  const base64 = key
+    .replace(/-----BEGIN [A-Z0-9 ]+-----/, "")
+    .replace(/-----END [A-Z0-9 ]+-----/, "")
+    .replace(/\s+/g, "");
+
+  if (!/^[A-Za-z0-9+/=]+$/.test(base64)) {
+    throw new Error("Private key body contains non-base64 characters after normalization");
+  }
 
   const wrapped = (base64.match(/.{1,64}/g) ?? []).join("\n");
   return `-----BEGIN ${keyType}-----\n${wrapped}\n-----END ${keyType}-----\n`;
@@ -61,7 +146,16 @@ function buildJwt(clientEmail: string, privateKey: string): string {
   const sign = createSign("RSA-SHA256");
   sign.update(`${header}.${payload}`);
   // Use explicit KeyObject so OpenSSL 3.x accepts PKCS8 ("BEGIN PRIVATE KEY") keys.
-  const keyObj = createPrivateKey({ key: Buffer.from(privateKey, "utf8"), format: "pem" });
+  let keyObj;
+  try {
+    keyObj = createPrivateKey({ key: Buffer.from(privateKey, "utf8"), format: "pem" });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `Could not decode Google Calendar private key. ${msg}. ` +
+        "Tip: in Vercel, paste the JSON service account file and base64-encode it into GOOGLE_CALENDAR_SERVICE_ACCOUNT_B64 to avoid escaping issues.",
+    );
+  }
   const sig = base64url(sign.sign(keyObj));
   return `${header}.${payload}.${sig}`;
 }
@@ -69,11 +163,7 @@ function buildJwt(clientEmail: string, privateKey: string): string {
 export async function getGCalAccessToken(): Promise<string> {
   if (cachedToken && Date.now() < tokenExpiresAt - 60_000) return cachedToken;
 
-  const clientEmail = process.env.GOOGLE_CALENDAR_CLIENT_EMAIL;
-  const rawKey = process.env.GOOGLE_CALENDAR_PRIVATE_KEY;
-  if (!clientEmail || !rawKey) {
-    throw new Error("GOOGLE_CALENDAR_CLIENT_EMAIL or GOOGLE_CALENDAR_PRIVATE_KEY not configured");
-  }
+  const { clientEmail, privateKey: rawKey } = resolveCredentials();
   const privateKey = normalizePemKey(rawKey);
   const jwt = buildJwt(clientEmail, privateKey);
 
@@ -108,11 +198,9 @@ export function getGCalId(): string {
 }
 
 export function isGCalConfigured(): boolean {
-  return !!(
-    process.env.GOOGLE_CALENDAR_CLIENT_EMAIL &&
-    process.env.GOOGLE_CALENDAR_PRIVATE_KEY &&
-    process.env.GOOGLE_CALENDAR_ID
-  );
+  if (!process.env.GOOGLE_CALENDAR_ID) return false;
+  if (process.env.GOOGLE_CALENDAR_SERVICE_ACCOUNT_B64) return true;
+  return !!(process.env.GOOGLE_CALENDAR_CLIENT_EMAIL && process.env.GOOGLE_CALENDAR_PRIVATE_KEY);
 }
 
 type GCalMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";

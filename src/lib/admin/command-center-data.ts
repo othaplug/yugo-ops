@@ -253,9 +253,9 @@ export const loadCommandCenterData = async () => {
     admin
       .from("quotes")
       .select(
-        "id, quote_id, status, custom_price, tiers, client_name, viewed_at, accepted_at, created_at, expires_at",
+        "id, quote_id, status, custom_price, tiers, viewed_at, accepted_at, created_at, expires_at",
       )
-      .in("status", ["sent", "viewed", "accepted", "confirmed", "booked", "paid", "expired", "declined", "lost", "cold"])
+      .in("status", ["sent", "viewed", "accepted", "expired", "declined", "lost", "cold"])
       .order("created_at", { ascending: false })
       .limit(500),
     (async () => {
@@ -947,19 +947,22 @@ export const loadCommandCenterData = async () => {
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
   const acceptedThisWeek = allQuotesExpanded.filter(
-    (q) =>
-      (q.status === "accepted" || q.status === "booked" || q.status === "confirmed" || q.status === "paid") &&
-      q.accepted_at &&
-      new Date(String(q.accepted_at)) >= sevenDaysAgo,
+    (q) => {
+      if (q.status !== "accepted") return false;
+      // Fall back to created_at when accepted_at is missing (legacy data).
+      const ref = q.accepted_at || q.created_at;
+      if (!ref) return false;
+      return new Date(String(ref)) >= sevenDaysAgo;
+    },
   ).length
 
   // Conversion rate from all quotes that have reached a terminal state (no time window —
   // avoids 0% when the only accepted quote was created >30 days ago).
-  const acceptedAll = allQuotesExpanded.filter((q) =>
-    ["accepted", "confirmed", "booked", "paid"].includes(String(q.status)),
+  const acceptedAll = allQuotesExpanded.filter(
+    (q) => String(q.status) === "accepted",
   ).length
   const decidedAll = allQuotesExpanded.filter((q) =>
-    ["accepted", "confirmed", "booked", "paid", "expired", "declined", "lost", "cold"].includes(String(q.status)),
+    ["accepted", "expired", "declined", "lost", "cold"].includes(String(q.status)),
   ).length
   const conversionRate =
     decidedAll > 0 ? Math.round((acceptedAll / decidedAll) * 100) : 0
