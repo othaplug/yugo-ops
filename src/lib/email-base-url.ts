@@ -11,6 +11,6 @@ export function getEmailBaseUrl(): string {
   const url =
     (process.env.NEXT_PUBLIC_EMAIL_APP_URL || "").trim() ||
     (process.env.NEXT_PUBLIC_APP_URL || "").trim() ||
-    "https://helloyugo.com";
+    "https://yugoplus.co";
   return url.replace(/\/$/, "");
 }
