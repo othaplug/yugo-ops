@@ -68,6 +68,54 @@ export default async function MoveDetailPage({
 
   if (error || !move) notFound();
 
+  // Self-heal: if move.est_hours is missing or estimated_duration_minutes is out of sync
+  // with the linked quote's est_hours, fix it on read so the duration shown here always
+  // matches the quote page (~Xh shown on the quote → X*60 minutes on the move).
+  // This is the authoritative source of truth: quote.est_hours.
+  const moveQuoteId = (move as { quote_id?: string | null }).quote_id;
+  if (moveQuoteId) {
+    const { data: linkedQuote } = await db
+      .from("quotes")
+      .select("est_hours")
+      .eq("id", moveQuoteId)
+      .maybeSingle();
+    const qehRaw = linkedQuote?.est_hours;
+    const qeh =
+      qehRaw != null && Number.isFinite(Number(qehRaw)) && Number(qehRaw) > 0
+        ? Number(qehRaw)
+        : null;
+    if (qeh != null) {
+      const expectedMinutes = Math.round(qeh * 60);
+      const currentEstHours = Number(
+        (move as { est_hours?: number | string | null }).est_hours ?? 0,
+      );
+      const currentMinutes = Number(
+        (move as { estimated_duration_minutes?: number | null })
+          .estimated_duration_minutes ?? 0,
+      );
+      const estHoursStale =
+        !currentEstHours ||
+        Math.abs(currentEstHours - qeh) > 0.01;
+      const minutesStale = Math.abs(currentMinutes - expectedMinutes) > 5;
+      const isImmutable = ["completed", "cancelled", "no_show"].includes(
+        String((move as { status?: string }).status ?? "").toLowerCase(),
+      );
+      if ((estHoursStale || minutesStale) && !isImmutable) {
+        await db
+          .from("moves")
+          .update({
+            est_hours: qeh,
+            estimated_duration_minutes: expectedMinutes,
+          })
+          .eq("id", (move as { id: string }).id);
+        // Patch the in-memory copy so the rendered page matches DB without re-fetch
+        (move as Record<string, unknown>).est_hours = qeh;
+        (move as Record<string, unknown>).estimated_duration_minutes =
+          expectedMinutes;
+      }
+    }
+  }
+
   if (
     String(move.service_type ?? "").toLowerCase() === "bin_rental" ||
     String(move.move_type ?? "").toLowerCase() === "bin_rental"

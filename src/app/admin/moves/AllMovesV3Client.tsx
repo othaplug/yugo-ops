@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { formatMoveDate, formatAdminCreatedAt } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
 import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
+import { TIERED_SERVICE_TYPES, QUOTE_SERVICE_TYPE_DEFINITIONS } from "@/lib/quote-service-types";
 import { formatJobId, getMoveCode, getMoveDetailPath } from "@/lib/move-code";
 import { getStatusLabel } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
@@ -160,7 +161,12 @@ export default function AllMovesV3Client({
 
   const filtered = React.useMemo(() => {
     return moves.filter((m) => {
-      if (urlType && normalizeType(m) !== urlType) return false;
+      if (urlType) {
+        // Match raw service_type / move_type slug first (matches the Service Type
+        // dropdown options); fall back to normalizeType for legacy URLs.
+        const rawSt = String(m.service_type ?? m.move_type ?? "").trim().toLowerCase();
+        if (rawSt !== urlType.toLowerCase() && normalizeType(m) !== urlType) return false;
+      }
       if (urlStatus && effective(m).toLowerCase() !== urlStatus.toLowerCase())
         return false;
       if (urlSegment === "pm" && moveSegment(m) !== "pm") return false;
@@ -205,8 +211,23 @@ export default function AllMovesV3Client({
     );
     const tierCounts: Record<string, number> = {};
     for (const m of bookedOrCompleted) {
-      const t = (m.tier_selected || "").trim();
-      if (t) tierCounts[t] = (tierCounts[t] || 0) + 1;
+      // Only count moves whose service type actually offers tier packages.
+      // Office moves, B2B deliveries, single items, labour-only etc. don't have tiers.
+      // PM moves carry a default tier that doesn't reflect a real client choice — exclude them.
+      const st = String(m.service_type ?? m.move_type ?? "").trim().toLowerCase();
+      if (!TIERED_SERVICE_TYPES.has(st)) continue;
+      const isPm = !!(m.contract_id && String(m.contract_id).trim()) || !!m.is_pm_move;
+      if (isPm) continue;
+      const t = (m.tier_selected || "").trim().toLowerCase();
+      if (!t) continue;
+      // Normalise legacy aliases (curated/essentials → essential, premier → signature)
+      const normalised =
+        t === "essentials" || t === "curated"
+          ? "essential"
+          : t === "premier"
+            ? "signature"
+            : t;
+      tierCounts[normalised] = (tierCounts[normalised] || 0) + 1;
     }
     const TIER_LABEL: Record<string, string> = {
       essential: "Essential",
@@ -509,19 +530,28 @@ export default function AllMovesV3Client({
       />
       <KpiStrip tiles={kpis} columns={5} />
       <div className="flex flex-wrap items-center gap-2">
-        <label className="sr-only" htmlFor="moves-segment-filter">
-          Move channel
+        <label className="sr-only" htmlFor="moves-service-filter">
+          Service type
         </label>
         <select
-          id="moves-segment-filter"
-          value={urlSegment === "pm" || urlSegment === "b2b" || urlSegment === "b2c" ? urlSegment : "all"}
-          onChange={(e) => setSegmentParam(e.target.value)}
-          className="admin-premium-input text-[13px] py-2 max-w-[220px]"
+          id="moves-service-filter"
+          value={urlType || "all"}
+          onChange={(e) => {
+            const next = e.target.value;
+            const q = new URLSearchParams(params.toString());
+            if (!next || next === "all") q.delete("type");
+            else q.set("type", next);
+            const s = q.toString();
+            router.push(s ? `/admin/moves?${s}` : "/admin/moves", { scroll: false });
+          }}
+          className="admin-premium-input text-[13px] py-2 max-w-[260px]"
         >
-          <option value="all">All channels</option>
-          <option value="b2c">B2C (direct)</option>
-          <option value="pm">Property management</option>
-          <option value="b2b">B2B deliveries</option>
+          <option value="all">All service types</option>
+          {QUOTE_SERVICE_TYPE_DEFINITIONS.filter((d) => d.value !== "bin_rental").map((d) => (
+            <option key={d.value} value={d.value}>
+              {d.label}
+            </option>
+          ))}
         </select>
       </div>
       <DataTable<Move>
@@ -543,7 +573,53 @@ export default function AllMovesV3Client({
         }
         viewMode={viewMode}
         onViewModeChange={setViewMode}
-        availableViews={["list"]}
+        availableViews={["list", "board"]}
+        board={{
+          groupBy: (m) => {
+            const s = effective(m).toLowerCase();
+            if (["completed", "delivered", "paid"].includes(s)) return "completed";
+            if (["cancelled", "canceled", "expired", "no_show"].includes(s)) return "cancelled";
+            if (["in_progress", "en_route", "loading", "unloading", "in_transit"].includes(s)) return "in_progress";
+            if (["scheduled", "booked", "confirmed"].includes(s)) return "scheduled";
+            return "draft";
+          },
+          columns: [
+            { id: "draft", label: "Draft / Pending", tone: "neutral" },
+            { id: "scheduled", label: "Scheduled", tone: "info" },
+            { id: "in_progress", label: "In Progress", tone: "info" },
+            { id: "completed", label: "Completed", tone: "success" },
+            { id: "cancelled", label: "Cancelled", tone: "danger" },
+          ],
+          renderCard: (m) => (
+            <div className="space-y-1.5 text-[12px]">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-[var(--yu3-ink)]">
+                  {formatJobId(getMoveCode(m), "move")}
+                </span>
+                <StatusPill tone={statusTone(effective(m))}>
+                  {getStatusLabel(effective(m)) || toTitleCase(effective(m))}
+                </StatusPill>
+              </div>
+              <div className="text-[var(--yu3-ink)] font-medium">
+                {m.client_name || "—"}
+              </div>
+              <div className="text-[10px] text-[var(--yu3-ink-muted)]">
+                {serviceTypeDisplayLabel(m.service_type ?? m.move_type)}
+              </div>
+              <div className="text-[10px] text-[var(--yu3-ink-muted)] truncate">
+                {m.from_address || "—"}
+              </div>
+              <div className="flex items-center justify-between text-[11px] pt-1 border-t border-[var(--yu3-line-subtle)]">
+                <span className="text-[var(--yu3-ink-muted)]">
+                  {m.scheduled_date ? formatMoveDate(m.scheduled_date) : "—"}
+                </span>
+                <span className="font-semibold text-[var(--yu3-ink)] tabular-nums">
+                  {formatCurrency(Number(m.estimate ?? m.final_amount ?? 0))}
+                </span>
+              </div>
+            </div>
+          ),
+        }}
       />
     </div>
   );

@@ -66,6 +66,40 @@ function resolveCredentials(): { clientEmail: string; privateKey: string } {
     }
   }
 
+  // Auto-detect: if value has no PEM headers but looks like base64-encoded JSON or
+  // base64-encoded PEM, decode it transparently. This is the most common cause of
+  // "Private key is missing PEM headers" errors — users paste base64 into the wrong
+  // env var.
+  if (!rawKey.includes("BEGIN ") && /^[A-Za-z0-9+/=\s]+$/.test(rawKey)) {
+    try {
+      const decoded = Buffer.from(rawKey, "base64").toString("utf8");
+      // Decoded JSON service account
+      if (decoded.trim().startsWith("{")) {
+        const json = JSON.parse(decoded) as {
+          client_email?: string;
+          private_key?: string;
+        };
+        if (json.private_key) {
+          if (!clientEmail && json.client_email) clientEmail = json.client_email;
+          if (!clientEmail) {
+            throw new Error("GOOGLE_CALENDAR_CLIENT_EMAIL is not configured");
+          }
+          return { clientEmail, privateKey: json.private_key };
+        }
+      }
+      // Decoded raw PEM
+      if (decoded.includes("BEGIN ") && decoded.includes("PRIVATE KEY")) {
+        if (!clientEmail) {
+          throw new Error("GOOGLE_CALENDAR_CLIENT_EMAIL is not configured");
+        }
+        return { clientEmail, privateKey: decoded };
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("CLIENT_EMAIL")) throw err;
+      // fall through to the PEM path below — error there is more accurate
+    }
+  }
+
   if (!clientEmail) {
     throw new Error("GOOGLE_CALENDAR_CLIENT_EMAIL is not configured");
   }
@@ -109,7 +143,9 @@ function normalizePemKey(rawKey: string): string {
   if (!headerMatch || !footerMatch) {
     throw new Error(
       "Private key is missing PEM headers (expected '-----BEGIN PRIVATE KEY-----'). " +
-        "If you stored a JSON service account, use GOOGLE_CALENDAR_SERVICE_ACCOUNT_B64 (base64-encoded JSON).",
+        "Easiest fix: in your terminal run `base64 -i service-account.json | pbcopy` " +
+        "and paste the result into GOOGLE_CALENDAR_SERVICE_ACCOUNT_B64 (preferred). " +
+        "Or paste the raw PEM with literal \\n escapes into GOOGLE_CALENDAR_PRIVATE_KEY.",
     );
   }
 

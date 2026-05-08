@@ -295,6 +295,7 @@ import {
   contractTaxLines,
 } from "@/lib/format-currency";
 import { portfolioPmMoveServiceLabel, serviceTypeDisplayLabel } from "@/lib/displayLabels";
+import { serviceTypeHasTiers } from "@/lib/quote-service-types";
 import { portfolioPmStatementInvoiceDueIso } from "@/lib/partners/portfolio-pm-statement-due-date";
 import { formatAccessForDisplay, toTitleCase } from "@/lib/format-text";
 
@@ -1465,6 +1466,22 @@ export default function MoveDetailClient({
                     : "—"}
                 </p>
               </div>
+              {/* Tier — only shown for service types that use tier packages
+                  (local_move, long_distance). Hidden for white_glove, specialty,
+                  office_move, single_item, etc. so non-tiered jobs aren't mislabelled. */}
+              {serviceTypeHasTiers(move.service_type ?? move.move_type) &&
+              tierDisplayLabel(move.tier_selected) ? (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
+                    Tier
+                  </p>
+                  <p className="text-[var(--yu3-ink)]">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-[0.04em] bg-[color-mix(in_srgb,var(--yu3-wine)_10%,transparent)] text-[var(--yu3-wine)] border border-[color-mix(in_srgb,var(--yu3-wine)_20%,transparent)]">
+                      {tierDisplayLabel(move.tier_selected)}
+                    </span>
+                  </p>
+                </div>
+              ) : null}
             </div>
           </div>
 

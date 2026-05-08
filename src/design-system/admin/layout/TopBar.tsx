@@ -40,6 +40,8 @@ export interface TopBarProps {
   userName?: string | null;
   userRole?: string | null;
   notificationCount?: number;
+  /** Optional custom notification trigger (replaces the default Link → /admin/notifications) */
+  notificationSlot?: React.ReactNode;
   theme?: "light" | "dark";
   onToggleTheme?: () => void;
   onSignOut?: () => void;
@@ -51,6 +53,7 @@ export function TopBar({
   userName,
   userRole,
   notificationCount = 0,
+  notificationSlot,
   theme = "light",
   onToggleTheme,
   onSignOut,
@@ -119,39 +122,41 @@ export function TopBar({
           aria-hidden
         />
 
-        <Link
-          href="/admin/notifications"
-          className={cn(
-            "relative inline-flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full shrink-0",
-            "bg-[var(--yu3-topbar-search-bg)] text-[var(--yu3-ink)]",
-            "hover:brightness-95",
-          )}
-          aria-label={
-            notificationCount > 0
-              ? `Notifications, ${notificationCount} unread`
-              : "Notifications"
-          }
-        >
-          <Bell
-            size={16}
-            weight="regular"
-            className="text-[var(--yu3-ink-muted)]"
-          />
-          {notificationCount > 0 ? (
-            <span
-              className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[var(--yu3-topbar-search-bg)] z-[1]"
-              aria-hidden
+        {notificationSlot ?? (
+          <Link
+            href="/admin/notifications"
+            className={cn(
+              "relative inline-flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full shrink-0",
+              "bg-[var(--yu3-topbar-search-bg)] text-[var(--yu3-ink)]",
+              "hover:brightness-95",
+            )}
+            aria-label={
+              notificationCount > 0
+                ? `Notifications, ${notificationCount} unread`
+                : "Notifications"
+            }
+          >
+            <Bell
+              size={16}
+              weight="regular"
+              className="text-[var(--yu3-ink-muted)]"
             />
-          ) : null}
-          {notificationCount > 0 ? (
-            <span
-              className="absolute -top-0.5 -right-0.5 z-[2] min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center"
-              aria-hidden
-            >
-              {notificationCount > 99 ? "99+" : notificationCount}
-            </span>
-          ) : null}
-        </Link>
+            {notificationCount > 0 ? (
+              <span
+                className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[var(--yu3-topbar-search-bg)] z-[1]"
+                aria-hidden
+              />
+            ) : null}
+            {notificationCount > 0 ? (
+              <span
+                className="absolute -top-0.5 -right-0.5 z-[2] min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center"
+                aria-hidden
+              >
+                {notificationCount > 99 ? "99+" : notificationCount}
+              </span>
+            ) : null}
+          </Link>
+        )}
 
         <DropdownMenu>
         <DropdownMenuTrigger asChild>

@@ -15,6 +15,7 @@ import RealtimeListener from "./RealtimeListener"
 import SessionTimeout from "./SessionTimeout"
 import OfflineBanner from "@/components/ui/OfflineBanner"
 import { AdminShell } from "@/design-system/admin/layout"
+import TopBarNotificationDropdown from "./TopBarNotificationDropdown"
 
 function PendingAwareShell({
   children,
@@ -64,6 +65,7 @@ function PendingAwareShell({
       isSuperAdmin={isSuperAdmin}
       badges={{ quotes: quoteBadge, changeRequests: pendingCount }}
       notificationCount={notificationCount}
+      notificationSlot={<TopBarNotificationDropdown />}
       onSignOut={handleSignOut}
     >
       {children}

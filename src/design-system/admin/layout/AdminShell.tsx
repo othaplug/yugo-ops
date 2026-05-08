@@ -24,6 +24,8 @@ export interface AdminShellProps {
   isSuperAdmin: boolean;
   badges?: { quotes?: number; changeRequests?: number };
   notificationCount?: number;
+  /** Custom notification trigger (e.g. dropdown sneak-peek). */
+  notificationSlot?: React.ReactNode;
   breadcrumbs?: { label: string; href?: string }[];
   onSignOut?: () => void;
   /**
@@ -44,6 +46,7 @@ export function AdminShell({
   isSuperAdmin,
   badges,
   notificationCount = 0,
+  notificationSlot,
   breadcrumbs,
   onSignOut,
   theme: themeProp,
@@ -191,6 +194,7 @@ export function AdminShell({
               userName={user?.full_name}
               userRole={role}
               notificationCount={notificationCount}
+              notificationSlot={notificationSlot}
               theme={theme}
               onToggleTheme={handleToggleTheme}
               onSignOut={onSignOut}
