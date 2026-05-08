@@ -2407,6 +2407,11 @@ export default function TrackMoveClient({
                             revealNames={revealCrewNames}
                             memberNames={crewMembers}
                             roles={crewRoles}
+                            crewTeamName={
+                              revealCrewNames && crewMembers.length > 0
+                                ? (move.assigned_crew_name as string | null | undefined) ?? crew?.name ?? undefined
+                                : undefined
+                            }
                             forest={FOREST}
                             mode={
                               isNonMoveProductTrack ? "bins" : "move"
@@ -3803,6 +3808,11 @@ export default function TrackMoveClient({
                   revealNames={revealCrewNames}
                   memberNames={crewMembers}
                   roles={crewRoles}
+                  crewTeamName={
+                    revealCrewNames && crewMembers.length > 0
+                      ? (move.assigned_crew_name as string | null | undefined) ?? crew?.name ?? undefined
+                      : undefined
+                  }
                   forest={FOREST}
                   mode={isNonMoveProductTrack ? "bins" : "move"}
                 />

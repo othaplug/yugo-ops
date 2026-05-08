@@ -11,10 +11,11 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { jobId, jobType, crewId } = body as {
+    const { jobId, jobType, crewId, members } = body as {
       jobId: string;
       jobType: "move" | "delivery";
       crewId: string | null;
+      members?: string[] | null;
     };
 
     if (!jobId || !jobType) {
@@ -37,6 +38,19 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
+    // members-only update: save assigned_members without changing the crew
+    if (crewId === undefined && Array.isArray(members)) {
+      const cleanMembers = members.filter((m) => typeof m === "string" && m.trim());
+      const { data: updated, error } = await admin
+        .from(table)
+        .update({ assigned_members: cleanMembers, updated_at: new Date().toISOString() })
+        .eq("id", existing.id)
+        .select()
+        .single();
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ ok: true, [jobType]: updated });
+    }
+
     if (isDispatchJobInProgress(existing.status, existing.stage)) {
       return NextResponse.json(
         { error: "Cannot reassign: job is in progress. Reassignment is only allowed before the crew has started." },
@@ -52,8 +66,14 @@ export async function PATCH(req: NextRequest) {
 
     if (trimmedCrew) {
       const snap = await fetchCrewAssignmentSnapshot(admin, trimmedCrew);
-      update.assigned_members = snap.assigned_members;
-      update.assigned_crew_name = snap.assigned_crew_name;
+      // If caller supplied explicit members, use those; otherwise use crew snapshot
+      if (Array.isArray(members)) {
+        update.assigned_members = members.filter((m) => typeof m === "string" && m.trim());
+        update.assigned_crew_name = snap.assigned_crew_name;
+      } else {
+        update.assigned_members = snap.assigned_members;
+        update.assigned_crew_name = snap.assigned_crew_name;
+      }
     } else {
       update.assigned_members = [];
       update.assigned_crew_name = null;

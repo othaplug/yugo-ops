@@ -8,6 +8,8 @@ type Props = {
   memberNames: string[];
   /** Optional role labels per member (same length as names when listing). */
   roles?: string[];
+  /** Team name (e.g. "Alpha") shown above individual crew member names. */
+  crewTeamName?: string;
   forest: string;
   /** Extra classes on outer wrapper (e.g. border-t spacing). */
   className?: string;
@@ -23,6 +25,7 @@ export default function TrackYourCrewSection({
   revealNames,
   memberNames,
   roles = CREW_ROLES_DEFAULT,
+  crewTeamName,
   forest,
   className = "",
   mode = "move",
@@ -60,7 +63,16 @@ export default function TrackYourCrewSection({
       </div>
 
       {showNameList ? (
-        <div className="flex flex-wrap gap-3">
+        <div className="space-y-3">
+          {crewTeamName && (
+            <p
+              className="text-[12px] font-semibold"
+              style={{ color: forest }}
+            >
+              Team: {crewTeamName}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-3">
           {names.map((name: string, i: number) => (
             <div key={`${name}-${i}`} className="flex items-center gap-2.5">
               <div
@@ -92,6 +104,7 @@ export default function TrackYourCrewSection({
               </div>
             </div>
           ))}
+          </div>
         </div>
       ) : showFinalizingList ? (
         <div className="flex items-start gap-3">

@@ -586,6 +586,10 @@ export default function MoveDetailClient({
     return assigned.length > 0 ? new Set(assigned) : new Set(crewMembers);
   });
   useEffect(() => {
+    // Don't reset checkbox state while the modal is open — the user may be
+    // editing which members to assign, and a realtime subscription update on
+    // move.assigned_members would wipe their uncommitted changes.
+    if (crewModalOpen) return;
     const members =
       selectedCrew?.members && Array.isArray(selectedCrew.members)
         ? selectedCrew.members
@@ -600,7 +604,7 @@ export default function MoveDetailClient({
     } else {
       setAssignedMembers(new Set());
     }
-  }, [move.crew_id, move.assigned_members, selectedCrew?.members]);
+  }, [move.crew_id, move.assigned_members, selectedCrew?.members, crewModalOpen]);
   const estimate = Number(move.estimate ?? move.amount ?? 0);
   const depositPaid = Number(
     move.deposit_amount ?? Math.round(estimate * 0.25),
@@ -1365,6 +1369,107 @@ export default function MoveDetailClient({
           </TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-3 pt-3">
+          {/* Move summary card */}
+          <div className="rounded-xl border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-[var(--yu3-ink-muted)]">
+                {toTitleCase(move.service_type?.replace(/_/g, " ") ?? "Move")}
+              </span>
+              <span
+                className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                style={{
+                  background: isCompleted
+                    ? "color-mix(in srgb, var(--yu3-sage) 15%, transparent)"
+                    : "color-mix(in srgb, var(--yu3-wine) 12%, transparent)",
+                  color: isCompleted ? "var(--yu3-sage)" : "var(--yu3-wine)",
+                }}
+              >
+                {toTitleCase(move.status ?? "")}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-[12px]">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
+                  From
+                </p>
+                <p className="text-[var(--yu3-ink)] leading-snug">
+                  {move.from_address || "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
+                  To
+                </p>
+                <p className="text-[var(--yu3-ink)] leading-snug">
+                  {move.to_address || move.delivery_address || "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
+                  Date
+                </p>
+                <p className="text-[var(--yu3-ink)]">
+                  {move.scheduled_date ? formatMoveDate(move.scheduled_date) : "—"}
+                  {move.arrival_window ? (
+                    <span className="text-[var(--yu3-ink-muted)] ml-1.5">
+                      · {move.arrival_window}
+                    </span>
+                  ) : null}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
+                  Client
+                </p>
+                <p className="text-[var(--yu3-ink)]">{move.client_name || "—"}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
+                  Crew
+                </p>
+                <p className="text-[var(--yu3-ink)]">
+                  {displayCrewName || "Not assigned"}
+                  {(snapshotRoster.length > 0) && (
+                    <span className="text-[var(--yu3-ink-muted)] ml-1.5">
+                      · {snapshotRoster.join(", ")}
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
+                  Est. Duration
+                </p>
+                <p className="text-[var(--yu3-ink)]">
+                  {jobTimeTracker
+                    ? formatMinutesAsHhMm(Math.round(jobTimeTracker.minutes))
+                    : move.est_hours
+                      ? `~${move.est_hours}h`
+                      : "Not set"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
+                  Revenue
+                </p>
+                <p className="text-[var(--yu3-ink)] font-medium">
+                  {formatCurrency(Number(move.final_amount ?? move.amount ?? move.estimate ?? 0))}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
+                  Deposit
+                </p>
+                <p className="text-[var(--yu3-ink)]">
+                  {move.deposit_amount
+                    ? formatCurrency(Number(move.deposit_amount))
+                    : "—"}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {typeof move.move_project_id === "string" &&
           move.move_project_id.trim() &&
           residentialMoveProject?.project &&
@@ -2843,18 +2948,28 @@ export default function MoveDetailClient({
                 type="button"
                 onClick={async () => {
                   const members = Array.from(assignedMembers);
-                  const { data } = await supabase
-                    .from("moves")
-                    .update({
-                      assigned_members: members,
-                      updated_at: new Date().toISOString(),
-                    })
-                    .eq("id", move.id)
-                    .select()
-                    .single();
-                  if (data) setMove(data);
-                  router.refresh();
-                  setCrewModalOpen(false);
+                  try {
+                    const res = await fetch("/api/dispatch/assign", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        jobId: move.id,
+                        jobType: "move",
+                        members,
+                      }),
+                    });
+                    const json = await res.json();
+                    if (!res.ok) throw new Error(json.error || "Failed to save");
+                    if (json.move) setMove(json.move);
+                    router.refresh();
+                    setCrewModalOpen(false);
+                    toast("Assignments saved", "check");
+                  } catch (err) {
+                    toast(
+                      err instanceof Error ? err.message : "Failed to save assignments",
+                      "alertTriangle",
+                    );
+                  }
                 }}
                 className="admin-btn admin-btn-primary w-full"
               >

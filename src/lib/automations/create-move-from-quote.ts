@@ -667,6 +667,10 @@ export async function createMoveFromQuote(
 
   const grossForDuration = totalWithTax;
   const attachDurationFields = (row: RowInsert): RowInsert => {
+    const rowEstHours = row.est_hours as number | null;
+    const hasExplicitHours =
+      rowEstHours != null && Number.isFinite(rowEstHours) && rowEstHours > 0;
+
     const dEst = estimateMoveDurationFromQuoteRow({
       serviceType: String(quote.service_type ?? ""),
       moveType,
@@ -693,9 +697,18 @@ export async function createMoveFromQuote(
       factors,
     });
     if (!dEst) return row;
+
+    // When the coordinator explicitly set est_hours on the quote, use that value
+    // as estimated_duration_minutes so the move detail shows the same time as
+    // the quote (quote shows "~Xh"; move should show the same Xh, not an
+    // inventory-model total that includes drive time and buffer).
+    const estimatedMinutes = hasExplicitHours
+      ? Math.round(rowEstHours! * 60)
+      : dEst.totalMinutes;
+
     return {
       ...row,
-      estimated_duration_minutes: dEst.totalMinutes,
+      estimated_duration_minutes: estimatedMinutes,
       estimated_internal_cost: dEst.estimatedCost,
       margin_alert_minutes: dEst.maxMinutesBeforeMarginAlert,
     };
@@ -722,6 +735,39 @@ export async function createMoveFromQuote(
       throw new Error(
         `Created primary move but failed on sibling rows for ${input.quoteId}: ${sibErr.message}`,
       );
+    }
+  }
+
+  // Copy inventory items from the quote into move_inventory so the move detail
+  // immediately shows the same inventory the client was quoted on.
+  const rawInventoryItems = (quote as { inventory_items?: unknown }).inventory_items;
+  if (Array.isArray(rawInventoryItems) && rawInventoryItems.length > 0) {
+    const inventoryRows = (rawInventoryItems as Array<Record<string, unknown>>)
+      .filter((item) => item && typeof item.name === "string" && item.name.trim())
+      .map((item, idx) => {
+        const name = String(item.name).trim();
+        const qty = typeof item.quantity === "number" && item.quantity > 1
+          ? item.quantity
+          : 1;
+        const itemName = qty > 1 ? `${name} x${qty}` : name;
+        // room slug → display name (e.g. "living_room" → "Living Room")
+        const roomSlug = typeof item.room === "string" && item.room.trim()
+          ? item.room.trim()
+          : "other";
+        const roomDisplay = roomSlug
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+        return {
+          move_id: primary.id,
+          room: roomDisplay,
+          item_name: itemName,
+          box_number: null,
+          sort_order: idx,
+        };
+      });
+
+    if (inventoryRows.length > 0) {
+      await supabase.from("move_inventory").insert(inventoryRows).then(() => {});
     }
   }
 
