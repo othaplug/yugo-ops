@@ -76,6 +76,15 @@ export default async function QuoteDetailPage({ params }: Props) {
   const { totalWithTax } = getQuoteTotalWithTaxFromRow(quote);
   const offlineDepositAmount = getOfflineDepositInclusiveFromQuote(quote);
 
+  // True when the quote stores tier-range pricing but no single tier has been confirmed.
+  // This triggers the external booking flow instead of the standard offline payment modal.
+  const tiers = quote.tiers as Record<string, { price: number }> | null;
+  const hasTierRange =
+    !!tiers &&
+    Object.values(tiers).some((t) => t?.price > 0) &&
+    !quote.selected_tier &&
+    !quote.custom_price;
+
   const { data: linkedMoveRow } = await db
     .from("moves")
     .select("move_code")
@@ -112,6 +121,7 @@ export default async function QuoteDetailPage({ params }: Props) {
         linkedDeliveryNumber={linkedDelRow?.delivery_number ?? null}
         hubspotDealId={hubspotDealId}
         hubspotEligible={quoteRowEligibleForHubSpotDeal(quote as Record<string, unknown>)}
+        hasTierRange={hasTierRange}
       />
     </div>
   );

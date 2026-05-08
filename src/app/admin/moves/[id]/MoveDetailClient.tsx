@@ -927,6 +927,11 @@ export default function MoveDetailClient({
             <StatusPill tone="wine">
               {serviceLabel}
             </StatusPill>
+            {(move as any).externally_booked && (
+              <span className="dt-badge tracking-[0.04em] text-amber-700 dark:text-amber-300">
+                Booked externally
+              </span>
+            )}
           </div>
         }
         actions={

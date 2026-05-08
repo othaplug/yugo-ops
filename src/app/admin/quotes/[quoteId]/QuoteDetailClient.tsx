@@ -40,6 +40,7 @@ import type { QuoteEngagementMetrics } from "@/lib/quotes/comparison-intelligenc
 import { formatCurrency } from "@/lib/format-currency";
 import type { QuotePaymentPipelineMode } from "@/lib/quotes/payment-pipeline-mode";
 import { InfoHint } from "@/components/ui/InfoHint";
+import ExternalBookingModal from "./ExternalBookingModal";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -76,6 +77,8 @@ interface Props {
   hubspotDealId?: string | null;
   /** False for sample or training quotes (no HubSpot sync) */
   hubspotEligible?: boolean;
+  /** True when the quote has tier pricing but no confirmed tier — external booking flow required */
+  hasTierRange?: boolean;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -421,6 +424,7 @@ export default function QuoteDetailClient({
   linkedDeliveryNumber = null,
   hubspotDealId = null,
   hubspotEligible = true,
+  hasTierRange = false,
 }: Props) {
   const router = useRouter();
   const [hubspotLinkedId, setHubspotLinkedId] = useState<string | null>(
@@ -455,6 +459,7 @@ export default function QuoteDetailClient({
   const [offlineLoading, setOfflineLoading] = useState(false);
   const [offlineError, setOfflineError] = useState<string | null>(null);
   const [offlineSuccess, setOfflineSuccess] = useState<string | null>(null);
+  const [showExternalBookingModal, setShowExternalBookingModal] = useState(false);
 
   const [photoRequestBusy, setPhotoRequestBusy] = useState(false);
   const [photoRequestSent, setPhotoRequestSent] = useState(
@@ -1209,6 +1214,19 @@ export default function QuoteDetailClient({
           )}
         </div>
 
+        {/* Tier-range banner — shown when no tier has been confirmed yet */}
+        {hasTierRange && !linkedMoveCode && !linkedDeliveryNumber && (
+          <div className="rounded-lg px-3 py-2.5 bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-700/40">
+            <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+              Tier not confirmed
+            </p>
+            <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5 leading-snug">
+              This quote has a price range — no tier was selected before it was sent.
+              Use &ldquo;Record external booking&rdquo; below to confirm which tier the client chose.
+            </p>
+          </div>
+        )}
+
         <div className="rounded-lg bg-[var(--card)] px-3 py-2">
           <div className="flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-3 sm:gap-y-1.5">
             <div className="flex items-center gap-1.5 min-w-0 shrink-0">
@@ -1248,6 +1266,22 @@ export default function QuoteDetailClient({
                   {linkedDeliveryNumber}
                 </Link>
               </p>
+            ) : hasTierRange ? (
+              /* Price-range quote: use the external booking flow */
+              <div className="flex flex-col gap-1 min-w-0 sm:flex-1 sm:items-end">
+                <button
+                  type="button"
+                  onClick={() => setShowExternalBookingModal(true)}
+                  className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
+                >
+                  Record external booking
+                  <CaretRight
+                    weight="bold"
+                    className="w-3 h-3 shrink-0 opacity-90"
+                    aria-hidden
+                  />
+                </button>
+              </div>
             ) : (
               <div className="flex flex-col gap-1 min-w-0 sm:flex-1 sm:items-end">
                 {(offlineSuccess || offlineError) && (
@@ -1332,6 +1366,24 @@ export default function QuoteDetailClient({
             )}
           </div>
         </div>
+
+        {showExternalBookingModal && (
+          <ExternalBookingModal
+            quoteId={quote.id}
+            quoteHumanId={quote.quote_id}
+            tiers={quote.tiers ?? {}}
+            serviceType={quote.service_type ?? "local_move"}
+            onClose={() => setShowExternalBookingModal(false)}
+            onSuccess={(moveCode) => {
+              setShowExternalBookingModal(false);
+              if (moveCode) {
+                router.push(`/admin/moves/${encodeURIComponent(moveCode)}`);
+              } else {
+                router.refresh();
+              }
+            }}
+          />
+        )}
 
         <ConfirmDialog
           open={offlineModalKind !== null}
