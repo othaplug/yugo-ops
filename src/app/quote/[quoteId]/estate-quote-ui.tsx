@@ -196,20 +196,20 @@ export const EstateExperienceSection = React.forwardRef<
             </h3>
             <div className="grid md:grid-cols-2 gap-6">
               <EstateFeatureCard
-                title="Verified repair or full replacement valuation"
-                description="Up to $10,000 per item, $100,000 per move. Zero deductible."
+                title="Full replacement value — current market value, no depreciation"
+                description="Items replaced at today's market value. Up to $10,000 per item, $100,000 per move. Zero deductible."
               />
               <EstateFeatureCard
                 title="All Packing Materials Included"
                 description="Boxes, wrapping, 5 wardrobe boxes, mattress bags — everything provided."
               />
               <EstateFeatureCard
-                title="30-Day Concierge Support"
-                description="Questions, adjustments, and support for 30 days after your move."
+                title="30-Day Post-Move Concierge"
+                description="Direct line to your coordinator for 30 days after your move — no support queues."
               />
               <EstateFeatureCard
-                title="Exclusive Partner Perks"
-                description="Access to partner discounts and member benefits."
+                title="Exclusive Yugo Circle Partner Offers"
+                description="Member-only partner discounts, settling-in services, and curated home offers."
               />
             </div>
           </div>

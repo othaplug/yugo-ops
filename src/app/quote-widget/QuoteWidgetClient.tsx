@@ -1755,12 +1755,12 @@ export default function QuoteWidgetClient() {
                           >
                             <p>Dedicated moving truck</p>
                             <p>Professional crew</p>
-                            <p>Protective wrapping for key furniture</p>
+                            <p>Protective wrapping for all standard furniture</p>
                             <p>Basic disassembly and reassembly</p>
                             <p>Floor and entryway protection</p>
                             <p>All standard equipment</p>
-                            <p>Standard valuation coverage</p>
-                            <p>Real-time GPS tracking</p>
+                            <p>Released value coverage — $0.60/lb per item</p>
+                            <p>Real-time GPS move tracking</p>
                           </div>
                         </details>
                       </div>
