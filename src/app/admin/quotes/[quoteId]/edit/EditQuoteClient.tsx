@@ -2095,8 +2095,20 @@ export default function EditQuoteClient({
       {/* Generated result */}
       {newQuoteResult && (
         <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-5 mb-6 mt-6">
-          <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest uppercase mb-3">
-            New Quote Generated
+          <div className="flex items-center gap-2 mb-3">
+            <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest uppercase">
+              Quote Updated
+            </div>
+            {newQuoteResult.version != null && (
+              <span className="text-[9px] font-bold text-[var(--tx3)] tracking-widest uppercase">
+                v{newQuoteResult.version}
+              </span>
+            )}
+            {newQuoteResult.is_revised && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                Revised
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-6 mb-4 flex-wrap">
             <div>
@@ -2105,22 +2117,41 @@ export default function EditQuoteClient({
                 {newQuoteId ?? "-"}
               </div>
             </div>
-            {oldPrice != null && newPrice != null ? (
-              <div>
-                <div className="text-[11px] text-[var(--tx3)]">
-                  Price Change
+            {(() => {
+              const priceBefore = newQuoteResult.price_before as number | null ?? null;
+              const priceAfter = newPrice;
+              return priceBefore != null && priceAfter != null ? (
+                <div>
+                  <div className="text-[11px] text-[var(--tx3)]">
+                    Price Change
+                  </div>
+                  <div className="text-sm font-medium text-[var(--tx)] flex items-center gap-2">
+                    <span className="line-through text-[var(--tx3)]">
+                      {formatCurrency(Number(priceBefore))}
+                    </span>
+                    <span className="text-[var(--tx3)]">→</span>
+                    <span className="text-[var(--gold)] font-bold">
+                      {formatCurrency(Number(priceAfter))}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-sm font-medium text-[var(--tx)] flex items-center gap-2">
-                  <span className="line-through text-[var(--tx3)]">
-                    {formatCurrency(Number(oldPrice))}
-                  </span>
-                  <span className="text-[var(--tx3)]">→</span>
-                  <span className="text-[var(--gold)] font-bold">
-                    {formatCurrency(Number(newPrice))}
-                  </span>
+              ) : oldPrice != null && newPrice != null ? (
+                <div>
+                  <div className="text-[11px] text-[var(--tx3)]">
+                    Price Change
+                  </div>
+                  <div className="text-sm font-medium text-[var(--tx)] flex items-center gap-2">
+                    <span className="line-through text-[var(--tx3)]">
+                      {formatCurrency(Number(oldPrice))}
+                    </span>
+                    <span className="text-[var(--tx3)]">→</span>
+                    <span className="text-[var(--gold)] font-bold">
+                      {formatCurrency(Number(newPrice))}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ) : null}
+              ) : null;
+            })()}
           </div>
 
           {newQuoteResult.tiers && (

@@ -22,6 +22,8 @@ import {
   LinkSimple,
   WarningCircle,
   Images,
+  Copy,
+  ClockCounterClockwise,
 } from "@phosphor-icons/react";
 import {
   ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS,
@@ -459,6 +461,11 @@ export default function QuoteDetailClient({
   const [recoveringMove, setRecoveringMove] = useState(false);
   const [recoverError, setRecoverError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [duplicating, setDuplicating] = useState(false);
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
+  const [versionHistoryExpanded, setVersionHistoryExpanded] = useState(false);
+  const [versionHistory, setVersionHistory] = useState<Array<{ version_number: number; created_at: string; snapshot: Record<string, unknown> }> | null>(null);
+  const [versionHistoryLoading, setVersionHistoryLoading] = useState(false);
 
   const [pipelineStatus, setPipelineStatus] = useState(
     String(quote.status || "draft"),
@@ -738,11 +745,56 @@ export default function QuoteDetailClient({
     }
   }
 
+  async function handleDuplicate() {
+    setDuplicateError(null);
+    setDuplicating(true);
+    try {
+      const res = await fetch(
+        `/api/admin/quotes/${encodeURIComponent(quote.quote_id)}/duplicate`,
+        { method: "POST", credentials: "same-origin" },
+      );
+      const data = (await res.json().catch(() => ({}))) as { newQuoteId?: string; error?: string };
+      if (!res.ok) {
+        setDuplicateError(data.error || "Failed to duplicate");
+        return;
+      }
+      if (data.newQuoteId) {
+        router.push(`/admin/quotes/${encodeURIComponent(data.newQuoteId)}/edit`);
+      }
+    } catch {
+      setDuplicateError("Failed to duplicate quote");
+    } finally {
+      setDuplicating(false);
+    }
+  }
+
+  async function handleLoadVersionHistory() {
+    if (versionHistory !== null) {
+      setVersionHistoryExpanded((v) => !v);
+      return;
+    }
+    setVersionHistoryLoading(true);
+    setVersionHistoryExpanded(true);
+    try {
+      const res = await fetch(
+        `/api/admin/quotes/${encodeURIComponent(quote.quote_id)}/versions`,
+        { credentials: "same-origin" },
+      );
+      if (!res.ok) return;
+      const data = (await res.json()) as { versions?: Array<{ version_number: number; created_at: string; snapshot: Record<string, unknown> }> };
+      setVersionHistory(data.versions ?? []);
+    } catch {
+      /* non-fatal */
+    } finally {
+      setVersionHistoryLoading(false);
+    }
+  }
+
   const canDeleteQuote = quoteStatusAllowsHardDelete(
     quote.status,
     isSuperAdmin,
   );
-  /** Bin rental jobs are tracked separately; “Create Move” is the wrong affordance here. */
+  /** Bin rental jobs are tracked separately; "Create Move" is the wrong affordance here. */
   const showCreateMoveFromAcceptedQuote = quote.service_type !== "bin_rental";
   const factors = quote.factors_applied as Record<string, unknown> | null;
   const showTieredEngagement = hasResidentialTiers(quote.tiers);
@@ -867,6 +919,16 @@ export default function QuoteDetailClient({
             >
               {getDisplayLabel(quote.status, "quote") || toTitleCase(quote.status)}
             </span>
+            {(quote.version as number | null) != null && (quote.version as number) > 1 && (
+              <span className="dt-badge tracking-[0.04em] shrink-0 text-[var(--tx3)]">
+                v{quote.version as number}
+              </span>
+            )}
+            {(quote.is_revised as boolean | null) && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-amber-500/15 text-amber-500 border border-amber-500/30 shrink-0">
+                Revised
+              </span>
+            )}
           </div>
 
           {/* Row 3: subtitle */}
@@ -876,6 +938,9 @@ export default function QuoteDetailClient({
               month: "short",
               day: "numeric",
             })}
+            {(quote.last_regenerated_at as string | null) && (
+              <> &middot; Updated {formatPlatformDisplay(quote.last_regenerated_at as string, { month: "short", day: "numeric" })}</>
+            )}
           </p>
 
           {(quote.sent_at || hubspotLinkedId) && (
@@ -1082,6 +1147,30 @@ export default function QuoteDetailClient({
               <span className="text-[11px] text-[var(--red)]">
                 {photoRequestError}
               </span>
+            )}
+            <button
+              type="button"
+              onClick={() => void handleDuplicate()}
+              disabled={duplicating}
+              className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS + " disabled:opacity-50"}
+              title="Duplicate this quote as a new draft"
+            >
+              <Copy
+                weight="regular"
+                className="w-3 h-3 shrink-0"
+                aria-hidden
+              />
+              {duplicating ? "Duplicating…" : "Duplicate quote"}
+              {!duplicating && (
+                <CaretRight
+                  weight="bold"
+                  className="w-3 h-3 shrink-0 opacity-90"
+                  aria-hidden
+                />
+              )}
+            </button>
+            {duplicateError && (
+              <span className="text-[11px] text-[var(--red)]">{duplicateError}</span>
             )}
             {canDeleteQuote && !showDeleteConfirm && (
               <button
@@ -1799,6 +1888,77 @@ export default function QuoteDetailClient({
                 </div>
               )}
             </div>
+
+            {/* Version History — only shown when quote has been regenerated */}
+            {(quote.version as number | null) != null && (quote.version as number) > 1 && (
+              <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
+                <button
+                  type="button"
+                  onClick={() => void handleLoadVersionHistory()}
+                  className="flex items-center justify-between w-full group"
+                >
+                  <div className="flex items-center gap-2">
+                    <ClockCounterClockwise
+                      weight="regular"
+                      className="w-4 h-4 text-[var(--tx3)]"
+                      aria-hidden
+                    />
+                    <h2 className="admin-section-h2">Version History</h2>
+                    <span className="dt-badge tracking-[0.04em] text-[var(--tx3)]">
+                      v{quote.version as number}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    weight="bold"
+                    className={`w-3.5 h-3.5 text-[var(--tx3)] transition-transform ${versionHistoryExpanded ? "rotate-180" : ""}`}
+                    aria-hidden
+                  />
+                </button>
+
+                {versionHistoryExpanded && (
+                  <div className="mt-4 space-y-2">
+                    {versionHistoryLoading ? (
+                      <p className="text-[11px] text-[var(--tx3)] italic">Loading…</p>
+                    ) : !versionHistory || versionHistory.length === 0 ? (
+                      <p className="text-[11px] text-[var(--tx3)] italic">No snapshots recorded.</p>
+                    ) : (
+                      versionHistory.map((v) => {
+                        const snap = v.snapshot;
+                        const snapTiers = snap.tiers as Record<string, { price: number }> | null;
+                        const snapPrice =
+                          snapTiers?.essential?.price ??
+                          snapTiers?.essentials?.price ??
+                          (snap.custom_price as number | null) ??
+                          null;
+                        return (
+                          <div
+                            key={v.version_number}
+                            className="rounded-lg border border-[var(--brd)] bg-[var(--card)] px-3 py-2.5 flex items-center gap-4 text-[12px]"
+                          >
+                            <span className="dt-badge tracking-[0.04em] text-[var(--tx3)] shrink-0">
+                              v{v.version_number}
+                            </span>
+                            {snapPrice != null && (
+                              <span className="text-[var(--tx2)] font-medium">
+                                {formatCurrency(snapPrice)}
+                              </span>
+                            )}
+                            <span className="text-[var(--tx3)] text-[11px]">
+                              {formatPlatformDisplay(v.created_at, { month: "short", day: "numeric" })}
+                            </span>
+                            {(snap.status as string | null) && (
+                              <span className="text-[var(--tx3)] text-[10px] uppercase tracking-wide">
+                                {String(snap.status)}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Client Engagement */}
             <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">

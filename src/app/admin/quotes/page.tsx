@@ -16,7 +16,7 @@ export default async function QuotesPage() {
 
   const { data: quotes } = await db
     .from("quotes")
-    .select("id, quote_id, contact_id, service_type, status, tiers, custom_price, recommended_tier, from_address, to_address, move_date, sent_at, viewed_at, accepted_at, expires_at, created_at, loss_reason")
+    .select("id, quote_id, contact_id, service_type, status, tiers, custom_price, recommended_tier, from_address, to_address, move_date, sent_at, viewed_at, accepted_at, expires_at, created_at, loss_reason, version, is_revised")
     .neq("status", "superseded")
     .order("created_at", { ascending: false });
 

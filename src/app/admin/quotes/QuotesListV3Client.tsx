@@ -43,6 +43,8 @@ interface Quote {
   expires_at: string | null;
   created_at: string;
   loss_reason?: string | null;
+  version?: number | null;
+  is_revised?: boolean | null;
 }
 
 /* ── Helpers ───────────────────────────────────────────────────────────── */
@@ -227,11 +229,23 @@ export default function QuotesListV3Client({
         accessor: (q) => q.quote_id,
         sortable: true,
         searchable: true,
-        width: 140,
+        width: 160,
         cell: (q) => (
-          <span className="yu3-num text-[13px] font-medium text-[var(--yu3-ink-strong)]">
-            {q.quote_id || ""}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="yu3-num text-[13px] font-medium text-[var(--yu3-ink-strong)]">
+              {q.quote_id || ""}
+            </span>
+            {q.version != null && q.version > 1 && (
+              <span className="text-[9px] font-bold text-[var(--tx3)] tracking-wide">
+                v{q.version}
+              </span>
+            )}
+            {q.is_revised && (
+              <span className="inline-flex items-center px-1 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                Revised
+              </span>
+            )}
+          </div>
         ),
       },
       {

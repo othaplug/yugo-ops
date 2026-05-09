@@ -4456,11 +4456,14 @@ export async function POST(req: NextRequest) {
 
   const isUpdate = !isPreview && !!input.quote_id?.trim();
   let quoteId: string;
+  // For in-place updates, fetch the full current row so we can snapshot it before overwriting.
+  let existingQuoteSnapshot: Record<string, unknown> | null = null;
   if (isPreview) {
     quoteId = "PREVIEW";
   } else if (isUpdate) {
-    const { data: existing } = await sb.from("quotes").select("quote_id").eq("quote_id", input.quote_id!.trim()).maybeSingle();
+    const { data: existing } = await sb.from("quotes").select("*").eq("quote_id", input.quote_id!.trim()).maybeSingle();
     quoteId = existing?.quote_id ?? (await generateNextQuoteId(sb, nextQuoteIdOpts));
+    existingQuoteSnapshot = existing as Record<string, unknown> | null;
   } else {
     quoteId = await generateNextQuoteId(sb, nextQuoteIdOpts);
   }
@@ -4588,9 +4591,29 @@ export async function POST(req: NextRequest) {
       multi_location: multiLocQuote,
       additional_origins: input.additional_pickup_addresses ?? [],
       additional_destinations: input.additional_dropoff_addresses ?? [],
+      // ── Version tracking (in-place updates only) ──────────────────────
+      ...(isUpdate && existingQuoteSnapshot ? {
+        version: ((existingQuoteSnapshot.version as number) ?? 1) + 1,
+        last_regenerated_at: new Date().toISOString(),
+        last_regenerated_by: authUser?.id ?? null,
+        is_revised: ["sent", "viewed"].includes(String(existingQuoteSnapshot.status ?? "")),
+      } : {}),
     };
 
     if (isUpdate) {
+      // Snapshot the current quote row before overwriting it
+      if (existingQuoteSnapshot?.id) {
+        const currentVersion = (existingQuoteSnapshot.version as number) ?? 1;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sb as any).from("quote_versions").insert({
+          quote_id: existingQuoteSnapshot.id as string,
+          version_number: currentVersion,
+          snapshot: existingQuoteSnapshot,
+          regenerated_by: authUser?.id ?? null,
+          created_at: new Date().toISOString(),
+        }).then(() => {}).catch(() => {}); // non-fatal, fire-and-forget
+      }
+
       const { error: updateErr } = await sb.from("quotes").update(quotePayload).eq("quote_id", quoteId);
       if (updateErr) {
         return NextResponse.json({ error: updateErr.message }, { status: 500 });
@@ -4757,11 +4780,24 @@ export async function POST(req: NextRequest) {
     moveProjectIdOut = (qMp?.move_project_id as string | null) ?? null;
   }
 
+  const newVersion = isUpdate && existingQuoteSnapshot
+    ? ((existingQuoteSnapshot.version as number) ?? 1) + 1
+    : null;
+
   const response: Record<string, unknown> = {
     quote_id: quoteId,
     quoteId,
     move_project_id: moveProjectIdOut,
     preview: isPreview,
+    // Version tracking (present on in-place updates)
+    ...(newVersion !== null ? {
+      version: newVersion,
+      is_revised: ["sent", "viewed"].includes(String(existingQuoteSnapshot?.status ?? "")),
+      price_before: (existingQuoteSnapshot?.tiers as Record<string, { price: number }> | null)?.essential?.price
+        ?? (existingQuoteSnapshot?.tiers as Record<string, { price: number }> | null)?.essentials?.price
+        ?? (existingQuoteSnapshot?.custom_price as number | null)
+        ?? null,
+    } : {}),
     service_type: svcType,
     distance_km: distInfo?.distance_km ?? null,
     drive_time_min: distInfo?.drive_time_min ?? null,
