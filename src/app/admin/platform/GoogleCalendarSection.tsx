@@ -120,13 +120,24 @@ export default function GoogleCalendarSection() {
     }
   }
 
-  const handleSync = async () => {
+  const handleSync = async (force = false) => {
+    if (force) {
+      if (!window.confirm(
+        "Force resync will clear all calendar event IDs and recreate every event from scratch. " +
+        "Existing events in Google Calendar will be left orphaned (you can delete them manually). " +
+        "Continue?",
+      )) {
+        return
+      }
+    }
     setSyncing(true)
     setLastSync(null)
     try {
       const res = await fetch("/api/admin/gcal/sync", {
         method: "POST",
         credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ force }),
       })
       const data = await res.json().catch(() => ({})) as SyncResponse
       if (!res.ok || (!data.success && !data.counts)) {
@@ -359,14 +370,25 @@ export default function GoogleCalendarSection() {
                 </a>
               )}
             </div>
-            <button
-              type="button"
-              onClick={() => void handleSync()}
-              disabled={syncing}
-              className="admin-btn admin-btn-primary"
-            >
-              {syncing ? "Syncing…" : "Sync all booked jobs now"}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void handleSync(false)}
+                disabled={syncing}
+                className="admin-btn admin-btn-primary"
+              >
+                {syncing ? "Syncing…" : "Sync all booked jobs now"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSync(true)}
+                disabled={syncing}
+                title="Wipes all event IDs and recreates every event from scratch — use when times look wrong"
+                className="text-[11px] font-semibold border border-[var(--brd)] px-3 py-1.5 rounded text-[var(--tx2)] hover:bg-[var(--bg2)] disabled:opacity-50"
+              >
+                Force resync (recreate all)
+              </button>
+            </div>
 
             {lastSync && (
               <div className="space-y-2">

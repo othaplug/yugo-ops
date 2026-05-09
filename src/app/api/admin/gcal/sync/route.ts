@@ -4,8 +4,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isGCalConfigured, setGCalIdOverride } from "@/lib/google-calendar/client";
 import { syncJobToGCal, type GCalJobInput } from "@/lib/google-calendar/sync-job";
 import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
-import { normalizeDbTimeToHHMM, parseFlexibleTimeToHHMM } from "@/lib/calendar/event-time-resolution";
-import { parsePartnerWindowLabelStartHHMM } from "@/lib/time-windows";
+import { buildReferenceBlockTimeMap, type BlockTimes } from "@/lib/calendar/event-time-resolution";
+import {
+  fetchBaselineHoursBySize,
+  fetchDeliveryDurationByType,
+  resolveDeliveryJobTimes,
+  resolveMoveJobTimes,
+} from "@/lib/google-calendar/resolve-job-times";
 
 /** Load the calendar ID override from platform_config (set by /create-calendar). */
 async function applyConfiguredCalendarOverride(): Promise<void> {
@@ -44,7 +49,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { jobType?: string; jobId?: string } = {};
+  let body: { jobType?: string; jobId?: string; force?: boolean } = {};
   try { body = await req.json(); } catch { /* no body */ }
 
   const db = createAdminClient();
@@ -55,7 +60,30 @@ export async function POST(req: NextRequest) {
     const { data: row } = await db.from(table).select("*").eq("id", body.jobId).single();
     if (!row) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
 
-    const input = isMov ? buildMoveInput(row as Record<string, unknown>, null) : buildDeliveryInput(row as Record<string, unknown>, null);
+    // Single-job path needs the same time resolution + crew block lookup.
+    const refType = isMov ? "move" : "delivery";
+    const { data: blockRow } = await db
+      .from("crew_schedule_blocks")
+      .select("block_start, block_end")
+      .eq("reference_type", refType)
+      .eq("reference_id", body.jobId)
+      .limit(1)
+      .maybeSingle();
+    const block = blockRow ? buildReferenceBlockTimeMap([{
+      reference_type: refType,
+      reference_id: body.jobId,
+      block_start: blockRow.block_start,
+      block_end: blockRow.block_end,
+    }]).get(`${refType}:${body.jobId}`) ?? null : null;
+
+    const [singleBaselineMap, singleDelMap] = await Promise.all([
+      isMov ? fetchBaselineHoursBySize() : Promise.resolve(new Map<string, number>()),
+      isMov ? Promise.resolve(new Map<string, number>()) : fetchDeliveryDurationByType(),
+    ]);
+
+    const input = isMov
+      ? buildMoveInput(row as Record<string, unknown>, null, block, singleBaselineMap)
+      : buildDeliveryInput(row as Record<string, unknown>, null, block, singleDelMap);
     const result = await syncJobToGCal(input);
 
     if (result.eventId !== undefined) {
@@ -65,39 +93,61 @@ export async function POST(req: NextRequest) {
   }
 
   // Bulk sync
-  const [movesResp, deliveriesResp, crewsResp] = await Promise.all([
+  // If force=true in body, clear existing event IDs so all events are recreated fresh.
+  // This is the recovery path when stale events have wrong times stuck on them.
+  if (body && (body as { force?: boolean }).force === true) {
+    await Promise.all([
+      db.from("moves").update({ gcal_event_id: null }).in("status", BOOKABLE_MOVE_STATUSES),
+      db.from("deliveries").update({ gcal_event_id: null }).in("status", BOOKABLE_DELIVERY_STATUSES),
+    ]);
+  }
+
+  const [movesResp, deliveriesResp, crewsResp, blocksResp, baselineMap, deliveryDurMap] = await Promise.all([
     db
       .from("moves")
-      // Include scheduled_time / preferred_time / arrival_window as fallbacks for when
-      // scheduled_start is null — matches the fallback chain in resolveMoveDisplayTimes()
-      .select("id, move_code, client_name, service_type, move_type, status, scheduled_date, scheduled_start, scheduled_time, preferred_time, arrival_window, estimated_duration_minutes, from_address, to_address, crew_id, notes, gcal_event_id")
+      // Pull every field used by resolveMoveDisplayTimes() in the OPS+ internal calendar.
+      .select("id, move_code, move_size, est_hours, client_name, service_type, move_type, status, scheduled_date, scheduled_start, scheduled_end, scheduled_time, preferred_time, arrival_window, estimated_duration_minutes, from_address, to_address, crew_id, notes, gcal_event_id")
       .in("status", BOOKABLE_MOVE_STATUSES),
     db
       .from("deliveries")
-      .select("id, delivery_number, client_name, service_type, status, scheduled_date, time_slot, scheduled_start, estimated_duration_minutes, from_address, to_address, crew_id, notes, gcal_event_id")
+      // Pull every field used by resolveDeliveryDisplayTimes().
+      .select("id, delivery_number, client_name, service_type, delivery_type, category, status, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_minutes, estimated_duration_hours, from_address, to_address, crew_id, notes, gcal_event_id")
       .in("status", BOOKABLE_DELIVERY_STATUSES)
       .not("service_type", "eq", "bin_rental"),
     db.from("crews").select("id, name"),
+    db.from("crew_schedule_blocks").select("reference_type, reference_id, block_start, block_end"),
+    fetchBaselineHoursBySize(),
+    fetchDeliveryDurationByType(),
   ]);
+
+  // Map of "move:<id>" / "delivery:<id>" → BlockTimes — the same source the
+  // OPS+ internal calendar uses to display times when scheduled_start is null.
+  const refBlockTimes = buildReferenceBlockTimeMap(blocksResp.data || []);
 
   const crewMap: Record<string, string> = {};
   for (const c of crewsResp.data ?? []) crewMap[c.id] = c.name;
 
   const results: { id: string; code: string; action: string; scheduledDate?: string; error?: string }[] = [];
 
-  const moveJobs = (movesResp.data ?? []).map((m) => ({
-    id: m.id as string,
-    code: String(m.move_code || ""),
-    scheduledDate: m.scheduled_date ? String(m.scheduled_date).slice(0, 10) : undefined,
-    input: buildMoveInput(m as Record<string, unknown>, crewMap),
-  }));
+  const moveJobs = (movesResp.data ?? []).map((m) => {
+    const block = refBlockTimes.get(`move:${m.id}`) ?? null;
+    return {
+      id: m.id as string,
+      code: String(m.move_code || ""),
+      scheduledDate: m.scheduled_date ? String(m.scheduled_date).slice(0, 10) : undefined,
+      input: buildMoveInput(m as Record<string, unknown>, crewMap, block, baselineMap),
+    };
+  });
 
-  const deliveryJobs = (deliveriesResp.data ?? []).map((d) => ({
-    id: d.id as string,
-    code: String(d.delivery_number || ""),
-    scheduledDate: d.scheduled_date ? String(d.scheduled_date).slice(0, 10) : undefined,
-    input: buildDeliveryInput(d as Record<string, unknown>, crewMap),
-  }));
+  const deliveryJobs = (deliveriesResp.data ?? []).map((d) => {
+    const block = refBlockTimes.get(`delivery:${d.id}`) ?? null;
+    return {
+      id: d.id as string,
+      code: String(d.delivery_number || ""),
+      scheduledDate: d.scheduled_date ? String(d.scheduled_date).slice(0, 10) : undefined,
+      input: buildDeliveryInput(d as Record<string, unknown>, crewMap, block, deliveryDurMap),
+    };
+  });
 
   for (const job of [...moveJobs, ...deliveryJobs]) {
     const result = await syncJobToGCal(job.input);
@@ -285,29 +335,17 @@ export async function GET(req: NextRequest) {
 
 /* ── Row → GCalJobInput ───────────────────────────────────────────────────── */
 
-/** Resolve the best start time for a move using the same fallback chain as the OPS+ internal calendar. */
-function resolveMoveStartTime(m: Record<string, unknown>): string | null {
-  return (
-    normalizeDbTimeToHHMM(m.scheduled_start as string | null) ||
-    parseFlexibleTimeToHHMM(m.scheduled_time as string | null) ||
-    parseFlexibleTimeToHHMM(m.preferred_time as string | null) ||
-    parsePartnerWindowLabelStartHHMM(m.arrival_window as string | null) ||
-    null
-  );
-}
-
-/** Resolve the best start time for a delivery using scheduled_start then time_slot. */
-function resolveDeliveryStartTime(d: Record<string, unknown>): string | null {
-  return (
-    normalizeDbTimeToHHMM(d.scheduled_start as string | null) ||
-    parseFlexibleTimeToHHMM(d.time_slot as string | null) ||
-    parsePartnerWindowLabelStartHHMM(d.time_slot as string | null) ||
-    null
-  );
-}
-
-function buildMoveInput(m: Record<string, unknown>, crewMap: Record<string, string> | null): GCalJobInput {
+function buildMoveInput(
+  m: Record<string, unknown>,
+  crewMap: Record<string, string> | null,
+  block: BlockTimes | null,
+  baselineMap: Map<string, number>,
+): GCalJobInput {
   const crewId = String(m.crew_id ?? "");
+  // Use the SAME time resolution as the OPS+ internal calendar — including
+  // the crew schedule block fallback. This is the only way to guarantee
+  // the calendar event time matches what's shown in /admin/calendar.
+  const { startHHMM, durationMinutes } = resolveMoveJobTimes(m, block, baselineMap);
   return {
     jobType: "move",
     jobId: String(m.id),
@@ -316,8 +354,10 @@ function buildMoveInput(m: Record<string, unknown>, crewMap: Record<string, stri
     serviceType: String(m.service_type || m.move_type || "residential"),
     status: String(m.status || ""),
     scheduledDate: m.scheduled_date ? String(m.scheduled_date).slice(0, 10) : null,
-    startTime: resolveMoveStartTime(m),
-    estimatedDurationMinutes: m.estimated_duration_minutes != null ? Number(m.estimated_duration_minutes) : null,
+    startTime: startHHMM,
+    estimatedDurationMinutes:
+      durationMinutes ??
+      (m.estimated_duration_minutes != null ? Number(m.estimated_duration_minutes) : null),
     fromAddress: m.from_address ? String(m.from_address) : null,
     toAddress: m.to_address ? String(m.to_address) : null,
     crewName: crewMap && crewId ? (crewMap[crewId] ?? null) : null,
@@ -326,8 +366,14 @@ function buildMoveInput(m: Record<string, unknown>, crewMap: Record<string, stri
   };
 }
 
-function buildDeliveryInput(d: Record<string, unknown>, crewMap: Record<string, string> | null): GCalJobInput {
+function buildDeliveryInput(
+  d: Record<string, unknown>,
+  crewMap: Record<string, string> | null,
+  block: BlockTimes | null,
+  deliveryDurMap: Map<string, number>,
+): GCalJobInput {
   const crewId = String(d.crew_id ?? "");
+  const { startHHMM, durationMinutes } = resolveDeliveryJobTimes(d, block, deliveryDurMap);
   return {
     jobType: "delivery",
     jobId: String(d.id),
@@ -336,8 +382,10 @@ function buildDeliveryInput(d: Record<string, unknown>, crewMap: Record<string, 
     serviceType: String(d.service_type || "b2b_delivery"),
     status: String(d.status || ""),
     scheduledDate: d.scheduled_date ? String(d.scheduled_date).slice(0, 10) : null,
-    startTime: resolveDeliveryStartTime(d),
-    estimatedDurationMinutes: d.estimated_duration_minutes != null ? Number(d.estimated_duration_minutes) : null,
+    startTime: startHHMM,
+    estimatedDurationMinutes:
+      durationMinutes ??
+      (d.estimated_duration_minutes != null ? Number(d.estimated_duration_minutes) : null),
     fromAddress: d.from_address ? String(d.from_address) : null,
     toAddress: d.to_address ? String(d.to_address) : null,
     crewName: crewMap && crewId ? (crewMap[crewId] ?? null) : null,
