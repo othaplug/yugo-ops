@@ -6,7 +6,7 @@ import { useToast } from "../components/Toast"
 import AppSettingsCollapsibleSection from "./AppSettingsCollapsibleSection"
 
 type SyncCount = { created: number; updated: number; deleted: number; skipped: number; error: number }
-type SyncResult = { id: string; code: string; action: string; scheduledDate?: string; error?: string }
+type SyncResult = { id: string; code: string; action: string; scheduledDate?: string; startTime?: string; eventId?: string; error?: string }
 type FixHint = {
   title: string
   steps: string[]
@@ -31,6 +31,8 @@ type SyncResponse = {
   counts?: SyncCount
   results?: SyncResult[]
   fix?: FixHint | null
+  calendarId?: string | null
+  calendarLink?: string | null
 }
 
 export default function GoogleCalendarSection() {
@@ -38,7 +40,7 @@ export default function GoogleCalendarSection() {
   const [status, setStatus] = useState<StatusData | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [testing, setTesting] = useState(false)
-  const [lastSync, setLastSync] = useState<{ counts: SyncCount; results: SyncResult[]; fix?: FixHint | null } | null>(null)
+  const [lastSync, setLastSync] = useState<{ counts: SyncCount; results: SyncResult[]; fix?: FixHint | null; calendarId?: string | null } | null>(null)
   const [showDetails, setShowDetails] = useState(false)
   const [creatingCalendar, setCreatingCalendar] = useState(false)
   const [shareEmail, setShareEmail] = useState("")
@@ -144,7 +146,7 @@ export default function GoogleCalendarSection() {
         toast(data.error ?? "Sync failed", "x")
         return
       }
-      setLastSync({ counts: data.counts!, results: data.results ?? [], fix: data.fix ?? null })
+      setLastSync({ counts: data.counts!, results: data.results ?? [], fix: data.fix ?? null, calendarId: data.calendarId ?? null })
       const c = data.counts!
       toast(`Synced: ${c.created} created · ${c.updated} updated · ${c.error} errors`, c.error > 0 ? "alertTriangle" : "check")
     } catch {
@@ -408,6 +410,11 @@ export default function GoogleCalendarSection() {
                 </button>
                 {showDetails && (
                   <div className="max-h-48 overflow-auto rounded-lg border border-[var(--brd)] bg-[var(--bg)] p-2.5 space-y-0.5">
+                    {lastSync.calendarId && (
+                      <div className="text-[10px] font-mono text-[var(--tx3)] pb-1 mb-1 border-b border-[var(--brd)]">
+                        Wrote to: {lastSync.calendarId}
+                      </div>
+                    )}
                     {lastSync.results.map((r) => (
                       <div key={r.id} className="flex items-baseline gap-2 text-[10px] font-mono">
                         <span className={`shrink-0 ${r.action === "error" ? "text-red-600" : r.action === "skipped" ? "text-[var(--tx3)]" : "text-green-600"}`}>
@@ -415,6 +422,7 @@ export default function GoogleCalendarSection() {
                         </span>
                         <span className="text-[var(--tx2)]">{r.code}</span>
                         {r.scheduledDate && <span className="text-[var(--tx3)]">{r.scheduledDate}</span>}
+                        {r.startTime && <span className="text-[var(--tx3)]">@ {r.startTime}</span>}
                         {r.error && <span className="text-red-500 truncate">{r.error}</span>}
                       </div>
                     ))}

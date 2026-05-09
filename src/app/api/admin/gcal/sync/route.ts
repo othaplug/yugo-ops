@@ -94,11 +94,12 @@ export async function POST(req: NextRequest) {
 
   // Bulk sync
   // If force=true in body, clear existing event IDs so all events are recreated fresh.
-  // This is the recovery path when stale events have wrong times stuck on them.
+  // Wipes EVERY row (not filtered by status) — old events from the previous calendar
+  // can have IDs that fail to PUT cleanly, and we want a totally fresh state.
   if (body && (body as { force?: boolean }).force === true) {
     await Promise.all([
-      db.from("moves").update({ gcal_event_id: null }).in("status", BOOKABLE_MOVE_STATUSES),
-      db.from("deliveries").update({ gcal_event_id: null }).in("status", BOOKABLE_DELIVERY_STATUSES),
+      db.from("moves").update({ gcal_event_id: null }).not("gcal_event_id", "is", null),
+      db.from("deliveries").update({ gcal_event_id: null }).not("gcal_event_id", "is", null),
     ]);
   }
 
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
   const crewMap: Record<string, string> = {};
   for (const c of crewsResp.data ?? []) crewMap[c.id] = c.name;
 
-  const results: { id: string; code: string; action: string; scheduledDate?: string; error?: string }[] = [];
+  const results: { id: string; code: string; action: string; scheduledDate?: string; startTime?: string; eventId?: string; error?: string }[] = [];
 
   const moveJobs = (movesResp.data ?? []).map((m) => {
     const block = refBlockTimes.get(`move:${m.id}`) ?? null;
@@ -154,7 +155,15 @@ export async function POST(req: NextRequest) {
     const friendlyError = result.error
       ? translateGCalError(result.error)
       : undefined;
-    results.push({ id: job.id, code: job.code, action: result.action, scheduledDate: job.scheduledDate, error: friendlyError });
+    results.push({
+      id: job.id,
+      code: job.code,
+      action: result.action,
+      scheduledDate: job.scheduledDate,
+      startTime: job.input.startTime ?? undefined,
+      eventId: result.eventId ?? undefined,
+      error: friendlyError,
+    });
 
     if (result.eventId !== undefined) {
       const table = job.input.jobType === "move" ? "moves" : "deliveries";
@@ -178,11 +187,23 @@ export async function POST(req: NextRequest) {
       ? buildWriterAccessFixHint()
       : null;
 
+  // Capture which calendar the events were actually written to so the UI can
+  // show a direct link and the user can verify they're looking at the right calendar.
+  let activeCalendarId: string | null = null;
+  try {
+    const { getGCalId } = await import("@/lib/google-calendar/client");
+    activeCalendarId = getGCalId();
+  } catch {
+    /* not configured */
+  }
+
   return NextResponse.json({
     success: counts.error === 0 || counts.created + counts.updated > 0,
     counts,
     results,
     fix: sharedFix,
+    calendarId: activeCalendarId,
+    calendarLink: activeCalendarId ? "https://calendar.google.com/calendar/r" : null,
   });
 }
 
