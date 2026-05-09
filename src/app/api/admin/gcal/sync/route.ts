@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isGCalConfigured, setGCalIdOverride } from "@/lib/google-calendar/client";
 import { syncJobToGCal, type GCalJobInput } from "@/lib/google-calendar/sync-job";
 import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
+import { normalizeDbTimeToHHMM, parseFlexibleTimeToHHMM } from "@/lib/calendar/event-time-resolution";
+import { parsePartnerWindowLabelStartHHMM } from "@/lib/time-windows";
 
 /** Load the calendar ID override from platform_config (set by /create-calendar). */
 async function applyConfiguredCalendarOverride(): Promise<void> {
@@ -66,11 +68,13 @@ export async function POST(req: NextRequest) {
   const [movesResp, deliveriesResp, crewsResp] = await Promise.all([
     db
       .from("moves")
-      .select("id, move_code, client_name, service_type, move_type, status, scheduled_date, scheduled_start, estimated_duration_minutes, from_address, to_address, crew_id, notes, gcal_event_id")
+      // Include scheduled_time / preferred_time / arrival_window as fallbacks for when
+      // scheduled_start is null — matches the fallback chain in resolveMoveDisplayTimes()
+      .select("id, move_code, client_name, service_type, move_type, status, scheduled_date, scheduled_start, scheduled_time, preferred_time, arrival_window, estimated_duration_minutes, from_address, to_address, crew_id, notes, gcal_event_id")
       .in("status", BOOKABLE_MOVE_STATUSES),
     db
       .from("deliveries")
-      .select("id, delivery_number, client_name, service_type, status, scheduled_date, time_slot, estimated_duration_minutes, from_address, to_address, crew_id, notes, gcal_event_id")
+      .select("id, delivery_number, client_name, service_type, status, scheduled_date, time_slot, scheduled_start, estimated_duration_minutes, from_address, to_address, crew_id, notes, gcal_event_id")
       .in("status", BOOKABLE_DELIVERY_STATUSES)
       .not("service_type", "eq", "bin_rental"),
     db.from("crews").select("id, name"),
@@ -281,6 +285,27 @@ export async function GET(req: NextRequest) {
 
 /* ── Row → GCalJobInput ───────────────────────────────────────────────────── */
 
+/** Resolve the best start time for a move using the same fallback chain as the OPS+ internal calendar. */
+function resolveMoveStartTime(m: Record<string, unknown>): string | null {
+  return (
+    normalizeDbTimeToHHMM(m.scheduled_start as string | null) ||
+    parseFlexibleTimeToHHMM(m.scheduled_time as string | null) ||
+    parseFlexibleTimeToHHMM(m.preferred_time as string | null) ||
+    parsePartnerWindowLabelStartHHMM(m.arrival_window as string | null) ||
+    null
+  );
+}
+
+/** Resolve the best start time for a delivery using scheduled_start then time_slot. */
+function resolveDeliveryStartTime(d: Record<string, unknown>): string | null {
+  return (
+    normalizeDbTimeToHHMM(d.scheduled_start as string | null) ||
+    parseFlexibleTimeToHHMM(d.time_slot as string | null) ||
+    parsePartnerWindowLabelStartHHMM(d.time_slot as string | null) ||
+    null
+  );
+}
+
 function buildMoveInput(m: Record<string, unknown>, crewMap: Record<string, string> | null): GCalJobInput {
   const crewId = String(m.crew_id ?? "");
   return {
@@ -291,7 +316,7 @@ function buildMoveInput(m: Record<string, unknown>, crewMap: Record<string, stri
     serviceType: String(m.service_type || m.move_type || "residential"),
     status: String(m.status || ""),
     scheduledDate: m.scheduled_date ? String(m.scheduled_date).slice(0, 10) : null,
-    startTime: m.scheduled_start ? String(m.scheduled_start).slice(0, 5) : null,
+    startTime: resolveMoveStartTime(m),
     estimatedDurationMinutes: m.estimated_duration_minutes != null ? Number(m.estimated_duration_minutes) : null,
     fromAddress: m.from_address ? String(m.from_address) : null,
     toAddress: m.to_address ? String(m.to_address) : null,
@@ -311,7 +336,7 @@ function buildDeliveryInput(d: Record<string, unknown>, crewMap: Record<string, 
     serviceType: String(d.service_type || "b2b_delivery"),
     status: String(d.status || ""),
     scheduledDate: d.scheduled_date ? String(d.scheduled_date).slice(0, 10) : null,
-    startTime: d.time_slot ? String(d.time_slot).slice(0, 5) : null,
+    startTime: resolveDeliveryStartTime(d),
     estimatedDurationMinutes: d.estimated_duration_minutes != null ? Number(d.estimated_duration_minutes) : null,
     fromAddress: d.from_address ? String(d.from_address) : null,
     toAddress: d.to_address ? String(d.to_address) : null,
