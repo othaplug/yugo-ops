@@ -20,8 +20,8 @@ async function applyConfiguredCalendarOverride(): Promise<void> {
   }
 }
 
-const BOOKABLE_MOVE_STATUSES = ["confirmed", "booked", "scheduled", "deposit_paid", "paid", "in_progress"];
-const BOOKABLE_DELIVERY_STATUSES = ["confirmed", "booked", "scheduled", "deposit_paid", "paid", "in_progress", "pending"];
+const BOOKABLE_MOVE_STATUSES = ["confirmed", "booked", "scheduled", "deposit_paid", "paid", "in_progress", "completed", "no_show"];
+const BOOKABLE_DELIVERY_STATUSES = ["confirmed", "booked", "scheduled", "deposit_paid", "paid", "in_progress", "pending", "completed", "no_show"];
 
 /**
  * POST /api/admin/gcal/sync
@@ -79,17 +79,19 @@ export async function POST(req: NextRequest) {
   const crewMap: Record<string, string> = {};
   for (const c of crewsResp.data ?? []) crewMap[c.id] = c.name;
 
-  const results: { id: string; code: string; action: string; error?: string }[] = [];
+  const results: { id: string; code: string; action: string; scheduledDate?: string; error?: string }[] = [];
 
   const moveJobs = (movesResp.data ?? []).map((m) => ({
     id: m.id as string,
     code: String(m.move_code || ""),
+    scheduledDate: m.scheduled_date ? String(m.scheduled_date).slice(0, 10) : undefined,
     input: buildMoveInput(m as Record<string, unknown>, crewMap),
   }));
 
   const deliveryJobs = (deliveriesResp.data ?? []).map((d) => ({
     id: d.id as string,
     code: String(d.delivery_number || ""),
+    scheduledDate: d.scheduled_date ? String(d.scheduled_date).slice(0, 10) : undefined,
     input: buildDeliveryInput(d as Record<string, unknown>, crewMap),
   }));
 
@@ -98,7 +100,7 @@ export async function POST(req: NextRequest) {
     const friendlyError = result.error
       ? translateGCalError(result.error)
       : undefined;
-    results.push({ id: job.id, code: job.code, action: result.action, error: friendlyError });
+    results.push({ id: job.id, code: job.code, action: result.action, scheduledDate: job.scheduledDate, error: friendlyError });
 
     if (result.eventId !== undefined) {
       const table = job.input.jobType === "move" ? "moves" : "deliveries";

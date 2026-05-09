@@ -41,6 +41,8 @@ const BOOKABLE_STATUSES = new Set([
   "paid",
   "in_progress",
   "pending",
+  "completed",
+  "no_show",
 ]);
 
 const CANCELLED_STATUSES = new Set([

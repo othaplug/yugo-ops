@@ -6,7 +6,7 @@ import { useToast } from "../components/Toast"
 import AppSettingsCollapsibleSection from "./AppSettingsCollapsibleSection"
 
 type SyncCount = { created: number; updated: number; deleted: number; skipped: number; error: number }
-type SyncResult = { id: string; code: string; action: string; error?: string }
+type SyncResult = { id: string; code: string; action: string; scheduledDate?: string; error?: string }
 type FixHint = {
   title: string
   steps: string[]
@@ -392,6 +392,7 @@ export default function GoogleCalendarSection() {
                           {r.action}
                         </span>
                         <span className="text-[var(--tx2)]">{r.code}</span>
+                        {r.scheduledDate && <span className="text-[var(--tx3)]">{r.scheduledDate}</span>}
                         {r.error && <span className="text-red-500 truncate">{r.error}</span>}
                       </div>
                     ))}
