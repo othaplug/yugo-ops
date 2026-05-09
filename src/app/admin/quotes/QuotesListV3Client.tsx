@@ -9,7 +9,17 @@ import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
 import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
 
 import { PageHeader } from "@/design-system/admin/layout";
-import { Button, StatusPill } from "@/design-system/admin/primitives";
+import {
+  Button,
+  StatusPill,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  Input,
+} from "@/design-system/admin/primitives";
 import {
   DataTable,
   type ColumnDef,
@@ -140,6 +150,10 @@ export default function QuotesListV3Client({
   });
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = React.useState<ViewMode>("list");
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = React.useState<{
+    ids: string[];
+    typed: string;
+  } | null>(null);
 
   const kpis = React.useMemo(() => {
     const total = quotes.length;
@@ -349,15 +363,32 @@ export default function QuotesListV3Client({
     [],
   );
 
+  const executeBulkDelete = React.useCallback(
+    async (ids: string[]) => {
+      const res = await fetch("/api/admin/quotes/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", ids }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.ok) {
+        const count = typeof data.deleted === "number" ? data.deleted : ids.length;
+        toast(`Deleted ${count} quote${count === 1 ? "" : "s"}`, "check");
+        setSelectedIds(new Set());
+        setBulkDeleteConfirm(null);
+        router.refresh();
+      } else {
+        toast("Error: " + (data.error || "Failed"), "x");
+      }
+    },
+    [router, toast],
+  );
+
   const runBulk = React.useCallback(
     async (action: "resend" | "expire" | "delete", ids: string[]) => {
       if (action === "delete") {
-        if (
-          !window.confirm(
-            `Permanently delete ${ids.length} quote${ids.length === 1 ? "" : "s"}? This cannot be undone.`,
-          )
-        )
-          return;
+        setBulkDeleteConfirm({ ids, typed: "" });
+        return;
       }
       const res = await fetch("/api/admin/quotes/bulk", {
         method: "POST",
@@ -369,14 +400,11 @@ export default function QuotesListV3Client({
         const labels: Record<string, string> = {
           resend: "Resent",
           expire: "Expired",
-          delete: "Deleted",
         };
         const count =
           typeof data.updated === "number"
             ? data.updated
-            : typeof data.deleted === "number"
-              ? data.deleted
-              : ids.length;
+            : ids.length;
         toast(
           `${labels[action]} ${count} quote${count === 1 ? "" : "s"}`,
           "check",
@@ -545,6 +573,75 @@ export default function QuotesListV3Client({
           ),
         }}
       />
+
+      {bulkDeleteConfirm && (
+        <Dialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setBulkDeleteConfirm(null);
+          }}
+        >
+          <DialogContent size="sm">
+            <DialogHeader>
+              <DialogTitle>
+                Delete {bulkDeleteConfirm.ids.length}{" "}
+                {bulkDeleteConfirm.ids.length === 1 ? "quote" : "quotes"}?
+              </DialogTitle>
+            </DialogHeader>
+            <DialogBody>
+              <p className="text-[13px] text-[var(--yu3-ink-muted)]">
+                This permanently deletes{" "}
+                {bulkDeleteConfirm.ids.length === 1
+                  ? "this quote"
+                  : `these ${bulkDeleteConfirm.ids.length} quotes`}{" "}
+                and cannot be undone.
+              </p>
+              {bulkDeleteConfirm.ids.length > 1 && (
+                <div className="mt-4">
+                  <p className="text-[12px] font-medium text-[var(--yu3-ink)] mb-1.5">
+                    Type{" "}
+                    <span className="font-mono font-bold tracking-wide">
+                      DELETE
+                    </span>{" "}
+                    to confirm
+                  </p>
+                  <Input
+                    value={bulkDeleteConfirm.typed}
+                    onChange={(e) =>
+                      setBulkDeleteConfirm((prev) =>
+                        prev ? { ...prev, typed: e.target.value } : null,
+                      )
+                    }
+                    placeholder="DELETE"
+                    autoFocus
+                  />
+                </div>
+              )}
+            </DialogBody>
+            <DialogFooter>
+              <Button
+                variant="ghost"
+                onClick={() => setBulkDeleteConfirm(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={
+                  bulkDeleteConfirm.ids.length > 1 &&
+                  bulkDeleteConfirm.typed !== "DELETE"
+                }
+                onClick={() => executeBulkDelete(bulkDeleteConfirm.ids)}
+              >
+                Delete{" "}
+                {bulkDeleteConfirm.ids.length === 1
+                  ? "quote"
+                  : `${bulkDeleteConfirm.ids.length} quotes`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
