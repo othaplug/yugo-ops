@@ -44,6 +44,8 @@ export const SERVICE_TYPE_LABELS: Record<string, string> = {
   long_distance: "Long Distance Move",
   /** Lead inbox / coordinator (not a quote service_type, but shown on same admin surfaces) */
   pm_inquiry: "Property management inquiry",
+  /** Virtual slug used when is_pm_move=true to override b2b_oneoff labels */
+  pm_move: "PM Move",
 };
 
 /**

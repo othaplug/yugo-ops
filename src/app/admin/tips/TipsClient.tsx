@@ -97,7 +97,7 @@ export default function TipsClient({
         cell: (r) =>
           r.job_type === "delivery" && r.delivery_number ? (
             <span className="text-[12px] font-semibold text-[var(--yu3-ink)]">
-              DLV {r.delivery_number}
+              {r.delivery_number.startsWith("DLV") ? r.delivery_number : `DLV ${r.delivery_number}`}
             </span>
           ) : r.move_code ? (
             <Link

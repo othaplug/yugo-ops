@@ -10,20 +10,49 @@ export default async function TipsPage() {
   const { data: tips } = await db
     .from("tips")
     .select(
-      "id, move_id, delivery_id, job_type, method, service_type, tier, neighbourhood, crew_id, crew_name, client_name, amount, processing_fee, net_amount, charged_at, moves(move_code), deliveries(delivery_number)",
+      "id, move_id, delivery_id, job_type, method, service_type, tier, neighbourhood, crew_id, crew_name, client_name, amount, processing_fee, net_amount, charged_at, moves(move_code, service_type, is_pm_move, first_name, last_name), deliveries(delivery_number, service_type)",
     )
     .order("charged_at", { ascending: false })
     .limit(200);
 
   const allTips = (tips || []).map((row) => {
-    const m = row.moves as { move_code?: string | null } | null | undefined;
-    const del = row.deliveries as { delivery_number?: string | null } | null | undefined;
+    const m = row.moves as {
+      move_code?: string | null;
+      service_type?: string | null;
+      is_pm_move?: boolean | null;
+      first_name?: string | null;
+      last_name?: string | null;
+    } | null | undefined;
+    const del = row.deliveries as { delivery_number?: string | null; service_type?: string | null } | null | undefined;
     const { moves: _m, deliveries: _d, ...rest } = row as typeof row & {
       moves?: unknown;
       deliveries?: unknown;
     };
+
+    // Resolve service_type: prefer tip row value, fall back to joined move/delivery
+    const resolvedServiceType =
+      (rest.service_type && String(rest.service_type).trim()) ||
+      (m?.service_type && String(m.service_type).trim()) ||
+      (del?.service_type && String(del.service_type).trim()) ||
+      null;
+
+    // For PM moves, override b2b_oneoff service_type to "pm_move"
+    const effectiveServiceType =
+      m?.is_pm_move && resolvedServiceType
+        ? "pm_move"
+        : resolvedServiceType;
+
+    // Resolve client_name: for PM moves prefer first_name + last_name from linked move
+    const tenantName =
+      m?.is_pm_move && (m.first_name || m.last_name)
+        ? [m.first_name, m.last_name].filter(Boolean).join(" ")
+        : null;
+    const resolvedClientName = tenantName || rest.client_name;
+
     return {
       ...rest,
+      client_name: resolvedClientName,
+      service_type: effectiveServiceType,
       move_code: m?.move_code ?? null,
       delivery_number: del?.delivery_number ?? null,
     };
