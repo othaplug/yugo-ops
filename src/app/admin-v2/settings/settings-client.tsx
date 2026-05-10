@@ -492,6 +492,31 @@ const NotificationsTab = () => {
 }
 
 const AuditTab = () => {
+  const [rows, setRows] = React.useState<AuditRow[]>(AUDIT)
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    let cancelled = false
+    fetch("/api/admin/audit-log?limit=200", { credentials: "same-origin" })
+      .then(async (res) => {
+        if (!res.ok || cancelled) return
+        const { logs } = await res.json() as { logs: Array<Record<string, unknown>> }
+        if (cancelled || !Array.isArray(logs)) return
+        const mapped: AuditRow[] = logs.map((log, idx) => ({
+          id: String(log.id ?? idx),
+          user: String(log.user_email ?? log.user_id ?? "System"),
+          module: String(log.resource_type ?? log.action ?? "").split("_")[0] ?? "system",
+          action: String(log.action ?? "").replace(/_/g, " "),
+          target: String(log.resource_id ?? log.resource_type ?? "–"),
+          at: String(log.created_at ?? new Date().toISOString()),
+        }))
+        setRows(mapped.length > 0 ? mapped : AUDIT)
+      })
+      .catch(() => { /* keep mock */ })
+      .then(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [])
+
   const columns = React.useMemo<ColumnConfig<AuditRow>[]>(
     () => [
       {
@@ -561,7 +586,7 @@ const AuditTab = () => {
 
   return (
     <DataTable
-      data={AUDIT}
+      data={rows}
       columns={columns}
       getRowId={(row) => row.id}
       stateKey="audit"
