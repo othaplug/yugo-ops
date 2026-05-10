@@ -23,6 +23,7 @@ export function getResolvedMoveIncludes(
   selectedTier: string | null | undefined,
   truckLabel: string,
   crewSize: number | null,
+  assemblyRequired?: boolean | null,
 ): TierFeature[] {
   const tier = normalizeResidentialTierKey(selectedTier);
   const n = crewSize ?? 2;
@@ -34,7 +35,10 @@ export function getResolvedMoveIncludes(
       : tier === "estate"
         ? RESOLVED_ESTATE_MOVE_INCLUDES
         : RESOLVED_ESSENTIAL_MOVE_INCLUDES;
-  return base.map((f, i) => {
+  // Hide assembly row only when assemblyRequired === false (explicit). Null/undefined keeps the default.
+  const filtered =
+    assemblyRequired === false ? base.filter((f) => f.key !== "assembly") : base;
+  return filtered.map((f, i) => {
     if (i === 0) return { ...f, title: truckLabel };
     if (i === 1) return { ...f, title: crewTitle, desc: crewDesc };
     return { ...f };
@@ -42,8 +46,13 @@ export function getResolvedMoveIncludes(
 }
 
 /** Plain title lines for PDF / quote payloads (row 0 = truck, row 1 = crew line from caller). */
-export function getResolvedMoveIncludeTitles(tier: string | null | undefined, truckLabel: string, crewLine: string): string[] {
-  const rows = getResolvedMoveIncludes(tier, truckLabel, null);
+export function getResolvedMoveIncludeTitles(
+  tier: string | null | undefined,
+  truckLabel: string,
+  crewLine: string,
+  assemblyRequired?: boolean | null,
+): string[] {
+  const rows = getResolvedMoveIncludes(tier, truckLabel, null, assemblyRequired);
   return rows.map((f, i) => (i === 0 ? truckLabel : i === 1 ? crewLine : f.title));
 }
 

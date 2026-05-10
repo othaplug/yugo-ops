@@ -17,6 +17,7 @@ export default async function RevenuePage() {
     { data: deliveries },
     { data: sentPartnerInvoices },
     { data: unbilledPMmoves },
+    { data: pmMovesAll },
     { data: bookedMovesBalance },
   ] = await Promise.all([
     db
@@ -50,6 +51,14 @@ export default async function RevenuePage() {
       .eq("is_pm_move", true)
       .eq("status", "completed")
       .is("invoice_id", null),
+    // All PM moves (for revenue chart segment + top clients)
+    db
+      .from("moves")
+      .select("id, client_name, organization_id, estimate, final_amount, total_price, amount, scheduled_date, status, payment_marked_paid_at")
+      .eq("is_pm_move", true)
+      .in("status", ["completed", "booked", "scheduled", "confirmed"])
+      .order("scheduled_date", { ascending: false })
+      .limit(2000),
     // Booked residential moves where a deposit was collected (balance outstanding)
     db
       .from("moves")
@@ -82,6 +91,7 @@ export default async function RevenuePage() {
       sentPartnerInvoices={sentPartnerInvoices || []}
       unbilledPMmoves={unbilledPMmoves || []}
       bookedMovesBalance={bookedMovesBalance || []}
+      pmMovesAll={pmMovesAll || []}
     />
   );
 }

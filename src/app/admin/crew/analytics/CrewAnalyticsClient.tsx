@@ -99,21 +99,43 @@ const RANGE_PRESETS = [
   { label: "90d", days: 90 },
 ] as const;
 
+/**
+ * Stage colours — semantic groupings:
+ *   slate  → travel        blue → arrived/at-location
+ *   amber  → admin         green → active work (load/unload)
+ *   wine   → completion    light grey → untracked
+ * Hex values are used directly because the design system doesn't define CSS variables for these.
+ */
 const STAGE_COLORS: Record<string, string> = {
-  en_route_to_pickup: "var(--color-stage-pickup-route)",
-  arrived_at_pickup: "var(--color-stage-pickup-arrived)",
-  loading: "var(--color-stage-loading)",
-  en_route_to_destination: "var(--color-stage-destination-route)",
-  arrived_at_destination: "var(--color-stage-destination-arrived)",
-  unloading: "var(--color-stage-unloading)",
-  completed: "var(--color-stage-completed)",
-  en_route: "var(--color-stage-pickup-route)",
-  arrived: "var(--color-stage-pickup-arrived)",
-  delivering: "var(--color-stage-unloading)",
-  /** Time with no GPS movement (injected in session checkpoints) */
-  idle: "var(--color-stage-idle)",
-  gap: "var(--color-stage-idle)",
+  // Travel
+  en_route_to_pickup: "#94a3b8",
+  en_route_to_destination: "#94a3b8",
+  in_transit: "#94a3b8",
+  travel_to_pickup: "#94a3b8",
+  en_route: "#94a3b8",
+  // At location
+  arrived_at_pickup: "#3b82f6",
+  arrived_at_destination: "#3b82f6",
+  arrived_pickup: "#3b82f6",
+  arrived_destination: "#3b82f6",
+  arrived: "#3b82f6",
+  // Admin / inventory
+  inventory_check: "#f59e0b",
+  // Active work
+  loading: "#2B3927",
+  unloading: "#2B3927",
+  delivering: "#2B3927",
+  // Completion
+  walkthrough_photos: "#66143D",
+  client_signoff: "#66143D",
+  completed: "#66143D",
+  // Untracked / gaps
+  idle: "#e5e7eb",
+  gap: "#e5e7eb",
 };
+
+/** Stages considered "untracked" — bars are dimmed, labels italicised. */
+const UNTRACKED_STAGES = new Set(["idle", "gap"]);
 
 /** Rename "idle" / "gap" stages to "Untracked" for display. */
 function getStageDisplayLabel(status: string, originalLabel: string): string {
@@ -1182,24 +1204,22 @@ function CrewDetailView({
                                   return (
                                     <div className="space-y-2">
                                       {mergedStages.map((stage, si) => {
-                                        const isUntracked = stage.status === "idle" || stage.status === "gap";
-                                        const stageColor =
-                                          STAGE_COLORS[stage.status] ||
-                                          "var(--color-stage-fallback)";
+                                        const isUntracked = UNTRACKED_STAGES.has(stage.status);
+                                        const stageColor = STAGE_COLORS[stage.status] || "#94a3b8";
+                                        const durationMin = stage.duration ?? 0;
                                         const barPct =
-                                          stage.duration != null
-                                            ? Math.min(100, (stage.duration / safeTotalDur) * 100)
+                                          durationMin > 0
+                                            ? Math.max(2, Math.min(100, (durationMin / safeTotalDur) * 100))
                                             : 0;
                                         const displayLabel = getStageDisplayLabel(stage.status, stage.label);
                                         return (
                                           <div
                                             key={si}
                                             className="flex items-center gap-3"
-                                            style={{ opacity: isUntracked ? 0.6 : 1 }}
                                           >
                                             <div
                                               className="w-2 h-2 rounded-full shrink-0"
-                                              style={{ backgroundColor: stageColor }}
+                                              style={{ backgroundColor: stageColor, opacity: isUntracked ? 0.5 : 1 }}
                                             />
                                             <div className="w-28 shrink-0">
                                               <p className={`text-[11px] font-medium truncate ${isUntracked ? "italic text-[var(--tx3)]" : "text-[var(--tx2)]"}`}>
@@ -1212,17 +1232,20 @@ function CrewDetailView({
                                                   : ""}
                                               </p>
                                             </div>
-                                            <div className="flex-1 h-1.5 rounded-full bg-[var(--brd)] overflow-hidden">
-                                              <div
-                                                className="h-full rounded-full transition-all"
-                                                style={{
-                                                  width: `${barPct}%`,
-                                                  backgroundColor: stageColor,
-                                                }}
-                                              />
+                                            <div className="flex-1 h-2 rounded-full bg-[var(--brd)]/40 overflow-hidden">
+                                              {barPct > 0 && (
+                                                <div
+                                                  className="h-full rounded-full transition-all"
+                                                  style={{
+                                                    width: `${barPct}%`,
+                                                    backgroundColor: stageColor,
+                                                    opacity: isUntracked ? 0.4 : 1,
+                                                  }}
+                                                />
+                                              )}
                                             </div>
                                             <span className={`w-12 text-right text-[11px] font-semibold tabular-nums shrink-0 ${isUntracked ? "text-[var(--tx3)]" : "text-[var(--tx)]"}`}>
-                                              {fmtDuration(stage.duration)}
+                                              {fmtDuration(durationMin)}
                                             </span>
                                           </div>
                                         );

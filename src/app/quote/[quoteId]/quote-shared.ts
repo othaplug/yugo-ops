@@ -168,6 +168,12 @@ export interface Quote {
   walkthrough_date?: string | null;
   walkthrough_notes?: string | null;
   walkthrough_special_items?: string | null;
+  /** Assembly auto-detection fields (set during quote creation when inventory is provided). */
+  assembly_required?: boolean | null;
+  assembly_auto_detected?: boolean | null;
+  assembly_items?: string[] | null;
+  assembly_override?: boolean | null;
+  assembly_minutes?: number | null;
 }
 
 export interface ValuationTier {

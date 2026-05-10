@@ -1605,6 +1605,7 @@ export default function QuotePageClient({
                 truckPrimary={quote.truck_primary}
                 truckSecondary={quote.truck_secondary}
                 crewSize={quote.est_crew_size}
+                assemblyRequired={quote.assembly_override ?? quote.assembly_required}
                 truckPricingNote={truckBreakdownClientNote}
               />
               <LongDistanceLayout
@@ -1623,6 +1624,7 @@ export default function QuotePageClient({
                 truckPrimary={quote.truck_primary}
                 truckSecondary={quote.truck_secondary}
                 crewSize={quote.est_crew_size}
+                assemblyRequired={quote.assembly_override ?? quote.assembly_required}
                 truckPricingNote={truckBreakdownClientNote}
               />
               <OfficeLayout
@@ -1697,6 +1699,7 @@ export default function QuotePageClient({
                 truckPrimary={quote.truck_primary}
                 truckSecondary={quote.truck_secondary}
                 crewSize={quote.est_crew_size}
+                assemblyRequired={quote.assembly_override ?? quote.assembly_required}
                 truckPricingNote={truckBreakdownClientNote}
               />
               <SpecialtyLayout
@@ -1773,6 +1776,7 @@ export default function QuotePageClient({
                 truckPrimary={quote.truck_primary}
                 truckSecondary={quote.truck_secondary}
                 crewSize={quote.est_crew_size}
+                assemblyRequired={quote.assembly_override ?? quote.assembly_required}
                 truckPricingNote={truckBreakdownClientNote}
               />
               <LabourOnlyLayout
@@ -1797,6 +1801,7 @@ export default function QuotePageClient({
                 truckPrimary={quote.truck_primary}
                 truckSecondary={quote.truck_secondary}
                 crewSize={quote.est_crew_size}
+                assemblyRequired={quote.assembly_override ?? quote.assembly_required}
                 truckPricingNote={truckBreakdownClientNote}
               />
               <FallbackPrice
@@ -1858,6 +1863,7 @@ export default function QuotePageClient({
                   truckPrimary={quote.truck_primary}
                   truckSecondary={quote.truck_secondary}
                   crewSize={quote.est_crew_size}
+                  assemblyRequired={quote.assembly_override ?? quote.assembly_required}
                   truckPricingNote={truckBreakdownClientNote}
                   premiumShellKind={shellKind}
                 />
@@ -2761,6 +2767,8 @@ const InclusionsShowcase = React.forwardRef<
      * logistics, but skips the universal accountability row and any API `includes` merge.
      */
     logisticsClientPreset?: "standard" | "white_glove";
+    /** Assembly auto-detection: when explicitly false, suppress disassembly/reassembly row. */
+    assemblyRequired?: boolean | null;
   }
 >(function InclusionsShowcase(
   {
@@ -2778,6 +2786,7 @@ const InclusionsShowcase = React.forwardRef<
     truckPricingNote = null,
     premiumShellKind = "none",
     logisticsClientPreset = "standard",
+    assemblyRequired = null,
   },
   ref,
 ) {
@@ -2822,7 +2831,7 @@ const InclusionsShowcase = React.forwardRef<
               showEventSetupFeature,
           )
         : variant === "residential"
-          ? getResolvedMoveIncludes(tier, truckLabel, crewSize)
+          ? getResolvedMoveIncludes(tier, truckLabel, crewSize, assemblyRequired)
           : (residentialTierFeatures[tier] ??
             residentialTierFeatures.essential);
 

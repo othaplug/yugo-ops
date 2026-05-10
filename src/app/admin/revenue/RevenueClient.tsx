@@ -114,6 +114,19 @@ interface BookedMoveBalance {
   deposit_amount?: number | null;
 }
 
+interface PMMoveAll {
+  id: string;
+  client_name?: string | null;
+  organization_id?: string | null;
+  estimate?: number | null;
+  final_amount?: number | null;
+  total_price?: number | null;
+  amount?: number | null;
+  scheduled_date?: string | null;
+  status?: string | null;
+  payment_marked_paid_at?: string | null;
+}
+
 interface RevenueClientProps {
   invoices: PartnerRevenueInvoice[];
   /** Recent deliveries (same window as Command Center) for partner revenue when no invoice row exists. */
@@ -129,6 +142,8 @@ interface RevenueClientProps {
   unbilledPMmoves?: UnbilledPMMove[];
   /** Booked residential moves with deposit collected — balance still due. */
   bookedMovesBalance?: BookedMoveBalance[];
+  /** All PM moves (for revenue chart third segment + top clients). */
+  pmMovesAll?: PMMoveAll[];
 }
 
 function getMoveRevenueDate(m: PaidMove): Date {
@@ -217,6 +232,7 @@ function KpiCard({
 // ─── Custom Tooltip ───────────────────────────────────────────────────────────
 const CHART_PARTNER_FILL = "var(--tx2)";
 const CHART_MOVES_FILL = "var(--grn)";
+const CHART_PM_FILL = "#66143D"; // wine — PM moves segment
 
 function StackedRevenueTooltip({
   active,
@@ -315,6 +331,7 @@ export default function RevenueClient({
   sentPartnerInvoices = [],
   unbilledPMmoves = [],
   bookedMovesBalance = [],
+  pmMovesAll = [],
 }: RevenueClientProps) {
   const [period, setPeriod] = useState<Period>("6mo");
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -398,9 +415,15 @@ export default function RevenueClient({
     byClient[name] =
       (byClient[name] || 0) + Number(m.final_amount ?? m.total_price ?? m.amount ?? m.estimate ?? 0);
   });
+  // PM partners — aggregate by organization name (client_name on the move)
+  pmMovesAll.forEach((m) => {
+    const name = m.client_name || "PM partner";
+    byClient[name] =
+      (byClient[name] || 0) + Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0);
+  });
   const topClients = Object.entries(byClient)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 6);
+    .slice(0, 8);
   const maxClientAmount = Math.max(1, topClients[0]?.[1] ?? 1);
 
   type ChartRow = {
@@ -409,7 +432,23 @@ export default function RevenueClient({
     value: number;
     partner: number;
     moves: number;
+    pm: number;
   };
+
+  // Helper: PM move total for a given month (uses scheduled_date when present, else payment_marked_paid_at)
+  const pmInMonth = (yr: number, mo: number) =>
+    pmMovesAll
+      .filter((m) => {
+        const ts = m.scheduled_date || m.payment_marked_paid_at;
+        if (!ts) return false;
+        const d = new Date(ts);
+        return d.getFullYear() === yr && d.getMonth() === mo;
+      })
+      .reduce(
+        (s, m) =>
+          s + Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0),
+        0,
+      );
 
   const chartData = useMemo(() => {
     const now = new Date();
@@ -440,12 +479,14 @@ export default function RevenueClient({
       fullLabel: string,
       partner: number,
       moves: number,
+      pm: number = 0,
     ): ChartRow => ({
       label,
       fullLabel,
       partner,
       moves,
-      value: partner + moves,
+      pm,
+      value: partner + moves + pm,
     });
 
     // All Time: aggregate by year (partner + moves)
@@ -463,11 +504,13 @@ export default function RevenueClient({
       return sorted.map((y) => {
         let partner = 0;
         let moves = 0;
+        let pm = 0;
         for (let mo = 0; mo < 12; mo++) {
           partner += partnerInMonth(y, mo);
           moves += moveSumInMonth(y, mo);
+          pm += pmInMonth(y, mo);
         }
-        return row(String(y), String(y), partner, moves);
+        return row(String(y), String(y), partner, moves, pm);
       });
     }
 
@@ -476,12 +519,14 @@ export default function RevenueClient({
       for (let m = 0; m < 12; m++) {
         const partner = partnerInMonth(selectedYear, m);
         const moves = moveSumInMonth(selectedYear, m);
+        const pm = pmInMonth(selectedYear, m);
         result.push(
           row(
             MONTH_LABELS[m],
             `${MONTH_LABELS[m]} ${selectedYear}`,
             partner,
             moves,
+            pm,
           ),
         );
       }
@@ -493,11 +538,24 @@ export default function RevenueClient({
       const byDayMoves: Record<number, number> = {};
       const byDayPartnerInv: Record<number, number> = {};
       const byDayDlv: Record<number, number> = {};
+      const byDayPM: Record<number, number> = {};
       for (let d = 1; d <= daysInMonth; d++) {
         byDayMoves[d] = 0;
         byDayPartnerInv[d] = 0;
         byDayDlv[d] = 0;
+        byDayPM[d] = 0;
       }
+      pmMovesAll.forEach((m) => {
+        const ts = m.scheduled_date || m.payment_marked_paid_at;
+        if (!ts) return;
+        const d = new Date(ts);
+        if (d.getFullYear() === year && d.getMonth() === month) {
+          const day = d.getDate();
+          byDayPM[day] =
+            (byDayPM[day] || 0) +
+            Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0);
+        }
+      });
       paidPartnerInvoices.forEach((inv) => {
         const d = getInvoiceRevenueDate(inv);
         if (d.getFullYear() === year && d.getMonth() === month) {
@@ -536,11 +594,13 @@ export default function RevenueClient({
         const day = i + 1;
         const partner = (byDayPartnerInv[day] || 0) + (byDayDlv[day] || 0);
         const moves = byDayMoves[day] || 0;
+        const pm = byDayPM[day] || 0;
         return row(
           String(day),
           `${now.toLocaleString("en-US", { month: "short" })} ${day}`,
           partner,
           moves,
+          pm,
         );
       });
     }
@@ -562,8 +622,9 @@ export default function RevenueClient({
       }
       const partner = partnerInMonth(y, m);
       const moves = moveSumInMonth(y, m);
+      const pm = pmInMonth(y, m);
       result.push(
-        row(MONTH_LABELS[m], `${MONTH_LABELS[m]} ${y}`, partner, moves),
+        row(MONTH_LABELS[m], `${MONTH_LABELS[m]} ${y}`, partner, moves, pm),
       );
     }
     return result;
@@ -578,6 +639,7 @@ export default function RevenueClient({
     deliveries,
     orgIdToType,
     clientTypeMap,
+    pmMovesAll,
   ]);
 
   const byTypeRaw: Record<string, number> = {
@@ -982,6 +1044,13 @@ export default function RevenueClient({
                 dataKey="moves"
                 stackId="rev"
                 fill={CHART_MOVES_FILL}
+                maxBarSize={44}
+              />
+              <Bar
+                name="PM moves"
+                dataKey="pm"
+                stackId="rev"
+                fill={CHART_PM_FILL}
                 radius={[4, 4, 0, 0]}
                 maxBarSize={44}
               />
