@@ -5,8 +5,8 @@ export const dynamic = "force-dynamic"
 export const revalidate = 0
 
 const CalendarPage = async () => {
-  const { moves } = await getAdminUniverse()
-  return <CalendarClient moves={moves} />
+  const { moves, invoices } = await getAdminUniverse()
+  return <CalendarClient moves={moves} invoices={invoices} />
 }
 
 export default CalendarPage

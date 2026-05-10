@@ -13,7 +13,7 @@ import { MoveDrawer } from "@/components/admin-v2/modules/move-drawer"
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
 import { MOVE_STATUS_LABEL, TIER_LABEL } from "@/lib/admin-v2/labels"
 import { formatTimeOfDay } from "@/lib/admin-v2/format"
-import type { Move } from "@/lib/admin-v2/mock/types"
+import type { Move, Invoice } from "@/lib/admin-v2/mock/types"
 import { cn } from "@/components/admin-v2/lib/cn"
 import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav"
 
@@ -62,9 +62,13 @@ const weekRange = (anchor: Date) => {
 
 export type CalendarClientProps = {
   moves: Move[]
+  invoices?: Invoice[]
 }
 
-export const CalendarClient = ({ moves }: CalendarClientProps) => {
+export const CalendarClient = ({ moves: initialMoves, invoices = [] }: CalendarClientProps) => {
+  const [moves, setMoves] = React.useState<Move[]>(() => initialMoves)
+  React.useEffect(() => { setMoves(initialMoves) }, [initialMoves])
+
   const drawer = useDrawer("move")
   const activeMove = React.useMemo(
     () => moves.find((m) => m.id === drawer.id) ?? null,
@@ -72,7 +76,7 @@ export const CalendarClient = ({ moves }: CalendarClientProps) => {
   )
 
   const [anchor, setAnchor] = React.useState(() => {
-    const first = moves[0]
+    const first = initialMoves[0]
     return first ? new Date(first.scheduledAt) : new Date()
   })
   const [view, setView] = React.useState<CalendarView>("week")
@@ -338,6 +342,14 @@ export const CalendarClient = ({ moves }: CalendarClientProps) => {
         move={activeMove}
         open={drawer.isOpen}
         onOpenChange={drawer.setOpen}
+        invoices={invoices}
+        onStatusChange={(moveId, newStatus) => {
+          setMoves((prev) =>
+            prev.map((m) =>
+              m.id === moveId ? { ...m, status: newStatus as Move["status"] } : m,
+            ),
+          )
+        }}
       />
     </div>
   )
