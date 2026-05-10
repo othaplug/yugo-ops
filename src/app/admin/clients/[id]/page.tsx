@@ -154,7 +154,7 @@ export default async function ClientDetailPage({
   const outstandingInvoices = allInvoices.filter(
     (i) => i.status === "sent" || i.status === "overdue",
   );
-  const outstandingTotal = outstandingInvoices.reduce(
+  let outstandingTotal = outstandingInvoices.reduce(
     (s, i) => s + Number(i.amount),
     0,
   );
@@ -195,10 +195,12 @@ export default async function ClientDetailPage({
   } | null = null;
 
   if (portfolioPartner) {
+    const REVENUE_STATUSES = ["completed", "confirmed", "booked", "scheduled", "paid"];
+
     const [
       { count: totalMoves },
       { count: movesThisMonth },
-      { data: estRows },
+      { data: revenueRows },
     ] = await Promise.all([
       db
         .from("moves")
@@ -211,26 +213,45 @@ export default async function ClientDetailPage({
         .gte("scheduled_date", monthStart),
       db
         .from("moves")
-        .select("estimate")
+        .select("scheduled_date, estimate, total_price, status")
         .eq("organization_id", id)
-        .in("status", ["completed", "paid"])
-        .not("estimate", "is", null)
-        .limit(400),
+        .in("status", REVENUE_STATUSES)
+        .limit(1000),
     ]);
 
-    const paid = allInvoices.filter((i) => (i.status as string) === "paid");
-    const revenueMtd = paid
-      .filter((i) => String(i.created_at || "").slice(0, 10) >= monthStart)
-      .reduce((s, i) => s + Number(i.amount || 0), 0);
-    const revenueYtd = paid
-      .filter((i) => String(i.created_at || "").slice(0, 10) >= yearStart)
-      .reduce((s, i) => s + Number(i.amount || 0), 0);
-    const estimates = (estRows || [])
-      .map((r: { estimate?: number }) => Number(r.estimate || 0))
-      .filter((n) => n > 0);
-    const avgMoveValue = estimates.length
-      ? estimates.reduce((a, b) => a + b, 0) / estimates.length
+    function moveRevenue(r: { estimate?: unknown; total_price?: unknown }): number {
+      const tp = Number(r.total_price);
+      if (Number.isFinite(tp) && tp > 0) return tp;
+      const est = Number(r.estimate);
+      return Number.isFinite(est) && est > 0 ? est : 0;
+    }
+
+    const allRevRows = revenueRows || [];
+    const revenueMtd = allRevRows
+      .filter((r) => String(r.scheduled_date || "").slice(0, 10) >= monthStart)
+      .reduce((s, r) => s + moveRevenue(r), 0);
+    const revenueYtd = allRevRows
+      .filter((r) => String(r.scheduled_date || "").slice(0, 10) >= yearStart)
+      .reduce((s, r) => s + moveRevenue(r), 0);
+
+    const completedRows = allRevRows.filter((r) => r.status === "completed" || r.status === "paid");
+    const avgMoveValue = completedRows.length
+      ? completedRows.reduce((s, r) => s + moveRevenue(r), 0) / completedRows.length
       : 0;
+
+    // Unbilled completed moves = outstanding for PM partners
+    const { data: unbilledRows } = await db
+      .from("moves")
+      .select("estimate, total_price")
+      .eq("organization_id", id)
+      .eq("status", "completed")
+      .is("invoice_id", null);
+
+    const pmOutstanding = (unbilledRows || []).reduce(
+      (s, r) => s + moveRevenue(r),
+      0,
+    );
+    outstandingTotal = pmOutstanding;
 
     pmMetrics = {
       buildingsCount: (partnerProperties || []).length,
