@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { toast } from "sonner"
 import { Button } from "../primitives/Button"
 import { Icon } from "../primitives/Icon"
@@ -140,6 +141,12 @@ export const LeadDrawer = ({
   const footer = (
     <div className="flex w-full items-center justify-between gap-2">
       <div className="flex items-center gap-2">
+        <Button variant="secondary" size="sm" asChild>
+          <Link href={`/admin/leads/${lead.id}`} target="_blank">
+            <Icon name="arrowUpRight" size="sm" weight="bold" />
+            Open
+          </Link>
+        </Button>
         <Button
           variant="secondary"
           size="sm"
@@ -147,14 +154,6 @@ export const LeadDrawer = ({
           onClick={() => toast.message(`Emailing ${lead.name}`)}
         >
           Email
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          leadingIcon={<Icon name="phone" size="sm" />}
-          onClick={() => toast.message(`Calling ${lead.name}`)}
-        >
-          Call
         </Button>
       </div>
       <div className="flex items-center gap-2">

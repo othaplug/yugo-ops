@@ -1,8 +1,10 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { toast } from "sonner"
 import { Button } from "../primitives/Button"
+import { Icon } from "../primitives/Icon"
 import { Chip } from "../primitives/Chip"
 import {
   DrawerSection,
@@ -186,7 +188,14 @@ export const InvoiceDrawer = ({
   )
 
   const footer = (
-    <div className="flex w-full items-center justify-end gap-2">
+    <div className="flex w-full items-center justify-between gap-2">
+      <Button variant="secondary" size="sm" asChild>
+        <Link href={`/admin/invoices`} target="_blank">
+          <Icon name="arrowUpRight" size="sm" weight="bold" />
+          Open in admin
+        </Link>
+      </Button>
+      <div className="flex items-center gap-2">
       <Button
         variant="secondary"
         size="sm"
@@ -208,6 +217,7 @@ export const InvoiceDrawer = ({
       >
         Send
       </Button>
+      </div>
     </div>
   )
 
