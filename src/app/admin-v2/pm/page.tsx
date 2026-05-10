@@ -5,8 +5,8 @@ export const dynamic = "force-dynamic"
 export const revalidate = 0
 
 const PMPage = async () => {
-  const { pmAccounts } = await getAdminUniverse()
-  return <PMClient initialAccounts={pmAccounts} />
+  const { pmAccounts, moves } = await getAdminUniverse()
+  return <PMClient initialAccounts={pmAccounts} moves={moves} />
 }
 
 export default PMPage

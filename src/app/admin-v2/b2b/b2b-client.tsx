@@ -21,7 +21,7 @@ import {
   VERTICAL_LABEL,
 } from "@/lib/admin-v2/labels"
 import { formatCurrencyCompact } from "@/lib/admin-v2/format"
-import type { B2BPartner, Vertical } from "@/lib/admin-v2/mock/types"
+import type { B2BPartner, Move, Vertical } from "@/lib/admin-v2/mock/types"
 import { cn } from "@/components/admin-v2/lib/cn"
 
 const VERTICAL_FILTERS: Array<{ id: "all" | Vertical; label: string }> = [
@@ -41,9 +41,10 @@ const VERTICAL_FILTERS: Array<{ id: "all" | Vertical; label: string }> = [
 
 export type B2BClientProps = {
   initialPartners: B2BPartner[]
+  moves?: Move[]
 }
 
-export const B2BClient = ({ initialPartners }: B2BClientProps) => {
+export const B2BClient = ({ initialPartners, moves = [] }: B2BClientProps) => {
   const [partners, setPartners] = React.useState<B2BPartner[]>(
     () => initialPartners,
   )
@@ -261,6 +262,7 @@ export const B2BClient = ({ initialPartners }: B2BClientProps) => {
         partner={activePartner}
         open={drawer.isOpen}
         onOpenChange={drawer.setOpen}
+        moves={moves}
       />
     </div>
   )

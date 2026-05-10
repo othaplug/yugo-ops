@@ -84,6 +84,7 @@ export type Move = {
   number: string;
   customerId: string;
   customerName: string;
+  organizationId: string | null;
   tier: ResidentialTier;
   serviceType: ServiceType;
   status: MoveStatus;

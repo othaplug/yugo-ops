@@ -5,19 +5,27 @@ import Link from "next/link"
 import { toast } from "sonner"
 import { Button } from "../primitives/Button"
 import { Icon } from "../primitives/Icon"
+import { Chip } from "../primitives/Chip"
 import {
   DrawerSection,
   DrawerStatGrid,
   ModuleDrawer,
 } from "./module-drawer"
-import type { PMAccount } from "@/lib/admin-v2/mock/types"
-import { PM_CONTRACT_LABEL } from "@/lib/admin-v2/labels"
-import { formatShortDate } from "@/lib/admin-v2/format"
+import type { PMAccount, Move } from "@/lib/admin-v2/mock/types"
+import {
+  MOVE_STATUS_LABEL,
+  PM_CONTRACT_LABEL,
+} from "@/lib/admin-v2/labels"
+import {
+  formatCurrency,
+  formatShortDate,
+} from "@/lib/admin-v2/format"
 
 type PMDrawerProps = {
   account: PMAccount | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  moves?: Move[]
 }
 
 const contractVariant = (status: PMAccount["contractStatus"]) =>
@@ -27,8 +35,13 @@ const contractVariant = (status: PMAccount["contractStatus"]) =>
       ? "warning"
       : "danger"
 
-export const PMDrawer = ({ account, open, onOpenChange }: PMDrawerProps) => {
+export const PMDrawer = ({ account, open, onOpenChange, moves = [] }: PMDrawerProps) => {
   if (!account) return null
+
+  const accountMoves = moves
+    .filter((m) => m.organizationId === account.id)
+    .sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime())
+    .slice(0, 10)
 
   const overview = (
     <DrawerStatGrid
@@ -64,6 +77,53 @@ export const PMDrawer = ({ account, open, onOpenChange }: PMDrawerProps) => {
         ))}
       </div>
     </DrawerSection>
+  )
+
+  const movesTab = accountMoves.length ? (
+    <div className="overflow-hidden rounded-md border border-line">
+      <table className="w-full body-sm">
+        <thead className="bg-surface-subtle">
+          <tr>
+            <th className="px-3 py-2 text-left label-sm text-fg-subtle">Move</th>
+            <th className="px-3 py-2 text-left label-sm text-fg-subtle">Status</th>
+            <th className="px-3 py-2 text-right label-sm text-fg-subtle">Value</th>
+            <th className="px-3 py-2 text-right label-sm text-fg-subtle">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {accountMoves.map((move) => (
+            <tr key={move.id} className="border-t border-line">
+              <td className="px-3 py-2 text-fg font-medium">{move.number}</td>
+              <td className="px-3 py-2">
+                <Chip
+                  label={MOVE_STATUS_LABEL[move.status]}
+                  variant={
+                    move.status === "completed"
+                      ? "success"
+                      : move.status === "in-transit" || move.status === "pre-move"
+                        ? "info"
+                        : move.status === "cancelled"
+                          ? "danger"
+                          : "neutral"
+                  }
+                />
+              </td>
+              <td className="px-3 py-2 text-right text-fg tabular-nums">
+                {formatCurrency(move.total)}
+              </td>
+              <td className="px-3 py-2 text-right text-fg-subtle">
+                {formatShortDate(move.scheduledAt)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <div className="flex h-full min-h-[160px] flex-col items-center justify-center rounded-md border border-dashed border-line bg-surface-subtle text-center">
+      <p className="body-sm font-medium text-fg">No moves on record</p>
+      <p className="mt-1 body-xs text-fg-subtle">Moves will appear here once linked to this account.</p>
+    </div>
   )
 
   const footer = (
@@ -108,6 +168,7 @@ export const PMDrawer = ({ account, open, onOpenChange }: PMDrawerProps) => {
       tabs={[
         { id: "overview", label: "Profile", content: overview },
         { id: "schedule", label: "Schedule", content: schedule },
+        { id: "moves", label: `Moves (${accountMoves.length})`, content: movesTab },
       ]}
       footer={footer}
     />

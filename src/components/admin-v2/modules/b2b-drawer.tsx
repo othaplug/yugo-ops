@@ -11,12 +11,14 @@ import {
   DrawerStatGrid,
   ModuleDrawer,
 } from "./module-drawer"
-import type { B2BPartner } from "@/lib/admin-v2/mock/types"
+import type { B2BPartner, Move } from "@/lib/admin-v2/mock/types"
 import {
   B2B_STATUS_LABEL,
+  MOVE_STATUS_LABEL,
   VERTICAL_LABEL,
 } from "@/lib/admin-v2/labels"
 import {
+  formatCurrency,
   formatCurrencyCompact,
   formatPercent,
   formatShortDate,
@@ -26,6 +28,7 @@ type B2BDrawerProps = {
   partner: B2BPartner | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  moves?: Move[]
 }
 
 const statusVariant = (status: B2BPartner["status"]) =>
@@ -35,8 +38,13 @@ const statusVariant = (status: B2BPartner["status"]) =>
       ? "warning"
       : "neutral"
 
-export const B2BDrawer = ({ partner, open, onOpenChange }: B2BDrawerProps) => {
+export const B2BDrawer = ({ partner, open, onOpenChange, moves = [] }: B2BDrawerProps) => {
   if (!partner) return null
+
+  const partnerMoves = moves
+    .filter((m) => m.organizationId === partner.id)
+    .sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime())
+    .slice(0, 10)
 
   const overview = (
     <DrawerStatGrid
@@ -85,6 +93,53 @@ export const B2BDrawer = ({ partner, open, onOpenChange }: B2BDrawerProps) => {
     </DrawerSection>
   )
 
+  const jobsTab = partnerMoves.length ? (
+    <div className="overflow-hidden rounded-md border border-line">
+      <table className="w-full body-sm">
+        <thead className="bg-surface-subtle">
+          <tr>
+            <th className="px-3 py-2 text-left label-sm text-fg-subtle">Job</th>
+            <th className="px-3 py-2 text-left label-sm text-fg-subtle">Status</th>
+            <th className="px-3 py-2 text-right label-sm text-fg-subtle">Value</th>
+            <th className="px-3 py-2 text-right label-sm text-fg-subtle">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {partnerMoves.map((move) => (
+            <tr key={move.id} className="border-t border-line">
+              <td className="px-3 py-2 text-fg font-medium">{move.number}</td>
+              <td className="px-3 py-2">
+                <Chip
+                  label={MOVE_STATUS_LABEL[move.status]}
+                  variant={
+                    move.status === "completed"
+                      ? "success"
+                      : move.status === "in-transit" || move.status === "pre-move"
+                        ? "info"
+                        : move.status === "cancelled"
+                          ? "danger"
+                          : "neutral"
+                  }
+                />
+              </td>
+              <td className="px-3 py-2 text-right text-fg tabular-nums">
+                {formatCurrency(move.total)}
+              </td>
+              <td className="px-3 py-2 text-right text-fg-subtle">
+                {formatShortDate(move.scheduledAt)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <div className="flex h-full min-h-[160px] flex-col items-center justify-center rounded-md border border-dashed border-line bg-surface-subtle text-center">
+      <p className="body-sm font-medium text-fg">No jobs on record</p>
+      <p className="mt-1 body-xs text-fg-subtle">Jobs will appear here once linked to this partner.</p>
+    </div>
+  )
+
   const footer = (
     <div className="flex w-full items-center justify-between gap-2">
       <Button variant="secondary" size="sm" asChild>
@@ -116,6 +171,7 @@ export const B2BDrawer = ({ partner, open, onOpenChange }: B2BDrawerProps) => {
       tabs={[
         { id: "overview", label: "Profile", content: overview },
         { id: "rate", label: "Rate card", content: rateCard },
+        { id: "jobs", label: `Jobs (${partnerMoves.length})`, content: jobsTab },
       ]}
       footer={footer}
     />

@@ -313,6 +313,7 @@ export const generateMoves = (
       number: `M-${(20000 + index).toString()}`,
       customerId: customer.id,
       customerName: customer.name,
+      organizationId: null,
       tier,
       serviceType,
       status,

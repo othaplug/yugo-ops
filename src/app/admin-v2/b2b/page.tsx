@@ -5,8 +5,8 @@ export const dynamic = "force-dynamic"
 export const revalidate = 0
 
 const B2BPage = async () => {
-  const { b2bPartners } = await getAdminUniverse()
-  return <B2BClient initialPartners={b2bPartners} />
+  const { b2bPartners, moves } = await getAdminUniverse()
+  return <B2BClient initialPartners={b2bPartners} moves={moves} />
 }
 
 export default B2BPage

@@ -287,6 +287,7 @@ export const mapMove = (
   number: str(row.move_code || row.id),
   customerId: str(row.contact_id),
   customerName: str(row.client_name) || "Customer",
+  organizationId: row.organization_id ? str(row.organization_id) : null,
   tier: mapTier(row.tier_selected),
   serviceType: mapServiceType(row.service_type || row.move_type),
   status: mapMoveStatus(row.status),

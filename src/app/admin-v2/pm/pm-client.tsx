@@ -17,13 +17,14 @@ import {
 import { PMDrawer } from "@/components/admin-v2/modules/pm-drawer"
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
 import { PM_CONTRACT_LABEL } from "@/lib/admin-v2/labels"
-import type { PMAccount } from "@/lib/admin-v2/mock/types"
+import type { PMAccount, Move } from "@/lib/admin-v2/mock/types"
 
 export type PMClientProps = {
   initialAccounts: PMAccount[]
+  moves?: Move[]
 }
 
-export const PMClient = ({ initialAccounts }: PMClientProps) => {
+export const PMClient = ({ initialAccounts, moves = [] }: PMClientProps) => {
   const [accounts, setAccounts] = React.useState<PMAccount[]>(() => initialAccounts)
   React.useEffect(() => {
     setAccounts(initialAccounts)
@@ -164,6 +165,7 @@ export const PMClient = ({ initialAccounts }: PMClientProps) => {
         account={activeAccount}
         open={drawer.isOpen}
         onOpenChange={drawer.setOpen}
+        moves={moves}
       />
     </div>
   )
