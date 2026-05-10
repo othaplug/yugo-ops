@@ -17,6 +17,15 @@ import {
 } from "@/components/admin-v2/datatable"
 import { InvoiceDrawer } from "@/components/admin-v2/modules/invoice-drawer"
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
+import { Input } from "@/components/admin-v2/primitives/Input"
+import {
+  Modal,
+  ModalClose,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalTrigger,
+} from "@/components/admin-v2/layout/Modal"
 import { INVOICE_STATUS_LABEL } from "@/lib/admin-v2/labels"
 import { formatCurrency, formatCurrencyCompact } from "@/lib/admin-v2/format"
 import { downloadCsv } from "@/lib/admin-v2/csv"
@@ -240,14 +249,7 @@ export const InvoicesClient = ({ initialInvoices, moves = [] }: InvoicesClientPr
       <PageHeader
         title="Invoices"
         actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            leadingIcon={<Icon name="plus" size="sm" weight="bold" />}
-            onClick={() => toast.message("New invoice flow opens here")}
-          >
-            New invoice
-          </Button>
+          <NewInvoiceModal onCreated={(inv) => setInvoices((prev) => [inv, ...prev])} />
         }
       />
 
@@ -306,5 +308,113 @@ export const InvoicesClient = ({ initialInvoices, moves = [] }: InvoicesClientPr
         moves={moves}
       />
     </div>
+  )
+}
+
+const NewInvoiceModal = ({ onCreated }: { onCreated: (invoice: Invoice) => void }) => {
+  const [open, setOpen] = React.useState(false)
+  const [clientName, setClientName] = React.useState("")
+  const [amount, setAmount] = React.useState("")
+  const [dueDate, setDueDate] = React.useState("")
+  const [saving, setSaving] = React.useState(false)
+
+  const reset = () => { setClientName(""); setAmount(""); setDueDate("") }
+
+  const handleCreate = async () => {
+    if (!clientName.trim()) { toast.error("Client name is required"); return }
+    const amountNum = parseFloat(amount)
+    if (!amountNum || amountNum <= 0) { toast.error("Amount must be greater than 0"); return }
+    setSaving(true)
+    try {
+      const res = await fetch("/api/admin/invoices/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          client_name: clientName.trim(),
+          amount: amountNum,
+          due_date: dueDate || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to create invoice")
+      } else {
+        const raw = data.invoice ?? data
+        const newInvoice: Invoice = {
+          id: raw.id,
+          number: raw.invoice_number ?? raw.number ?? "INV-???",
+          customerId: raw.organization_id ?? "",
+          customerName: clientName.trim(),
+          moveId: raw.move_id ?? null,
+          status: "draft",
+          subtotal: amountNum,
+          tax: 0,
+          total: amountNum,
+          dueAt: dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          paidAt: null,
+          createdAt: raw.created_at ?? new Date().toISOString(),
+        }
+        toast.success(`Invoice ${newInvoice.number} created`)
+        onCreated(newInvoice)
+        setOpen(false)
+        reset()
+      }
+    } catch {
+      toast.error("Network error")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset() }}>
+      <ModalTrigger asChild>
+        <Button variant="secondary" size="sm" leadingIcon={<Icon name="plus" size="sm" weight="bold" />}>
+          New invoice
+        </Button>
+      </ModalTrigger>
+      <ModalContent size="sm">
+        <ModalHeader title="Create invoice" description="Generate a manual invoice for a client or partner." />
+        <div className="space-y-3">
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Client name *</label>
+            <Input
+              type="text"
+              placeholder="Acme Corp or Jane Smith"
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Amount *</label>
+            <Input
+              type="number"
+              placeholder="0.00"
+              min="0"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Due date</label>
+            <Input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
+          </div>
+        </div>
+        <ModalFooter>
+          <ModalClose asChild>
+            <Button variant="secondary" size="sm">Cancel</Button>
+          </ModalClose>
+          <Button variant="primary" size="sm" disabled={saving} onClick={handleCreate}>
+            {saving ? "Creating…" : "Create invoice"}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   )
 }

@@ -28,6 +28,15 @@ import {
 import { variantForStatus } from "@/components/admin-v2/primitives/Chip";
 import { LeadDrawer } from "@/components/admin-v2/modules/lead-drawer";
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer";
+import { Input } from "@/components/admin-v2/primitives/Input";
+import {
+  Modal,
+  ModalClose,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalTrigger,
+} from "@/components/admin-v2/layout/Modal";
 import { LEAD_STATUS_LABEL } from "@/lib/admin-v2/labels";
 import { formatCurrency, formatCurrencyCompact } from "@/lib/admin-v2/format";
 import { downloadCsv } from "@/lib/admin-v2/csv";
@@ -233,14 +242,7 @@ export const LeadsClient = ({ initialLeads }: LeadsClientProps) => {
         title="Leads"
         actions={
           <>
-            <Button
-              variant="secondary"
-              size="sm"
-              leadingIcon={<Icon name="plus" size="sm" weight="bold" />}
-              onClick={() => toast.message("Create lead flow opens here")}
-            >
-              New lead
-            </Button>
+            <CreateLeadModal onCreated={(lead) => setLeads((prev) => [lead, ...prev])} />
             <DropdownRoot>
               <DropdownTrigger asChild>
                 <Button variant="ghost" size="iconSm" aria-label="More actions">
@@ -421,3 +423,155 @@ const LeadsBoard = ({
     </div>
   );
 };
+
+const LEAD_SOURCE_OPTIONS: { value: string; label: string }[] = [
+  { value: "phone_call", label: "Phone call" },
+  { value: "website_form", label: "Website form" },
+  { value: "email", label: "Email" },
+  { value: "referral", label: "Referral" },
+  { value: "repeat_client", label: "Repeat client" },
+  { value: "realtor", label: "Realtor" },
+  { value: "google_ads", label: "Google Ads" },
+  { value: "social_media", label: "Social media" },
+  { value: "other", label: "Other" },
+]
+
+const CreateLeadModal = ({ onCreated }: { onCreated: (lead: Lead) => void }) => {
+  const [open, setOpen] = React.useState(false)
+  const [firstName, setFirstName] = React.useState("")
+  const [lastName, setLastName] = React.useState("")
+  const [email, setEmail] = React.useState("")
+  const [phone, setPhone] = React.useState("")
+  const [source, setSource] = React.useState("phone_call")
+  const [saving, setSaving] = React.useState(false)
+
+  const reset = () => {
+    setFirstName(""); setLastName(""); setEmail(""); setPhone(""); setSource("phone_call")
+  }
+
+  const handleCreate = async () => {
+    if (!firstName.trim() && !email.trim()) {
+      toast.error("Name or email is required")
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await fetch("/api/admin/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          source,
+          source_detail: "Manual entry",
+          skip_hubspot: true,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to create lead")
+      } else {
+        const raw = data.lead
+        const newLead: Lead = {
+          id: raw.id,
+          name: [raw.first_name, raw.last_name].filter(Boolean).join(" ") || raw.email || "Unknown",
+          email: raw.email ?? "",
+          phone: raw.phone ?? "",
+          source: raw.lead_source ?? source,
+          sourceExternal: false,
+          status: "new",
+          size: 0,
+          interest: [],
+          probability: "low",
+          lastAction: raw.created_at ?? new Date().toISOString(),
+          ownerName: "Unassigned",
+          createdAt: raw.created_at ?? new Date().toISOString(),
+        }
+        toast.success(`Lead created`)
+        onCreated(newLead)
+        setOpen(false)
+        reset()
+      }
+    } catch {
+      toast.error("Network error")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset() }}>
+      <ModalTrigger asChild>
+        <Button variant="secondary" size="sm" leadingIcon={<Icon name="plus" size="sm" weight="bold" />}>
+          New lead
+        </Button>
+      </ModalTrigger>
+      <ModalContent size="sm">
+        <ModalHeader title="Create lead" description="Manually log a new lead into the pipeline." />
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label-sm text-fg-subtle block mb-1">First name</label>
+              <Input
+                type="text"
+                placeholder="Jane"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label-sm text-fg-subtle block mb-1">Last name</label>
+              <Input
+                type="text"
+                placeholder="Smith"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Email</label>
+            <Input
+              type="email"
+              placeholder="jane@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Phone</label>
+            <Input
+              type="tel"
+              placeholder="+1 416 555 0100"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Source</label>
+            <select
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              className="w-full rounded-md border border-line bg-surface px-3 py-2 body-sm text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+            >
+              {LEAD_SOURCE_OPTIONS.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <ModalFooter>
+          <ModalClose asChild>
+            <Button variant="secondary" size="sm">Cancel</Button>
+          </ModalClose>
+          <Button variant="primary" size="sm" disabled={saving} onClick={handleCreate}>
+            {saving ? "Creating…" : "Create lead"}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  )
+}
