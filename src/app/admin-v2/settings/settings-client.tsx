@@ -22,6 +22,7 @@ import {
   type ColumnConfig,
 } from "@/components/admin-v2/datatable"
 import { formatShortDate, formatTimeOfDay } from "@/lib/admin-v2/format"
+import type { PlatformUserSlim } from "@/lib/admin-v2/data/server"
 
 type TeamMember = {
   id: string
@@ -253,7 +254,18 @@ const PlatformTab = () => {
   )
 }
 
-const TeamTab = () => {
+const toTeamMember = (pu: PlatformUserSlim): TeamMember => ({
+  id: pu.userId,
+  name: pu.name,
+  email: pu.email,
+  role: (["super_admin", "admin", "coordinator", "crew", "partner"].includes(pu.role)
+    ? pu.role
+    : "coordinator") as TeamMember["role"],
+  status: "active",
+  lastSeenAt: pu.createdAt,
+})
+
+const TeamTab = ({ team }: { team: TeamMember[] }) => {
   const columns = React.useMemo<ColumnConfig<TeamMember>[]>(
     () => [
       {
@@ -342,7 +354,7 @@ const TeamTab = () => {
         </Button>
       </div>
       <DataTable
-        data={TEAM}
+        data={team}
         columns={columns}
         getRowId={(row) => row.id}
         stateKey="team"
@@ -560,32 +572,42 @@ const AuditTab = () => {
   )
 }
 
-export const SettingsClient = () => (
-  <div className="flex flex-col gap-6">
-    <PageHeader title="Settings" />
-    <Tabs defaultValue="platform">
-      <TabsList>
-        <TabsTrigger value="platform">Platform</TabsTrigger>
-        <TabsTrigger value="team">Team</TabsTrigger>
-        <TabsTrigger value="integrations">Integrations</TabsTrigger>
-        <TabsTrigger value="notifications">Notifications</TabsTrigger>
-        <TabsTrigger value="audit">Audit log</TabsTrigger>
-      </TabsList>
-      <TabsContent value="platform" className="pt-6">
-        <PlatformTab />
-      </TabsContent>
-      <TabsContent value="team" className="pt-6">
-        <TeamTab />
-      </TabsContent>
-      <TabsContent value="integrations" className="pt-6">
-        <IntegrationsTab />
-      </TabsContent>
-      <TabsContent value="notifications" className="pt-6">
-        <NotificationsTab />
-      </TabsContent>
-      <TabsContent value="audit" className="pt-6">
-        <AuditTab />
-      </TabsContent>
-    </Tabs>
-  </div>
-)
+export type SettingsClientProps = {
+  platformUsers?: PlatformUserSlim[]
+}
+
+export const SettingsClient = ({ platformUsers = [] }: SettingsClientProps) => {
+  const team = React.useMemo(
+    () => (platformUsers.length > 0 ? platformUsers.map(toTeamMember) : TEAM),
+    [platformUsers],
+  )
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader title="Settings" />
+      <Tabs defaultValue="platform">
+        <TabsList>
+          <TabsTrigger value="platform">Platform</TabsTrigger>
+          <TabsTrigger value="team">Team</TabsTrigger>
+          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="audit">Audit log</TabsTrigger>
+        </TabsList>
+        <TabsContent value="platform" className="pt-6">
+          <PlatformTab />
+        </TabsContent>
+        <TabsContent value="team" className="pt-6">
+          <TeamTab team={team} />
+        </TabsContent>
+        <TabsContent value="integrations" className="pt-6">
+          <IntegrationsTab />
+        </TabsContent>
+        <TabsContent value="notifications" className="pt-6">
+          <NotificationsTab />
+        </TabsContent>
+        <TabsContent value="audit" className="pt-6">
+          <AuditTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}

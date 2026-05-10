@@ -1,5 +1,12 @@
-import { SettingsClient } from "./settings-client";
+import { getAdminUniverse } from "@/lib/admin-v2/data/server"
+import { SettingsClient } from "./settings-client"
 
-const SettingsPage = () => <SettingsClient />;
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 
-export default SettingsPage;
+const SettingsPage = async () => {
+  const { platformUsers } = await getAdminUniverse()
+  return <SettingsClient platformUsers={platformUsers} />
+}
+
+export default SettingsPage

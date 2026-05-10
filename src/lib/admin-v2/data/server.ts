@@ -44,6 +44,14 @@ import type {
   Quote,
 } from "../mock/types"
 
+export type PlatformUserSlim = {
+  userId: string
+  name: string
+  email: string
+  role: string
+  createdAt: string
+}
+
 export type AdminUniverse = {
   leads: Lead[]
   customers: Customer[]
@@ -54,6 +62,7 @@ export type AdminUniverse = {
   b2bPartners: B2BPartner[]
   pmAccounts: PMAccount[]
   buildings: Building[]
+  platformUsers: PlatformUserSlim[]
   meta: { source: "live" | "mock"; fetchedAt: string; error?: string }
 }
 
@@ -99,6 +108,7 @@ const mockUniverse = (reason: string): AdminUniverse => {
     buildings,
     quotes,
     b2bPartners,
+    platformUsers: [],
     meta: { source: "mock", fetchedAt: new Date().toISOString(), error: reason },
   }
 }
@@ -116,6 +126,8 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
     return mockUniverse(e instanceof Error ? e.message : "Supabase init failed")
   }
 
+  type PlatformUserRow = { user_id: string; name?: string | null; email?: string | null; role?: string | null; created_at?: string | null }
+
   const [
     leadsResp,
     quotesResp,
@@ -125,6 +137,7 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
     invoicesResp,
     crewResp,
     buildingsResp,
+    platformUsersResp,
   ] = await Promise.all([
     tryQuery<LeadRow>(() =>
       db
@@ -194,6 +207,13 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
         .order("name", { ascending: true })
         .limit(LIMIT),
     ),
+    tryQuery<PlatformUserRow>(() =>
+      db
+        .from("platform_users")
+        .select("user_id, name, email, role, created_at")
+        .order("created_at", { ascending: true })
+        .limit(200),
+    ),
   ])
 
   const errors = [
@@ -205,6 +225,7 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
     invoicesResp.error,
     crewResp.error,
     buildingsResp.error,
+    platformUsersResp.error,
   ].filter(Boolean) as string[]
 
   if (
@@ -217,6 +238,20 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
   }
 
   // Build join maps once so we can attach names without N+1 fetches.
+  const userNameByUserId = new Map<string, string>()
+  const puRows = platformUsersResp.rows ?? []
+  for (const pu of puRows) {
+    if (pu.user_id && pu.name) userNameByUserId.set(pu.user_id, pu.name)
+  }
+
+  const platformUsers: PlatformUserSlim[] = puRows.map((pu) => ({
+    userId: pu.user_id,
+    name: pu.name ?? pu.email ?? "User",
+    email: pu.email ?? "",
+    role: pu.role ?? "viewer",
+    createdAt: pu.created_at ?? new Date().toISOString(),
+  }))
+
   const contactNameById = new Map<string, string>()
   for (const contact of contactsResp.rows ?? []) {
     contactNameById.set(contact.id, contact.name ?? "")
@@ -233,7 +268,9 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
     crewById.set(member.id, { id: member.id, name: member.name ?? "Crew" })
   }
 
-  const leads: Lead[] = (leadsResp.rows ?? []).map((row) => mapLead(row))
+  const leads: Lead[] = (leadsResp.rows ?? []).map((row) =>
+    mapLead(row, row.assigned_to ? userNameByUserId.get(row.assigned_to) : undefined),
+  )
   const quotes: Quote[] = (quotesResp.rows ?? []).map((row) =>
     mapQuote(row, contactNameById.get(row.contact_id ?? "")),
   )
@@ -348,6 +385,7 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
     b2bPartners,
     pmAccounts,
     buildings,
+    platformUsers,
     meta: {
       source: "live",
       fetchedAt: new Date().toISOString(),
