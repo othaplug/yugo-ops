@@ -74,9 +74,19 @@ const ZONES = [
   { id: "z6", label: "Out-of-area", multiplier: 1.3 },
 ]
 
+const UNIT_BY_CATEGORY: Record<string, string> = {
+  Base: "flat",
+  Truck: "per move",
+  Labour: "/ hr",
+  Modifier: "%",
+}
+
 const RatesTab = () => {
   const [rates, setRates] = React.useState<RateRow[]>(STATIC_RATES)
   const [saving, setSaving] = React.useState<string | null>(null)
+  const [adding, setAdding] = React.useState<string | null>(null)
+  const [newLabel, setNewLabel] = React.useState("")
+  const [newValue, setNewValue] = React.useState("")
 
   React.useEffect(() => {
     fetch("/api/admin/pricing?section=base-rates", { credentials: "same-origin" })
@@ -116,7 +126,7 @@ const RatesTab = () => {
               size="sm"
               variant="secondary"
               leadingIcon={<Icon name="plus" size="sm" weight="bold" />}
-              onClick={() => toast.message(`New ${cat.toLowerCase()} rate`)}
+              onClick={() => { setAdding(cat); setNewLabel(""); setNewValue("") }}
             >
               Add rate
             </Button>
@@ -172,6 +182,71 @@ const RatesTab = () => {
                   </Button>
                 </li>
               ))}
+            {adding === cat && (
+              <li className="flex items-center gap-4 px-4 py-3 bg-surface-subtle">
+                <Input
+                  size="sm"
+                  containerClassName="flex-1"
+                  type="text"
+                  placeholder="Rate label"
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  autoFocus
+                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    size="sm"
+                    containerClassName="w-24"
+                    type="number"
+                    placeholder="0"
+                    value={newValue}
+                    onChange={(e) => setNewValue(e.target.value)}
+                  />
+                  <span className="body-xs text-fg-subtle min-w-[52px]">
+                    {UNIT_BY_CATEGORY[cat] ?? ""}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={async () => {
+                      if (!newLabel.trim()) { toast.error("Label is required"); return }
+                      const val = parseFloat(newValue)
+                      if (isNaN(val)) { toast.error("Value must be a number"); return }
+                      const tempId = `new-${Date.now()}`
+                      const newRow: RateRow = {
+                        id: tempId,
+                        label: newLabel.trim(),
+                        category: cat,
+                        value: val,
+                        unit: UNIT_BY_CATEGORY[cat] ?? "",
+                      }
+                      setRates((prev) => [...prev, newRow])
+                      if (cat === "Base") {
+                        setSaving(tempId)
+                        const result = await savePricingRows("base-rates", [{ id: tempId, move_size: newLabel.trim().toLowerCase().replace(/\s+/g, "_"), base_price: val }])
+                        setSaving(null)
+                        if (result.ok) {
+                          toast.success(`${newRow.label} added`)
+                        } else {
+                          toast.error(result.error ?? "Failed to save rate")
+                          setRates((prev) => prev.filter((r) => r.id !== tempId))
+                        }
+                      } else {
+                        toast.success(`${newRow.label} added`)
+                      }
+                      setAdding(null)
+                    }}
+                  >
+                    Add
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => setAdding(null)}>
+                    Cancel
+                  </Button>
+                </div>
+              </li>
+            )}
           </ul>
         </section>
       ))}

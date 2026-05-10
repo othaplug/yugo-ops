@@ -21,6 +21,13 @@ import { variantForStatus } from "@/components/admin-v2/primitives/Chip";
 import { MoveDrawer } from "@/components/admin-v2/modules/move-drawer";
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer";
 import {
+  Modal,
+  ModalClose,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+} from "@/components/admin-v2/layout/Modal";
+import {
   MOVE_STATUS_LABEL,
   SERVICE_TYPE_LABEL,
   TIER_LABEL,
@@ -52,12 +59,15 @@ export type MovesClientProps = {
   invoices?: Invoice[];
 };
 
+type CrewTeam = { id: string; name: string }
+
 export const MovesClient = ({ initialMoves, invoices = [] }: MovesClientProps) => {
   const [moves, setMoves] = React.useState<Move[]>(() => initialMoves);
   React.useEffect(() => {
     setMoves(initialMoves);
   }, [initialMoves]);
   const drawer = useDrawer("move");
+  const [crewPickerRows, setCrewPickerRows] = React.useState<Move[] | null>(null);
   const activeMove = React.useMemo(
     () => moves.find((m) => m.id === drawer.id) ?? null,
     [drawer.id, moves],
@@ -235,7 +245,7 @@ export const MovesClient = ({ initialMoves, invoices = [] }: MovesClientProps) =
         id: "reassign",
         label: "Reassign crew",
         handler: (rows) => {
-          toast.info(`Crew picker for ${rows.length} moves`);
+          setCrewPickerRows(rows);
         },
       },
       {
@@ -353,6 +363,12 @@ export const MovesClient = ({ initialMoves, invoices = [] }: MovesClientProps) =
           )
         }}
       />
+
+      <CrewPickerModal
+        moves={crewPickerRows}
+        onClose={() => setCrewPickerRows(null)}
+        onAssigned={() => setCrewPickerRows(null)}
+      />
     </div>
   );
 };
@@ -428,3 +444,117 @@ const MovesBoard = ({
     </div>
   );
 };
+
+async function assignCrewToMoves(moveIds: string[], crewId: string): Promise<{ failCount: number }> {
+  const results = await Promise.allSettled(
+    moveIds.map((id) =>
+      fetch(`/api/admin/moves/${id}/assign-crew`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ crew_id: crewId }),
+      }).then((r) => r.ok),
+    ),
+  )
+  const failCount = results.filter((r) => r.status === "rejected" || (r.status === "fulfilled" && !r.value)).length
+  return { failCount }
+}
+
+const CrewPickerModal = ({
+  moves,
+  onClose,
+  onAssigned,
+}: {
+  moves: Move[] | null
+  onClose: () => void
+  onAssigned: () => void
+}) => {
+  const [teams, setTeams] = React.useState<CrewTeam[]>([])
+  const [teamId, setTeamId] = React.useState("")
+  const [loading, setLoading] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!moves) return
+    setLoading(true)
+    fetch("/api/admin/crews", { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((data: CrewTeam[]) => {
+        const list = Array.isArray(data) ? data : []
+        setTeams(list)
+        if (list.length > 0) setTeamId(list[0].id)
+      })
+      .catch(() => setTeams([]))
+      .finally(() => setLoading(false))
+  }, [moves])
+
+  const handleAssign = async () => {
+    if (!moves || !teamId) return
+    setSaving(true)
+    const moveIds = moves.map((m) => m.id)
+    const { failCount } = await assignCrewToMoves(moveIds, teamId)
+    setSaving(false)
+    const crewName = teams.find((t) => t.id === teamId)?.name ?? "crew"
+    if (failCount === 0) {
+      toast.success(`Assigned ${crewName} to ${moves.length} move${moves.length !== 1 ? "s" : ""}`)
+    } else {
+      toast.error(`${failCount} move(s) failed to assign`)
+    }
+    onAssigned()
+  }
+
+  return (
+    <Modal open={!!moves} onOpenChange={(v) => { if (!v) onClose() }}>
+      <ModalContent size="sm">
+        <ModalHeader
+          title="Reassign crew"
+          description={`Pick a crew team for ${moves?.length ?? 0} selected move${(moves?.length ?? 0) !== 1 ? "s" : ""}.`}
+        />
+        <div className="space-y-3">
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Team</label>
+            {loading ? (
+              <div className="h-9 rounded-md border border-line bg-surface animate-pulse" />
+            ) : (
+              <select
+                value={teamId}
+                onChange={(e) => setTeamId(e.target.value)}
+                className="w-full rounded-md border border-line bg-surface px-3 py-2 body-sm text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+              >
+                {teams.length === 0 && <option value="">No teams found</option>}
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+          {moves && moves.length > 0 && (
+            <ul className="max-h-40 overflow-y-auto divide-y divide-line rounded-md border border-line">
+              {moves.slice(0, 8).map((m) => (
+                <li key={m.id} className="px-3 py-2 body-sm text-fg">
+                  {m.number} · <span className="text-fg-subtle">{m.customerName}</span>
+                </li>
+              ))}
+              {moves.length > 8 && (
+                <li className="px-3 py-2 body-xs text-fg-subtle">+{moves.length - 8} more</li>
+              )}
+            </ul>
+          )}
+        </div>
+        <ModalFooter>
+          <ModalClose asChild>
+            <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
+          </ModalClose>
+          <Button
+            variant="primary"
+            size="sm"
+            disabled={saving || loading || teams.length === 0}
+            onClick={handleAssign}
+          >
+            {saving ? "Assigning…" : "Assign crew"}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  )
+}
