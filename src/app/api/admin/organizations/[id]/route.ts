@@ -42,6 +42,20 @@ export async function PATCH(
       else if (body.invoice_due_day_of_month === null || body.invoice_due_day_of_month === "") updates.invoice_due_day_of_month = null;
     }
 
+    // PM billing settings
+    if (typeof body.billing_email === "string") updates.billing_email = body.billing_email.trim().toLowerCase() || null;
+    if (typeof body.billing_enabled === "boolean") updates.billing_enabled = body.billing_enabled;
+    if (body.billing_terms_days !== undefined) {
+      const v = Number(body.billing_terms_days);
+      if (Number.isInteger(v) && v > 0 && v <= 365) updates.billing_terms_days = v;
+      else if (body.billing_terms_days === null) updates.billing_terms_days = null;
+    }
+    if (body.billing_anchor_day !== undefined) {
+      const v = Number(body.billing_anchor_day);
+      if (Number.isInteger(v) && v >= 1 && v <= 31) updates.billing_anchor_day = v;
+      else if (body.billing_anchor_day === null) updates.billing_anchor_day = null;
+    }
+
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
     }

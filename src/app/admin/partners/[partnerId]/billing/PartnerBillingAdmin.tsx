@@ -9,6 +9,7 @@ import {
   PlusCircle,
   CircleNotch,
   Buildings,
+  Gear,
 } from "@phosphor-icons/react";
 import { useToast } from "@/app/admin/components/Toast";
 import { formatPlatformDisplay } from "@/lib/date-format";
@@ -93,6 +94,125 @@ interface Aging {
   days30: number;
   days60: number;
   days90: number;
+}
+
+// ── PM Billing Settings ────────────────────────────────────────────────────
+
+function PmBillingSettings({ org }: { org: Org }) {
+  const { toast } = useToast();
+  const [email, setEmail] = useState(org.billing_email ?? org.email ?? "");
+  const [enabled, setEnabled] = useState(org.billing_enabled ?? false);
+  const [terms, setTerms] = useState(String(org.billing_terms_days ?? 30));
+  const [anchor, setAnchor] = useState(String(org.billing_anchor_day ?? ""));
+  const [saving, setSaving] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  async function save() {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/organizations/${org.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          billing_email: email,
+          billing_enabled: enabled,
+          billing_terms_days: Number(terms) || 30,
+          billing_anchor_day: anchor ? Number(anchor) : null,
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok) { toast(d.error || "Failed to save"); return; }
+      toast("Billing settings saved");
+      setOpen(false);
+    } catch { toast("Failed to save"); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <div className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-2xl overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-[var(--brd)]/5 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <Gear size={14} className="text-[var(--tx3)]" />
+          <span className="text-[12px] font-bold text-[var(--tx)]">Billing Settings</span>
+        </div>
+        <span className="text-[11px] text-[var(--tx3)]">{open ? "Close" : "Edit"}</span>
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5 border-t border-[var(--brd)]/30 pt-4 space-y-4">
+          {/* Enable toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[12px] font-semibold text-[var(--tx)]">Auto-billing</div>
+              <div className="text-[11px] text-[var(--tx3)]">Automatically generate invoices on anchor day</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEnabled((v) => !v)}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${enabled ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+            >
+              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${enabled ? "translate-x-4" : "translate-x-0.5"}`} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1.5">Billing Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={org.email ?? ""}
+                className="admin-premium-input w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1.5">Payment Terms (days)</label>
+              <input
+                type="number"
+                min="1"
+                max="365"
+                value={terms}
+                onChange={(e) => setTerms(e.target.value)}
+                className="admin-premium-input w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1.5">Billing Anchor Day</label>
+              <input
+                type="number"
+                min="1"
+                max="31"
+                value={anchor}
+                onChange={(e) => setAnchor(e.target.value)}
+                placeholder="e.g. 1 = 1st of month"
+                className="admin-premium-input w-full"
+              />
+              <p className="text-[10px] text-[var(--tx3)] mt-1">Day of month invoices auto-generate</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <button
+              onClick={save}
+              disabled={saving}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-bold text-white transition-all disabled:opacity-50"
+              style={{ background: "linear-gradient(135deg, #2C3E2D, #5C1A33)" }}
+            >
+              {saving ? <CircleNotch size={13} className="animate-spin" /> : null}
+              {saving ? "Saving…" : "Save settings"}
+            </button>
+            <button onClick={() => setOpen(false)} className="px-4 py-2 rounded-xl text-[12px] text-[var(--tx3)] hover:text-[var(--tx)] border border-[var(--brd)] transition-all">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── PM Invoice section ─────────────────────────────────────────────────────
@@ -251,6 +371,9 @@ function PmInvoicesPanel({
           ))}
         </div>
       )}
+
+      {/* Billing settings */}
+      <PmBillingSettings org={org} />
 
       {/* Invoices table */}
       <div>
