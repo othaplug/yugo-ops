@@ -20,6 +20,7 @@ type SearchUniverse = {
     type?: string;
   }>;
   invoices: Array<{ id: string; number: string; customerName: string }>;
+  crew: Array<{ id: string; name: string; role: string }>;
 };
 
 const NAV_ITEMS: Array<{
@@ -188,7 +189,15 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
         `${qu.number} ${qu.customerName}`.toLowerCase().includes(q),
       )
       .slice(0, 5);
-    return { customers, leads, moves, quotes };
+    const invoices = (universe.invoices ?? [])
+      .filter((inv) =>
+        `${inv.number} ${inv.customerName}`.toLowerCase().includes(q),
+      )
+      .slice(0, 5);
+    const crew = (universe.crew ?? [])
+      .filter((c) => c.name.toLowerCase().includes(q))
+      .slice(0, 4);
+    return { customers, leads, moves, quotes, invoices, crew };
   }, [query, universe]);
 
   return (
@@ -339,6 +348,61 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
                           />
                           <span className="flex-1 truncate">
                             {q.number} · {q.customerName}
+                          </span>
+                        </Command.Item>
+                      ))}
+                    </Command.Group>
+                  ) : null}
+
+                  {results.invoices.length > 0 ? (
+                    <Command.Group
+                      heading="Invoices"
+                      className={GROUP_HEADING_CLASS}
+                    >
+                      {results.invoices.map((inv) => (
+                        <Command.Item
+                          key={inv.id}
+                          value={`invoice-${inv.id}`}
+                          onSelect={() =>
+                            runAction(`/admin-v2/invoices?drawer=invoice:${inv.id}`)
+                          }
+                          className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 body-sm text-fg data-[selected=true]:bg-surface-subtle"
+                        >
+                          <Icon
+                            name="invoices"
+                            size="sm"
+                            className="text-fg-subtle"
+                          />
+                          <span className="flex-1 truncate">
+                            {inv.number} · {inv.customerName}
+                          </span>
+                        </Command.Item>
+                      ))}
+                    </Command.Group>
+                  ) : null}
+
+                  {results.crew.length > 0 ? (
+                    <Command.Group
+                      heading="Crew"
+                      className={GROUP_HEADING_CLASS}
+                    >
+                      {results.crew.map((c) => (
+                        <Command.Item
+                          key={c.id}
+                          value={`crew-${c.id}`}
+                          onSelect={() =>
+                            runAction(`/admin-v2/crew?drawer=crew:${c.id}`)
+                          }
+                          className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 body-sm text-fg data-[selected=true]:bg-surface-subtle"
+                        >
+                          <Icon
+                            name="crew"
+                            size="sm"
+                            className="text-fg-subtle"
+                          />
+                          <span className="flex-1 truncate">{c.name}</span>
+                          <span className="body-xs text-fg-subtle capitalize">
+                            {c.role}
                           </span>
                         </Command.Item>
                       ))}
