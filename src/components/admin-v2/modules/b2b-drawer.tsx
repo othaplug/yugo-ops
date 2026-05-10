@@ -11,6 +11,7 @@ import {
   DrawerStatGrid,
   ModuleDrawer,
 } from "./module-drawer"
+import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav"
 import type { B2BPartner, Move } from "@/lib/admin-v2/mock/types"
 import {
   B2B_STATUS_LABEL,
@@ -106,8 +107,16 @@ export const B2BDrawer = ({ partner, open, onOpenChange, moves = [] }: B2BDrawer
         </thead>
         <tbody>
           {partnerMoves.map((move) => (
-            <tr key={move.id} className="border-t border-line">
-              <td className="px-3 py-2 text-fg font-medium">{move.number}</td>
+            <tr key={move.id} className="border-t border-line hover:bg-surface-subtle transition-colors">
+              <td className="px-3 py-2">
+                <Link
+                  href={`${ADMIN_V2_BASE}/moves?drawer=move:${move.id}`}
+                  className="text-fg font-medium hover:underline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  {move.number}
+                </Link>
+              </td>
               <td className="px-3 py-2">
                 <Chip
                   label={MOVE_STATUS_LABEL[move.status]}

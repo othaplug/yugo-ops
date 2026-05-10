@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { toast } from "sonner"
 import { Button } from "../primitives/Button"
 import { Icon } from "../primitives/Icon"
@@ -10,6 +11,7 @@ import {
   DrawerStatGrid,
   ModuleDrawer,
 } from "./module-drawer"
+import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav"
 import type { CrewMember, Move } from "@/lib/admin-v2/mock/types"
 import {
   CREW_AVAILABILITY_LABEL,
@@ -177,8 +179,16 @@ export const CrewDrawer = ({ crew, open, onOpenChange, moves = [], onAvailabilit
         </thead>
         <tbody>
           {crewMoves.map((move) => (
-            <tr key={move.id} className="border-t border-line">
-              <td className="px-3 py-2 text-fg font-medium">{move.number}</td>
+            <tr key={move.id} className="border-t border-line hover:bg-surface-subtle transition-colors">
+              <td className="px-3 py-2">
+                <Link
+                  href={`${ADMIN_V2_BASE}/moves?drawer=move:${move.id}`}
+                  className="text-fg font-medium hover:underline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  {move.number}
+                </Link>
+              </td>
               <td className="px-3 py-2">
                 <Chip
                   label={MOVE_STATUS_LABEL[move.status]}

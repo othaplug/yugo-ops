@@ -12,6 +12,7 @@ import {
   DrawerTimeline,
   ModuleDrawer,
 } from "./module-drawer"
+import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav"
 import type { Customer, Move, Quote, Invoice } from "@/lib/admin-v2/mock/types"
 import {
   CUSTOMER_TYPE_LABEL,
@@ -103,8 +104,16 @@ export const CustomerDrawer = ({
         </thead>
         <tbody>
           {customerMoves.map((move) => (
-            <tr key={move.id} className="border-t border-line">
-              <td className="px-3 py-2 text-fg font-medium">{move.number}</td>
+            <tr key={move.id} className="border-t border-line hover:bg-surface-subtle transition-colors">
+              <td className="px-3 py-2">
+                <Link
+                  href={`${ADMIN_V2_BASE}/moves?drawer=move:${move.id}`}
+                  className="text-fg font-medium hover:underline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  {move.number}
+                </Link>
+              </td>
               <td className="px-3 py-2">
                 <Chip
                   label={MOVE_STATUS_LABEL[move.status]}
@@ -147,8 +156,16 @@ export const CustomerDrawer = ({
         </thead>
         <tbody>
           {customerQuotes.map((quote) => (
-            <tr key={quote.id} className="border-t border-line">
-              <td className="px-3 py-2 text-fg font-medium">{quote.number}</td>
+            <tr key={quote.id} className="border-t border-line hover:bg-surface-subtle transition-colors">
+              <td className="px-3 py-2">
+                <Link
+                  href={`${ADMIN_V2_BASE}/quotes?drawer=quote:${quote.id}`}
+                  className="text-fg font-medium hover:underline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  {quote.number}
+                </Link>
+              </td>
               <td className="px-3 py-2">
                 <Chip
                   label={QUOTE_STATUS_LABEL[quote.status]}
@@ -183,8 +200,16 @@ export const CustomerDrawer = ({
         </thead>
         <tbody>
           {customerInvoices.map((inv) => (
-            <tr key={inv.id} className="border-t border-line">
-              <td className="px-3 py-2 text-fg font-medium">{inv.number}</td>
+            <tr key={inv.id} className="border-t border-line hover:bg-surface-subtle transition-colors">
+              <td className="px-3 py-2">
+                <Link
+                  href={`${ADMIN_V2_BASE}/invoices?drawer=invoice:${inv.id}`}
+                  className="text-fg font-medium hover:underline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  {inv.number}
+                </Link>
+              </td>
               <td className="px-3 py-2">
                 <Chip
                   label={INVOICE_STATUS_LABEL[inv.status]}
