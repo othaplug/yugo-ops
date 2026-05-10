@@ -28,6 +28,22 @@ import { formatCurrencyCompact } from "@/lib/admin-v2/format";
 import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav";
 import type { Quote } from "@/lib/admin-v2/mock/types";
 
+async function bulkQuoteAction(action: "resend" | "delete", ids: string[]): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch("/api/admin/quotes/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ action, ids }),
+    })
+    const data = await res.json()
+    if (!res.ok) return { ok: false, error: data.error ?? "Failed" }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: "Network error" }
+  }
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const countIn7Days = (quotes: Quote[], pick: (q: Quote) => string | null) =>
@@ -174,8 +190,19 @@ export const QuotesClient = ({ initialQuotes }: QuotesClientProps) => {
       {
         id: "resend",
         label: "Resend",
-        handler: (rows) => {
-          toast.success(`Resent ${rows.length} quotes`);
+        handler: async (rows) => {
+          const ids = rows.map((r) => r.id)
+          const result = await bulkQuoteAction("resend", ids)
+          if (result.ok) {
+            setQuotes((prev) =>
+              prev.map((q) =>
+                ids.includes(q.id) ? { ...q, status: "sent" as Quote["status"] } : q,
+              ),
+            )
+            toast.success(`Resent ${rows.length} quotes`)
+          } else {
+            toast.error(result.error ?? "Failed to resend quotes")
+          }
         },
       },
       {
@@ -189,10 +216,16 @@ export const QuotesClient = ({ initialQuotes }: QuotesClientProps) => {
         id: "delete",
         label: "Delete quotes",
         destructive: true,
-        handler: (rows) => {
-          const ids = new Set(rows.map((r) => r.id));
-          setQuotes((prev) => prev.filter((r) => !ids.has(r.id)));
-          toast.error(`Deleted ${rows.length} quotes`);
+        handler: async (rows) => {
+          const ids = rows.map((r) => r.id)
+          const result = await bulkQuoteAction("delete", ids)
+          if (result.ok) {
+            const idSet = new Set(ids)
+            setQuotes((prev) => prev.filter((r) => !idSet.has(r.id)))
+            toast.error(`Deleted ${rows.length} quotes`)
+          } else {
+            toast.error(result.error ?? "Failed to delete quotes")
+          }
         },
       },
     ],

@@ -21,6 +21,36 @@ import { INVOICE_STATUS_LABEL } from "@/lib/admin-v2/labels"
 import { formatCurrency, formatCurrencyCompact } from "@/lib/admin-v2/format"
 import type { Invoice } from "@/lib/admin-v2/mock/types"
 
+async function bulkInvoiceAction(action: "mark_paid" | "cancel" | "send", ids: string[]): Promise<{ ok: boolean; error?: string }> {
+  if (action === "send") {
+    // No bulk send endpoint; patch each individually
+    const results = await Promise.all(
+      ids.map((id) =>
+        fetch(`/api/admin/invoices/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ status: "sent" }),
+        }).then((r) => r.ok),
+      ),
+    )
+    return results.every(Boolean) ? { ok: true } : { ok: false, error: "Some invoices failed to send" }
+  }
+  try {
+    const res = await fetch("/api/admin/invoices/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ action, ids }),
+    })
+    const data = await res.json()
+    if (!res.ok) return { ok: false, error: data.error ?? "Failed" }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: "Network error" }
+  }
+}
+
 export type InvoicesClientProps = {
   initialInvoices: Invoice[]
 }
@@ -134,27 +164,39 @@ export const InvoicesClient = ({ initialInvoices }: InvoicesClientProps) => {
       {
         id: "send",
         label: "Send",
-        handler: (rows) => {
-          const ids = new Set(rows.map((r) => r.id))
-          setInvoices((prev) =>
-            prev.map((inv) => (ids.has(inv.id) ? { ...inv, status: "sent" } : inv)),
-          )
-          toast.success(`Sent ${rows.length} invoices`)
+        handler: async (rows) => {
+          const ids = rows.map((r) => r.id)
+          const result = await bulkInvoiceAction("send", ids)
+          if (result.ok) {
+            const idSet = new Set(ids)
+            setInvoices((prev) =>
+              prev.map((inv) => idSet.has(inv.id) ? { ...inv, status: "sent" as Invoice["status"] } : inv),
+            )
+            toast.success(`Sent ${rows.length} invoices`)
+          } else {
+            toast.error(result.error ?? "Failed to send invoices")
+          }
         },
       },
       {
         id: "paid",
         label: "Mark paid",
-        handler: (rows) => {
-          const ids = new Set(rows.map((r) => r.id))
-          setInvoices((prev) =>
-            prev.map((inv) =>
-              ids.has(inv.id)
-                ? { ...inv, status: "paid", paidAt: new Date().toISOString() }
-                : inv,
-            ),
-          )
-          toast.success(`${rows.length} invoices marked paid`)
+        handler: async (rows) => {
+          const ids = rows.map((r) => r.id)
+          const result = await bulkInvoiceAction("mark_paid", ids)
+          if (result.ok) {
+            const idSet = new Set(ids)
+            setInvoices((prev) =>
+              prev.map((inv) =>
+                idSet.has(inv.id)
+                  ? { ...inv, status: "paid" as Invoice["status"], paidAt: new Date().toISOString() }
+                  : inv,
+              ),
+            )
+            toast.success(`${rows.length} invoices marked paid`)
+          } else {
+            toast.error(result.error ?? "Failed to mark invoices paid")
+          }
         },
       },
       {
@@ -168,8 +210,18 @@ export const InvoicesClient = ({ initialInvoices }: InvoicesClientProps) => {
         id: "void",
         label: "Void",
         destructive: true,
-        handler: (rows) => {
-          toast.error(`Voided ${rows.length} invoices`)
+        handler: async (rows) => {
+          const ids = rows.map((r) => r.id)
+          const result = await bulkInvoiceAction("cancel", ids)
+          if (result.ok) {
+            const idSet = new Set(ids)
+            setInvoices((prev) =>
+              prev.map((inv) => idSet.has(inv.id) ? { ...inv, status: "void" as Invoice["status"] } : inv),
+            )
+            toast.error(`Voided ${rows.length} invoices`)
+          } else {
+            toast.error(result.error ?? "Failed to void invoices")
+          }
         },
       },
     ],

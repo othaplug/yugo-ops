@@ -31,6 +31,21 @@ import type { Move, Invoice } from "@/lib/admin-v2/mock/types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+async function bulkMoveStatus(ids: string[], status: string): Promise<{ ok: boolean; failCount: number }> {
+  const results = await Promise.allSettled(
+    ids.map((id) =>
+      fetch(`/api/admin/moves/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ action: "update_status", status }),
+      }).then((r) => r.ok),
+    ),
+  )
+  const failCount = results.filter((r) => r.status === "rejected" || (r.status === "fulfilled" && !r.value)).length
+  return { ok: failCount === 0, failCount }
+}
+
 export type MovesClientProps = {
   initialMoves: Move[];
   invoices?: Invoice[];
@@ -186,8 +201,17 @@ export const MovesClient = ({ initialMoves, invoices = [] }: MovesClientProps) =
       {
         id: "dispatch",
         label: "Dispatch",
-        handler: (rows) => {
-          toast.success(`Dispatched ${rows.length} moves`);
+        handler: async (rows) => {
+          const eligible = rows.filter((r) => r.status !== "completed" && r.status !== "cancelled" && r.status !== "in-transit")
+          if (!eligible.length) { toast.info("No eligible moves to dispatch"); return }
+          const { ok, failCount } = await bulkMoveStatus(eligible.map((r) => r.id), "in-transit")
+          if (ok) {
+            const ids = new Set(eligible.map((r) => r.id))
+            setMoves((prev) => prev.map((m) => ids.has(m.id) ? { ...m, status: "in-transit" as Move["status"] } : m))
+            toast.success(`Dispatched ${eligible.length} moves`)
+          } else {
+            toast.error(`${failCount} move(s) failed to dispatch`)
+          }
         },
       },
       {
@@ -208,14 +232,17 @@ export const MovesClient = ({ initialMoves, invoices = [] }: MovesClientProps) =
         id: "cancel",
         label: "Cancel moves",
         destructive: true,
-        handler: (rows) => {
-          const ids = new Set(rows.map((r) => r.id));
-          setMoves((prev) =>
-            prev.map((m) =>
-              ids.has(m.id) ? { ...m, status: "cancelled" } : m,
-            ),
-          );
-          toast.error(`Cancelled ${rows.length} moves`);
+        handler: async (rows) => {
+          const eligible = rows.filter((r) => r.status !== "completed" && r.status !== "cancelled")
+          if (!eligible.length) { toast.info("No eligible moves to cancel"); return }
+          const { ok, failCount } = await bulkMoveStatus(eligible.map((r) => r.id), "cancelled")
+          const ids = new Set(eligible.map((r) => r.id))
+          setMoves((prev) => prev.map((m) => ids.has(m.id) ? { ...m, status: "cancelled" as Move["status"] } : m))
+          if (ok) {
+            toast.error(`Cancelled ${eligible.length} moves`)
+          } else {
+            toast.error(`Cancelled locally; ${failCount} failed to sync`)
+          }
         },
       },
     ],
