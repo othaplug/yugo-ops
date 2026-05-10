@@ -13,6 +13,7 @@ import {
   DrawerTimeline,
   ModuleDrawer,
 } from "./module-drawer"
+import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav"
 import type { Move, Invoice } from "@/lib/admin-v2/mock/types"
 import {
   INVOICE_STATUS_LABEL,
@@ -60,7 +61,18 @@ export const MoveDrawer = ({ move, open, onOpenChange, invoices = [], onStatusCh
     <div className="flex flex-col gap-6">
       <DrawerStatGrid
         items={[
-          { label: "Customer", value: move.customerName },
+          {
+            label: "Customer",
+            value: (
+              <Link
+                href={`${ADMIN_V2_BASE}/customers?drawer=customer:${move.customerId}`}
+                className="text-accent hover:underline label-sm"
+                onClick={() => onOpenChange(false)}
+              >
+                {move.customerName}
+              </Link>
+            ),
+          },
           { label: "Service", value: SERVICE_TYPE_LABEL[move.serviceType] },
           { label: "Tier", value: TIER_LABEL[move.tier] },
           { label: "Total", value: formatCurrency(move.total) },

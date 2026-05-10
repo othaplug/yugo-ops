@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { toast } from "sonner"
 import { Button } from "../primitives/Button"
 import { Icon } from "../primitives/Icon"
@@ -11,6 +12,7 @@ import {
   DrawerTimeline,
   ModuleDrawer,
 } from "./module-drawer"
+import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav"
 import type { Quote } from "@/lib/admin-v2/mock/types"
 import {
   QUOTE_STATUS_LABEL,
@@ -117,7 +119,18 @@ export const QuoteDrawer = ({
     <div className="flex flex-col gap-6">
       <DrawerStatGrid
         items={[
-          { label: "Customer", value: quote.customerName },
+          {
+            label: "Customer",
+            value: (
+              <Link
+                href={`${ADMIN_V2_BASE}/customers?drawer=customer:${quote.customerId}`}
+                className="text-accent hover:underline label-sm"
+                onClick={() => onOpenChange(false)}
+              >
+                {quote.customerName}
+              </Link>
+            ),
+          },
           { label: "Service", value: SERVICE_TYPE_LABEL[quote.serviceType] },
           { label: "Tier", value: TIER_LABEL[quote.tier] },
           { label: "Total", value: formatCurrency(quote.total) },
@@ -135,7 +148,13 @@ export const QuoteDrawer = ({
             size="sm"
             variant="ghost"
             leadingIcon={<Icon name="copy" size="sm" />}
-            onClick={() => toast.success("Quote link copied")}
+            onClick={() => {
+              const url = `https://yugomoving.com/quote/${quote.number.toLowerCase()}`
+              navigator.clipboard.writeText(url).then(
+                () => toast.success("Quote link copied"),
+                () => toast.error("Failed to copy"),
+              )
+            }}
           >
             Copy
           </Button>
