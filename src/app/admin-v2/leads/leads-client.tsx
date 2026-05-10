@@ -162,6 +162,21 @@ export const LeadsClient = ({ initialLeads }: LeadsClientProps) => {
         value: (row) => new Date(row.lastAction).getTime(),
         render: (row) => <DateCell value={row.lastAction} />,
       },
+      {
+        id: "owner",
+        type: "text",
+        header: "Owner",
+        priority: "p3",
+        sortable: true,
+        filterable: true,
+        groupable: true,
+        value: (row) => row.ownerName || "Unassigned",
+        render: (row) => (
+          <span className="body-sm text-fg">
+            {row.ownerName || <span className="text-fg-subtle">Unassigned</span>}
+          </span>
+        ),
+      },
     ],
     [],
   );
