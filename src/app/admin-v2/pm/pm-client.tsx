@@ -16,6 +16,15 @@ import {
 } from "@/components/admin-v2/datatable"
 import { PMDrawer } from "@/components/admin-v2/modules/pm-drawer"
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
+import { Input } from "@/components/admin-v2/primitives/Input"
+import {
+  Modal,
+  ModalClose,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalTrigger,
+} from "@/components/admin-v2/layout/Modal"
 import { PM_CONTRACT_LABEL } from "@/lib/admin-v2/labels"
 import { downloadCsv } from "@/lib/admin-v2/csv"
 import type { PMAccount, Move } from "@/lib/admin-v2/mock/types"
@@ -136,14 +145,7 @@ export const PMClient = ({ initialAccounts, moves = [] }: PMClientProps) => {
       <PageHeader
         title="Property management"
         actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            leadingIcon={<Icon name="plus" size="sm" weight="bold" />}
-            onClick={() => toast.message("New PM account flow opens here")}
-          >
-            New account
-          </Button>
+          <NewPMModal onCreated={(account) => setAccounts((prev) => [account, ...prev])} />
         }
       />
 
@@ -174,5 +176,140 @@ export const PMClient = ({ initialAccounts, moves = [] }: PMClientProps) => {
         moves={moves}
       />
     </div>
+  )
+}
+
+const PM_TYPE_OPTIONS = [
+  { value: "property_management_residential", label: "Residential" },
+  { value: "property_management_commercial", label: "Commercial" },
+  { value: "developer_builder", label: "Developer / Builder" },
+]
+
+const NewPMModal = ({ onCreated }: { onCreated: (account: PMAccount) => void }) => {
+  const [open, setOpen] = React.useState(false)
+  const [name, setName] = React.useState("")
+  const [email, setEmail] = React.useState("")
+  const [contactName, setContactName] = React.useState("")
+  const [phone, setPhone] = React.useState("")
+  const [pmType, setPmType] = React.useState("property_management_residential")
+  const [saving, setSaving] = React.useState(false)
+
+  const reset = () => { setName(""); setEmail(""); setContactName(""); setPhone(""); setPmType("property_management_residential") }
+
+  const handleCreate = async () => {
+    if (!name.trim() || !email.trim()) { toast.error("Company name and email are required"); return }
+    setSaving(true)
+    try {
+      const res = await fetch("/api/invite/partner", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          contact_name: contactName.trim() || name.trim(),
+          phone: phone.trim() || null,
+          type: pmType,
+          skip_invite_email: true,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to create PM account")
+      } else {
+        const raw = data.organization ?? data
+        const newAccount: PMAccount = {
+          id: raw.id ?? String(Date.now()),
+          name: name.trim(),
+          primaryContact: contactName.trim() || name.trim(),
+          email: email.trim(),
+          buildings: 0,
+          movesLast30: 0,
+          contractStatus: "active",
+          createdAt: raw.created_at ?? new Date().toISOString(),
+        }
+        toast.success(`PM account ${name.trim()} created`)
+        onCreated(newAccount)
+        setOpen(false)
+        reset()
+      }
+    } catch {
+      toast.error("Network error")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset() }}>
+      <ModalTrigger asChild>
+        <Button variant="secondary" size="sm" leadingIcon={<Icon name="plus" size="sm" weight="bold" />}>
+          New account
+        </Button>
+      </ModalTrigger>
+      <ModalContent size="sm">
+        <ModalHeader title="Add PM account" description="Onboard a new property management company or developer." />
+        <div className="space-y-3">
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Company name *</label>
+            <Input
+              type="text"
+              placeholder="Skyline Properties"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Contact email *</label>
+            <Input
+              type="email"
+              placeholder="ops@skyline.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label-sm text-fg-subtle block mb-1">Contact name</label>
+              <Input
+                type="text"
+                placeholder="Jane Smith"
+                value={contactName}
+                onChange={(e) => setContactName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label-sm text-fg-subtle block mb-1">Phone</label>
+              <Input
+                type="tel"
+                placeholder="+1 416 555 0100"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Account type</label>
+            <select
+              value={pmType}
+              onChange={(e) => setPmType(e.target.value)}
+              className="w-full rounded-md border border-line bg-surface px-3 py-2 body-sm text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+            >
+              {PM_TYPE_OPTIONS.map((v) => (
+                <option key={v.value} value={v.value}>{v.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <ModalFooter>
+          <ModalClose asChild>
+            <Button variant="secondary" size="sm">Cancel</Button>
+          </ModalClose>
+          <Button variant="primary" size="sm" disabled={saving} onClick={handleCreate}>
+            {saving ? "Creating…" : "Create account"}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   )
 }

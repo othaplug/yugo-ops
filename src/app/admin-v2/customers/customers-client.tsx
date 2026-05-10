@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
+import Link from "next/link"
 import { PageHeader } from "@/components/admin-v2/composites/PageHeader"
 import { MetricStrip } from "@/components/admin-v2/composites/MetricCard"
 import { Button } from "@/components/admin-v2/primitives/Button"
@@ -24,6 +25,7 @@ import {
 } from "@/lib/admin-v2/labels"
 import { formatCurrencyCompact } from "@/lib/admin-v2/format"
 import { downloadCsv } from "@/lib/admin-v2/csv"
+import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav"
 import type { Customer, CustomerType, Move, Quote, Invoice } from "@/lib/admin-v2/mock/types"
 
 export type CustomersClientProps = {
@@ -181,13 +183,8 @@ export const CustomersClient = ({ initialCustomers, moves = [], quotes = [], inv
       <PageHeader
         title="Customers"
         actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            leadingIcon={<Icon name="plus" size="sm" weight="bold" />}
-            onClick={() => toast.message("Create customer flow opens here")}
-          >
-            New customer
+          <Button variant="secondary" size="sm" leadingIcon={<Icon name="plus" size="sm" weight="bold" />} asChild>
+            <Link href={`${ADMIN_V2_BASE}/quotes/new`}>New customer</Link>
           </Button>
         }
       />

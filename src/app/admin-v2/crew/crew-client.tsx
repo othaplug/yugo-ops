@@ -17,6 +17,15 @@ import {
 } from "@/components/admin-v2/datatable"
 import { CrewDrawer } from "@/components/admin-v2/modules/crew-drawer"
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
+import { Input } from "@/components/admin-v2/primitives/Input"
+import {
+  Modal,
+  ModalClose,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalTrigger,
+} from "@/components/admin-v2/layout/Modal"
 import {
   CREW_AVAILABILITY_LABEL,
   CREW_ROLE_LABEL,
@@ -215,14 +224,7 @@ export const CrewClient = ({ initialCrew, moves = [] }: CrewClientProps) => {
       <PageHeader
         title="Crew"
         actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            leadingIcon={<Icon name="plus" size="sm" weight="bold" />}
-            onClick={() => toast.message("Invite crew flow opens here")}
-          >
-            New crew
-          </Button>
+          <InviteCrewModal onCreated={(member) => setCrew((prev) => [member, ...prev])} />
         }
       />
 
@@ -263,5 +265,201 @@ export const CrewClient = ({ initialCrew, moves = [] }: CrewClientProps) => {
         }}
       />
     </div>
+  )
+}
+
+type CrewTeam = { id: string; name: string }
+
+const CREW_ROLE_OPTIONS = [
+  { value: "lead", label: "Lead" },
+  { value: "mover", label: "Mover" },
+  { value: "driver", label: "Driver" },
+  { value: "specialist", label: "Specialist" },
+]
+
+function generatePin(): string {
+  return String(Math.floor(100000 + Math.random() * 900000))
+}
+
+const InviteCrewModal = ({ onCreated }: { onCreated: (member: CrewMember) => void }) => {
+  const [open, setOpen] = React.useState(false)
+  const [name, setName] = React.useState("")
+  const [phone, setPhone] = React.useState("")
+  const [email, setEmail] = React.useState("")
+  const [role, setRole] = React.useState("mover")
+  const [teamId, setTeamId] = React.useState("")
+  const [pin, setPin] = React.useState(() => generatePin())
+  const [teams, setTeams] = React.useState<CrewTeam[]>([])
+  const [teamsLoading, setTeamsLoading] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
+
+  const reset = () => {
+    setName(""); setPhone(""); setEmail(""); setRole("mover"); setTeamId(""); setPin(generatePin())
+  }
+
+  React.useEffect(() => {
+    if (!open) return
+    setTeamsLoading(true)
+    fetch("/api/admin/crews", { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((data: CrewTeam[]) => {
+        setTeams(Array.isArray(data) ? data : [])
+        if (Array.isArray(data) && data.length > 0) setTeamId(data[0].id)
+      })
+      .catch(() => setTeams([]))
+      .finally(() => setTeamsLoading(false))
+  }, [open])
+
+  const handleCreate = async () => {
+    if (!name.trim()) { toast.error("Name is required"); return }
+    if (!phone.trim()) { toast.error("Phone is required"); return }
+    if (!teamId) { toast.error("Team is required"); return }
+    if (!/^\d{6}$/.test(pin)) { toast.error("PIN must be 6 digits"); return }
+    setSaving(true)
+    try {
+      const res = await fetch("/api/admin/crew-members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: phone.trim(),
+          email: email.trim() || undefined,
+          role,
+          team_id: teamId,
+          pin,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to create crew member")
+      } else {
+        const raw = data.member ?? data
+        const newMember: CrewMember = {
+          id: raw.id ?? String(Date.now()),
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          role: role as CrewMember["role"],
+          availability: "off-duty",
+          rating: 5,
+          damageRate: 0,
+          movesCompleted: 0,
+          nextAssignmentAt: null,
+        }
+        toast.success(`${name.trim()} added to crew`)
+        onCreated(newMember)
+        setOpen(false)
+        reset()
+      }
+    } catch {
+      toast.error("Network error")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset() }}>
+      <ModalTrigger asChild>
+        <Button variant="secondary" size="sm" leadingIcon={<Icon name="plus" size="sm" weight="bold" />}>
+          New crew
+        </Button>
+      </ModalTrigger>
+      <ModalContent size="sm">
+        <ModalHeader title="Add crew member" description="Invite a new mover, driver, or lead to the portal." />
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label-sm text-fg-subtle block mb-1">Name *</label>
+              <Input
+                type="text"
+                placeholder="Alex Johnson"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label-sm text-fg-subtle block mb-1">Phone *</label>
+              <Input
+                type="tel"
+                placeholder="+1 416 555 0100"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Email</label>
+            <Input
+              type="email"
+              placeholder="alex@example.com (optional)"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label-sm text-fg-subtle block mb-1">Role *</label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full rounded-md border border-line bg-surface px-3 py-2 body-sm text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+              >
+                {CREW_ROLE_OPTIONS.map((r) => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label-sm text-fg-subtle block mb-1">Team *</label>
+              {teamsLoading ? (
+                <div className="h-9 rounded-md border border-line bg-surface animate-pulse" />
+              ) : (
+                <select
+                  value={teamId}
+                  onChange={(e) => setTeamId(e.target.value)}
+                  className="w-full rounded-md border border-line bg-surface px-3 py-2 body-sm text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                >
+                  {teams.length === 0 && <option value="">No teams found</option>}
+                  {teams.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Portal PIN (6 digits)</label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="text"
+                placeholder="6-digit PIN"
+                maxLength={6}
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                className="flex-1"
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                type="button"
+                onClick={() => setPin(generatePin())}
+              >
+                Regenerate
+              </Button>
+            </div>
+          </div>
+        </div>
+        <ModalFooter>
+          <ModalClose asChild>
+            <Button variant="secondary" size="sm">Cancel</Button>
+          </ModalClose>
+          <Button variant="primary" size="sm" disabled={saving || teamsLoading || teams.length === 0} onClick={handleCreate}>
+            {saving ? "Adding…" : "Add crew member"}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   )
 }

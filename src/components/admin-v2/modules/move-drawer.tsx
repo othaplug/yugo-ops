@@ -203,13 +203,8 @@ export const MoveDrawer = ({ move, open, onOpenChange, invoices = [], onStatusCh
       </Button>
       <div className="flex items-center gap-2">
         {!isTerminal && !isDispatched && (
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={loading !== null}
-            onClick={() => toast.info(`Reschedule ${move.number}`)}
-          >
-            Reschedule
+          <Button variant="secondary" size="sm" asChild>
+            <Link href={`${ADMIN_V2_BASE}/calendar`}>Reschedule</Link>
           </Button>
         )}
         {isDispatched ? (
