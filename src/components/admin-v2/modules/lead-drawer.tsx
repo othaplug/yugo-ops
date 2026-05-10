@@ -39,6 +39,23 @@ type LeadDrawerProps = {
   onOpenChange: (open: boolean) => void
   onConvert?: (lead: Lead) => void
   onMarkLost?: (lead: Lead) => void
+  onStatusChange?: (leadId: string, newStatus: string) => void
+}
+
+async function patchLeadStatus(leadId: string, status: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`/api/admin/leads/${leadId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ status }),
+    })
+    const data = await res.json()
+    if (!res.ok) return { ok: false, error: data.error ?? "Failed" }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: "Network error" }
+  }
 }
 
 export const LeadDrawer = ({
@@ -47,7 +64,9 @@ export const LeadDrawer = ({
   onOpenChange,
   onConvert,
   onMarkLost,
+  onStatusChange,
 }: LeadDrawerProps) => {
+  const [loading, setLoading] = React.useState<string | null>(null)
   if (!lead) return null
 
   const overview = (
@@ -165,12 +184,20 @@ export const LeadDrawer = ({
           </DropdownTrigger>
           <DropdownContent align="end">
             <DropdownItem
-              onSelect={() => {
-                onMarkLost?.(lead)
-                toast.error(`${lead.name} marked lost`)
+              onSelect={async () => {
+                setLoading("lost")
+                const result = await patchLeadStatus(lead.id, "disqualified")
+                setLoading(null)
+                if (result.ok) {
+                  toast.error(`${lead.name} marked lost`)
+                  onMarkLost?.(lead)
+                  onStatusChange?.(lead.id, "lost")
+                } else {
+                  toast.error(result.error ?? "Failed to update lead")
+                }
               }}
             >
-              Mark lost
+              {loading === "lost" ? "Saving…" : "Mark lost"}
             </DropdownItem>
             <DropdownItem
               onSelect={() => toast.info(`Exported ${lead.name}`)}
@@ -189,6 +216,7 @@ export const LeadDrawer = ({
         <Button
           variant="primary"
           size="sm"
+          disabled={loading !== null}
           onClick={() => {
             onConvert?.(lead)
             toast.success(`${lead.name} queued for quote`)

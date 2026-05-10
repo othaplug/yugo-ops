@@ -321,6 +321,15 @@ export const LeadsClient = ({ initialLeads }: LeadsClientProps) => {
         lead={activeLead}
         open={drawer.isOpen}
         onOpenChange={drawer.setOpen}
+        onStatusChange={(leadId, newStatus) => {
+          setLeads((prev) =>
+            prev.map((l) =>
+              l.id === leadId
+                ? { ...l, status: newStatus as Lead["status"] }
+                : l,
+            ),
+          )
+        }}
       />
     </div>
   );
