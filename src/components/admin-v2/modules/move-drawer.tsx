@@ -202,32 +202,55 @@ export const MoveDrawer = ({ move, open, onOpenChange, invoices = [], onStatusCh
         </Link>
       </Button>
       <div className="flex items-center gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={loading !== null || isTerminal}
-          onClick={() => toast.info(`Reschedule ${move.number}`)}
-        >
-          Reschedule
-        </Button>
-        <Button
-          variant="primary"
-          size="sm"
-          disabled={loading !== null || isTerminal || isDispatched}
-          onClick={async () => {
-            setLoading("dispatch")
-            const result = await patchMoveStatus(move.id, "in-transit")
-            setLoading(null)
-            if (result.ok) {
-              toast.success(`${move.number} dispatched`)
-              onStatusChange?.(move.id, "in-transit")
-            } else {
-              toast.error(result.error ?? "Failed to dispatch move")
-            }
-          }}
-        >
-          {loading === "dispatch" ? "Dispatching…" : isDispatched ? "Dispatched" : "Dispatch"}
-        </Button>
+        {!isTerminal && !isDispatched && (
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={loading !== null}
+            onClick={() => toast.info(`Reschedule ${move.number}`)}
+          >
+            Reschedule
+          </Button>
+        )}
+        {isDispatched ? (
+          <Button
+            variant="primary"
+            size="sm"
+            disabled={loading !== null}
+            onClick={async () => {
+              setLoading("complete")
+              const result = await patchMoveStatus(move.id, "completed")
+              setLoading(null)
+              if (result.ok) {
+                toast.success(`${move.number} completed`)
+                onStatusChange?.(move.id, "completed")
+              } else {
+                toast.error(result.error ?? "Failed to complete move")
+              }
+            }}
+          >
+            {loading === "complete" ? "Completing…" : "Complete"}
+          </Button>
+        ) : !isTerminal ? (
+          <Button
+            variant="primary"
+            size="sm"
+            disabled={loading !== null}
+            onClick={async () => {
+              setLoading("dispatch")
+              const result = await patchMoveStatus(move.id, "in-transit")
+              setLoading(null)
+              if (result.ok) {
+                toast.success(`${move.number} dispatched`)
+                onStatusChange?.(move.id, "in-transit")
+              } else {
+                toast.error(result.error ?? "Failed to dispatch move")
+              }
+            }}
+          >
+            {loading === "dispatch" ? "Dispatching…" : "Dispatch"}
+          </Button>
+        ) : null}
       </div>
     </div>
   )
