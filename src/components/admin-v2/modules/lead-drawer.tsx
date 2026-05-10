@@ -33,6 +33,7 @@ import {
   formatRelativeDays,
   formatShortDate,
 } from "@/lib/admin-v2/format"
+import { downloadCsv } from "@/lib/admin-v2/csv"
 
 type LeadDrawerProps = {
   lead: Lead | null
@@ -197,7 +198,13 @@ export const LeadDrawer = ({
               {loading === "lost" ? "Saving…" : "Mark lost"}
             </DropdownItem>
             <DropdownItem
-              onSelect={() => toast.info(`Exported ${lead.name}`)}
+              onSelect={() => {
+                downloadCsv(
+                  ["Name", "Email", "Phone", "Source", "Status", "Size", "Owner", "Last contact"],
+                  [[lead.name, lead.email, lead.phone, lead.source, lead.status, lead.size, lead.ownerName, lead.lastAction]],
+                  `yugo-lead-${lead.name.replace(/\s+/g, "-").toLowerCase()}`,
+                )
+              }}
             >
               Export
             </DropdownItem>
