@@ -254,6 +254,15 @@ export const QuotesClient = ({ initialQuotes }: QuotesClientProps) => {
         quote={activeQuote}
         open={drawer.isOpen}
         onOpenChange={drawer.setOpen}
+        onStatusChange={(quoteId, newStatus) => {
+          setQuotes((prev) =>
+            prev.map((q) =>
+              q.id === quoteId
+                ? { ...q, status: newStatus as Quote["status"] }
+                : q,
+            ),
+          )
+        }}
       />
     </div>
   );

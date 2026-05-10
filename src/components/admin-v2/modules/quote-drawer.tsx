@@ -27,10 +27,91 @@ type QuoteDrawerProps = {
   quote: Quote | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  onStatusChange?: (quoteId: string, newStatus: string) => void
 }
 
-export const QuoteDrawer = ({ quote, open, onOpenChange }: QuoteDrawerProps) => {
+async function patchQuoteStatus(
+  quoteId: string,
+  status: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`/api/admin/quotes/${quoteId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ status }),
+    })
+    const data = await res.json()
+    if (!res.ok) return { ok: false, error: data.error ?? "Failed" }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: "Network error" }
+  }
+}
+
+async function resendQuote(quoteId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch("/api/admin/quotes/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ action: "resend", ids: [quoteId] }),
+    })
+    const data = await res.json()
+    if (!res.ok) return { ok: false, error: data.error ?? "Failed" }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: "Network error" }
+  }
+}
+
+export const QuoteDrawer = ({
+  quote,
+  open,
+  onOpenChange,
+  onStatusChange,
+}: QuoteDrawerProps) => {
+  const [loading, setLoading] = React.useState<string | null>(null)
+
+  const handleAction = React.useCallback(
+    async (
+      action: "won" | "resend" | "duplicate",
+    ) => {
+      if (!quote) return
+      setLoading(action)
+
+      if (action === "won") {
+        const result = await patchQuoteStatus(quote.id, "accepted")
+        setLoading(null)
+        if (result.ok) {
+          toast.success(`${quote.number} marked as won`)
+          onStatusChange?.(quote.id, "accepted")
+        } else {
+          toast.error(result.error ?? "Failed to update quote")
+        }
+      } else if (action === "resend") {
+        const result = await resendQuote(quote.id)
+        setLoading(null)
+        if (result.ok) {
+          toast.success(`${quote.number} resent`)
+          onStatusChange?.(quote.id, "sent")
+        } else {
+          toast.error(result.error ?? "Failed to resend quote")
+        }
+      } else {
+        setLoading(null)
+        toast.info("Duplicate quote")
+      }
+    },
+    [quote, onStatusChange],
+  )
+
   if (!quote) return null
+
+  const isTerminal =
+    quote.status === "accepted" ||
+    quote.status === "declined" ||
+    quote.status === "expired"
 
   const overview = (
     <div className="flex flex-col gap-6">
@@ -132,25 +213,32 @@ export const QuoteDrawer = ({ quote, open, onOpenChange }: QuoteDrawerProps) => 
       <Button
         variant="secondary"
         size="sm"
-        onClick={() => toast.info("Duplicate quote")}
+        disabled={loading !== null}
+        onClick={() => handleAction("duplicate")}
       >
         Duplicate
       </Button>
       <div className="flex items-center gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => toast.info(`Resent ${quote.number}`)}
-        >
-          Resend
-        </Button>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => toast.success(`${quote.number} marked as won`)}
-        >
-          Mark as won
-        </Button>
+        {!isTerminal && (
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={loading !== null}
+            onClick={() => handleAction("resend")}
+          >
+            {loading === "resend" ? "Resending…" : "Resend"}
+          </Button>
+        )}
+        {quote.status !== "accepted" && (
+          <Button
+            variant="primary"
+            size="sm"
+            disabled={loading !== null || isTerminal}
+            onClick={() => handleAction("won")}
+          >
+            {loading === "won" ? "Saving…" : "Mark as won"}
+          </Button>
+        )}
       </div>
     </div>
   )
