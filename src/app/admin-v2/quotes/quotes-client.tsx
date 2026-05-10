@@ -25,6 +25,7 @@ import {
   TIER_LABEL,
 } from "@/lib/admin-v2/labels";
 import { formatCurrencyCompact } from "@/lib/admin-v2/format";
+import { downloadCsv } from "@/lib/admin-v2/csv";
 import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav";
 import type { Quote } from "@/lib/admin-v2/mock/types";
 
@@ -209,7 +210,12 @@ export const QuotesClient = ({ initialQuotes }: QuotesClientProps) => {
         id: "export",
         label: "Download as .CSV",
         handler: (rows) => {
-          toast.info(`Exported ${rows.length} quotes`);
+          downloadCsv(
+            ["Quote", "Customer", "Service", "Tier", "Status", "Total", "Sent", "Expires"],
+            rows.map((r) => [r.number, r.customerName, r.serviceType, r.tier, r.status, r.total, r.sentAt ?? "", r.expiresAt]),
+            `yugo-quotes-${new Date().toISOString().slice(0, 10)}`,
+          );
+          toast.success(`Downloaded ${rows.length} quotes`);
         },
       },
       {

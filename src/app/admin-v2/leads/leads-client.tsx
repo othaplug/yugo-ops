@@ -29,6 +29,7 @@ import { LeadDrawer } from "@/components/admin-v2/modules/lead-drawer";
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer";
 import { LEAD_STATUS_LABEL } from "@/lib/admin-v2/labels";
 import { formatCurrency, formatCurrencyCompact } from "@/lib/admin-v2/format";
+import { downloadCsv } from "@/lib/admin-v2/csv";
 import type { Lead } from "@/lib/admin-v2/mock/types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -201,7 +202,12 @@ export const LeadsClient = ({ initialLeads }: LeadsClientProps) => {
         id: "export",
         label: "Download as .CSV",
         handler: (rows) => {
-          toast.info(`Exported ${rows.length} leads`);
+          downloadCsv(
+            ["Name", "Email", "Phone", "Source", "Status", "Size", "Owner", "Last contact"],
+            rows.map((r) => [r.name, r.email, r.phone, r.source, r.status, r.size, r.ownerName, r.lastAction]),
+            `yugo-leads-${new Date().toISOString().slice(0, 10)}`,
+          );
+          toast.success(`Downloaded ${rows.length} leads`);
         },
       },
       {

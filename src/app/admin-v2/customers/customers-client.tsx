@@ -23,6 +23,7 @@ import {
   VERTICAL_LABEL,
 } from "@/lib/admin-v2/labels"
 import { formatCurrencyCompact } from "@/lib/admin-v2/format"
+import { downloadCsv } from "@/lib/admin-v2/csv"
 import type { Customer, CustomerType, Move, Quote, Invoice } from "@/lib/admin-v2/mock/types"
 
 export type CustomersClientProps = {
@@ -153,7 +154,12 @@ export const CustomersClient = ({ initialCustomers, moves = [], quotes = [], inv
         id: "export",
         label: "Download as .CSV",
         handler: (rows) => {
-          toast.info(`Exported ${rows.length} customers`)
+          downloadCsv(
+            ["Name", "Email", "Phone", "Type", "LTV", "Moves", "Last contact", "Since"],
+            rows.map((r) => [r.name, r.email, r.phone, r.type, r.ltv, r.movesCount, r.lastContactAt, r.createdAt]),
+            `yugo-customers-${new Date().toISOString().slice(0, 10)}`,
+          )
+          toast.success(`Downloaded ${rows.length} customers`)
         },
       },
       {

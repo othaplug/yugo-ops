@@ -17,6 +17,7 @@ import {
 import { BuildingDrawer } from "@/components/admin-v2/modules/building-drawer"
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
 import { BUILDING_CONFIG_LABEL } from "@/lib/admin-v2/labels"
+import { downloadCsv } from "@/lib/admin-v2/csv"
 import type { Building } from "@/lib/admin-v2/mock/types"
 import { cn } from "@/components/admin-v2/lib/cn"
 
@@ -144,7 +145,12 @@ export const BuildingsClient = ({ initialBuildings }: BuildingsClientProps) => {
         id: "export",
         label: "Download as .CSV",
         handler: (rows) => {
-          toast.info(`Exported ${rows.length} buildings`)
+          downloadCsv(
+            ["Building", "Address", "PM Account", "Elevator config", "Complexity", "Moves completed", "Last move"],
+            rows.map((r) => [r.name, r.address, r.pmAccountName ?? "", r.elevatorConfig, r.complexity, r.movesCompleted, r.lastMoveAt ?? ""]),
+            `yugo-buildings-${new Date().toISOString().slice(0, 10)}`,
+          )
+          toast.success(`Downloaded ${rows.length} buildings`)
         },
       },
       {

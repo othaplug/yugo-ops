@@ -21,6 +21,7 @@ import {
   VERTICAL_LABEL,
 } from "@/lib/admin-v2/labels"
 import { formatCurrencyCompact } from "@/lib/admin-v2/format"
+import { downloadCsv } from "@/lib/admin-v2/csv"
 import type { B2BPartner, Move, Vertical } from "@/lib/admin-v2/mock/types"
 import { cn } from "@/components/admin-v2/lib/cn"
 
@@ -180,7 +181,12 @@ export const B2BClient = ({ initialPartners, moves = [] }: B2BClientProps) => {
         id: "export",
         label: "Download as .CSV",
         handler: (rows) => {
-          toast.info(`Exported ${rows.length} partners`)
+          downloadCsv(
+            ["Partner", "Vertical", "Status", "Contact", "Email", "Jobs (30d)", "Revenue (30d)", "On-time %"],
+            rows.map((r) => [r.name, r.vertical, r.status, r.primaryContact, r.email, r.jobsLast30, r.revenueLast30, r.onTimePercent]),
+            `yugo-b2b-partners-${new Date().toISOString().slice(0, 10)}`,
+          )
+          toast.success(`Downloaded ${rows.length} partners`)
         },
       },
       {

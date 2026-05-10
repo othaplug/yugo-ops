@@ -26,6 +26,7 @@ import {
   TIER_LABEL,
 } from "@/lib/admin-v2/labels";
 import { formatCurrencyCompact, formatPercent } from "@/lib/admin-v2/format";
+import { downloadCsv } from "@/lib/admin-v2/csv";
 import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav";
 import type { Move, Invoice } from "@/lib/admin-v2/mock/types";
 
@@ -225,7 +226,12 @@ export const MovesClient = ({ initialMoves, invoices = [] }: MovesClientProps) =
         id: "export",
         label: "Download as .CSV",
         handler: (rows) => {
-          toast.info(`Exported ${rows.length} moves`);
+          downloadCsv(
+            ["Move", "Customer", "Service", "Tier", "Status", "Total", "Scheduled", "Origin", "Destination"],
+            rows.map((r) => [r.number, r.customerName, r.serviceType, r.tier, r.status, r.total, r.scheduledAt, r.origin, r.destination]),
+            `yugo-moves-${new Date().toISOString().slice(0, 10)}`,
+          );
+          toast.success(`Downloaded ${rows.length} moves`);
         },
       },
       {

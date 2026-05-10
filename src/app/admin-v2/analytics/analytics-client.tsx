@@ -193,6 +193,24 @@ export const AnalyticsClient = ({
     return tablePoints.filter((_, i) => i % step === 0).map((p) => p.label)
   }, [tablePoints])
 
+  const handleExport = React.useCallback(() => {
+    const headers = activeFam.useWeek
+      ? ["Period", "Leads", "Quotes", "Accepted"]
+      : ["Period", "Revenue", "Jobs", "Avg Value"]
+    const rows = activeFam.useWeek
+      ? (chartData as WeekPoint[]).map((p) => [p.label, p.leads, p.quotes, p.accepted])
+      : (chartData as MonthPoint[]).map((p) => [p.label, p.revenue, p.jobs, p.avgValue])
+    const csv = [headers, ...rows].map((row) => row.join(",")).join("\n")
+    const blob = new Blob([csv], { type: "text/csv" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `yugo-analytics-${activeFam.id}-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast.success(`Exported ${rows.length} rows`)
+  }, [activeFam, chartData])
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -203,7 +221,7 @@ export const AnalyticsClient = ({
               size="sm"
               variant="secondary"
               leadingIcon={<Icon name="download" size="sm" weight="bold" />}
-              onClick={() => toast.info("Export coming soon")}
+              onClick={handleExport}
             >
               Export
             </Button>

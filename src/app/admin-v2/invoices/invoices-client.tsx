@@ -19,6 +19,7 @@ import { InvoiceDrawer } from "@/components/admin-v2/modules/invoice-drawer"
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
 import { INVOICE_STATUS_LABEL } from "@/lib/admin-v2/labels"
 import { formatCurrency, formatCurrencyCompact } from "@/lib/admin-v2/format"
+import { downloadCsv } from "@/lib/admin-v2/csv"
 import type { Invoice, Move } from "@/lib/admin-v2/mock/types"
 
 async function bulkInvoiceAction(action: "mark_paid" | "cancel" | "send", ids: string[]): Promise<{ ok: boolean; error?: string }> {
@@ -204,7 +205,12 @@ export const InvoicesClient = ({ initialInvoices, moves = [] }: InvoicesClientPr
         id: "export",
         label: "Download as .CSV",
         handler: (rows) => {
-          toast.info(`Exported ${rows.length} invoices`)
+          downloadCsv(
+            ["Invoice", "Customer", "Status", "Total", "Due", "Paid"],
+            rows.map((r) => [r.number, r.customerName, r.status, r.total, r.dueAt, r.paidAt ?? ""]),
+            `yugo-invoices-${new Date().toISOString().slice(0, 10)}`,
+          )
+          toast.success(`Downloaded ${rows.length} invoices`)
         },
       },
       {

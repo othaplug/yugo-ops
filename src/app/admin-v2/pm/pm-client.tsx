@@ -17,6 +17,7 @@ import {
 import { PMDrawer } from "@/components/admin-v2/modules/pm-drawer"
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
 import { PM_CONTRACT_LABEL } from "@/lib/admin-v2/labels"
+import { downloadCsv } from "@/lib/admin-v2/csv"
 import type { PMAccount, Move } from "@/lib/admin-v2/mock/types"
 
 export type PMClientProps = {
@@ -118,7 +119,12 @@ export const PMClient = ({ initialAccounts, moves = [] }: PMClientProps) => {
         id: "export",
         label: "Download as .CSV",
         handler: (rows) => {
-          toast.info(`Exported ${rows.length} accounts`)
+          downloadCsv(
+            ["Account", "Contact", "Email", "Buildings", "Moves (30d)", "Contract", "Onboarded"],
+            rows.map((r) => [r.name, r.primaryContact, r.email, r.buildings, r.movesLast30, r.contractStatus, r.createdAt]),
+            `yugo-pm-accounts-${new Date().toISOString().slice(0, 10)}`,
+          )
+          toast.success(`Downloaded ${rows.length} accounts`)
         },
       },
     ],

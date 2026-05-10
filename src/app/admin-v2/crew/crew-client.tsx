@@ -22,6 +22,7 @@ import {
   CREW_ROLE_LABEL,
 } from "@/lib/admin-v2/labels"
 import { formatPercent } from "@/lib/admin-v2/format"
+import { downloadCsv } from "@/lib/admin-v2/csv"
 import type { CrewMember, Move } from "@/lib/admin-v2/mock/types"
 
 async function bulkSetCrewActive(ids: string[], is_active: boolean): Promise<{ failCount: number }> {
@@ -197,7 +198,12 @@ export const CrewClient = ({ initialCrew, moves = [] }: CrewClientProps) => {
         id: "export",
         label: "Download as .CSV",
         handler: (rows) => {
-          toast.info(`Exported ${rows.length} crew`)
+          downloadCsv(
+            ["Name", "Role", "Availability", "Moves completed", "Rating", "Damage rate"],
+            rows.map((r) => [r.name, r.role, r.availability, r.movesCompleted, r.rating, r.damageRate]),
+            `yugo-crew-${new Date().toISOString().slice(0, 10)}`,
+          )
+          toast.success(`Downloaded ${rows.length} crew`)
         },
       },
     ],
