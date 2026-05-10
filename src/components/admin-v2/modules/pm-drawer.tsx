@@ -48,7 +48,14 @@ export const PMDrawer = ({ account, open, onOpenChange, moves = [] }: PMDrawerPr
     <DrawerStatGrid
       items={[
         { label: "Primary contact", value: account.primaryContact },
-        { label: "Email", value: account.email },
+        {
+          label: "Email",
+          value: (
+            <a href={`mailto:${account.email}`} className="text-accent hover:underline label-sm">
+              {account.email}
+            </a>
+          ),
+        },
         { label: "Buildings", value: account.buildings.toString() },
         { label: "Moves (30d)", value: account.movesLast30.toString() },
         {

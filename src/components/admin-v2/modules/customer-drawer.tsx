@@ -266,13 +266,8 @@ export const CustomerDrawer = ({
 
   const footer = (
     <div className="flex w-full items-center justify-between gap-2">
-      <Button
-        variant="secondary"
-        size="sm"
-        leadingIcon={<Icon name="message" size="sm" />}
-        onClick={() => toast.message(`Message ${customer.name}`)}
-      >
-        Message
+      <Button variant="secondary" size="sm" leadingIcon={<Icon name="message" size="sm" />} asChild>
+        <a href={`mailto:${customer.email}`}>Message</a>
       </Button>
       <div className="flex items-center gap-2">
         <Button

@@ -52,8 +52,22 @@ export const B2BDrawer = ({ partner, open, onOpenChange, moves = [] }: B2BDrawer
       items={[
         { label: "Vertical", value: VERTICAL_LABEL[partner.vertical] },
         { label: "Primary contact", value: partner.primaryContact },
-        { label: "Email", value: partner.email },
-        { label: "Phone", value: partner.phone },
+        {
+          label: "Email",
+          value: (
+            <a href={`mailto:${partner.email}`} className="text-accent hover:underline label-sm">
+              {partner.email}
+            </a>
+          ),
+        },
+        {
+          label: "Phone",
+          value: (
+            <a href={`tel:${partner.phone}`} className="text-accent hover:underline label-sm">
+              {partner.phone}
+            </a>
+          ),
+        },
         {
           label: "Jobs (30d)",
           value: partner.jobsLast30.toString(),
