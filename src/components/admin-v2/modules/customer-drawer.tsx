@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { toast } from "sonner"
 import { Button } from "../primitives/Button"
 import { Icon } from "../primitives/Icon"
@@ -11,9 +12,12 @@ import {
   DrawerTimeline,
   ModuleDrawer,
 } from "./module-drawer"
-import type { Customer } from "@/lib/admin-v2/mock/types"
+import type { Customer, Move, Quote, Invoice } from "@/lib/admin-v2/mock/types"
 import {
   CUSTOMER_TYPE_LABEL,
+  INVOICE_STATUS_LABEL,
+  MOVE_STATUS_LABEL,
+  QUOTE_STATUS_LABEL,
   VERTICAL_LABEL,
 } from "@/lib/admin-v2/labels"
 import {
@@ -26,14 +30,24 @@ type CustomerDrawerProps = {
   customer: Customer | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  moves?: Move[]
+  quotes?: Quote[]
+  invoices?: Invoice[]
 }
 
 export const CustomerDrawer = ({
   customer,
   open,
   onOpenChange,
+  moves = [],
+  quotes = [],
+  invoices = [],
 }: CustomerDrawerProps) => {
   if (!customer) return null
+
+  const customerMoves = moves.filter((m) => m.customerId === customer.id)
+  const customerQuotes = quotes.filter((q) => q.customerId === customer.id)
+  const customerInvoices = invoices.filter((i) => i.customerId === customer.id)
 
   const overview = (
     <div className="flex flex-col gap-6">
@@ -76,25 +90,128 @@ export const CustomerDrawer = ({
     </div>
   )
 
-  const moves = (
-    <EmptyTab
-      title="Move history"
-      description={`${customer.movesCount} past moves. Connect to the Supabase moves table to show details.`}
-    />
+  const movesTab = customerMoves.length ? (
+    <div className="overflow-hidden rounded-md border border-line">
+      <table className="w-full body-sm">
+        <thead className="bg-surface-subtle">
+          <tr>
+            <th className="px-3 py-2 text-left label-sm text-fg-subtle">Move</th>
+            <th className="px-3 py-2 text-left label-sm text-fg-subtle">Status</th>
+            <th className="px-3 py-2 text-right label-sm text-fg-subtle">Total</th>
+            <th className="px-3 py-2 text-right label-sm text-fg-subtle">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {customerMoves.map((move) => (
+            <tr key={move.id} className="border-t border-line">
+              <td className="px-3 py-2 text-fg font-medium">{move.number}</td>
+              <td className="px-3 py-2">
+                <Chip
+                  label={MOVE_STATUS_LABEL[move.status]}
+                  variant={
+                    move.status === "completed"
+                      ? "success"
+                      : move.status === "in-transit" || move.status === "pre-move"
+                        ? "info"
+                        : move.status === "cancelled"
+                          ? "danger"
+                          : "neutral"
+                  }
+                />
+              </td>
+              <td className="px-3 py-2 text-right text-fg tabular-nums">
+                {formatCurrency(move.total)}
+              </td>
+              <td className="px-3 py-2 text-right text-fg-subtle">
+                {formatShortDate(move.scheduledAt)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <EmptyTab title="No moves" description="This customer has no moves on record yet." />
   )
 
-  const quotes = (
-    <EmptyTab
-      title="Recent quotes"
-      description="Quote history renders here when connected to Supabase."
-    />
+  const quotesTab = customerQuotes.length ? (
+    <div className="overflow-hidden rounded-md border border-line">
+      <table className="w-full body-sm">
+        <thead className="bg-surface-subtle">
+          <tr>
+            <th className="px-3 py-2 text-left label-sm text-fg-subtle">Quote</th>
+            <th className="px-3 py-2 text-left label-sm text-fg-subtle">Status</th>
+            <th className="px-3 py-2 text-right label-sm text-fg-subtle">Total</th>
+            <th className="px-3 py-2 text-right label-sm text-fg-subtle">Expires</th>
+          </tr>
+        </thead>
+        <tbody>
+          {customerQuotes.map((quote) => (
+            <tr key={quote.id} className="border-t border-line">
+              <td className="px-3 py-2 text-fg font-medium">{quote.number}</td>
+              <td className="px-3 py-2">
+                <Chip
+                  label={QUOTE_STATUS_LABEL[quote.status]}
+                  variant={variantForStatus(quote.status)}
+                />
+              </td>
+              <td className="px-3 py-2 text-right text-fg tabular-nums">
+                {formatCurrency(quote.total)}
+              </td>
+              <td className="px-3 py-2 text-right text-fg-subtle">
+                {formatShortDate(quote.expiresAt)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <EmptyTab title="No quotes" description="This customer has no quotes on record yet." />
   )
 
-  const invoices = (
-    <EmptyTab
-      title="Invoices"
-      description="Invoices and payments render here when connected to Supabase."
-    />
+  const invoicesTab = customerInvoices.length ? (
+    <div className="overflow-hidden rounded-md border border-line">
+      <table className="w-full body-sm">
+        <thead className="bg-surface-subtle">
+          <tr>
+            <th className="px-3 py-2 text-left label-sm text-fg-subtle">Invoice</th>
+            <th className="px-3 py-2 text-left label-sm text-fg-subtle">Status</th>
+            <th className="px-3 py-2 text-right label-sm text-fg-subtle">Total</th>
+            <th className="px-3 py-2 text-right label-sm text-fg-subtle">Due</th>
+          </tr>
+        </thead>
+        <tbody>
+          {customerInvoices.map((inv) => (
+            <tr key={inv.id} className="border-t border-line">
+              <td className="px-3 py-2 text-fg font-medium">{inv.number}</td>
+              <td className="px-3 py-2">
+                <Chip
+                  label={INVOICE_STATUS_LABEL[inv.status]}
+                  variant={
+                    inv.status === "paid"
+                      ? "success"
+                      : inv.status === "overdue"
+                        ? "danger"
+                        : inv.status === "sent"
+                          ? "info"
+                          : "neutral"
+                  }
+                />
+              </td>
+              <td className="px-3 py-2 text-right text-fg tabular-nums">
+                {formatCurrency(inv.total)}
+              </td>
+              <td className="px-3 py-2 text-right text-fg-subtle">
+                {formatShortDate(inv.dueAt)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <EmptyTab title="No invoices" description="This customer has no invoices on record yet." />
   )
 
   const communications = (
@@ -116,10 +233,10 @@ export const CustomerDrawer = ({
 
   const tabs = [
     { id: "overview", label: "Overview", content: overview },
-    { id: "moves", label: "Moves", content: moves },
-    { id: "quotes", label: "Quotes", content: quotes },
-    { id: "invoices", label: "Invoices", content: invoices },
-    { id: "communications", label: "Communications", content: communications },
+    { id: "moves", label: `Moves (${customerMoves.length})`, content: movesTab },
+    { id: "quotes", label: `Quotes (${customerQuotes.length})`, content: quotesTab },
+    { id: "invoices", label: `Invoices (${customerInvoices.length})`, content: invoicesTab },
+    { id: "communications", label: "Activity", content: communications },
   ]
 
   const footer = (

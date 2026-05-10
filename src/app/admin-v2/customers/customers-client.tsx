@@ -23,13 +23,16 @@ import {
   VERTICAL_LABEL,
 } from "@/lib/admin-v2/labels"
 import { formatCurrencyCompact } from "@/lib/admin-v2/format"
-import type { Customer, CustomerType } from "@/lib/admin-v2/mock/types"
+import type { Customer, CustomerType, Move, Quote, Invoice } from "@/lib/admin-v2/mock/types"
 
 export type CustomersClientProps = {
   initialCustomers: Customer[]
+  moves?: Move[]
+  quotes?: Quote[]
+  invoices?: Invoice[]
 }
 
-export const CustomersClient = ({ initialCustomers }: CustomersClientProps) => {
+export const CustomersClient = ({ initialCustomers, moves = [], quotes = [], invoices = [] }: CustomersClientProps) => {
   const [customers, setCustomers] = React.useState<Customer[]>(() => initialCustomers)
   React.useEffect(() => {
     setCustomers(initialCustomers)
@@ -238,6 +241,9 @@ export const CustomersClient = ({ initialCustomers }: CustomersClientProps) => {
         customer={activeCustomer}
         open={drawer.isOpen}
         onOpenChange={drawer.setOpen}
+        moves={moves}
+        quotes={quotes}
+        invoices={invoices}
       />
     </div>
   )

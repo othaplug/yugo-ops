@@ -5,8 +5,15 @@ export const dynamic = "force-dynamic"
 export const revalidate = 0
 
 const CustomersPage = async () => {
-  const { customers } = await getAdminUniverse()
-  return <CustomersClient initialCustomers={customers} />
+  const { customers, moves, quotes, invoices } = await getAdminUniverse()
+  return (
+    <CustomersClient
+      initialCustomers={customers}
+      moves={moves}
+      quotes={quotes}
+      invoices={invoices}
+    />
+  )
 }
 
 export default CustomersPage
