@@ -21,6 +21,15 @@ import {
   TextCell,
   type ColumnConfig,
 } from "@/components/admin-v2/datatable"
+import { Input } from "@/components/admin-v2/primitives/Input"
+import {
+  Modal,
+  ModalClose,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalTrigger,
+} from "@/components/admin-v2/layout/Modal"
 import { formatShortDate, formatTimeOfDay } from "@/lib/admin-v2/format"
 import type { PlatformUserSlim } from "@/lib/admin-v2/data/server"
 
@@ -91,6 +100,7 @@ type Integration = {
   icon: IconName
   status: "connected" | "disconnected" | "error"
   lastSync: string | null
+  testKey?: string
 }
 
 const INTEGRATIONS: Integration[] = [
@@ -101,6 +111,7 @@ const INTEGRATIONS: Integration[] = [
     icon: "leads",
     status: "connected",
     lastSync: new Date(Date.now() - 1000 * 60 * 3).toISOString(),
+    testKey: "hubspot",
   },
   {
     id: "square",
@@ -109,6 +120,7 @@ const INTEGRATIONS: Integration[] = [
     icon: "invoices",
     status: "connected",
     lastSync: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
+    testKey: "square",
   },
   {
     id: "apollo",
@@ -133,8 +145,24 @@ const INTEGRATIONS: Integration[] = [
     icon: "dispatch",
     status: "connected",
     lastSync: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+    testKey: "mapbox",
   },
 ]
+
+async function testIntegration(key: string): Promise<{ ok: boolean; message: string }> {
+  try {
+    const res = await fetch("/api/admin/integrations/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ key }),
+    })
+    const data = await res.json()
+    return { ok: data.ok, message: data.message ?? (data.ok ? "Connected" : "Failed") }
+  } catch {
+    return { ok: false, message: "Network error" }
+  }
+}
 
 type AuditRow = {
   id: string
@@ -410,14 +438,7 @@ const TeamTab = ({ team }: { team: TeamMember[] }) => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="heading-sm text-fg">Team</h3>
-        <Button
-          size="sm"
-          variant="primary"
-          leadingIcon={<Icon name="plus" size="sm" weight="bold" />}
-          onClick={() => toast.info("Invite flow opens here")}
-        >
-          Invite user
-        </Button>
+        <InviteUserModal />
       </div>
       <DataTable
         data={team}
@@ -432,60 +453,185 @@ const TeamTab = ({ team }: { team: TeamMember[] }) => {
   )
 }
 
-const IntegrationsTab = () => (
-  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    {INTEGRATIONS.map((integration) => (
-      <article
-        key={integration.id}
-        className="rounded-lg border border-line bg-surface p-5 flex flex-col gap-4"
-      >
-        <header className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-md bg-surface-subtle border border-line">
-              <Icon name={integration.icon} size="md" weight="bold" />
-            </span>
-            <div>
-              <h3 className="heading-sm text-fg">{integration.name}</h3>
-              <p className="body-xs text-fg-subtle">
-                {integration.description}
-              </p>
-            </div>
+const ROLE_OPTIONS = [
+  { value: "admin", label: "Admin" },
+  { value: "manager", label: "Manager" },
+  { value: "coordinator", label: "Coordinator" },
+  { value: "dispatcher", label: "Dispatcher" },
+]
+
+function generateTempPassword(): string {
+  const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789"
+  return Array.from({ length: 12 }).map(() => chars[Math.floor(Math.random() * chars.length)]).join("")
+}
+
+const InviteUserModal = () => {
+  const [open, setOpen] = React.useState(false)
+  const [email, setEmail] = React.useState("")
+  const [name, setName] = React.useState("")
+  const [role, setRole] = React.useState("dispatcher")
+  const [sending, setSending] = React.useState(false)
+
+  const reset = () => { setEmail(""); setName(""); setRole("dispatcher") }
+
+  const handleInvite = async () => {
+    if (!email.trim()) { toast.error("Email is required"); return }
+    setSending(true)
+    try {
+      const res = await fetch("/api/invite/user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ email: email.trim(), name: name.trim(), password: generateTempPassword(), role }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to send invite")
+      } else {
+        toast.success(`Invite sent to ${email.trim()}`)
+        setOpen(false)
+        reset()
+      }
+    } catch {
+      toast.error("Network error")
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset() }}>
+      <ModalTrigger asChild>
+        <Button size="sm" variant="primary" leadingIcon={<Icon name="plus" size="sm" weight="bold" />}>
+          Invite user
+        </Button>
+      </ModalTrigger>
+      <ModalContent size="sm">
+        <ModalHeader title="Invite team member" description="They'll receive an email with login instructions." />
+        <div className="space-y-3">
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Email *</label>
+            <Input
+              type="email"
+              placeholder="name@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleInvite() }}
+            />
           </div>
-          <Chip
-            label={
-              integration.status === "connected"
-                ? "CONNECTED"
-                : integration.status === "error"
-                  ? "ERROR"
-                  : "DISCONNECTED"
-            }
-            variant={
-              integration.status === "connected"
-                ? "success"
-                : integration.status === "error"
-                  ? "danger"
-                  : "neutral"
-            }
-          />
-        </header>
-        <p className="body-xs text-fg-subtle">
-          {integration.lastSync
-            ? `Last sync ${formatTimeOfDay(integration.lastSync)}`
-            : "Not yet connected"}
-        </p>
-        <div className="mt-auto flex items-center justify-end gap-2">
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => toast.info(`Configure ${integration.name}`)}
-          >
-            Configure
-          </Button>
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Name</label>
+            <Input
+              type="text"
+              placeholder="Full name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Role</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full rounded-md border border-line bg-surface px-3 py-2 body-sm text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+            >
+              {ROLE_OPTIONS.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
-      </article>
-    ))}
-  </div>
-)
+        <ModalFooter>
+          <ModalClose asChild>
+            <Button variant="secondary" size="sm">Cancel</Button>
+          </ModalClose>
+          <Button variant="primary" size="sm" disabled={sending} onClick={handleInvite}>
+            {sending ? "Sending…" : "Send invite"}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  )
+}
+
+const IntegrationsTab = () => {
+  const [testing, setTesting] = React.useState<string | null>(null)
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {INTEGRATIONS.map((integration) => (
+        <article
+          key={integration.id}
+          className="rounded-lg border border-line bg-surface p-5 flex flex-col gap-4"
+        >
+          <header className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex size-10 items-center justify-center rounded-md bg-surface-subtle border border-line">
+                <Icon name={integration.icon} size="md" weight="bold" />
+              </span>
+              <div>
+                <h3 className="heading-sm text-fg">{integration.name}</h3>
+                <p className="body-xs text-fg-subtle">
+                  {integration.description}
+                </p>
+              </div>
+            </div>
+            <Chip
+              label={
+                integration.status === "connected"
+                  ? "CONNECTED"
+                  : integration.status === "error"
+                    ? "ERROR"
+                    : "DISCONNECTED"
+              }
+              variant={
+                integration.status === "connected"
+                  ? "success"
+                  : integration.status === "error"
+                    ? "danger"
+                    : "neutral"
+              }
+            />
+          </header>
+          <p className="body-xs text-fg-subtle">
+            {integration.lastSync
+              ? `Last sync ${formatTimeOfDay(integration.lastSync)}`
+              : "Not yet connected"}
+          </p>
+          <div className="mt-auto flex items-center justify-end gap-2">
+            {integration.testKey ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={testing !== null}
+                onClick={async () => {
+                  setTesting(integration.id)
+                  const result = await testIntegration(integration.testKey!)
+                  setTesting(null)
+                  if (result.ok) {
+                    toast.success(`${integration.name}: ${result.message}`)
+                  } else {
+                    toast.error(`${integration.name}: ${result.message}`)
+                  }
+                }}
+              >
+                {testing === integration.id ? "Testing…" : "Test connection"}
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => toast.info(`${integration.name} is not yet configured`)}
+              >
+                Configure
+              </Button>
+            )}
+          </div>
+        </article>
+      ))}
+    </div>
+  )
+}
 
 const NotificationsTab = () => {
   const [prefs, setPrefs] = React.useState(NOTIFY_PREFS)

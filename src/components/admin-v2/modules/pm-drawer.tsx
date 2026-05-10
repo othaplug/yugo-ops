@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { toast } from "sonner"
 import { Button } from "../primitives/Button"
 import { Icon } from "../primitives/Icon"
 import { Chip } from "../primitives/Chip"
@@ -160,12 +159,10 @@ export const PMDrawer = ({ account, open, onOpenChange, moves = [] }: PMDrawerPr
             Health
           </Link>
         </Button>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => toast.info("New project flow opens here")}
-        >
-          New project
+        <Button variant="primary" size="sm" asChild>
+          <Link href={`${ADMIN_V2_BASE}/moves/new`} onClick={() => onOpenChange(false)}>
+            New project
+          </Link>
         </Button>
       </div>
     </div>

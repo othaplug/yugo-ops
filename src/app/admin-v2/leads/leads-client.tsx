@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/admin-v2/composites/PageHeader";
 import { MetricStrip } from "@/components/admin-v2/composites/MetricCard";
@@ -30,6 +31,7 @@ import { useDrawer } from "@/components/admin-v2/layout/useDrawer";
 import { LEAD_STATUS_LABEL } from "@/lib/admin-v2/labels";
 import { formatCurrency, formatCurrencyCompact } from "@/lib/admin-v2/format";
 import { downloadCsv } from "@/lib/admin-v2/csv";
+import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav";
 import type { Lead } from "@/lib/admin-v2/mock/types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -47,6 +49,7 @@ export type LeadsClientProps = {
 
 export const LeadsClient = ({ initialLeads }: LeadsClientProps) => {
   const [leads, setLeads] = React.useState<Lead[]>(() => initialLeads);
+  const router = useRouter();
 
   React.useEffect(() => {
     setLeads(initialLeads);
@@ -261,7 +264,7 @@ export const LeadsClient = ({ initialLeads }: LeadsClientProps) => {
                   Export all
                 </DropdownItem>
                 <DropdownSeparator />
-                <DropdownItem onSelect={() => toast.info("Lead settings")}>
+                <DropdownItem onSelect={() => router.push(`${ADMIN_V2_BASE}/settings`)}>
                   Lead settings
                 </DropdownItem>
               </DropdownContent>

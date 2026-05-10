@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { toast } from "sonner"
 import { PageHeader } from "@/components/admin-v2/composites/PageHeader"
 import {
@@ -15,6 +16,7 @@ import { Icon } from "@/components/admin-v2/primitives/Icon"
 import { Chip } from "@/components/admin-v2/primitives/Chip"
 import { formatCurrency } from "@/lib/admin-v2/format"
 import { cn } from "@/components/admin-v2/lib/cn"
+import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav"
 
 type RateRow = {
   id: string
@@ -284,13 +286,10 @@ const SimulatorTab = () => {
             </li>
           ))}
         </ul>
-        <Button
-          variant="primary"
-          size="sm"
-          className="mt-4 w-full"
-          onClick={() => toast.success("Quote draft created from simulator")}
-        >
-          Create draft quote
+        <Button variant="primary" size="sm" className="mt-4 w-full" asChild>
+          <Link href={`${ADMIN_V2_BASE}/quotes/new`}>
+            Create draft quote
+          </Link>
         </Button>
       </aside>
     </div>

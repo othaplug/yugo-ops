@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { toast } from "sonner"
 import { Button } from "../primitives/Button"
 import { Chip } from "../primitives/Chip"
 import { Icon } from "../primitives/Icon"
@@ -171,12 +170,10 @@ export const B2BDrawer = ({ partner, open, onOpenChange, moves = [] }: B2BDrawer
           Open in admin
         </Link>
       </Button>
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={() => toast.info("New job routing opens here")}
-      >
-        New job
+      <Button variant="primary" size="sm" asChild>
+        <Link href={`${ADMIN_V2_BASE}/moves/new`} onClick={() => onOpenChange(false)}>
+          New job
+        </Link>
       </Button>
     </div>
   )

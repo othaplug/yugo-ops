@@ -16,6 +16,15 @@ import {
 } from "@/components/admin-v2/datatable"
 import { BuildingDrawer } from "@/components/admin-v2/modules/building-drawer"
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
+import { Input } from "@/components/admin-v2/primitives/Input"
+import {
+  Modal,
+  ModalClose,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalTrigger,
+} from "@/components/admin-v2/layout/Modal"
 import { BUILDING_CONFIG_LABEL } from "@/lib/admin-v2/labels"
 import { downloadCsv } from "@/lib/admin-v2/csv"
 import type { Building } from "@/lib/admin-v2/mock/types"
@@ -169,14 +178,9 @@ export const BuildingsClient = ({ initialBuildings }: BuildingsClientProps) => {
       <PageHeader
         title="Buildings"
         actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            leadingIcon={<Icon name="plus" size="sm" weight="bold" />}
-            onClick={() => toast.message("New building flow opens here")}
-          >
-            New building
-          </Button>
+          <NewBuildingModal
+            onCreated={(building) => setBuildings((prev) => [building, ...prev])}
+          />
         }
       />
 
@@ -207,7 +211,101 @@ export const BuildingsClient = ({ initialBuildings }: BuildingsClientProps) => {
         building={activeBuilding}
         open={drawer.isOpen}
         onOpenChange={drawer.setOpen}
+        onComplexityChange={(id, complexity) =>
+          setBuildings((prev) =>
+            prev.map((b) => b.id === id ? { ...b, complexity: complexity as Building["complexity"] } : b)
+          )
+        }
       />
     </div>
+  )
+}
+
+const NewBuildingModal = ({ onCreated }: { onCreated: (building: Building) => void }) => {
+  const [open, setOpen] = React.useState(false)
+  const [address, setAddress] = React.useState("")
+  const [name, setName] = React.useState("")
+  const [saving, setSaving] = React.useState(false)
+
+  const reset = () => { setAddress(""); setName("") }
+
+  const handleCreate = async () => {
+    if (!address.trim()) { toast.error("Address is required"); return }
+    setSaving(true)
+    try {
+      const res = await fetch("/api/admin/buildings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ address: address.trim(), building_name: name.trim() || null }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to create building")
+      } else {
+        const b = data.building
+        const newBuilding: Building = {
+          id: b.id,
+          name: b.building_name || b.address,
+          address: b.address,
+          pmAccountId: null,
+          pmAccountName: null,
+          elevatorConfig: "standard",
+          complexity: (b.complexity_rating ?? 1) as Building["complexity"],
+          movesCompleted: 0,
+          lastMoveAt: null,
+        }
+        toast.success(`Building created`)
+        onCreated(newBuilding)
+        setOpen(false)
+        reset()
+      }
+    } catch {
+      toast.error("Network error")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset() }}>
+      <ModalTrigger asChild>
+        <Button variant="secondary" size="sm" leadingIcon={<Icon name="plus" size="sm" weight="bold" />}>
+          New building
+        </Button>
+      </ModalTrigger>
+      <ModalContent size="sm">
+        <ModalHeader title="Add building" description="Enter the building address to add it to the directory." />
+        <div className="space-y-3">
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Address *</label>
+            <Input
+              type="text"
+              placeholder="123 Main St, Toronto, ON"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleCreate() }}
+            />
+          </div>
+          <div>
+            <label className="label-sm text-fg-subtle block mb-1">Building name</label>
+            <Input
+              type="text"
+              placeholder="The Grand (optional)"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+        </div>
+        <ModalFooter>
+          <ModalClose asChild>
+            <Button variant="secondary" size="sm">Cancel</Button>
+          </ModalClose>
+          <Button variant="primary" size="sm" disabled={saving} onClick={handleCreate}>
+            {saving ? "Creating…" : "Create building"}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   )
 }
