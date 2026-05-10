@@ -28,12 +28,30 @@ type CrewDrawerProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   moves?: Move[]
+  onAvailabilityChange?: (crewId: string, availability: CrewMember["availability"]) => void
+}
+
+async function patchCrewActive(crewId: string, is_active: boolean): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`/api/admin/crew-members/${crewId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ is_active }),
+    })
+    const data = await res.json()
+    if (!res.ok) return { ok: false, error: data.error ?? "Failed" }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: "Network error" }
+  }
 }
 
 const availabilityVariant = (state: CrewMember["availability"]) =>
   state === "available" ? "success" : state === "on-move" ? "info" : "neutral"
 
-export const CrewDrawer = ({ crew, open, onOpenChange, moves = [] }: CrewDrawerProps) => {
+export const CrewDrawer = ({ crew, open, onOpenChange, moves = [], onAvailabilityChange }: CrewDrawerProps) => {
+  const [loading, setLoading] = React.useState<string | null>(null)
   if (!crew) return null
 
   const crewMoves = moves
@@ -185,14 +203,29 @@ export const CrewDrawer = ({ crew, open, onOpenChange, moves = [] }: CrewDrawerP
     </div>
   )
 
+  const isOffDuty = crew.availability === "off-duty"
+
   const footer = (
     <div className="flex w-full items-center justify-end gap-2">
       <Button
         variant="secondary"
         size="sm"
-        onClick={() => toast.info(`${crew.name} set off duty`)}
+        disabled={loading !== null}
+        onClick={async () => {
+          const newActive = isOffDuty
+          setLoading("duty")
+          const result = await patchCrewActive(crew.id, newActive)
+          setLoading(null)
+          if (result.ok) {
+            const newAvailability = newActive ? "available" : "off-duty"
+            toast.success(newActive ? `${crew.name} set active` : `${crew.name} set off duty`)
+            onAvailabilityChange?.(crew.id, newAvailability)
+          } else {
+            toast.error(result.error ?? "Failed to update crew")
+          }
+        }}
       >
-        Set off duty
+        {loading === "duty" ? "Saving…" : isOffDuty ? "Set active" : "Set off duty"}
       </Button>
       <Button
         variant="primary"

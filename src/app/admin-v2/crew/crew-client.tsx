@@ -229,6 +229,13 @@ export const CrewClient = ({ initialCrew, moves = [] }: CrewClientProps) => {
         open={drawer.isOpen}
         onOpenChange={drawer.setOpen}
         moves={moves}
+        onAvailabilityChange={(crewId, availability) => {
+          setCrew((prev) =>
+            prev.map((c) =>
+              c.id === crewId ? { ...c, availability } : c,
+            ),
+          )
+        }}
       />
     </div>
   )
