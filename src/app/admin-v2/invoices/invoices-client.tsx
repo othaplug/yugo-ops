@@ -228,6 +228,22 @@ export const InvoicesClient = ({ initialInvoices }: InvoicesClientProps) => {
         invoice={activeInvoice}
         open={drawer.isOpen}
         onOpenChange={drawer.setOpen}
+        onStatusChange={(invoiceId, newStatus) => {
+          setInvoices((prev) =>
+            prev.map((inv) =>
+              inv.id === invoiceId
+                ? {
+                    ...inv,
+                    status: newStatus as Invoice["status"],
+                    paidAt:
+                      newStatus === "paid"
+                        ? new Date().toISOString()
+                        : inv.paidAt,
+                  }
+                : inv,
+            ),
+          )
+        }}
       />
     </div>
   )
