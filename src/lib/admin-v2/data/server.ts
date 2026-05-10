@@ -161,7 +161,7 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
       db
         .from("moves")
         .select(
-          "id, move_code, client_name, client_email, contact_id, organization_id, from_address, to_address, scheduled_date, estimate, status, move_type, service_type, tier_selected, crew_id, created_at, margin_percent",
+          "id, move_code, client_name, client_email, contact_id, organization_id, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, crew_id, created_at, margin_percent",
         )
         .order("created_at", { ascending: false })
         .limit(LIMIT),

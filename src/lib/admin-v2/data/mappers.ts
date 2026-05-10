@@ -266,6 +266,8 @@ export type MoveRow = {
   to_address?: string | null;
   scheduled_date?: string | null;
   estimate?: number | null;
+  final_amount?: number | null;
+  total_price?: number | null;
   status?: string | null;
   move_type?: string | null;
   service_type?: string | null;
@@ -296,7 +298,7 @@ export const mapMove = (
       ? [crewById.get(str(row.crew_id))!]
       : [],
   truck: null,
-  total: num(row.estimate),
+  total: num(row.final_amount ?? row.total_price ?? row.estimate),
   onTime: num(row.margin_percent) >= 0,
 });
 
