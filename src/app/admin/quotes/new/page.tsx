@@ -29,7 +29,7 @@ export default async function NewQuotePage() {
     db.from("platform_config").select("key, value"),
     db
       .from("item_weights")
-      .select("slug, item_name, weight_score, category, room, is_common, display_order, active, num_people_min")
+      .select("slug, item_name, weight_score, category, room, is_common, display_order, active, num_people_min, assembly_complexity, disassembly_required")
       .eq("active", true)
       .order("display_order"),
     db

@@ -140,6 +140,7 @@ import {
   quoteFormSchedulingSectionTitle,
   quoteFormServiceDateLabel,
 } from "@/lib/quotes/quote-field-labels";
+import { calcAssemblyMinutes } from "@/lib/quotes/assembly-detection";
 
 const PanelRightClose = PanelRightOpen;
 
@@ -268,6 +269,8 @@ interface ItemWeight {
   is_common: boolean;
   display_order?: number;
   active?: boolean;
+  assembly_complexity?: string | null;
+  disassembly_required?: boolean | null;
 }
 
 /** Parsed inventory line from a lead — needs coordinator review when not high confidence */
@@ -1040,6 +1043,8 @@ function quickEstimate(
   inventoryScore?: number,
   specialtyItems?: { type: string; qty: number }[],
   moveDate?: string,
+  inventoryItemsForAssembly?: { slug?: string; name?: string; quantity?: number }[],
+  itemWeightsForAssembly?: ItemWeight[],
 ): { essential: number; signature: number; estate: number } | null {
   if (serviceType !== "local_move" && serviceType !== "long_distance")
     return null;
@@ -1106,7 +1111,15 @@ function quickEstimate(
   };
   const loadHrs = score / 12;
   const unloadHrs = loadHrs * 0.75;
-  const disassemblyHrs = DISASSEMBLY[moveSize] ?? 0.5;
+  const baseDisassemblyHrs = DISASSEMBLY[moveSize] ?? 0.5;
+  // If we have real inventory with assembly data, use item-specific minutes (floored at base estimate).
+  let disassemblyHrs = baseDisassemblyHrs;
+  if (inventoryItemsForAssembly?.length && itemWeightsForAssembly?.length) {
+    const { totalMinutes } = calcAssemblyMinutes(inventoryItemsForAssembly, itemWeightsForAssembly);
+    if (totalMinutes > 0) {
+      disassemblyHrs = Math.max(baseDisassemblyHrs, totalMinutes / 60);
+    }
+  }
   const accessPenalty =
     (ACCESS_PENALTY[fromAccess ?? ""] ?? 0) +
     (ACCESS_PENALTY[toAccess ?? ""] ?? 0);
@@ -3378,6 +3391,8 @@ export default function QuoteFormClient({
         inventoryScoreWithBoxes > 0 ? inventoryScoreWithBoxes : undefined,
         specialtyItems.length > 0 ? specialtyItems : undefined,
         moveDate || undefined,
+        inventoryItems.length > 0 ? inventoryItems : undefined,
+        itemWeights.length > 0 ? itemWeights : undefined,
       ),
     [
       config,
@@ -3389,6 +3404,8 @@ export default function QuoteFormClient({
       inventoryScoreWithBoxes,
       specialtyItems,
       moveDate,
+      inventoryItems,
+      itemWeights,
     ],
   );
 
@@ -4100,6 +4117,14 @@ export default function QuoteFormClient({
           base.inventory_items = inventoryItems.map((i) =>
             inventoryItemToPayload(i),
           );
+        }
+        // Assembly auto-detection — store results so the client quote page can use them
+        if (inventoryItems.length > 0 && itemWeights.length > 0) {
+          const { totalMinutes, breakdown } = calcAssemblyMinutes(inventoryItems, itemWeights);
+          base.assembly_auto_detected = true;
+          base.assembly_required = totalMinutes > 0;
+          base.assembly_minutes = totalMinutes > 0 ? totalMinutes : null;
+          base.assembly_items = breakdown.map((b) => b.itemName);
         }
         if (fromLat != null && Number.isFinite(fromLat)) base.from_lat = fromLat;
         if (fromLng != null && Number.isFinite(fromLng)) base.from_lng = fromLng;

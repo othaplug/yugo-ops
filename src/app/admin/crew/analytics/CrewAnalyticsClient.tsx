@@ -112,7 +112,55 @@ const STAGE_COLORS: Record<string, string> = {
   delivering: "var(--color-stage-unloading)",
   /** Time with no GPS movement (injected in session checkpoints) */
   idle: "var(--color-stage-idle)",
+  gap: "var(--color-stage-idle)",
 };
+
+/** Rename "idle" / "gap" stages to "Untracked" for display. */
+function getStageDisplayLabel(status: string, originalLabel: string): string {
+  if (status === "idle" || status === "gap") return "Untracked";
+  return originalLabel;
+}
+
+/** Merge consecutive stages with the same status (e.g. duplicate "At pickup"). */
+function mergeAdjacentStages(stages: Stage[]): Stage[] {
+  if (!stages.length) return stages;
+  const merged: Stage[] = [{ ...stages[0] }];
+  for (let i = 1; i < stages.length; i++) {
+    const curr = stages[i];
+    const last = merged[merged.length - 1];
+    const endTs = last.endedAt ? new Date(last.endedAt).getTime() : null;
+    const startTs = curr.startedAt ? new Date(curr.startedAt).getTime() : null;
+    const consecutive =
+      endTs !== null &&
+      startTs !== null &&
+      Math.abs(startTs - endTs) <= 2 * 60 * 1000; // ≤ 2 min gap
+    if (curr.status === last.status && consecutive) {
+      merged[merged.length - 1] = {
+        ...last,
+        endedAt: curr.endedAt,
+        duration: (last.duration ?? 0) + (curr.duration ?? 0),
+      };
+    } else {
+      merged.push({ ...curr });
+    }
+  }
+  return merged;
+}
+
+/** Efficiency = active work minutes / (active + untracked minutes). */
+function calculateEfficiencyScore(stages: Stage[]): {
+  score: number;
+  activeMinutes: number;
+  untrackedMinutes: number;
+} {
+  const ACTIVE = new Set(["loading", "unloading", "inventory_check", "walkthrough_photos", "client_signoff", "delivering"]);
+  const UNTRACKED = new Set(["idle", "gap"]);
+  const activeMinutes = stages.filter((s) => ACTIVE.has(s.status)).reduce((sum, s) => sum + (s.duration ?? 0), 0);
+  const untrackedMinutes = stages.filter((s) => UNTRACKED.has(s.status)).reduce((sum, s) => sum + (s.duration ?? 0), 0);
+  const total = activeMinutes + untrackedMinutes;
+  const score = total > 0 ? Math.round((activeMinutes / total) * 100) : 100;
+  return { score, activeMinutes, untrackedMinutes };
+}
 
 function fmtDate(d: Date) {
   return d.toISOString().split("T")[0];
@@ -1083,14 +1131,10 @@ function CrewDetailView({
                             <span className="text-[11px] font-medium text-[var(--tx2)]">
                               {job.jobType === "move" ? "Move" : "Delivery"}
                             </span>
-                            <span className="text-right text-[12px] font-semibold text-[var(--tx)] tabular-nums">
-                              {fmtDuration(job.totalDuration)}
-                              {job.quotedMinutes != null && (
-                                <span className="block text-[10px] font-normal text-[var(--tx3)]">
-                                  of {fmtDuration(job.quotedMinutes)}
-                                </span>
-                              )}
-                            </span>
+                            <TimeWithEstimate
+                              actual={job.totalDuration}
+                              estimated={job.quotedMinutes}
+                            />
                             <span
                               className="text-center text-[13px] font-bold"
                               style={{ color: onTimeColor }}
@@ -1127,65 +1171,85 @@ function CrewDetailView({
                                   No stage data available.
                                 </p>
                               ) : (
-                                <div className="space-y-2">
-                                  {job.stages.map((stage, si) => {
-                                    const stageColor =
-                                      STAGE_COLORS[stage.status] ||
-                                      "var(--color-stage-fallback)";
-                                    const maxDur = Math.max(
-                                      ...job.stages.map((s) => s.duration || 0),
-                                      1,
-                                    );
-                                    const barPct =
-                                      stage.duration != null
-                                        ? (stage.duration / maxDur) * 100
-                                        : 0;
-                                    return (
-                                      <div
-                                        key={si}
-                                        className="flex items-center gap-3"
-                                      >
-                                        <div
-                                          className="w-2 h-2 rounded-full shrink-0"
-                                          style={{
-                                            backgroundColor: stageColor,
-                                          }}
-                                        />
-                                        <div className="w-28 shrink-0">
-                                          <p className="text-[11px] font-medium text-[var(--tx2)] truncate">
-                                            {stage.label}
-                                          </p>
-                                          <p className="text-[9px] text-[var(--tx3)]">
-                                            {fmtTime(stage.startedAt)}
-                                            {stage.endedAt
-                                              ? ` → ${fmtTime(stage.endedAt)}`
-                                              : ""}
-                                          </p>
-                                        </div>
-                                        <div className="flex-1 h-1.5 rounded-full bg-[var(--brd)] overflow-hidden">
+                                (() => {
+                                  const mergedStages = mergeAdjacentStages(job.stages);
+                                  const safeTotalDur = Math.max(
+                                    mergedStages.reduce((sum, s) => sum + (s.duration ?? 0), 0),
+                                    1,
+                                  );
+                                  const efficiency = calculateEfficiencyScore(mergedStages);
+                                  const hasUntracked = efficiency.untrackedMinutes > 0;
+                                  return (
+                                    <div className="space-y-2">
+                                      {mergedStages.map((stage, si) => {
+                                        const isUntracked = stage.status === "idle" || stage.status === "gap";
+                                        const stageColor =
+                                          STAGE_COLORS[stage.status] ||
+                                          "var(--color-stage-fallback)";
+                                        const barPct =
+                                          stage.duration != null
+                                            ? Math.min(100, (stage.duration / safeTotalDur) * 100)
+                                            : 0;
+                                        const displayLabel = getStageDisplayLabel(stage.status, stage.label);
+                                        return (
                                           <div
-                                            className="h-full rounded-full transition-all"
-                                            style={{
-                                              width: `${barPct}%`,
-                                              backgroundColor: stageColor,
-                                            }}
-                                          />
-                                        </div>
-                                        <span className="w-12 text-right text-[11px] font-semibold text-[var(--tx)] tabular-nums shrink-0">
-                                          {fmtDuration(stage.duration)}
+                                            key={si}
+                                            className="flex items-center gap-3"
+                                            style={{ opacity: isUntracked ? 0.6 : 1 }}
+                                          >
+                                            <div
+                                              className="w-2 h-2 rounded-full shrink-0"
+                                              style={{ backgroundColor: stageColor }}
+                                            />
+                                            <div className="w-28 shrink-0">
+                                              <p className={`text-[11px] font-medium truncate ${isUntracked ? "italic text-[var(--tx3)]" : "text-[var(--tx2)]"}`}>
+                                                {displayLabel}
+                                              </p>
+                                              <p className="text-[9px] text-[var(--tx3)]">
+                                                {fmtTime(stage.startedAt)}
+                                                {stage.endedAt
+                                                  ? ` → ${fmtTime(stage.endedAt)}`
+                                                  : ""}
+                                              </p>
+                                            </div>
+                                            <div className="flex-1 h-1.5 rounded-full bg-[var(--brd)] overflow-hidden">
+                                              <div
+                                                className="h-full rounded-full transition-all"
+                                                style={{
+                                                  width: `${barPct}%`,
+                                                  backgroundColor: stageColor,
+                                                }}
+                                              />
+                                            </div>
+                                            <span className={`w-12 text-right text-[11px] font-semibold tabular-nums shrink-0 ${isUntracked ? "text-[var(--tx3)]" : "text-[var(--tx)]"}`}>
+                                              {fmtDuration(stage.duration)}
+                                            </span>
+                                          </div>
+                                        );
+                                      })}
+                                      <div className="flex items-center justify-between pt-2 border-t border-[var(--brd)]/30 mt-3">
+                                        <span className="text-[11px] font-bold text-[var(--tx3)] uppercase tracking-wide">
+                                          Total
+                                        </span>
+                                        <span className="text-[13px] font-bold text-[var(--tx)]">
+                                          {fmtDuration(job.totalDuration)}
                                         </span>
                                       </div>
-                                    );
-                                  })}
-                                  <div className="flex items-center justify-between pt-2 border-t border-[var(--brd)]/30 mt-3">
-                                    <span className="text-[11px] font-bold text-[var(--tx3)] uppercase tracking-wide">
-                                      Total
-                                    </span>
-                                    <span className="text-[13px] font-bold text-[var(--tx)]">
-                                      {fmtDuration(job.totalDuration)}
-                                    </span>
-                                  </div>
-                                </div>
+                                      {/* Untracked time note */}
+                                      {hasUntracked && (
+                                        <div className="mt-2 p-2.5 bg-[var(--org)]/10 border border-[var(--org)]/25 rounded-lg text-[11px] text-[var(--tx2)]">
+                                          <span className="font-semibold">Untracked time detected.</span>{" "}
+                                          Stage transitions may have been missed — likely loading or unloading that happened while the app sat on a previous stage.
+                                          {efficiency.score < 70 && efficiency.untrackedMinutes > 30 && (
+                                            <span className="block mt-1 text-[var(--tx3)]">
+                                              {efficiency.untrackedMinutes}m untracked · {efficiency.score}% tracked efficiency. Consider reviewing with crew lead.
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()
                               )}
 
                               {/* Sign-off / tip info */}
@@ -1231,6 +1295,39 @@ function CrewDetailView({
 }
 
 // ─── Small components ─────────────────────────────────────────────────────────
+
+function TimeWithEstimate({
+  actual,
+  estimated,
+}: {
+  actual: number | null;
+  estimated: number | null;
+}) {
+  if (!estimated || estimated <= 0) {
+    return (
+      <span className="text-right text-[12px] font-semibold text-[var(--tx)] tabular-nums">
+        {fmtDuration(actual)}
+      </span>
+    );
+  }
+  const ratio = (actual ?? 0) / estimated;
+  const color =
+    ratio <= 1.0
+      ? "var(--grn)"
+      : ratio <= 1.15
+        ? "var(--org)"
+        : "var(--red)";
+  return (
+    <span className="text-right tabular-nums">
+      <span className="block text-[12px] font-semibold" style={{ color }}>
+        {fmtDuration(actual)}
+      </span>
+      <span className="block text-[10px] font-normal text-[var(--tx3)]">
+        of {fmtDuration(estimated)}
+      </span>
+    </span>
+  );
+}
 
 function SummaryCell({
   label,

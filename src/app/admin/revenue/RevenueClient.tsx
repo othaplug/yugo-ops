@@ -89,6 +89,31 @@ interface PaidMove {
   payment_marked_paid_at: string | null;
 }
 
+interface SentPartnerInvoice {
+  id: string;
+  total_amount: number | null;
+  organization_id?: string | null;
+}
+
+interface UnbilledPMMove {
+  id: string;
+  move_code?: string | null;
+  client_name?: string | null;
+  estimate?: number | null;
+  final_amount?: number | null;
+  total_price?: number | null;
+  amount?: number | null;
+}
+
+interface BookedMoveBalance {
+  id: string;
+  estimate?: number | null;
+  final_amount?: number | null;
+  total_price?: number | null;
+  amount?: number | null;
+  deposit_amount?: number | null;
+}
+
 interface RevenueClientProps {
   invoices: PartnerRevenueInvoice[];
   /** Recent deliveries (same window as Command Center) for partner revenue when no invoice row exists. */
@@ -98,6 +123,12 @@ interface RevenueClientProps {
   /** Org id → type (retail, b2c, …). Used so B2B invoices resolve even when client name mismatches. */
   orgIdToType?: Record<string, string>;
   clientNameToOrgId?: Record<string, string>;
+  /** PM billing invoices with status='sent' (not yet paid). */
+  sentPartnerInvoices?: SentPartnerInvoice[];
+  /** Completed PM moves not yet attached to a partner invoice. */
+  unbilledPMmoves?: UnbilledPMMove[];
+  /** Booked residential moves with deposit collected — balance still due. */
+  bookedMovesBalance?: BookedMoveBalance[];
 }
 
 function getMoveRevenueDate(m: PaidMove): Date {
@@ -281,6 +312,9 @@ export default function RevenueClient({
   clientTypeMap = {},
   orgIdToType = {},
   clientNameToOrgId = {},
+  sentPartnerInvoices = [],
+  unbilledPMmoves = [],
+  bookedMovesBalance = [],
 }: RevenueClientProps) {
   const [period, setPeriod] = useState<Period>("6mo");
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -324,9 +358,35 @@ export default function RevenueClient({
   const invPct = Math.round((invoiceRevenue / totalSource) * 100);
   const movePct = 100 - invPct;
 
-  const outstanding = all
+  // B2B delivery invoices outstanding (invoices table)
+  const outstandingDeliveryInvoices = all
     .filter((i) => invoiceStatusIsOutstanding(i.status))
     .reduce((s, i) => s + invoicePreTaxForDisplay(i), 0);
+
+  // PM billing invoices sent but not paid (partner_invoices table)
+  const outstandingPartnerInvoices = sentPartnerInvoices.reduce(
+    (s, i) => s + Number(i.total_amount ?? 0),
+    0,
+  );
+
+  // Completed PM moves with no invoice sent yet
+  const outstandingPMUnbilled = unbilledPMmoves.reduce((s, m) => {
+    return s + Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0);
+  }, 0);
+
+  // Booked residential moves: balance due after deposit
+  const outstandingDepositBalances = bookedMovesBalance.reduce((s, m) => {
+    const price = Number(m.final_amount ?? m.total_price ?? m.estimate ?? m.amount ?? 0);
+    const deposit = Number(m.deposit_amount ?? 0);
+    return s + Math.max(0, price - deposit);
+  }, 0);
+
+  const outstanding = outstandingDeliveryInvoices;
+  const totalOutstanding =
+    outstandingDeliveryInvoices +
+    outstandingPartnerInvoices +
+    outstandingPMUnbilled +
+    outstandingDepositBalances;
 
   const byClient: Record<string, number> = {};
   invoicesForBreakdown.forEach((i) => {
@@ -749,12 +809,33 @@ export default function RevenueClient({
           sub={`${paidPartnerInvoices.length} paid partner invoices · ${paidMovesList.length} paid moves`}
           href="/admin/finance/invoices"
         />
-        <KpiCard
-          label="Outstanding"
-          value={formatCompactCurrency(outstanding)}
-          sub="Open invoices before HST (excludes paid, draft)"
-          href="/admin/finance/invoices"
-        />
+        {/* Outstanding — shows full breakdown across all sources */}
+        <div className="group cursor-default bg-[var(--yu3-bg-surface)] border border-[var(--yu3-line)] rounded-[var(--yu3-r-lg)] p-5 md:p-6 flex flex-col gap-2">
+          <p className="text-[11px] font-semibold tracking-[0.08em] uppercase text-[var(--yu3-ink-muted)]">
+            Outstanding
+          </p>
+          <p className="text-[28px] font-semibold leading-none [font-feature-settings:'tnum'_1] text-[var(--yu3-ink-strong)]">
+            {formatCompactCurrency(totalOutstanding)}
+          </p>
+          {totalOutstanding > 0 ? (
+            <div className="text-[11px] text-[var(--tx3)] space-y-0.5 mt-1">
+              {outstandingDeliveryInvoices > 0 && (
+                <p>{formatCompactCurrency(outstandingDeliveryInvoices)} · B2B invoices</p>
+              )}
+              {outstandingPartnerInvoices > 0 && (
+                <p>{formatCompactCurrency(outstandingPartnerInvoices)} · PM invoices sent</p>
+              )}
+              {outstandingPMUnbilled > 0 && (
+                <p>{formatCompactCurrency(outstandingPMUnbilled)} · PM awaiting invoice</p>
+              )}
+              {outstandingDepositBalances > 0 && (
+                <p>{formatCompactCurrency(outstandingDepositBalances)} · balances due</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-[12px] text-[var(--yu3-ink-muted)]">All collected</p>
+          )}
+        </div>
         <KpiCard
           label="Avg Job Value"
           value={formatCompactCurrency(avgJob)}
@@ -931,7 +1012,7 @@ export default function RevenueClient({
             </p>
           </div>
           <div className="space-y-1 divide-y divide-[var(--brd)]">
-            {byType.map((t) => {
+            {byType.filter((t) => t.amount > 0).map((t) => {
               const pct = Math.round((t.amount / totalByType) * 100);
               return (
                 <button
