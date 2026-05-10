@@ -74,6 +74,7 @@ export const AdminV2Shell = ({ user, children }: AdminV2ShellProps) => {
   const router = useRouter();
   const [commandOpen, setCommandOpen] = React.useState(false);
   const [notificationsOpen, setNotificationsOpen] = React.useState(false);
+  const [unreadCount, setUnreadCount] = React.useState(0);
 
   const handleSignOut = React.useCallback(async () => {
     const supabase = createSupabaseBrowserClient();
@@ -90,7 +91,7 @@ export const AdminV2Shell = ({ user, children }: AdminV2ShellProps) => {
           onSignOut={handleSignOut}
           onOpenCommandPalette={() => setCommandOpen(true)}
           onOpenNotifications={() => setNotificationsOpen(true)}
-          unreadNotifications={2}
+          unreadNotifications={unreadCount}
         >
           {children}
         </AdminShell>
@@ -98,6 +99,7 @@ export const AdminV2Shell = ({ user, children }: AdminV2ShellProps) => {
         <NotificationsDrawer
           open={notificationsOpen}
           onOpenChange={setNotificationsOpen}
+          onUnreadCountChange={setUnreadCount}
         />
         <GlobalShortcuts
           onToggleCommand={() => setCommandOpen((v) => !v)}

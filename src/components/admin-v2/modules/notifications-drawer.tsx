@@ -70,11 +70,13 @@ const eventToNotification = (e: ActivityEventRow): Notification => ({
 type NotificationsDrawerProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onUnreadCountChange?: (count: number) => void
 }
 
 export const NotificationsDrawer = ({
   open,
   onOpenChange,
+  onUnreadCountChange,
 }: NotificationsDrawerProps) => {
   const [items, setItems] = React.useState<Notification[]>([])
   const [loading, setLoading] = React.useState(false)
@@ -131,6 +133,10 @@ export const NotificationsDrawer = ({
   const isRead = (item: Notification) => readIds.has(item.id) || item.read
 
   const unreadCount = items.filter((i) => !isRead(i)).length
+
+  React.useEffect(() => {
+    onUnreadCountChange?.(unreadCount)
+  }, [unreadCount, onUnreadCountChange])
 
   const filteredList = (filter: "all" | "unread") => {
     const rows = filter === "unread" ? items.filter((i) => !isRead(i)) : items
