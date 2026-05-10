@@ -5,8 +5,8 @@ export const dynamic = "force-dynamic"
 export const revalidate = 0
 
 const MovesPage = async () => {
-  const { moves } = await getAdminUniverse()
-  return <MovesClient initialMoves={moves} />
+  const { moves, invoices } = await getAdminUniverse()
+  return <MovesClient initialMoves={moves} invoices={invoices} />
 }
 
 export default MovesPage

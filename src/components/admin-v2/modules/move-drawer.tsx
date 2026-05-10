@@ -5,7 +5,7 @@ import Link from "next/link"
 import { toast } from "sonner"
 import { Button } from "../primitives/Button"
 import { Icon } from "../primitives/Icon"
-import { variantForStatus } from "../primitives/Chip"
+import { Chip, variantForStatus } from "../primitives/Chip"
 import { AvatarStack } from "../primitives/AvatarStack"
 import {
   DrawerSection,
@@ -13,8 +13,9 @@ import {
   DrawerTimeline,
   ModuleDrawer,
 } from "./module-drawer"
-import type { Move } from "@/lib/admin-v2/mock/types"
+import type { Move, Invoice } from "@/lib/admin-v2/mock/types"
 import {
+  INVOICE_STATUS_LABEL,
   MOVE_STATUS_LABEL,
   SERVICE_TYPE_LABEL,
   TIER_LABEL,
@@ -29,10 +30,13 @@ type MoveDrawerProps = {
   move: Move | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  invoices?: Invoice[]
 }
 
-export const MoveDrawer = ({ move, open, onOpenChange }: MoveDrawerProps) => {
+export const MoveDrawer = ({ move, open, onOpenChange, invoices = [] }: MoveDrawerProps) => {
   if (!move) return null
+
+  const linkedInvoice = invoices.find((inv) => inv.moveId === move.id) ?? null
 
   const overview = (
     <div className="flex flex-col gap-6">
@@ -75,6 +79,31 @@ export const MoveDrawer = ({ move, open, onOpenChange }: MoveDrawerProps) => {
           </span>
         </div>
       </DrawerSection>
+
+      {linkedInvoice ? (
+        <DrawerSection title="Invoice">
+          <div className="flex items-center justify-between rounded-md border border-line bg-surface-subtle px-3 py-2">
+            <div className="flex items-center gap-2">
+              <span className="label-md text-fg">{linkedInvoice.number}</span>
+              <Chip
+                label={INVOICE_STATUS_LABEL[linkedInvoice.status]}
+                variant={
+                  linkedInvoice.status === "paid"
+                    ? "success"
+                    : linkedInvoice.status === "overdue"
+                      ? "danger"
+                      : linkedInvoice.status === "sent"
+                        ? "info"
+                        : "neutral"
+                }
+              />
+            </div>
+            <span className="body-sm text-fg tabular-nums">
+              {formatCurrency(linkedInvoice.total)}
+            </span>
+          </div>
+        </DrawerSection>
+      ) : null}
     </div>
   )
 

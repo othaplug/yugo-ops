@@ -27,15 +27,16 @@ import {
 } from "@/lib/admin-v2/labels";
 import { formatCurrencyCompact, formatPercent } from "@/lib/admin-v2/format";
 import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav";
-import type { Move } from "@/lib/admin-v2/mock/types";
+import type { Move, Invoice } from "@/lib/admin-v2/mock/types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type MovesClientProps = {
   initialMoves: Move[];
+  invoices?: Invoice[];
 };
 
-export const MovesClient = ({ initialMoves }: MovesClientProps) => {
+export const MovesClient = ({ initialMoves, invoices = [] }: MovesClientProps) => {
   const [moves, setMoves] = React.useState<Move[]>(() => initialMoves);
   React.useEffect(() => {
     setMoves(initialMoves);
@@ -294,6 +295,7 @@ export const MovesClient = ({ initialMoves }: MovesClientProps) => {
         move={activeMove}
         open={drawer.isOpen}
         onOpenChange={drawer.setOpen}
+        invoices={invoices}
       />
     </div>
   );
