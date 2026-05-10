@@ -12,7 +12,8 @@ import {
   DrawerTimeline,
   ModuleDrawer,
 } from "./module-drawer"
-import type { Invoice } from "@/lib/admin-v2/mock/types"
+import { ADMIN_V2_BASE } from "@/components/admin-v2/config/nav"
+import type { Invoice, Move } from "@/lib/admin-v2/mock/types"
 import { INVOICE_STATUS_LABEL } from "@/lib/admin-v2/labels"
 import {
   formatCurrency,
@@ -24,6 +25,7 @@ type InvoiceDrawerProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   onStatusChange?: (invoiceId: string, newStatus: string) => void
+  moves?: Move[]
 }
 
 const statusVariant = (status: Invoice["status"]) => {
@@ -65,6 +67,7 @@ export const InvoiceDrawer = ({
   open,
   onOpenChange,
   onStatusChange,
+  moves = [],
 }: InvoiceDrawerProps) => {
   const [loading, setLoading] = React.useState<string | null>(null)
 
@@ -86,6 +89,8 @@ export const InvoiceDrawer = ({
 
   if (!invoice) return null
 
+  const linkedMove = invoice.moveId ? moves.find((m) => m.id === invoice.moveId) ?? null : null
+
   const overview = (
     <div className="flex flex-col gap-6">
       <DrawerStatGrid
@@ -93,7 +98,15 @@ export const InvoiceDrawer = ({
           { label: "Customer", value: invoice.customerName },
           {
             label: "Linked move",
-            value: invoice.moveId ?? "–",
+            value: linkedMove ? (
+              <Link
+                href={`${ADMIN_V2_BASE}/moves?drawer=move:${linkedMove.id}`}
+                className="text-accent hover:underline label-sm"
+                onClick={() => onOpenChange(false)}
+              >
+                {linkedMove.number}
+              </Link>
+            ) : invoice.moveId ? "–" : "None",
           },
           {
             label: "Subtotal",
@@ -195,9 +208,9 @@ export const InvoiceDrawer = ({
   const footer = (
     <div className="flex w-full items-center justify-between gap-2">
       <Button variant="secondary" size="sm" asChild>
-        <Link href={`/admin/invoices`} target="_blank">
+        <Link href={`${ADMIN_V2_BASE}/invoices?drawer=invoice:${invoice.id}`}>
           <Icon name="arrowUpRight" size="sm" weight="bold" />
-          Open in admin
+          Open
         </Link>
       </Button>
       <div className="flex items-center gap-2">

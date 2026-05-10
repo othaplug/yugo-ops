@@ -19,7 +19,7 @@ import { InvoiceDrawer } from "@/components/admin-v2/modules/invoice-drawer"
 import { useDrawer } from "@/components/admin-v2/layout/useDrawer"
 import { INVOICE_STATUS_LABEL } from "@/lib/admin-v2/labels"
 import { formatCurrency, formatCurrencyCompact } from "@/lib/admin-v2/format"
-import type { Invoice } from "@/lib/admin-v2/mock/types"
+import type { Invoice, Move } from "@/lib/admin-v2/mock/types"
 
 async function bulkInvoiceAction(action: "mark_paid" | "cancel" | "send", ids: string[]): Promise<{ ok: boolean; error?: string }> {
   if (action === "send") {
@@ -53,9 +53,10 @@ async function bulkInvoiceAction(action: "mark_paid" | "cancel" | "send", ids: s
 
 export type InvoicesClientProps = {
   initialInvoices: Invoice[]
+  moves?: Move[]
 }
 
-export const InvoicesClient = ({ initialInvoices }: InvoicesClientProps) => {
+export const InvoicesClient = ({ initialInvoices, moves = [] }: InvoicesClientProps) => {
   const [invoices, setInvoices] = React.useState<Invoice[]>(() => initialInvoices)
   React.useEffect(() => {
     setInvoices(initialInvoices)
@@ -296,6 +297,7 @@ export const InvoicesClient = ({ initialInvoices }: InvoicesClientProps) => {
             ),
           )
         }}
+        moves={moves}
       />
     </div>
   )
