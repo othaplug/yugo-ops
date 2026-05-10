@@ -2714,9 +2714,24 @@ export default function QuoteFormClient({
         const pbc =
           L.parsed_box_count != null ? Number(L.parsed_box_count) : NaN;
         if (!Number.isNaN(pbc) && pbc > 0) setClientBoxCount(String(pbc));
-        const an = str(L.assembly_needed).toLowerCase();
+        const an = str(L.assembly_needed).toLowerCase().trim();
         if (an === "both") setAssembly("Both");
         else if (an === "yes" || an === "true") setAssembly("Both");
+        // Residential assembly override mapping: client's intake answer beats auto-detection.
+        //   "none" / "no" / "no thank you" / "not required" → assembly_override = false
+        //   "yes" / "true" / "both"                        → assembly_override = true
+        //   anything else / empty                          → leave null (use auto-detection)
+        if (
+          an.includes("none") ||
+          an === "no" ||
+          an === "false" ||
+          an.includes("not required") ||
+          an.includes("no thank")
+        ) {
+          setAssemblyOverride(false);
+        } else if (an === "yes" || an === "true" || an === "both") {
+          setAssemblyOverride(true);
+        }
 
         const summary = str(L.intelligence_summary);
         setLeadIntelSummary(summary || null);
@@ -7357,6 +7372,23 @@ export default function QuoteFormClient({
                             ⚡ Auto-detection suggested:{" "}
                             {assemblyDetection.required ? "required" : "not required"}
                           </p>
+                        )}
+                        {/* Operational guard: client declined assembly but inventory has items requiring it. */}
+                        {assemblyOverride === false && assemblyDetection.required && (
+                          <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-2">
+                            <p className="text-[11px] font-semibold text-amber-800">
+                              Client declined assembly — verify on move day
+                            </p>
+                            <p className="text-[10px] text-amber-700 mt-0.5 leading-snug">
+                              {assemblyDetection.itemsRequiringAssembly.slice(0, 3).join(", ")}
+                              {assemblyDetection.itemsRequiringAssembly.length > 3
+                                ? ` +${assemblyDetection.itemsRequiringAssembly.length - 3} more`
+                                : ""}{" "}
+                              normally require assembly. Confirm the client will handle disassembly
+                              before move day. If the crew has to assist, this will affect the
+                              price.
+                            </p>
+                          </div>
                         )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">

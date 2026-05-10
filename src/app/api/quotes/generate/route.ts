@@ -1485,14 +1485,46 @@ async function calcResidential(
       const effectiveMinHours = input.service_type === "white_glove" ? minHoursFloor + 1 : minHoursFloor;
       const effectiveHours = Math.max(labour.estimatedHours, effectiveMinHours);
       const actualManHours = labour.crewSize * effectiveHours;
-      const extraManHours = Math.max(0, actualManHours - baselineManHours);
+      const extraManHoursRaw = Math.max(0, actualManHours - baselineManHours);
 
-      tieredLabourDelta.essential = Math.round(extraManHours * labourRates.essential);
-      tieredLabourDelta.signature = Math.round(extraManHours * labourRates.signature);
-      tieredLabourDelta.estate    = Math.round(extraManHours * labourRates.estate);
+      // ── Labour delta sanity guard ──────────────────────────────────────────
+      // Don't add a delta if the (pre-delta) effective hourly rate is already at or
+      // above the labour floor. This prevents the delta from firing on healthy quotes
+      // just because the crew*hours exceeds a baseline by a fraction of an hour.
+      const labourFloorEssential = cfgNum(
+        config,
+        "labour_rate_floor_essential",
+        cfgNum(config, "labour_rate_floor", 50),
+      );
+      const preDeltaEffectiveRate =
+        actualManHours > 0 ? marketAdjustedPrice / actualManHours : 0;
+      const rateAlreadyAboveFloor = preDeltaEffectiveRate >= labourFloorEssential;
+
+      // Cap the delta at 1 man-hour of labour. If we would add more than that, it
+      // means the base rate is misconfigured for this size — surface a warning
+      // and suppress the surcharge rather than silently ballooning the price.
+      const maxExtraManHours = 1;
+      const cappedExtraManHours = rateAlreadyAboveFloor
+        ? 0
+        : Math.min(extraManHoursRaw, maxExtraManHours);
+
+      tieredLabourDelta.essential = Math.round(cappedExtraManHours * labourRates.essential);
+      tieredLabourDelta.signature = Math.round(cappedExtraManHours * labourRates.signature);
+      tieredLabourDelta.estate    = Math.round(cappedExtraManHours * labourRates.estate);
 
       // Legacy single delta (essential rate) for backward-compatible breakdown display
       labourDelta = tieredLabourDelta.essential;
+
+      pd("Step 6.5 — labour delta sanity guard:", {
+        marketAdjustedPrice,
+        actualManHours,
+        preDeltaEffectiveRate: Math.round(preDeltaEffectiveRate * 100) / 100,
+        labourFloorEssential,
+        rateAlreadyAboveFloor,
+        extraManHoursRaw,
+        cappedExtraManHours,
+        suppressed: rateAlreadyAboveFloor || extraManHoursRaw > maxExtraManHours,
+      });
 
       pd("Step 6 — labour vs benchmark:", {
         labour_crew: labour.crewSize,
@@ -1504,7 +1536,8 @@ async function calcResidential(
         effective_min_hours: effectiveMinHours,
         effective_hours_used: effectiveHours,
         actual_man_hours: actualManHours,
-        extra_man_hours: extraManHours,
+        extra_man_hours: extraManHoursRaw,
+        capped_extra_man_hours: cappedExtraManHours,
         labour_rates_per_mover_hour: labourRates,
         tiered_labour_delta: tieredLabourDelta,
       });
@@ -1536,9 +1569,30 @@ async function calcResidential(
   const curatedMult = cfgNum(config, "tier_essential_multiplier",
     cfgNum(config, "tier_curated_multiplier",
     cfgNum(config, "tier_essentials_multiplier", 1.0)));
-  const signatureMult = cfgNum(config, "tier_signature_multiplier",
+  const signatureMultBase = cfgNum(config, "tier_signature_multiplier",
     cfgNum(config, "tier_premier_multiplier", 1.50));
   const estateMult = cfgNum(config, "tier_estate_multiplier", 3.15);
+
+  /**
+   * Size-adjusted Signature multiplier.
+   *
+   * The flat 1.50× multiplier produces a labour rate above the market ceiling on small
+   * moves (studio / 1br). Scale it down for small jobs so the Signature card stays
+   * within the competitive ceiling. The platform_config value is treated as the 3BR
+   * baseline; smaller sizes proportionally reduce, larger sizes match or slightly
+   * exceed. Capped at the configured value so we never silently inflate.
+   */
+  const SIGNATURE_SIZE_FACTOR: Record<string, number> = {
+    studio: 0.86,    // ~1.30 if base is 1.50
+    "1br": 0.90,     // ~1.35
+    "2br": 0.97,     // ~1.45
+    "3br": 1.0,      // baseline (1.50)
+    "4br": 1.03,     // ~1.55
+    "5br_plus": 1.07, // ~1.60
+    partial: 0.90,
+  };
+  const sizeKey = (input.move_size || "2br").toLowerCase().trim();
+  const signatureMult = signatureMultBase * (SIGNATURE_SIZE_FACTOR[sizeKey] ?? 1.0);
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
 
   // Step 5: TIER MULTIPLIERS applied to market-adjusted price

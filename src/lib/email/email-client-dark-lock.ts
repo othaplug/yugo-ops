@@ -61,6 +61,23 @@ export function getFragmentClientEmailDarkLockCss(): string {
     color: #3A3532 !important;
     -webkit-text-fill-color: #3A3532 !important;
   }
+  /*
+   * Wine panels (.yugo-on-wine) must stay cream-on-wine no matter what dark-mode
+   * email clients try. The cream defaults below win unless a child element sets
+   * its own !important color override (e.g. tier accent).
+   */
+  body.yugo-client-email .yugo-on-wine,
+  body.yugo-client-email .yugo-on-wine *:not(a) {
+    color: #F5EEE6 !important;
+    -webkit-text-fill-color: #F5EEE6 !important;
+    mso-color-alt: #F5EEE6 !important;
+  }
+}
+/* Also enforce in light mode (some clients run dark-lock CSS unconditionally). */
+body.yugo-client-email .yugo-on-wine,
+body.yugo-client-email .yugo-on-wine *:not(a) {
+  color: #F5EEE6;
+  -webkit-text-fill-color: #F5EEE6;
 }
 `;
 }

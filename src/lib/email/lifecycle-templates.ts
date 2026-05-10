@@ -118,12 +118,20 @@ function creamContractKvRow(
 }
 
 /** Wine inset panel (pre-move checklist, card-on-file explainer, partner notices). */
-const WINE_INSET_RULE = "rgba(255,255,255,0.2)";
+const WINE_INSET_RULE = "rgba(245,238,230,0.25)";
+/** Cream ink for any text on wine panels — solid hex (no rgba) so dark-mode email clients can't dim it. */
+const WINE_PANEL_CREAM = "#F5EEE6";
+const WINE_PANEL_CREAM_MUTED = "#E8DFD3";
 const EQ_PANEL = `background:${EMAIL_WINE};border:1px solid ${WINE_INSET_RULE};border-radius:0;padding:20px;margin-bottom:20px;font-family:${PREMIUM_FONT}`;
 /** Light kicker on wine {@link EQ_PANEL} — 12px uppercase, tracked (must stay high-contrast on #5C1A33). */
-const PANEL_KICKER_ON_WINE_UPPER = `font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:#F5F0E8 !important;-webkit-text-fill-color:#F5F0E8;mso-color-alt:#F5F0E8;letter-spacing:0.06em;text-transform:uppercase`;
-/** Body copy on wine inset panels. */
-const EQ_ON_WINE_PANEL = "rgba(255,255,255,0.88)";
+const PANEL_KICKER_ON_WINE_UPPER = `font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:${WINE_PANEL_CREAM} !important;-webkit-text-fill-color:${WINE_PANEL_CREAM};mso-color-alt:${WINE_PANEL_CREAM};letter-spacing:0.06em;text-transform:uppercase`;
+/** Body copy on wine inset panels. Solid cream + !important so dark-lock CSS can't override to forest. */
+const EQ_ON_WINE_PANEL_STYLE = `color:${WINE_PANEL_CREAM} !important;-webkit-text-fill-color:${WINE_PANEL_CREAM};mso-color-alt:${WINE_PANEL_CREAM}`;
+/** Muted secondary cream on wine. */
+const EQ_ON_WINE_MUTED_STYLE = `color:${WINE_PANEL_CREAM_MUTED} !important;-webkit-text-fill-color:${WINE_PANEL_CREAM_MUTED};mso-color-alt:${WINE_PANEL_CREAM_MUTED}`;
+/** Inner callout INSIDE a wine panel (translucent cream — used for "Card on file" sub-block). */
+const WINE_INNER_CALLOUT = `background:rgba(245,238,230,0.08);border:1px solid ${WINE_INSET_RULE};border-top:2px solid ${WINE_PANEL_CREAM};border-radius:0;padding:16px;font-family:${PREMIUM_FONT}`;
+const WINE_INNER_EYEBROW = `font-family:${PREMIUM_FONT};font-size:11px;font-weight:700;color:${WINE_PANEL_CREAM} !important;-webkit-text-fill-color:${WINE_PANEL_CREAM};letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px`;
 
 function creamSupportMailtoLink(): string {
   const e = getClientSupportEmail();
@@ -217,16 +225,16 @@ export function preMove72hrEmail(d: PreMove72hrData): string {
       Your move is confirmed for <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. A little preparation goes a long way. Here is a quick checklist to make the day as smooth as possible.
     </p>
 
-    <div style="${EQ_PANEL}">
+    <div class="yugo-on-wine" style="${EQ_PANEL}">
       <div style="${PANEL_KICKER_ON_WINE_UPPER};margin-bottom:14px;">Pre-move checklist</div>
-      <div style="font-size:13px;color:${EQ_ON_WINE_PANEL};line-height:2;font-family:${PREMIUM_FONT}">
-        <div>— Book elevator or loading dock at both locations</div>
-        <div>— Reserve parking access for our truck</div>
-        <div>— Finish packing any remaining boxes</div>
-        <div>— Clear hallways and pathways throughout</div>
-        <div>— Arrange care for pets and young children on the day</div>
-        <div>— Keep valuables, medications, and important documents with you</div>
-        <div>— Defrost the freezer and empty the fridge</div>
+      <div style="font-size:13px;${EQ_ON_WINE_PANEL_STYLE};line-height:2;font-family:${PREMIUM_FONT}">
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Book elevator or loading dock at both locations</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Reserve parking access for our truck</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Finish packing any remaining boxes</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Clear hallways and pathways throughout</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Arrange care for pets and young children on the day</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Keep valuables, medications, and important documents with you</div>
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">— Defrost the freezer and empty the fridge</div>
       </div>
     </div>
 
@@ -565,7 +573,7 @@ export function lowSatisfactionEmail(d: LowSatisfactionData): string {
   const support = getClientSupportEmail();
   const coordEmailRaw = (d.coordinatorEmail || "").trim();
   const coordMail = coordEmailRaw
-    ? `<div style="margin-top:4px"><a href="mailto:${coordEmailRaw.replace(/&/g, "&amp;")}" style="color:rgba(255,255,255,0.95) !important;-webkit-text-fill-color:rgba(255,255,255,0.95);text-decoration:underline;font-size:13px;font-weight:600;">${escapeHtmlEmail(coordEmailRaw)}</a></div>`
+    ? `<div style="margin-top:4px"><a href="mailto:${coordEmailRaw.replace(/&/g, "&amp;")}" style="color:#F5EEE6 !important;-webkit-text-fill-color:#F5EEE6;text-decoration:underline;font-size:13px;font-weight:600;">${escapeHtmlEmail(coordEmailRaw)}</a></div>`
     : "";
   return legacyEmailLayout(`
     <div style="${AMBER_EYEBROW_UPPER}">We are here for you</div>
@@ -574,11 +582,11 @@ export function lowSatisfactionEmail(d: LowSatisfactionData): string {
       We understand your experience fell short of what you deserved, and we sincerely apologize. This is not the standard we hold ourselves to, and we are committed to making it right.
     </p>
 
-    <div style="background:${EMAIL_WINE};border:1px solid ${WINE_INSET_RULE};border-radius:0;padding:14px 16px;margin-bottom:20px">
-      <div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.7">
-        <div>Your dedicated coordinator is available to resolve this personally:</div>
-        ${d.coordinatorName ? `<div style="color:rgba(255,255,255,0.98);font-weight:600;margin-top:8px">${escapeHtmlEmail(d.coordinatorName)}</div>` : ""}
-        ${d.coordinatorPhone ? `<div style="margin-top:4px"><a href="tel:${String(d.coordinatorPhone).replace(/\s/g, "").replace(/[()]/g, "")}" style="color:rgba(255,255,255,0.95) !important;-webkit-text-fill-color:rgba(255,255,255,0.95);text-decoration:underline;font-size:13px;font-weight:600;">${escapeHtmlEmail(formatPhone(d.coordinatorPhone))}</a></div>` : ""}
+    <div class="yugo-on-wine" style="background:${EMAIL_WINE};border:1px solid ${WINE_INSET_RULE};border-radius:0;padding:14px 16px;margin-bottom:20px">
+      <div style="font-size:13px;${EQ_ON_WINE_PANEL_STYLE};line-height:1.7;font-family:${PREMIUM_FONT}">
+        <div style="${EQ_ON_WINE_PANEL_STYLE}">Your dedicated coordinator is available to resolve this personally:</div>
+        ${d.coordinatorName ? `<div style="${EQ_ON_WINE_PANEL_STYLE};font-weight:700;margin-top:8px">${escapeHtmlEmail(d.coordinatorName)}</div>` : ""}
+        ${d.coordinatorPhone ? `<div style="margin-top:4px"><a href="tel:${String(d.coordinatorPhone).replace(/\s/g, "").replace(/[()]/g, "")}" style="${EQ_ON_WINE_PANEL_STYLE};text-decoration:underline;font-size:13px;font-weight:600;">${escapeHtmlEmail(formatPhone(d.coordinatorPhone))}</a></div>` : ""}
         ${coordMail}
       </div>
     </div>
@@ -605,12 +613,12 @@ export interface InternalLowSatAlertData {
 export function internalLowSatAlertEmail(d: InternalLowSatAlertData): string {
   const emailRaw = (d.clientEmail || "").trim();
   const emailCell = emailRaw
-    ? `<a href="mailto:${emailRaw.replace(/&/g, "&amp;")}" style="color:rgba(255,255,255,0.95) !important;-webkit-text-fill-color:rgba(255,255,255,0.95);text-decoration:underline;font-weight:600;">${escapeHtmlEmail(emailRaw)}</a>`
+    ? `<a href="mailto:${emailRaw.replace(/&/g, "&amp;")}" style="color:#F5EEE6 !important;-webkit-text-fill-color:#F5EEE6;text-decoration:underline;font-weight:600;">${escapeHtmlEmail(emailRaw)}</a>`
     : "—";
   const wineKvLabel =
-    "padding:5px 8px 5px 0;color:rgba(255,255,255,0.72);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top";
+    `padding:5px 8px 5px 0;color:${WINE_PANEL_CREAM_MUTED} !important;-webkit-text-fill-color:${WINE_PANEL_CREAM_MUTED};font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top`;
   const wineKvVal =
-    "padding:5px 0;color:rgba(255,255,255,0.95);font-size:12px;text-align:right;font-weight:600;vertical-align:top";
+    `padding:5px 0;color:${WINE_PANEL_CREAM} !important;-webkit-text-fill-color:${WINE_PANEL_CREAM};font-size:12px;text-align:right;font-weight:700;vertical-align:top`;
   const wineKvRule = `1px solid ${WINE_INSET_RULE}`;
   return legacyEmailLayout(`
     <div style="${ALERT_EYEBROW_UPPER}">Low satisfaction alert</div>
@@ -621,7 +629,7 @@ export function internalLowSatAlertEmail(d: InternalLowSatAlertData): string {
       <div style="font-size:12px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};margin-top:4px">This client reported a low satisfaction score. Follow up immediately.</div>
     </div>
 
-    <div style="background:${EMAIL_WINE};border:1px solid ${WINE_INSET_RULE};border-radius:0;padding:20px;margin-bottom:20px">
+    <div class="yugo-on-wine" style="background:${EMAIL_WINE};border:1px solid ${WINE_INSET_RULE};border-radius:0;padding:20px;margin-bottom:20px">
       <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:12px;border-collapse:collapse;font-family:${PREMIUM_FONT}">
         ${emailNestedKvRow({
           borderTop: "none",
@@ -903,12 +911,12 @@ export function balanceReminder72hrEmail(d: BalanceReminder72hrData): string {
       Amount <strong style="color:${EMAIL_FOREST}">${formatCurrencyEmail(d.balanceAmount)}</strong> is due before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>.
     </p>
 
-    <div style="${EQ_PANEL}">
+    <div class="yugo-on-wine" style="${EQ_PANEL}">
       <div style="${PANEL_KICKER_ON_WINE_UPPER};margin-bottom:12px;">Automatic payment</div>
-      <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:16px;font-family:${PREMIUM_FONT}">
-        <div style="${FOREST_EYEBROW_UPPER};margin-bottom:8px">Card on file</div>
-        <div style="font-size:12px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};line-height:1.65">
-          We will charge <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${formatCurrencyEmail(d.balanceAmount)}</strong> approximately 48 hours before ${d.estateBalanceChargeBeforePacking ? "your scheduled packing day" : "your move"}. No action required.
+      <div style="${WINE_INNER_CALLOUT}">
+        <div style="${WINE_INNER_EYEBROW}">Card on file</div>
+        <div style="font-size:12px;${EQ_ON_WINE_MUTED_STYLE};line-height:1.65;font-family:${PREMIUM_FONT}">
+          We will charge <strong style="${EQ_ON_WINE_PANEL_STYLE};font-weight:700;">${formatCurrencyEmail(d.balanceAmount)}</strong> approximately 48 hours before ${d.estateBalanceChargeBeforePacking ? "your scheduled packing day" : "your move"}. No action required.
         </div>
       </div>
     </div>
@@ -1227,9 +1235,9 @@ export function partnerCardExpiringEmail(d: PartnerCardExpiringData): string {
     <p style="${EQ_LEAD}">
       Hi ${firstName(d.partnerName) || d.partnerName}, your <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${d.cardBrand} ending in ${d.cardLastFour}</strong> on file for partner billing expires soon.
     </p>
-    <div style="${EQ_PANEL}">
+    <div class="yugo-on-wine" style="${EQ_PANEL}">
       <div style="${PANEL_KICKER_ON_WINE_UPPER};margin-bottom:12px;">Why update now</div>
-      <div style="font-size:12px;color:${EQ_ON_WINE_PANEL};line-height:1.65">
+      <div style="font-size:12px;${EQ_ON_WINE_PANEL_STYLE};line-height:1.65;font-family:${PREMIUM_FONT}">
         Automatic statement charges use this card. An expired card can delay payouts and require manual follow-up.
       </div>
     </div>
@@ -1282,9 +1290,9 @@ export function clientCardExpiringEmail(d: ClientCardExpiringData): string {
     <p style="${EQ_LEAD}">
       The card on file for <strong style="color:${EMAIL_FOREST}">${ref}</strong> expires before we can charge your remaining balance. Update it so payment runs on schedule.
     </p>
-    <div style="${EQ_PANEL}">
+    <div class="yugo-on-wine" style="${EQ_PANEL}">
       <div style="${PANEL_KICKER_ON_WINE_UPPER};margin-bottom:12px;">Automatic balance charge</div>
-      <div style="font-size:12px;color:${EQ_ON_WINE_PANEL};line-height:1.65">
+      <div style="font-size:12px;${EQ_ON_WINE_PANEL_STYLE};line-height:1.65;font-family:${PREMIUM_FONT}">
         We charge the remaining balance to the card on file before move day. An expired card may delay service until billing is resolved.
       </div>
     </div>
