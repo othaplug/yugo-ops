@@ -317,6 +317,30 @@ export async function PATCH(
       }
     }
 
+    if (action === "update_status") {
+      const admin = createAdminClient();
+      const { status } = body as { status?: string };
+      if (!status) return NextResponse.json({ error: "status required" }, { status: 400 });
+      const { error: updateErr } = await admin.from("moves").update({ status }).eq("id", id);
+      if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 400 });
+      await admin.from("status_events").insert({
+        entity_type: "move",
+        entity_id: id,
+        event_type: `status_changed_to_${status}`,
+        description: `Status updated to ${status}`,
+        icon: "move",
+      });
+      await logAudit({
+        userId: authUser?.id,
+        userEmail: authUser?.email,
+        action: "move_status_change",
+        resourceType: "move",
+        resourceId: id,
+        details: { status },
+      });
+      return NextResponse.json({ ok: true });
+    }
+
     if (action === "log_status_change") {
       const admin = createAdminClient();
       const { new_status, previous_status } = body as { new_status?: string; previous_status?: string };

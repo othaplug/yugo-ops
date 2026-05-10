@@ -296,6 +296,13 @@ export const MovesClient = ({ initialMoves, invoices = [] }: MovesClientProps) =
         open={drawer.isOpen}
         onOpenChange={drawer.setOpen}
         invoices={invoices}
+        onStatusChange={(moveId, newStatus) => {
+          setMoves((prev) =>
+            prev.map((m) =>
+              m.id === moveId ? { ...m, status: newStatus as Move["status"] } : m,
+            ),
+          )
+        }}
       />
     </div>
   );

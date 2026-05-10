@@ -31,9 +31,27 @@ type MoveDrawerProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   invoices?: Invoice[]
+  onStatusChange?: (moveId: string, newStatus: string) => void
 }
 
-export const MoveDrawer = ({ move, open, onOpenChange, invoices = [] }: MoveDrawerProps) => {
+async function patchMoveStatus(moveId: string, status: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`/api/admin/moves/${moveId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ action: "update_status", status }),
+    })
+    const data = await res.json()
+    if (!res.ok) return { ok: false, error: data.error ?? "Failed" }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: "Network error" }
+  }
+}
+
+export const MoveDrawer = ({ move, open, onOpenChange, invoices = [], onStatusChange }: MoveDrawerProps) => {
+  const [loading, setLoading] = React.useState<string | null>(null)
   if (!move) return null
 
   const linkedInvoice = invoices.find((inv) => inv.moveId === move.id) ?? null
@@ -160,6 +178,9 @@ export const MoveDrawer = ({ move, open, onOpenChange, invoices = [] }: MoveDraw
 
   const moveSlug = move.number.replace(/^#/, "").trim()
 
+  const isTerminal = move.status === "completed" || move.status === "cancelled"
+  const isDispatched = move.status === "in-transit" || move.status === "pre-move"
+
   const footer = (
     <div className="flex w-full items-center justify-between gap-2">
       <Button variant="secondary" size="sm" asChild>
@@ -172,6 +193,7 @@ export const MoveDrawer = ({ move, open, onOpenChange, invoices = [] }: MoveDraw
         <Button
           variant="secondary"
           size="sm"
+          disabled={loading !== null || isTerminal}
           onClick={() => toast.info(`Reschedule ${move.number}`)}
         >
           Reschedule
@@ -179,10 +201,20 @@ export const MoveDrawer = ({ move, open, onOpenChange, invoices = [] }: MoveDraw
         <Button
           variant="primary"
           size="sm"
-          onClick={() => toast.success(`${move.number} dispatched`)}
-          disabled={move.status === "completed" || move.status === "cancelled"}
+          disabled={loading !== null || isTerminal || isDispatched}
+          onClick={async () => {
+            setLoading("dispatch")
+            const result = await patchMoveStatus(move.id, "in-transit")
+            setLoading(null)
+            if (result.ok) {
+              toast.success(`${move.number} dispatched`)
+              onStatusChange?.(move.id, "in-transit")
+            } else {
+              toast.error(result.error ?? "Failed to dispatch move")
+            }
+          }}
         >
-          Dispatch
+          {loading === "dispatch" ? "Dispatching…" : isDispatched ? "Dispatched" : "Dispatch"}
         </Button>
       </div>
     </div>

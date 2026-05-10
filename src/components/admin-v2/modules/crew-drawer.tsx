@@ -10,27 +10,36 @@ import {
   DrawerStatGrid,
   ModuleDrawer,
 } from "./module-drawer"
-import type { CrewMember } from "@/lib/admin-v2/mock/types"
+import type { CrewMember, Move } from "@/lib/admin-v2/mock/types"
 import {
   CREW_AVAILABILITY_LABEL,
   CREW_ROLE_LABEL,
+  MOVE_STATUS_LABEL,
 } from "@/lib/admin-v2/labels"
 import {
+  formatCurrency,
   formatPercent,
   formatShortDate,
 } from "@/lib/admin-v2/format"
+import { variantForStatus } from "../primitives/Chip"
 
 type CrewDrawerProps = {
   crew: CrewMember | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  moves?: Move[]
 }
 
 const availabilityVariant = (state: CrewMember["availability"]) =>
   state === "available" ? "success" : state === "on-move" ? "info" : "neutral"
 
-export const CrewDrawer = ({ crew, open, onOpenChange }: CrewDrawerProps) => {
+export const CrewDrawer = ({ crew, open, onOpenChange, moves = [] }: CrewDrawerProps) => {
   if (!crew) return null
+
+  const crewMoves = moves
+    .filter((m) => m.crew.some((c) => c.id === crew.id))
+    .sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime())
+    .slice(0, 15)
 
   const profile = (
     <div className="flex flex-col gap-6">
@@ -137,6 +146,45 @@ export const CrewDrawer = ({ crew, open, onOpenChange }: CrewDrawerProps) => {
     </div>
   )
 
+  const movesTab = crewMoves.length ? (
+    <div className="overflow-hidden rounded-md border border-line">
+      <table className="w-full body-sm">
+        <thead className="bg-surface-subtle">
+          <tr>
+            <th className="px-3 py-2 text-left label-sm text-fg-subtle">Move</th>
+            <th className="px-3 py-2 text-left label-sm text-fg-subtle">Status</th>
+            <th className="px-3 py-2 text-right label-sm text-fg-subtle">Value</th>
+            <th className="px-3 py-2 text-right label-sm text-fg-subtle">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {crewMoves.map((move) => (
+            <tr key={move.id} className="border-t border-line">
+              <td className="px-3 py-2 text-fg font-medium">{move.number}</td>
+              <td className="px-3 py-2">
+                <Chip
+                  label={MOVE_STATUS_LABEL[move.status]}
+                  variant={variantForStatus(move.status)}
+                />
+              </td>
+              <td className="px-3 py-2 text-right text-fg tabular-nums">
+                {formatCurrency(move.total)}
+              </td>
+              <td className="px-3 py-2 text-right text-fg-subtle">
+                {formatShortDate(move.scheduledAt)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <div className="flex h-full min-h-[160px] flex-col items-center justify-center rounded-md border border-dashed border-line bg-surface-subtle text-center">
+      <p className="body-sm font-medium text-fg">No moves on record</p>
+      <p className="mt-1 body-xs text-fg-subtle">Moves assigned to this crew member will appear here.</p>
+    </div>
+  )
+
   const footer = (
     <div className="flex w-full items-center justify-end gap-2">
       <Button
@@ -170,6 +218,7 @@ export const CrewDrawer = ({ crew, open, onOpenChange }: CrewDrawerProps) => {
         { id: "profile", label: "Profile", content: profile },
         { id: "performance", label: "Performance", content: performance },
         { id: "availability", label: "Availability", content: availability },
+        { id: "moves", label: `Moves (${crewMoves.length})`, content: movesTab },
       ]}
       footer={footer}
     />

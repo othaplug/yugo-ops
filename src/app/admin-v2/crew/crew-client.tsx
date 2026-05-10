@@ -22,13 +22,14 @@ import {
   CREW_ROLE_LABEL,
 } from "@/lib/admin-v2/labels"
 import { formatPercent } from "@/lib/admin-v2/format"
-import type { CrewMember } from "@/lib/admin-v2/mock/types"
+import type { CrewMember, Move } from "@/lib/admin-v2/mock/types"
 
 export type CrewClientProps = {
   initialCrew: CrewMember[]
+  moves?: Move[]
 }
 
-export const CrewClient = ({ initialCrew }: CrewClientProps) => {
+export const CrewClient = ({ initialCrew, moves = [] }: CrewClientProps) => {
   const [crew, setCrew] = React.useState<CrewMember[]>(() => initialCrew)
   React.useEffect(() => {
     setCrew(initialCrew)
@@ -227,6 +228,7 @@ export const CrewClient = ({ initialCrew }: CrewClientProps) => {
         crew={activeMember}
         open={drawer.isOpen}
         onOpenChange={drawer.setOpen}
+        moves={moves}
       />
     </div>
   )

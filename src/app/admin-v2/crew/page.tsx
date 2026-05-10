@@ -5,8 +5,8 @@ export const dynamic = "force-dynamic"
 export const revalidate = 0
 
 const CrewPage = async () => {
-  const { crew } = await getAdminUniverse()
-  return <CrewClient initialCrew={crew} />
+  const { crew, moves } = await getAdminUniverse()
+  return <CrewClient initialCrew={crew} moves={moves} />
 }
 
 export default CrewPage
