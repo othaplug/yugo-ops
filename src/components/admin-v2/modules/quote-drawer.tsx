@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "../primitives/Button"
 import { Icon } from "../primitives/Icon"
@@ -51,6 +52,20 @@ async function patchQuoteStatus(
   }
 }
 
+async function duplicateQuote(quoteNumber: string): Promise<{ ok: boolean; newQuoteId?: string; error?: string }> {
+  try {
+    const res = await fetch(`/api/admin/quotes/${encodeURIComponent(quoteNumber)}/duplicate`, {
+      method: "POST",
+      credentials: "same-origin",
+    })
+    const data = await res.json()
+    if (!res.ok) return { ok: false, error: data.error ?? "Failed" }
+    return { ok: true, newQuoteId: data.newQuoteId }
+  } catch {
+    return { ok: false, error: "Network error" }
+  }
+}
+
 async function resendQuote(quoteId: string): Promise<{ ok: boolean; error?: string }> {
   try {
     const res = await fetch("/api/admin/quotes/bulk", {
@@ -74,6 +89,7 @@ export const QuoteDrawer = ({
   onStatusChange,
 }: QuoteDrawerProps) => {
   const [loading, setLoading] = React.useState<string | null>(null)
+  const router = useRouter()
 
   const handleAction = React.useCallback(
     async (
@@ -101,11 +117,20 @@ export const QuoteDrawer = ({
           toast.error(result.error ?? "Failed to resend quote")
         }
       } else {
+        // duplicate
+        const result = await duplicateQuote(quote.number)
         setLoading(null)
-        toast.info("Duplicate quote")
+        if (result.ok) {
+          toast.success(`${quote.number} duplicated as ${result.newQuoteId}`)
+          onOpenChange(false)
+          router.push("/admin-v2/quotes")
+          router.refresh()
+        } else {
+          toast.error(result.error ?? "Failed to duplicate quote")
+        }
       }
     },
-    [quote, onStatusChange],
+    [quote, onStatusChange, onOpenChange, router],
   )
 
   if (!quote) return null
