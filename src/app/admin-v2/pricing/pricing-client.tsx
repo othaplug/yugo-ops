@@ -24,11 +24,8 @@ type RateRow = {
   unit: string
 }
 
-const INITIAL_RATES: RateRow[] = [
-  { id: "r1", label: "Studio / 1-bed base", category: "Base", value: 520, unit: "flat" },
-  { id: "r2", label: "2-bed base", category: "Base", value: 780, unit: "flat" },
-  { id: "r3", label: "3-bed base", category: "Base", value: 980, unit: "flat" },
-  { id: "r4", label: "4+ bed base", category: "Base", value: 1240, unit: "flat" },
+// Base rows are loaded from the DB; Truck/Labour/Modifier remain local until those tables are wired
+const STATIC_RATES: RateRow[] = [
   { id: "r5", label: "16' truck", category: "Truck", value: 140, unit: "per move" },
   { id: "r6", label: "20' truck", category: "Truck", value: 180, unit: "per move" },
   { id: "r7", label: "26' truck", category: "Truck", value: 240, unit: "per move" },
@@ -40,6 +37,32 @@ const INITIAL_RATES: RateRow[] = [
   { id: "r13", label: "Long-carry > 150 ft", category: "Modifier", value: 8, unit: "%" },
 ]
 
+const MOVE_SIZE_LABEL: Record<string, string> = {
+  studio: "Studio",
+  "1br": "1-bed",
+  "2br": "2-bed",
+  "3br": "3-bed",
+  "4br": "4-bed",
+  "5br_plus": "5+ bed",
+  partial: "Partial",
+}
+
+async function savePricingRows(section: string, rows: Array<Record<string, unknown>>): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch("/api/admin/pricing", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ section, rows }),
+    })
+    const data = await res.json()
+    if (!res.ok) return { ok: false, error: data.error ?? "Failed" }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: "Network error" }
+  }
+}
+
 const ZONES = [
   { id: "z1", label: "Downtown Toronto", multiplier: 1.25 },
   { id: "z2", label: "North York", multiplier: 1.05 },
@@ -50,7 +73,26 @@ const ZONES = [
 ]
 
 const RatesTab = () => {
-  const [rates, setRates] = React.useState<RateRow[]>(INITIAL_RATES)
+  const [rates, setRates] = React.useState<RateRow[]>(STATIC_RATES)
+  const [saving, setSaving] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    fetch("/api/admin/pricing?section=base-rates", { credentials: "same-origin" })
+      .then(async (res) => {
+        if (!res.ok) return
+        const { data } = await res.json() as { data: Array<{ id: string; move_size: string; base_price: number }> }
+        if (!Array.isArray(data)) return
+        const baseRows: RateRow[] = data.map((r) => ({
+          id: r.id,
+          label: `${MOVE_SIZE_LABEL[r.move_size] ?? r.move_size} base`,
+          category: "Base" as const,
+          value: r.base_price,
+          unit: "flat",
+        }))
+        setRates([...baseRows, ...STATIC_RATES])
+      })
+      .catch(() => { /* keep static fallback */ })
+  }, [])
 
   const categories = ["Base", "Truck", "Labour", "Modifier"] as const
 
@@ -108,9 +150,23 @@ const RatesTab = () => {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => toast.success(`${row.label} saved`)}
+                    disabled={saving === row.id}
+                    onClick={async () => {
+                      if (cat === "Base") {
+                        setSaving(row.id)
+                        const result = await savePricingRows("base-rates", [{ id: row.id, base_price: row.value }])
+                        setSaving(null)
+                        if (result.ok) {
+                          toast.success(`${row.label} saved`)
+                        } else {
+                          toast.error(result.error ?? `Failed to save ${row.label}`)
+                        }
+                      } else {
+                        toast.success(`${row.label} saved`)
+                      }
+                    }}
                   >
-                    Save
+                    {saving === row.id ? "Saving…" : "Save"}
                   </Button>
                 </li>
               ))}
@@ -241,8 +297,46 @@ const SimulatorTab = () => {
   )
 }
 
+type ZoneRow = { id: string; label: string; multiplier: number }
+
 const ZonesTab = () => {
-  const [zones, setZones] = React.useState(ZONES)
+  const [zones, setZones] = React.useState<ZoneRow[]>(
+    ZONES.map((z) => ({ ...z })),
+  )
+  const [saving, setSaving] = React.useState(false)
+
+  React.useEffect(() => {
+    fetch("/api/admin/pricing?section=neighbourhoods", { credentials: "same-origin" })
+      .then(async (res) => {
+        if (!res.ok) return
+        const { data } = await res.json() as {
+          data: Array<{ id: string; neighbourhood_name: string | null; postal_prefix: string; multiplier: number }>
+        }
+        if (!Array.isArray(data) || data.length === 0) return
+        setZones(
+          data.map((r) => ({
+            id: r.id,
+            label: r.neighbourhood_name ?? r.postal_prefix,
+            multiplier: r.multiplier,
+          })),
+        )
+      })
+      .catch(() => { /* keep mock */ })
+  }, [])
+
+  const handleSaveZones = async () => {
+    setSaving(true)
+    const result = await savePricingRows(
+      "neighbourhoods",
+      zones.map((z) => ({ id: z.id, multiplier: z.multiplier })),
+    )
+    setSaving(false)
+    if (result.ok) {
+      toast.success("Zones saved")
+    } else {
+      toast.error(result.error ?? "Failed to save zones")
+    }
+  }
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
@@ -251,7 +345,7 @@ const ZonesTab = () => {
           aria-hidden
           className="absolute inset-0 [background-image:linear-gradient(var(--line)_1px,transparent_1px),linear-gradient(90deg,var(--line)_1px,transparent_1px)] [background-size:40px_40px] opacity-40"
         />
-        {zones.map((zone, index) => (
+        {zones.slice(0, 6).map((zone, index) => (
           <div
             key={zone.id}
             className={cn(
@@ -272,15 +366,15 @@ const ZonesTab = () => {
       <aside className="rounded-lg border border-line bg-surface p-4 space-y-2">
         <header className="flex items-center justify-between pb-2">
           <h3 className="heading-sm text-fg">Zone multipliers</h3>
-          <Chip label="6 ZONES" variant="neutral" />
+          <Chip label={`${zones.length} ZONES`} variant="neutral" />
         </header>
-        <ul className="divide-y divide-line">
+        <ul className="divide-y divide-line max-h-72 overflow-y-auto">
           {zones.map((zone) => (
             <li
               key={zone.id}
               className="flex items-center gap-3 py-2"
             >
-              <span className="flex-1 body-sm text-fg">{zone.label}</span>
+              <span className="flex-1 body-sm text-fg truncate">{zone.label}</span>
               <Input
                 size="sm"
                 containerClassName="w-24"
@@ -303,9 +397,10 @@ const ZonesTab = () => {
           variant="primary"
           size="sm"
           className="w-full"
-          onClick={() => toast.success("Zones saved")}
+          disabled={saving}
+          onClick={handleSaveZones}
         >
-          Save zones
+          {saving ? "Saving…" : "Save zones"}
         </Button>
       </aside>
     </div>

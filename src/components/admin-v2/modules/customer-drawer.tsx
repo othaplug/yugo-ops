@@ -316,10 +316,13 @@ const ContactRow = ({
   icon: "email" | "phone"
   label: string
 }) => (
-  <div className="flex items-center gap-2 body-sm text-fg">
+  <a
+    href={icon === "email" ? `mailto:${label}` : `tel:${label}`}
+    className="flex items-center gap-2 body-sm text-fg hover:text-accent transition-colors"
+  >
     <Icon name={icon} size="sm" className="text-fg-subtle" />
     <span>{label}</span>
-  </div>
+  </a>
 )
 
 const EmptyTab = ({

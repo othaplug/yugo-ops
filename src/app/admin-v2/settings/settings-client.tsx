@@ -179,9 +179,74 @@ const NOTIFY_PREFS: Array<{
   { id: "n6", event: "At-risk move", email: true, sms: true },
 ]
 
+type DateFactor = { id: string; factor_type: string; factor_value: string; multiplier: number }
+
+async function saveDateFactors(rows: Array<{ id: string; multiplier: number }>): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch("/api/admin/pricing", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ section: "date-factors", rows }),
+    })
+    const data = await res.json()
+    if (!res.ok) return { ok: false, error: data.error ?? "Failed" }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: "Network error" }
+  }
+}
+
 const PlatformTab = () => {
-  const [weekend, setWeekend] = React.useState(15)
-  const [peak, setPeak] = React.useState(12)
+  const [weekend, setWeekend] = React.useState(10)
+  const [peak, setPeak] = React.useState(10)
+  const [saving, setSaving] = React.useState(false)
+  // ids of the saturday/sunday rows and peak season row so we can update them
+  const [weekendIds, setWeekendIds] = React.useState<string[]>([])
+  const [peakId, setPeakId] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    fetch("/api/admin/pricing?section=date-factors", { credentials: "same-origin" })
+      .then(async (res) => {
+        if (!res.ok) return
+        const { data } = await res.json() as { data: DateFactor[] }
+        if (!Array.isArray(data)) return
+        const weekendRows = data.filter(
+          (r) => r.factor_type === "day_of_week" && (r.factor_value === "saturday" || r.factor_value === "sunday"),
+        )
+        const peakRow = data.find((r) => r.factor_type === "season" && r.factor_value === "peak_jun_aug")
+        if (weekendRows.length > 0) {
+          const avgMultiplier = weekendRows.reduce((s, r) => s + r.multiplier, 0) / weekendRows.length
+          setWeekend(Math.round((avgMultiplier - 1) * 100))
+          setWeekendIds(weekendRows.map((r) => r.id))
+        }
+        if (peakRow) {
+          setPeak(Math.round((peakRow.multiplier - 1) * 100))
+          setPeakId(peakRow.id)
+        }
+      })
+      .catch(() => { /* keep defaults */ })
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    const rows: Array<{ id: string; multiplier: number }> = [
+      ...weekendIds.map((id) => ({ id, multiplier: 1 + weekend / 100 })),
+      ...(peakId ? [{ id: peakId, multiplier: 1 + peak / 100 }] : []),
+    ]
+    if (rows.length === 0) {
+      toast.info("No factors loaded — changes not saved")
+      setSaving(false)
+      return
+    }
+    const result = await saveDateFactors(rows)
+    setSaving(false)
+    if (result.ok) {
+      toast.success("Platform multipliers saved")
+    } else {
+      toast.error(result.error ?? "Failed to save")
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -216,9 +281,10 @@ const PlatformTab = () => {
           <Button
             size="sm"
             variant="primary"
-            onClick={() => toast.success("Platform settings saved")}
+            disabled={saving}
+            onClick={handleSave}
           >
-            Save
+            {saving ? "Saving…" : "Save"}
           </Button>
         </div>
       </section>
