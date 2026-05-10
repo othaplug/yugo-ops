@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "../primitives/Button"
 import { Icon } from "../primitives/Icon"
@@ -67,6 +68,7 @@ export const LeadDrawer = ({
   onStatusChange,
 }: LeadDrawerProps) => {
   const [loading, setLoading] = React.useState<string | null>(null)
+  const router = useRouter()
   if (!lead) return null
 
   const overview = (
@@ -214,7 +216,8 @@ export const LeadDrawer = ({
           disabled={loading !== null}
           onClick={() => {
             onConvert?.(lead)
-            toast.success(`${lead.name} queued for quote`)
+            onOpenChange(false)
+            router.push("/admin-v2/quotes/new")
           }}
         >
           Convert to quote
