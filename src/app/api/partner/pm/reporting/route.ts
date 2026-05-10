@@ -15,6 +15,7 @@ export async function GET() {
     { data: contract },
     { data: invoices },
     { data: moves },
+    { data: partnerInvoices },
   ] = await Promise.all([
     admin
       .from("partner_statements")
@@ -24,7 +25,7 @@ export async function GET() {
       .eq("partner_id", orgId)
       .order("created_at", { ascending: false })
       .limit(36),
-    admin.from("organizations").select("billing_email, payment_terms, billing_anchor_day").eq("id", orgId).single(),
+    admin.from("organizations").select("billing_email, payment_terms, billing_anchor_day, billing_terms_days").eq("id", orgId).single(),
     admin
       .from("partner_contracts")
       .select("payment_terms, end_date")
@@ -45,14 +46,32 @@ export async function GET() {
       .not("contract_id", "is", null)
       .order("scheduled_date", { ascending: false })
       .limit(2000),
+    // PM partner invoices (new billing system)
+    admin
+      .from("partner_invoices")
+      .select("id, invoice_number, status, period_start, period_end, total_amount, sent_at, paid_at, created_at")
+      .eq("organization_id", orgId)
+      .order("created_at", { ascending: false })
+      .limit(36),
   ]);
 
   const invs = invoices ?? [];
-  const outstandingInvs = invs.filter((i) => i.status === "sent" || i.status === "overdue");
-  const outstandingAmount = outstandingInvs.reduce((s, i) => s + Number(i.amount || 0), 0);
+  const pmInvs = partnerInvoices ?? [];
+
+  // Outstanding: prefer partner_invoices if they exist, else fall back to invoices table
+  const outstandingSource = pmInvs.length > 0 ? pmInvs : invs;
+  const outstandingInvs = outstandingSource.filter((i) => i.status === "sent" || i.status === "overdue");
+  const outstandingAmount = outstandingInvs.reduce(
+    (s, i) => s + Number((i as Record<string, unknown>).total_amount ?? (i as Record<string, unknown>).amount ?? 0),
+    0,
+  );
   const outstandingDueDate =
     outstandingInvs.length > 0
-      ? outstandingInvs.sort((a, b) => (a.due_date || "").localeCompare(b.due_date || ""))[0]?.due_date ||
+      ? (outstandingInvs.sort((a, b) =>
+          ((a as Record<string, unknown>).period_end as string ?? (a as Record<string, unknown>).due_date as string ?? "").localeCompare(
+            ((b as Record<string, unknown>).period_end as string ?? (b as Record<string, unknown>).due_date as string ?? ""),
+          ),
+        )[0] as Record<string, unknown>)?.period_end as string | null ??
         null
       : null;
 
@@ -69,6 +88,7 @@ export async function GET() {
 
   return NextResponse.json({
     statements: statements ?? [],
+    partnerInvoices: pmInvs,
     invoices: invs,
     allMoves: moves ?? [],
     outstandingAmount,

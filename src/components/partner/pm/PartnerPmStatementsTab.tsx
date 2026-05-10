@@ -26,6 +26,18 @@ import {
 } from "@/components/partner/PartnerChrome";
 import { InfoHint } from "@/components/ui/InfoHint";
 
+interface PartnerInvoice {
+  id: string;
+  invoice_number: string;
+  status: string;
+  period_start: string;
+  period_end: string;
+  total_amount: number;
+  sent_at: string | null;
+  paid_at: string | null;
+  created_at: string;
+}
+
 interface DashboardData {
   completedThisMonth: number;
   onTimeRate: number;
@@ -43,6 +55,7 @@ interface DashboardData {
     status: string;
     created_at: string;
   }[];
+  partnerInvoices?: PartnerInvoice[];
 }
 
 interface PartnerStatement {
@@ -186,6 +199,7 @@ export function PartnerPmStatementsTab({ orgName }: { orgName: string }) {
           outstandingDueDate: d.outstandingDueDate ?? null,
           allDeliveries: d.allMoves ?? [],
           invoices: d.invoices ?? [],
+          partnerInvoices: d.partnerInvoices ?? [],
         });
       })
       .catch(() => {
@@ -450,8 +464,90 @@ function PartnerPmStatementsInner({
     0,
   );
 
+  const partnerInvoices = data.partnerInvoices ?? [];
+  const unpaidPartnerInvs = partnerInvoices.filter(
+    (i) => !["paid", "draft", "void"].includes(i.status),
+  );
+  const totalPartnerInvOutstanding = unpaidPartnerInvs.reduce(
+    (sum, i) => sum + Number(i.total_amount || 0),
+    0,
+  );
+
   return (
     <div className="space-y-0 text-[#1a1f1b]">
+      {/* Partner invoices (PM billing) — shown when available */}
+      {partnerInvoices.length > 0 && (
+        <section className="pb-8 border-b border-[#2C3E2D]/10">
+          <div className="flex items-center justify-between gap-3 mb-5">
+            <div className="min-w-0">
+              <PartnerSectionEyebrow>Billing</PartnerSectionEyebrow>
+              <div className="flex items-center gap-2">
+                <Invoice size={18} color={WINE} weight="regular" />
+                <h3 className="font-hero text-[22px] sm:text-[24px] font-normal text-[#5C1A33] leading-tight">
+                  Invoices
+                </h3>
+              </div>
+            </div>
+            {totalPartnerInvOutstanding > 0 && (
+              <span className="text-[10px] font-bold tracking-[0.08em] uppercase shrink-0 px-2.5 py-1.5 border border-red-500/25 text-red-700 bg-red-500/[0.06] rounded-sm">
+                {formatCurrency(totalPartnerInvOutstanding)} outstanding
+              </span>
+            )}
+          </div>
+
+          <div className="border-t border-[#2C3E2D]/10 overflow-x-auto -mx-1">
+            <table className="w-full min-w-[600px]">
+              <thead>
+                <tr className="border-b border-[#2C3E2D]/10">
+                  {["Invoice", "Period", "Total", "Status", ""].map((h) => (
+                    <th
+                      key={h}
+                      className="py-3 pr-4 text-left text-[9px] font-bold uppercase tracking-[0.12em] text-[#5A6B5E] first:pl-0"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {partnerInvoices.map((inv) => {
+                  const cfg = STMT_STATUS[inv.status] ?? STMT_STATUS.draft!;
+                  const isPaid = inv.status === "paid";
+                  return (
+                    <tr key={inv.id} className="border-b border-[#2C3E2D]/5 last:border-0">
+                      <td className="py-3 pr-4 text-[12px] font-mono font-semibold text-[#5C1A33]">
+                        {inv.invoice_number}
+                      </td>
+                      <td className="py-3 pr-4 text-[12px] text-[#5A6B5E]">
+                        {fmtStmtPeriod(inv.period_start, inv.period_end)}
+                      </td>
+                      <td className="py-3 pr-4 text-[13px] font-semibold text-[#1a1f1b] tabular-nums">
+                        {formatCurrency(Number(inv.total_amount))}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <span
+                          className="px-2 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-wider"
+                          style={{ color: cfg.color, background: cfg.bg }}
+                        >
+                          {cfg.label}
+                        </span>
+                      </td>
+                      <td className="py-3">
+                        {isPaid ? (
+                          <span className="flex items-center gap-1 text-[11px] text-emerald-700 font-medium">
+                            <CheckCircle size={12} weight="fill" /> Paid
+                          </span>
+                        ) : null}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       {/* Statements, show when any exist */}
       {statements.length > 0 && (
         <section className="pb-8 border-b border-[#2C3E2D]/10">
