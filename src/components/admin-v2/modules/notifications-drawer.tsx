@@ -1,6 +1,14 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
+import { createClient } from "@/lib/supabase/client"
+import {
+  type ActivityEventRow,
+  formatActivityTime,
+  formatActivityDescription,
+  getActivityHref,
+} from "@/app/admin/components/activity-feed-shared"
 import {
   Drawer,
   DrawerBody,
@@ -18,6 +26,7 @@ import { Avatar } from "../primitives/Avatar"
 import { Button } from "../primitives/Button"
 import { cn } from "../lib/cn"
 
+// Re-export the Notification type for external use if needed.
 export type Notification = {
   id: string
   title: string
@@ -29,61 +38,6 @@ export type Notification = {
   href?: string
 }
 
-const relativeLabel = (iso: string): string => {
-  const ms = Date.now() - new Date(iso).getTime()
-  const min = Math.floor(ms / 60_000)
-  if (min < 1) return "Just now"
-  if (min < 60) return `${min}m`
-  const hours = Math.floor(min / 60)
-  if (hours < 24) return `${hours}h`
-  const days = Math.floor(hours / 24)
-  return `${days}d`
-}
-
-const MOCK: Notification[] = [
-  {
-    id: "n1",
-    title: "New lead assigned",
-    body: "Andy Shepard came in from Organic.",
-    actor: "System",
-    at: new Date(Date.now() - 1000 * 60 * 4).toISOString(),
-    read: false,
-    mention: true,
-  },
-  {
-    id: "n2",
-    title: "Quote viewed",
-    body: "Sophia Morgan opened quote Q-2042 for the second time.",
-    actor: "HubSpot",
-    at: new Date(Date.now() - 1000 * 60 * 23).toISOString(),
-    read: false,
-  },
-  {
-    id: "n3",
-    title: "Move rescheduled",
-    body: "Michael Carter moved #M-1190 to Friday at 9 AM.",
-    actor: "Emily Thompson",
-    at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-    read: true,
-  },
-  {
-    id: "n4",
-    title: "Payment received",
-    body: "Invoice INV-4022 paid via Square.",
-    actor: "Square",
-    at: new Date(Date.now() - 1000 * 60 * 60 * 22).toISOString(),
-    read: true,
-  },
-  {
-    id: "n5",
-    title: "Crew late check-in",
-    body: "Truck 07 arrived 12 minutes late at origin.",
-    actor: "Dispatch",
-    at: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-    read: true,
-  },
-]
-
 const bucket = (at: string): "Today" | "Yesterday" | "This week" => {
   const diff = Date.now() - new Date(at).getTime()
   const day = 24 * 60 * 60 * 1000
@@ -91,6 +45,27 @@ const bucket = (at: string): "Today" | "Yesterday" | "This week" => {
   if (diff < 2 * day) return "Yesterday"
   return "This week"
 }
+
+const actorFromEvent = (e: ActivityEventRow): string => {
+  if (e.entity_type === "move") return "Moves"
+  if (e.entity_type === "quote") return "Quotes"
+  if (e.entity_type === "invoice") return "Invoices"
+  if (e.entity_type === "delivery") return "Dispatch"
+  if (e.entity_type === "crew") return "Crew"
+  return "System"
+}
+
+const eventToNotification = (e: ActivityEventRow): Notification => ({
+  id: e.id,
+  title: e.event_type
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase()),
+  body: e.description ?? e.event_type,
+  actor: actorFromEvent(e),
+  at: e.created_at,
+  read: false,
+  href: getActivityHref(e),
+})
 
 type NotificationsDrawerProps = {
   open: boolean
@@ -101,17 +76,64 @@ export const NotificationsDrawer = ({
   open,
   onOpenChange,
 }: NotificationsDrawerProps) => {
-  const [items, setItems] = React.useState<Notification[]>(MOCK)
+  const [items, setItems] = React.useState<Notification[]>([])
+  const [loading, setLoading] = React.useState(false)
+  const seenIds = React.useRef(new Set<string>())
+  const supabase = createClient()
+
+  // Initial load when drawer opens.
+  React.useEffect(() => {
+    if (!open) return
+    if (items.length > 0) return // already loaded
+    setLoading(true)
+    supabase
+      .from("status_events")
+      .select("id, entity_type, entity_id, event_type, description, icon, created_at")
+      .order("created_at", { ascending: false })
+      .limit(30)
+      .then(({ data }) => {
+        if (!data) return
+        const rows = data as ActivityEventRow[]
+        const notifs = rows.map(eventToNotification)
+        for (const n of notifs) seenIds.current.add(n.id)
+        setItems(notifs)
+      })
+      .then(() => setLoading(false), () => setLoading(false))
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Real-time subscription.
+  React.useEffect(() => {
+    const channel = supabase
+      .channel("notifications-drawer")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "status_events" },
+        (payload) => {
+          const row = payload.new as ActivityEventRow
+          if (!row?.id || seenIds.current.has(row.id)) return
+          seenIds.current.add(row.id)
+          const notif = eventToNotification(row)
+          setItems((prev) => [notif, ...prev].slice(0, 30))
+        },
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [supabase])
+
+  const [readIds, setReadIds] = React.useState<Set<string>>(new Set())
 
   const markAllRead = () =>
-    setItems((prev) => prev.map((item) => ({ ...item, read: true })))
+    setReadIds(new Set(items.map((i) => i.id)))
 
-  const list = (filter: "all" | "unread" | "mentions") => {
-    const rows = items.filter((item) => {
-      if (filter === "unread") return !item.read
-      if (filter === "mentions") return item.mention
-      return true
-    })
+  const markRead = (id: string) =>
+    setReadIds((prev) => new Set([...prev, id]))
+
+  const isRead = (item: Notification) => readIds.has(item.id) || item.read
+
+  const unreadCount = items.filter((i) => !isRead(i)).length
+
+  const filteredList = (filter: "all" | "unread") => {
+    const rows = filter === "unread" ? items.filter((i) => !isRead(i)) : items
     const buckets: Record<string, Notification[]> = {
       Today: [],
       Yesterday: [],
@@ -134,20 +156,33 @@ export const NotificationsDrawer = ({
                 key={item.id}
                 className={cn(
                   "flex gap-3 px-3 py-3",
-                  !item.read && "bg-accent-subtle/40",
+                  !isRead(item) && "bg-accent-subtle/40",
                 )}
               >
                 <Avatar name={item.actor} size="sm" />
                 <div className="flex-1 min-w-0 space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <p className="label-md text-fg truncate">{item.title}</p>
-                    {!item.read ? (
-                      <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+                    {item.href ? (
+                      <Link
+                        href={item.href}
+                        className="label-md text-fg truncate hover:underline"
+                        onClick={() => {
+                          markRead(item.id)
+                          onOpenChange(false)
+                        }}
+                      >
+                        {item.title}
+                      </Link>
+                    ) : (
+                      <p className="label-md text-fg truncate">{item.title}</p>
+                    )}
+                    {!isRead(item) ? (
+                      <span className="size-1.5 rounded-full bg-accent shrink-0" aria-hidden />
                     ) : null}
                   </div>
                   <p className="body-sm text-fg truncate">{item.body}</p>
                   <p className="body-xs text-fg-subtle">
-                    {item.actor} · {relativeLabel(item.at)}
+                    {item.actor} · {formatActivityTime(item.at)}
                   </p>
                 </div>
               </li>
@@ -162,20 +197,21 @@ export const NotificationsDrawer = ({
       <DrawerContent widthClass="w-[min(420px,92vw)]">
         <DrawerHeader
           title="Notifications"
-          description={`${items.filter((i) => !i.read).length} unread`}
+          description={unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
         />
         <Tabs defaultValue="all" className="flex min-h-0 flex-1 flex-col">
           <DrawerTabs className="flex items-center justify-between gap-4">
             <TabsList className="h-11 gap-5 border-0 p-0">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="unread">Unread</TabsTrigger>
-              <TabsTrigger value="mentions">Mentions</TabsTrigger>
             </TabsList>
-            <Button size="sm" variant="ghost" onClick={markAllRead}>
-              Mark all read
-            </Button>
+            {unreadCount > 0 && (
+              <Button size="sm" variant="ghost" onClick={markAllRead}>
+                Mark all read
+              </Button>
+            )}
           </DrawerTabs>
-          {["all", "unread", "mentions"].map((filter) => (
+          {["all", "unread"].map((filter) => (
             <TabsContent
               key={filter}
               value={filter}
@@ -183,7 +219,19 @@ export const NotificationsDrawer = ({
               forceMount
             >
               <DrawerBody>
-                <div className="space-y-4">{renderBuckets(list(filter as "all" | "unread" | "mentions"))}</div>
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <span className="body-sm text-fg-subtle">Loading…</span>
+                  </div>
+                ) : items.length === 0 ? (
+                  <p className="py-8 text-center body-sm text-fg-subtle">
+                    No recent activity
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {renderBuckets(filteredList(filter as "all" | "unread"))}
+                  </div>
+                )}
               </DrawerBody>
             </TabsContent>
           ))}
