@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { toast } from "sonner"
 import { Button } from "../primitives/Button"
 import { Icon } from "../primitives/Icon"
 import { Chip, variantForStatus } from "../primitives/Chip"
@@ -270,19 +269,15 @@ export const CustomerDrawer = ({
         <a href={`mailto:${customer.email}`}>Message</a>
       </Button>
       <div className="flex items-center gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => toast.info(`Quote for ${customer.name}`)}
-        >
-          Create quote
+        <Button variant="secondary" size="sm" asChild>
+          <Link href={`${ADMIN_V2_BASE}/quotes/new`} onClick={() => onOpenChange(false)}>
+            Create quote
+          </Link>
         </Button>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => toast.success(`Move scheduled for ${customer.name}`)}
-        >
-          Create move
+        <Button variant="primary" size="sm" asChild>
+          <Link href={`${ADMIN_V2_BASE}/moves/new`} onClick={() => onOpenChange(false)}>
+            Create move
+          </Link>
         </Button>
       </div>
     </div>
