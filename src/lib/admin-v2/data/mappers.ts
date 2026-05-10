@@ -274,6 +274,7 @@ export type MoveRow = {
   created_at?: string | null;
   contact_id?: string | null;
   margin_percent?: number | null;
+  organization_id?: string | null;
 };
 
 export const mapMove = (

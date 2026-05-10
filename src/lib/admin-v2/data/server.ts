@@ -1,6 +1,7 @@
 import "server-only"
 import { cache } from "react"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { isPropertyManagementDeliveryVertical } from "@/lib/partner-type"
 import {
   mapB2BPartner,
   mapBuilding,
@@ -147,7 +148,7 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
       db
         .from("moves")
         .select(
-          "id, move_code, client_name, client_email, contact_id, from_address, to_address, scheduled_date, estimate, status, move_type, service_type, tier_selected, crew_id, created_at, margin_percent",
+          "id, move_code, client_name, client_email, contact_id, organization_id, from_address, to_address, scheduled_date, estimate, status, move_type, service_type, tier_selected, crew_id, created_at, margin_percent",
         )
         .order("created_at", { ascending: false })
         .limit(LIMIT),
@@ -277,15 +278,14 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
   )
 
   const organizations = organizationsResp.rows ?? []
-  const b2bOrgs = organizations.filter(
-    (o) => (o.type ?? "").toLowerCase() !== "pm",
-  )
-  const pmOrgs = organizations.filter(
-    (o) => (o.type ?? "").toLowerCase() === "pm",
-  )
+  const isPmOrg = (o: OrganizationRow) =>
+    isPropertyManagementDeliveryVertical(o.vertical || o.type || "")
+  const b2bOrgs = organizations.filter((o) => !isPmOrg(o))
+  const pmOrgs = organizations.filter((o) => isPmOrg(o))
+
+  const thirtyDays = Date.now() - 30 * 24 * 60 * 60 * 1000
 
   const b2bStats = new Map<string, { jobsLast30: number; revenueLast30: number }>()
-  const thirtyDays = Date.now() - 30 * 24 * 60 * 60 * 1000
   for (const invoice of invoices) {
     if (!invoice.customerId) continue
     if (new Date(invoice.createdAt).getTime() < thirtyDays) continue
@@ -302,7 +302,7 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
     mapB2BPartner(org, b2bStats.get(org.id)),
   )
 
-  // PM accounts + buildings + move stats per account.
+  // PM accounts + buildings + move counts per account.
   const buildingsRaw = buildingsResp.rows ?? []
   const pmBuildingCount = new Map<string, number>()
   for (const building of buildingsRaw) {
@@ -313,9 +313,19 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
     )
   }
 
+  // Count moves per PM org in the last 30 days.
+  const pmMovesLast30 = new Map<string, number>()
+  for (const row of movesResp.rows ?? []) {
+    if (!row.organization_id) continue
+    const scheduledMs = row.scheduled_date ? new Date(row.scheduled_date).getTime() : 0
+    if (scheduledMs < thirtyDays) continue
+    pmMovesLast30.set(row.organization_id, (pmMovesLast30.get(row.organization_id) ?? 0) + 1)
+  }
+
   const pmAccounts: PMAccount[] = pmOrgs.map((org) =>
     mapPMAccount(org, {
       buildings: pmBuildingCount.get(org.id) ?? 0,
+      movesLast30: pmMovesLast30.get(org.id) ?? 0,
     }),
   )
 
