@@ -140,7 +140,10 @@ import {
   quoteFormSchedulingSectionTitle,
   quoteFormServiceDateLabel,
 } from "@/lib/quotes/quote-field-labels";
-import { calcAssemblyMinutes } from "@/lib/quotes/assembly-detection";
+import {
+  calcAssemblyMinutes,
+  detectAssemblyRequired,
+} from "@/lib/quotes/assembly-detection";
 
 const PanelRightClose = PanelRightOpen;
 
@@ -1499,6 +1502,9 @@ export default function QuoteFormClient({
   const [officeBoardroomCount, setOfficeBoardroomCount] = useState(1);
   const [officeKitchen, setOfficeKitchen] = useState(false);
   const [officeTruckCount, setOfficeTruckCount] = useState(1);
+
+  // Residential assembly auto-detection — null = use auto, true/false = coordinator override
+  const [assemblyOverride, setAssemblyOverride] = useState<boolean | null>(null);
 
   // Single item fields
   const [itemDescription, setItemDescription] = useState("");
@@ -3378,6 +3384,15 @@ export default function QuoteFormClient({
     specialtyRouteLoading,
   ]);
 
+  // ── Live assembly auto-detection from inventory ──────────────────────────────
+  const assemblyDetection = useMemo(
+    () => detectAssemblyRequired(inventoryItems, itemWeights),
+    [inventoryItems, itemWeights],
+  );
+  // Effective value passed downstream: override beats auto-detection
+  const effectiveAssemblyRequired =
+    assemblyOverride !== null ? assemblyOverride : assemblyDetection.required;
+
   // ── Quick optimistic estimate — updates on ANY pricing-relevant change ──────
   const liveEstimate = useMemo(
     () =>
@@ -3391,8 +3406,9 @@ export default function QuoteFormClient({
         inventoryScoreWithBoxes > 0 ? inventoryScoreWithBoxes : undefined,
         specialtyItems.length > 0 ? specialtyItems : undefined,
         moveDate || undefined,
-        inventoryItems.length > 0 ? inventoryItems : undefined,
-        itemWeights.length > 0 ? itemWeights : undefined,
+        // Pass inventory ONLY when assembly is effectively required.
+        effectiveAssemblyRequired && inventoryItems.length > 0 ? inventoryItems : undefined,
+        effectiveAssemblyRequired && itemWeights.length > 0 ? itemWeights : undefined,
       ),
     [
       config,
@@ -3406,6 +3422,7 @@ export default function QuoteFormClient({
       moveDate,
       inventoryItems,
       itemWeights,
+      effectiveAssemblyRequired,
     ],
   );
 
@@ -4118,13 +4135,15 @@ export default function QuoteFormClient({
             inventoryItemToPayload(i),
           );
         }
-        // Assembly auto-detection — store results so the client quote page can use them
+        // Assembly auto-detection — store results so the client quote page + API can use them
         if (inventoryItems.length > 0 && itemWeights.length > 0) {
           const { totalMinutes, breakdown } = calcAssemblyMinutes(inventoryItems, itemWeights);
           base.assembly_auto_detected = true;
           base.assembly_required = totalMinutes > 0;
           base.assembly_minutes = totalMinutes > 0 ? totalMinutes : null;
           base.assembly_items = breakdown.map((b) => b.itemName);
+          // Coordinator override (null = use auto)
+          base.assembly_override = assemblyOverride;
         }
         if (fromLat != null && Number.isFinite(fromLat)) base.from_lat = fromLat;
         if (fromLng != null && Number.isFinite(fromLng)) base.from_lng = fromLng;
@@ -7306,6 +7325,72 @@ export default function QuoteFormClient({
                       />
                     )}
                   </>
+                )}
+
+              {/* ── Assembly auto-detection toggle (residential / long-distance) ── */}
+              {(serviceType === "local_move" || serviceType === "long_distance") &&
+                inventoryItems.length > 0 && (
+                  <div className="mt-4 mb-4 rounded-md border border-line bg-surface px-3 py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="label-md text-fg">Assembly / disassembly</span>
+                          {assemblyOverride !== null && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                              Manual override
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-[var(--tx3)] mt-0.5 leading-snug">
+                          {assemblyDetection.required && assemblyDetection.confidence === "certain"
+                            ? `Auto-detected: ${assemblyDetection.itemsRequiringAssembly.slice(0, 2).join(", ")}${
+                                assemblyDetection.itemsRequiringAssembly.length > 2
+                                  ? ` +${assemblyDetection.itemsRequiringAssembly.length - 2} more`
+                                  : ""
+                              } need assembly`
+                            : assemblyDetection.required && assemblyDetection.confidence === "likely"
+                              ? "Some items may need assembly — confirm with client"
+                              : "No assembly items detected in inventory"}
+                        </p>
+                        {assemblyOverride !== null && (
+                          <p className="text-[10px] text-amber-600 mt-1">
+                            ⚡ Auto-detection suggested:{" "}
+                            {assemblyDetection.required ? "required" : "not required"}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {assemblyOverride !== null && (
+                          <button
+                            type="button"
+                            onClick={() => setAssemblyOverride(null)}
+                            className="text-[10px] text-[var(--tx3)] hover:text-[var(--tx)] underline underline-offset-2"
+                          >
+                            Reset to auto
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={effectiveAssemblyRequired}
+                          onClick={() => setAssemblyOverride(!effectiveAssemblyRequired)}
+                          className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${
+                            effectiveAssemblyRequired
+                              ? assemblyOverride !== null
+                                ? "bg-amber-500"
+                                : "bg-[var(--admin-primary-fill)]"
+                              : "bg-[var(--brd)]"
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                              effectiveAssemblyRequired ? "translate-x-4" : ""
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
               {serviceType !== "b2b_delivery" && (
@@ -10733,10 +10818,26 @@ export default function QuoteFormClient({
                   /* ── Optimistic live preview ── */
                   <>
                     {liveEstimate && "essential" in liveEstimate ? (
-                      <OptimisticTiers
-                        est={liveEstimate}
-                        isLongDistance={serviceType === "long_distance"}
-                      />
+                      <>
+                        <OptimisticTiers
+                          est={liveEstimate}
+                          isLongDistance={serviceType === "long_distance"}
+                        />
+                        {/* Coordinator preview: assembly contribution to labour estimate */}
+                        {(serviceType === "local_move" || serviceType === "long_distance") &&
+                          inventoryItems.length > 0 &&
+                          itemWeights.length > 0 &&
+                          effectiveAssemblyRequired && (
+                            <AssemblyLabourPreview
+                              minutes={
+                                calcAssemblyMinutes(inventoryItems, itemWeights).totalMinutes
+                              }
+                              itemCount={
+                                assemblyDetection.itemsRequiringAssembly.length
+                              }
+                            />
+                          )}
+                      </>
                     ) : (serviceType === "local_move" ||
                         serviceType === "long_distance") &&
                       !liveEstimate ? (
@@ -13060,6 +13161,41 @@ function LabourOnlyPriceDisplay({
         <span>Deposit to book</span>
         <span className={ink.deposit}>{fmtPrice(t.deposit)}</span>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Coordinator-only preview row that shows how many minutes of the labour estimate are
+ * coming from item-intelligence assembly detection. The client quote page never sees this.
+ */
+function AssemblyLabourPreview({
+  minutes,
+  itemCount,
+}: {
+  minutes: number;
+  itemCount: number;
+}) {
+  if (minutes <= 0) return null;
+  const hours = Math.round((minutes / 60) * 10) / 10;
+  return (
+    <div className="mt-3 rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-3 text-[11px] space-y-1.5">
+      <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+        Labour estimate · assembly contribution
+      </p>
+      <div className="flex justify-between text-[var(--tx)]">
+        <span>
+          Assembly / disassembly{" "}
+          <span className="text-[var(--tx3)]">
+            ({itemCount} item{itemCount !== 1 ? "s" : ""})
+          </span>
+        </span>
+        <span className="tabular-nums font-semibold">+{minutes}m · ~{hours}h</span>
+      </div>
+      <p className="text-[10px] text-[var(--tx3)] leading-snug">
+        Assembly is not a separate fee — it inflates labour hours which feeds the quoted
+        price. Toggle off above to remove.
+      </p>
     </div>
   );
 }

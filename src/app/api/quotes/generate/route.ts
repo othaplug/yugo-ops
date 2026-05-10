@@ -155,6 +155,12 @@ interface QuoteInput {
   contact_id?: string;
   inventory_items?: InventoryItem[];
   client_box_count?: number;
+  /** Residential assembly auto-detection (set by QuoteFormClient when inventory provided). */
+  assembly_required?: boolean | null;
+  assembly_auto_detected?: boolean;
+  assembly_items?: string[];
+  assembly_override?: boolean | null;
+  assembly_minutes?: number | null;
   // Office
   square_footage?: number;
   workstation_count?: number;
@@ -914,6 +920,8 @@ async function residentialIncludes(
   minCrew: number,
   estHours: number,
   moveSize?: string,
+  /** When explicitly false, suppress "Basic disassembly & reassembly" from the includes list. */
+  assemblyRequired?: boolean | null,
 ): Promise<{ essential: string[]; signature: string[]; estate: string[] }> {
   const truckLabel = DEFAULT_TRUCK_BY_SIZE[moveSize ?? "2br"] ?? "Dedicated moving truck";
 
@@ -924,26 +932,33 @@ async function residentialIncludes(
   ]);
 
   const crewLine = `Professional crew of ${minCrew}`;
-  const hydrate = (list: string[]) =>
-    list.map((f) => {
+  const ASSEMBLY_PATTERN = /(disassembly\s*(&|and)?\s*reassembly|basic\s+disassembly)/i;
+  const hydrate = (list: string[]) => {
+    const filtered = assemblyRequired === false ? list.filter((f) => !ASSEMBLY_PATTERN.test(f)) : list;
+    return filtered.map((f) => {
       if (f === "Dedicated moving truck") return truckLabel;
       if (f === "Professional movers" || f.toLowerCase().includes("professional crew of")) return crewLine;
       return f;
     });
+  };
 
   if (dbEss.length > 0) {
     const essential = hydrate(dbEss);
     const signature =
-      dbSig.length > 0 ? hydrate(dbSig) : getResolvedMoveIncludeTitles("signature", truckLabel, crewLine);
+      dbSig.length > 0
+        ? hydrate(dbSig)
+        : getResolvedMoveIncludeTitles("signature", truckLabel, crewLine, assemblyRequired);
     const estate =
-      dbEst.length > 0 ? hydrate(dbEst) : getResolvedMoveIncludeTitles("estate", truckLabel, crewLine);
+      dbEst.length > 0
+        ? hydrate(dbEst)
+        : getResolvedMoveIncludeTitles("estate", truckLabel, crewLine, assemblyRequired);
     return { essential, signature, estate };
   }
 
   return {
-    essential: getResolvedMoveIncludeTitles("essential", truckLabel, crewLine),
-    signature: getResolvedMoveIncludeTitles("signature", truckLabel, crewLine),
-    estate: getResolvedMoveIncludeTitles("estate", truckLabel, crewLine),
+    essential: getResolvedMoveIncludeTitles("essential", truckLabel, crewLine, assemblyRequired),
+    signature: getResolvedMoveIncludeTitles("signature", truckLabel, crewLine, assemblyRequired),
+    estate: getResolvedMoveIncludeTitles("estate", truckLabel, crewLine, assemblyRequired),
   };
 }
 
@@ -1687,7 +1702,18 @@ async function calcResidential(
   const sigDep = Math.max(sigMin, Math.round(sigPrice * sigPct / 100));
   const estDep = Math.max(estMin, Math.round(estPrice * estPct / 100));
 
-  const inc = await residentialIncludes(sb, minCrew, estHours, input.move_size);
+  // Effective assembly: explicit override beats auto-detected value
+  const effectiveAssemblyRequired =
+    input.assembly_override !== undefined && input.assembly_override !== null
+      ? input.assembly_override
+      : input.assembly_required ?? null;
+  const inc = await residentialIncludes(
+    sb,
+    minCrew,
+    estHours,
+    input.move_size,
+    effectiveAssemblyRequired,
+  );
 
   const tiers = {
     essential: {
@@ -1798,6 +1824,16 @@ async function calcResidential(
       packing_supplies_included: estateSuppliesAllowance,
       crating_total: cratingTotal,
       crating_pieces_count: input.crating_pieces?.length ?? 0,
+      // Assembly auto-detection — surfaced in coordinator preview
+      assembly_required:
+        input.assembly_override !== undefined && input.assembly_override !== null
+          ? input.assembly_override
+          : input.assembly_required ?? null,
+      assembly_auto_detected: input.assembly_auto_detected ?? false,
+      assembly_minutes: input.assembly_minutes ?? 0,
+      assembly_items_count: Array.isArray(input.assembly_items) ? input.assembly_items.length : 0,
+      assembly_override:
+        input.assembly_override !== undefined ? input.assembly_override : null,
       // Estimated cost / margin (admin only — not shown to clients)
       estimated_cost: {
         labour: estLabourCost,
@@ -3757,6 +3793,16 @@ export async function POST(req: NextRequest) {
       });
       catalogMinCrew = catalogMinCrewFromInventorySlugs(linesForCatalogCrew, iwMin ?? []);
     }
+    // Effective assembly minutes for this quote — used to bump labour hours.
+    // Only apply when assembly is required (override beats auto-detection).
+    const effectiveAssemblyOn =
+      input.assembly_override !== undefined && input.assembly_override !== null
+        ? input.assembly_override === true
+        : input.assembly_required !== false;
+    const labourAssemblyMinutes =
+      effectiveAssemblyOn && (input.assembly_minutes ?? 0) > 0
+        ? input.assembly_minutes!
+        : 0;
     labourClient = estimateLabourFromScore(
       adjustedScore,
       distInfo?.distance_km ?? 0,
@@ -3770,6 +3816,7 @@ export async function POST(req: NextRequest) {
         hoursEstimateMode: "client_on_job",
         truckInventoryScore: truckInventoryScoreForLabour,
         catalogMinCrew,
+        assemblyMinutes: labourAssemblyMinutes,
       },
     );
   } else if (isLocalMove) {
@@ -4563,6 +4610,14 @@ export async function POST(req: NextRequest) {
       inventory_items: input.inventory_items ?? [],
       client_box_count: input.client_box_count ?? null,
       inventory_warnings: inventoryWarnings.length > 0 ? inventoryWarnings : [],
+      // Assembly auto-detection (residential)
+      assembly_required:
+        input.assembly_required !== undefined ? input.assembly_required : null,
+      assembly_auto_detected: input.assembly_auto_detected ?? false,
+      assembly_items: input.assembly_items ?? [],
+      assembly_override:
+        input.assembly_override !== undefined ? input.assembly_override : null,
+      assembly_minutes: input.assembly_minutes ?? null,
       inventory_score: invResult.inventoryScore || null,
       inventory_modifier: invResult.modifier !== 1.0 ? invResult.modifier : null,
       est_crew_size: displayCrew ?? labour?.crewSize ?? null,

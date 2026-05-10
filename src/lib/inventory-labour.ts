@@ -52,6 +52,12 @@ export interface LabourOptions {
   truckInventoryScore?: number;
   /** Floor crew count from catalog rows (`num_people_min`), clamped with score rules in estimateLabourFromScore. */
   catalogMinCrew?: number;
+  /**
+   * Item-intelligence assembly minutes. When set and > 0, replaces the size-based DISASSEMBLY_BY_SIZE
+   * floor (use `Math.max(sizeBased, assemblyMinutes/60)`). Pricing engine sets this from
+   * calcAssemblyMinutes() so quotes with bed frames / standing desks correctly reflect added time.
+   */
+  assemblyMinutes?: number;
 }
 
 export type InventorySlugLine = { slug?: string | null; quantity?: number | null };
@@ -123,7 +129,13 @@ export function estimateLabourFromScore(
   // Loading: inventory score / 12 (boxes move in batches on dollies)
   const loadHours = inventoryScore / 12;
   const unloadHours = loadHours * 0.75;
-  const disassemblyHours = DISASSEMBLY_BY_SIZE[sizeKey] ?? 0.5;
+  const baseDisassemblyHours = DISASSEMBLY_BY_SIZE[sizeKey] ?? 0.5;
+  // Assembly auto-detection: if calcAssemblyMinutes() supplied a positive number, floor at base.
+  const itemAssemblyHours =
+    options?.assemblyMinutes && options.assemblyMinutes > 0
+      ? options.assemblyMinutes / 60
+      : 0;
+  const disassemblyHours = Math.max(baseDisassemblyHours, itemAssemblyHours);
 
   const mode = options?.hoursEstimateMode ?? "crew_full_cycle";
 
