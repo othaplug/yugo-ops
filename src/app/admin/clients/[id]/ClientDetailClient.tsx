@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { CaretRight, PencilSimple as Pencil, Plus, Trash as Trash2 } from "@phosphor-icons/react";
@@ -774,11 +775,16 @@ export default function ClientDetailClient({
       <div className="border-t border-[var(--yu3-line-subtle)] pt-6 pb-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)]">Invoices</h3>
-          {outstandingTotal > 0 && (
-            <div className="text-[11px] font-semibold text-[var(--yu3-warning)]">
-              Outstanding: {formatCompactCurrency(outstandingTotal)}
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {outstandingTotal > 0 && (
+              <div className="text-[11px] font-semibold text-[var(--yu3-warning)]">
+                Outstanding: {formatCompactCurrency(outstandingTotal)}
+              </div>
+            )}
+            {portfolioPartner && (
+              <GeneratePmInvoiceButton partnerId={client.id} />
+            )}
+          </div>
         </div>
         <div className="divide-y divide-[var(--yu3-line-subtle)]">
           {allInvoices.map((inv) => (
@@ -854,5 +860,59 @@ export default function ClientDetailClient({
           document.body
         )}
     </div>
+  );
+}
+
+/**
+ * Coordinator-facing button that generates a single Square invoice covering all
+ * unbilled completed PM moves on this partner. Only visible for portfolioPartner.
+ */
+function GeneratePmInvoiceButton({ partnerId }: { partnerId: string }) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [loading, setLoading] = React.useState(false);
+  const handleClick = async () => {
+    if (loading) return;
+    if (!confirm("Generate a Square invoice covering all unbilled PM moves for this partner? The partner will be emailed a payment link.")) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/partners/${partnerId}/generate-invoice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({}),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast(`Could not generate invoice: ${data.error ?? `HTTP ${res.status}`}`, "x");
+      } else if (data.warning) {
+        toast(
+          `${data.invoice_number} saved · ${formatCompactCurrency(data.total_amount ?? 0)} · due ${data.due_date} (Square not configured)`,
+          "check",
+        );
+        router.refresh();
+      } else {
+        toast(
+          `${data.invoice_number} sent · ${formatCompactCurrency(data.total_amount ?? 0)} · due ${data.due_date}`,
+          "check",
+        );
+        router.refresh();
+      }
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Network error", "x");
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={loading}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--yu3-wine)] text-white text-[10px] font-bold tracking-wide uppercase disabled:opacity-50 hover:opacity-90 transition-opacity"
+      title="Bundle unbilled PM moves into a single Square invoice"
+    >
+      {loading ? "Generating…" : "Generate invoice"}
+    </button>
   );
 }

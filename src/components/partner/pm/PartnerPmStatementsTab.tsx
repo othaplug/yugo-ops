@@ -32,10 +32,14 @@ interface PartnerInvoice {
   status: string;
   period_start: string;
   period_end: string;
+  due_date?: string | null;
   total_amount: number;
   sent_at: string | null;
   paid_at: string | null;
   created_at: string;
+  square_invoice_id?: string | null;
+  square_invoice_url?: string | null;
+  notes?: string | null;
 }
 
 interface DashboardData {
@@ -536,6 +540,19 @@ function PartnerPmStatementsInner({
                         {isPaid ? (
                           <span className="flex items-center gap-1 text-[11px] text-emerald-700 font-medium">
                             <CheckCircle size={12} weight="fill" /> Paid
+                          </span>
+                        ) : inv.square_invoice_url ? (
+                          <a
+                            href={inv.square_invoice_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider bg-[#5C1A33] text-white hover:opacity-90 transition-opacity"
+                          >
+                            Pay invoice
+                          </a>
+                        ) : inv.due_date ? (
+                          <span className="text-[10px] text-[#5A6B5E]">
+                            Due {fmtStmtDate(inv.due_date)}
                           </span>
                         ) : null}
                       </td>

@@ -57,6 +57,63 @@ export default async function InvoicesPage() {
     };
   });
 
+  // Also surface partner_invoices (PM batched billing) — merged into the same list
+  // so coordinators see every invoice in one place. Shape is normalized to match
+  // the existing invoice row contract that InvoicesPageClient consumes.
+  const partnerInvoicesRes = await db
+    .from("partner_invoices")
+    .select(
+      "id, invoice_number, status, period_start, period_end, due_date, total_amount, notes, created_at, sent_at, paid_at, square_invoice_id, square_invoice_url, organization_id, organizations!organization_id(name, vertical, type)",
+    )
+    .order("created_at", { ascending: false });
+  if (partnerInvoicesRes.error) {
+    console.error(
+      "[admin/invoices] partner_invoices query failed:",
+      partnerInvoicesRes.error.message,
+    );
+  }
+  for (const row of partnerInvoicesRes.data ?? []) {
+    const orgEmbed = row.organizations as
+      | { name?: string | null; vertical?: string | null; type?: string | null }
+      | null
+      | undefined;
+    all.push({
+      // Identity / display
+      id: row.id,
+      invoice_number: row.invoice_number,
+      client_name: orgEmbed?.name ?? "Partner",
+      organization_id: row.organization_id,
+      organization: orgEmbed
+        ? { vertical: orgEmbed.vertical ?? null, type: orgEmbed.type ?? null }
+        : null,
+      // Money + lifecycle (match the `invoices` table's contract: amount = subtotal)
+      amount: row.total_amount,
+      status: row.status,
+      created_at: row.created_at,
+      updated_at: row.sent_at ?? row.created_at,
+      paid_at: row.paid_at ?? null,
+      sent_at: row.sent_at ?? null,
+      due_date: row.due_date ?? null,
+      // Discriminator + Square fields so the modal can deep-link properly
+      kind: "partner_invoice",
+      period_start: row.period_start,
+      period_end: row.period_end,
+      square_invoice_id: row.square_invoice_id ?? null,
+      square_invoice_url: row.square_invoice_url ?? null,
+      notes: row.notes ?? null,
+      // Fields that don't apply to PM batches
+      delivery_id: null,
+      move_id: null,
+      deliveries: null,
+      moves: null,
+    } as unknown as (typeof all)[number]);
+  }
+  all.sort((a, b) => {
+    const av = String((a as { created_at?: string }).created_at ?? "");
+    const bv = String((b as { created_at?: string }).created_at ?? "");
+    return bv.localeCompare(av);
+  });
+
   const paid = all.filter((i) => i.status === "paid");
   const sent = all.filter((i) => i.status === "sent");
   const overdue = all.filter((i) => i.status === "overdue");

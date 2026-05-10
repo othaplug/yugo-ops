@@ -7,23 +7,30 @@ import TipsClient from "./TipsClient";
 
 export default async function TipsPage() {
   const db = createAdminClient();
-  const { data: tips } = await db
+  const { data: tips, error: tipsErr } = await db
     .from("tips")
     .select(
-      "id, move_id, delivery_id, job_type, method, service_type, tier, neighbourhood, crew_id, crew_name, client_name, amount, processing_fee, net_amount, charged_at, moves(move_code, service_type, is_pm_move, first_name, last_name), deliveries(delivery_number, service_type)",
+      "id, move_id, delivery_id, job_type, method, service_type, tier, neighbourhood, crew_id, crew_name, client_name, amount, processing_fee, net_amount, charged_at, moves(move_code, service_type, is_pm_move, tenant_name, client_name), deliveries(delivery_number, delivery_type, vertical_code)",
     )
     .order("charged_at", { ascending: false })
     .limit(200);
+  if (tipsErr) {
+    console.error("[tips/page] Query failed:", tipsErr.message);
+  }
 
   const allTips = (tips || []).map((row) => {
     const m = row.moves as {
       move_code?: string | null;
       service_type?: string | null;
       is_pm_move?: boolean | null;
-      first_name?: string | null;
-      last_name?: string | null;
+      tenant_name?: string | null;
+      client_name?: string | null;
     } | null | undefined;
-    const del = row.deliveries as { delivery_number?: string | null; service_type?: string | null } | null | undefined;
+    const del = row.deliveries as { delivery_number?: string | null; delivery_type?: string | null; vertical_code?: string | null } | null | undefined;
+    const delServiceType =
+      (del?.delivery_type && String(del.delivery_type).trim()) ||
+      (del?.vertical_code && String(del.vertical_code).trim()) ||
+      null;
     const { moves: _m, deliveries: _d, ...rest } = row as typeof row & {
       moves?: unknown;
       deliveries?: unknown;
@@ -33,7 +40,7 @@ export default async function TipsPage() {
     const resolvedServiceType =
       (rest.service_type && String(rest.service_type).trim()) ||
       (m?.service_type && String(m.service_type).trim()) ||
-      (del?.service_type && String(del.service_type).trim()) ||
+      delServiceType ||
       null;
 
     // For PM moves, override b2b_oneoff service_type to "pm_move"
@@ -42,12 +49,15 @@ export default async function TipsPage() {
         ? "pm_move"
         : resolvedServiceType;
 
-    // Resolve client_name: for PM moves prefer first_name + last_name from linked move
-    const tenantName =
-      m?.is_pm_move && (m.first_name || m.last_name)
-        ? [m.first_name, m.last_name].filter(Boolean).join(" ")
+    // Resolve client_name: for PM moves the displayable name lives on the linked move's
+    // tenant_name (preferred) or falls back to the move's client_name.
+    const pmDisplayName =
+      m?.is_pm_move
+        ? (m.tenant_name && m.tenant_name.trim()) ||
+          (m.client_name && m.client_name.trim()) ||
+          null
         : null;
-    const resolvedClientName = tenantName || rest.client_name;
+    const resolvedClientName = pmDisplayName || rest.client_name;
 
     return {
       ...rest,

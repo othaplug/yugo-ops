@@ -49,7 +49,9 @@ export async function GET() {
     // PM partner invoices (new billing system)
     admin
       .from("partner_invoices")
-      .select("id, invoice_number, status, period_start, period_end, total_amount, sent_at, paid_at, created_at")
+      .select(
+        "id, invoice_number, status, period_start, period_end, due_date, total_amount, sent_at, paid_at, created_at, square_invoice_id, square_invoice_url, notes",
+      )
       .eq("organization_id", orgId)
       .order("created_at", { ascending: false })
       .limit(36),
@@ -65,15 +67,26 @@ export async function GET() {
     (s, i) => s + Number((i as Record<string, unknown>).total_amount ?? (i as Record<string, unknown>).amount ?? 0),
     0,
   );
-  const outstandingDueDate =
-    outstandingInvs.length > 0
-      ? (outstandingInvs.sort((a, b) =>
-          ((a as Record<string, unknown>).period_end as string ?? (a as Record<string, unknown>).due_date as string ?? "").localeCompare(
-            ((b as Record<string, unknown>).period_end as string ?? (b as Record<string, unknown>).due_date as string ?? ""),
-          ),
-        )[0] as Record<string, unknown>)?.period_end as string | null ??
-        null
-      : null;
+  const outstandingDueDate = (() => {
+    if (outstandingInvs.length === 0) return null;
+    const sorted = [...outstandingInvs].sort((a, b) => {
+      const av =
+        ((a as Record<string, unknown>).due_date as string | undefined) ||
+        ((a as Record<string, unknown>).period_end as string | undefined) ||
+        "";
+      const bv =
+        ((b as Record<string, unknown>).due_date as string | undefined) ||
+        ((b as Record<string, unknown>).period_end as string | undefined) ||
+        "";
+      return av.localeCompare(bv);
+    });
+    const first = sorted[0] as Record<string, unknown>;
+    return (
+      (first?.due_date as string | null) ??
+      (first?.period_end as string | null) ??
+      null
+    );
+  })();
 
   const billingTerms =
     (contract?.payment_terms as string | undefined) ||
