@@ -59,13 +59,14 @@ export default async function RevenuePage() {
       .in("status", ["completed", "booked", "scheduled", "confirmed"])
       .order("scheduled_date", { ascending: false })
       .limit(2000),
-    // Booked residential moves where a deposit was collected (balance outstanding)
+    // Booked residential moves where a deposit was collected (balance outstanding).
+    // Detect deposit collection via deposit_paid_at IS NOT NULL — there is no boolean column.
     db
       .from("moves")
       .select("id, estimate, final_amount, total_price, amount, deposit_amount")
       .in("status", ["booked", "scheduled", "confirmed"])
       .eq("is_pm_move", false)
-      .eq("deposit_paid", true),
+      .not("deposit_paid_at", "is", null),
   ]);
   const clientTypeMap: Record<string, string> = {};
   const orgIdToType: Record<string, string> = {};
