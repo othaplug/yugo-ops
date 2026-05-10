@@ -216,6 +216,22 @@ export const MovesClient = ({ initialMoves, invoices = [] }: MovesClientProps) =
         },
       },
       {
+        id: "complete",
+        label: "Mark complete",
+        handler: async (rows) => {
+          const eligible = rows.filter((r) => r.status === "in-transit" || r.status === "pre-move")
+          if (!eligible.length) { toast.info("No dispatched moves to complete"); return }
+          const { ok, failCount } = await bulkMoveStatus(eligible.map((r) => r.id), "completed")
+          if (ok) {
+            const ids = new Set(eligible.map((r) => r.id))
+            setMoves((prev) => prev.map((m) => ids.has(m.id) ? { ...m, status: "completed" as Move["status"] } : m))
+            toast.success(`Completed ${eligible.length} moves`)
+          } else {
+            toast.error(`${failCount} move(s) failed to complete`)
+          }
+        },
+      },
+      {
         id: "reassign",
         label: "Reassign crew",
         handler: (rows) => {
