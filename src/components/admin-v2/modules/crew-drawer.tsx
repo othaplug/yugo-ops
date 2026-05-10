@@ -237,12 +237,10 @@ export const CrewDrawer = ({ crew, open, onOpenChange, moves = [], onAvailabilit
       >
         {loading === "duty" ? "Saving…" : isOffDuty ? "Set active" : "Set off duty"}
       </Button>
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={() => toast.success(`${crew.name} assigned`)}
-      >
-        Assign to move
+      <Button variant="primary" size="sm" asChild>
+        <Link href={`${ADMIN_V2_BASE}/moves`} onClick={() => onOpenChange(false)}>
+          View moves
+        </Link>
       </Button>
     </div>
   )
