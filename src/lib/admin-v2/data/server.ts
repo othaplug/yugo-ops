@@ -322,17 +322,16 @@ const fetchAdminUniverse = async (): Promise<AdminUniverse> => {
 
   const thirtyDays = Date.now() - 30 * 24 * 60 * 60 * 1000
 
+  // B2B stats: count moves per org in last 30 days (org is B2B client, not PM).
   const b2bStats = new Map<string, { jobsLast30: number; revenueLast30: number }>()
-  for (const invoice of invoices) {
-    if (!invoice.customerId) continue
-    if (new Date(invoice.createdAt).getTime() < thirtyDays) continue
-    const existing = b2bStats.get(invoice.customerId) ?? {
-      jobsLast30: 0,
-      revenueLast30: 0,
-    }
+  for (const row of movesResp.rows ?? []) {
+    if (!row.organization_id) continue
+    const scheduledMs = row.scheduled_date ? new Date(row.scheduled_date).getTime() : 0
+    if (scheduledMs < thirtyDays) continue
+    const existing = b2bStats.get(row.organization_id) ?? { jobsLast30: 0, revenueLast30: 0 }
     existing.jobsLast30 += 1
-    existing.revenueLast30 += invoice.total
-    b2bStats.set(invoice.customerId, existing)
+    existing.revenueLast30 += Number(row.final_amount ?? row.total_price ?? row.estimate ?? 0)
+    b2bStats.set(row.organization_id, existing)
   }
 
   const b2bPartners: B2BPartner[] = b2bOrgs.map((org) =>
