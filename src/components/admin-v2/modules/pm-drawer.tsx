@@ -1,8 +1,10 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { toast } from "sonner"
 import { Button } from "../primitives/Button"
+import { Icon } from "../primitives/Icon"
 import {
   DrawerSection,
   DrawerStatGrid,
@@ -65,21 +67,31 @@ export const PMDrawer = ({ account, open, onOpenChange }: PMDrawerProps) => {
   )
 
   const footer = (
-    <div className="flex w-full items-center justify-end gap-2">
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={() => toast.info("Statement generation queued")}
-      >
-        Generate statement
+    <div className="flex w-full items-center justify-between gap-2">
+      <Button variant="secondary" size="sm" asChild>
+        <Link href={`/admin/partners/${account.id}/billing`} target="_blank">
+          <Icon name="arrowUpRight" size="sm" weight="bold" />
+          Billing
+        </Link>
       </Button>
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={() => toast.success("New project created")}
-      >
-        New project
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          asChild
+        >
+          <Link href={`/admin/partners/${account.id}`} target="_blank">
+            Profile
+          </Link>
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => toast.info("New project flow opens here")}
+        >
+          New project
+        </Button>
+      </div>
     </div>
   )
 

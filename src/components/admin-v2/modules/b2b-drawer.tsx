@@ -1,9 +1,11 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { toast } from "sonner"
 import { Button } from "../primitives/Button"
 import { Chip } from "../primitives/Chip"
+import { Icon } from "../primitives/Icon"
 import {
   DrawerSection,
   DrawerStatGrid,
@@ -84,18 +86,17 @@ export const B2BDrawer = ({ partner, open, onOpenChange }: B2BDrawerProps) => {
   )
 
   const footer = (
-    <div className="flex w-full items-center justify-end gap-2">
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={() => toast.info("Statements drawer opens here")}
-      >
-        View statements
+    <div className="flex w-full items-center justify-between gap-2">
+      <Button variant="secondary" size="sm" asChild>
+        <Link href={`/admin/partners/${partner.id}`} target="_blank">
+          <Icon name="arrowUpRight" size="sm" weight="bold" />
+          Open in admin
+        </Link>
       </Button>
       <Button
         variant="primary"
         size="sm"
-        onClick={() => toast.success("New job routed")}
+        onClick={() => toast.info("New job routing opens here")}
       >
         New job
       </Button>
