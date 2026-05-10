@@ -24,6 +24,21 @@ import {
 import { formatPercent } from "@/lib/admin-v2/format"
 import type { CrewMember, Move } from "@/lib/admin-v2/mock/types"
 
+async function bulkSetCrewActive(ids: string[], is_active: boolean): Promise<{ failCount: number }> {
+  const results = await Promise.allSettled(
+    ids.map((id) =>
+      fetch(`/api/admin/crew-members/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ is_active }),
+      }).then((r) => r.ok),
+    ),
+  )
+  const failCount = results.filter((r) => r.status === "rejected" || (r.status === "fulfilled" && !r.value)).length
+  return { failCount }
+}
+
 export type CrewClientProps = {
   initialCrew: CrewMember[]
   moves?: Move[]
@@ -164,14 +179,18 @@ export const CrewClient = ({ initialCrew, moves = [] }: CrewClientProps) => {
       {
         id: "off",
         label: "Set off duty",
-        handler: (rows) => {
-          const ids = new Set(rows.map((r) => r.id))
+        handler: async (rows) => {
+          const ids = rows.map((r) => r.id)
+          const { failCount } = await bulkSetCrewActive(ids, false)
+          const idSet = new Set(ids)
           setCrew((prev) =>
-            prev.map((c) =>
-              ids.has(c.id) ? { ...c, availability: "off-duty" } : c,
-            ),
+            prev.map((c) => idSet.has(c.id) ? { ...c, availability: "off-duty" as CrewMember["availability"] } : c),
           )
-          toast.success(`${rows.length} crew set off duty`)
+          if (failCount === 0) {
+            toast.success(`${rows.length} crew set off duty`)
+          } else {
+            toast.error(`${failCount} crew member(s) failed to update`)
+          }
         },
       },
       {
