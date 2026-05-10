@@ -248,7 +248,16 @@ export const LeadsClient = ({ initialLeads }: LeadsClientProps) => {
                 <DropdownItem onSelect={() => toast.info("Import .CSV")}>
                   Import .CSV
                 </DropdownItem>
-                <DropdownItem onSelect={() => toast.info("Export all")}>
+                <DropdownItem
+                  onSelect={() => {
+                    downloadCsv(
+                      ["Name", "Email", "Phone", "Source", "Status", "Size", "Owner", "Last contact"],
+                      leads.map((r) => [r.name, r.email, r.phone, r.source, r.status, r.size, r.ownerName, r.lastAction]),
+                      `yugo-leads-all-${new Date().toISOString().slice(0, 10)}`,
+                    );
+                    toast.success(`Downloaded ${leads.length} leads`);
+                  }}
+                >
                   Export all
                 </DropdownItem>
                 <DropdownSeparator />
