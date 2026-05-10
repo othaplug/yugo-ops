@@ -106,6 +106,8 @@ export async function autoCreateHubSpotDealForNewMove(opts: {
     lastName,
     businessName: businessName ?? undefined,
     tierLabel: String(move.tier_selected ?? "").trim().replace(/_/g, " ") || undefined,
+    moveSize: String(move.move_size ?? "").trim() || undefined,
+    fromAddress: String(move.from_address ?? "").trim() || undefined,
     date: String(move.scheduled_date ?? "").trim() || undefined,
     fallbackCode: `Move ${moveCode}`,
   })

@@ -134,6 +134,7 @@ export async function autoCreateHubSpotDealForNewDelivery(opts: {
     firstName,
     lastName,
     businessName: String(delivery.business_name || "").trim() || undefined,
+    fromAddress: String(delivery.pickup_address ?? "").trim() || undefined,
     date: String(delivery.scheduled_date ?? "").trim() || undefined,
     fallbackCode: `Delivery ${deliveryNumber}`,
   })

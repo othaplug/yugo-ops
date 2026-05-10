@@ -403,7 +403,7 @@ export default function PartnerHealthClient() {
           <table className="w-full min-w-[720px]">
             <thead>
               <tr className="border-b border-[var(--yu3-line)] bg-[var(--yu3-bg-canvas)]/50">
-                {["Partner", "Status", "Volume (30d)", "Trend", "Revenue", "Last delivery", "Action"].map(
+                {["Partner", "Status", "Volume (30d)", "Trend", "Revenue", "Last job", "Action"].map(
                   (h) => (
                     <th
                       key={h}

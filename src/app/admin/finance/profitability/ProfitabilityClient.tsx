@@ -520,7 +520,7 @@ function OverheadEditor({
                   onChange={(e) =>
                     setStandard((p) => ({ ...p, [f.key]: e.target.value }))
                   }
-                  className="admin-premium-input admin-premium-input--leading admin-premium-input--compact w-full"
+                  className="admin-premium-input admin-premium-input--leading admin-premium-input--compact w-full pl-5"
                 />
               </div>
             </div>
@@ -574,7 +574,7 @@ function OverheadEditor({
                         [t.key]: e.target.value,
                       }))
                     }
-                    className="admin-premium-input admin-premium-input--leading admin-premium-input--compact w-full"
+                    className="admin-premium-input admin-premium-input--leading admin-premium-input--compact w-full pl-5"
                   />
                 </div>
               </div>
@@ -637,7 +637,7 @@ function OverheadEditor({
                       ),
                     )
                   }
-                  className="admin-premium-input admin-premium-input--leading admin-premium-input--compact w-full"
+                  className="admin-premium-input admin-premium-input--leading admin-premium-input--compact w-full pl-5"
                 />
               </div>
               <button
@@ -673,7 +673,7 @@ function OverheadEditor({
             value={newAmount}
             onChange={(e) => setNewAmount(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addCustom()}
-            className="admin-premium-input admin-premium-input--leading admin-premium-input--compact w-full"
+            className="admin-premium-input admin-premium-input--leading admin-premium-input--compact w-full pl-5"
           />
         </div>
         <button

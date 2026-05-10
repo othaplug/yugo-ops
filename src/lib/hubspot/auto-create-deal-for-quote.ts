@@ -188,6 +188,8 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
     lastName,
     businessName: String(quote.b2b_business_name ?? "").trim() || undefined,
     tierLabel,
+    moveSize: String(quote.move_size ?? "").trim() || undefined,
+    fromAddress: String(quote.from_address ?? "").trim() || undefined,
     date: String(quote.move_date ?? "").trim() || undefined,
     fallbackCode: `Quote ${quoteIdText}`,
   });

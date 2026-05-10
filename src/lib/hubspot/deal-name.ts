@@ -1,10 +1,10 @@
 /**
  * HubSpot deal name builder.
  *
- * Structured format by service category:
- *   B2B:         [B2B] CompanyName · Service Label · Date
- *   PM:          [PM] TenantName · Portfolio Move · Date
- *   Residential: FirstName LastName · Tier · Date
+ * Format (using | separator):
+ *   Residential: First Last | Tier | Size | City
+ *   B2B:         [B2B] | Company | Vertical | City
+ *   PM:          [PM] | Tenant | City
  *
  * Result is capped at 200 characters (HubSpot limit).
  */
@@ -45,6 +45,32 @@ export function serviceCategory(
   return "residential"
 }
 
+/** Extract the city segment from a full address string. */
+function extractCity(address: string | null | undefined): string {
+  if (!address) return ""
+  const s = String(address).trim()
+  // Typical format: "123 Street, City, Province ZIP" or "123 Street, City, State 12345"
+  const parts = s.split(",").map((p) => p.trim()).filter(Boolean)
+  if (parts.length >= 2) {
+    // Second-to-last segment is generally city; last is state/province + zip
+    const candidate = parts[parts.length - 2]
+    // Strip trailing two-letter province/state code if present in this segment
+    return candidate.replace(/\s+[A-Z]{2}\s*$/, "").trim()
+  }
+  return ""
+}
+
+/** Format a move-size slug for display. "2_bedroom" → "2 Bed", "studio" → "Studio". */
+function formatSize(size: string | null | undefined): string {
+  const s = String(size || "").trim()
+  if (!s) return ""
+  return s
+    .replace(/_/g, " ")
+    .replace(/\b(\d+)\s*bed(room)?s?\b/i, "$1 Bed")
+    .replace(/\bstudio\b/i, "Studio")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 /** Build a structured HubSpot deal name. */
 export function buildHubSpotDealName(opts: {
   serviceType?: string | null
@@ -55,47 +81,47 @@ export function buildHubSpotDealName(opts: {
   businessName?: string | null
   /** Residential tier label (signature / curated / essential). Only shown for residential deals. */
   tierLabel?: string | null
+  /** Move size / bedroom count — shown for residential deals (e.g. "2_bedroom"). */
+  moveSize?: string | null
+  /** Pickup / from address — city is extracted and appended to all deal names. */
+  fromAddress?: string | null
+  /** Legacy: kept for call-site compatibility but no longer included in the deal name. */
   date?: string | null
   fallbackCode?: string | null
 }): string {
   const cat = serviceCategory(opts.serviceType, opts.isPmMove)
-  const date = String(opts.date || "").trim()
+  const city = extractCity(opts.fromAddress)
   const label = serviceTypeHumanLabel(opts.serviceType)
 
   if (cat === "b2b") {
     const biz = String(opts.businessName || "").trim()
     const person = joinName(opts.firstName, opts.lastName)
     const subject = biz || person
-    return assembleName("[B2B]", subject, label, date, opts.fallbackCode ?? "B2B Deal")
+    return assembleParts(["[B2B]", subject, label, city], opts.fallbackCode ?? "B2B Deal")
   }
 
   if (cat === "pm") {
     const tenant = joinName(opts.firstName, opts.lastName)
-    return assembleName("[PM]", tenant, label || "Portfolio Move", date, opts.fallbackCode ?? "PM Deal")
+    return assembleParts(["[PM]", tenant, city], opts.fallbackCode ?? "PM Deal")
   }
 
   // residential
   const person = joinName(opts.firstName, opts.lastName)
   const tier = String(opts.tierLabel || "").trim()
-  const display = tier || label
-  return assembleName(null, person, display, date, opts.fallbackCode ?? "Residential Deal")
+  const size = formatSize(opts.moveSize)
+  return assembleParts([person, tier || label, size, city], opts.fallbackCode ?? "Residential Deal")
 }
 
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function assembleName(
-  prefix: string | null,
-  subject: string,
-  label: string,
-  date: string,
-  fallback: string,
-): string {
-  const parts = [prefix, subject, label, date]
+function assembleParts(parts: (string | null | undefined)[], fallback: string): string {
+  const joined = parts
     .map((x) => String(x ?? "").trim())
     .filter(Boolean)
-  return (parts.join(" · ").trim() || fallback).slice(0, 200)
+    .join(" | ")
+  return (joined.trim() || fallback).slice(0, 200)
 }
 
 function joinName(first?: string | null, last?: string | null): string {

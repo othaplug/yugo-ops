@@ -20,12 +20,32 @@ export interface PartnerHealthRow {
   revenue_by_vertical_90d: { code: string; label: string; revenue: number; pct: number }[];
 }
 
-function getHealthStatus(lastDeliveryAt: string | null): PartnerHealthRow["health_status"] {
-  if (!lastDeliveryAt) return "churned";
-  const days = Math.floor((Date.now() - new Date(lastDeliveryAt).getTime()) / 86_400_000);
-  if (days <= 14) return "active";
-  if (days <= 30) return "at_risk";
-  if (days <= 60) return "cold";
+/**
+ * Classify health from last-activity date.
+ * If there is no activity, fall back to how long the org has been a partner:
+ *   - joined < 30 days ago → active (brand new, give them time)
+ *   - joined 30–60 days ago → at_risk (needs engagement)
+ *   - joined > 60 days ago → churned (inactive long enough to count)
+ */
+function getHealthStatus(
+  lastActivityAt: string | null,
+  orgCreatedAt: string | null,
+): PartnerHealthRow["health_status"] {
+  if (lastActivityAt) {
+    const days = Math.floor((Date.now() - new Date(lastActivityAt).getTime()) / 86_400_000);
+    if (days <= 14) return "active";
+    if (days <= 30) return "at_risk";
+    if (days <= 60) return "cold";
+    return "churned";
+  }
+  // No recorded activity — use partner tenure
+  if (orgCreatedAt) {
+    const daysSince = Math.floor(
+      (Date.now() - new Date(orgCreatedAt).getTime()) / 86_400_000,
+    );
+    if (daysSince <= 30) return "active";
+    if (daysSince <= 60) return "at_risk";
+  }
   return "churned";
 }
 
@@ -38,7 +58,7 @@ function getTrend(current: number, previous: number): PartnerHealthRow["trend"] 
   return "stable";
 }
 
-/** Revenue figure from delivery row (schema uses total_price / admin_adjusted_price / base_price). */
+/** Revenue figure from delivery row. */
 function deliveryRevenue(d: {
   total_price?: number | null;
   admin_adjusted_price?: number | null;
@@ -51,6 +71,12 @@ function deliveryRevenue(d: {
 }
 
 const COMPLETED_STATUSES = ["completed", "delivered"];
+const PM_MOVE_STATUSES = ["completed", "booked", "confirmed", "in_progress", "scheduled"];
+
+/** True for property-management org types. */
+function isPmType(type: string | null | undefined): boolean {
+  return String(type || "").toLowerCase().includes("property_management");
+}
 
 export async function GET() {
   const { error: authError } = await requireStaff();
@@ -60,20 +86,19 @@ export async function GET() {
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 86_400_000).toISOString();
   const sixtyDaysAgo = new Date(now.getTime() - 60 * 86_400_000).toISOString();
+  const ninetyDaysAgo = new Date(now.getTime() - 90 * 86_400_000).toISOString();
 
-  // Same partner scope as /api/admin/partners/list (exclude consumer orgs only).
-  // Try with new columns first; fall back to the stable baseline if migration not yet applied.
+  // Fetch orgs — include created_at for new-partner classification
   let { data: orgs, error: orgsError } = await admin
     .from("organizations")
-    .select("id, name, type, vertical, contact_name, email, phone, last_delivery_at")
+    .select("id, name, type, vertical, contact_name, email, phone, last_delivery_at, created_at")
     .not("type", "eq", "b2c")
     .order("name");
 
-  // last_delivery_at may not exist yet if the migration hasn't been applied — retry without it
   if (orgsError && /last_delivery_at|column|does not exist/i.test(orgsError.message)) {
     const retry = await admin
       .from("organizations")
-      .select("id, name, type, vertical, contact_name, email, phone")
+      .select("id, name, type, vertical, contact_name, email, phone, created_at")
       .not("type", "eq", "b2c")
       .order("name");
     orgs = retry.data as typeof orgs;
@@ -90,11 +115,79 @@ export async function GET() {
     return NextResponse.json({ partners: [], stats: { total: 0, active: 0, at_risk: 0, cold: 0, churned: 0 } });
   }
 
-  // Latest completed_at per org (covers orgs before last_delivery_at column / backfill)
+  // ── Split PM vs delivery org IDs ──────────────────────────────────────────
+  const pmOrgIds = (orgs ?? []).filter((o) => isPmType(o.type)).map((o) => o.id);
+  const deliveryOrgIds = orgIds.filter((id) => !pmOrgIds.includes(id));
+
+  // ── Moves data for PM orgs ────────────────────────────────────────────────
+  const movesLastActivity: Record<string, string> = {};
+  const movesVolume30d: Record<string, number> = {};
+  const movesRevenue30d: Record<string, number> = {};
+  const movesPrevVolume: Record<string, number> = {};
+
+  if (pmOrgIds.length > 0) {
+    const ORG_CHUNK = 50;
+
+    // Last activity: pick the most-recent scheduled_date or completed_at
+    for (let i = 0; i < pmOrgIds.length; i += ORG_CHUNK) {
+      const chunk = pmOrgIds.slice(i, i + ORG_CHUNK);
+      const { data: rows } = await admin
+        .from("moves")
+        .select("organization_id, completed_at, scheduled_date")
+        .in("organization_id", chunk)
+        .in("status", PM_MOVE_STATUSES)
+        .not("organization_id", "is", null);
+
+      for (const m of rows ?? []) {
+        const oid = String(m.organization_id);
+        const ts = (m.completed_at as string | null) ?? (m.scheduled_date as string | null);
+        if (!ts) continue;
+        if (!movesLastActivity[oid] || ts > movesLastActivity[oid]) {
+          movesLastActivity[oid] = ts;
+        }
+      }
+    }
+
+    // Volume + revenue: last 30 days
+    for (let i = 0; i < pmOrgIds.length; i += ORG_CHUNK) {
+      const chunk = pmOrgIds.slice(i, i + ORG_CHUNK);
+      const { data: rows } = await admin
+        .from("moves")
+        .select("organization_id, total_price")
+        .in("organization_id", chunk)
+        .gte("scheduled_date", thirtyDaysAgo)
+        .in("status", PM_MOVE_STATUSES);
+
+      for (const m of rows ?? []) {
+        const oid = String(m.organization_id);
+        movesVolume30d[oid] = (movesVolume30d[oid] || 0) + 1;
+        movesRevenue30d[oid] = (movesRevenue30d[oid] || 0) + (Number(m.total_price) || 0);
+      }
+    }
+
+    // Previous 30 days for trend
+    for (let i = 0; i < pmOrgIds.length; i += ORG_CHUNK) {
+      const chunk = pmOrgIds.slice(i, i + ORG_CHUNK);
+      const { data: rows } = await admin
+        .from("moves")
+        .select("organization_id")
+        .in("organization_id", chunk)
+        .gte("scheduled_date", sixtyDaysAgo)
+        .lt("scheduled_date", thirtyDaysAgo)
+        .in("status", PM_MOVE_STATUSES);
+
+      for (const m of rows ?? []) {
+        const oid = String(m.organization_id);
+        movesPrevVolume[oid] = (movesPrevVolume[oid] || 0) + 1;
+      }
+    }
+  }
+
+  // ── Deliveries data for non-PM orgs ───────────────────────────────────────
   const lastCompletedByOrg: Record<string, string> = {};
   const ORG_CHUNK = 50;
-  for (let i = 0; i < orgIds.length; i += ORG_CHUNK) {
-    const chunk = orgIds.slice(i, i + ORG_CHUNK);
+  for (let i = 0; i < deliveryOrgIds.length; i += ORG_CHUNK) {
+    const chunk = deliveryOrgIds.slice(i, i + ORG_CHUNK);
     const { data: rows } = await admin
       .from("deliveries")
       .select("organization_id, completed_at")
@@ -110,16 +203,15 @@ export async function GET() {
     }
   }
 
-  const ninetyDaysAgo = new Date(now.getTime() - 90 * 86_400_000).toISOString();
-
   // Deliveries in last 30 days (current period)
   const { data: deliveries30 } = await admin
     .from("deliveries")
     .select("organization_id, base_price, total_price, admin_adjusted_price, status, completed_at")
-    .in("organization_id", orgIds)
+    .in("organization_id", deliveryOrgIds.length > 0 ? deliveryOrgIds : ["__none__"])
     .gte("completed_at", thirtyDaysAgo)
     .in("status", COMPLETED_STATUSES);
 
+  // Revenue by vertical, last 90 days
   let deliveries90: {
     organization_id: string;
     vertical_code?: string | null;
@@ -127,25 +219,27 @@ export async function GET() {
     total_price?: number | null;
     admin_adjusted_price?: number | null;
   }[] = [];
-  const vert90Res = await admin
-    .from("deliveries")
-    .select("organization_id, vertical_code, base_price, total_price, admin_adjusted_price")
-    .in("organization_id", orgIds)
-    .gte("completed_at", ninetyDaysAgo)
-    .in("status", COMPLETED_STATUSES);
-  if (
-    !vert90Res.error &&
-    Array.isArray(vert90Res.data)
-  ) {
-    deliveries90 = vert90Res.data as typeof deliveries90;
-  } else if (
-    vert90Res.error &&
-    !/vertical_code|column|does not exist/i.test(String(vert90Res.error.message || ""))
-  ) {
-    console.warn("[partners/health] deliveries 90d vertical query:", vert90Res.error.message);
+  if (deliveryOrgIds.length > 0) {
+    const vert90Res = await admin
+      .from("deliveries")
+      .select("organization_id, vertical_code, base_price, total_price, admin_adjusted_price")
+      .in("organization_id", deliveryOrgIds)
+      .gte("completed_at", ninetyDaysAgo)
+      .in("status", COMPLETED_STATUSES);
+    if (!vert90Res.error && Array.isArray(vert90Res.data)) {
+      deliveries90 = vert90Res.data as typeof deliveries90;
+    } else if (
+      vert90Res.error &&
+      !/vertical_code|column|does not exist/i.test(String(vert90Res.error.message || ""))
+    ) {
+      console.warn("[partners/health] deliveries 90d vertical query:", vert90Res.error.message);
+    }
   }
 
-  const { data: verticalNameRows } = await admin.from("delivery_verticals").select("code, name").eq("active", true);
+  const { data: verticalNameRows } = await admin
+    .from("delivery_verticals")
+    .select("code, name")
+    .eq("active", true);
   const verticalLabel = (code: string | null | undefined): string => {
     if (!code || !String(code).trim()) return "Other";
     const c = String(code);
@@ -163,11 +257,11 @@ export async function GET() {
     verticalRevenueByOrg[oid]![key] = (verticalRevenueByOrg[oid]![key] || 0) + deliveryRevenue(d);
   }
 
-  // Previous 30 days (for trend)
+  // Previous 30 days (for trend) — delivery orgs only
   const { data: deliveriesPrev } = await admin
     .from("deliveries")
     .select("organization_id, status, completed_at")
-    .in("organization_id", orgIds)
+    .in("organization_id", deliveryOrgIds.length > 0 ? deliveryOrgIds : ["__none__"])
     .gte("completed_at", sixtyDaysAgo)
     .lt("completed_at", thirtyDaysAgo)
     .in("status", COMPLETED_STATUSES);
@@ -196,13 +290,20 @@ export async function GET() {
     prevVolumeMap[oid] = (prevVolumeMap[oid] || 0) + 1;
   }
 
+  // ── Build partner rows ────────────────────────────────────────────────────
   const partners: PartnerHealthRow[] = (orgs ?? []).map((org) => {
-    const vol = volumeMap[org.id] || 0;
-    const prevVol = prevVolumeMap[org.id] || 0;
-    const rev = revenueMap[org.id] || 0;
+    const pm = isPmType(org.type);
 
+    // Last activity: moves for PM, deliveries for others
     const rowLast = org.last_delivery_at as string | null | undefined;
-    const lastAt = rowLast ?? lastCompletedByOrg[org.id] ?? null;
+    const lastAt = pm
+      ? (movesLastActivity[org.id] ?? null)
+      : (rowLast ?? lastCompletedByOrg[org.id] ?? null);
+
+    const vol = pm ? (movesVolume30d[org.id] || 0) : (volumeMap[org.id] || 0);
+    const prevVol = pm ? (movesPrevVolume[org.id] || 0) : (prevVolumeMap[org.id] || 0);
+    const rev = pm ? (movesRevenue30d[org.id] || 0) : (revenueMap[org.id] || 0);
+
     const daysSince = lastAt
       ? Math.floor((now.getTime() - new Date(lastAt).getTime()) / 86_400_000)
       : null;
@@ -232,7 +333,7 @@ export async function GET() {
       email: org.email,
       phone: org.phone,
       last_delivery_at: lastAt,
-      health_status: getHealthStatus(lastAt),
+      health_status: getHealthStatus(lastAt, (org as { created_at?: string | null }).created_at ?? null),
       volume_30d: vol,
       revenue_30d: Math.round(rev),
       trend: getTrend(vol, prevVol),
