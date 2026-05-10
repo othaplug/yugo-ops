@@ -23,6 +23,7 @@ type InvoiceDrawerProps = {
   invoice: Invoice | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  onStatusChange?: (invoiceId: string, newStatus: string) => void
 }
 
 const statusVariant = (status: Invoice["status"]) => {
@@ -43,11 +44,46 @@ const statusVariant = (status: Invoice["status"]) => {
   }
 }
 
+async function patchInvoiceStatus(invoiceId: string, status: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`/api/admin/invoices/${invoiceId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ status }),
+    })
+    const data = await res.json()
+    if (!res.ok) return { ok: false, error: data.error ?? "Failed" }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: "Network error" }
+  }
+}
+
 export const InvoiceDrawer = ({
   invoice,
   open,
   onOpenChange,
+  onStatusChange,
 }: InvoiceDrawerProps) => {
+  const [loading, setLoading] = React.useState<string | null>(null)
+
+  const handleStatusChange = React.useCallback(
+    async (newStatus: string, label: string) => {
+      if (!invoice) return
+      setLoading(newStatus)
+      const result = await patchInvoiceStatus(invoice.id, newStatus)
+      setLoading(null)
+      if (result.ok) {
+        toast.success(`Invoice ${label}`)
+        onStatusChange?.(invoice.id, newStatus)
+      } else {
+        toast.error(result.error ?? "Failed to update invoice")
+      }
+    },
+    [invoice, onStatusChange],
+  )
+
   if (!invoice) return null
 
   const overview = (
@@ -96,38 +132,22 @@ export const InvoiceDrawer = ({
         <table className="w-full body-sm">
           <thead className="bg-surface-subtle">
             <tr>
-              <th className="px-3 py-2 text-left label-sm text-fg-subtle">
-                Item
-              </th>
-              <th className="px-3 py-2 text-right label-sm text-fg-subtle">
-                Qty
-              </th>
-              <th className="px-3 py-2 text-right label-sm text-fg-subtle">
-                Rate
-              </th>
-              <th className="px-3 py-2 text-right label-sm text-fg-subtle">
-                Amount
-              </th>
+              <th className="px-3 py-2 text-left label-sm text-fg-subtle">Item</th>
+              <th className="px-3 py-2 text-right label-sm text-fg-subtle">Qty</th>
+              <th className="px-3 py-2 text-right label-sm text-fg-subtle">Rate</th>
+              <th className="px-3 py-2 text-right label-sm text-fg-subtle">Amount</th>
             </tr>
           </thead>
           <tbody>
             {[
               { item: "Base move rate", qty: 1, rate: invoice.subtotal * 0.6 },
               { item: "Labour", qty: 1, rate: invoice.subtotal * 0.3 },
-              {
-                item: "Materials & supplies",
-                qty: 1,
-                rate: invoice.subtotal * 0.1,
-              },
+              { item: "Materials & supplies", qty: 1, rate: invoice.subtotal * 0.1 },
             ].map((row) => (
               <tr key={row.item} className="border-t border-line">
                 <td className="px-3 py-2 text-fg">{row.item}</td>
-                <td className="px-3 py-2 text-right text-fg tabular-nums">
-                  {row.qty}
-                </td>
-                <td className="px-3 py-2 text-right text-fg tabular-nums">
-                  {formatCurrency(row.rate)}
-                </td>
+                <td className="px-3 py-2 text-right text-fg tabular-nums">{row.qty}</td>
+                <td className="px-3 py-2 text-right text-fg tabular-nums">{formatCurrency(row.rate)}</td>
                 <td className="px-3 py-2 text-right text-fg tabular-nums font-medium">
                   {formatCurrency(row.qty * row.rate)}
                 </td>
@@ -136,17 +156,11 @@ export const InvoiceDrawer = ({
           </tbody>
           <tfoot>
             <tr className="border-t border-line bg-surface-subtle">
-              <td className="px-3 py-2 label-sm text-fg-subtle" colSpan={3}>
-                Tax
-              </td>
-              <td className="px-3 py-2 text-right text-fg tabular-nums">
-                {formatCurrency(invoice.tax)}
-              </td>
+              <td className="px-3 py-2 label-sm text-fg-subtle" colSpan={3}>Tax</td>
+              <td className="px-3 py-2 text-right text-fg tabular-nums">{formatCurrency(invoice.tax)}</td>
             </tr>
             <tr className="border-t border-line">
-              <td className="px-3 py-2 label-md text-fg" colSpan={3}>
-                Total
-              </td>
+              <td className="px-3 py-2 label-md text-fg" colSpan={3}>Total</td>
               <td className="px-3 py-2 text-right text-fg tabular-nums font-semibold">
                 {formatCurrency(invoice.total)}
               </td>
@@ -166,26 +180,17 @@ export const InvoiceDrawer = ({
           at: formatShortDate(invoice.createdAt),
         },
         invoice.status !== "draft"
-          ? {
-              id: "sent",
-              label: "Sent via Square",
-              at: formatShortDate(invoice.createdAt),
-            }
+          ? { id: "sent", label: "Sent", at: formatShortDate(invoice.createdAt) }
           : null,
         invoice.paidAt
-          ? {
-              id: "paid",
-              label: "Payment received",
-              at: formatShortDate(invoice.paidAt),
-            }
+          ? { id: "paid", label: "Payment received", at: formatShortDate(invoice.paidAt) }
           : null,
-      ].filter(Boolean) as Array<{
-        id: string
-        label: string
-        at: string
-      }>}
+      ].filter(Boolean) as Array<{ id: string; label: string; at: string }>}
     />
   )
+
+  const isPaid = invoice.status === "paid"
+  const isVoid = invoice.status === "void" || invoice.status === "refunded"
 
   const footer = (
     <div className="flex w-full items-center justify-between gap-2">
@@ -196,27 +201,36 @@ export const InvoiceDrawer = ({
         </Link>
       </Button>
       <div className="flex items-center gap-2">
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={() => toast.info("Void flow gated to admins")}
-      >
-        Void
-      </Button>
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={() => toast.success("Invoice marked paid")}
-      >
-        Mark paid
-      </Button>
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={() => toast.success("Invoice sent via Square")}
-      >
-        Send
-      </Button>
+        {!isVoid && !isPaid && (
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={loading !== null}
+            onClick={() => handleStatusChange("void", "voided")}
+          >
+            {loading === "void" ? "Voiding…" : "Void"}
+          </Button>
+        )}
+        {!isPaid && !isVoid && (
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={loading !== null}
+            onClick={() => handleStatusChange("paid", "marked paid")}
+          >
+            {loading === "paid" ? "Saving…" : "Mark paid"}
+          </Button>
+        )}
+        {invoice.status === "draft" && (
+          <Button
+            variant="primary"
+            size="sm"
+            disabled={loading !== null}
+            onClick={() => handleStatusChange("sent", "sent")}
+          >
+            {loading === "sent" ? "Sending…" : "Send"}
+          </Button>
+        )}
       </div>
     </div>
   )
