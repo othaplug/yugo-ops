@@ -87,7 +87,7 @@ function fmtCurrency(n: number) {
   return "$" + n.toLocaleString("en-CA", { maximumFractionDigits: 0 });
 }
 
-function fmtLastDelivery(days: number | null): string {
+function fmtLastJob(days: number | null): string {
   if (days === null) return "Never";
   if (days === 0) return "Today";
   if (days === 1) return "Yesterday";
@@ -109,7 +109,7 @@ function ReEngageModal({ partner, onClose }: ReEngageModalProps) {
   const subject = `Checking in, ${partner.name} × Yugo`;
   const body = `Hi ${firstName},
 
-It's been a few weeks since your last delivery with us. Just checking in to see if you have any upcoming needs.
+It's been a few weeks since your last job with us. Just checking in to see if you have any upcoming needs.
 
 We're here whenever you need us, just reach out!
 
@@ -131,7 +131,7 @@ The Yugo Team`;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to: partner.phone,
-          message: `Hi ${firstName}, just checking in from Yugo! It's been a while since your last delivery. Do you have any upcoming needs we can help with? We're here anytime., Yugo Team`,
+          message: `Hi ${firstName}, just checking in from Yugo! It's been a while since your last job with us. Do you have any upcoming needs we can help with? We're here anytime. – Yugo Team`,
           type: "partner_reengagement",
           related_id: partner.id,
           related_type: "organization",
@@ -488,7 +488,7 @@ export default function PartnerHealthClient() {
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-[12px] text-[var(--yu3-ink-muted)]">
-                        {fmtLastDelivery(p.days_since_last)}
+                        {fmtLastJob(p.days_since_last)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
