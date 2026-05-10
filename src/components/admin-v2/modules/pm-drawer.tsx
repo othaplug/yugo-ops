@@ -80,8 +80,8 @@ export const PMDrawer = ({ account, open, onOpenChange }: PMDrawerProps) => {
           size="sm"
           asChild
         >
-          <Link href={`/admin/partners/${account.id}`} target="_blank">
-            Profile
+          <Link href={`/admin/partners/health`} target="_blank">
+            Health
           </Link>
         </Button>
         <Button

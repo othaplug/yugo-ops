@@ -88,7 +88,7 @@ export const B2BDrawer = ({ partner, open, onOpenChange }: B2BDrawerProps) => {
   const footer = (
     <div className="flex w-full items-center justify-between gap-2">
       <Button variant="secondary" size="sm" asChild>
-        <Link href={`/admin/partners/${partner.id}`} target="_blank">
+        <Link href={`/admin/clients/${partner.id}`} target="_blank">
           <Icon name="arrowUpRight" size="sm" weight="bold" />
           Open in admin
         </Link>
