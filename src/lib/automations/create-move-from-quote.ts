@@ -396,6 +396,24 @@ export async function createMoveFromQuote(
     neighbourhood_tier: (factors.neighbourhood_tier as string) ?? null,
     lead_source: "quote",
 
+    // ── Inventory snapshot from quote (move detail UI source of truth) ─────
+    inventory_items:
+      (quote as { inventory_items?: unknown }).inventory_items ?? null,
+    inventory_score:
+      (quote as { inventory_score?: number | null }).inventory_score ?? null,
+    box_estimate:
+      (quote as { client_box_count?: number | null }).client_box_count != null
+        ? String((quote as { client_box_count?: number | null }).client_box_count)
+        : null,
+    assembly_required:
+      (quote as { assembly_required?: boolean | null }).assembly_required ?? null,
+    assembly_override:
+      (quote as { assembly_override?: boolean | null }).assembly_override ?? null,
+    assembly_items:
+      (quote as { assembly_items?: unknown }).assembly_items ?? null,
+    assembly_minutes:
+      (quote as { assembly_minutes?: number | null }).assembly_minutes ?? null,
+
     /** Fresh moves must not inherit quote-linked planner previews; multi-day attach sets this after insert. */
     move_project_id: null,
 

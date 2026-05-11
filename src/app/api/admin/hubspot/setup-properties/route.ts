@@ -5,8 +5,11 @@ import { ensureHubSpotCustomProperties } from "@/lib/hubspot/setup"
 /**
  * POST /api/admin/hubspot/setup-properties
  *
- * Creates (or confirms) the three Yugo-branded custom deal properties
- * (yugo_job_id, yugo_job_number, yugo_service_type) in the connected HubSpot portal.
+ * Creates (or confirms) every Yugo-branded custom deal property registered in
+ * `src/lib/hubspot/setup.ts` (~17 fields including Job No, First/Last Name,
+ * Pickup/Dropoff Address, Access From/To, Service Type, Move Date, Move Size,
+ * Sub-total, Taxes, Total Price, Additional Info, Deal Type, Lost Reason).
+ *
  * Safe to call multiple times — HTTP 409 (already exists) is treated as success.
  *
  * Requires HUBSPOT_ACCESS_TOKEN.

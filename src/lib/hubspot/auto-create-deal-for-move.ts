@@ -6,6 +6,7 @@ import { findOrCreateHubSpotContact } from "@/lib/hubspot/auto-create-deal-for-q
 import { patchHubSpotDealJobNo } from "@/lib/hubspot/sync-deal-job-no"
 import { buildHubSpotDealName, serviceCategory } from "@/lib/hubspot/deal-name"
 import { dealPackageType, yugoJobProperties } from "@/lib/hubspot/deal-properties"
+import { buildAllYugoProperties } from "@/lib/hubspot/deal-properties-builder"
 import type { HubSpotAutoCreateDealResult } from "@/lib/hubspot/auto-create-deal-types"
 import { moveNumericJobNoForHubSpot } from "@/lib/move-code"
 
@@ -143,6 +144,24 @@ export async function autoCreateHubSpotDealForNewMove(opts: {
     lastname: lastName,
     package_type: dealPackageType(svcType, move.is_pm_move, String(move.tier_selected ?? "").trim()),
     ...yugoJobProperties({ jobId: moveCode, jobNo, serviceType: svcType }),
+    // All yugo_* custom properties from the central builder (single source of truth)
+    ...buildAllYugoProperties({
+      jobId: moveCode,
+      jobNumber: jobNo,
+      firstName,
+      lastName,
+      fromAddress: move.from_address,
+      toAddress: move.to_address,
+      fromAccess: move.from_access,
+      toAccess: move.to_access,
+      serviceType: svcType,
+      moveDate: move.scheduled_date,
+      moveSize: move.move_size,
+      subtotal: typeof move.estimate === "number" ? move.estimate : null,
+      tierSelected: move.tier_selected,
+      isPmMove: move.is_pm_move,
+      businessName: businessName ?? null,
+    }),
   }
 
   const est = move.estimate

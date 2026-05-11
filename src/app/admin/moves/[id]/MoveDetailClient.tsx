@@ -1696,6 +1696,12 @@ export default function MoveDetailClient({
         </CollapsibleSection>
       )}
 
+      {/* ─── Documents ─────────────────────────────────────────────
+           Contract (signed at booking) and POD (client sign-off at completion).
+           Renders even when only one of the documents is present so coordinators
+           can quickly verify which artefacts exist for the move. */}
+      <MoveOverviewDocumentsSection move={move} />
+
         </TabsContent>
 
         <TabsContent value="plan" className="space-y-3 pt-2">
@@ -3615,6 +3621,164 @@ function MoveProfitCard({ move }: { move: any }) {
       {costs.grossMargin < target && (
         <div className="mt-3 text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5">
           Below target margin ({target}%)
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Documents block on the move Overview tab. Surfaces the signed booking
+ * contract, the client sign-off / proof-of-delivery, and any photos captured
+ * during the move. Falls back to an empty state when no documents exist yet
+ * so coordinators see what's expected vs what's actually been collected.
+ */
+function MoveOverviewDocumentsSection({
+  move,
+}: {
+  move: Record<string, unknown>;
+}) {
+  const contractUrl = String(move.contract_pdf_url ?? "").trim();
+  const contractSignedAt = String(move.contract_signed_at ?? "").trim();
+  const contractSigned = Boolean(move.contract_signed) || !!contractSignedAt;
+
+  const podUrl = String(move.pod_signature_url ?? "").trim();
+  const podSignedAt = String(move.pod_signed_at ?? "").trim();
+  const podSignedByName = String(move.pod_signed_by_name ?? "").trim();
+  const podCondition = String(move.pod_condition ?? "").trim();
+  const podPhotosRaw = move.pod_photos;
+  const podPhotos = Array.isArray(podPhotosRaw)
+    ? (podPhotosRaw as string[]).filter((p) => typeof p === "string" && p.trim())
+    : [];
+
+  const clientName = String(move.client_name ?? move.tenant_name ?? "").trim();
+
+  const hasAny =
+    contractSigned || !!podUrl || podSignedAt || podPhotos.length > 0;
+
+  const fmtDateTime = (iso: string): string => {
+    if (!iso) return "";
+    try {
+      return new Date(iso).toLocaleString("en-CA", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    } catch {
+      return iso;
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-[var(--yu3-line)] bg-[var(--yu3-bg-surface)] p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--yu3-ink-muted)]">
+          Documents
+        </span>
+      </div>
+
+      {!hasAny ? (
+        <p className="text-[11px] text-[var(--yu3-ink-muted)]">
+          No documents yet. Contract appears here after booking; proof of
+          delivery and photos appear after move completion.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {contractSigned && (
+            <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg)]">
+              <div className="min-w-0">
+                <p className="text-[12px] font-semibold text-[var(--yu3-ink)]">
+                  Move Contract
+                </p>
+                <p className="text-[10px] text-[var(--yu3-ink-muted)] truncate">
+                  {clientName ? `Signed by ${clientName}` : "Signed"}
+                  {contractSignedAt ? ` · ${fmtDateTime(contractSignedAt)}` : ""}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700">
+                  ✓ Signed
+                </span>
+                {contractUrl ? (
+                  <a
+                    href={contractUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-semibold text-[var(--yu3-wine)] hover:underline"
+                  >
+                    View →
+                  </a>
+                ) : null}
+              </div>
+            </div>
+          )}
+
+          {(!!podUrl || podSignedAt) && (
+            <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg)]">
+              <div className="min-w-0">
+                <p className="text-[12px] font-semibold text-[var(--yu3-ink)]">
+                  Proof of Delivery
+                </p>
+                <p className="text-[10px] text-[var(--yu3-ink-muted)] truncate">
+                  {podSignedByName || clientName
+                    ? `Signed by ${podSignedByName || clientName}`
+                    : "Signed"}
+                  {podSignedAt ? ` · ${fmtDateTime(podSignedAt)}` : ""}
+                  {podCondition ? ` · Condition: ${podCondition}` : ""}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700">
+                  ✓ Signed
+                </span>
+                {podUrl ? (
+                  <a
+                    href={podUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-semibold text-[var(--yu3-wine)] hover:underline"
+                  >
+                    View →
+                  </a>
+                ) : null}
+              </div>
+            </div>
+          )}
+
+          {podPhotos.length > 0 && (
+            <div className="p-2.5 rounded-lg border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg)]">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[12px] font-semibold text-[var(--yu3-ink)]">
+                  Move Photos
+                </p>
+                <span className="text-[10px] text-[var(--yu3-ink-muted)]">
+                  {podPhotos.length} photo
+                  {podPhotos.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className="flex gap-2 overflow-x-auto">
+                {podPhotos.slice(0, 5).map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={url}
+                      alt={`Move photo ${i + 1}`}
+                      className="w-16 h-16 rounded-md object-cover border border-[var(--yu3-line-subtle)] hover:opacity-80 transition-opacity"
+                    />
+                  </a>
+                ))}
+                {podPhotos.length > 5 && (
+                  <div className="w-16 h-16 rounded-md bg-[var(--yu3-bg-subtle)] flex items-center justify-center shrink-0">
+                    <span className="text-[10px] font-bold text-[var(--yu3-ink-muted)]">
+                      +{podPhotos.length - 5}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

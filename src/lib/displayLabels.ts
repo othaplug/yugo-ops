@@ -165,14 +165,124 @@ export const EVENT_PHASE_LABELS: Record<string, string> = {
 // Access types (for display, not internal use)
 export const ACCESS_LABELS: Record<string, string> = {
   elevator: "Elevator",
+  ground: "Ground Floor",
   ground_floor: "Ground Floor",
+  concierge: "Concierge",
   loading_dock: "Loading Dock",
-  walk_up_2nd: "2nd Floor (Walk-up)",
-  walk_up_3rd: "3rd Floor (Walk-up)",
-  walk_up_4th: "4th+ Floor (Walk-up)",
-  long_carry: "Extended Entrance",
-  narrow_stairs: "Narrow Staircase",
+  walk_up_2: "Walk-up (2nd Floor)",
+  walk_up_2nd: "Walk-up (2nd Floor)",
+  walk_up_3: "Walk-up (3rd Floor)",
+  walk_up_3rd: "Walk-up (3rd Floor)",
+  walk_up_4_plus: "Walk-up (4th+ Floor)",
+  walk_up_4plus: "Walk-up (4th+ Floor)",
+  walk_up_4th: "Walk-up (4th+ Floor)",
+  walk_up_4th_plus: "Walk-up (4th+ Floor)",
+  long_carry: "Long Carry",
+  narrow_stairs: "Narrow Stairs",
   no_parking: "Limited Parking",
+};
+
+/** Truck / vehicle types — shown on quote and move detail. */
+export const TRUCK_TYPE_LABELS: Record<string, string> = {
+  sprinter: "Sprinter Van",
+  cargo_van: "Cargo Van",
+  "16ft": "16ft Truck",
+  "20ft": "20ft Truck",
+  "24ft": "24ft Truck",
+  "26ft": "26ft Truck",
+  "26ft_lift": "26ft Truck w/ Lift",
+  none: "No Truck (Labour Only)",
+};
+
+/** B2B handling types — vertical-specific delivery handling. */
+export const HANDLING_TYPE_LABELS: Record<string, string> = {
+  dock_to_dock: "Dock to Dock",
+  threshold: "Threshold Drop",
+  room_of_choice: "Room of Choice",
+  white_glove: "White Glove",
+  carry_in: "Carry In",
+  hand_bomb: "Hand Bomb",
+  skid_drop: "Skid Drop",
+};
+
+/** Assembly complexity — item-intelligence detection. */
+export const ASSEMBLY_LABELS: Record<string, string> = {
+  none: "None",
+  simple: "Simple",
+  moderate: "Moderate",
+  complex: "Complex",
+  specialist: "Specialist Required",
+  assembly: "Assembly at Delivery",
+  disassembly: "Disassembly at Pickup",
+  both: "Disassemble & Reassemble",
+};
+
+/** Payment methods — used across quotes, invoices, and finance views. */
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  card: "Credit Card",
+  card_at_booking: "Card at Booking",
+  cash: "Cash",
+  etransfer: "E-Transfer",
+  credit_card: "Credit Card",
+  cheque: "Cheque",
+  invoice: "Invoice",
+  offline: "Offline Payment",
+  square: "Square",
+  other: "Other",
+};
+
+/** Partner / organization types (vertical slugs). */
+export const PARTNER_TYPE_LABELS: Record<string, string> = {
+  property_management: "Property Management",
+  property_management_residential: "Property Management (Residential)",
+  property_management_commercial: "Property Management (Commercial)",
+  developer_builder: "Developer / Builder",
+  furniture_retail: "Furniture Retailer",
+  interior_designer: "Interior Designer",
+  flooring: "Flooring",
+  cabinetry: "Cabinetry & Fixtures",
+  medical: "Medical Equipment",
+  appliance: "Appliance Delivery",
+  art_gallery: "Art & Gallery",
+  restaurant: "Restaurant & Hospitality",
+  hospitality: "Hospitality",
+  office_furniture: "Office Furniture",
+  ecommerce: "E-Commerce",
+  referral: "Referral Partner",
+  realtor: "Realtor",
+  developer: "Developer",
+  retail: "Retail",
+  b2c: "B2C",
+  b2b: "B2B",
+};
+
+/** PM move types — reason codes captured in the PM portal. */
+export const PM_MOVE_TYPE_LABELS: Record<string, string> = {
+  reno_displacement_out: "Renovation Move-Out",
+  reno_return_in: "Renovation Return",
+  tenant_move_out: "Tenant Move-Out",
+  tenant_move_in: "Tenant Move-In",
+  suite_transfer: "Suite Transfer",
+  unit_turnover: "Unit Turnover",
+};
+
+/** Estate / multi-day plan day types. */
+export const DAY_TYPE_LABELS: Record<string, string> = {
+  pack: "Packing Day",
+  move: "Moving Day",
+  unpack: "Unpacking Day",
+  crating: "Crating Day",
+  install: "Install Day",
+  cleanup: "Cleanup Day",
+  custom: "Custom",
+};
+
+/** Partner health classification — derived from move/delivery history. */
+export const PARTNER_HEALTH_LABELS: Record<string, string> = {
+  active: "Active",
+  at_risk: "At Risk",
+  churned: "Churned",
+  new: "New",
 };
 
 /** Referral program row status — never show raw enum to clients */
@@ -210,7 +320,16 @@ export type DisplayLabelCategory =
   | "event_phase"
   | "quote"
   | "referral"
-  | "valuation";
+  | "valuation"
+  | "truck"
+  | "handling"
+  | "assembly"
+  | "payment_method"
+  | "partner_type"
+  | "pm_move_type"
+  | "day_type"
+  | "partner_health"
+  | "move_size";
 
 // Main function: try specific maps first, fall back to generic
 export function getDisplayLabel(
@@ -230,6 +349,15 @@ export function getDisplayLabel(
     quote: QUOTE_STATUS_LABELS,
     referral: REFERRAL_STATUS_LABELS,
     valuation: VALUATION_TIER_LABELS,
+    truck: TRUCK_TYPE_LABELS,
+    handling: HANDLING_TYPE_LABELS,
+    assembly: ASSEMBLY_LABELS,
+    payment_method: PAYMENT_METHOD_LABELS,
+    partner_type: PARTNER_TYPE_LABELS,
+    pm_move_type: PM_MOVE_TYPE_LABELS,
+    day_type: DAY_TYPE_LABELS,
+    partner_health: PARTNER_HEALTH_LABELS,
+    move_size: MOVE_SIZE_LABELS,
   };
 
   if (category && maps[category]?.[value]) {

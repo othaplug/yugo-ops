@@ -5,6 +5,7 @@ import { resolveHubSpotStageInternalId } from "@/lib/hubspot/resolve-hubspot-sta
 import { findExistingOpenDealForContactEmail } from "@/lib/hubspot/find-existing-open-deal";
 import { buildHubSpotDealName, serviceCategory } from "@/lib/hubspot/deal-name";
 import { dealPackageType, yugoJobProperties } from "@/lib/hubspot/deal-properties";
+import { buildAllYugoProperties } from "@/lib/hubspot/deal-properties-builder";
 import { resolveStageFromStatus } from "@/lib/hubspot/stage-mapping";
 import type { HubSpotAutoCreateDealResult } from "@/lib/hubspot/auto-create-deal-types";
 
@@ -217,6 +218,27 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
     lastname: lastName,
     package_type: dealPackageType(svcType, false, String(quote.recommended_tier ?? "").trim()),
     ...yugoJobProperties({ jobId: quoteIdText, jobNo, serviceType: svcType }),
+    // All yugo_* custom properties from the central builder (single source of truth)
+    ...buildAllYugoProperties({
+      jobId: quoteIdText,
+      jobNumber: jobNo,
+      firstName,
+      lastName,
+      fromAddress: quote.from_address as string | null | undefined,
+      toAddress: quote.to_address as string | null | undefined,
+      fromAccess: quote.from_access as string | null | undefined,
+      toAccess: quote.to_access as string | null | undefined,
+      serviceType: svcType,
+      moveDate: quote.move_date as string | null | undefined,
+      moveSize: quote.move_size as string | null | undefined,
+      subtotal: price,
+      tierSelected: quote.recommended_tier as string | null | undefined,
+      crewSize: quote.est_crew_size as number | null | undefined,
+      estimatedHours: quote.est_hours as number | null | undefined,
+      truckType: quote.truck_primary as string | null | undefined,
+      isPmMove: false,
+      businessName: (quote.b2b_business_name as string | null | undefined) ?? null,
+    }),
   };
   if (price != null) properties.amount = String(price);
   if (jobNo) properties.job_no = jobNo;

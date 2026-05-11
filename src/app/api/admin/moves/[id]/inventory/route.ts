@@ -29,10 +29,51 @@ export async function GET(
         .order("room")
         .order("sort_order")
         .order("item_name"),
-      db.from("moves").select("client_box_count, quote_id").eq("id", moveId).single(),
+      db
+        .from("moves")
+        .select("client_box_count, quote_id, inventory_items")
+        .eq("id", moveId)
+        .single(),
     ]);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+    // Fallback when move_inventory is empty: derive read-only rows from the
+    // moves.inventory_items JSONB snapshot copied from the source quote.
+    let effectiveItems = items ?? [];
+    if (
+      effectiveItems.length === 0 &&
+      Array.isArray((moveRow as { inventory_items?: unknown } | null)?.inventory_items)
+    ) {
+      const snapshot = (moveRow as { inventory_items?: unknown[] }).inventory_items as Array<
+        Record<string, unknown>
+      >;
+      effectiveItems = snapshot
+        .filter(
+          (it) =>
+            it &&
+            typeof it.name === "string" &&
+            (it.name as string).trim(),
+        )
+        .map((it, idx) => {
+          const name = String(it.name).trim();
+          const qty =
+            typeof it.quantity === "number" && (it.quantity as number) > 1
+              ? (it.quantity as number)
+              : 1;
+          const roomRaw =
+            typeof it.room === "string" && (it.room as string).trim()
+              ? (it.room as string).trim()
+              : "other";
+          return {
+            id: `snapshot-${idx}`,
+            room: roomRaw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+            item_name: qty > 1 ? `${name} x${qty}` : name,
+            box_number: null as string | null,
+            sort_order: idx,
+          };
+        });
+    }
 
     let boxCount =
       moveRow?.client_box_count != null && Number.isFinite(Number(moveRow.client_box_count))
@@ -54,7 +95,7 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ items: items ?? [], boxCount });
+    return NextResponse.json({ items: effectiveItems, boxCount });
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to fetch inventory" },
