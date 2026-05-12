@@ -562,6 +562,9 @@ export default function B2BJobsDeliveryForm({
   const [editingLineIdx, setEditingLineIdx] = useState<number | null>(null);
   const [customFormOpen, setCustomFormOpen] = useState(false);
   const [boxCountOpen, setBoxCountOpen] = useState(false);
+  // UI state for the redesigned Vehicle/Crew/Hours + Pricing override panels.
+  const [vehicleOverrideOpen, setVehicleOverrideOpen] = useState(false);
+  const [pricingOverrideOpen, setPricingOverrideOpen] = useState(false);
 
   const [handlingType, setHandlingType] = useState("threshold");
   const [scheduledDate, setScheduledDate] = useState("");
@@ -1922,6 +1925,9 @@ export default function B2BJobsDeliveryForm({
         </div>
       )}
 
+      <div className="grid gap-6 items-start lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="space-y-6 min-w-0">
+
       {organizations.length > 0 && (
         <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
           <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
@@ -1956,7 +1962,7 @@ export default function B2BJobsDeliveryForm({
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
-            Client / business
+            Client / business *
           </h3>
           {hsLookupState === "loading" && (
             <span className="flex items-center gap-1 text-[10px] text-[var(--tx3)]">
@@ -1966,7 +1972,7 @@ export default function B2BJobsDeliveryForm({
           )}
         </div>
         {hsPendingMatch && (
-          <div className="p-3 rounded-lg border border-rose-500/30 bg-rose-500/5">
+          <div className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-[var(--tx)]">
@@ -2010,7 +2016,7 @@ export default function B2BJobsDeliveryForm({
                   onClick={() =>
                     applyHubSpotContactFromMatch(hsPendingMatch.contact)
                   }
-                  className="px-3 py-1.5 text-xs rounded-md bg-rose-600 hover:bg-rose-700 text-white font-medium"
+                  className="px-3 py-1.5 text-xs rounded-md bg-amber-600 hover:bg-amber-700 text-white font-medium"
                 >
                   Auto-fill
                 </button>
@@ -2763,7 +2769,7 @@ export default function B2BJobsDeliveryForm({
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
-            Route
+            Route *
           </h3>
           <div
             className="inline-flex rounded-lg border border-[var(--brd)] bg-[var(--bg)] p-0.5"
@@ -2914,7 +2920,7 @@ export default function B2BJobsDeliveryForm({
 
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
         <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
-          Schedule
+          Schedule *
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Field label="Date *">
@@ -2965,94 +2971,147 @@ export default function B2BJobsDeliveryForm({
         )}
       </section>
 
-      <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
+      <section className="space-y-3 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
         <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
           Vehicle, crew, hours
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
-          <Field label="Recommended truck">
-            <div className="px-2 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] min-h-[36px] flex items-center">
-              {previewLoading ||
-              (clientDistanceLoading && !clientEstimate && !serverPricing)
-                ? "…"
-                : ((serverPricing ?? clientEstimate)?.truck ?? "—")}
-            </div>
-          </Field>
-          <Field label="Override truck">
-            <select
-              value={truckOverride}
-              onChange={(e) => setTruckOverride(e.target.value)}
-              className={fieldInput}
-            >
-              <option value="">Use recommended</option>
-              {TRUCK_OPTIONS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Recommended crew">
-            <div className="px-2 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] min-h-[36px] flex items-center">
-              {previewLoading ||
-              (clientDistanceLoading && !clientEstimate && !serverPricing)
-                ? "…"
-                : (serverPricing ?? clientEstimate) != null
-                  ? String((serverPricing ?? clientEstimate)!.crew)
-                  : "—"}
-            </div>
-          </Field>
-          <Field label="Override crew size">
-            <input
-              type="number"
-              min={1}
-              max={8}
-              value={crewOverride}
-              onChange={(e) => setCrewOverride(e.target.value)}
-              placeholder="e.g. 3"
-              className={fieldInput}
-            />
-          </Field>
-          <Field label="Est. hours">
-            <div className="px-2 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] min-h-[36px] flex items-center">
-              {previewLoading ||
-              (clientDistanceLoading && !clientEstimate && !serverPricing)
-                ? "…"
-                : (serverPricing ?? clientEstimate) != null
-                  ? `${(serverPricing ?? clientEstimate)!.estimated_hours} hrs`
-                  : "—"}
-            </div>
-          </Field>
-          <Field label="Override hours">
-            <input
-              type="text"
-              value={hoursOverride}
-              onChange={(e) => setHoursOverride(e.target.value)}
-              placeholder="e.g. 3.5"
-              className={fieldInput}
-            />
-          </Field>
-        </div>
+        {(() => {
+          const calc = serverPricing ?? clientEstimate;
+          const loading =
+            previewLoading || (clientDistanceLoading && !calc);
+          const isOverridden =
+            !!truckOverride || !!crewOverride.trim() || !!hoursOverride.trim();
+          return (
+            <>
+              {/* Read-only recommended summary — the canonical "what will happen" panel */}
+              <div className="grid grid-cols-3 gap-3 px-3 py-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
+                <div>
+                  <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">
+                    Truck
+                  </div>
+                  <div className="text-[12px] font-semibold text-[var(--tx)]">
+                    {loading
+                      ? "…"
+                      : truckOverride || calc?.truck || "—"}
+                    {truckOverride && (
+                      <span className="ml-1 text-[9px] font-bold uppercase text-[var(--gold)]">
+                        override
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">
+                    Crew size
+                  </div>
+                  <div className="text-[12px] font-semibold text-[var(--tx)]">
+                    {loading
+                      ? "…"
+                      : crewOverride.trim() ||
+                        (calc != null ? String(calc.crew) : "—")}
+                    {crewOverride.trim() && (
+                      <span className="ml-1 text-[9px] font-bold uppercase text-[var(--gold)]">
+                        override
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">
+                    Est. hours
+                  </div>
+                  <div className="text-[12px] font-semibold text-[var(--tx)]">
+                    {loading
+                      ? "…"
+                      : hoursOverride.trim()
+                        ? `${hoursOverride} hrs`
+                        : calc != null
+                          ? `${calc.estimated_hours} hrs`
+                          : "—"}
+                    {hoursOverride.trim() && (
+                      <span className="ml-1 text-[9px] font-bold uppercase text-[var(--gold)]">
+                        override
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setVehicleOverrideOpen((v) => !v)}
+                className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase text-[var(--tx2)] hover:text-[var(--tx)]"
+                aria-expanded={vehicleOverrideOpen}
+              >
+                <CaretDown
+                  className={`w-3 h-3 transition-transform ${vehicleOverrideOpen ? "" : "-rotate-90"}`}
+                />
+                {isOverridden ? "Adjust overrides" : "Override recommendation"}
+              </button>
+              {vehicleOverrideOpen && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] pt-1">
+                  <Field label="Override truck">
+                    <select
+                      value={truckOverride}
+                      onChange={(e) => setTruckOverride(e.target.value)}
+                      className={fieldInput}
+                    >
+                      <option value="">Use recommended</option>
+                      {TRUCK_OPTIONS.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Override crew count">
+                    <input
+                      type="number"
+                      min={1}
+                      max={8}
+                      value={crewOverride}
+                      onChange={(e) => setCrewOverride(e.target.value)}
+                      placeholder="e.g. 3"
+                      className={fieldInput}
+                    />
+                  </Field>
+                  <Field label="Override hours">
+                    <input
+                      type="text"
+                      value={hoursOverride}
+                      onChange={(e) => setHoursOverride(e.target.value)}
+                      placeholder="e.g. 3.5"
+                      className={fieldInput}
+                    />
+                  </Field>
+                </div>
+              )}
+
+              {crews.length > 0 && (
+                <div className="pt-2 border-t border-[var(--brd)]/60">
+                  <Field label="Assigned crew team (optional)">
+                    <select
+                      value={crewId}
+                      onChange={(e) => setCrewId(e.target.value)}
+                      className={fieldInput}
+                    >
+                      <option value="">Unassigned — auto-route</option>
+                      {crews.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+              )}
+            </>
+          );
+        })()}
       </section>
 
-      {vis("assembly") && (
-        <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
-            Assembly
-          </h3>
-          <label className="flex items-center gap-2 text-[11px] text-[var(--tx)]">
-            <input
-              type="checkbox"
-              checked={assemblyRequired}
-              onChange={(e) => setAssemblyRequired(e.target.checked)}
-              className="accent-[var(--gold)]"
-            />
-            Assembly required
-          </label>
-        </section>
-      )}
-
-      {(cmpVis("debris_removal") ||
+      {(vis("assembly") ||
+        cmpVis("debris_removal") ||
         cmpVis("stairs") ||
         cmpVis("high_value") ||
         cmpVis("artwork") ||
@@ -3062,312 +3121,226 @@ export default function B2BJobsDeliveryForm({
         cmpVis("returns_pickup") ||
         cmpVis("skid_count") ||
         cmpVis("total_load_weight") ||
-        cmpVis("haul_away")) && (
-        <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
-            Complexity & extras
-          </h3>
-          {(cmpVis("debris_removal") ||
-            cmpVis("high_value") ||
-            cmpVis("artwork") ||
-            cmpVis("antiques")) && (
-            <div className="flex flex-wrap gap-3 text-[11px] text-[var(--tx)]">
-              {cmpVis("debris_removal") && (
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={debrisRemoval}
-                    onChange={(e) => setDebrisRemoval(e.target.checked)}
-                    className="accent-[var(--gold)]"
-                  />
-                  Debris removal
-                </label>
+        cmpVis("haul_away")) && (() => {
+          const tagOptions: Array<{
+            visible: boolean;
+            label: string;
+            checked: boolean;
+            onChange: (v: boolean) => void;
+          }> = [
+            {
+              visible: !!vis("assembly"),
+              label: "Assembly required",
+              checked: assemblyRequired,
+              onChange: setAssemblyRequired,
+            },
+            {
+              visible: !!cmpVis("debris_removal"),
+              label: "Debris removal",
+              checked: debrisRemoval,
+              onChange: setDebrisRemoval,
+            },
+            {
+              visible: !!cmpVis("high_value"),
+              label: "High value",
+              checked: highValue,
+              onChange: setHighValue,
+            },
+            {
+              visible: !!cmpVis("artwork"),
+              label: "Artwork",
+              checked: artwork,
+              onChange: setArtwork,
+            },
+            {
+              visible: !!cmpVis("antiques"),
+              label: "Antiques",
+              checked: antiques,
+              onChange: setAntiques,
+            },
+            {
+              visible: !!cmpVis("returns_pickup"),
+              label: "Returns pickup",
+              checked: returnsPickup,
+              onChange: setReturnsPickup,
+            },
+          ];
+          const visibleTags = tagOptions.filter((t) => t.visible);
+          const hasQuantities =
+            cmpVis("stairs") ||
+            cmpVis("skid_count") ||
+            cmpVis("total_load_weight") ||
+            cmpVis("haul_away");
+          const hasNotes =
+            cmpVis("chain_of_custody") || cmpVis("hookup_install");
+          return (
+            <section className="space-y-4 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
+              <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
+                Complexity &amp; extras
+              </h3>
+
+              {visibleTags.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+                    Job tags
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {visibleTags.map((t) => (
+                      <button
+                        key={t.label}
+                        type="button"
+                        onClick={() => t.onChange(!t.checked)}
+                        aria-pressed={t.checked}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border transition-colors ${
+                          t.checked
+                            ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--tx)]"
+                            : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:bg-[var(--bg)]"
+                        }`}
+                      >
+                        <span
+                          aria-hidden
+                          className={`inline-block w-3 h-3 rounded-sm border ${
+                            t.checked
+                              ? "border-[var(--gold)] bg-[var(--gold)]"
+                              : "border-[var(--brd)]"
+                          }`}
+                        />
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
-              {cmpVis("high_value") && (
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={highValue}
-                    onChange={(e) => setHighValue(e.target.checked)}
-                    className="accent-[var(--gold)]"
-                  />
-                  High value
-                </label>
+
+              {hasQuantities && (
+                <div className="space-y-1.5">
+                  <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+                    Quantities
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {cmpVis("stairs") && (
+                      <Field label="Stairs (flights)">
+                        <input
+                          type="number"
+                          min={0}
+                          value={stairsFlights}
+                          onChange={(e) => setStairsFlights(e.target.value)}
+                          className={fieldInput}
+                          placeholder="0"
+                        />
+                      </Field>
+                    )}
+                    {cmpVis("skid_count") && (
+                      <Field label="Skid count">
+                        <input
+                          type="number"
+                          min={0}
+                          value={skidCount}
+                          onChange={(e) => setSkidCount(e.target.value)}
+                          className={fieldInput}
+                          placeholder="0"
+                        />
+                      </Field>
+                    )}
+                    {cmpVis("total_load_weight") && (
+                      <Field label="Total load (lbs)">
+                        <input
+                          type="number"
+                          min={0}
+                          value={totalLoadWeightLbs}
+                          onChange={(e) =>
+                            setTotalLoadWeightLbs(e.target.value)
+                          }
+                          className={fieldInput}
+                          placeholder="0"
+                        />
+                      </Field>
+                    )}
+                    {cmpVis("haul_away") && (
+                      <Field label="Haul-away units">
+                        <input
+                          type="number"
+                          min={0}
+                          value={haulAwayUnits}
+                          onChange={(e) => setHaulAwayUnits(e.target.value)}
+                          className={fieldInput}
+                          placeholder="0"
+                        />
+                      </Field>
+                    )}
+                  </div>
+                </div>
               )}
-              {cmpVis("artwork") && (
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={artwork}
-                    onChange={(e) => setArtwork(e.target.checked)}
-                    className="accent-[var(--gold)]"
-                  />
-                  Artwork
-                </label>
+
+              {hasNotes && (
+                <div className="space-y-2">
+                  <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+                    Notes
+                  </p>
+                  {cmpVis("chain_of_custody") && (
+                    <Field label="Chain of custody notes">
+                      <textarea
+                        value={chainOfCustodyNotes}
+                        onChange={(e) =>
+                          setChainOfCustodyNotes(e.target.value)
+                        }
+                        rows={2}
+                        className={`${fieldInput} resize-y`}
+                        placeholder="Required handoffs, temperature, seals…"
+                      />
+                    </Field>
+                  )}
+                  {cmpVis("hookup_install") && (
+                    <Field label="Hook-up / install notes">
+                      <textarea
+                        value={hookupNotes}
+                        onChange={(e) => setHookupNotes(e.target.value)}
+                        rows={2}
+                        className={`${fieldInput} resize-y`}
+                        placeholder="Gas line, water, electrical…"
+                      />
+                    </Field>
+                  )}
+                </div>
               )}
-              {cmpVis("antiques") && (
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={antiques}
-                    onChange={(e) => setAntiques(e.target.checked)}
-                    className="accent-[var(--gold)]"
-                  />
-                  Antiques
-                </label>
-              )}
-            </div>
-          )}
-          {cmpVis("stairs") && (
-            <Field label="Stairs (flights)">
-              <input
-                type="number"
-                min={0}
-                value={stairsFlights}
-                onChange={(e) => setStairsFlights(e.target.value)}
-                className={fieldInput}
-              />
-            </Field>
-          )}
-          {cmpVis("chain_of_custody") && (
-            <Field label="Chain of custody notes">
-              <textarea
-                value={chainOfCustodyNotes}
-                onChange={(e) => setChainOfCustodyNotes(e.target.value)}
-                rows={2}
-                className={`${fieldInput} resize-y`}
-                placeholder="Required handoffs, temperature, seals…"
-              />
-            </Field>
-          )}
-          {cmpVis("hookup_install") && (
-            <Field label="Hook-up / install notes">
-              <textarea
-                value={hookupNotes}
-                onChange={(e) => setHookupNotes(e.target.value)}
-                rows={2}
-                className={`${fieldInput} resize-y`}
-                placeholder="Gas line, water, electrical…"
-              />
-            </Field>
-          )}
-          {cmpVis("returns_pickup") && (
-            <label className="flex items-center gap-2 text-[11px] text-[var(--tx)]">
-              <input
-                type="checkbox"
-                checked={returnsPickup}
-                onChange={(e) => setReturnsPickup(e.target.checked)}
-                className="accent-[var(--gold)]"
-              />
-              Returns pickup
-            </label>
-          )}
-          {cmpVis("skid_count") && (
-            <Field label="Skid count">
-              <input
-                type="number"
-                min={0}
-                value={skidCount}
-                onChange={(e) => setSkidCount(e.target.value)}
-                className={fieldInput}
-              />
-            </Field>
-          )}
-          {cmpVis("total_load_weight") && (
-            <Field label="Total load weight (lbs)">
-              <input
-                type="number"
-                min={0}
-                value={totalLoadWeightLbs}
-                onChange={(e) => setTotalLoadWeightLbs(e.target.value)}
-                className={fieldInput}
-              />
-            </Field>
-          )}
-          {cmpVis("haul_away") && (
-            <Field label="Haul-away units">
-              <input
-                type="number"
-                min={0}
-                value={haulAwayUnits}
-                onChange={(e) => setHaulAwayUnits(e.target.value)}
-                className={fieldInput}
-              />
-            </Field>
-          )}
-        </section>
-      )}
+            </section>
+          );
+        })()}
 
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
         <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
-          Pricing
-        </h3>
-        {selectedVertical && (
-          <div className="text-[11px] text-[var(--tx2)] space-y-0.5">
-            <p>
-              <span className="font-semibold text-[var(--tx)]">
-                {selectedVertical.name}
-              </span>
-              <span className="text-[var(--tx3)]"> · Base rate </span>
-              <span className="tabular-nums text-[var(--tx)]">
-                {formatCurrency(selectedVertical.base_rate)}
-              </span>
-            </p>
-            {estimatedDistanceKm != null ? (
-              <p className="text-[10px] text-[var(--tx3)]">
-                Route ~{estimatedDistanceKm} km (used in estimate)
-              </p>
-            ) : null}
-          </div>
-        )}
-        {clientEstimate && (
-          <div className="text-[11px] space-y-1 text-[var(--tx)] border border-[var(--brd)]/50 rounded-lg p-3 bg-[var(--bg)]/40">
-            <p className="text-[9px] uppercase tracking-wide text-[var(--tx3)]">
-              Estimate (client-side, updates as you type)
-            </p>
-            <p className="text-[10px] text-[var(--tx3)]">
-              Approximate subtotal using route distance; does not include full
-              partner rate lookup or every access surcharge.
-            </p>
-            <div className="font-semibold text-[var(--accent-text)]">
-              Pre-tax estimate: {formatCurrency(clientEstimate.rounded_pre_tax)}
-            </div>
-            {clientEstimate.access_surcharge > 0 && (
-              <div className="text-[var(--tx3)]">
-                Access (in pre-tax):{" "}
-                {formatCurrency(clientEstimate.access_surcharge)}
-              </div>
-            )}
-            <div className="border-t border-[var(--brd)]/40 pt-2 mt-2 space-y-0.5 max-h-32 overflow-y-auto">
-              {clientEstimate.breakdown.map((b, i) => (
-                <div key={i} className="flex justify-between gap-2">
-                  <span className="text-[var(--tx3)]">{b.label}</span>
-                  <span>{formatCurrency(b.amount)}</span>
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between font-medium pt-2 border-t border-[var(--brd)]/40">
-              <span>HST (est.)</span>
-              <span>{formatCurrency(clientEstimate.hst)}</span>
-            </div>
-            <div className="flex justify-between font-bold text-[var(--accent-text)]">
-              <span>Total (est.)</span>
-              <span>~{formatCurrency(clientEstimate.total_with_tax)}</span>
-            </div>
-          </div>
-        )}
-        {serverPricing && (
-          <div className="text-[11px] space-y-1 text-[var(--tx)] border border-[var(--gold)]/25 rounded-lg p-3 bg-[var(--gold)]/5">
-            <p className="text-[9px] uppercase tracking-wide text-[var(--tx3)]">
-              Server price (authoritative)
-            </p>
-            <p className="text-[10px] text-[var(--tx3)]">
-              Mapbox distance, partner rates when applicable, and full
-              surcharges. This is what appears on the quote.
-            </p>
-            <div className="font-semibold text-[var(--accent-text)]">
-              Calculated pre-tax:{" "}
-              {formatCurrency(serverPricing.rounded_pre_tax)}
-            </div>
-            {serverPricing.access_surcharge > 0 && (
-              <div className="text-[var(--tx3)]">
-                Access surcharges (in pre-tax):{" "}
-                {formatCurrency(serverPricing.access_surcharge)}
-              </div>
-            )}
-            <div className="border-t border-[var(--brd)]/40 pt-2 mt-2 space-y-0.5 max-h-40 overflow-y-auto">
-              {serverPricing.breakdown.map((b, i) => (
-                <div key={i} className="flex justify-between gap-2">
-                  <span className="text-[var(--tx3)]">{b.label}</span>
-                  <span>{formatCurrency(b.amount)}</span>
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between font-medium pt-2 border-t border-[var(--brd)]/40">
-              <span>HST</span>
-              <span>{formatCurrency(serverPricing.hst)}</span>
-            </div>
-            <div className="flex justify-between font-bold text-[var(--accent-text)]">
-              <span>Total (incl. HST)</span>
-              <span>{formatCurrency(serverPricing.total_with_tax)}</span>
-            </div>
-          </div>
-        )}
-        {!clientEstimate && !previewLoading && !clientDistanceLoading && (
-          <p className="text-[11px] text-[var(--tx3)]">
-            Select a vertical, enter pickup and delivery addresses, and add at
-            least one line item (or flooring box count). The estimate above
-            updates as you type. Use Get exact price for the number that goes on
-            the quote.
-          </p>
-        )}
-        {previewLoading && (
-          <p className="text-[11px] text-[var(--tx3)]">
-            Calculating exact price on server…
-          </p>
-        )}
-        {clientDistanceLoading && !clientEstimate && (
-          <p className="text-[11px] text-[var(--tx3)]">
-            Calculating route distance…
-          </p>
-        )}
-        <button
-          type="button"
-          disabled={previewLoading}
-          onClick={() => void runPricingPreview()}
-          className="w-full sm:w-auto px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] disabled:opacity-50"
-        >
-          Get exact price
-        </button>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-          <Field label="Admin override (pre-tax, optional)">
-            <input
-              type="text"
-              value={overridePrice}
-              onChange={(e) => setOverridePrice(e.target.value)}
-              onBlur={() => {
-                const n = parseNumberInput(overridePrice);
-                if (n > 0) setOverridePrice(formatNumberInput(n));
-              }}
-              className={fieldInput}
-              placeholder="Leave blank to use calculated"
-            />
-          </Field>
-          <Field label="Override reason (required if overriding)">
-            <input
-              value={overrideReason}
-              onChange={(e) => setOverrideReason(e.target.value)}
-              className={fieldInput}
-              placeholder="e.g. Volume discount"
-            />
-          </Field>
-        </div>
-      </section>
-
-      <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
-        <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
-          Payment
+          Payment *
         </h3>
         <div className="space-y-2 text-[11px] text-[var(--tx)]">
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex items-start gap-2 cursor-pointer py-1">
             <input
               type="radio"
               name="b2b-pay"
               checked={paymentMethod === "card"}
               onChange={() => setPaymentMethod("card")}
-              className="accent-[var(--gold)]"
+              className="accent-[var(--gold)] mt-0.5"
             />
-            Card at booking (full payment)
+            <div className="min-w-0">
+              <div className="font-semibold">Card at booking (full payment)</div>
+              <div className="text-[10px] text-[var(--tx3)] mt-0.5">
+                Charged on confirm. Card token captured at the quote-accept step.
+              </div>
+            </div>
           </label>
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex items-start gap-2 cursor-pointer py-1">
             <input
               type="radio"
               name="b2b-pay"
               checked={paymentMethod === "invoice"}
               onChange={() => setPaymentMethod("invoice")}
-              className="accent-[var(--gold)]"
+              className="accent-[var(--gold)] mt-0.5"
             />
-            Invoice
+            <div className="min-w-0">
+              <div className="font-semibold">Invoice</div>
+              <div className="text-[10px] text-[var(--tx3)] mt-0.5">
+                Sent after delivery; no card required at booking. Choose terms below.
+              </div>
+            </div>
           </label>
         </div>
         {paymentMethod === "invoice" && (
@@ -3407,27 +3380,165 @@ export default function B2BJobsDeliveryForm({
           onChange={(e) => setSpecialInstructions(e.target.value)}
           rows={3}
           className={`${fieldInput} resize-y`}
+          placeholder="Dock hours, security check-in, fragile items, anything the crew needs to know on site."
         />
       </section>
 
-      {crews.length > 0 && (
-        <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
-          <Field label="Assign crew (optional)">
-            <select
-              value={crewId}
-              onChange={(e) => setCrewId(e.target.value)}
-              className={fieldInput}
+        </div>{/* /left column */}
+
+        <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+          <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
+            <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
+              Pricing
+            </h3>
+            {selectedVertical && (
+              <div className="text-[11px] text-[var(--tx2)] space-y-0.5">
+                <p>
+                  <span className="font-semibold text-[var(--tx)]">
+                    {selectedVertical.name}
+                  </span>
+                  <span className="text-[var(--tx3)]"> · Base rate </span>
+                  <span className="tabular-nums text-[var(--tx)]">
+                    {formatCurrency(selectedVertical.base_rate)}
+                  </span>
+                </p>
+                {estimatedDistanceKm != null ? (
+                  <p className="text-[10px] text-[var(--tx3)]">
+                    Route ~{estimatedDistanceKm} km
+                  </p>
+                ) : null}
+              </div>
+            )}
+            {/* Show server (authoritative) result if present; else fall back to client estimate. Avoids showing two totals. */}
+            {serverPricing ? (
+              <div className="text-[11px] space-y-1 text-[var(--tx)] border border-[var(--gold)]/30 rounded-lg p-3 bg-[var(--gold)]/5">
+                <p className="text-[9px] uppercase tracking-wide text-[var(--tx3)]">
+                  Final price (server)
+                </p>
+                <div className="text-[20px] font-bold text-[var(--accent-text)] tabular-nums">
+                  {formatCurrency(serverPricing.total_with_tax)}
+                </div>
+                <div className="text-[10px] text-[var(--tx3)]">
+                  Pre-tax {formatCurrency(serverPricing.rounded_pre_tax)} · HST{" "}
+                  {formatCurrency(serverPricing.hst)}
+                </div>
+                {serverPricing.access_surcharge > 0 && (
+                  <div className="text-[10px] text-[var(--tx3)]">
+                    Access surcharges:{" "}
+                    {formatCurrency(serverPricing.access_surcharge)}
+                  </div>
+                )}
+                <div className="border-t border-[var(--brd)]/40 pt-2 mt-2 space-y-0.5 max-h-44 overflow-y-auto">
+                  {serverPricing.breakdown.map((b, i) => (
+                    <div key={i} className="flex justify-between gap-2 text-[10px]">
+                      <span className="text-[var(--tx3)]">{b.label}</span>
+                      <span className="tabular-nums">
+                        {formatCurrency(b.amount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : clientEstimate ? (
+              <div className="text-[11px] space-y-1 text-[var(--tx)] border border-[var(--brd)] rounded-lg p-3 bg-[var(--bg)]/40">
+                <p className="text-[9px] uppercase tracking-wide text-[var(--tx3)]">
+                  Estimate (updates as you type)
+                </p>
+                <div className="text-[20px] font-bold text-[var(--accent-text)] tabular-nums">
+                  ~{formatCurrency(clientEstimate.total_with_tax)}
+                </div>
+                <div className="text-[10px] text-[var(--tx3)]">
+                  Pre-tax {formatCurrency(clientEstimate.rounded_pre_tax)} · HST{" "}
+                  {formatCurrency(clientEstimate.hst)}
+                </div>
+                <p className="text-[10px] text-[var(--tx3)] leading-relaxed">
+                  Approximate. Click <strong>Get exact price</strong> below for
+                  the number that goes on the quote.
+                </p>
+                <div className="border-t border-[var(--brd)]/40 pt-2 mt-2 space-y-0.5 max-h-32 overflow-y-auto">
+                  {clientEstimate.breakdown.map((b, i) => (
+                    <div key={i} className="flex justify-between gap-2 text-[10px]">
+                      <span className="text-[var(--tx3)]">{b.label}</span>
+                      <span className="tabular-nums">
+                        {formatCurrency(b.amount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
+                Select a vertical, enter pickup and delivery addresses, and add
+                at least one line item to see an estimate.
+              </p>
+            )}
+            {previewLoading && (
+              <p className="text-[10px] text-[var(--tx3)]">Calculating…</p>
+            )}
+            {clientDistanceLoading && !clientEstimate && (
+              <p className="text-[10px] text-[var(--tx3)]">
+                Calculating route distance…
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={previewLoading}
+              onClick={() => void runPricingPreview()}
+              className="w-full px-3 py-2.5 rounded-lg text-[11px] font-bold tracking-wider uppercase bg-[var(--tx)] text-[var(--card)] hover:opacity-90 disabled:opacity-50"
             >
-              <option value="">Unassigned</option>
-              {crews.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </section>
-      )}
+              {previewLoading ? "Calculating…" : "Get exact price"}
+            </button>
+
+            <div className="pt-2 border-t border-[var(--brd)]/60">
+              <button
+                type="button"
+                onClick={() => setPricingOverrideOpen((v) => !v)}
+                className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase text-[var(--tx2)] hover:text-[var(--tx)]"
+                aria-expanded={pricingOverrideOpen}
+              >
+                <CaretDown
+                  className={`w-3 h-3 transition-transform ${pricingOverrideOpen ? "" : "-rotate-90"}`}
+                />
+                Override price (admin)
+                {(overridePrice.trim() || overrideReason.trim()) && (
+                  <span className="ml-1 px-1.5 py-0.5 rounded text-[9px] bg-amber-500/20 text-amber-700">
+                    active
+                  </span>
+                )}
+              </button>
+              {pricingOverrideOpen && (
+                <div className="mt-2 p-3 rounded-lg border border-amber-500/40 bg-amber-500/5 space-y-2">
+                  <p className="text-[10px] text-amber-800 leading-relaxed">
+                    <strong>Heads up:</strong> overriding bypasses partner rates
+                    and surcharges. The reason is logged on the deal.
+                  </p>
+                  <Field label="Override pre-tax price">
+                    <input
+                      type="text"
+                      value={overridePrice}
+                      onChange={(e) => setOverridePrice(e.target.value)}
+                      onBlur={() => {
+                        const n = parseNumberInput(overridePrice);
+                        if (n > 0) setOverridePrice(formatNumberInput(n));
+                      }}
+                      className={fieldInput}
+                      placeholder="e.g. 1850"
+                    />
+                  </Field>
+                  <Field label="Reason (required) *">
+                    <input
+                      value={overrideReason}
+                      onChange={(e) => setOverrideReason(e.target.value)}
+                      className={fieldInput}
+                      placeholder="e.g. Volume discount, partner promo"
+                    />
+                  </Field>
+                </div>
+              )}
+            </div>
+          </section>
+        </aside>
+      </div>{/* /grid */}
 
       <div className="flex flex-wrap gap-2 pt-2">
         <button
