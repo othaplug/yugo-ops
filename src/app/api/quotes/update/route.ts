@@ -4,6 +4,9 @@ import { sendEmail } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { requireStaff } from "@/lib/api-auth";
 import { sendQuoteLinkSms } from "@/lib/quote-sms";
+import { buildHubSpotDealName } from "@/lib/hubspot/deal-name";
+import { buildAllDealProperties } from "@/lib/hubspot/deal-properties-builder";
+import { safePatchDeal } from "@/lib/hubspot/safe-deal-write";
 
 /**
  * POST /api/quotes/update
@@ -96,22 +99,64 @@ export async function POST(req: Request) {
     if (reason) changes.push(reason);
     const changesSummary = changes.length > 0 ? changes.join("<br/>") : "Quote details updated.";
 
-    /* ── HubSpot: update deal amount + add note ── */
+    /* ── HubSpot: update deal amount, name, address, access, size … on every edit ── */
     const dealId = original.hubspot_deal_id || newQuote.hubspot_deal_id;
     const hsToken = process.env.HUBSPOT_ACCESS_TOKEN;
     if (dealId && hsToken) {
-      if (newPrice) {
-        fetch(`https://api.hubapi.com/crm/v3/objects/deals/${dealId}`, {
-          method: "PATCH",
-          headers: { Authorization: `Bearer ${hsToken}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            properties: {
-              amount: String(newPrice),
-              quote_url: `${getEmailBaseUrl()}/quote/${newQuoteId}`,
-            },
-          }),
-        }).catch(() => {});
-      }
+      // Pull the full property set so the deal stays in lockstep with the
+      // re-generated quote — earlier this only sent `amount`, so address
+      // / access / move date / size edits never reached HubSpot.
+      const contactRow = original.contacts as
+        | { name?: string | null }
+        | { name?: string | null }[]
+        | null;
+      const contactName = (Array.isArray(contactRow) ? contactRow[0]?.name : contactRow?.name) || "";
+      const nameParts = String(contactName).trim().split(/\s+/);
+      const fnEdit = nameParts[0] ?? "";
+      const lnEdit = nameParts.slice(1).join(" ");
+      const factorsAppliedEdit =
+        (newQuote.factors_applied as { b2b_business_name?: string; business_name?: string } | null) ??
+        (original.factors_applied as { b2b_business_name?: string; business_name?: string } | null) ??
+        null;
+      const businessNameEdit =
+        factorsAppliedEdit?.b2b_business_name ?? factorsAppliedEdit?.business_name ?? null;
+
+      const rebuiltDealName = buildHubSpotDealName({
+        serviceType: newQuote.service_type ?? original.service_type ?? undefined,
+        isPmMove: false,
+        firstName: fnEdit,
+        lastName: lnEdit,
+        businessName: businessNameEdit ?? undefined,
+        tierLabel: newQuote.recommended_tier ?? original.recommended_tier ?? undefined,
+        moveSize: newQuote.move_size ?? original.move_size ?? undefined,
+        fromAddress: newQuote.from_address ?? original.from_address ?? undefined,
+        fallbackCode: `Quote ${newQuoteId}`,
+      });
+
+      const dealProps: Record<string, string> = {
+        dealname: rebuiltDealName,
+        quote_url: `${getEmailBaseUrl()}/quote/${newQuoteId}`,
+        ...buildAllDealProperties({
+          jobId: newQuoteId,
+          firstName: fnEdit,
+          lastName: lnEdit,
+          fromAddress: newQuote.from_address ?? original.from_address ?? undefined,
+          toAddress: newQuote.to_address ?? original.to_address ?? undefined,
+          fromAccess: newQuote.from_access ?? original.from_access ?? undefined,
+          toAccess: newQuote.to_access ?? original.to_access ?? undefined,
+          serviceType: newQuote.service_type ?? original.service_type ?? undefined,
+          moveDate: newQuote.move_date ?? original.move_date ?? undefined,
+          moveSize: newQuote.move_size ?? original.move_size ?? undefined,
+          subtotal: typeof newPrice === "number" ? newPrice : null,
+          tierSelected:
+            newQuote.recommended_tier ?? original.recommended_tier ?? undefined,
+          isPmMove: false,
+          businessName: businessNameEdit ?? undefined,
+        }),
+      };
+      if (typeof newPrice === "number") dealProps.amount = String(newPrice);
+
+      safePatchDeal(hsToken, dealId, dealProps).catch(() => {});
 
       const noteBody = [
         `Quote re-generated (v${currentVersion} → v${currentVersion + 1}).`,

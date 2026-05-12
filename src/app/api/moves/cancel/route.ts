@@ -3,6 +3,7 @@ import { squareClient } from "@/lib/square";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
+import { safePatchDeal } from "@/lib/hubspot/safe-deal-write";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
 import { requireStaff } from "@/lib/api-auth";
@@ -117,19 +118,10 @@ export async function POST(req: Request) {
 
       const token = process.env.HUBSPOT_ACCESS_TOKEN;
       if (token) {
-        fetch(`https://api.hubapi.com/crm/v3/objects/deals/${move.hubspot_deal_id}`, {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            properties: {
-              hs_is_closed_won: "false",
-              closed_lost_reason: fullReason,
-              closedate: now,
-            },
-          }),
+        safePatchDeal(token, move.hubspot_deal_id, {
+          hs_is_closed_won: "false",
+          closed_lost_reason: fullReason,
+          closedate: now,
         }).catch(() => {});
       }
     }

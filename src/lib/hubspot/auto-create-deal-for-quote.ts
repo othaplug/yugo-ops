@@ -6,6 +6,7 @@ import { findExistingOpenDealForContactEmail } from "@/lib/hubspot/find-existing
 import { buildHubSpotDealName, serviceCategory } from "@/lib/hubspot/deal-name";
 import { dealPackageType, yugoJobProperties } from "@/lib/hubspot/deal-properties";
 import { buildAllYugoProperties } from "@/lib/hubspot/deal-properties-builder";
+import { safeCreateDeal } from "@/lib/hubspot/safe-deal-write";
 import { resolveStageFromStatus } from "@/lib/hubspot/stage-mapping";
 import type { HubSpotAutoCreateDealResult } from "@/lib/hubspot/auto-create-deal-types";
 
@@ -265,14 +266,7 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
     ];
   }
 
-  let dealRes = await fetch(HS_DEALS, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  let dealRes = await safeCreateDeal(token, body as { properties: Record<string, unknown>; associations?: unknown });
 
   if (!dealRes.ok) {
     const errText = await dealRes.text();
@@ -286,7 +280,7 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
       console.warn(
         `[HubSpot] Custom deal properties missing for ${quoteIdText} — retrying with standard properties only. Error: ${errText.slice(0, 500)}`,
       );
-      const standardBody: Record<string, unknown> = {
+      const standardBody: { properties: Record<string, unknown>; associations?: unknown } = {
         properties: {
           dealname: properties.dealname,
           pipeline: properties.pipeline,
@@ -296,14 +290,7 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
       };
       if (body.associations) standardBody.associations = body.associations;
 
-      dealRes = await fetch(HS_DEALS, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(standardBody),
-      });
+      dealRes = await safeCreateDeal(token, standardBody);
     }
 
     if (!dealRes.ok) {

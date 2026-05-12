@@ -7,6 +7,7 @@ import { patchHubSpotDealJobNo } from "@/lib/hubspot/sync-deal-job-no"
 import { buildHubSpotDealName } from "@/lib/hubspot/deal-name"
 import { yugoJobProperties } from "@/lib/hubspot/deal-properties"
 import { buildAllDealProperties } from "@/lib/hubspot/deal-properties-builder"
+import { safeCreateDeal } from "@/lib/hubspot/safe-deal-write"
 import type { HubSpotAutoCreateDealResult } from "@/lib/hubspot/auto-create-deal-types"
 import { deliveryNumericJobNoForHubSpot } from "@/lib/move-code"
 
@@ -197,14 +198,7 @@ export async function autoCreateHubSpotDealForNewDelivery(opts: {
     ]
   }
 
-  const dealRes = await fetch(HS_DEALS, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  })
+  const dealRes = await safeCreateDeal(token, body as { properties: Record<string, unknown>; associations?: unknown })
 
   if (!dealRes.ok) {
     const t = await dealRes.text()

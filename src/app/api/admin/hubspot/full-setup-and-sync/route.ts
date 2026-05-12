@@ -3,8 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { requireStaff } from "@/lib/api-auth"
 import { ensureHubSpotCustomProperties } from "@/lib/hubspot/setup"
 import { buildAllYugoProperties } from "@/lib/hubspot/deal-properties-builder"
-
-const HS_DEAL_PATCH_BASE = "https://api.hubapi.com/crm/v3/objects/deals"
+import { safePatchDeal } from "@/lib/hubspot/safe-deal-write"
 
 interface SyncEntry {
   jobId: string
@@ -160,14 +159,7 @@ async function patchDeal(
     return { jobId, hubspotDealId: dealId, result: "skipped" }
   }
   try {
-    const res = await fetch(`${HS_DEAL_PATCH_BASE}/${dealId}`, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ properties: props }),
-    })
+    const res = await safePatchDeal(token, dealId, props)
     if (!res.ok) {
       const t = await res.text()
       return {

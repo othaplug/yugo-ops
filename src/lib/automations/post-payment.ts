@@ -3,6 +3,9 @@ import { syncJobToGCal } from "@/lib/google-calendar/sync-job";
 import { isGCalConfigured } from "@/lib/google-calendar/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
+import { buildHubSpotDealName } from "@/lib/hubspot/deal-name";
+import { buildAllDealProperties } from "@/lib/hubspot/deal-properties-builder";
+import { safePatchDeal } from "@/lib/hubspot/safe-deal-write";
 import { getResend } from "@/lib/resend";
 import { getEmailFrom } from "@/lib/email/send";
 import { sendSMS } from "@/lib/sms/sendSMS";
@@ -279,27 +282,57 @@ export async function runPostPaymentActions(
         const token = process.env.HUBSPOT_ACCESS_TOKEN;
         if (!token) return;
 
-        await fetch(
-          `https://api.hubapi.com/crm/v3/objects/deals/${hubspotDealId}`,
-          {
-            method: "PATCH",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              properties: {
-                dealname: `${(clientName || "Client").trim()} · ${input.moveCode}`.slice(0, 200),
-                amount: String(totalWithTax),
-                deposit_received_at: new Date().toISOString(),
-                square_invoice_id: input.paymentId,
-                opsplus_move_id: input.moveId,
-                contract_signed: "true",
-                package_type: tierLabel || serviceLabel,
-              },
-            }),
-          },
-        );
+        // Rebuild the canonical deal name + property bag so post-payment
+        // doesn't wipe the proper-cased name set at quote-send time. The
+        // earlier "Client · MV-XXXX" template was the source of the legacy
+        // dot-separator dealnames we had to patch by hand (Chris Chatlani,
+        // Richelle Baker, etc.).
+        const firstNameForPayment = (clientName || "")
+          .trim()
+          .split(/\s+/)[0] ?? "";
+        const lastNameForPayment = (clientName || "")
+          .trim()
+          .split(/\s+/)
+          .slice(1)
+          .join(" ");
+        const rebuiltDealName = buildHubSpotDealName({
+          serviceType: String(quote.service_type ?? "") || undefined,
+          isPmMove: !!move.is_pm_move,
+          firstName: firstNameForPayment,
+          lastName: lastNameForPayment,
+          tierLabel: (selectedTier as string | null | undefined) ?? undefined,
+          moveSize: (quote.move_size as string | null | undefined) ?? undefined,
+          fromAddress: (quote.from_address as string | null | undefined) ?? undefined,
+          fallbackCode: `Move ${input.moveCode}`,
+        });
+
+        const dealPayload: Record<string, string> = {
+          dealname: rebuiltDealName,
+          amount: String(totalWithTax),
+          deposit_received_at: new Date().toISOString(),
+          square_invoice_id: input.paymentId,
+          opsplus_move_id: input.moveId,
+          contract_signed: "true",
+          package_type: tierLabel || serviceLabel,
+          ...buildAllDealProperties({
+            jobId: input.moveCode,
+            firstName: firstNameForPayment,
+            lastName: lastNameForPayment,
+            fromAddress: quote.from_address as string | null | undefined,
+            toAddress: quote.to_address as string | null | undefined,
+            fromAccess: quote.from_access as string | null | undefined,
+            toAccess: quote.to_access as string | null | undefined,
+            serviceType: String(quote.service_type ?? "") || undefined,
+            moveDate: (quote.move_date as string | null | undefined) ?? undefined,
+            moveSize: (quote.move_size as string | null | undefined) ?? undefined,
+            subtotal: totalWithTax > 0 ? Math.round(totalWithTax / 1.13 * 100) / 100 : null,
+            totalPrice: totalWithTax,
+            tierSelected: (selectedTier as string | null | undefined) ?? null,
+            isPmMove: !!move.is_pm_move,
+          }),
+        };
+
+        await safePatchDeal(token, hubspotDealId, dealPayload);
       },
     },
 
@@ -926,27 +959,52 @@ export async function runPostPaymentActionsB2BDelivery(
         await syncDealStage(hubspotDealId, "confirmed");
         const token = process.env.HUBSPOT_ACCESS_TOKEN;
         if (!token) return;
-        await fetch(
-          `https://api.hubapi.com/crm/v3/objects/deals/${hubspotDealId}`,
-          {
-            method: "PATCH",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              properties: {
-                dealname: `${(clientName || "Client").trim()} · ${input.deliveryNumber}`.slice(0, 200),
-                amount: String(totalWithTax),
-                deposit_received_at: new Date().toISOString(),
-                square_invoice_id: input.paymentId,
-                opsplus_move_id: input.deliveryId,
-                contract_signed: "true",
-                package_type: tierLabel || serviceLabel,
-              },
-            }),
-          },
-        );
+        // Same canonical-name + property-set rebuild as the move path —
+        // keeps deliveries on the same dealname format as quotes/moves.
+        const firstNameForDelivery = (clientName || "")
+          .trim()
+          .split(/\s+/)[0] ?? "";
+        const lastNameForDelivery = (clientName || "")
+          .trim()
+          .split(/\s+/)
+          .slice(1)
+          .join(" ");
+        const rebuiltDeliveryDealName = buildHubSpotDealName({
+          serviceType: String(quote.service_type ?? "") || undefined,
+          isPmMove: false,
+          firstName: firstNameForDelivery,
+          lastName: lastNameForDelivery,
+          tierLabel: (selectedTier as string | null | undefined) ?? undefined,
+          moveSize: (quote.move_size as string | null | undefined) ?? undefined,
+          fromAddress: (quote.from_address as string | null | undefined) ?? undefined,
+          fallbackCode: `Delivery ${input.deliveryNumber}`,
+        });
+        const deliveryDealPayload: Record<string, string> = {
+          dealname: rebuiltDeliveryDealName,
+          amount: String(totalWithTax),
+          deposit_received_at: new Date().toISOString(),
+          square_invoice_id: input.paymentId,
+          opsplus_move_id: input.deliveryId,
+          contract_signed: "true",
+          package_type: tierLabel || serviceLabel,
+          ...buildAllDealProperties({
+            jobId: input.deliveryNumber,
+            firstName: firstNameForDelivery,
+            lastName: lastNameForDelivery,
+            fromAddress: quote.from_address as string | null | undefined,
+            toAddress: quote.to_address as string | null | undefined,
+            fromAccess: quote.from_access as string | null | undefined,
+            toAccess: quote.to_access as string | null | undefined,
+            serviceType: String(quote.service_type ?? "") || undefined,
+            moveDate: (quote.move_date as string | null | undefined) ?? undefined,
+            moveSize: (quote.move_size as string | null | undefined) ?? undefined,
+            subtotal: totalWithTax > 0 ? Math.round(totalWithTax / 1.13 * 100) / 100 : null,
+            totalPrice: totalWithTax,
+            tierSelected: (selectedTier as string | null | undefined) ?? null,
+            isPmMove: false,
+          }),
+        };
+        await safePatchDeal(token, hubspotDealId, deliveryDealPayload);
       },
     },
     {

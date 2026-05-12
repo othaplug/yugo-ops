@@ -5,6 +5,7 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { autoCreateHubSpotDealForSentQuote } from "@/lib/hubspot/auto-create-deal-for-quote";
 import { buildAllDealProperties } from "@/lib/hubspot/deal-properties-builder";
+import { safePatchDeal } from "@/lib/hubspot/safe-deal-write";
 import { requireStaff } from "@/lib/api-auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { logAudit } from "@/lib/audit";
@@ -472,14 +473,7 @@ export async function POST(req: NextRequest) {
       if (lName) dealProps.lastname = lName;
       if (curatedPrice != null) dealProps.amount = String(curatedPrice);
 
-      fetch(`https://api.hubapi.com/crm/v3/objects/deals/${effectiveDealId}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${hsToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ properties: dealProps }),
-      }).catch(() => {});
+      safePatchDeal(hsToken, effectiveDealId, dealProps).catch(() => {});
 
       syncDealStage(effectiveDealId, "quote_sent").catch(() => {});
     }
