@@ -79,13 +79,16 @@ export async function GET(req: NextRequest) {
       const { locationId } = await getSquarePaymentConfig();
       if (!locationId) throw new Error("Square location not configured");
 
+      // Square idempotency key max is 45 chars — keep it short
+      const shortId = move.id.replace(/-/g, "").slice(0, 20);
+      const dateStr = new Date().toISOString().split("T")[0].replace(/-/g, "");
       const paymentRes = await squareClient.payments.create({
         sourceId: move.square_card_id,
         amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
         customerId: move.square_customer_id || undefined,
         referenceId: move.move_code || move.id,
         note: "Balance + processing fee, auto-charge",
-        idempotencyKey: `bal-auto-${move.id}-${new Date().toISOString().split("T")[0]}`,
+        idempotencyKey: `ba-${shortId}-${dateStr}`,
         locationId,
       });
 

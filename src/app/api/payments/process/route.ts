@@ -167,6 +167,30 @@ export async function POST(req: Request) {
         squareCardId = cardRes.card?.id;
       } catch (e) {
         console.error("[Square] card storage failed:", e);
+        // Card create failed — the card may already be on file from a prior session.
+        // Fall back to listing the customer's stored cards before giving up.
+        if (squareCustomerId) {
+          try {
+            const listRes = await squareClient.cards.list({ customerId: squareCustomerId });
+            squareCardId = (listRes as { cards?: Array<{ id?: string }> }).cards?.[0]?.id;
+            if (squareCardId) {
+              console.log("[Square] recovered existing card on file:", squareCardId);
+            }
+          } catch {
+            // list also failed — proceed without a stored card
+          }
+        }
+        // Alert admin so we know card storage is broken for this booking
+        if (!squareCardId) {
+          notifyAdmins("payment_failed", {
+            quoteId,
+            sourceId: quoteId,
+            subject: "Card storage failed at checkout — no card on file",
+            description: `${quoteId} — ${clientEmail}: Square card.create failed and no existing card found. Balance will require manual collection.`,
+            clientName,
+            excludeRecipientEmails: clientEmail.trim() ? [clientEmail.trim().toLowerCase()] : [],
+          }).catch(() => {});
+        }
         // Fall through — we can still charge with the nonce directly
       }
 
