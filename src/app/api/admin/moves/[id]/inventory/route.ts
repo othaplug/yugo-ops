@@ -38,8 +38,8 @@ export async function GET(
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-    // Fallback when move_inventory is empty: derive read-only rows from the
-    // moves.inventory_items JSONB snapshot copied from the source quote.
+    // Fallback when move_inventory is empty: materialize rows from the
+    // moves.inventory_items JSONB snapshot so edit/delete always work on real DB rows.
     let effectiveItems = items ?? [];
     if (
       effectiveItems.length === 0 &&
@@ -48,7 +48,7 @@ export async function GET(
       const snapshot = (moveRow as { inventory_items?: unknown[] }).inventory_items as Array<
         Record<string, unknown>
       >;
-      effectiveItems = snapshot
+      const insertRows = snapshot
         .filter(
           (it) =>
             it &&
@@ -66,13 +66,33 @@ export async function GET(
               ? (it.room as string).trim()
               : "other";
           return {
-            id: `snapshot-${idx}`,
+            move_id: moveId,
             room: roomRaw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
             item_name: qty > 1 ? `${name} x${qty}` : name,
             box_number: null as string | null,
             sort_order: idx,
           };
         });
+
+      if (insertRows.length > 0) {
+        // Materialize into move_inventory so subsequent requests use real rows.
+        const { data: inserted } = await db
+          .from("move_inventory")
+          .insert(insertRows)
+          .select("id, room, item_name, box_number, sort_order");
+        if (inserted && inserted.length > 0) {
+          effectiveItems = inserted;
+        } else {
+          // Insert failed (e.g. race condition) — return derived rows for this request only
+          effectiveItems = insertRows.map((r, idx) => ({
+            id: `snapshot-${idx}`,
+            room: r.room,
+            item_name: r.item_name,
+            box_number: r.box_number,
+            sort_order: r.sort_order,
+          }));
+        }
+      }
     }
 
     let boxCount =
