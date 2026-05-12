@@ -40,13 +40,19 @@ const ALLOWED_PROPERTIES = new Set([
   // Deal fields synced from Yugo (match get-deal / HubSpot deal property internal names)
   "firstname",
   "lastname",
+  "client_name", // portal: "First name"
+  "last_name",
   "pick_up_address",
   "drop_off_address",
-  "access_from",
+  "access", // portal: "Access from" (NOT access_from)
   "access_to",
   "service_type",
   "move_size",
   "move_date",
+  "sub_total",
+  "additional_info",
+  "lost_reason",
+  "dealtype",
 ]);
 
 export async function POST(req: NextRequest) {

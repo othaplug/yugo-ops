@@ -6,6 +6,7 @@ import { findOrCreateHubSpotContact } from "@/lib/hubspot/auto-create-deal-for-q
 import { patchHubSpotDealJobNo } from "@/lib/hubspot/sync-deal-job-no"
 import { buildHubSpotDealName } from "@/lib/hubspot/deal-name"
 import { yugoJobProperties } from "@/lib/hubspot/deal-properties"
+import { buildAllDealProperties } from "@/lib/hubspot/deal-properties-builder"
 import type { HubSpotAutoCreateDealResult } from "@/lib/hubspot/auto-create-deal-types"
 import { deliveryNumericJobNoForHubSpot } from "@/lib/move-code"
 
@@ -146,33 +147,40 @@ export async function autoCreateHubSpotDealForNewDelivery(opts: {
     phone: clientPhone ?? null,
   })
 
+  const amount = preTaxAmountForHubSpot(delivery)
+
+  // Single payload built via the shared deal-properties builder so deliveries
+  // get the same portal-name discipline as quotes and moves. The builder
+  // writes `pick_up_address`, `drop_off_address`, `access`, `access_to`,
+  // `service_type`, `move_date`, `job_no`, etc. — every field the owner
+  // listed in their portal property audit.
   const properties: Record<string, string> = {
     dealname: dealName,
     pipeline: pipelineId,
     dealstage: stageId,
     quote_url: deliveryAdminUrl,
-    service_type: svc,
-    move_date: String(delivery.scheduled_date || "").trim(),
-    pick_up_address: String(delivery.pickup_address || "").trim(),
-    drop_off_address: String(delivery.delivery_address || "").trim(),
-    access_from: String(delivery.pickup_access || "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "_"),
-    access_to: String(delivery.delivery_access || "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "_"),
     firstname: firstName,
     lastname: lastName,
     package_type: "b2b",
     ...yugoJobProperties({ jobId: deliveryNumber, jobNo, serviceType: svc }),
+    ...buildAllDealProperties({
+      jobId: deliveryNumber,
+      jobNumber: jobNo,
+      firstName,
+      lastName,
+      fromAddress: delivery.pickup_address,
+      toAddress: delivery.delivery_address,
+      fromAccess: delivery.pickup_access,
+      toAccess: delivery.delivery_access,
+      serviceType: svc,
+      moveDate: delivery.scheduled_date,
+      subtotal: amount,
+      isPmMove: false,
+      businessName: delivery.business_name,
+    }),
   }
 
-  const amount = preTaxAmountForHubSpot(delivery)
   if (amount != null) properties.amount = String(amount)
-
-  if (jobNo) properties.job_no = jobNo
 
   const body: Record<string, unknown> = { properties }
   if (contactId) {

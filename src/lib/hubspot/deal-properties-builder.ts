@@ -1,11 +1,21 @@
 /**
- * THE SINGLE SOURCE OF TRUTH for the yugo_* custom properties on every HubSpot deal.
+ * Single source of truth for the custom-property payload written to every
+ * HubSpot deal from quote, move, and delivery creates / retries.
  *
- * Both auto-create-deal-for-quote.ts and auto-create-deal-for-move.ts spread
- * `buildAllYugoProperties(record)` into their property payloads. Going forward,
- * any new deal create/update call MUST go through this builder — never inline.
+ * IMPORTANT — internal-name discipline:
  *
- * The list of property names MUST stay in sync with `YUGO_CUSTOM_PROPS` in setup.ts.
+ *   We previously wrote to `yugo_*` prefixed properties that were auto-created
+ *   by `setup.ts`. The portal's actual deal properties have **no prefix**
+ *   (`job_no`, `client_name`, `pick_up_address`, etc.) so every write went to
+ *   phantom fields while the real cards stayed empty. This builder now writes
+ *   directly to the portal-defined internal names below — verified against the
+ *   owner's portal property settings on 2026-05-12.
+ *
+ *   If you add a new property, the internal name must EXIST in the portal
+ *   first (see HubSpot → Settings → Properties → Deals). Don't auto-create.
+ *
+ * The list of property names MUST stay in sync with `LEGACY_YUGO_PROPS` in
+ * setup.ts when cleaning up old phantom properties.
  */
 
 import { serviceCategory } from "@/lib/hubspot/deal-name"
@@ -78,7 +88,7 @@ function isoDateOnly(d: string | Date | null | undefined): string {
   }
 }
 
-/** Human-readable summary used for `yugo_additional_info`. */
+/** Human-readable summary used for `additional_info`. */
 function buildAdditionalInfo(src: YugoDealSource): string {
   const cat = serviceCategory(src.serviceType, src.isPmMove)
   const parts: string[] = []
@@ -96,63 +106,100 @@ function buildAdditionalInfo(src: YugoDealSource): string {
 }
 
 /**
- * Build every yugo_* property for a deal. Empty strings are OMITTED so partial
- * updates don't wipe existing data — HubSpot treats missing keys as "no change".
+ * Build every deal property (using the portal's real internal names) for a
+ * HubSpot create / update. Empty strings are OMITTED so partial updates don't
+ * wipe existing data — HubSpot treats missing keys as "no change".
+ *
+ * Internal-name mapping (left side = portal, right side = source field):
+ *
+ *   job_no            ← jobNumber (e.g. "30221")
+ *   client_name       ← firstName (portal label: "First name", stores first name)
+ *   last_name         ← lastName
+ *   pick_up_address   ← fromAddress
+ *   access            ← fromAccess (slug — let portal map enum if dropdown)
+ *   drop_off_address  ← toAddress
+ *   access_to         ← toAccess (slug)
+ *   service_type      ← serviceType slug (pm_move when isPmMove)
+ *   move_date         ← moveDate (YYYY-MM-DD)
+ *   move_size         ← moveSize slug (skipped for B2B verticals)
+ *   sub_total         ← subtotal pre-tax
+ *   taxes             ← HST (derived as subtotal × 0.13 when not supplied)
+ *   total_price       ← total (subtotal + taxes when not supplied)
+ *   additional_info   ← composed crew/hours/truck/tier/size/vertical summary
+ *   dealtype          ← "residential" | "pm" | "b2b" (lowercase enum-safe)
+ *   lost_reason       ← lostReason free text
  */
-export function buildAllYugoProperties(src: YugoDealSource): Record<string, string> {
+export function buildAllDealProperties(src: YugoDealSource): Record<string, string> {
   const out: Record<string, string> = {}
 
   // ── Identity ────────────────────────────────────────────────
   const jobId = String(src.jobId ?? "").trim()
-  if (jobId) out.yugo_job_id = jobId
   const jobNo = String(src.jobNumber ?? "").trim() || jobId.replace(/^[A-Z]+-/, "")
-  if (jobNo) out.yugo_job_number = jobNo
+  if (jobNo) out.job_no = jobNo
 
   // ── Client ──────────────────────────────────────────────────
   const fn = String(src.firstName ?? "").trim()
   const ln = String(src.lastName ?? "").trim()
-  if (fn) out.yugo_first_name = fn
-  if (ln) out.yugo_last_name = ln
+  if (fn) out.client_name = fn
+  if (ln) out.last_name = ln
 
   // ── Route ──────────────────────────────────────────────────
   const fromAddr = String(src.fromAddress ?? "").trim()
   const toAddr = String(src.toAddress ?? "").trim()
-  if (fromAddr) out.yugo_pickup_address = fromAddr
-  if (toAddr) out.yugo_dropoff_address = toAddr
-  const fromAcc = String(src.fromAccess ?? "").trim()
-  const toAcc = String(src.toAccess ?? "").trim()
-  if (fromAcc) out.yugo_access_from = displayLabel(fromAcc)
-  if (toAcc) out.yugo_access_to = displayLabel(toAcc)
+  if (fromAddr) out.pick_up_address = fromAddr
+  if (toAddr) out.drop_off_address = toAddr
+
+  // Access: write the slug (lowercase, underscored) so dropdown-style
+  // properties in HubSpot match their internal enum values. Free-text
+  // properties still render this readably ("elevator", "ground_floor").
+  const fromAcc = String(src.fromAccess ?? "").trim().toLowerCase().replace(/\s+/g, "_")
+  const toAcc = String(src.toAccess ?? "").trim().toLowerCase().replace(/\s+/g, "_")
+  if (fromAcc) out.access = fromAcc
+  if (toAcc) out.access_to = toAcc
 
   // ── Service ────────────────────────────────────────────────
-  const svc = String(src.serviceType ?? "").trim()
-  if (svc) out.yugo_service_type = displayLabel(src.isPmMove ? "pm_move" : svc)
+  const svc = String(src.serviceType ?? "").trim().toLowerCase()
+  if (svc) out.service_type = src.isPmMove ? "pm_move" : svc
   const moveDateIso = isoDateOnly(src.moveDate)
-  if (moveDateIso) out.yugo_move_date = moveDateIso
-  const sz = String(src.moveSize ?? "").trim()
-  if (sz && !isB2bSlug(svc)) out.yugo_move_size = displayLabel(sz)
+  if (moveDateIso) out.move_date = moveDateIso
+  const sz = String(src.moveSize ?? "").trim().toLowerCase()
+  if (sz && !isB2bSlug(svc)) out.move_size = sz
 
   // ── Financial ─────────────────────────────────────────────
   const subtotal =
     typeof src.subtotal === "number" && Number.isFinite(src.subtotal) ? src.subtotal : null
   if (subtotal != null) {
-    out.yugo_subtotal = String(Math.round(subtotal * 100) / 100)
+    out.sub_total = String(Math.round(subtotal * 100) / 100)
     const hst = deriveHst(subtotal, src.hst)
-    out.yugo_taxes = String(hst)
+    out.taxes = String(hst)
     const total =
       typeof src.totalPrice === "number" && Number.isFinite(src.totalPrice) && src.totalPrice > 0
         ? src.totalPrice
         : subtotal + hst
-    out.yugo_total_price = String(Math.round(total * 100) / 100)
+    out.total_price = String(Math.round(total * 100) / 100)
   }
 
   // ── Metadata ──────────────────────────────────────────────
   const addl = buildAdditionalInfo(src)
-  if (addl) out.yugo_additional_info = addl
+  if (addl) out.additional_info = addl
+
+  // dealtype is HubSpot's standard property — if customized to allow
+  // residential/pm/b2b enum values they'll match; otherwise the write
+  // is silently ignored without blocking the other 14 properties.
   const cat = serviceCategory(src.serviceType, src.isPmMove)
-  out.yugo_deal_type = cat === "b2b" ? "B2B" : cat === "pm" ? "PM" : "Residential"
+  out.dealtype = cat === "b2b" ? "b2b" : cat === "pm" ? "pm" : "residential"
+
   const lost = String(src.lostReason ?? "").trim()
-  if (lost) out.yugo_lost_reason = lost
+  if (lost) out.lost_reason = lost
 
   return out
 }
+
+/**
+ * Back-compat alias. Existing call sites import `buildAllYugoProperties` —
+ * keep the name working so we can update the body in one place without
+ * rippling through 7 callers in the same PR.
+ *
+ * @deprecated Use `buildAllDealProperties` for new code.
+ */
+export const buildAllYugoProperties = buildAllDealProperties

@@ -43,11 +43,13 @@ export async function POST() {
   const sb = createAdminClient()
   const entries: SyncEntry[] = []
 
-  // Quotes that have a hubspot_deal_id
+  // Quotes that have a hubspot_deal_id. The quotes table has NO first_name /
+  // last_name columns — the original sync silently 400'd on every load,
+  // returning zero rows. Names live on the joined `contacts` row instead.
   const { data: quotes } = await sb
     .from("quotes")
     .select(
-      "quote_id, hubspot_deal_id, first_name, last_name, from_address, to_address, from_access, to_access, service_type, move_date, move_size, custom_price, tiers, est_crew_size, est_hours, truck_primary, recommended_tier, b2b_business_name",
+      "quote_id, hubspot_deal_id, from_address, to_address, from_access, to_access, service_type, move_date, move_size, custom_price, tiers, est_crew_size, est_hours, truck_primary, recommended_tier, b2b_business_name, contact_id, contacts:contact_id(name)",
     )
     .not("hubspot_deal_id", "is", null)
 
@@ -55,10 +57,17 @@ export async function POST() {
     const tiers = q.tiers as Record<string, { price?: number }> | null
     const price =
       tiers?.essential?.price ?? tiers?.curated?.price ?? Number(q.custom_price ?? 0) ?? null
+    const contactRaw = (q as { contacts?: { name?: string | null } | { name?: string | null }[] | null })
+      .contacts
+    const contact = Array.isArray(contactRaw) ? contactRaw[0] ?? null : contactRaw
+    const fullName = String(contact?.name ?? "").trim()
+    const parts = fullName.split(/\s+/)
+    const firstName = parts.shift() ?? ""
+    const lastName = parts.join(" ")
     const props = buildAllYugoProperties({
       jobId: q.quote_id,
-      firstName: q.first_name,
-      lastName: q.last_name,
+      firstName,
+      lastName,
       fromAddress: q.from_address,
       toAddress: q.to_address,
       fromAccess: q.from_access,

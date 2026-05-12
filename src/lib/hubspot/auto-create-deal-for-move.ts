@@ -122,29 +122,20 @@ export async function autoCreateHubSpotDealForNewMove(opts: {
 
   const jobNo = moveNumericJobNoForHubSpot(moveCode)
 
+  // Standard HubSpot deal fields only. All OPS+ custom properties
+  // (job_no, pick_up_address, access, access_to, service_type, move_date,
+  // sub_total, taxes, total_price, etc.) flow through buildAllDealProperties
+  // which writes the portal's real internal names — kept lean to avoid the
+  // earlier `access_from` typo (portal expects `access`).
   const properties: Record<string, string> = {
     dealname: dealName,
     pipeline: pipelineId,
     dealstage: stageId,
     quote_url: moveAdminUrl,
-    service_type: svcType,
-    move_date: String(move.scheduled_date || "").trim(),
-    move_size: String(move.move_size || "").trim().toLowerCase(),
-    pick_up_address: String(move.from_address || "").trim(),
-    drop_off_address: String(move.to_address || "").trim(),
-    access_from: String(move.from_access || "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "_"),
-    access_to: String(move.to_access || "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "_"),
     firstname: firstName,
     lastname: lastName,
     package_type: dealPackageType(svcType, move.is_pm_move, String(move.tier_selected ?? "").trim()),
     ...yugoJobProperties({ jobId: moveCode, jobNo, serviceType: svcType }),
-    // All yugo_* custom properties from the central builder (single source of truth)
     ...buildAllYugoProperties({
       jobId: moveCode,
       jobNumber: jobNo,
@@ -168,8 +159,6 @@ export async function autoCreateHubSpotDealForNewMove(opts: {
   if (est != null && Number.isFinite(Number(est)) && Number(est) > 0) {
     properties.amount = String(Math.round(Number(est)))
   }
-
-  if (jobNo) properties.job_no = jobNo
 
   const body: Record<string, unknown> = { properties }
   if (contactId) {

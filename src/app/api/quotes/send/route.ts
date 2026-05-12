@@ -440,14 +440,27 @@ export async function POST(req: NextRequest) {
       };
       if (jobNoSuffix) dealProps.job_no = jobNoSuffix;
       if (curatedPrice != null) dealProps.amount = String(curatedPrice);
-      if (fName) dealProps.firstname = fName;
-      if (lName) dealProps.lastname = lName;
+      if (fName) {
+        dealProps.firstname = fName;
+        // Portal labels its custom deal field "First name" with internal
+        // name `client_name`; mirror so the OPS+ Details card pre-fills.
+        dealProps.client_name = fName;
+      }
+      if (lName) {
+        dealProps.lastname = lName;
+        dealProps.last_name = lName;
+      }
       if (quote.from_address?.trim()) dealProps.pick_up_address = quote.from_address.trim();
       if (quote.to_address?.trim()) dealProps.drop_off_address = quote.to_address.trim();
-      if (quote.from_access?.trim()) dealProps.access_from = quote.from_access.trim();
-      if (quote.to_access?.trim()) dealProps.access_to = quote.to_access.trim();
-      if (quote.service_type?.trim()) dealProps.service_type = quote.service_type.trim();
-      if (quote.move_size?.trim()) dealProps.move_size = quote.move_size.trim();
+      // Portal's internal name for "Access from" is `access` (NOT access_from);
+      // the old write went to a non-existent property and silently no-op'd.
+      if (quote.from_access?.trim())
+        dealProps.access = quote.from_access.trim().toLowerCase().replace(/\s+/g, "_");
+      if (quote.to_access?.trim())
+        dealProps.access_to = quote.to_access.trim().toLowerCase().replace(/\s+/g, "_");
+      if (quote.service_type?.trim())
+        dealProps.service_type = quote.service_type.trim().toLowerCase();
+      if (quote.move_size?.trim()) dealProps.move_size = quote.move_size.trim().toLowerCase();
       if (quote.move_date?.trim()) dealProps.move_date = quote.move_date.trim();
 
       fetch(`https://api.hubapi.com/crm/v3/objects/deals/${effectiveDealId}`, {

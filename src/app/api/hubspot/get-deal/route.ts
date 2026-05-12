@@ -13,13 +13,24 @@ const DEAL_PROPERTIES = [
   "move_size",
   "pick_up_address",
   "drop_off_address",
-  "access_from",
+  // portal calls these "Access from" → access, and "Access to" → access_to.
+  // The old `access_from` GET request was 404-ing on every read because the
+  // property doesn't exist; pulling `access` makes the admin pre-fill match
+  // the actual deal data the owner sees in HubSpot.
+  "access",
   "access_to",
   "firstname",
   "lastname",
+  "client_name",
+  "last_name",
   "package_type",
   "job_no",
+  "sub_total",
+  "taxes",
+  "total_price",
   "additional_info",
+  "lost_reason",
+  "dealtype",
   "agent",
   "square_footage",
   "workstation_count",

@@ -202,23 +202,21 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
     phone: clientPhone ?? null,
   });
 
+  // Standard HubSpot deal fields + first/last name contact mirrors. All
+  // OPS+ custom properties (job_no, pick_up_address, access, service_type,
+  // move_date, sub_total, taxes, etc.) flow through the single
+  // buildAllDealProperties builder — keep this block lean to avoid the
+  // earlier `access_from` typo (portal expects `access`) that left fields
+  // empty on every new deal.
   const properties: Record<string, string> = {
     dealname: dealName,
     pipeline: pipelineId,
     dealstage: stageId,
     quote_url: quoteUrl,
-    service_type: svcType,
-    move_date: String(quote.move_date || "").trim(),
-    move_size: String(quote.move_size || "").trim().toLowerCase(),
-    pick_up_address: String(quote.from_address || "").trim(),
-    drop_off_address: String(quote.to_address || "").trim(),
-    access_from: String(quote.from_access || "").trim().toLowerCase().replace(/\s+/g, "_"),
-    access_to: String(quote.to_access || "").trim().toLowerCase().replace(/\s+/g, "_"),
     firstname: firstName,
     lastname: lastName,
     package_type: dealPackageType(svcType, false, String(quote.recommended_tier ?? "").trim()),
     ...yugoJobProperties({ jobId: quoteIdText, jobNo, serviceType: svcType }),
-    // All yugo_* custom properties from the central builder (single source of truth)
     ...buildAllYugoProperties({
       jobId: quoteIdText,
       jobNumber: jobNo,
@@ -241,7 +239,6 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
     }),
   };
   if (price != null) properties.amount = String(price);
-  if (jobNo) properties.job_no = jobNo;
 
   const body: Record<string, unknown> = { properties };
   if (contactId) {
