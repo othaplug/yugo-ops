@@ -4,6 +4,7 @@ import { verifyWalkthroughToken } from "@/lib/track-token";
 import { getAdminNotificationEmail } from "@/lib/config";
 import { getEmailFrom } from "@/lib/email/send";
 import { getResend } from "@/lib/resend";
+import { internalAdminAlertEmail } from "@/lib/email-templates";
 
 // ─────────────────────────────────────────────────────────────
 // POST /api/walkthrough/[token]/confirm
@@ -59,11 +60,23 @@ export async function POST(
     if (adminEmail) {
       const firstName = (move.client_name as string | null)?.split(" ")[0] ?? "Client";
       const moveCode = move.move_code ? `#${move.move_code}` : moveId.slice(0, 8);
+      const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://yugoplus.co"}/admin/moves/${move.move_code || moveId}`;
       await resend.emails.send({
         from,
         to: adminEmail,
         subject: `Remote walkthrough confirmed by ${firstName} (${moveCode})`,
-        html: `<p>${firstName} has confirmed the remote walkthrough for move ${moveCode}. The crew may proceed.</p>`,
+        html: internalAdminAlertEmail({
+          kicker: "Walkthrough confirmed",
+          title: `${firstName} approved the remote walkthrough`,
+          summary: `Client has signed off on the remote walkthrough for move ${moveCode}. The crew is cleared to proceed on move day.`,
+          keyValues: [
+            { label: "Move", value: moveCode, accent: "forest" },
+            { label: "Client", value: (move.client_name as string | null) || firstName },
+            { label: "Confirmed", value: new Date().toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" }) },
+          ],
+          primaryCta: { label: "Open in admin", url: adminUrl },
+          tone: "info",
+        }),
       });
     }
   } catch (err) {

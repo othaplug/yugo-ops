@@ -2507,6 +2507,118 @@ export function estate30DayCheckinEmailHtml(
   `);
 }
 
+/**
+ * Reusable premium admin notification email — single shell used by every
+ * operational alert the admin team receives (card-on-file, walkthrough confirmed,
+ * bin overdue, fleet maintenance, etc.). Keeps every admin email on-brand
+ * instead of bare {@code <p>} blocks.
+ *
+ * Sections (all optional except `title`):
+ *   - kicker     : small green/wine eyebrow above title (e.g. "Action required")
+ *   - title      : large serif headline
+ *   - summary    : 1–2 sentence intro paragraph
+ *   - keyValues  : array of label/value rows rendered as a hairline-divided table
+ *   - callout    : highlighted action/info block at the bottom of the body
+ *   - primaryCta : optional wine-outline CTA link
+ *   - footnote   : muted post-CTA line (e.g. "Reference: …")
+ *
+ * Pass either `tone="action"` (green kicker) or `tone="info"` (wine kicker).
+ * Both render through {@link emailLayout} so the Yugo cream shell + footer
+ * + dark-mode locks are applied automatically.
+ */
+export function internalAdminAlertEmail(params: {
+  kicker?: string;
+  title: string;
+  summary?: string;
+  keyValues?: { label: string; valueHtml?: string; value?: string; accent?: "forest" | "wine" | "muted" }[];
+  callout?: { label: string; body: string } | null;
+  primaryCta?: { label: string; url: string } | null;
+  footnote?: string;
+  tone?: "action" | "info";
+}): string {
+  const {
+    kicker,
+    title,
+    summary,
+    keyValues = [],
+    callout = null,
+    primaryCta = null,
+    footnote,
+    tone = "action",
+  } = params;
+
+  const kickerColor = tone === "info" ? EMAIL_FOREST : "#2D7A4F";
+  const ib = `1px solid ${PREMIUM_RULE}`;
+  const il = `padding:8px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:34%;vertical-align:top;font-family:${PREMIUM_FONT}`;
+  const ivBase = `padding:8px 0;font-size:12px;color:${PREMIUM_BODY};font-weight:600;text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`;
+  const accentStyle = (a?: "forest" | "wine" | "muted") =>
+    a === "forest"
+      ? `${ivBase};color:${EMAIL_FOREST}`
+      : a === "wine"
+        ? `${ivBase};color:${EMAIL_FOREST}`
+        : a === "muted"
+          ? `${ivBase};color:${PREMIUM_BODY_MUTED};font-weight:500`
+          : ivBase;
+
+  const kvRows =
+    keyValues.length > 0
+      ? keyValues
+          .map((row, idx) =>
+            emailNestedKvRow({
+              borderTop: idx === 0 ? "none" : ib,
+              labelStyle: il,
+              valueStyle: accentStyle(row.accent),
+              label: row.label,
+              valueHtml:
+                row.valueHtml ??
+                (row.value ? escapeHtmlEmail(row.value) : "—"),
+            }),
+          )
+          .join("")
+      : "";
+
+  const kvTable =
+    kvRows.length > 0
+      ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:18px;font-family:${PREMIUM_FONT};">${kvRows}</table>`
+      : "";
+
+  const summaryHtml = summary
+    ? `<p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.65;margin:0 0 20px;font-family:${PREMIUM_FONT};">${summary}</p>`
+    : "";
+
+  const calloutHtml = callout
+    ? `<div style="background:${PREMIUM_MUTED_FILL};padding:${PREMIUM_CALLOUT_PAD};margin-bottom:16px;">
+        <div style="font-size:11px;color:${EMAIL_FOREST};font-weight:700;line-height:1.35;letter-spacing:0.04em;">${escapeHtmlEmail(callout.label)}</div>
+        <div style="font-size:12px;color:${PREMIUM_BODY};margin-top:4px;line-height:1.5;">${callout.body}</div>
+      </div>`
+    : "";
+
+  const ctaHtml = primaryCta
+    ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 10px;"><tr><td>
+        <a href="${primaryCta.url.replace(/&/g, "&amp;")}" style="display:inline-block;background-color:transparent;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};padding:11px 24px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-decoration:none;border:1px solid ${EMAIL_FOREST};text-transform:uppercase;font-family:${PREMIUM_FONT};">${primaryCta.label.toUpperCase()}&nbsp;&nbsp;&#8250;</a>
+      </td></tr></table>`
+    : "";
+
+  const footnoteHtml = footnote
+    ? `<p style="font-size:11px;color:${PREMIUM_BODY_MUTED};margin:14px 0 0;line-height:1.5;font-family:${PREMIUM_FONT};">${footnote}</p>`
+    : "";
+
+  return emailLayout(
+    `
+    ${kicker ? `<div style="font-size:10px;font-weight:700;color:${kickerColor};letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px;">${escapeHtmlEmail(kicker)}</div>` : ""}
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 16px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};text-transform:none;letter-spacing:0;line-height:1.25;">${escapeHtmlEmail(title)}</h1>
+    ${summaryHtml}
+    ${kvTable ? premiumSectionRule() : ""}
+    ${kvTable}
+    ${calloutHtml}
+    ${ctaHtml}
+    ${footnoteHtml}
+  `,
+    undefined,
+    "generic",
+  );
+}
+
 export function internalBookingAlertEmail(params: {
   clientName: string;
   clientEmail: string;

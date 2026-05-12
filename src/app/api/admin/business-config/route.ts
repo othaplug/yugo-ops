@@ -9,6 +9,8 @@ const BUSINESS_KEYS = [
   "company_name", "company_legal_name", "company_phone", "company_email",
   "company_address", "company_hst_number", "business_hours", "after_hours_contact",
   "company_website", "dispatch_phone",
+  // Default coordinator (per-move can override on quote/move create)
+  "coordinator_name", "coordinator_phone",
   // Notification / email
   "notifications_from_email", "admin_notification_email",
   // Social media

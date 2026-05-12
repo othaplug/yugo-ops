@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { squareClient } from "@/lib/square";
 import { sendEmail } from "@/lib/email/send";
+import { internalAdminAlertEmail } from "@/lib/email-templates";
 
 /**
  * Vercel Cron: runs daily at 8 AM EST (13:00 UTC), before charge-balance (14:00)
@@ -142,16 +143,42 @@ async function alertNoCard(
 ): Promise<void> {
   const adminEmail = process.env.SUPER_ADMIN_EMAIL;
   if (adminEmail) {
+    const balance = Number(move.balance_amount || 0);
+    const dateDisplay = move.scheduled_date
+      ? new Date(move.scheduled_date + "T00:00:00").toLocaleDateString("en-CA", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "TBD";
+    const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://yugoplus.co"}/admin/moves/${move.move_code || move.id}`;
     await sendEmail({
       to: adminEmail,
       subject: `No card on file: ${move.move_code} — manual balance collection needed`,
-      html: `
-        <p><strong>${move.move_code}</strong> — ${move.client_name || ""} (${move.client_email || ""})</p>
-        <p>Move date: ${move.scheduled_date}</p>
-        <p>Balance: $${Number(move.balance_amount || 0).toFixed(2)}</p>
-        <p>${reason}</p>
-        <p>Watch <strong>pay@helloyugo.com</strong> for an incoming e-transfer, or follow up with the client directly.</p>
-      `,
+      html: internalAdminAlertEmail({
+        kicker: "Action required",
+        title: `No card on file — ${move.move_code || "Move"}`,
+        summary: reason,
+        keyValues: [
+          { label: "Move", value: move.move_code || "—", accent: "forest" },
+          { label: "Client", value: move.client_name || "—" },
+          {
+            label: "Email",
+            valueHtml: move.client_email
+              ? `<a href="mailto:${encodeURIComponent(move.client_email)}" style="color:#2C3E2D;text-decoration:underline;font-weight:600;">${move.client_email}</a>`
+              : "—",
+          },
+          { label: "Move date", value: dateDisplay },
+          { label: "Balance", value: `$${balance.toFixed(2)}`, accent: "forest" },
+        ],
+        callout: {
+          label: "Next step",
+          body: "Watch <strong>pay@helloyugo.com</strong> for an incoming e-transfer, or follow up with the client directly to confirm payment method.",
+        },
+        primaryCta: { label: "Open in admin", url: adminUrl },
+        tone: "action",
+      }),
     }).catch(() => {});
   }
 

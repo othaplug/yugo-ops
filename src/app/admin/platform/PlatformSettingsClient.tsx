@@ -560,6 +560,7 @@ function BusinessInfoSection() {
     "company_name", "company_legal_name", "company_phone", "company_email",
     "company_address", "company_hst_number", "business_hours", "after_hours_contact",
     "company_website", "dispatch_phone",
+    "coordinator_name", "coordinator_phone",
     "notifications_from_email", "admin_notification_email",
     "company_social_instagram", "company_social_facebook",
     "company_social_twitter", "company_social_linkedin",
@@ -631,6 +632,20 @@ function BusinessInfoSection() {
             {inp("after_hours_contact", "After-Hours Contact", "Emergency phone or email")}
             {inp("business_hours", "Business Hours", "Mon-Sat 7:00 AM - 8:00 PM")}
           </div>
+        </div>
+
+        {/* Coordinator (source of truth for client-facing track page + emails) */}
+        <div className="pt-4 border-t border-[var(--brd)]/30">
+          <div className={subheadCls}>Default Coordinator</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {inp("coordinator_name", "Coordinator Name", "Mira Vance")}
+            {inp("coordinator_phone", "Coordinator Phone", PHONE_PLACEHOLDER, "tel")}
+          </div>
+          <p className="text-[10px] text-[var(--tx3)] mt-2">
+            Shown on the client track page and in client-facing emails. Each
+            quote/move can override these per-job; leaving them blank falls back
+            to the Yugo logo + main phone.
+          </p>
         </div>
 
         {/* Notification emails */}

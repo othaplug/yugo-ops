@@ -4,6 +4,7 @@ import { squareClient } from "@/lib/square";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { sendEmail } from "@/lib/email/send";
+import { internalAdminAlertEmail } from "@/lib/email-templates";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireAdmin } from "@/lib/api-auth";
 
@@ -238,10 +239,33 @@ export async function POST(req: NextRequest) {
     // Notify admin
     const adminEmail = process.env.SUPER_ADMIN_EMAIL;
     if (adminEmail) {
+      const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || "https://yugoplus.co"}/admin/bin-rentals/${binOrder.id}`;
       sendEmail({
         to: adminEmail,
         subject: `New bin order ${orderNumber}, ${clientName}`,
-        html: `<p>New bin rental: <strong>${orderNumber}</strong><br>Client: ${clientName} (${clientEmail})<br>Bundle: ${bundleType} (${binCount} bins)<br>Address: ${deliveryAddress}<br>Move: ${formatDateShort(moveDateObj)} | Drop-off: ${formatDateShort(dropOffDate)} | Pickup: ${formatDateShort(pickupDate)}<br>Total: $${total.toFixed(2)}</p><p><a href="${process.env.NEXT_PUBLIC_BASE_URL || "https://helloyugo.com"}/admin/bin-rentals/${binOrder.id}">View in admin</a></p>`,
+        html: internalAdminAlertEmail({
+          kicker: "New bin order",
+          title: `${clientName} — ${orderNumber}`,
+          summary: `A new bin rental was booked. The client is expected to be ready for drop-off on ${formatDateShort(dropOffDate)}.`,
+          keyValues: [
+            { label: "Order", value: orderNumber, accent: "forest" },
+            { label: "Client", value: clientName },
+            {
+              label: "Email",
+              valueHtml: clientEmail
+                ? `<a href="mailto:${encodeURIComponent(clientEmail)}" style="color:#2C3E2D;text-decoration:underline;font-weight:600;">${clientEmail}</a>`
+                : "—",
+            },
+            { label: "Address", value: deliveryAddress },
+            { label: "Bundle", value: `${bundleType} (${binCount} bins)` },
+            { label: "Drop-off", value: formatDateShort(dropOffDate) },
+            { label: "Move", value: formatDateShort(moveDateObj) },
+            { label: "Pickup", value: formatDateShort(pickupDate) },
+            { label: "Total", value: `$${total.toFixed(2)}`, accent: "forest" },
+          ],
+          primaryCta: { label: "Open in admin", url: adminUrl },
+          tone: "info",
+        }),
       }).catch(() => {});
     }
 

@@ -4,6 +4,7 @@ import { squareClient } from "@/lib/square";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { sendEmail } from "@/lib/email/send";
+import { internalAdminAlertEmail } from "@/lib/email-templates";
 
 const GRACE_DAYS = 2;
 const WRITE_OFF_DAYS = 30;
@@ -122,10 +123,28 @@ export async function GET(req: NextRequest) {
         // Notify coordinator
         const adminEmail = process.env.SUPER_ADMIN_EMAIL;
         if (adminEmail) {
+          const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://yugoplus.co"}/admin/bin-rentals/${order.id}`;
           await sendEmail({
             to: adminEmail,
             subject: `Overdue bin order: ${order.order_number}, ${daysOverdue} days late`,
-            html: `<p>Bin order <strong>${order.order_number}</strong> for ${order.client_name} is ${daysOverdue} days overdue.<br>Address: ${order.delivery_address}<br>Phone: ${order.client_phone}</p>`,
+            html: internalAdminAlertEmail({
+              kicker: "Bin pickup overdue",
+              title: `${order.order_number} — ${daysOverdue} days past pickup`,
+              summary: `${order.client_name}'s bin rental is overdue. Daily late fees of $${lateFeePerDay} are now accruing.`,
+              keyValues: [
+                { label: "Order", value: order.order_number || "—", accent: "forest" },
+                { label: "Client", value: order.client_name || "—" },
+                { label: "Phone", value: order.client_phone || "—" },
+                { label: "Address", value: order.delivery_address || "—" },
+                { label: "Days overdue", value: String(daysOverdue), accent: "forest" },
+              ],
+              callout: {
+                label: "Action",
+                body: "Reach out to schedule pickup. Late fees auto-charge daily while overdue.",
+              },
+              primaryCta: { label: "Open in admin", url: adminUrl },
+              tone: "action",
+            }),
           }).catch(() => {});
         }
 
@@ -182,10 +201,29 @@ export async function GET(req: NextRequest) {
         const adminEmail = process.env.SUPER_ADMIN_EMAIL;
         if (adminEmail) {
           const totalLate = (Number(order.late_return_fees) || 0) + daysOverdue * lateFeePerDay;
+          const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://yugoplus.co"}/admin/bin-rentals/${order.id}`;
           await sendEmail({
             to: adminEmail,
             subject: `Escalation: ${order.order_number} ${daysOverdue} days late`,
-            html: `<p><strong>${order.order_number}</strong> is ${daysOverdue} days past pickup. Estimated late fees: $${totalLate.toFixed(0)}. Client: ${order.client_name}. Phone: ${order.client_phone}</p>`,
+            html: internalAdminAlertEmail({
+              kicker: "Escalation",
+              title: `${order.order_number} — ${daysOverdue} days late`,
+              summary: `This bin rental has been overdue for more than two weeks and is approaching write-off. Personal outreach is recommended.`,
+              keyValues: [
+                { label: "Order", value: order.order_number || "—", accent: "forest" },
+                { label: "Client", value: order.client_name || "—" },
+                { label: "Phone", value: order.client_phone || "—" },
+                { label: "Address", value: order.delivery_address || "—" },
+                { label: "Days overdue", value: String(daysOverdue), accent: "forest" },
+                { label: "Late fees accrued", value: `$${totalLate.toFixed(0)}`, accent: "forest" },
+              ],
+              callout: {
+                label: "Risk",
+                body: `If still not recovered by day ${WRITE_OFF_DAYS}, the full replacement cost will be charged automatically and the order closed.`,
+              },
+              primaryCta: { label: "Open in admin", url: adminUrl },
+              tone: "action",
+            }),
           }).catch(() => {});
         }
       }

@@ -191,6 +191,22 @@ export default async function TrackMovePage({
 
   const { email: companyContactEmail } = await getLegalBranding();
 
+  // Coordinator displayed on the client track page. Source of truth:
+  //   1. moves.coordinator_name (per-move override, set on quote/move create)
+  //   2. platform_config.coordinator_name (org default)
+  //   3. fallback: null → client UI shows Yugo logo
+  const coordinatorCfg = await getFeatureConfig(["coordinator_name", "coordinator_phone"]);
+  const trackCoordinatorName: string | null =
+    (typeof (move as { coordinator_name?: string | null }).coordinator_name === "string" &&
+      (move as { coordinator_name?: string | null }).coordinator_name?.trim()) ||
+    (coordinatorCfg.coordinator_name?.trim() || null) ||
+    null;
+  const trackCoordinatorPhone: string | null =
+    (typeof (move as { coordinator_phone?: string | null }).coordinator_phone === "string" &&
+      (move as { coordinator_phone?: string | null }).coordinator_phone?.trim()) ||
+    (coordinatorCfg.coordinator_phone?.trim() || null) ||
+    null;
+
   let moveProjectForTrack: {
     project: Record<string, unknown>;
     phases: {
@@ -262,6 +278,8 @@ export default async function TrackMovePage({
       quotePickupStops={quotePickupStops}
       pendingBookingModification={pendingBookingMod ?? null}
       moveProjectForTrack={moveProjectForTrack}
+      coordinatorName={trackCoordinatorName}
+      coordinatorPhone={trackCoordinatorPhone}
     />
   );
 }

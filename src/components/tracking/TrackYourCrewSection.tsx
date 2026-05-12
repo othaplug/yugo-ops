@@ -64,14 +64,9 @@ export default function TrackYourCrewSection({
 
       {showNameList ? (
         <div className="space-y-3">
-          {crewTeamName && (
-            <p
-              className="text-[12px] font-semibold"
-              style={{ color: forest }}
-            >
-              Team: {crewTeamName}
-            </p>
-          )}
+          {/* Team name (e.g. "Alpha") is internal dispatch nomenclature; client
+              sees individual crew names below — they don't need to know the
+              admin team grouping. */}
           <div className="flex flex-wrap gap-3">
           {names.map((name: string, i: number) => (
             <div key={`${name}-${i}`} className="flex items-center gap-2.5">

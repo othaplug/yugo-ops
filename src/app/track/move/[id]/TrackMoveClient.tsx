@@ -458,6 +458,73 @@ function BinRentalTrackingSection({
   );
 }
 
+/**
+ * Client track page — contact row.
+ * Renders coordinator name + phone (tappable) when name set, falls back
+ * to Yugo logo + phone when name missing. Source-of-truth resolution
+ * happens server-side in page.tsx (move.coordinator_name → platform default).
+ */
+function CoordinatorRow({
+  name,
+  phone,
+  forest,
+  wine,
+}: {
+  name: string | null;
+  phone: string | null;
+  forest: string;
+  wine: string;
+}) {
+  const dialPhone = phone || YUGO_PHONE;
+  const displayPhone = phone || YUGO_PHONE;
+  if (name) {
+    // Build initials for the avatar circle (e.g. "Mira Vance" → "MV")
+    const initials = name
+      .trim()
+      .split(/\s+/)
+      .map((w) => w[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+    return (
+      <a
+        href={`tel:${normalizePhone(dialPhone)}`}
+        className="inline-flex items-center gap-2.5 text-[12px] transition-opacity hover:opacity-80"
+        style={{ color: forest }}
+      >
+        <span
+          className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold tracking-wider"
+          style={{ backgroundColor: `${wine}14`, color: wine }}
+          aria-hidden
+        >
+          {initials || "·"}
+        </span>
+        <span className="flex flex-col leading-tight">
+          <span className="text-[13px] font-semibold" style={{ color: forest }}>
+            {name}
+          </span>
+          <span className="text-[11px] opacity-65" style={{ color: forest }}>
+            Coordinator · {formatPhone(displayPhone)}
+          </span>
+        </span>
+      </a>
+    );
+  }
+  return (
+    <a
+      href={`tel:${normalizePhone(dialPhone)}`}
+      className="inline-flex items-center gap-2 text-[12px] transition-opacity hover:opacity-70"
+      style={{ color: forest }}
+    >
+      <YugoLogo size={12} variant="wine" onLightBackground />
+      <span className="font-medium">{formatPhone(displayPhone)}</span>
+      <span className="opacity-40">·</span>
+      <span className="opacity-40">Coordinator</span>
+    </a>
+  );
+}
+
 export default function TrackMoveClient({
   move,
   crew,
@@ -487,6 +554,8 @@ export default function TrackMoveClient({
   moveProjectForTrack = null,
   fillParentHeight = false,
   companyContactEmail = process.env.NEXT_PUBLIC_YUGO_EMAIL || "support@helloyugo.com",
+  coordinatorName = null,
+  coordinatorPhone = null,
 }: {
   move: any;
   crew: { id: string; name: string; members?: string[] } | null;
@@ -567,6 +636,10 @@ export default function TrackMoveClient({
   fillParentHeight?: boolean;
   /** Company inbox for footer “Contact us” (from platform config on live track). */
   companyContactEmail?: string;
+  /** Coordinator displayed on client track page — per-move first, then platform default. */
+  coordinatorName?: string | null;
+  /** Optional phone for coordinator. Falls back to YUGO_PHONE if missing. */
+  coordinatorPhone?: string | null;
 }) {
   const router = useRouter();
   const params = useParams();
@@ -2293,7 +2366,7 @@ export default function TrackMoveClient({
                                 className="text-[11px] opacity-50 mt-0.5"
                                 style={{ color: FOREST }}
                               >
-                                +{formatCurrency(calcHST(totalBalance))} HST
+                                All taxes included
                               </div>
                             ) : (
                               <div
@@ -2313,8 +2386,7 @@ export default function TrackMoveClient({
                                 style={{ color: FOREST }}
                               >
                                 Inventory update approved. Additional charge:{" "}
-                                {formatCurrency(totalBalance)} +{" "}
-                                {formatCurrency(calcHST(totalBalance))} HST.
+                                {formatCurrency(totalBalance)} (taxes included).
                               </p>
                             )}
                           {isCompleted &&
@@ -2326,10 +2398,9 @@ export default function TrackMoveClient({
                                 style={{ color: FOREST }}
                               >
                                 Additional charge:{" "}
-                                {formatCurrency(totalBalance)} +{" "}
-                                {formatCurrency(calcHST(totalBalance))} HST. Add
-                                a card below to authorize the charge, or contact
-                                your coordinator.
+                                {formatCurrency(totalBalance)} (taxes included).
+                                Add a card below to authorize the charge, or
+                                contact your coordinator.
                               </p>
                             )}
                           {balanceChargeError && isCompleted && (
@@ -2419,27 +2490,17 @@ export default function TrackMoveClient({
                           />
                         </div>
 
-                        {/* Coordinator — same row as dashboard */}
+                        {/* Coordinator — show name when available, else Yugo logo + phone */}
                         <div
                           className="border-t pt-4 mt-1"
                           style={{ borderColor: `${FOREST}18` }}
                         >
-                          <a
-                            href={`tel:${normalizePhone(YUGO_PHONE)}`}
-                            className="inline-flex items-center gap-2 text-[12px] transition-opacity hover:opacity-70"
-                            style={{ color: FOREST }}
-                          >
-                            <YugoLogo
-                              size={12}
-                              variant="wine"
-                              onLightBackground
-                            />
-                            <span className="font-medium">
-                              {formatPhone(YUGO_PHONE)}
-                            </span>
-                            <span className="opacity-40">·</span>
-                            <span className="opacity-40">Coordinator</span>
-                          </a>
+                          <CoordinatorRow
+                            name={coordinatorName}
+                            phone={coordinatorPhone}
+                            forest={FOREST}
+                            wine={WINE}
+                          />
                         </div>
                       </div>
                     )}
@@ -3704,7 +3765,7 @@ export default function TrackMoveClient({
                           className="text-[11px] opacity-50"
                           style={{ color: FOREST }}
                         >
-                          +{formatCurrency(calcHST(totalBalance))} HST
+                          All taxes included
                         </div>
                       ) : (
                         <div
@@ -3724,8 +3785,7 @@ export default function TrackMoveClient({
                         style={{ color: FOREST }}
                       >
                         Inventory update approved. Additional charge:{" "}
-                        {formatCurrency(totalBalance)} +{" "}
-                        {formatCurrency(calcHST(totalBalance))} HST.
+                        {formatCurrency(totalBalance)} (taxes included).
                       </p>
                     )}
                   {totalBalance > 0 &&
@@ -3735,10 +3795,9 @@ export default function TrackMoveClient({
                         className="text-[12px] leading-relaxed opacity-85"
                         style={{ color: FOREST }}
                       >
-                        Additional charge: {formatCurrency(totalBalance)} +{" "}
-                        {formatCurrency(calcHST(totalBalance))} HST. Add a card
-                        below to authorize the charge, or contact your
-                        coordinator.
+                        Additional charge: {formatCurrency(totalBalance)} (taxes
+                        included). Add a card below to authorize the charge, or
+                        contact your coordinator.
                       </p>
                     )}
                   {balanceChargeError && (
@@ -3820,16 +3879,12 @@ export default function TrackMoveClient({
 
               {/* Coordinator */}
               <div className="border-t border-[var(--brd)]/20 pt-4 mt-5">
-                <a
-                  href={`tel:${normalizePhone(YUGO_PHONE)}`}
-                  className="inline-flex items-center gap-2 text-[12px] transition-opacity hover:opacity-70"
-                  style={{ color: FOREST }}
-                >
-                  <YugoLogo size={12} variant="wine" onLightBackground />
-                  <span className="font-medium">{formatPhone(YUGO_PHONE)}</span>
-                  <span className="opacity-40">·</span>
-                  <span className="opacity-40">Coordinator</span>
-                </a>
+                <CoordinatorRow
+                  name={coordinatorName}
+                  phone={coordinatorPhone}
+                  forest={FOREST}
+                  wine={WINE}
+                />
               </div>
 
               {changeSubmitted && !isEstateTier && (
@@ -4672,35 +4727,23 @@ export default function TrackMoveClient({
                     }}
                   >
                     <div
-                      className="flex justify-between text-[14px] mb-1.5"
+                      className="flex justify-between items-baseline"
                       style={{ color: FOREST }}
                     >
-                      <span className="opacity-70">
+                      <span className="text-[14px] opacity-70">
                         {isLogisticsDeliveryTrack
                           ? "Balance due"
                           : "Move balance"}
                       </span>
-                      <span className="font-semibold">
+                      <span className="font-hero text-[20px] font-bold tabular-nums">
                         {formatCurrency(totalBalance)}
                       </span>
                     </div>
                     <div
-                      className="flex justify-between text-[14px] mb-1.5"
+                      className="text-[11px] opacity-50 text-right mt-1"
                       style={{ color: FOREST }}
                     >
-                      <span className="opacity-70">HST (13%)</span>
-                      <span className="font-semibold">
-                        {formatCurrency(calcHST(totalBalance))}
-                      </span>
-                    </div>
-                    <div
-                      className="border-t pt-2 mt-2 flex justify-between text-[var(--text-base)] font-bold"
-                      style={{ borderColor: `${FOREST}15`, color: FOREST }}
-                    >
-                      <span>Total</span>
-                      <span>
-                        {formatCurrency(totalBalance + calcHST(totalBalance))}
-                      </span>
+                      All taxes included
                     </div>
                   </div>
 
@@ -4777,7 +4820,7 @@ export default function TrackMoveClient({
                         Processing…
                       </span>
                     ) : (
-                      `Pay ${formatCurrency(totalBalance + calcHST(totalBalance))}`
+                      `Pay ${formatCurrency(totalBalance)}`
                     )}
                   </button>
 
@@ -4954,19 +4997,7 @@ function CrewChangeRequestBanner({
           </div>
         )}
 
-        <div className="border-t border-amber-400/20 pt-2 mt-1 space-y-1">
-          <div className="flex items-center justify-between text-[12px] text-amber-700/70">
-            <span>Subtotal change</span>
-            <span>
-              {delta >= 0 ? "+" : ""}${delta}
-            </span>
-          </div>
-          <div className="flex items-center justify-between text-[12px] text-amber-700/70">
-            <span>HST (13%)</span>
-            <span>
-              {hst >= 0 ? "+" : "-"}${Math.abs(hst).toFixed(2)}
-            </span>
-          </div>
+        <div className="border-t border-amber-400/20 pt-2 mt-1">
           <div className="flex items-center justify-between text-[14px] font-bold text-amber-800">
             <span>Additional charge</span>
             <span>
@@ -4975,6 +5006,9 @@ function CrewChangeRequestBanner({
                 : `-$${Math.abs(total).toFixed(2)}`}
             </span>
           </div>
+          <p className="text-[11px] text-amber-700/60 mt-0.5 text-right">
+            All taxes included
+          </p>
         </div>
 
         {error && <p className="mt-2 text-[12px] text-red-500">{error}</p>}
