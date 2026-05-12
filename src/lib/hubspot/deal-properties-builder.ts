@@ -21,6 +21,101 @@
 import { serviceCategory } from "@/lib/hubspot/deal-name"
 import { displayLabel } from "@/lib/utils/display-sanitize"
 
+/**
+ * HubSpot enum value maps — discovered via GET /crm/v3/properties/deals/<name>
+ * on 2026-05-12. These are the EXACT allowed values for select/radio/checkbox
+ * properties; writing anything else returns HTTP 400 and the whole patch
+ * fails. Unmapped values are OMITTED so other properties still write through.
+ *
+ * If the portal owner adds a new enum option, mirror it here.
+ */
+const ACCESS_HUBSPOT_VALUES: Record<string, string> = {
+  ground: "Ground floor",
+  ground_floor: "Ground floor",
+  groundfloor: "Ground floor",
+  elevator: "Elevator",
+  basement: "Basement",
+  second_floor: "Second floor",
+  walk_up_2: "Second floor",
+  walk_up_2nd: "Second floor",
+  third_floor: "Third floor+",
+  walk_up_3: "Third floor+",
+  walk_up_3rd: "Third floor+",
+  walk_up_4_plus: "Third floor+",
+  walk_up_4plus: "Third floor+",
+  walk_up_4th: "Third floor+",
+  walk_up_4th_plus: "Third floor+",
+  // Slugs without a direct portal enum (loading_dock, concierge, long_carry,
+  // narrow_stairs, no_parking) intentionally omitted — they'll skip the write
+  // rather than reject the whole payload. Owner can add them to the portal
+  // enum and extend this map.
+}
+
+const MOVE_SIZE_HUBSPOT_VALUES: Record<string, string> = {
+  studio: "Studio",
+  bachelor: "Studio",
+  small: "Small",
+  partial: "Small",
+  "1br": "1BR",
+  "1br_den": "1BR + Den",
+  "2br": "2BR",
+  "2br_den": "2BR + Den",
+  "3br": "3BR",
+  "4br": "4BR+",
+  "4br_plus": "4BR+",
+  "5br": "4BR+",
+  "5br_plus": "4BR+",
+  office_small: "Commercial",
+  office_medium: "Commercial",
+  office_large: "Commercial",
+  custom: "Specialty",
+  specialty: "Specialty",
+  single_item: "Single Item",
+}
+
+const SERVICE_TYPE_HUBSPOT_VALUES: Record<string, string> = {
+  local_move: "Local Move",
+  long_distance: "Long-Distance Move",
+  long_distance_move: "Long-Distance Move",
+  office_move: "Office Move",
+  office: "Office Move",
+  specialty: "Specialty Move",
+  white_glove: "White Glove Move",
+  single_item: "Single Item",
+  event: "Event Services",
+  event_logistics: "Event Services",
+  // PM moves run through residential infrastructure — surface as Local Move
+  // so reporting filters group them with other residential bookings.
+  pm_move: "Local Move",
+  b2b_delivery: "Home Delivery",
+  b2b_oneoff: "Home Delivery",
+  b2b_one_off: "Home Delivery",
+  commercial_delivery: "Home Delivery",
+  white_glove_delivery: "White Glove Delivery",
+  // bin_rental + labour_only have no precise enum match — fall through to "Other".
+  bin_rental: "Other",
+  labour_only: "Other",
+}
+
+const LOST_REASON_HUBSPOT_VALUES: Record<string, string> = {
+  too_expensive: "Too Expensive",
+  competitor: "Chose Competitor",
+  chose_competitor: "Chose Competitor",
+  date_unavailable: "Date Unavailable",
+  scope_changed: "Scope Changed",
+  no_response: "No Response",
+  unresponsive: "No Response",
+  timing: "Timing",
+  diy: "DIY",
+  other: "Other",
+}
+
+function mapEnum(raw: string | null | undefined, table: Record<string, string>): string | null {
+  const v = String(raw ?? "").trim().toLowerCase().replace(/\s+/g, "_").replace(/-/g, "_")
+  if (!v) return null
+  return table[v] ?? null
+}
+
 export interface YugoDealSource {
   /** Job identification */
   jobId?: string | null // "YG-30221" / "MV-30221" / "DLV-30203"
@@ -149,21 +244,33 @@ export function buildAllDealProperties(src: YugoDealSource): Record<string, stri
   if (fromAddr) out.pick_up_address = fromAddr
   if (toAddr) out.drop_off_address = toAddr
 
-  // Access: write the slug (lowercase, underscored) so dropdown-style
-  // properties in HubSpot match their internal enum values. Free-text
-  // properties still render this readably ("elevator", "ground_floor").
-  const fromAcc = String(src.fromAccess ?? "").trim().toLowerCase().replace(/\s+/g, "_")
-  const toAcc = String(src.toAccess ?? "").trim().toLowerCase().replace(/\s+/g, "_")
-  if (fromAcc) out.access = fromAcc
-  if (toAcc) out.access_to = toAcc
+  // Access: enum dropdown in HubSpot — must match one of the portal values
+  // exactly ("Ground floor", "Elevator", "Basement", "Second floor",
+  // "Third floor+"). Unmapped slugs (e.g. "loading_dock", "concierge")
+  // are omitted so the rest of the payload still writes through.
+  const accessVal = mapEnum(src.fromAccess, ACCESS_HUBSPOT_VALUES)
+  const accessToVal = mapEnum(src.toAccess, ACCESS_HUBSPOT_VALUES)
+  if (accessVal) out.access = accessVal
+  if (accessToVal) out.access_to = accessToVal
 
   // ── Service ────────────────────────────────────────────────
-  const svc = String(src.serviceType ?? "").trim().toLowerCase()
-  if (svc) out.service_type = src.isPmMove ? "pm_move" : svc
+  // service_type is a multi-select checkbox in HubSpot — but a single value
+  // write still works since HubSpot stores it as a `;`-joined string.
+  const svcRaw = String(src.serviceType ?? "").trim().toLowerCase()
+  const svcKey = src.isPmMove ? "pm_move" : svcRaw
+  const svcVal = mapEnum(svcKey, SERVICE_TYPE_HUBSPOT_VALUES)
+  if (svcVal) out.service_type = svcVal
+
   const moveDateIso = isoDateOnly(src.moveDate)
   if (moveDateIso) out.move_date = moveDateIso
-  const sz = String(src.moveSize ?? "").trim().toLowerCase()
-  if (sz && !isB2bSlug(svc)) out.move_size = sz
+
+  // move_size enum — "Studio", "1BR", "2BR", "3BR", "4BR+", "Commercial",
+  // "Specialty", "Single Item". Omit for B2B verticals where size isn't
+  // meaningful.
+  if (!isB2bSlug(svcRaw)) {
+    const sizeVal = mapEnum(src.moveSize, MOVE_SIZE_HUBSPOT_VALUES)
+    if (sizeVal) out.move_size = sizeVal
+  }
 
   // ── Financial ─────────────────────────────────────────────
   const subtotal =
@@ -183,14 +290,14 @@ export function buildAllDealProperties(src: YugoDealSource): Record<string, stri
   const addl = buildAdditionalInfo(src)
   if (addl) out.additional_info = addl
 
-  // dealtype is HubSpot's standard property — if customized to allow
-  // residential/pm/b2b enum values they'll match; otherwise the write
-  // is silently ignored without blocking the other 14 properties.
-  const cat = serviceCategory(src.serviceType, src.isPmMove)
-  out.dealtype = cat === "b2b" ? "b2b" : cat === "pm" ? "pm" : "residential"
+  // dealtype is HubSpot's standard radio property — values restricted to
+  // "newbusiness" / "existingbusiness". Every quote-derived deal is
+  // newbusiness by definition (we don't track returning-customer status
+  // on the quote yet). Skip for retries that already have a dealtype.
+  out.dealtype = "newbusiness"
 
-  const lost = String(src.lostReason ?? "").trim()
-  if (lost) out.lost_reason = lost
+  const lostVal = mapEnum(src.lostReason, LOST_REASON_HUBSPOT_VALUES)
+  if (lostVal) out.lost_reason = lostVal
 
   return out
 }

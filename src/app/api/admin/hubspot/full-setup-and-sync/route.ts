@@ -46,10 +46,13 @@ export async function POST() {
   // Quotes that have a hubspot_deal_id. The quotes table has NO first_name /
   // last_name columns — the original sync silently 400'd on every load,
   // returning zero rows. Names live on the joined `contacts` row instead.
+  // Business name lives in factors_applied JSONB, not as its own column.
+  // Earlier sync attempts selected b2b_business_name explicitly and the
+  // whole query 400'd silently — every deal stayed un-patched for weeks.
   const { data: quotes } = await sb
     .from("quotes")
     .select(
-      "quote_id, hubspot_deal_id, from_address, to_address, from_access, to_access, service_type, move_date, move_size, custom_price, tiers, est_crew_size, est_hours, truck_primary, recommended_tier, b2b_business_name, contact_id, contacts:contact_id(name)",
+      "quote_id, hubspot_deal_id, from_address, to_address, from_access, to_access, service_type, move_date, move_size, custom_price, tiers, est_crew_size, est_hours, truck_primary, recommended_tier, factors_applied, contact_id, contacts:contact_id(name)",
     )
     .not("hubspot_deal_id", "is", null)
 
@@ -64,6 +67,11 @@ export async function POST() {
     const parts = fullName.split(/\s+/)
     const firstName = parts.shift() ?? ""
     const lastName = parts.join(" ")
+    const factors = q.factors_applied as
+      | { b2b_business_name?: string; business_name?: string }
+      | null
+    const businessName =
+      (factors?.b2b_business_name ?? factors?.business_name) || null
     const props = buildAllYugoProperties({
       jobId: q.quote_id,
       firstName,
@@ -81,7 +89,7 @@ export async function POST() {
       estimatedHours: q.est_hours,
       truckType: q.truck_primary,
       isPmMove: false,
-      businessName: q.b2b_business_name,
+      businessName,
     })
     entries.push(await patchDeal(token, q.hubspot_deal_id, q.quote_id, props))
   }
