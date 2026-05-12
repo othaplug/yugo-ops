@@ -33,6 +33,8 @@ import {
   Trash as Trash2,
   SpinnerGap,
   ArrowSquareOut,
+  PencilSimple,
+  CaretDown,
 } from "@phosphor-icons/react";
 import {
   parseB2BJobsFieldVisibility,
@@ -556,6 +558,10 @@ export default function B2BJobsDeliveryForm({
   const [newHaulAwayLine, setNewHaulAwayLine] = useState(false);
   const [newCratingRequired, setNewCratingRequired] = useState(false);
   const [newLineAssemblyRequired, setNewLineAssemblyRequired] = useState(false);
+  // UI state for the redesigned Items panel.
+  const [editingLineIdx, setEditingLineIdx] = useState<number | null>(null);
+  const [customFormOpen, setCustomFormOpen] = useState(false);
+  const [boxCountOpen, setBoxCountOpen] = useState(false);
 
   const [handlingType, setHandlingType] = useState("threshold");
   const [scheduledDate, setScheduledDate] = useState("");
@@ -2121,80 +2127,442 @@ export default function B2BJobsDeliveryForm({
         </select>
       </section>
 
-      <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
-        <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
-          Items *
-        </h3>
+      <section className="space-y-3 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">
+            Items *
+          </h3>
+          {routeMode !== "multi" && lines.length > 0 && (
+            <span className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">
+              {lines.length} {lines.length === 1 ? "item" : "items"}
+              {(() => {
+                const totalQty = lines.reduce(
+                  (s, r) => s + (Number(r.quantity) || 0),
+                  0,
+                );
+                return totalQty > lines.length ? ` · ${totalQty} units` : "";
+              })()}
+            </span>
+          )}
+        </div>
+
         {routeMode === "multi" && (
           <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
             Items are added per pickup stop in the Route section. Quick add
             buttons appear on each expanded stop card.
           </p>
         )}
-        {routeMode !== "multi" && verticalCode === "flooring" && vis("box_count") && (
-          <Field label="Box / unit count (flooring shortcut)">
-            <input
-              type="number"
-              min={0}
-              value={boxCount}
-              onChange={(e) => setBoxCount(e.target.value)}
-              className={fieldInput}
-            />
-            <p className="text-[10px] text-[var(--tx3)] mt-1">
-              Quick entry: set total units without adding individual line items
-            </p>
-          </Field>
-        )}
+
+        {/* ── Added items: collapsed chip by default; click to expand for edit ── */}
         {routeMode !== "multi" && lines.length > 0 && (
-          <ul className="space-y-2">
-            {lines.map((row, idx) => (
-              <li
-                key={idx}
-                className="space-y-2 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[11px]"
-              >
-                <div className="flex flex-wrap items-end gap-2">
-                  <div className="flex-1 min-w-[140px]">
-                    <Field label="Item">
+          <ul className="space-y-1.5">
+            {lines.map((row, idx) => {
+              const weightLabel =
+                WEIGHT_TIER_OPTIONS.find(
+                  (o) => o.value === normalizeB2bWeightCategory(row.weight_category),
+                )?.label ?? row.weight_category;
+              const unitLabel =
+                FLOORING_UNIT_OPTIONS.find((o) => o.value === (row.unit_type || "box"))
+                  ?.label ?? row.unit_type ?? "";
+              const flags: string[] = [];
+              if (row.fragile) flags.push("Fragile");
+              if (row.hookup_required) flags.push("Hook-up");
+              if (row.haul_away_line) flags.push("Haul-away");
+              if (row.crating_required) flags.push("Crating");
+              if (row.line_assembly_required) flags.push("Assembly");
+              const subline = [
+                showItemField("weight") ? weightLabel : null,
+                showUnitTypeColumn ? unitLabel : null,
+                ...flags,
+              ]
+                .filter(Boolean)
+                .join(" · ");
+
+              if (editingLineIdx !== idx) {
+                return (
+                  <li
+                    key={idx}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--brd)] hover:border-[var(--gold)] transition-colors"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[12px] font-semibold text-[var(--tx)] truncate">
+                        <span className="text-[var(--tx2)] font-bold">{row.quantity} ×</span>{" "}
+                        {row.description || <span className="italic text-[var(--tx3)]">Untitled item</span>}
+                      </div>
+                      {subline && (
+                        <div className="text-[10px] text-[var(--tx3)] truncate mt-0.5">
+                          {subline}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setEditingLineIdx(idx)}
+                        className="p-1.5 text-[var(--tx3)] hover:text-[var(--tx)] rounded-md hover:bg-[var(--bg)]"
+                        aria-label="Edit line"
+                      >
+                        <PencilSimple className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeLine(idx)}
+                        className="p-1.5 text-[var(--tx3)] hover:text-[var(--red)] rounded-md hover:bg-[var(--bg)]"
+                        aria-label="Remove line"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </li>
+                );
+              }
+
+              return (
+                <li
+                  key={idx}
+                  className="space-y-2 px-3 py-3 rounded-lg bg-[var(--bg)] border border-[var(--gold)] text-[11px]"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+                      Editing item {idx + 1}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setEditingLineIdx(null)}
+                      className="text-[10px] font-bold tracking-wider uppercase text-[var(--gold)] hover:text-[var(--tx)]"
+                    >
+                      Done
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap items-end gap-2">
+                    <div className="flex-1 min-w-[140px]">
+                      <Field label="Item">
+                        <input
+                          value={row.description}
+                          onChange={(e) =>
+                            patchLine(idx, { description: e.target.value })
+                          }
+                          className={fieldInput}
+                        />
+                      </Field>
+                    </div>
+                    <div className="w-[72px]">
+                      <Field label="Qty">
+                        <input
+                          type="number"
+                          min={1}
+                          value={row.quantity}
+                          onChange={(e) =>
+                            patchLine(idx, {
+                              quantity: Math.max(1, Number(e.target.value) || 1),
+                            })
+                          }
+                          className={fieldInput}
+                        />
+                      </Field>
+                    </div>
+                    {showItemField("weight") && (
+                      <div className="min-w-[160px] max-w-[220px]">
+                        <Field label="Weight range">
+                          <select
+                            value={normalizeB2bWeightCategory(row.weight_category)}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              patchLine(idx, {
+                                weight_category: v,
+                                ...(!tierRequiresActualWeight(v)
+                                  ? { actual_weight_lbs: undefined }
+                                  : {}),
+                              });
+                            }}
+                            className={fieldInput}
+                          >
+                            {WEIGHT_TIER_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                      </div>
+                    )}
+                    {showUnitTypeColumn && (
+                      <div className="w-[112px]">
+                        <Field label="Unit">
+                          <select
+                            value={row.unit_type || "box"}
+                            onChange={(e) =>
+                              patchLine(idx, { unit_type: e.target.value })
+                            }
+                            className={fieldInput}
+                          >
+                            {FLOORING_UNIT_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                      </div>
+                    )}
+                    {showItemField("fragile") && (
+                      <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pb-2 shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={row.fragile}
+                          onChange={(e) =>
+                            patchLine(idx, { fragile: e.target.checked })
+                          }
+                          className="accent-[var(--gold)]"
+                        />
+                        Fragile
+                      </label>
+                    )}
+                  </div>
+                  {showLineDetailFields && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-2 border-t border-[var(--brd)]/50">
+                      {showItemField("weight") &&
+                        tierRequiresActualWeight(
+                          normalizeB2bWeightCategory(row.weight_category),
+                        ) && (
+                          <Field label="Actual weight (lbs) *">
+                            <input
+                              type="number"
+                              min={1}
+                              value={row.actual_weight_lbs ?? ""}
+                              onChange={(e) => {
+                                const n = Number(e.target.value);
+                                patchLine(idx, {
+                                  actual_weight_lbs:
+                                    Number.isFinite(n) && n > 0
+                                      ? Math.round(n)
+                                      : undefined,
+                                });
+                              }}
+                              className={fieldInput}
+                              placeholder="Required for this tier"
+                            />
+                          </Field>
+                        )}
+                      {showItemField("stop_assignment") && (
+                        <Field label="Stop assignment">
+                          <input
+                            value={row.stop_assignment ?? ""}
+                            onChange={(e) =>
+                              patchLine(idx, { stop_assignment: e.target.value })
+                            }
+                            className={fieldInput}
+                            placeholder="Vendor / stop"
+                          />
+                        </Field>
+                      )}
+                      {showItemField("serial_number") && (
+                        <Field label="Serial number">
+                          <input
+                            value={row.serial_number ?? ""}
+                            onChange={(e) =>
+                              patchLine(idx, { serial_number: e.target.value })
+                            }
+                            className={fieldInput}
+                          />
+                        </Field>
+                      )}
+                      {showItemField("declared_value") && (
+                        <Field label="Declared value">
+                          <input
+                            value={row.declared_value ?? ""}
+                            onChange={(e) =>
+                              patchLine(idx, { declared_value: e.target.value })
+                            }
+                            className={fieldInput}
+                            placeholder="e.g. 5000"
+                          />
+                        </Field>
+                      )}
+                      {showItemField("hookup_required") && (
+                        <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
+                          <input
+                            type="checkbox"
+                            checked={!!row.hookup_required}
+                            onChange={(e) =>
+                              patchLine(idx, { hookup_required: e.target.checked })
+                            }
+                            className="accent-[var(--gold)]"
+                          />
+                          Hook-up required
+                        </label>
+                      )}
+                      {showItemField("haul_away_old") && (
+                        <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
+                          <input
+                            type="checkbox"
+                            checked={!!row.haul_away_line}
+                            onChange={(e) =>
+                              patchLine(idx, { haul_away_line: e.target.checked })
+                            }
+                            className="accent-[var(--gold)]"
+                          />
+                          Haul-away old unit
+                        </label>
+                      )}
+                      {showItemField("crating_required") && (
+                        <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
+                          <input
+                            type="checkbox"
+                            checked={!!row.crating_required}
+                            onChange={(e) =>
+                              patchLine(idx, { crating_required: e.target.checked })
+                            }
+                            className="accent-[var(--gold)]"
+                          />
+                          Crating required
+                        </label>
+                      )}
+                      {showItemField("assembly_required") && (
+                        <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
+                          <input
+                            type="checkbox"
+                            checked={!!row.line_assembly_required}
+                            onChange={(e) =>
+                              patchLine(idx, {
+                                line_assembly_required: e.target.checked,
+                              })
+                            }
+                            className="accent-[var(--gold)]"
+                          />
+                          Assembly required
+                        </label>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        removeLine(idx);
+                        setEditingLineIdx(null);
+                      }}
+                      className="text-[10px] font-semibold text-[var(--red)] hover:underline"
+                    >
+                      Remove item
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {/* ── Empty state ── */}
+        {routeMode !== "multi" && lines.length === 0 && !boxCount && (
+          <div className="text-center py-5 text-[11px] text-[var(--tx3)] border border-dashed border-[var(--brd)] rounded-lg">
+            No items added yet. Tap a quick-add button below or add a custom item.
+          </div>
+        )}
+
+        {/* ── Quick add (PRIMARY) — grouped by unit ── */}
+        {routeMode !== "multi" && quickAddPresets.length > 0 && (() => {
+          const groups: { title: string; items: typeof quickAddPresets }[] = [
+            { title: "Boxes", items: quickAddPresets.filter((p) => p.unit === "box") },
+            { title: "Rolls", items: quickAddPresets.filter((p) => p.unit === "roll") },
+            {
+              title: "Trim & finish",
+              items: quickAddPresets.filter(
+                (p) => p.unit !== "box" && p.unit !== "roll",
+              ),
+            },
+          ].filter((g) => g.items.length > 0);
+
+          return (
+            <div className="space-y-2 pt-1">
+              <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+                Quick add{itemConfig?.label ? ` — ${itemConfig.label}` : ""}
+              </p>
+              <div className="space-y-2">
+                {groups.map((group) => (
+                  <div key={group.title} className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                    {groups.length > 1 && (
+                      <span className="text-[10px] font-semibold text-[var(--tx2)] w-[88px] shrink-0">
+                        {group.title}
+                      </span>
+                    )}
+                    <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+                      {group.items.map((p) => (
+                        <button
+                          key={p.name}
+                          type="button"
+                          onClick={() => addQuickPreset(p)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--bg)] transition-colors"
+                        >
+                          {p.icon ? (
+                            <B2bQuickAddIcon
+                              icon={p.icon}
+                              className="shrink-0 text-[var(--accent-text)]"
+                            />
+                          ) : (
+                            <Plus className="w-3 h-3 shrink-0" aria-hidden />
+                          )}
+                          {p.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── Custom item disclosure (SECONDARY) ── */}
+        {routeMode !== "multi" && (
+          <div className="pt-2 border-t border-[var(--brd)]/60">
+            <button
+              type="button"
+              onClick={() => setCustomFormOpen((v) => !v)}
+              className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase text-[var(--tx2)] hover:text-[var(--tx)]"
+              aria-expanded={customFormOpen}
+            >
+              <CaretDown
+                className={`w-3 h-3 transition-transform ${customFormOpen ? "" : "-rotate-90"}`}
+              />
+              Add custom item
+            </button>
+            {customFormOpen && (
+              <div className="mt-3 space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                  <div className="sm:col-span-3">
+                    <Field label="Description">
                       <input
-                        value={row.description}
-                        onChange={(e) =>
-                          patchLine(idx, { description: e.target.value })
-                        }
+                        value={newDesc}
+                        onChange={(e) => setNewDesc(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && newDesc.trim()) {
+                            e.preventDefault();
+                            addLine();
+                          }
+                        }}
                         className={fieldInput}
+                        placeholder="e.g. Custom adhesive bucket"
                       />
                     </Field>
                   </div>
-                  <div className="w-[72px]">
+                  <div className="sm:col-span-2">
                     <Field label="Qty">
                       <input
                         type="number"
                         min={1}
-                        value={row.quantity}
-                        onChange={(e) =>
-                          patchLine(idx, {
-                            quantity: Math.max(1, Number(e.target.value) || 1),
-                          })
-                        }
+                        value={newQty}
+                        onChange={(e) => setNewQty(Number(e.target.value) || 1)}
                         className={fieldInput}
                       />
                     </Field>
                   </div>
                   {showItemField("weight") && (
-                    <div className="min-w-[160px] max-w-[220px]">
+                    <div className="sm:col-span-3">
                       <Field label="Weight range">
                         <select
-                          value={normalizeB2bWeightCategory(
-                            row.weight_category,
-                          )}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            patchLine(idx, {
-                              weight_category: v,
-                              ...(!tierRequiresActualWeight(v)
-                                ? { actual_weight_lbs: undefined }
-                                : {}),
-                            });
-                          }}
+                          value={normalizeB2bWeightCategory(newWeight)}
+                          onChange={(e) => setNewWeight(e.target.value)}
                           className={fieldInput}
                         >
                           {WEIGHT_TIER_OPTIONS.map((o) => (
@@ -2207,13 +2575,11 @@ export default function B2BJobsDeliveryForm({
                     </div>
                   )}
                   {showUnitTypeColumn && (
-                    <div className="w-[112px]">
+                    <div className="sm:col-span-2">
                       <Field label="Unit">
                         <select
-                          value={row.unit_type || "box"}
-                          onChange={(e) =>
-                            patchLine(idx, { unit_type: e.target.value })
-                          }
+                          value={newUnitType}
+                          onChange={(e) => setNewUnitType(e.target.value)}
                           className={fieldInput}
                         >
                           {FLOORING_UNIT_OPTIONS.map((o) => (
@@ -2226,13 +2592,11 @@ export default function B2BJobsDeliveryForm({
                     </div>
                   )}
                   {showItemField("fragile") && (
-                    <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pb-2 shrink-0">
+                    <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pb-2 sm:col-span-1">
                       <input
                         type="checkbox"
-                        checked={row.fragile}
-                        onChange={(e) =>
-                          patchLine(idx, { fragile: e.target.checked })
-                        }
+                        checked={newFragile}
+                        onChange={(e) => setNewFragile(e.target.checked)}
                         className="accent-[var(--gold)]"
                       />
                       Fragile
@@ -2240,68 +2604,40 @@ export default function B2BJobsDeliveryForm({
                   )}
                   <button
                     type="button"
-                    onClick={() => removeLine(idx)}
-                    className="p-2 text-[var(--tx3)] hover:text-[var(--red)] shrink-0"
-                    aria-label="Remove line"
+                    onClick={addLine}
+                    disabled={!newDesc.trim()}
+                    className="admin-btn admin-btn-sm admin-btn-primary disabled:opacity-50"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Plus className="w-4 h-4" />
+                    Add
                   </button>
                 </div>
                 {showLineDetailFields && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-2 border-t border-[var(--brd)]/50">
-                    {showItemField("weight") &&
-                      tierRequiresActualWeight(
-                        normalizeB2bWeightCategory(row.weight_category),
-                      ) && (
-                        <Field label="Actual weight (lbs) *">
-                          <input
-                            type="number"
-                            min={1}
-                            value={row.actual_weight_lbs ?? ""}
-                            onChange={(e) => {
-                              const n = Number(e.target.value);
-                              patchLine(idx, {
-                                actual_weight_lbs:
-                                  Number.isFinite(n) && n > 0
-                                    ? Math.round(n)
-                                    : undefined,
-                              });
-                            }}
-                            className={fieldInput}
-                            placeholder="Required for this tier"
-                          />
-                        </Field>
-                      )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-1">
                     {showItemField("stop_assignment") && (
-                      <Field label="Stop assignment">
+                      <Field label="Stop assignment (new line)">
                         <input
-                          value={row.stop_assignment ?? ""}
-                          onChange={(e) =>
-                            patchLine(idx, { stop_assignment: e.target.value })
-                          }
+                          value={newStopAssignment}
+                          onChange={(e) => setNewStopAssignment(e.target.value)}
                           className={fieldInput}
                           placeholder="Vendor / stop"
                         />
                       </Field>
                     )}
                     {showItemField("serial_number") && (
-                      <Field label="Serial number">
+                      <Field label="Serial number (new line)">
                         <input
-                          value={row.serial_number ?? ""}
-                          onChange={(e) =>
-                            patchLine(idx, { serial_number: e.target.value })
-                          }
+                          value={newSerialNumber}
+                          onChange={(e) => setNewSerialNumber(e.target.value)}
                           className={fieldInput}
                         />
                       </Field>
                     )}
                     {showItemField("declared_value") && (
-                      <Field label="Declared value">
+                      <Field label="Declared value (new line)">
                         <input
-                          value={row.declared_value ?? ""}
-                          onChange={(e) =>
-                            patchLine(idx, { declared_value: e.target.value })
-                          }
+                          value={newDeclaredValue}
+                          onChange={(e) => setNewDeclaredValue(e.target.value)}
                           className={fieldInput}
                           placeholder="e.g. 5000"
                         />
@@ -2311,12 +2647,8 @@ export default function B2BJobsDeliveryForm({
                       <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
                         <input
                           type="checkbox"
-                          checked={!!row.hookup_required}
-                          onChange={(e) =>
-                            patchLine(idx, {
-                              hookup_required: e.target.checked,
-                            })
-                          }
+                          checked={newHookupRequired}
+                          onChange={(e) => setNewHookupRequired(e.target.checked)}
                           className="accent-[var(--gold)]"
                         />
                         Hook-up required
@@ -2326,10 +2658,8 @@ export default function B2BJobsDeliveryForm({
                       <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
                         <input
                           type="checkbox"
-                          checked={!!row.haul_away_line}
-                          onChange={(e) =>
-                            patchLine(idx, { haul_away_line: e.target.checked })
-                          }
+                          checked={newHaulAwayLine}
+                          onChange={(e) => setNewHaulAwayLine(e.target.checked)}
                           className="accent-[var(--gold)]"
                         />
                         Haul-away old unit
@@ -2339,12 +2669,8 @@ export default function B2BJobsDeliveryForm({
                       <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
                         <input
                           type="checkbox"
-                          checked={!!row.crating_required}
-                          onChange={(e) =>
-                            patchLine(idx, {
-                              crating_required: e.target.checked,
-                            })
-                          }
+                          checked={newCratingRequired}
+                          onChange={(e) => setNewCratingRequired(e.target.checked)}
                           className="accent-[var(--gold)]"
                         />
                         Crating required
@@ -2354,11 +2680,9 @@ export default function B2BJobsDeliveryForm({
                       <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
                         <input
                           type="checkbox"
-                          checked={!!row.line_assembly_required}
+                          checked={newLineAssemblyRequired}
                           onChange={(e) =>
-                            patchLine(idx, {
-                              line_assembly_required: e.target.checked,
-                            })
+                            setNewLineAssemblyRequired(e.target.checked)
                           }
                           className="accent-[var(--gold)]"
                         />
@@ -2367,195 +2691,47 @@ export default function B2BJobsDeliveryForm({
                     )}
                   </div>
                 )}
-              </li>
-            ))}
-          </ul>
-        )}
-        {routeMode !== "multi" && (
-        <>
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-          <div className="sm:col-span-3">
-            <Field label="Description">
-              <input
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value)}
-                className={fieldInput}
-                placeholder="Item description"
-              />
-            </Field>
-          </div>
-          <div className="sm:col-span-2">
-            <Field label="Qty">
-              <input
-                type="number"
-                min={1}
-                value={newQty}
-                onChange={(e) => setNewQty(Number(e.target.value) || 1)}
-                className={fieldInput}
-              />
-            </Field>
-          </div>
-          {showItemField("weight") && (
-            <div className="sm:col-span-3">
-              <Field label="Weight range">
-                <select
-                  value={normalizeB2bWeightCategory(newWeight)}
-                  onChange={(e) => setNewWeight(e.target.value)}
-                  className={fieldInput}
-                >
-                  {WEIGHT_TIER_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </div>
-          )}
-          {showUnitTypeColumn && (
-            <div className="sm:col-span-2">
-              <Field label="Unit type">
-                <select
-                  value={newUnitType}
-                  onChange={(e) => setNewUnitType(e.target.value)}
-                  className={fieldInput}
-                >
-                  {FLOORING_UNIT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </div>
-          )}
-          {showItemField("fragile") && (
-            <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pb-2 sm:col-span-1">
-              <input
-                type="checkbox"
-                checked={newFragile}
-                onChange={(e) => setNewFragile(e.target.checked)}
-                className="accent-[var(--gold)]"
-              />
-              Fragile
-            </label>
-          )}
-          <button
-            type="button"
-            onClick={addLine}
-            disabled={!newDesc.trim()}
-            className="admin-btn admin-btn-sm admin-btn-primary"
-          >
-            <Plus className="w-4 h-4" />
-            Add
-          </button>
-        </div>
-        {showLineDetailFields && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-1">
-            {showItemField("stop_assignment") && (
-              <Field label="Stop assignment (new line)">
-                <input
-                  value={newStopAssignment}
-                  onChange={(e) => setNewStopAssignment(e.target.value)}
-                  className={fieldInput}
-                  placeholder="Vendor / stop"
-                />
-              </Field>
-            )}
-            {showItemField("serial_number") && (
-              <Field label="Serial number (new line)">
-                <input
-                  value={newSerialNumber}
-                  onChange={(e) => setNewSerialNumber(e.target.value)}
-                  className={fieldInput}
-                />
-              </Field>
-            )}
-            {showItemField("declared_value") && (
-              <Field label="Declared value (new line)">
-                <input
-                  value={newDeclaredValue}
-                  onChange={(e) => setNewDeclaredValue(e.target.value)}
-                  className={fieldInput}
-                  placeholder="e.g. 5000"
-                />
-              </Field>
-            )}
-            {showItemField("hookup_required") && (
-              <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
-                <input
-                  type="checkbox"
-                  checked={newHookupRequired}
-                  onChange={(e) => setNewHookupRequired(e.target.checked)}
-                  className="accent-[var(--gold)]"
-                />
-                Hook-up required
-              </label>
-            )}
-            {showItemField("haul_away_old") && (
-              <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
-                <input
-                  type="checkbox"
-                  checked={newHaulAwayLine}
-                  onChange={(e) => setNewHaulAwayLine(e.target.checked)}
-                  className="accent-[var(--gold)]"
-                />
-                Haul-away old unit
-              </label>
-            )}
-            {showItemField("crating_required") && (
-              <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
-                <input
-                  type="checkbox"
-                  checked={newCratingRequired}
-                  onChange={(e) => setNewCratingRequired(e.target.checked)}
-                  className="accent-[var(--gold)]"
-                />
-                Crating required
-              </label>
-            )}
-            {showItemField("assembly_required") && (
-              <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
-                <input
-                  type="checkbox"
-                  checked={newLineAssemblyRequired}
-                  onChange={(e) => setNewLineAssemblyRequired(e.target.checked)}
-                  className="accent-[var(--gold)]"
-                />
-                Assembly required
-              </label>
+              </div>
             )}
           </div>
         )}
-        {quickAddPresets.length > 0 && (
-          <div className="pt-2 space-y-1">
-            <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
-              Quick add{itemConfig?.label ? ` (${itemConfig.label})` : ""}
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {quickAddPresets.map((p) => (
-                <button
-                  key={p.name}
-                  type="button"
-                  onClick={() => addQuickPreset(p)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] bg-[var(--bg)]"
-                >
-                  {p.icon ? (
-                    <B2bQuickAddIcon
-                      icon={p.icon}
-                      className="shrink-0 text-[var(--accent-text)]"
+
+        {/* ── Box-count shortcut (TERTIARY, flooring only) ── */}
+        {routeMode !== "multi" &&
+          verticalCode === "flooring" &&
+          vis("box_count") && (
+            <div className="pt-2 border-t border-[var(--brd)]/60">
+              <button
+                type="button"
+                onClick={() => setBoxCountOpen((v) => !v)}
+                className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase text-[var(--tx2)] hover:text-[var(--tx)]"
+                aria-expanded={boxCountOpen}
+              >
+                <CaretDown
+                  className={`w-3 h-3 transition-transform ${boxCountOpen ? "" : "-rotate-90"}`}
+                />
+                Skip line items — enter total box count
+              </button>
+              {boxCountOpen && (
+                <div className="mt-3 max-w-[260px]">
+                  <Field label="Total boxes / units for the job">
+                    <input
+                      type="number"
+                      min={0}
+                      value={boxCount}
+                      onChange={(e) => setBoxCount(e.target.value)}
+                      className={fieldInput}
+                      placeholder="e.g. 40"
                     />
-                  ) : (
-                    <Plus className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                  )}
-                  + {p.name}
-                </button>
-              ))}
+                  </Field>
+                  <p className="text-[10px] text-[var(--tx3)] mt-1 leading-relaxed">
+                    Use this when you only have a total count and don&apos;t need
+                    to itemize. Leave the items list above empty.
+                  </p>
+                </div>
+              )}
             </div>
-          </div>
-        )}
-        </>
-        )}
+          )}
       </section>
 
       {vis("handling") && (
