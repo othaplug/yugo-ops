@@ -899,19 +899,15 @@ export interface BalanceReminder72hrData {
   moveDate: string | null;
   balanceAmount: number;
   trackingUrl: string;
+  paymentPageUrl: string;
+  hasCardOnFile: boolean;
   /** Estate: balance auto-charge is scheduled for ~48h before packing day, not move day. */
   estateBalanceChargeBeforePacking?: boolean;
 }
 
 export function balanceReminder72hrEmail(d: BalanceReminder72hrData): string {
-  return emailLayout(`
-    <div style="${FOREST_EYEBROW_UPPER}">Balance due</div>
-    <h1 style="${EQ_H1}">Remaining balance${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
-    <p style="${EQ_LEAD}">
-      Amount <strong style="color:${EMAIL_FOREST}">${formatCurrencyEmail(d.balanceAmount)}</strong> is due before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>.
-    </p>
-
-    <div class="yugo-on-wine" style="${EQ_PANEL}">
+  const paymentPanel = d.hasCardOnFile
+    ? `<div class="yugo-on-wine" style="${EQ_PANEL}">
       <div style="${PANEL_KICKER_ON_WINE_UPPER};margin-bottom:12px;">Automatic payment</div>
       <div style="${WINE_INNER_CALLOUT}">
         <div style="${WINE_INNER_EYEBROW}">Card on file</div>
@@ -919,9 +915,28 @@ export function balanceReminder72hrEmail(d: BalanceReminder72hrData): string {
           We will charge <strong style="${EQ_ON_WINE_PANEL_STYLE};font-weight:700;">${formatCurrencyEmail(d.balanceAmount)}</strong> approximately 48 hours before ${d.estateBalanceChargeBeforePacking ? "your scheduled packing day" : "your move"}. No action required.
         </div>
       </div>
+    </div>`
+    : `<div style="margin-bottom:22px;font-family:${PREMIUM_FONT}">
+      <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:22px;text-align:center">
+        <div style="${FOREST_EYEBROW_UPPER}margin-bottom:10px;">Action required</div>
+        <div style="font-size:28px;font-weight:700;color:${EMAIL_FOREST};margin-bottom:10px;letter-spacing:0">${formatCurrencyEmail(d.balanceAmount)}</div>
+        <div style="font-size:12px;color:${PROMO_CREAM_MUTED};line-height:1.65">
+          No card is saved on your file. Please pay your balance before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>.
+        </div>
+      </div>
     </div>
+    ${ctaButton(d.paymentPageUrl, "Pay balance now")}`;
 
-    ${ctaButton(d.trackingUrl, "View move details")}
+  return emailLayout(`
+    <div style="${FOREST_EYEBROW_UPPER}">Balance due</div>
+    <h1 style="${EQ_H1}">Remaining balance${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <p style="${EQ_LEAD}">
+      Amount <strong style="color:${EMAIL_FOREST}">${formatCurrencyEmail(d.balanceAmount)}</strong> is due before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>.
+    </p>
+
+    ${paymentPanel}
+
+    ${d.hasCardOnFile ? ctaButton(d.trackingUrl, "View move details") : ""}
     <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${PREMIUM_FONT}">
       Questions? Email ${creamSupportMailtoLink()} or call your coordinator.
     </p>
@@ -937,17 +952,16 @@ export interface BalanceReminder48hrData {
   autoChargeDate: string | null;
   paymentPageUrl: string;
   trackingUrl: string;
+  hasCardOnFile: boolean;
 }
 
 export function balanceReminder48hrEmail(d: BalanceReminder48hrData): string {
-  return emailLayout(`
-    <div style="${AMBER_EYEBROW_UPPER}">Balance due soon</div>
-    <h1 style="${EQ_H1}">${formatCurrencyEmail(d.balanceAmount)} due${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
-    <p style="${EQ_LEAD}">
-      Your remaining balance will be charged to the card on file before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>.
-    </p>
+  const bodyText = d.hasCardOnFile
+    ? `Your remaining balance will be charged to the card on file before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>.`
+    : `Your remaining balance is due before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. No card is on file — please pay now.`;
 
-    <div style="margin-bottom:22px;font-family:${PREMIUM_FONT}">
+  const callout = d.hasCardOnFile
+    ? `<div style="margin-bottom:22px;font-family:${PREMIUM_FONT}">
       <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:22px;text-align:center">
         <div style="${FOREST_EYEBROW_UPPER}margin-bottom:10px;">Scheduled charge</div>
         <div style="font-size:28px;font-weight:700;color:${EMAIL_FOREST};margin-bottom:10px;letter-spacing:0">${formatCurrencyEmail(d.balanceAmount)}</div>
@@ -955,7 +969,24 @@ export function balanceReminder48hrEmail(d: BalanceReminder48hrData): string {
           Charge date: <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.autoChargeDate)}</strong>. No action needed.
         </div>
       </div>
+    </div>`
+    : `<div style="margin-bottom:22px;font-family:${PREMIUM_FONT}">
+      <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:22px;text-align:center">
+        <div style="${FOREST_EYEBROW_UPPER}margin-bottom:10px;">Action required</div>
+        <div style="font-size:28px;font-weight:700;color:${EMAIL_FOREST};margin-bottom:10px;letter-spacing:0">${formatCurrencyEmail(d.balanceAmount)}</div>
+        <div style="font-size:12px;color:${PROMO_CREAM_MUTED};line-height:1.65">
+          Due before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>.
+        </div>
+      </div>
     </div>
+    ${ctaButton(d.paymentPageUrl, "Pay balance now")}`;
+
+  return emailLayout(`
+    <div style="${AMBER_EYEBROW_UPPER}">Balance due soon</div>
+    <h1 style="${EQ_H1}">${formatCurrencyEmail(d.balanceAmount)} due${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <p style="${EQ_LEAD}">${bodyText}</p>
+
+    ${callout}
 
     <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${PREMIUM_FONT}">
       Questions? Email ${creamSupportMailtoLink()} or call your coordinator.

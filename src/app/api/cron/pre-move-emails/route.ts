@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
   const { data: moves72 } = await supabase
     .from("moves")
     .select(
-      "id, move_code, client_name, client_email, client_phone, scheduled_date, scheduled_time, from_address, to_address, from_access, to_access, balance_amount, balance_paid_at, deposit_paid_at, tier_selected",
+      "id, move_code, client_name, client_email, client_phone, scheduled_date, scheduled_time, from_address, to_address, from_access, to_access, balance_amount, balance_paid_at, deposit_paid_at, tier_selected, square_card_id",
     )
     .in("status", ["confirmed", "scheduled"])
     .eq("scheduled_date", threeDaysOut)
@@ -121,6 +121,8 @@ export async function GET(req: NextRequest) {
       const bal = Number(move.balance_amount || 0);
       if (bal > 0 && !move.balance_paid_at && move.deposit_paid_at) {
         try {
+          const hasCardOnFile = !!move.square_card_id;
+          const paymentPageUrl = `${baseUrl}/pay/${move.id}`;
           const balResult = await sendEmail({
             to: move.client_email,
             subject: `Your balance of $${bal.toFixed(2)} is due ${move.move_code || "Payment"}`,
@@ -131,6 +133,8 @@ export async function GET(req: NextRequest) {
               moveDate: move.scheduled_date,
               balanceAmount: bal,
               trackingUrl,
+              paymentPageUrl,
+              hasCardOnFile,
               estateBalanceChargeBeforePacking: isEstate,
             },
           });
@@ -156,7 +160,7 @@ export async function GET(req: NextRequest) {
   const { data: moves48 } = await supabase
     .from("moves")
     .select(
-      "id, move_code, client_name, client_email, scheduled_date, balance_amount, balance_paid_at, deposit_paid_at, tier_selected, service_tier, move_size, inventory_score",
+      "id, move_code, client_name, client_email, scheduled_date, balance_amount, balance_paid_at, deposit_paid_at, tier_selected, service_tier, move_size, inventory_score, square_card_id",
     )
     .in("status", ["confirmed", "scheduled"])
     .in("scheduled_date", [twoDaysOut, threeDaysOut])
@@ -203,6 +207,7 @@ export async function GET(req: NextRequest) {
             autoChargeDate,
             paymentPageUrl,
             trackingUrl,
+            hasCardOnFile: !!move.square_card_id,
           },
         });
 
