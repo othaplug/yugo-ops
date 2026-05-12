@@ -28,7 +28,13 @@ export function prepareB2bLineItemsForDimensionalEngine(
     let line = { ...i };
     if (v === "flooring") {
       const uht = flooringHandlingTypeFromUnitType(i.unit_type);
-      if (uht) {
+      const ut = (i.unit_type || "").trim().toLowerCase();
+      // Pallets and rolls/pieces have physically-determined handling — always override.
+      // Boxes respect the coordinator's explicit selection; only default to hand_bomb
+      // when the quote-level handling is threshold/hand_bomb (the flooring default).
+      const isPhysicalOverride = ut === "pallet" || ut === "roll" || ut === "piece";
+      const coordinatorPickedNonDefault = ht0 !== "hand_bomb" && ht0 !== "threshold";
+      if (uht && (isPhysicalOverride || !coordinatorPickedNonDefault)) {
         line = { ...line, handling_type: uht };
       } else if (!line.handling_type) {
         line = { ...line, handling_type: ht0 };

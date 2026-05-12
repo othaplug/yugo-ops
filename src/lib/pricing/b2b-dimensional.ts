@@ -398,6 +398,16 @@ function handlingChargeForType(
   if (!dimOn || units <= 0) return 0;
   const ht = normalizeHandlingKey(htRaw);
 
+  // Flat carry-in fee takes priority over per-box rate when configured.
+  // "carry_in" = crew carries items to unit via elevator — flat access charge, not per-box.
+  if (ht === "carry_in" && handlingRates["carry_in_flat"] != null) {
+    const charge = num(handlingRates["carry_in_flat"], 0);
+    if (charge !== 0) {
+      breakdown.push({ label: "Carry-in to unit", amount: charge });
+    }
+    return charge;
+  }
+
   const perBoxKeys: { key: string; label: string; rateKey: string }[] = [
     { key: "hand_bomb", label: "Hand-bomb", rateKey: "hand_bomb_per_box" },
     { key: "carry_in", label: "Carry-in", rateKey: "carry_in_per_box" },
@@ -506,7 +516,7 @@ export function calculateB2BDimensionalPrice(args: {
             const unitCharge = Math.round(extra * rate * 100) / 100;
             totalPrice += unitCharge;
             breakdown.push({
-              label: `Additional ${disp}s (${extra} beyond ${baseIncluded}) × ${fmtMoney(rate)}`,
+              label: `Additional ${pluralUnitType(disp)} (${extra} beyond ${baseIncluded}) × ${fmtMoney(rate)}`,
               amount: unitCharge,
             });
           }
@@ -567,7 +577,7 @@ export function calculateB2BDimensionalPrice(args: {
       const unitCharge = Math.round(extra * perItemAfterBase * 100) / 100;
       totalPrice += unitCharge;
       breakdown.push({
-        label: `Additional ${unitLabel}s (${extra} beyond ${itemsIncludedBase}) × ${fmtMoney(perItemAfterBase)}`,
+        label: `Additional ${pluralUnitType(unitLabel)} (${extra} beyond ${itemsIncludedBase}) × ${fmtMoney(perItemAfterBase)}`,
         amount: unitCharge,
       });
     }
@@ -641,20 +651,42 @@ export function calculateB2BDimensionalPrice(args: {
     return s;
   }, 0);
   const fl = vc.flooring_load_tiers as Record<string, unknown> | undefined;
-  const loadLbs =
+  let loadLbsIsEstimated = false;
+  let loadLbs: number | undefined =
     args.input.total_load_weight_lbs != null && args.input.total_load_weight_lbs > 0
       ? args.input.total_load_weight_lbs
       : summedLineLbs > 0
         ? summedLineLbs
         : undefined;
+
+  // For flooring, estimate load weight from box count when the field is left blank.
+  // This ensures heavy tile / bulk flooring orders trigger the weight surcharge even
+  // when the coordinator doesn't fill in total_load_weight_lbs.
+  if (fl && loadLbs == null && verticalCodeNorm === "flooring" && dimOn) {
+    const estimatedLbs = items.reduce((sum, item) => {
+      const ut = (item.unit_type || "").trim().toLowerCase();
+      const isBoxType = ut === "box" || ut === "unit" || ut === "bag" || ut === "bundle" || ut === "";
+      if (!isBoxType) return sum;
+      const d = item.description.trim().toLowerCase();
+      const isTile = /tile|ceramic|porcelain|48["\s]|48x/i.test(d);
+      const lbsPerBox = isTile ? 90 : 40;
+      return sum + item.quantity * lbsPerBox;
+    }, 0);
+    if (estimatedLbs > 0) {
+      loadLbs = estimatedLbs;
+      loadLbsIsEstimated = true;
+    }
+  }
+
   if (fl && dimOn && loadLbs != null && loadLbs > 0) {
     const sm = num(fl.standard_max_lb, 1000);
     const hm = num(fl.heavy_max_lb, 2500);
+    const estSuffix = loadLbsIsEstimated ? ", estimated from box count" : "";
     let loadFee = 0;
     let loadLabel = "";
     if (loadLbs > hm) {
       loadFee = num(fl.extra_fee, 80);
-      loadLabel = `Heavy load (${loadLbs} lbs total)`;
+      loadLabel = `Extra heavy load (~${Math.round(loadLbs).toLocaleString()} lbs${estSuffix}) — 3-person crew`;
       if (fl.extra_three_crew === true) {
         const hr = num(vc.crew_hourly_rate, 75);
         const extraLabour = Math.round(1 * hr * num(vc.min_hours, 2) * 100) / 100;
@@ -663,7 +695,7 @@ export function calculateB2BDimensionalPrice(args: {
       }
     } else if (loadLbs > sm) {
       loadFee = num(fl.heavy_fee, 40);
-      loadLabel = `Load weight tier (${loadLbs} lbs total)`;
+      loadLabel = `Heavy load (~${Math.round(loadLbs).toLocaleString()} lbs${estSuffix})`;
     }
     if (loadFee > 0) {
       totalPrice += loadFee;
@@ -748,8 +780,27 @@ export function calculateB2BDimensionalPrice(args: {
   }
 
   const recommendedTruckByUnits = recommendTruckForB2B(items, totalUnits, vc);
+
+  // For flooring, augment items with per-box weight estimates when weight is not explicit.
+  // This prevents the truck recommendation from defaulting to a sprinter when the form
+  // sends a single summary line (e.g., "Flooring / building materials" qty=1) with no weight.
+  const itemsForTruckRec =
+    verticalCodeNorm === "flooring"
+      ? items.map((item) => {
+          if (item.weight_lbs != null || item.actual_weight_lbs != null) return item;
+          const ut = (item.unit_type || "").trim().toLowerCase();
+          const isBoxType =
+            ut === "box" || ut === "unit" || ut === "bag" || ut === "bundle" || ut === "";
+          if (!isBoxType) return item;
+          const d = item.description.trim().toLowerCase();
+          const isTile = /tile|ceramic|porcelain|48["\s]|48x/i.test(d);
+          // Conservative floor: 90 lbs for tile boxes, 50 lbs for all other flooring boxes
+          return { ...item, weight_lbs: isTile ? 90 : 50 };
+        })
+      : items;
+
   const { truck: recommendedTruckByWeight, needsLiftGateNote } =
-    recommendTruckFromWeightItems(items);
+    recommendTruckFromWeightItems(itemsForTruckRec);
   const recommendedTruck = pickLargerTruck(
     recommendedTruckByUnits,
     recommendedTruckByWeight,
@@ -782,7 +833,7 @@ export function calculateB2BDimensionalPrice(args: {
       const distanceCharge = Math.round(chargeableKm * perKm);
       totalPrice += distanceCharge;
       breakdown.push({
-        label: `Distance: ${chargeableKm.toFixed(1)} km × ${fmtMoney(perKm)}`,
+        label: `Distance: ${distKm.toFixed(1)} km route (${chargeableKm.toFixed(1)} km beyond ${freeKm} km free) × ${fmtMoney(perKm)}`,
         amount: distanceCharge,
       });
     }
@@ -1001,4 +1052,14 @@ export function calculateB2BDimensionalPrice(args: {
 
 function fmtMoney(n: number): string {
   return `$${n.toLocaleString("en-CA", { maximumFractionDigits: 2 })}`;
+}
+
+/** Pluralize a unit-type label without "boxs" / "piecees" mangling. */
+function pluralUnitType(disp: string): string {
+  const d = disp.trim().toLowerCase();
+  if (d === "box") return "boxes";
+  if (d === "piece") return "pieces";
+  if (d === "bunch") return "bunches";
+  if (d.endsWith("s")) return disp; // already plural (rolls, bags, pallets, …)
+  return `${disp}s`;
 }
