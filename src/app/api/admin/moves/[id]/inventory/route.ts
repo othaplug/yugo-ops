@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuth } from "@/lib/api-auth";
 import { isSuperAdminEmail } from "@/lib/super-admin";
+import { inferRoomFromItem, isDeliveryServiceType, DELIVERY_ROOM_LABEL } from "@/lib/inventory-room-inference";
 
 export async function GET(
   _req: Request,
@@ -31,51 +32,59 @@ export async function GET(
         .order("item_name"),
       db
         .from("moves")
-        .select("client_box_count, quote_id, inventory_items")
+        .select("client_box_count, quote_id, inventory_items, service_type, items")
         .eq("id", moveId)
         .single(),
     ]);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-    // Fallback when move_inventory is empty: materialize rows from the
-    // moves.inventory_items JSONB snapshot so edit/delete always work on real DB rows.
+    // Fallback when move_inventory is empty: materialize rows from the snapshot
+    // so edit/delete always work on real DB rows.
     let effectiveItems = items ?? [];
-    if (
-      effectiveItems.length === 0 &&
-      Array.isArray((moveRow as { inventory_items?: unknown } | null)?.inventory_items)
-    ) {
-      const snapshot = (moveRow as { inventory_items?: unknown[] }).inventory_items as Array<
-        Record<string, unknown>
-      >;
-      const insertRows = snapshot
-        .filter(
-          (it) =>
-            it &&
-            typeof it.name === "string" &&
-            (it.name as string).trim(),
-        )
-        .map((it, idx) => {
-          const name = String(it.name).trim();
-          const qty =
-            typeof it.quantity === "number" && (it.quantity as number) > 1
-              ? (it.quantity as number)
-              : 1;
-          const roomRaw =
-            typeof it.room === "string" && (it.room as string).trim()
-              ? (it.room as string).trim()
-              : "other";
-          return {
-            move_id: moveId,
-            room: roomRaw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-            item_name: qty > 1 ? `${name} x${qty}` : name,
-            box_number: null as string | null,
-            sort_order: idx,
-          };
-        });
+    if (effectiveItems.length === 0 && moveRow) {
+      const serviceType = String((moveRow as { service_type?: unknown }).service_type ?? "");
+      const isDelivery = isDeliveryServiceType(serviceType);
+      let insertRows: { move_id: string; room: string; item_name: string; box_number: string | null; sort_order: number }[] = [];
+
+      if (isDelivery) {
+        // White glove / delivery: items are in moves.items
+        const wgRaw = (moveRow as { items?: unknown }).items;
+        if (Array.isArray(wgRaw)) {
+          insertRows = (wgRaw as Array<Record<string, unknown>>)
+            .filter((it) => it && typeof it.description === "string" && (it.description as string).trim())
+            .map((it, idx) => ({
+              move_id: moveId,
+              room: DELIVERY_ROOM_LABEL,
+              item_name: String(it.description).trim(),
+              box_number: null as string | null,
+              sort_order: idx,
+            }));
+        }
+      } else {
+        // Residential: items are in moves.inventory_items
+        const snapshot = (moveRow as { inventory_items?: unknown }).inventory_items;
+        if (Array.isArray(snapshot)) {
+          insertRows = (snapshot as Array<Record<string, unknown>>)
+            .filter((it) => it && typeof it.name === "string" && (it.name as string).trim())
+            .map((it, idx) => {
+              const name = String(it.name).trim();
+              const qty = typeof it.quantity === "number" && (it.quantity as number) > 1 ? (it.quantity as number) : 1;
+              return {
+                move_id: moveId,
+                room: inferRoomFromItem(
+                  typeof it.slug === "string" ? it.slug : null,
+                  name,
+                ),
+                item_name: qty > 1 ? `${name} x${qty}` : name,
+                box_number: null as string | null,
+                sort_order: idx,
+              };
+            });
+        }
+      }
 
       if (insertRows.length > 0) {
-        // Materialize into move_inventory so subsequent requests use real rows.
         const { data: inserted } = await db
           .from("move_inventory")
           .insert(insertRows)
@@ -83,7 +92,6 @@ export async function GET(
         if (inserted && inserted.length > 0) {
           effectiveItems = inserted;
         } else {
-          // Insert failed (e.g. race condition) — return derived rows for this request only
           effectiveItems = insertRows.map((r, idx) => ({
             id: `snapshot-${idx}`,
             room: r.room,

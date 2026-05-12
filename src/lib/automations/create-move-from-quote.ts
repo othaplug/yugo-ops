@@ -7,6 +7,7 @@ import { generateWelcomePackageToken } from "@/lib/welcome-package-token";
 import { estimateMoveDurationFromQuoteRow } from "@/lib/jobs/duration-estimate";
 import { convertedRecordCodeFromQuoteId } from "@/lib/quotes/quote-id";
 import { serviceTypeHasTiers } from "@/lib/quote-service-types";
+import { inferRoomFromItem, isDeliveryServiceType, DELIVERY_ROOM_LABEL } from "@/lib/inventory-room-inference";
 
 /* ═══════════════════════════════════════════════════════════
    createMoveFromQuote
@@ -762,34 +763,55 @@ export async function createMoveFromQuote(
 
   // Copy inventory items from the quote into move_inventory so the move detail
   // immediately shows the same inventory the client was quoted on.
-  const rawInventoryItems = (quote as { inventory_items?: unknown }).inventory_items;
-  if (Array.isArray(rawInventoryItems) && rawInventoryItems.length > 0) {
-    const inventoryRows = (rawInventoryItems as Array<Record<string, unknown>>)
-      .filter((item) => item && typeof item.name === "string" && item.name.trim())
-      .map((item, idx) => {
-        const name = String(item.name).trim();
-        const qty = typeof item.quantity === "number" && item.quantity > 1
-          ? item.quantity
-          : 1;
-        const itemName = qty > 1 ? `${name} x${qty}` : name;
-        // room slug → display name (e.g. "living_room" → "Living Room")
-        const roomSlug = typeof item.room === "string" && item.room.trim()
-          ? item.room.trim()
-          : "other";
-        const roomDisplay = roomSlug
-          .replace(/_/g, " ")
-          .replace(/\b\w/g, (c) => c.toUpperCase());
-        return {
+  const serviceType = String(quote.service_type ?? "");
+  const isDelivery = isDeliveryServiceType(serviceType);
+
+  if (isDelivery) {
+    // White glove / delivery: items are in whiteGloveFields.items (from factors_applied.white_glove_items)
+    const wgItems = (whiteGloveFields as { items?: unknown }).items;
+    if (Array.isArray(wgItems) && wgItems.length > 0) {
+      const inventoryRows = (wgItems as Array<Record<string, unknown>>)
+        .filter((item) => item && typeof item.description === "string" && item.description.trim())
+        .map((item, idx) => ({
           move_id: primary.id,
-          room: roomDisplay,
-          item_name: itemName,
+          room: DELIVERY_ROOM_LABEL,
+          item_name: String(item.description).trim(),
           box_number: null,
           sort_order: idx,
-        };
-      });
+        }));
+      if (inventoryRows.length > 0) {
+        await supabase.from("move_inventory").insert(inventoryRows).then(() => {});
+      }
+    }
+  } else {
+    // Residential / standard move: items are in quote.inventory_items JSONB
+    const rawInventoryItems = (quote as { inventory_items?: unknown }).inventory_items;
+    if (Array.isArray(rawInventoryItems) && rawInventoryItems.length > 0) {
+      const inventoryRows = (rawInventoryItems as Array<Record<string, unknown>>)
+        .filter((item) => item && typeof item.name === "string" && (item.name as string).trim())
+        .map((item, idx) => {
+          const name = String(item.name).trim();
+          const qty = typeof item.quantity === "number" && item.quantity > 1
+            ? item.quantity
+            : 1;
+          const itemName = qty > 1 ? `${name} x${qty}` : name;
+          // Infer room from slug + name (item_weights catalog room takes priority)
+          const room = inferRoomFromItem(
+            typeof item.slug === "string" ? item.slug : null,
+            name,
+          );
+          return {
+            move_id: primary.id,
+            room,
+            item_name: itemName,
+            box_number: null,
+            sort_order: idx,
+          };
+        });
 
-    if (inventoryRows.length > 0) {
-      await supabase.from("move_inventory").insert(inventoryRows).then(() => {});
+      if (inventoryRows.length > 0) {
+        await supabase.from("move_inventory").insert(inventoryRows).then(() => {});
+      }
     }
   }
 
