@@ -165,6 +165,20 @@ function quoteEmailLayout(innerHtml: string): string {
         -webkit-filter: none !important;
       }
     }
+    /* Wine panel ink-lock — runs in BOTH light and dark mode because some
+       email clients (e.g. Gmail Android, Outlook on Mac) inject color-shift
+       rules unconditionally. Forces every descendant of .yugo-on-wine to
+       cream so the $price/label never disappears into the wine background. */
+    .yugo-on-wine,
+    .yugo-on-wine * {
+      color: #F5EEE6 !important;
+      -webkit-text-fill-color: #F5EEE6 !important;
+    }
+    .yugo-on-wine a {
+      color: #F5EEE6 !important;
+      -webkit-text-fill-color: #F5EEE6 !important;
+      text-decoration: underline !important;
+    }
     ${getEmailResponsiveCss()}
   </style>
   ${getOutlookMsoHeadBlock()}
@@ -561,13 +575,21 @@ function estateRecommendationNote(
 }
 
 function priceCard(label: string, price: number, note: string): string {
+  // Wine panel rendered on dark — every text node needs !important +
+  // -webkit-text-fill-color so Gmail/Apple Mail dark-mode injectors don't
+  // force forest ink on top of the wine background (the original bug:
+  // $540.00 disappearing into wine). The yugo-on-wine class lets the
+  // dark-lock stylesheet enforce this for every descendant globally.
+  const labelStyle = `font-family:${EMAIL_SANS_STACK};font-size:12px;font-weight:700;color:#F5EEE6 !important;-webkit-text-fill-color:#F5EEE6;mso-color-alt:#F5EEE6;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:10px;`;
+  const priceStyle = `font-family:${HERO_FONT};font-size:36px;font-weight:400;color:#F5EEE6 !important;-webkit-text-fill-color:#F5EEE6;mso-color-alt:#F5EEE6;line-height:1;letter-spacing:0;`;
+  const noteStyle = `font-size:11px;color:#E8DFD3 !important;-webkit-text-fill-color:#E8DFD3;mso-color-alt:#E8DFD3;margin-top:8px;letter-spacing:0.04em;text-transform:uppercase;`;
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:28px;">
       <tr>
-        <td align="center" style="background-color:${CARD};border:1px solid ${ACCENT_ROSE_MUTED}55;padding:24px 22px;">
-          <div style="${DARK_CARD_EYEBROW}margin-bottom:10px;">${label}</div>
-          <div style="font-family:${HERO_FONT};font-size:36px;font-weight:400;color:${ACCENT_OFF_WHITE};line-height:1;letter-spacing:0;">${formatCurrencyEmail(price)}</div>
-          <div style="font-size:11px;color:${DARK_TX3};margin-top:8px;letter-spacing:0.04em;text-transform:uppercase;">${note}</div>
+        <td align="center" class="yugo-on-wine" style="background-color:${CARD};border:1px solid ${ACCENT_ROSE_MUTED}55;padding:24px 22px;">
+          <div style="${labelStyle}">${label}</div>
+          <div style="${priceStyle}">${formatCurrencyEmail(price)}</div>
+          <div style="${noteStyle}">${note}</div>
         </td>
       </tr>
     </table>
@@ -1100,12 +1122,12 @@ function labourOnlyTemplate(d: QuoteTemplateData): string {
     ${bodyText("Your labour service quote is ready. A professional crew arrives fully equipped and ready to work. No truck required.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
-    <div style="background:${CARD};border:1px solid ${ACCENT_ROSE_MUTED}44;border-radius:0;padding:24px;text-align:center;margin-bottom:24px">
-      <div style="${DARK_CARD_EYEBROW}margin-bottom:8px;">Labour service</div>
-      ${labourNote ? `<div style="font-size:12px;color:${DARK_TX2};margin-bottom:10px">${labourNote}</div>` : ""}
-      <div style="font-family:${HERO_FONT};font-size:32px;font-weight:700;color:${ACCENT_OFF_WHITE};letter-spacing:0;">${formatCurrencyEmail(total)}</div>
-      <div style="font-size:11px;color:${DARK_TX3};margin-top:6px">+${formatCurrencyEmail(tax)} HST &middot; Total ${formatCurrencyEmail(total + tax)}</div>
-      <div style="font-size:11px;color:${DARK_TX3};margin-top:4px">Deposit to book: <strong style="color:${DARK_TX}">${formatCurrencyEmail(deposit)}</strong> (50%)</div>
+    <div class="yugo-on-wine" style="background:${CARD};border:1px solid ${ACCENT_ROSE_MUTED}44;border-radius:0;padding:24px;text-align:center;margin-bottom:24px">
+      <div style="font-family:${EMAIL_SANS_STACK};font-size:12px;font-weight:700;color:#F5EEE6 !important;-webkit-text-fill-color:#F5EEE6;mso-color-alt:#F5EEE6;letter-spacing:0;text-transform:uppercase;margin-bottom:8px;">Labour service</div>
+      ${labourNote ? `<div style="font-size:12px;color:#E8DFD3 !important;-webkit-text-fill-color:#E8DFD3;mso-color-alt:#E8DFD3;margin-bottom:10px">${labourNote}</div>` : ""}
+      <div style="font-family:${HERO_FONT};font-size:32px;font-weight:700;color:#F5EEE6 !important;-webkit-text-fill-color:#F5EEE6;mso-color-alt:#F5EEE6;letter-spacing:0;">${formatCurrencyEmail(total)}</div>
+      <div style="font-size:11px;color:#E8DFD3 !important;-webkit-text-fill-color:#E8DFD3;mso-color-alt:#E8DFD3;margin-top:6px">+${formatCurrencyEmail(tax)} HST &middot; Total ${formatCurrencyEmail(total + tax)}</div>
+      <div style="font-size:11px;color:#E8DFD3 !important;-webkit-text-fill-color:#E8DFD3;mso-color-alt:#E8DFD3;margin-top:4px">Deposit to book: <strong style="color:#F5EEE6 !important;-webkit-text-fill-color:#F5EEE6;mso-color-alt:#F5EEE6;">${formatCurrencyEmail(deposit)}</strong> (50%)</div>
     </div>
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
     ${ctaButton(d.quoteUrl, "View Quote & Book")}
