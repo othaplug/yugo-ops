@@ -916,16 +916,12 @@ export function balanceReminder72hrEmail(d: BalanceReminder72hrData): string {
         </div>
       </div>
     </div>`
-    : `<div style="margin-bottom:22px;font-family:${PREMIUM_FONT}">
-      <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:22px;text-align:center">
-        <div style="${FOREST_EYEBROW_UPPER}margin-bottom:10px;">Action required</div>
-        <div style="font-size:28px;font-weight:700;color:${EMAIL_FOREST};margin-bottom:10px;letter-spacing:0">${formatCurrencyEmail(d.balanceAmount)}</div>
-        <div style="font-size:12px;color:${PROMO_CREAM_MUTED};line-height:1.65">
-          No card is saved on your file. Please pay your balance before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>.
-        </div>
-      </div>
-    </div>
-    ${ctaButton(d.paymentPageUrl, "Pay balance now")}`;
+    : noCardPaymentOptionsPanel({
+        balanceAmount: d.balanceAmount,
+        moveDate: d.moveDate,
+        moveCode: d.moveCode,
+        paymentPageUrl: d.paymentPageUrl,
+      });
 
   return emailLayout(`
     <div style="${FOREST_EYEBROW_UPPER}">Balance due</div>
@@ -943,6 +939,55 @@ export function balanceReminder72hrEmail(d: BalanceReminder72hrData): string {
   `);
 }
 
+/**
+ * Two-option payment panel shown when no Square card is stored on the move.
+ * Renders an "Action required" header with both Pay-Online and Interac e-Transfer methods.
+ */
+function noCardPaymentOptionsPanel(opts: {
+  balanceAmount: number;
+  moveDate: string | null;
+  moveCode: string;
+  paymentPageUrl: string;
+}): string {
+  return `<div style="margin-bottom:22px;font-family:${PREMIUM_FONT}">
+    <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:22px;text-align:center">
+      <div style="${FOREST_EYEBROW_UPPER}margin-bottom:10px;">Action required — no card on file</div>
+      <div style="font-size:28px;font-weight:700;color:${EMAIL_FOREST};margin-bottom:10px;letter-spacing:0">${formatCurrencyEmail(opts.balanceAmount)}</div>
+      <div style="font-size:12px;color:${PROMO_CREAM_MUTED};line-height:1.65">
+        Due before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(opts.moveDate)}</strong>. Please pay using one of the methods below.
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:14px;font-family:${PREMIUM_FONT}">
+    <div style="${FOREST_EYEBROW_UPPER}text-align:center;margin-bottom:10px;">Option 1 — Pay online with credit card</div>
+    ${ctaButton(opts.paymentPageUrl, "Pay balance now")}
+  </div>
+
+  <div style="margin-bottom:22px;font-family:${PREMIUM_FONT}">
+    <div style="${FOREST_EYEBROW_UPPER}text-align:center;margin-bottom:10px;">Option 2 — Send Interac e-Transfer</div>
+    <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-radius:0;padding:18px;font-family:${PREMIUM_FONT}">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="font-family:${PREMIUM_FONT}">
+        <tr>
+          <td style="padding:4px 0;font-size:11px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.07em;text-transform:uppercase;width:38%">Send to</td>
+          <td style="padding:4px 0;font-size:13px;color:${PROMO_CREAM_BODY};font-weight:600">pay@helloyugo.com</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 0;font-size:11px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.07em;text-transform:uppercase">Amount</td>
+          <td style="padding:4px 0;font-size:13px;color:${PROMO_CREAM_BODY};font-weight:600">${formatCurrencyEmail(opts.balanceAmount)} CAD</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 0;font-size:11px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.07em;text-transform:uppercase">Reference</td>
+          <td style="padding:4px 0;font-size:13px;color:${PROMO_CREAM_BODY};font-weight:600">${opts.moveCode}</td>
+        </tr>
+      </table>
+      <div style="margin-top:12px;font-size:11px;color:${PROMO_CREAM_MUTED};line-height:1.6">
+        Include your move code <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:700">${opts.moveCode}</strong> in the e-transfer message so we can match it to your move.
+      </div>
+    </div>
+  </div>`;
+}
+
 export interface BalanceReminder48hrData {
   clientName: string;
   moveCode: string;
@@ -958,7 +1003,7 @@ export interface BalanceReminder48hrData {
 export function balanceReminder48hrEmail(d: BalanceReminder48hrData): string {
   const bodyText = d.hasCardOnFile
     ? `Your remaining balance will be charged to the card on file before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>.`
-    : `Your remaining balance is due before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. No card is on file — please pay now.`;
+    : `Your remaining balance is due before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. We don't have a card on file — please pay using one of the methods below.`;
 
   const callout = d.hasCardOnFile
     ? `<div style="margin-bottom:22px;font-family:${PREMIUM_FONT}">
@@ -970,16 +1015,12 @@ export function balanceReminder48hrEmail(d: BalanceReminder48hrData): string {
         </div>
       </div>
     </div>`
-    : `<div style="margin-bottom:22px;font-family:${PREMIUM_FONT}">
-      <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:22px;text-align:center">
-        <div style="${FOREST_EYEBROW_UPPER}margin-bottom:10px;">Action required</div>
-        <div style="font-size:28px;font-weight:700;color:${EMAIL_FOREST};margin-bottom:10px;letter-spacing:0">${formatCurrencyEmail(d.balanceAmount)}</div>
-        <div style="font-size:12px;color:${PROMO_CREAM_MUTED};line-height:1.65">
-          Due before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>.
-        </div>
-      </div>
-    </div>
-    ${ctaButton(d.paymentPageUrl, "Pay balance now")}`;
+    : noCardPaymentOptionsPanel({
+        balanceAmount: d.balanceAmount,
+        moveDate: d.moveDate,
+        moveCode: d.moveCode,
+        paymentPageUrl: d.paymentPageUrl,
+      });
 
   return emailLayout(`
     <div style="${AMBER_EYEBROW_UPPER}">Balance due soon</div>

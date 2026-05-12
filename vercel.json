@@ -9,6 +9,10 @@
       "schedule": "30 14 * * *"
     },
     {
+      "path": "/api/cron/card-on-file-audit",
+      "schedule": "30 13 * * *"
+    },
+    {
       "path": "/api/cron/charge-balance",
       "schedule": "0 14 * * *"
     },
