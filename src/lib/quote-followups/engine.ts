@@ -9,6 +9,18 @@ import { sendQuoteFollowupSms } from "@/lib/quote-sms";
 import { logActivity } from "@/lib/activity";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { processColdRules } from "@/lib/quote-followups/cold-intelligence";
+import { getLocalClockPartsInAppTimezone } from "@/lib/business-timezone";
+
+/**
+ * Quiet-hours guard: with the cron now firing hourly (instead of once daily
+ * at 11 AM EST), we still want client-facing email + SMS to land during
+ * waking hours. Returns true if the current app-timezone local time is within
+ * 8 AM – 8 PM. Quote expiration still runs outside that window — it's silent.
+ */
+function withinBusinessHours(): boolean {
+  const { hour } = getLocalClockPartsInAppTimezone(new Date());
+  return hour >= 8 && hour < 20;
+}
 
 const HS_TASKS = "https://api.hubapi.com/crm/v3/objects/tasks";
 const HS_ASSOC = "https://api.hubapi.com/crm/v4/objects/tasks";
@@ -251,19 +263,25 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
 
   const statusNotAcceptedOrExpired = ["draft", "sent", "viewed", "declined"];
 
+  // Quiet-hours guard: only send client-facing follow-up email + SMS during business hours.
+  // Expiration sweep below still runs regardless (it doesn't touch the client).
+  const sendsAllowed = withinBusinessHours();
+
   const cutoff24h = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
 
-  const { data: rule1Quotes } = await supabase
-    .from("quotes")
-    .select(
-      "id, quote_id, public_action_token, service_type, factors_applied, contact_id, contacts:contact_id(name, email, phone)",
-    )
-    .eq("status", "sent")
-    .eq("auto_followup_active", true)
-    .lt("sent_at", cutoff24h)
-    .is("viewed_at", null)
-    .is("followup_1_sent", null)
-    .limit(50);
+  const { data: rule1Quotes } = sendsAllowed
+    ? await supabase
+        .from("quotes")
+        .select(
+          "id, quote_id, public_action_token, service_type, factors_applied, contact_id, contacts:contact_id(name, email, phone)",
+        )
+        .eq("status", "sent")
+        .eq("auto_followup_active", true)
+        .lt("sent_at", cutoff24h)
+        .is("viewed_at", null)
+        .is("followup_1_sent", null)
+        .limit(50)
+    : { data: null };
 
   if (rule1Quotes) {
     for (const q of rule1Quotes) {
@@ -352,7 +370,7 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
   const cutoff48h = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
 
   const { data: rule2Quotes } =
-    maxAttempts >= 2
+    maxAttempts >= 2 && sendsAllowed
       ? await supabase
           .from("quotes")
           .select(
@@ -469,7 +487,7 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
   const cutoff5d = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString();
 
   const { data: rule3Quotes } =
-    maxAttempts >= 3
+    maxAttempts >= 3 && sendsAllowed
       ? await supabase
           .from("quotes")
           .select(
