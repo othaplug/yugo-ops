@@ -6,13 +6,22 @@ import { processColdRules } from "@/lib/quote-followups/cold-intelligence";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 
 /**
- * Vercel Cron: runs daily at 11 AM EST (16:00 UTC).
+ * Vercel Cron: runs hourly with a business-hours guard for client-facing sends.
  * Automated nurture sequence for unbooked quotes.
  *
- * Rule 1: sent + 24hr, not viewed  → reminder email
- * Rule 2: viewed + 48hr, not booked → urgency/smart email + HubSpot task
- * Rule 3: viewed + 5 days, not booked → final follow-up + HubSpot task
- * Rule 4: expired quotes → mark as expired
+ * Cadence rules (time-since-action):
+ *   F1: sent + 24hr, not viewed  → reminder email
+ *   F2: viewed + 48hr, not booked → engagement-aware email + HubSpot task
+ *   F3: viewed + 5 days, not booked → final follow-up + HubSpot task
+ *
+ * Event-driven rules (fire independent of cadence):
+ *   Urgency: move_date ≤ 5 days away, not yet booked → confirm-now email + SMS
+ *   Expiry warning: expires_at ≤ 48h, not yet expired/booked → lock-in email + SMS
+ *
+ * Coordinator signals (no client message):
+ *   Hot flag: ≥3 quote-page views, no booking → notify admins + HubSpot task
+ *   Cold sweep: processColdRules — multi-factor (expiry × opens × views)
+ *   Expired sweep: expires_at < now → mark as expired
  */
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -114,6 +123,9 @@ export async function GET(req: NextRequest) {
     followup1: job.followup1,
     followup2: job.followup2,
     followup3: job.followup3,
+    urgency: job.urgency,
+    expiryWarning: job.expiryWarning,
+    hotFlagged: job.hotFlagged,
     expired: job.expired,
     coldMarked: job.coldMarked,
     errors: job.errors.length,

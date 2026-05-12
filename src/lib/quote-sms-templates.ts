@@ -51,6 +51,41 @@ export function buildQuoteSmsBody(params: {
   ].join("\n\n");
 }
 
+/** Move-date urgency SMS: move date is ≤ 5 days away, quote not booked. */
+export function buildQuoteUrgencySmsBody(params: {
+  firstName?: string | null;
+  quoteUrl: string;
+  daysUntilMove: number;
+}): string {
+  const name = params.firstName?.trim() || "there";
+  const d = Math.max(0, params.daysUntilMove);
+  const window =
+    d <= 0 ? "today" : d === 1 ? "tomorrow" : `in ${d} days`;
+  return [
+    `Hi ${name},`,
+    `Your Yugo move is ${window} — we need to confirm your crew and truck.`,
+    `Lock it in:\n${params.quoteUrl}`,
+    `Or call (647) 370-4525.`,
+  ].join("\n\n");
+}
+
+/** 48h expiry warning SMS: quote rate held until expires_at, not yet accepted. */
+export function buildQuoteExpiryWarningSmsBody(params: {
+  firstName?: string | null;
+  quoteUrl: string;
+  hoursUntilExpiry: number;
+}): string {
+  const name = params.firstName?.trim() || "there";
+  const h = Math.max(0, params.hoursUntilExpiry);
+  const window =
+    h <= 6 ? "in a few hours" : h <= 24 ? "in less than a day" : "in 2 days";
+  return [
+    `Hi ${name},`,
+    `Your Yugo quote expires ${window}. After that, pricing may change and we cannot hold your crew slot.`,
+    `Lock in your rate:\n${params.quoteUrl}`,
+  ].join("\n\n");
+}
+
 /** Automated follow-up SMS (cron / manual batch) - OpenPhone */
 export function buildQuoteFollowupSmsBody(params: {
   firstName?: string | null;

@@ -28,6 +28,10 @@ import {
   QuoteFollowup2Data,
   quoteFollowup3Email,
   QuoteFollowup3Data,
+  quoteFollowupUrgencyEmail,
+  QuoteFollowupUrgencyData,
+  quoteFollowupExpiryWarningEmail,
+  QuoteFollowupExpiryWarningData,
   cancellationConfirmEmail,
   CancellationConfirmData,
   quoteUpdatedEmail,
@@ -91,6 +95,8 @@ export type TemplateName =
   | "quote-followup-3"
   | "quote-followup-3-hot"
   | "quote-followup-3-unseen"
+  | "quote-followup-urgency"
+  | "quote-followup-expiry-warning"
   | "cancellation-confirm"
   | "quote-updated"
   | "balance-reminder-72hr"
@@ -141,6 +147,8 @@ type TemplateDataMap = {
   "quote-followup-3": QuoteFollowup3Data;
   "quote-followup-3-hot": QuoteFollowup3Data;
   "quote-followup-3-unseen": QuoteFollowup3Data;
+  "quote-followup-urgency": QuoteFollowupUrgencyData;
+  "quote-followup-expiry-warning": QuoteFollowupExpiryWarningData;
   "cancellation-confirm": CancellationConfirmData;
   "quote-updated": QuoteUpdatedData;
   "balance-reminder-72hr": BalanceReminder72hrData;
@@ -248,6 +256,8 @@ function renderTemplate(template: string, data: unknown): string {
     "quote-followup-3": quoteFollowup3Email,
     "quote-followup-3-hot": quoteFollowup3Email,
     "quote-followup-3-unseen": quoteFollowup3Email,
+    "quote-followup-urgency": quoteFollowupUrgencyEmail,
+    "quote-followup-expiry-warning": quoteFollowupExpiryWarningEmail,
     "cancellation-confirm": cancellationConfirmEmail,
     "quote-updated": quoteUpdatedEmail,
     "balance-reminder-72hr": balanceReminder72hrEmail,

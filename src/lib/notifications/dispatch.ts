@@ -244,6 +244,7 @@ export function buildNotificationTitle(
     quote_expired: "Quote expired",
     quote_declined: "Quote declined",
     quote_cold: "Quote went cold",
+    quote_hot: "Hot quote — multiple views",
     payment_received: "Payment received",
     payment_failed: "Payment failed",
     quote_comparison_signal: "Quote comparison signal",
@@ -303,7 +304,7 @@ export function buildNotificationBody(
     const base = data.clientName ? `${data.clientName} viewed their quote` : "Quote was viewed";
     return data.tierClicked ? `${base} (${data.tierClicked} clicked)` : base;
   }
-  if (slug === "quote_declined" || slug === "quote_cold") {
+  if (slug === "quote_declined" || slug === "quote_cold" || slug === "quote_hot") {
     return (data.description as string) || "";
   }
   if (slug === "payment_received" || slug === "deposit_received") {
@@ -344,6 +345,7 @@ export function getNotificationIcon(slug: string): string {
     quote_expired: "clock",
     quote_declined: "file",
     quote_cold: "clock",
+    quote_hot: "flag",
     payment_received: "dollar",
     payment_failed: "alertTriangle",
     deposit_received: "dollar",

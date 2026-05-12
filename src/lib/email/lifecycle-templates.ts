@@ -1402,6 +1402,87 @@ export function quoteFollowup3Email(d: QuoteFollowup3Data): string {
   );
 }
 
+/* ── Move-date urgency: move_date ≤ 5 days, not yet booked ── */
+
+export interface QuoteFollowupUrgencyData {
+  clientName: string;
+  quoteUrl: string;
+  serviceLabel: string;
+  moveDate: string;
+  /** Whole days from now → move_date, capped at 0. */
+  daysUntilMove: number;
+  declineUrl?: string | null;
+  openPixelSrc?: string | null;
+}
+
+export function quoteFollowupUrgencyEmail(d: QuoteFollowupUrgencyData): string {
+  const name = firstName(d.clientName);
+  const dLabel =
+    d.daysUntilMove <= 0
+      ? "today"
+      : d.daysUntilMove === 1
+        ? "tomorrow"
+        : `${d.daysUntilMove} days away`;
+  const heading = name
+    ? `${name}, your move is ${dLabel}.`
+    : `Your move is ${dLabel}.`;
+  const body =
+    d.daysUntilMove <= 1
+      ? `Your ${d.serviceLabel.toLowerCase()} is scheduled for <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. To secure your crew and truck, we need your confirmation now.`
+      : `Your ${d.serviceLabel.toLowerCase()} is scheduled for <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. Availability for that date is limited — once you confirm, your crew and truck are locked in.`;
+
+  return equinoxPromoLayout(
+    `
+    <div role="heading" aria-level="1" style="${PROMO_CREAM_H1}">${heading}</div>
+    <p style="${PROMO_CREAM_P}">${body}<br/><br/><span style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};font-weight:700;letter-spacing:0.04em;text-transform:uppercase;font-size:13px;">${d.daysUntilMove <= 1 ? "Confirm today" : `${d.daysUntilMove} days to confirm`}</span></p>
+    ${equinoxPromoCta(d.quoteUrl, "Confirm My Move")}
+    ${equinoxPromoFinePrint(`Anything changed about your move? Email <a href="mailto:${getClientSupportEmail()}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;">${getClientSupportEmail()}</a> and we will update your quote.`)}
+    ${quoteFollowupDeclineAndPixelFooter(d.declineUrl, d.openPixelSrc)}
+  `,
+    "quote",
+  );
+}
+
+/* ── 48h expiry warning: quote expires soon, not yet accepted ── */
+
+export interface QuoteFollowupExpiryWarningData {
+  clientName: string;
+  quoteUrl: string;
+  serviceLabel: string;
+  expiresAt: string;
+  /** Hours from now → expires_at, capped at 0. */
+  hoursUntilExpiry: number;
+  declineUrl?: string | null;
+  openPixelSrc?: string | null;
+}
+
+export function quoteFollowupExpiryWarningEmail(
+  d: QuoteFollowupExpiryWarningData,
+): string {
+  const name = firstName(d.clientName);
+  const hours = Math.max(0, d.hoursUntilExpiry);
+  const window =
+    hours <= 6
+      ? "in a few hours"
+      : hours <= 24
+        ? "in less than 24 hours"
+        : "in 48 hours";
+  const heading = name
+    ? `${name}, your Yugo quote expires ${window}.`
+    : `Your Yugo quote expires ${window}.`;
+
+  return equinoxPromoLayout(
+    `
+    <div role="heading" aria-level="1" style="${PROMO_CREAM_H1}">${heading}</div>
+    <p style="${PROMO_CREAM_P}">Your ${d.serviceLabel.toLowerCase()} quote is held at its current rate until <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.expiresAt)}</strong>. After that, pricing may shift based on availability and we cannot guarantee your crew slot.<br/><br/><span style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};font-weight:700;letter-spacing:0.04em;text-transform:uppercase;font-size:13px;">Lock in your rate</span></p>
+    ${equinoxPromoCta(d.quoteUrl, "View and Accept")}
+    ${equinoxPromoFinePrint(`Need more time or want to adjust anything? Email <a href="mailto:${getClientSupportEmail()}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;">${getClientSupportEmail()}</a> — happy to help.`)}
+    ${quoteFollowupDeclineAndPixelFooter(d.declineUrl, d.openPixelSrc)}
+  `,
+    "quote",
+  );
+}
+
 /* ── Post-move: 72hr Perks & Referral Email ── */
 
 export interface PostMovePerksEmailData {

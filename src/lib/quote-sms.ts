@@ -2,7 +2,12 @@ import { getConfig } from "@/lib/config";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { getPublicQuoteUrl } from "@/lib/quote-public-url";
-import { buildQuoteSmsBody, buildQuoteFollowupSmsBody } from "@/lib/quote-sms-templates";
+import {
+  buildQuoteSmsBody,
+  buildQuoteFollowupSmsBody,
+  buildQuoteUrgencySmsBody,
+  buildQuoteExpiryWarningSmsBody,
+} from "@/lib/quote-sms-templates";
 import { buildSmsTrackUrl } from "@/lib/notifications/public-track-url";
 
 function toE164NorthAmerica(digitsRaw: string): string | null {
@@ -115,6 +120,70 @@ export async function sendQuoteFollowupSms(params: {
   } else {
     console.error("[quote-sms followup]", result.error);
     await logSms({ phone: to, message: body, type: `quote_followup_${params.followupNumber}`, quoteId: params.quoteId, status: "failed" });
+    return { ok: false, skipped: result.error || "openphone_error" };
+  }
+}
+
+export async function sendQuoteUrgencySms(params: {
+  phone: string | null | undefined;
+  quoteUrl: string;
+  quoteId: string;
+  firstName?: string;
+  daysUntilMove: number;
+}): Promise<{ ok: boolean; skipped?: string }> {
+  const smsEnabled = (await getConfig("sms_enabled", "true")).toLowerCase() === "true";
+  if (!smsEnabled) return { ok: true, skipped: "sms_disabled" };
+  if (!params.phone?.trim() || !process.env.OPENPHONE_API_KEY || !process.env.OPENPHONE_PHONE_NUMBER_ID) {
+    return { ok: true, skipped: "no_openphone_or_phone" };
+  }
+  const to = toE164NorthAmerica(params.phone);
+  if (!to) return { ok: true, skipped: "invalid_phone" };
+
+  const body = buildQuoteUrgencySmsBody({
+    firstName: params.firstName,
+    quoteUrl: params.quoteUrl,
+    daysUntilMove: params.daysUntilMove,
+  });
+
+  const result = await sendSMS(to, body);
+  if (result.success) {
+    await logSms({ phone: to, message: body, type: "quote_followup_urgency", quoteId: params.quoteId, messageId: result.id, status: "sent" });
+    return { ok: true };
+  } else {
+    console.error("[quote-sms urgency]", result.error);
+    await logSms({ phone: to, message: body, type: "quote_followup_urgency", quoteId: params.quoteId, status: "failed" });
+    return { ok: false, skipped: result.error || "openphone_error" };
+  }
+}
+
+export async function sendQuoteExpiryWarningSms(params: {
+  phone: string | null | undefined;
+  quoteUrl: string;
+  quoteId: string;
+  firstName?: string;
+  hoursUntilExpiry: number;
+}): Promise<{ ok: boolean; skipped?: string }> {
+  const smsEnabled = (await getConfig("sms_enabled", "true")).toLowerCase() === "true";
+  if (!smsEnabled) return { ok: true, skipped: "sms_disabled" };
+  if (!params.phone?.trim() || !process.env.OPENPHONE_API_KEY || !process.env.OPENPHONE_PHONE_NUMBER_ID) {
+    return { ok: true, skipped: "no_openphone_or_phone" };
+  }
+  const to = toE164NorthAmerica(params.phone);
+  if (!to) return { ok: true, skipped: "invalid_phone" };
+
+  const body = buildQuoteExpiryWarningSmsBody({
+    firstName: params.firstName,
+    quoteUrl: params.quoteUrl,
+    hoursUntilExpiry: params.hoursUntilExpiry,
+  });
+
+  const result = await sendSMS(to, body);
+  if (result.success) {
+    await logSms({ phone: to, message: body, type: "quote_followup_expiry_warning", quoteId: params.quoteId, messageId: result.id, status: "sent" });
+    return { ok: true };
+  } else {
+    console.error("[quote-sms expiry-warning]", result.error);
+    await logSms({ phone: to, message: body, type: "quote_followup_expiry_warning", quoteId: params.quoteId, status: "failed" });
     return { ok: false, skipped: result.error || "openphone_error" };
   }
 }
