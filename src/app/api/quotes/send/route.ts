@@ -4,6 +4,7 @@ import { sendEmail, TemplateName } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { autoCreateHubSpotDealForSentQuote } from "@/lib/hubspot/auto-create-deal-for-quote";
+import { buildAllDealProperties } from "@/lib/hubspot/deal-properties-builder";
 import { requireStaff } from "@/lib/api-auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { logAudit } from "@/lib/audit";
@@ -435,33 +436,41 @@ export async function POST(req: NextRequest) {
       const fName = fullName ? fullName.split(/\s+/)[0]!.trim() : "";
       const lName = fullName ? fullName.split(/\s+/).slice(1).join(" ").trim() : "";
 
+      // Build the deal property payload through the single source of truth.
+      // The earlier inline writes used raw slugs (e.g. access="ground_floor",
+      // service_type="local_move", move_size="1br") which HubSpot rejects
+      // for the enum dropdowns — the whole PATCH 400'd and left the deal
+      // empty even though auto-create had populated it. The builder maps
+      // every slug to the portal's allowed enum value, or omits the field
+      // if no mapping exists.
+      const factors =
+        (quote.factors_applied as { b2b_business_name?: string; business_name?: string } | null) ??
+        null;
       const dealProps: Record<string, string> = {
         quote_url: quoteUrl,
+        ...buildAllDealProperties({
+          jobId: quoteId,
+          jobNumber: jobNoSuffix,
+          firstName: fName,
+          lastName: lName,
+          fromAddress: quote.from_address,
+          toAddress: quote.to_address,
+          fromAccess: quote.from_access,
+          toAccess: quote.to_access,
+          serviceType: quote.service_type,
+          moveDate: quote.move_date,
+          moveSize: quote.move_size,
+          subtotal: typeof curatedPrice === "number" ? curatedPrice : null,
+          tierSelected: quote.recommended_tier as string | null | undefined,
+          isPmMove: false,
+          businessName: factors?.b2b_business_name ?? factors?.business_name ?? null,
+        }),
       };
-      if (jobNoSuffix) dealProps.job_no = jobNoSuffix;
+      // First/last name also get the standard contact-shaped mirrors so the
+      // dealname banner and contact card show the right values.
+      if (fName) dealProps.firstname = fName;
+      if (lName) dealProps.lastname = lName;
       if (curatedPrice != null) dealProps.amount = String(curatedPrice);
-      if (fName) {
-        dealProps.firstname = fName;
-        // Portal labels its custom deal field "First name" with internal
-        // name `client_name`; mirror so the OPS+ Details card pre-fills.
-        dealProps.client_name = fName;
-      }
-      if (lName) {
-        dealProps.lastname = lName;
-        dealProps.last_name = lName;
-      }
-      if (quote.from_address?.trim()) dealProps.pick_up_address = quote.from_address.trim();
-      if (quote.to_address?.trim()) dealProps.drop_off_address = quote.to_address.trim();
-      // Portal's internal name for "Access from" is `access` (NOT access_from);
-      // the old write went to a non-existent property and silently no-op'd.
-      if (quote.from_access?.trim())
-        dealProps.access = quote.from_access.trim().toLowerCase().replace(/\s+/g, "_");
-      if (quote.to_access?.trim())
-        dealProps.access_to = quote.to_access.trim().toLowerCase().replace(/\s+/g, "_");
-      if (quote.service_type?.trim())
-        dealProps.service_type = quote.service_type.trim().toLowerCase();
-      if (quote.move_size?.trim()) dealProps.move_size = quote.move_size.trim().toLowerCase();
-      if (quote.move_date?.trim()) dealProps.move_date = quote.move_date.trim();
 
       fetch(`https://api.hubapi.com/crm/v3/objects/deals/${effectiveDealId}`, {
         method: "PATCH",

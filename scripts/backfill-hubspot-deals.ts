@@ -10,6 +10,7 @@ import { config as dotenvConfig } from "dotenv"
 import path from "node:path"
 import { createClient } from "@supabase/supabase-js"
 import { buildAllDealProperties } from "../src/lib/hubspot/deal-properties-builder"
+import { buildHubSpotDealName } from "../src/lib/hubspot/deal-name"
 
 // .env.local is what `next dev` reads — keep parity with the running app.
 dotenvConfig({ path: path.resolve(process.cwd(), ".env.local") })
@@ -71,31 +72,43 @@ async function main() {
     const parts = fullName.split(/\s+/)
     const firstName = parts.shift() ?? ""
     const lastName = parts.join(" ")
-    const props = buildAllDealProperties({
-      jobId: q.quote_id,
+    const factors = q.factors_applied as
+      | { b2b_business_name?: string; business_name?: string }
+      | null
+    const businessName = (factors?.b2b_business_name ?? factors?.business_name) || null
+    const dealName = buildHubSpotDealName({
+      serviceType: q.service_type as string | null | undefined,
+      isPmMove: false,
       firstName,
       lastName,
-      fromAddress: q.from_address,
-      toAddress: q.to_address,
-      fromAccess: q.from_access,
-      toAccess: q.to_access,
-      serviceType: q.service_type,
-      moveDate: q.move_date,
-      moveSize: q.move_size,
-      subtotal: price,
-      tierSelected: q.recommended_tier,
-      crewSize: q.est_crew_size,
-      estimatedHours: q.est_hours,
-      truckType: q.truck_primary,
-      isPmMove: false,
-      // Business name lives in factors_applied JSONB on quotes (no top-level column).
-      businessName:
-        ((q.factors_applied as { b2b_business_name?: string; business_name?: string } | null)
-          ?.b2b_business_name ??
-          (q.factors_applied as { b2b_business_name?: string; business_name?: string } | null)
-            ?.business_name) ||
-        null,
+      businessName: businessName ?? undefined,
+      tierLabel: (q.recommended_tier as string | null | undefined) ?? undefined,
+      moveSize: (q.move_size as string | null | undefined) ?? undefined,
+      fromAddress: (q.from_address as string | null | undefined) ?? undefined,
+      fallbackCode: `Quote ${q.quote_id}`,
     })
+    const props: Record<string, string> = {
+      dealname: dealName,
+      ...buildAllDealProperties({
+        jobId: q.quote_id,
+        firstName,
+        lastName,
+        fromAddress: q.from_address,
+        toAddress: q.to_address,
+        fromAccess: q.from_access,
+        toAccess: q.to_access,
+        serviceType: q.service_type,
+        moveDate: q.move_date,
+        moveSize: q.move_size,
+        subtotal: price,
+        tierSelected: q.recommended_tier,
+        crewSize: q.est_crew_size,
+        estimatedHours: q.est_hours,
+        truckType: q.truck_primary,
+        isPmMove: false,
+        businessName,
+      }),
+    }
     qEntries.push(await patchDeal(q.hubspot_deal_id, q.quote_id, props))
   }
 

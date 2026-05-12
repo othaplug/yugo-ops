@@ -181,13 +181,23 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
   const jobNo = quoteNumericSuffixForHubSpot(quoteIdText, prefix);
   const price = essentialPrice(quote);
 
-  const tierLabel = String(quote.recommended_tier ?? "").trim().replace(/_/g, " ") || undefined;
+  // formatTier in buildHubSpotDealName handles the slug → label mapping
+  // ("essential" → "Essential", "signature" → "Signature"), so don't
+  // pre-mangle the value here.
+  const tierLabel = String(quote.recommended_tier ?? "").trim() || undefined;
+  // Business name lives in factors_applied JSONB on quotes — there's no
+  // top-level b2b_business_name column. Reading it raw returns undefined.
+  const factorsApplied =
+    (quote.factors_applied as { b2b_business_name?: string; business_name?: string } | null) ?? null;
+  const businessName =
+    String(factorsApplied?.b2b_business_name ?? factorsApplied?.business_name ?? "").trim() ||
+    undefined;
   const dealName = buildHubSpotDealName({
     serviceType: svcType || undefined,
     isPmMove: false,
     firstName,
     lastName,
-    businessName: String(quote.b2b_business_name ?? "").trim() || undefined,
+    businessName,
     tierLabel,
     moveSize: String(quote.move_size ?? "").trim() || undefined,
     fromAddress: String(quote.from_address ?? "").trim() || undefined,
@@ -235,7 +245,7 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
       estimatedHours: quote.est_hours as number | null | undefined,
       truckType: quote.truck_primary as string | null | undefined,
       isPmMove: false,
-      businessName: (quote.b2b_business_name as string | null | undefined) ?? null,
+      businessName: businessName ?? null,
     }),
   };
   if (price != null) properties.amount = String(price);

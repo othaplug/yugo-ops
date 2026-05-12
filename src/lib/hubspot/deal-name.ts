@@ -9,7 +9,7 @@
  * Result is capped at 200 characters (HubSpot limit).
  */
 
-import { SERVICE_TYPE_LABELS } from "@/lib/displayLabels"
+import { SERVICE_TYPE_LABELS, MOVE_SIZE_LABELS, TIER_LABELS } from "@/lib/displayLabels"
 
 /** Service type slugs that indicate a B2B (commercial) context. */
 const B2B_SERVICE_TYPE_SET = new Set([
@@ -60,15 +60,33 @@ function extractCity(address: string | null | undefined): string {
   return ""
 }
 
-/** Format a move-size slug for display. "2_bedroom" → "2 Bed", "studio" → "Studio". */
+/** Format a move-size slug for display in the HubSpot deal name.
+ *  Uses {@link MOVE_SIZE_LABELS} for canonical slugs so "1br" → "1 Bedroom",
+ *  "4br_plus" → "4+ Bedrooms", "office_large" → "Large Office". Falls back
+ *  to title-cased underscore-replacement for unknown slugs. The previous
+ *  implementation used /\b\w/g which left "1br" untouched (single word) —
+ *  hence the lowercase "1br" leaking into deal names. */
 function formatSize(size: string | null | undefined): string {
   const s = String(size || "").trim()
   if (!s) return ""
+  const key = s.toLowerCase()
+  if (MOVE_SIZE_LABELS[key]) return MOVE_SIZE_LABELS[key]
   return s
     .replace(/_/g, " ")
     .replace(/\b(\d+)\s*bed(room)?s?\b/i, "$1 Bed")
     .replace(/\bstudio\b/i, "Studio")
     .replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+/** Format a tier slug for display in the HubSpot deal name.
+ *  "essential" → "Essential", "curated" → "Essential", "signature" →
+ *  "Signature", "estate" → "Estate". Falls back to title-cased input. */
+function formatTier(tier: string | null | undefined): string {
+  const s = String(tier || "").trim()
+  if (!s) return ""
+  const key = s.toLowerCase()
+  if (TIER_LABELS[key]) return TIER_LABELS[key]
+  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 /** Build a structured HubSpot deal name. */
@@ -107,7 +125,7 @@ export function buildHubSpotDealName(opts: {
 
   // residential
   const person = joinName(opts.firstName, opts.lastName)
-  const tier = String(opts.tierLabel || "").trim()
+  const tier = formatTier(opts.tierLabel)
   const size = formatSize(opts.moveSize)
   return assembleParts([person, tier || label, size, city], opts.fallbackCode ?? "Residential Deal")
 }
