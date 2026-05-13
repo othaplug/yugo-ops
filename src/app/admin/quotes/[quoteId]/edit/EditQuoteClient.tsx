@@ -1345,6 +1345,9 @@ export default function EditQuoteClient({
               <option value="elevator">Elevator</option>
               <option value="ground_floor">Ground Floor</option>
               <option value="loading_dock">Loading Dock</option>
+              <option value="basement">Basement</option>
+              <option value="basement_stairs">Basement (Stairs)</option>
+              <option value="basement_walkout">Basement (Walk-out)</option>
               <option value="walk_up_2nd">Walk-Up (2nd floor)</option>
               <option value="walk_up_3rd">Walk-Up (3rd floor)</option>
               <option value="walk_up_4th_plus">Walk-Up (4th+ floor)</option>
@@ -1364,6 +1367,9 @@ export default function EditQuoteClient({
               <option value="elevator">Elevator</option>
               <option value="ground_floor">Ground Floor</option>
               <option value="loading_dock">Loading Dock</option>
+              <option value="basement">Basement</option>
+              <option value="basement_stairs">Basement (Stairs)</option>
+              <option value="basement_walkout">Basement (Walk-out)</option>
               <option value="walk_up_2nd">Walk-Up (2nd floor)</option>
               <option value="walk_up_3rd">Walk-Up (3rd floor)</option>
               <option value="walk_up_4th_plus">Walk-Up (4th+ floor)</option>

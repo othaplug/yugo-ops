@@ -1815,6 +1815,7 @@ export default function CrewJobPage({
                   : getCrewCheckpointDisplayLabel(
                       nextStatus!,
                       useLogisticsCopy,
+                      job?.serviceType,
                     )}
               </button>
             ) : null)}
@@ -1880,6 +1881,7 @@ export default function CrewJobPage({
                   const stepLabel = getCrewCheckpointDisplayLabel(
                     s,
                     useLogisticsCopy,
+                    job?.serviceType,
                   );
 
                   return (
@@ -2242,7 +2244,13 @@ export default function CrewJobPage({
         <WalkthroughModal
           jobId={id}
           jobType={jobType}
-          copyVariant={useLogisticsCopy ? "logistics" : "residential_move"}
+          copyVariant={
+            (job?.serviceType || "").toLowerCase() === "white_glove"
+              ? "white_glove"
+              : useLogisticsCopy
+                ? "logistics"
+                : "residential_move"
+          }
           b2bExtraItemHints={
             job.jobType === "delivery" && Boolean(job.partnerVertical)
           }

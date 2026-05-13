@@ -98,7 +98,7 @@ interface WalkthroughModalProps {
   /** Moves use move walkthrough API; deliveries use /api/crew/delivery/[id]/walkthrough */
   jobType?: "move" | "delivery";
   /** Residential move vs delivery / B2B logistics wording */
-  copyVariant?: "residential_move" | "logistics";
+  copyVariant?: "residential_move" | "logistics" | "white_glove";
   /** Partner-linked delivery — show B2B-oriented quick-add labels. */
   b2bExtraItemHints?: boolean;
   inventory: InventoryRoom[];
@@ -164,12 +164,15 @@ export default function WalkthroughModal({
   onClose,
 }: WalkthroughModalProps) {
   const logistics = copyVariant === "logistics";
+  const whiteGlove = copyVariant === "white_glove";
   const skipReasons = logistics
     ? LOGISTICS_SKIP_REASONS
     : RESIDENTIAL_SKIP_REASONS;
-  const modalTitle = logistics
-    ? "Job list verification"
-    : "Inventory walkthrough";
+  const modalTitle = whiteGlove
+    ? "Item inspection"
+    : logistics
+      ? "Job list verification"
+      : "Inventory walkthrough";
   const [step, setStep] = useState<
     "intro" | "checklist" | "extras" | "summary" | "skip"
   >("intro");
@@ -546,9 +549,11 @@ export default function WalkthroughModal({
             </h3>
             <p className="text-[11px] text-[var(--yu3-ink-muted)] mt-1.5 leading-snug [font-family:var(--font-body)]">
               {step === "intro" &&
-                (logistics
-                  ? "Verify the manifest with the site contact or receiver."
-                  : "Walk through with the client and verify the inventory.")}
+                (whiteGlove
+                  ? "Inspect and document the condition of each item before loading."
+                  : logistics
+                    ? "Verify the manifest with the site contact or receiver."
+                    : "Walk through with the client and verify the inventory.")}
               {step === "checklist" && `${items.length} items to verify`}
               {step === "extras" && "Add any extra items found"}
               {step === "summary" && "Review changes before submitting"}
@@ -585,12 +590,20 @@ export default function WalkthroughModal({
               </div>
               <div className="px-1">
                 <h4 className="font-hero text-[24px] sm:text-[26px] font-semibold text-[var(--yu3-ink-strong)] mb-2 tracking-[-0.02em] leading-tight">
-                  {logistics
-                    ? "Step 1: Verify the job list"
-                    : "Step 1: Inventory walkthrough"}
+                  {whiteGlove
+                    ? "Step 1: Item inspection"
+                    : logistics
+                      ? "Step 1: Verify the job list"
+                      : "Step 1: Inventory walkthrough"}
                 </h4>
                 <p className="text-[13px] sm:text-[14px] text-[var(--yu3-ink-muted)] leading-relaxed [font-family:var(--font-body)]">
-                  {logistics ? (
+                  {whiteGlove ? (
+                    <>
+                      Document the condition of each piece before it goes on
+                      the truck. Photograph any pre-existing damage so the
+                      vendor — not Yugo — owns it.
+                    </>
+                  ) : logistics ? (
                     <>
                       With the site contact or receiver, confirm the job list
                       matches what&apos;s on site. Flag missing lines and add
@@ -605,9 +618,11 @@ export default function WalkthroughModal({
                   )}
                 </p>
                 <p className="text-[12px] sm:text-[13px] font-semibold text-[var(--yu3-wine)]/85 mt-3 leading-snug [font-family:var(--font-body)]">
-                  {logistics
-                    ? "The line-by-line checklist opens on the next screen. Tap Start inventory check."
-                    : "The room-by-room checklist opens on the next screen. Tap Start inventory check."}
+                  {whiteGlove
+                    ? "The item-by-item checklist opens on the next screen. Tap Start inventory check."
+                    : logistics
+                      ? "The line-by-line checklist opens on the next screen. Tap Start inventory check."
+                      : "The room-by-room checklist opens on the next screen. Tap Start inventory check."}
                 </p>
               </div>
               <div className="rounded-xl border border-[var(--yu3-wine)]/12 bg-gradient-to-br from-[#FFFBF7] via-[var(--yu3-wine-tint)]/30 to-[var(--yu3-wine-tint)]/50 px-4 py-3.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]">

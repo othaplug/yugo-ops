@@ -481,6 +481,9 @@ export default function EditDeliveryModal({
                   Ground Floor / Loading Dock
                 </option>
                 <option value="loading_dock">Loading Dock</option>
+                <option value="basement">Basement</option>
+                <option value="basement_stairs">Basement (Stairs)</option>
+                <option value="basement_walkout">Basement (Walk-out)</option>
                 <option value="walk_up_2nd">Walk-up (2nd floor)</option>
                 <option value="walk_up_3rd">Walk-up (3rd floor)</option>
                 <option value="walk_up_4th_plus">Walk-up (4th+ floor)</option>

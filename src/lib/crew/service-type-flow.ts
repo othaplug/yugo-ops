@@ -65,18 +65,42 @@ export const EVENT_MOVE_FLOW: TrackingStatus[] = [
   "completed",
 ];
 
+// White-glove is a vendor pickup + placement delivery, not a residential move.
+// No "wrapping" or "unwrapping_placement" stages — items arrive packaged from
+// the vendor, the crew inspects each piece before loading, places to spec at
+// the destination, and removes packaging on the way out.
+//
+// Stages map to existing TrackingStatus keys (DB-stable). Display copy is
+// overridden per service type via WHITE_GLOVE_STAGE_LABELS below so the crew
+// app shows "Item inspection" / "Placement to spec" / "Packaging removal"
+// instead of the residential defaults.
 const WHITE_GLOVE_FLOW: TrackingStatus[] = [
   "en_route_to_pickup",
   "arrived_at_pickup",
-  "wrapping",
+  "inventory_check",         // → "Item inspection" (per-piece condition check)
   "loading",
   "en_route_to_destination",
   "arrived_at_destination",
-  "unloading",
-  "unwrapping_placement",
-  "walkthrough_photos",
+  "unloading",               // → "Placement to spec"
+  "walkthrough_photos",      // → "Final inspection"
   "completed",
 ];
+
+/**
+ * Crew-facing labels override for white-glove jobs. Underlying status keys
+ * stay the same so existing DB/tracking pipelines are untouched.
+ */
+export const WHITE_GLOVE_STAGE_LABELS: Partial<Record<TrackingStatus, string>> = {
+  en_route_to_pickup: "En route to vendor",
+  arrived_at_pickup: "At vendor",
+  inventory_check: "Item inspection",
+  loading: "Loading",
+  en_route_to_destination: "In transit",
+  arrived_at_destination: "At destination",
+  unloading: "Placement to spec",
+  walkthrough_photos: "Final inspection",
+  completed: "Client sign-off",
+};
 
 const BIN_RENTAL_FLOW: TrackingStatus[] = [
   "en_route",

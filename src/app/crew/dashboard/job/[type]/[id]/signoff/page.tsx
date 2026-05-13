@@ -339,7 +339,10 @@ export default function ClientSignOffPage({
   const [inventoryItems, setInventoryItems] = useState<string[]>([]);
 
   // Phase 1
-  const [photosReviewedByClient, setPhotosReviewedByClient] = useState(false);
+  // Photos are reviewed inline in the Final walkthrough uploader (gallery + toggle
+  // were removed as duplicates). Default to true so the existing API contract that
+  // expects this flag stays satisfied.
+  const photosReviewedByClient = true;
   const [inventoryReviewedByClient, setInventoryReviewedByClient] =
     useState(false);
   const [allItemsReceived, setAllItemsReceived] = useState(true);
@@ -809,8 +812,9 @@ export default function ClientSignOffPage({
   const phase1Valid =
     itemConditionsValid && (itemConditions.length === 0 || true);
 
+  // Photos are documented inline in the Final walkthrough uploader; no separate
+  // "I have reviewed" gate is needed (the toggle/gallery was removed as a duplicate).
   const phase2Valid =
-    (jobPhotos.length === 0 || photosReviewedByClient) &&
     inventoryReviewedByClient &&
     walkthroughConductedByClient &&
     ((allItemsReceived && conditionAccepted) ||
@@ -1160,45 +1164,9 @@ export default function ClientSignOffPage({
               </div>
             </div>
 
-            {/* Photo gallery */}
-            {!photosLoading && jobPhotos.length > 0 && (
-              <div className="mb-5">
-                <p
-                  className="text-[10px] font-bold uppercase tracking-widest mb-2.5"
-                  style={{ color: MUTED }}
-                >
-                  Crew Photos ({jobPhotos.length})
-                </p>
-                <div className="grid grid-cols-3 gap-1.5 mb-3">
-                  {jobPhotos.slice(0, 9).map((p) => (
-                    <div
-                      key={p.id}
-                      className="aspect-square overflow-hidden border border-[var(--yu3-wine)]/12"
-                      style={{ background: NOTE_FILL }}
-                    >
-                      <img
-                        src={p.url}
-                        alt={p.category}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ))}
-                  {jobPhotos.length > 9 && (
-                    <div
-                      className="aspect-square flex items-center justify-center text-[12px] font-semibold border border-[var(--yu3-wine)]/12"
-                      style={{ background: NOTE_FILL, color: MUTED }}
-                    >
-                      +{jobPhotos.length - 9}
-                    </div>
-                  )}
-                </div>
-                <ToggleCard
-                  checked={photosReviewedByClient}
-                  onChange={setPhotosReviewedByClient}
-                  label="I have reviewed the crew photos above"
-                />
-              </div>
-            )}
+            {/* Removed: duplicate "Crew Photos" gallery.
+                Photos now live in a single place — the "Final walkthrough" uploader above.
+                The act of uploading IS the documentation; no separate review gate. */}
 
             <div className="space-y-2.5 mb-6">
               <ToggleCard

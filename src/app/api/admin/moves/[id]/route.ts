@@ -5,6 +5,9 @@ import { requireAdmin } from "@/lib/api-auth";
 import { squareClient } from "@/lib/square";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { logAudit } from "@/lib/audit";
+import { sendEmail } from "@/lib/email/send";
+import { signTrackToken } from "@/lib/track-token";
+import { getMoveCode, formatJobId } from "@/lib/move-code";
 import {
   depositPreTaxFromMove,
   finalizeBalancePaymentSettlement,
@@ -315,6 +318,89 @@ export async function PATCH(
         const msg = e instanceof Error ? e.message : "Payment processing failed";
         return NextResponse.json({ error: msg }, { status: 500 });
       }
+    }
+
+    // ── action: send_payment_link ───────────────────────────────────────
+    // Admin-initiated balance collection when the move has NO square_card_id.
+    // Emails the client a tokenized link to /track/move/[id] where the existing
+    // POST /api/track/moves/[id]/payment-link endpoint generates a Square
+    // checkout URL. The client clicks "Pay balance" on that page and pays via
+    // Square. No card-on-file required.
+    if (action === "send_payment_link") {
+      const admin = createAdminClient();
+      const { data: move, error: fetchErr } = await admin
+        .from("moves")
+        .select("id, client_email, client_name, move_code, balance_amount, balance_auto_charged, balance_paid_at, estimate")
+        .eq("id", id)
+        .single();
+
+      if (fetchErr || !move) {
+        return NextResponse.json({ error: "Move not found" }, { status: 404 });
+      }
+      const clientEmail = (move.client_email as string | null)?.trim();
+      if (!clientEmail) {
+        return NextResponse.json({ error: "Move has no client_email on file" }, { status: 400 });
+      }
+
+      const balanceAmount = Number(move.balance_amount || 0);
+      if (balanceAmount <= 0) {
+        return NextResponse.json({ error: "No balance to collect" }, { status: 400 });
+      }
+
+      const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
+      if (!baseUrl) {
+        return NextResponse.json(
+          { error: "NEXT_PUBLIC_APP_URL not configured" },
+          { status: 503 },
+        );
+      }
+      const token = signTrackToken("move", id);
+      const moveCode = getMoveCode(move) || formatJobId(id, "move");
+      const trackUrl = `${baseUrl}/track/move/${id}?token=${encodeURIComponent(token)}&pay=1`;
+
+      const clientFirst = ((move.client_name as string | null) || "").split(" ")[0] || "there";
+      const balanceStr = balanceAmount.toLocaleString("en-CA", {
+        style: "currency",
+        currency: "CAD",
+      });
+
+      const html = `
+        <p>Hi ${clientFirst},</p>
+        <p>Your remaining balance for move <strong>${moveCode}</strong> is <strong>${balanceStr}</strong>.</p>
+        <p>You can pay securely with a card via Square here:</p>
+        <p><a href="${trackUrl}" style="background:#66143D;color:#F9EDE4;padding:12px 18px;border-radius:8px;text-decoration:none;display:inline-block;">Pay ${balanceStr}</a></p>
+        <p style="font-size:12px;color:#777;">If the button doesn't work, paste this link into your browser:<br>${trackUrl}</p>
+        <p>Thanks,<br>Yugo</p>
+      `;
+
+      try {
+        await sendEmail({
+          to: clientEmail,
+          subject: `Balance payment for ${moveCode} — ${balanceStr}`,
+          html,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Failed to send email";
+        return NextResponse.json({ error: msg }, { status: 500 });
+      }
+
+      await admin.from("status_events").insert({
+        entity_type: "move",
+        entity_id: id,
+        event_type: "payment_link_sent",
+        description: `Payment link emailed to ${clientEmail} for balance ${balanceStr}`,
+        icon: "dollar",
+      });
+      await logAudit({
+        userId: authUser?.id,
+        userEmail: authUser?.email,
+        action: "edit_move",
+        resourceType: "move",
+        resourceId: id,
+        details: { kind: "payment_link_sent", email: clientEmail, amount_cad: balanceAmount },
+      });
+
+      return NextResponse.json({ ok: true, email: clientEmail, amount: balanceAmount });
     }
 
     if (action === "update_status") {

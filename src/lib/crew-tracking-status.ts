@@ -165,10 +165,35 @@ const LOGISTICS_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
   unloading_return: "Unloading at Origin",
 };
 
+/**
+ * White-glove crew copy. Items are pre-packaged by the vendor; the crew
+ * inspects, transports, places to spec, and removes packaging — never wraps.
+ * Underlying status keys stay residential so DB/tracking pipelines are
+ * unaffected; only the surface label changes.
+ */
+const WHITE_GLOVE_CHECKPOINT_LABELS: Partial<Record<TrackingStatus, string>> = {
+  en_route_to_pickup: "En Route to Vendor",
+  arrived_at_pickup: "At Vendor",
+  inventory_check: "Item Inspection",
+  loading: "Loading",
+  en_route_to_destination: "In Transit",
+  arrived_at_destination: "At Destination",
+  unloading: "Placement to Spec",
+  walkthrough_photos: "Final Inspection",
+  completed: "Client Sign-off",
+};
+
 export function getCrewCheckpointDisplayLabel(
   status: string,
   useLogisticsCopy: boolean,
+  serviceType?: string | null,
 ): string {
+  // White-glove overrides take precedence — even when the logistics-copy flag
+  // is on (B2B-style display), white-glove jobs need item-inspection language.
+  if ((serviceType || "").toLowerCase() === "white_glove") {
+    const wg = WHITE_GLOVE_CHECKPOINT_LABELS[status as TrackingStatus];
+    if (wg) return wg;
+  }
   if (useLogisticsCopy) {
     const mapped = LOGISTICS_CHECKPOINT_LABELS[status as TrackingStatus];
     if (mapped) return mapped;

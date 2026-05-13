@@ -39,9 +39,12 @@ export default function CrewJobTimer({
   const target = Math.max(1, estimatedMinutes)
   const percentUsed = Math.min(100, Math.round((elapsedMin / target) * 100))
 
-  const showMarginBanner = operationalAlerts
-    ? operationalAlerts.marginBelowHalf
-    : elapsedMin > marginAlertMinutes
+  // Crew app shows time-based alerts only. Margin/profit signals are admin-only
+  // intelligence and must NEVER render in the crew bundle. `marginBelowHalf` is
+  // intentionally ignored here.
+  const showMarginBanner = false
+  void operationalAlerts?.marginBelowHalf
+  void marginAlertMinutes
 
   const showTimeBanner = operationalAlerts
     ? operationalAlerts.projectedFinishAfterAllocated
@@ -49,17 +52,13 @@ export default function CrewJobTimer({
 
   const remainMin = Math.max(0, Math.round(target - elapsedMin))
 
-  const barFill = showMarginBanner
-    ? "bg-red-500"
-    : showTimeBanner
-      ? "bg-amber-500"
-      : "bg-[var(--yu3-wine)]"
+  const barFill = showTimeBanner
+    ? "bg-amber-500"
+    : "bg-[var(--yu3-wine)]"
 
-  const shellClass = showMarginBanner
-    ? "border-red-500/25 bg-[var(--yu3-bg-surface)]"
-    : showTimeBanner
-      ? "border-amber-500/30 bg-[var(--yu3-bg-surface)]"
-      : "border-[var(--yu3-wine)]/10 bg-[var(--yu3-bg-surface)]"
+  const shellClass = showTimeBanner
+    ? "border-amber-500/30 bg-[var(--yu3-bg-surface)]"
+    : "border-[var(--yu3-wine)]/10 bg-[var(--yu3-bg-surface)]"
 
   const startFinish = useMemo(() => {
     const raw = startedAtIso?.trim()
@@ -91,28 +90,15 @@ export default function CrewJobTimer({
       className={`mb-4 overflow-hidden rounded-[20px] border border-[var(--yu3-line-subtle)] shadow-[var(--yu3-shadow-md)] [color-scheme:light] ${shellClass}`}
       aria-label="Job time tracker"
     >
-      {(showMarginBanner || showTimeBanner) && (
-        <div
-          className={`space-y-1 px-4 py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.12em] [font-family:var(--font-body)] ${
-            showMarginBanner
-              ? "bg-red-500/10 text-red-800"
-              : "bg-amber-500/12 text-amber-950"
-          }`}
-        >
-          {showMarginBanner && (
-            <p className="leading-snug">
-              Projected profit margin below half of plan. Notify dispatch.
-            </p>
-          )}
-          {showTimeBanner && (
-            <p className="leading-snug">
-              Projected finish beyond allocated time
-              {operationalAlerts?.projectedTotalMinutes != null
-                ? ` (~${formatMinutesAsHhMm(Math.round(operationalAlerts.projectedTotalMinutes))} total)`
-                : ""}
-              .
-            </p>
-          )}
+      {showTimeBanner && (
+        <div className="space-y-1 px-4 py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.12em] [font-family:var(--font-body)] bg-amber-500/12 text-amber-950">
+          <p className="leading-snug">
+            Projected finish beyond allocated time
+            {operationalAlerts?.projectedTotalMinutes != null
+              ? ` (~${formatMinutesAsHhMm(Math.round(operationalAlerts.projectedTotalMinutes))} total)`
+              : ""}
+            . Notify your coordinator if you need more time.
+          </p>
         </div>
       )}
 
@@ -151,11 +137,9 @@ export default function CrewJobTimer({
       <div className="flex items-baseline justify-center gap-1.5 px-5 pb-3 pt-2">
         <span
           className={`text-[32px] font-semibold leading-none tracking-[-0.03em] tabular-nums [font-family:var(--font-body)] sm:text-[36px] ${
-            showMarginBanner
-              ? "text-red-600"
-              : showTimeBanner
-                ? "text-amber-600"
-                : "text-[var(--yu3-wine)]"
+            showTimeBanner
+              ? "text-amber-600"
+              : "text-[var(--yu3-wine)]"
           }`}
         >
           {primaryHhMm}
@@ -168,11 +152,7 @@ export default function CrewJobTimer({
       <div className="mx-5 h-px bg-[var(--yu3-line-subtle)]" aria-hidden />
 
       <p className="px-5 py-2.5 text-center text-[11px] font-medium leading-relaxed text-[var(--yu3-ink)] [font-family:var(--font-body)]">
-        {showMarginBanner ? (
-          <span className="text-red-700/95">
-            Internal model projects less than half of planned margin dollars at this pace.
-          </span>
-        ) : showTimeBanner ? (
+        {showTimeBanner ? (
           <span className="text-amber-900/95">
             Job is tracking past the allocated window. Finish critical path first.
           </span>

@@ -2516,7 +2516,7 @@ export default function MoveDetailClient({
                 )}
                 {balanceDue > 0 && !move.balance_auto_charged && (
                   <>
-                    {move.square_card_id && (
+                    {move.square_card_id ? (
                       <button
                         type="button"
                         disabled={paymentBtnLoading !== null}
@@ -2562,7 +2562,57 @@ export default function MoveDetailClient({
                       >
                         {paymentBtnLoading === "card"
                           ? "Charging…"
-                          : "Charge Card Now"}
+                          : `Charge ${formatCurrency(balanceDue)} balance`}
+                      </button>
+                    ) : (
+                      // No card on file — email the client a Square payment link.
+                      <button
+                        type="button"
+                        disabled={paymentBtnLoading !== null || !move.client_email}
+                        title={!move.client_email ? "No client email on file" : undefined}
+                        onClick={async () => {
+                          if (
+                            !window.confirm(
+                              `Email ${move.client_email} a payment link for ${formatCurrency(balanceDue)} CAD?`,
+                            )
+                          )
+                            return;
+                          setPaymentBtnLoading("card");
+                          try {
+                            const res = await fetch(
+                              `/api/admin/moves/${move.id}`,
+                              {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  action: "send_payment_link",
+                                  marked_by: "admin",
+                                }),
+                              },
+                            );
+                            const data = await res.json();
+                            if (!res.ok)
+                              throw new Error(data.error || "Failed");
+                            toast(
+                              `Payment link sent to ${data.email}`,
+                              "check",
+                            );
+                          } catch (err) {
+                            toast(
+                              err instanceof Error
+                                ? err.message
+                                : "Failed to send payment link",
+                              "alertTriangle",
+                            );
+                          } finally {
+                            setPaymentBtnLoading(null);
+                          }
+                        }}
+                        className="text-[10px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--yu3-wine)]/10 text-[var(--yu3-wine)] border border-[var(--yu3-wine)]/25 hover:bg-[var(--yu3-wine)]/18 transition-colors disabled:opacity-40"
+                      >
+                        {paymentBtnLoading === "card"
+                          ? "Sending…"
+                          : "Send payment link →"}
                       </button>
                     )}
                   </>

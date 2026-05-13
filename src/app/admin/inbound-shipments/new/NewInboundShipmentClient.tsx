@@ -622,6 +622,9 @@ export default function NewInboundShipmentClient({
                 <option value="elevator">Elevator</option>
                 <option value="stairs">Stairs</option>
                 <option value="loading_dock">Loading dock</option>
+                <option value="basement">Basement</option>
+                <option value="basement_stairs">Basement (Stairs)</option>
+                <option value="basement_walkout">Basement (Walk-out)</option>
                 <option value="no_parking">No parking nearby</option>
               </select>
               <textarea
