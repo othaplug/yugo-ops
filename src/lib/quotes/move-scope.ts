@@ -38,24 +38,29 @@ export function detectDayCount(input: MoveScopeDetectionInput): number {
   const ms = normSize(input.move_size)
   const tier = String(input.tier || "signature").toLowerCase()
 
-  const slugStr = input.addon_slugs.map((s) => s.toLowerCase()).join("|")
-
-  const hasFullPackingAddon =
-    slugStr.includes("full_packing") ||
-    slugStr.includes("full-packing") ||
-    (slugStr.includes("full") && slugStr.includes("pack") && !slugStr.includes("unpack"))
-
-  const hasUnpackAddon =
-    slugStr.includes("unpacking") ||
-    slugStr.includes("unpack") ||
-    slugStr.includes("unpack_setup")
+  // ─────────────────────────────────────────────────────────────────────────
+  // Day-rate billing (Mode B) — STRUCTURAL triggers only.
+  //
+  // Packing/unpacking ADD-ONS (full_packing, unpacking slugs) are Mode A:
+  // they bill a flat fee via the addons table (`calculateAddons`) and the
+  // crew packs/unpacks within the single move day on standard 1BR/2BR moves.
+  // They MUST NOT also trigger a separate $650 day rate here or the quote
+  // double-charges the client (see YG-30238).
+  //
+  // Structural multi-day triggers:
+  //   - Estate tier with large home (3BR+)
+  //   - 4BR / 5BR_plus (inherently multi-day regardless of tier)
+  //   - Specialty crating
+  //   - 5BR_plus extra volume day
+  // ─────────────────────────────────────────────────────────────────────────
+  const isLargeHome = ms === "3br" || ms === "4br" || ms === "5br_plus"
 
   const hasPacking =
-    tier === "estate" || hasFullPackingAddon || ms === "4br" || ms === "5br_plus"
+    (tier === "estate" && isLargeHome) || ms === "4br" || ms === "5br_plus"
 
   if (hasPacking) days += 1
 
-  const hasUnpacking = tier === "estate" || hasUnpackAddon
+  const hasUnpacking = tier === "estate" && isLargeHome
 
   if (hasUnpacking) days += 1
 
@@ -90,21 +95,9 @@ export function describeMoveScopeAutoReason(input: MoveScopeDetectionInput): str
   const ms = normSize(input.move_size)
   parts.push(formatMoveSizeForReason(ms))
 
-  const slugStr = input.addon_slugs.map((s) => s.toLowerCase()).join("|")
-  if (
-    slugStr.includes("full_packing") ||
-    slugStr.includes("full-packing") ||
-    (slugStr.includes("full") && slugStr.includes("pack") && !slugStr.includes("unpack"))
-  ) {
-    parts.push("full packing")
-  }
-  if (
-    slugStr.includes("unpacking") ||
-    slugStr.includes("unpack_setup") ||
-    (slugStr.includes("unpack") && !slugStr.includes("junk"))
-  ) {
-    parts.push("unpacking")
-  }
+  // Packing/unpacking add-on slugs are intentionally NOT listed here as
+  // day-driving factors. They are flat-fee add-ons (Mode A) and do not
+  // expand the schedule into additional billed days. See detectDayCount.
   const hasSpecialtyCrating =
     input.specialty_items?.some((it) => CRATING_SPECIALTY_TYPES.has(it.type)) ?? false
   if (hasSpecialtyCrating && input.crating_required) parts.push("specialty crating")
@@ -144,22 +137,22 @@ export function computeMoveScopeAddonPreTax(
 ): MoveScopePricingResult {
   const ms = normSize(input.move_size)
   const tier = String(input.tier || "signature").toLowerCase()
-  const slugStr = input.addon_slugs.map((s) => s.toLowerCase()).join("|")
 
-  const hasFullPackingAddon =
-    slugStr.includes("full_packing") ||
-    slugStr.includes("full-packing") ||
-    (slugStr.includes("full") && slugStr.includes("pack") && !slugStr.includes("unpack"))
-
-  const hasUnpackAddon =
-    slugStr.includes("unpacking") ||
-    slugStr.includes("unpack_setup") ||
-    (slugStr.includes("unpack") && !slugStr.includes("junk"))
+  // ─────────────────────────────────────────────────────────────────────────
+  // Day-rate billing (Mode B) — STRUCTURAL triggers only.
+  //
+  // Packing/unpacking ADD-ON slugs are deliberately NOT consulted here.
+  // They bill a flat fee via the addons table (`calculateAddons`) and the
+  // crew packs/unpacks within the single move day on standard moves. Adding
+  // a $650 day rate here on top of the add-on fee would double-charge the
+  // client (the YG-30238 bug). See detectDayCount for the same rule.
+  // ─────────────────────────────────────────────────────────────────────────
+  const isLargeHome = ms === "3br" || ms === "4br" || ms === "5br_plus"
 
   const hasPacking =
-    tier === "estate" || hasFullPackingAddon || ms === "4br" || ms === "5br_plus"
+    (tier === "estate" && isLargeHome) || ms === "4br" || ms === "5br_plus"
 
-  const hasUnpacking = tier === "estate" || hasUnpackAddon
+  const hasUnpacking = tier === "estate" && isLargeHome
 
   const hasSpecialtyCrating =
     input.specialty_items?.some((it) => CRATING_SPECIALTY_TYPES.has(it.type)) ?? false
@@ -222,10 +215,7 @@ export function computeMoveScopeAddonPreTax(
     breakdownJson.push({ day: dayCursor++, type: "crating", rate: moveDayRate })
     summary.push("Crating")
   }
-  if (hasUnpacking) {
-    breakdownJson.push({ day: dayCursor++, type: "unpack", rate: packDayRate })
-    summary.push("Unpacking")
-  }
+  // Extra volume/loading days come before the move day for very large homes
   if (ms === "5br_plus") {
     breakdownJson.push({ day: dayCursor++, type: "volume", rate: moveDayRate })
   }
@@ -236,8 +226,14 @@ export function computeMoveScopeAddonPreTax(
       rate: moveDayRate,
     })
   }
+  // Move day: always after packing/loading, always before unpacking.
+  // pack → crating → volume → move → unpack is the correct chronological order.
   breakdownJson.push({ day: dayCursor++, type: "move", rate: 0 })
   summary.push("Moving")
+  if (hasUnpacking) {
+    breakdownJson.push({ day: dayCursor++, type: "unpack", rate: packDayRate })
+    summary.push("Unpacking")
+  }
 
   const plannedDaysBeforePad = breakdownJson.length
   const ov = input.estimated_days_override

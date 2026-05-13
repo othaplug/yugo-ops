@@ -49,25 +49,18 @@ function buildRows(args: {
   moveDayRate: number
   optionalExtraVolume: boolean
 }): RowVm[] {
-  const slugStr = args.addonSlugs.map((s) => s.toLowerCase()).join("|")
   const ms = normMoveSizeKey(args.moveSize)
   const tier = args.tierNorm
 
-  const hasFullPackingAddon =
-    slugStr.includes("full_packing") ||
-    slugStr.includes("full-packing") ||
-    (slugStr.includes("full") &&
-      slugStr.includes("pack") &&
-      !slugStr.includes("unpack"))
-
-  const hasUnpackAddon =
-    slugStr.includes("unpacking") ||
-    slugStr.includes("unpack_setup") ||
-    (slugStr.includes("unpack") && !slugStr.includes("junk"))
-
+  // Day-rate billing fires on STRUCTURAL triggers only — never on the
+  // full_packing / unpacking add-on slugs (those bill via the addons table
+  // as flat fees; adding a $650 day rate on top would double-charge the
+  // client — see YG-30238). Keep this in sync with detectDayCount in
+  // src/lib/quotes/move-scope.ts.
+  const isLargeHome = ms === "3br" || ms === "4br" || ms === "5br_plus"
   const hasPacking =
-    tier === "estate" || hasFullPackingAddon || ms === "4br" || ms === "5br_plus"
-  const hasUnpacking = tier === "estate" || hasUnpackAddon
+    (tier === "estate" && isLargeHome) || ms === "4br" || ms === "5br_plus"
+  const hasUnpacking = tier === "estate" && isLargeHome
 
   const CRATING_TYPES = new Set([
     "piano_grand",
@@ -86,18 +79,17 @@ function buildRows(args: {
     key: "pack",
     checked: hasPacking,
     locked:
-      tier === "estate" ||
-      hasFullPackingAddon ||
+      (tier === "estate" && isLargeHome) ||
       ms === "4br" ||
       ms === "5br_plus",
     title: "Packing day",
-    dayNote: hasPacking ? "+1 day" : "Optional",
+    dayNote: hasPacking ? "+1 day" : "Add-on fee (single-day)",
     amountNote:
-      tier === "estate"
+      tier === "estate" && isLargeHome
         ? "Included with Estate tier (+ packing day)"
         : hasPacking
           ? `$${args.packDayRate.toLocaleString("en-CA")} (${args.packDayRate.toLocaleString("en-CA")} per packing day)`
-          : `$${args.packDayRate.toLocaleString("en-CA")} per day`,
+          : "Flat add-on fee — no separate day rate",
   })
 
   rows.push({
@@ -112,13 +104,15 @@ function buildRows(args: {
   rows.push({
     key: "unpack",
     checked: hasUnpacking,
-    locked: tier === "estate" || hasUnpackAddon,
+    locked: tier === "estate" && isLargeHome,
     title: "Unpacking / setup",
-    dayNote: hasUnpacking ? "+1 day" : "Optional add-on",
+    dayNote: hasUnpacking ? "+1 day" : "Add-on fee (single-day)",
     amountNote:
-      tier === "estate"
+      tier === "estate" && isLargeHome
         ? "Included with Estate tier (+ unpacking day)"
-        : `$${args.packDayRate.toLocaleString("en-CA")} per day`,
+        : hasUnpacking
+          ? `$${args.packDayRate.toLocaleString("en-CA")} per day`
+          : "Flat add-on fee — no separate day rate",
   })
 
   rows.push({

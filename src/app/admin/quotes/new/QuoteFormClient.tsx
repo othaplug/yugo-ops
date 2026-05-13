@@ -115,6 +115,7 @@ import {
   type SpecialtyDetected,
 } from "@/lib/leads/specialty-detect";
 import {
+  expectedScoreRangeForMoveSize,
   moveSizeInventoryMismatchMessage,
   moveSizeLabel,
   suggestMoveSizeFromInventory,
@@ -1505,6 +1506,8 @@ export default function QuoteFormClient({
 
   // Residential assembly auto-detection — null = use auto, true/false = coordinator override
   const [assemblyOverride, setAssemblyOverride] = useState<boolean | null>(null);
+  // Tracks coordinator's explicit confirmation when overriding a significant size mismatch.
+  const [sizeOverrideConfirmed, setSizeOverrideConfirmed] = useState(false);
 
   // Single item fields
   const [itemDescription, setItemDescription] = useState("");
@@ -2708,18 +2711,39 @@ export default function QuoteFormClient({
         if (str(L.to_access)) setToAccess(str(L.to_access));
         if (str(L.preferred_time)) setPreferredTime(str(L.preferred_time));
         const rt = str(L.recommended_tier).toLowerCase();
-        if (rt === "estate") setRecommendedTier("estate");
-        else if (rt === "signature") setRecommendedTier("signature");
+        if (rt === "estate") {
+          // Estate is only warranted for large homes (3BR+) or moves with specialty items.
+          // If the lead recommends estate for a 1BR/2BR without specialty items, downgrade
+          // to signature to prevent grossly over-scoped quotes like YG-30229.
+          const msKey = str(L.move_size).toLowerCase().trim().replace(/\s+/g, "_").replace(/bedroom/g, "br");
+          const isLargeHome = ["3br", "4br", "5br_plus"].includes(msKey);
+          const hasSpecialty =
+            Array.isArray(L.specialty_items_detected) && L.specialty_items_detected.length > 0;
+          if (isLargeHome || hasSpecialty) {
+            setRecommendedTier("estate");
+          } else {
+            setRecommendedTier("signature");
+          }
+        } else if (rt === "signature") setRecommendedTier("signature");
         else if (rt === "curated") setRecommendedTier("essential");
         const pbc =
           L.parsed_box_count != null ? Number(L.parsed_box_count) : NaN;
         if (!Number.isNaN(pbc) && pbc > 0) setClientBoxCount(String(pbc));
         const an = str(L.assembly_needed).toLowerCase().trim();
-        if (an === "both") setAssembly("Both");
-        else if (an === "yes" || an === "true") setAssembly("Both");
+        // Broaden assembly intake matching — "Both", "yes", "assembly", "disassembly",
+        // "reassembly" all confirm that the client wants assembly service.
+        const anIsYes =
+          an === "yes" ||
+          an === "true" ||
+          an === "both" ||
+          an.includes("both") ||
+          an.includes("assembly") ||
+          an.includes("disassembly") ||
+          an.includes("reassembly");
+        if (anIsYes) setAssembly("Both");
         // Residential assembly override mapping: client's intake answer beats auto-detection.
         //   "none" / "no" / "no thank you" / "not required" → assembly_override = false
-        //   "yes" / "true" / "both"                        → assembly_override = true
+        //   confirmed-yes patterns above                    → assembly_override = true
         //   anything else / empty                          → leave null (use auto-detection)
         if (
           an.includes("none") ||
@@ -2729,7 +2753,7 @@ export default function QuoteFormClient({
           an.includes("no thank")
         ) {
           setAssemblyOverride(false);
-        } else if (an === "yes" || an === "true" || an === "both") {
+        } else if (anIsYes) {
           setAssemblyOverride(true);
         }
 
@@ -4160,6 +4184,11 @@ export default function QuoteFormClient({
           // Coordinator override (null = use auto)
           base.assembly_override = assemblyOverride;
         }
+        // Size override confirmation — stored for audit when coordinator explicitly keeps
+        // a stated move size that conflicts significantly with the inventory score.
+        if (sizeOverrideConfirmed) {
+          base.size_override_confirmed = true;
+        }
         if (fromLat != null && Number.isFinite(fromLat)) base.from_lat = fromLat;
         if (fromLng != null && Number.isFinite(fromLng)) base.from_lng = fromLng;
         if (toLat != null && Number.isFinite(toLat)) base.to_lat = toLat;
@@ -4950,6 +4979,15 @@ export default function QuoteFormClient({
     if (!email) {
       toast("Client email is required to send", "alertTriangle");
       return;
+    }
+    // Guard: if Essential tier is above the market ceiling rate, require explicit confirmation
+    // before sending. Catches coordinator errors where a small move was priced too high.
+    const essentialVal = quoteResult?.labour_validation_by_tier?.["essential"];
+    if (essentialVal?.status === "above_ceiling") {
+      const confirmed = window.confirm(
+        `Essential tier is above the market ceiling rate (${essentialVal.effectiveRate?.toFixed(0) ?? "??"}/hr vs ceiling ${essentialVal.ceiling ?? "??"}/hr).\n\nAre you sure you want to send this quote?`,
+      );
+      if (!confirmed) return;
     }
     setSending(true);
     try {
@@ -6697,27 +6735,81 @@ export default function QuoteFormClient({
                               moveSizeSuggestion.suggested,
                             );
                             if (!msg) return null;
+                            const range = expectedScoreRangeForMoveSize(moveSize);
+                            // Significant mismatch: score is >30% below the typical minimum for the stated size.
+                            // This produces a hard two-button warning that requires an explicit coordinator decision.
+                            const isSignificantMismatch =
+                              !!range && inventoryScoreWithBoxes < range.min * 0.70;
+
+                            if (!isSignificantMismatch) {
+                              // Slight mismatch — soft informational warning
+                              return (
+                                <div className="mt-2 rounded-lg border border-amber-500/35 bg-amber-500/8 p-2.5 text-[10px] text-[var(--tx2)] space-y-2">
+                                  <p className="flex items-start gap-1.5">
+                                    <Warning
+                                      className="w-3.5 h-3.5 shrink-0 text-amber-500 mt-0.5"
+                                      aria-hidden
+                                    />
+                                    <span>{msg}</span>
+                                  </p>
+                                  <button
+                                    type="button"
+                                    className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                                    onClick={() => {
+                                      moveSizeUserTouchedRef.current = false;
+                                      setMoveSize(moveSizeSuggestion.suggested);
+                                      setSizeOverrideConfirmed(false);
+                                    }}
+                                  >
+                                    Use{" "}
+                                    {moveSizeLabel(moveSizeSuggestion.suggested)}{" "}
+                                    instead
+                                  </button>
+                                </div>
+                              );
+                            }
+
+                            // Significant mismatch — hard warning that requires explicit coordinator decision
                             return (
-                              <div className="mt-2 rounded-lg border border-amber-500/35 bg-amber-500/8 p-2.5 text-[10px] text-[var(--tx2)] space-y-2">
-                                <p className="flex items-start gap-1.5">
-                                  <Warning
-                                    className="w-3.5 h-3.5 shrink-0 text-amber-500 mt-0.5"
-                                    aria-hidden
-                                  />
-                                  <span>{msg}</span>
+                              <div className="mt-2 rounded-lg border border-amber-300 bg-amber-50 p-3 space-y-2">
+                                <p className="text-[11px] font-semibold text-amber-800 flex items-center gap-1.5">
+                                  <Warning className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                                  Size mismatch detected
                                 </p>
-                                <button
-                                  type="button"
-                                  className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
-                                  onClick={() => {
-                                    moveSizeUserTouchedRef.current = false;
-                                    setMoveSize(moveSizeSuggestion.suggested);
-                                  }}
-                                >
-                                  Use{" "}
-                                  {moveSizeLabel(moveSizeSuggestion.suggested)}{" "}
-                                  instead
-                                </button>
+                                <p className="text-[10px] text-amber-700 leading-snug">
+                                  Inventory scores{" "}
+                                  <strong>{inventoryScoreWithBoxes.toFixed(1)}</strong> — typical for{" "}
+                                  {moveSizeLabel(moveSizeSuggestion.suggested)}, not{" "}
+                                  {moveSizeLabel(moveSize)} (typical:{" "}
+                                  {range?.min}–{range?.max}). Using{" "}
+                                  {moveSizeLabel(moveSize)} pricing will significantly overprice this quote.
+                                </p>
+                                {!sizeOverrideConfirmed ? (
+                                  <div className="flex gap-2 pt-1">
+                                    <button
+                                      type="button"
+                                      className="flex-1 py-1.5 bg-amber-600 text-white rounded-lg text-[10px] font-semibold"
+                                      onClick={() => {
+                                        moveSizeUserTouchedRef.current = false;
+                                        setMoveSize(moveSizeSuggestion.suggested);
+                                        setSizeOverrideConfirmed(false);
+                                      }}
+                                    >
+                                      Use {moveSizeLabel(moveSizeSuggestion.suggested)} (recommended)
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="px-3 py-1.5 border border-amber-300 text-amber-700 rounded-lg text-[10px] font-medium"
+                                      onClick={() => setSizeOverrideConfirmed(true)}
+                                    >
+                                      Keep {moveSizeLabel(moveSize)} — I&apos;ve verified this
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <p className="text-[10px] text-amber-600 font-medium">
+                                    ✓ Override confirmed. Coordinator verified this is a {moveSizeLabel(moveSize)} move.
+                                  </p>
+                                )}
                               </div>
                             );
                           })()}
@@ -7387,6 +7479,19 @@ export default function QuoteFormClient({
                               normally require assembly. Confirm the client will handle disassembly
                               before move day. If the crew has to assist, this will affect the
                               price.
+                            </p>
+                          </div>
+                        )}
+                        {/* Intake override: client requested assembly but inventory shows none detected. */}
+                        {assemblyOverride === true && !assemblyDetection.required && (
+                          <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-2">
+                            <p className="text-[11px] font-semibold text-amber-800">
+                              Assembly requested — not detected in inventory
+                            </p>
+                            <p className="text-[10px] text-amber-700 mt-0.5 leading-snug">
+                              Client indicated assembly on their intake form, but no assembly items
+                              were found in the inventory list. Confirm with the client before
+                              sending — if no assembly is needed, reset to auto.
                             </p>
                           </div>
                         )}
