@@ -4132,6 +4132,11 @@ export default function QuoteFormClient({
     (opts?: { serviceAreaOverride?: boolean }) => {
       const clientName = [firstName, lastName].filter(Boolean).join(" ");
       const base: Record<string, unknown> = {
+        // When quoteId is already set (user clicked Regenerate after a prior Generate),
+        // pass it to the API so it updates the existing row in place instead of
+        // minting a new draft quote with a new YG-##### id. The /api/quotes/generate
+        // route reads `quote_id` and switches to update mode (see route.ts line 4558).
+        ...(quoteId ? { quote_id: quoteId } : {}),
         service_type: serviceType,
         from_address: fromAddress,
         to_address: toAddress,
@@ -4745,6 +4750,9 @@ export default function QuoteFormClient({
       wgDeliveryInstructions,
       isMultiScenario,
       scenarios,
+      quoteId,
+      assemblyOverride,
+      sizeOverrideConfirmed,
     ],
   );
 
