@@ -5,6 +5,7 @@ import { squareClient } from "@/lib/square";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment";
 import { rateLimit } from "@/lib/rate-limit";
+import { squareThrownErrorStructured } from "@/lib/square-payment-errors";
 
 /**
  * Charge the move's saved Square card for the current balance (e.g. post–inventory-change adjustment).
@@ -78,7 +79,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json({ success: true, payment_id: paymentId });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Payment processing failed";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    // Structured Square error so clients see "Your card was declined" /
+    // "This card has expired" / etc. instead of the raw SDK JSON body
+    // that used to leak through via `e.message`.
+    const structured = squareThrownErrorStructured(e);
+    console.error(
+      `[Square] track balance card-on-file failed: status=${structured.statusCode ?? "?"} ` +
+        `code=${structured.code ?? "—"} detail=${(structured.detail ?? "").slice(0, 200)}`,
+    );
+    return NextResponse.json({ error: structured.message }, { status: 500 });
   }
 }

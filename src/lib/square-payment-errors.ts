@@ -60,31 +60,104 @@ export function squarePaymentErrorsToMessage(
 }
 
 /**
- * Safe message when the Square SDK throws (often a long string with JSON body).
+ * Square SDK v44 throws a `SquareError` with `statusCode`, `body`, and a
+ * structured `errors` array (`{ category, code, detail?, field? }[]`). The
+ * older string-parsing path was missing the structured array entirely, so
+ * every SDK exception fell through to the generic "Payment could not be
+ * completed" — making it impossible to tell INSUFFICIENT_FUNDS from
+ * GENERIC_DECLINE from a network blip just from the customer-facing copy.
  */
-export function squareThrownErrorMessage(err: unknown): string {
-  const fallback = "Payment could not be completed. Please try again or contact support.";
-  if (!(err instanceof Error) || !err.message) return fallback;
+export type StructuredSquareError = {
+  /** Already-mapped, human-safe message. */
+  message: string
+  /** Highest-priority error code from Square (UPPERCASE) when available. */
+  code: string | null
+  /** First Square category (PAYMENT_METHOD_ERROR, AUTHENTICATION_ERROR, etc.). */
+  category: string | null
+  /** Free-text Square `detail` field (longer technical reason). */
+  detail: string | null
+  /** HTTP status from Square (4xx vs 5xx — drives retry decisions). */
+  statusCode: number | null
+  /** Full Square errors array, preserved for webhook_logs / forensics. */
+  raw: Array<{ code?: string; category?: string; detail?: string; field?: string }> | null
+}
 
-  const msg = err.message;
+function readSquareError(err: unknown): {
+  errors: Array<{ code?: string; category?: string; detail?: string; field?: string }> | null
+  statusCode: number | null
+} {
+  if (!err || typeof err !== "object") return { errors: null, statusCode: null }
+  const obj = err as { errors?: unknown; statusCode?: unknown }
+  const errors =
+    Array.isArray(obj.errors) && obj.errors.length > 0
+      ? (obj.errors as Array<{ code?: string; category?: string; detail?: string; field?: string }>)
+      : null
+  const sc = typeof obj.statusCode === "number" ? obj.statusCode : null
+  return { errors, statusCode: sc }
+}
 
-  if (msg.includes("INSUFFICIENT_FUNDS")) {
-    return BY_CODE.INSUFFICIENT_FUNDS;
+/**
+ * Parse a thrown SDK error into a structured + safe-to-show payload.
+ * Use this in payment routes so the catch block can persist the structured
+ * fields (category, code, statusCode, raw detail) alongside the message.
+ */
+export function squareThrownErrorStructured(err: unknown): StructuredSquareError {
+  const fallback = "Payment could not be completed. Please try again or contact support."
+  const empty: StructuredSquareError = {
+    message: fallback,
+    code: null,
+    category: null,
+    detail: null,
+    statusCode: null,
+    raw: null,
+  }
+  if (!err) return empty
+
+  // ── Structured SquareError path (preferred) ────────────────────────────
+  const { errors, statusCode } = readSquareError(err)
+  if (errors && errors.length > 0) {
+    const first = errors[0]
+    const code = (first.code || "").toUpperCase() || null
+    const mapped = code && BY_CODE[code] ? BY_CODE[code] : null
+    const detail = (first.detail || "").trim() || null
+    return {
+      message: mapped ?? (detail && detail.length <= 200 ? detail : fallback),
+      code,
+      category: first.category || null,
+      detail,
+      statusCode,
+      raw: errors,
+    }
   }
 
-  const codeMatches = [...msg.matchAll(/"code"\s*:\s*"([^"]+)"/gi)];
+  // ── Fallback: string parsing for older shape / wrapped errors ───────────
+  if (!(err instanceof Error) || !err.message) return { ...empty, statusCode }
+  const msg = err.message
+
+  if (msg.includes("INSUFFICIENT_FUNDS")) {
+    return { ...empty, code: "INSUFFICIENT_FUNDS", message: BY_CODE.INSUFFICIENT_FUNDS, statusCode }
+  }
+
+  const codeMatches = [...msg.matchAll(/"code"\s*:\s*"([^"]+)"/gi)]
   for (const m of codeMatches) {
-    const code = m[1]?.toUpperCase();
-    if (code && BY_CODE[code]) return BY_CODE[code];
+    const code = m[1]?.toUpperCase()
+    if (code && BY_CODE[code]) {
+      return { ...empty, code, message: BY_CODE[code], statusCode }
+    }
   }
 
   if (msg.length > 400 || (msg.includes("Status code:") && msg.includes("{"))) {
-    return fallback;
+    return { ...empty, statusCode }
   }
-
   if (msg.length < 220 && !msg.trimStart().startsWith("{")) {
-    return msg;
+    return { ...empty, message: msg, statusCode }
   }
+  return { ...empty, statusCode }
+}
 
-  return fallback;
+/**
+ * Back-compat wrapper — returns just the human-safe message string.
+ */
+export function squareThrownErrorMessage(err: unknown): string {
+  return squareThrownErrorStructured(err).message
 }

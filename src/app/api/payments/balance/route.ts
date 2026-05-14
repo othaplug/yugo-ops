@@ -7,6 +7,7 @@ import { signTrackToken } from "@/lib/track-token";
 import { rateLimit } from "@/lib/rate-limit";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment";
+import { squareThrownErrorStructured } from "@/lib/square-payment-errors";
 
 /**
  * Process a voluntary balance payment from the client payment page.
@@ -132,7 +133,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, payment_id: paymentId });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Payment processing failed";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    const structured = squareThrownErrorStructured(e);
+    console.error(
+      `[Square] balance payment failed: status=${structured.statusCode ?? "?"} ` +
+        `code=${structured.code ?? "—"} detail=${(structured.detail ?? "").slice(0, 200)}`,
+    );
+    return NextResponse.json({ error: structured.message }, { status: 500 });
   }
 }

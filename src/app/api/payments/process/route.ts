@@ -13,7 +13,7 @@ import {
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { rateLimit } from "@/lib/rate-limit";
 import { isQuoteExpiredForBooking, quoteExpiryBlockedStatuses } from "@/lib/quote-expiry";
-import { squareThrownErrorMessage } from "@/lib/square-payment-errors";
+import { squareThrownErrorStructured } from "@/lib/square-payment-errors";
 import { logActivity } from "@/lib/activity";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
 import { buildPaymentFailedClientEmailHtml } from "@/lib/email/payment-failed-client-email";
@@ -112,6 +112,10 @@ export async function POST(req: Request) {
     const [firstName, ...lastParts] = clientName.trim().split(" ");
     const lastName = lastParts.join(" ") || ".";
 
+    // Read retry count early — needed by the customer-create catch block as
+    // well as the payment-create catch further down.
+    const retryCount = Number((quote as { payment_retry_count?: number }).payment_retry_count ?? 0);
+
     // ── 2. Create or find Square Customer ──
     let squareCustomerId: string | undefined;
 
@@ -138,12 +142,62 @@ export async function POST(req: Request) {
         });
         squareCustomerId = createRes.customer?.id;
       } catch (e) {
-        console.error("[Square] customer create failed:", e);
-        return NextResponse.json({ error: "Failed to create customer profile" }, { status: 500 });
+        const structured = squareThrownErrorStructured(e);
+        console.error(
+          `[Square] customer create failed: quote=${quoteId} code=${structured.code ?? "—"} ` +
+            `status=${structured.statusCode ?? "?"} detail=${(structured.detail ?? "").slice(0, 200)}`,
+        );
+        // Persist the failure so the admin notification & retry surface
+        // see *something* — earlier this returned 500 silently.
+        await supabase
+          .from("quotes")
+          .update({
+            status: "payment_failed",
+            payment_error: "Could not set up your Square customer profile. Please contact support.",
+            payment_failed_at: new Date().toISOString(),
+            payment_retry_count: retryCount + 1,
+          })
+          .eq("id", quote.id);
+        supabase
+          .from("webhook_logs")
+          .insert({
+            source: "payments_process",
+            event_type: "customer_create_failed",
+            status: "error",
+            payload: {
+              quoteId,
+              clientEmail,
+              code: structured.code,
+              category: structured.category,
+              detail: structured.detail,
+              statusCode: structured.statusCode,
+              errors: structured.raw,
+            },
+            error: structured.message.slice(0, 500),
+          })
+          .then(
+            () => {},
+            () => {},
+          );
+        notifyAdmins("payment_failed", {
+          quoteId,
+          sourceId: quote.id,
+          subject: `Square customer create failed — ${quoteId}`,
+          description:
+            `${quoteId} — ${clientEmail}: customer create failed before payment was attempted.` +
+            (structured.code ? ` [code=${structured.code}]` : "") +
+            (structured.detail ? `\n\nDetail: ${structured.detail}` : ""),
+          clientName,
+          excludeRecipientEmails: clientEmail.trim()
+            ? [clientEmail.trim().toLowerCase()]
+            : [],
+        }).catch(() => {});
+        return NextResponse.json(
+          { error: "Could not set up your payment profile. Please contact support." },
+          { status: 500 },
+        );
       }
     }
-
-    const retryCount = Number((quote as { payment_retry_count?: number }).payment_retry_count ?? 0);
 
     // ── Idempotency guard: if a previous attempt captured a Square payment but
     //    move creation crashed, skip Square entirely and go straight to job creation.
@@ -242,8 +296,18 @@ export async function POST(req: Request) {
           })
           .eq("id", quote.id);
       } catch (e) {
-        console.error("[Square] payment failed:", e);
-        const msg = squareThrownErrorMessage(e);
+        // Structured Square error: pull the code, category, statusCode, and
+        // raw detail so the catch block has real data to act on. Persist the
+        // full payload to webhook_logs for diagnostics and persist the
+        // already-created square_customer_id so retries don't keep creating
+        // duplicate Square customer profiles.
+        const structured = squareThrownErrorStructured(e);
+        const msg = structured.message;
+        console.error(
+          `[Square] payment failed: quote=${quoteId} status=${structured.statusCode ?? "?"} ` +
+            `code=${structured.code ?? "—"} category=${structured.category ?? "—"} ` +
+            `detail=${(structured.detail ?? "").slice(0, 200)}`,
+        );
         const nextRetry = retryCount + 1;
         const failedAt = new Date().toISOString();
         await supabase
@@ -254,14 +318,61 @@ export async function POST(req: Request) {
             payment_failed_at: failedAt,
             payment_retry_count: nextRetry,
             updated_at: failedAt,
+            // Persist Square customer + card discovery from the successful
+            // pre-payment steps. Without this, a second attempt by the same
+            // client creates a duplicate customer in Square — and if the
+            // bank later declines again the duplicate makes manual recovery
+            // (matching by email) ambiguous.
+            ...(squareCustomerId ? { square_customer_id: squareCustomerId } : {}),
+            ...(squareCardId ? { square_card_id: squareCardId } : {}),
           })
           .eq("id", quote.id);
+
+        // Full structured error to webhook_logs — admins can search by
+        // quote_id and see Square's exact code/category/detail/raw payload
+        // even when the customer-facing copy is generic.
+        supabase
+          .from("webhook_logs")
+          .insert({
+            source: "payments_process",
+            event_type: "payment_failed",
+            status: "error",
+            payload: {
+              quoteId,
+              clientEmail,
+              squareCustomerId: squareCustomerId ?? null,
+              squareCardId: squareCardId ?? null,
+              amountCents,
+              retryCount: nextRetry,
+              statusCode: structured.statusCode,
+              code: structured.code,
+              category: structured.category,
+              detail: structured.detail,
+              errors: structured.raw,
+            },
+            error: msg.slice(0, 500),
+          })
+          .then(
+            () => {},
+            () => {},
+          );
 
         notifyAdmins("payment_failed", {
           quoteId,
           sourceId: quote.id,
-          subject: "Quote payment failed",
-          description: `${quoteId} — ${clientEmail}: ${msg}`,
+          subject: structured.code
+            ? `Quote payment failed — ${structured.code}`
+            : "Quote payment failed",
+          // Surface the structured code + Square detail so the admin email
+          // identifies whether it's a bank decline, an SDK timeout, or a
+          // config issue — not just the generic client-facing copy.
+          description:
+            `${quoteId} — ${clientEmail}: ${msg}` +
+            (structured.code ? ` [code=${structured.code}]` : "") +
+            (structured.category ? ` [category=${structured.category}]` : "") +
+            (structured.statusCode ? ` [status=${structured.statusCode}]` : "") +
+            (structured.detail ? `\n\nDetail: ${structured.detail}` : "") +
+            (nextRetry > 1 ? `\n\nAttempt #${nextRetry}` : ""),
           clientName: clientName,
           excludeRecipientEmails: clientEmail.trim()
             ? [clientEmail.trim().toLowerCase()]
