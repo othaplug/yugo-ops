@@ -125,14 +125,17 @@ export default function BalancePaymentSection({ move, onUpdate }: BalancePayment
 
       {balanceAmount > 0 && (
         <div className="mt-3 pt-3 border-t border-[var(--brd)]/50 flex flex-wrap items-center gap-2">
-          {move.square_card_id && (
+          {/* Show Charge Card when EITHER square_card_id is stored directly OR
+              we have square_customer_id (the API falls back to cards.list to
+              resolve the actual card source). */}
+          {(move.square_card_id || move.square_customer_id) && (
             <button
               type="button"
               onClick={handleChargeCard}
               disabled={loading !== null}
               className="text-[10px] font-semibold px-3 py-1.5 rounded-md bg-[var(--gold)]/15 text-[var(--accent-text)] border border-[var(--gold)]/40 hover:bg-[var(--gold)]/25 transition-colors disabled:opacity-50"
             >
-              {loading === "card" ? "Charging…" : "Charge Card Now"}
+              {loading === "card" ? "Charging…" : `Charge ${formatCurrency(balanceAmount)} balance`}
             </button>
           )}
           <button

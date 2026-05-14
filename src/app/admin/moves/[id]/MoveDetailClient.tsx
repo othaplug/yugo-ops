@@ -2516,7 +2516,12 @@ export default function MoveDetailClient({
                 )}
                 {balanceDue > 0 && !move.balance_auto_charged && (
                   <>
-                    {move.square_card_id ? (
+                    {/* A card is chargeable when EITHER:
+                        - square_card_id is stored directly, OR
+                        - square_customer_id is stored (we'll look up their saved card via
+                          Square cards.list at charge time — same fallback as the tip flow).
+                       Without either, fall through to the "Send payment link" branch. */}
+                    {move.square_card_id || move.square_customer_id ? (
                       <button
                         type="button"
                         disabled={paymentBtnLoading !== null}

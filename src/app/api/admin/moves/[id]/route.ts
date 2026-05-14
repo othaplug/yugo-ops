@@ -244,8 +244,34 @@ export async function PATCH(
       if (fetchErr || !move) {
         return NextResponse.json({ error: "Move not found" }, { status: 404 });
       }
-      if (!move.square_card_id) {
-        return NextResponse.json({ error: "No card on file for this move" }, { status: 400 });
+
+      // Resolve a Square source_id to charge.
+      // 1) Prefer the explicit square_card_id stored on the move.
+      // 2) Fall back to looking up the customer's saved cards via Square's
+      //    cards.list — many moves (e.g. MV-30211) end up with only the
+      //    square_customer_id when the deposit went through Square's hosted
+      //    flow, never persisting the specific card id locally.
+      //    Same pattern used by the tip endpoint at
+      //    src/app/api/track/moves/[id]/tip/route.ts.
+      let resolvedCardId: string | null = (move.square_card_id as string | null) ?? null;
+      const customerId = (move.square_customer_id as string | null) ?? null;
+      if (!resolvedCardId && customerId) {
+        try {
+          const listRes = await squareClient.cards.list({
+            customerId,
+            sortOrder: "ASC",
+          });
+          const cards = listRes.data ?? [];
+          resolvedCardId = cards.length > 0 ? (cards[0].id ?? null) : null;
+        } catch (e) {
+          console.warn("[charge_card_now] cards.list failed:", e);
+        }
+      }
+      if (!resolvedCardId) {
+        return NextResponse.json(
+          { error: "No card on file for this move" },
+          { status: 400 },
+        );
       }
 
       // Include approved change-request and extra-item fees, matching the client-side balanceDue calculation
@@ -273,7 +299,7 @@ export async function PATCH(
         }
 
         const paymentRes = await squareClient.payments.create({
-          sourceId: move.square_card_id,
+          sourceId: resolvedCardId,
           amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
           customerId: move.square_customer_id || undefined,
           referenceId: move.move_code || id,
@@ -285,6 +311,15 @@ export async function PATCH(
         const paymentId = paymentRes.payment?.id;
         if (!paymentId) {
           return NextResponse.json({ error: "Payment was not completed" }, { status: 500 });
+        }
+
+        // Backfill the card id on the move when we had to look it up. Saves
+        // the round-trip on the next charge (tips, balance adjustments).
+        if (!move.square_card_id && resolvedCardId) {
+          await admin
+            .from("moves")
+            .update({ square_card_id: resolvedCardId })
+            .eq("id", id);
         }
 
         const receiptUrl = (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
