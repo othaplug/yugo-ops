@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notifyAllAdmins } from "@/lib/notifications";
 
 const ROOMS = [
   "living_room",
@@ -75,7 +76,7 @@ export async function POST(
   return NextResponse.json({ ok: true, url: publicUrl });
 }
 
-/** POST JSON { complete: true } — mark survey completed */
+/** PUT JSON { complete: true } — mark survey completed and notify admins */
 export async function PUT(
   _req: NextRequest,
   { params }: { params: Promise<{ token: string }> },
@@ -85,9 +86,48 @@ export async function PUT(
   if (!t) return NextResponse.json({ error: "Invalid" }, { status: 400 });
 
   const sb = createAdminClient();
-  const { data: move } = await sb.from("moves").select("id").eq("survey_token", t).maybeSingle();
+  const { data: move } = await sb
+    .from("moves")
+    .select("id, move_code, client_name, survey_completed")
+    .eq("survey_token", t)
+    .maybeSingle();
   if (!move) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  // Skip duplicate notifications if the client re-submits a completed survey.
+  const alreadyCompleted = !!move.survey_completed;
+
   await sb.from("moves").update({ survey_completed: true }).eq("id", move.id);
+
+  // Hot alert for the coordinator. Fire-and-forget — don't fail the client's
+  // submission if the notification system hiccups. Only fires on the first
+  // completion so we don't spam admins with repeated submits.
+  if (!alreadyCompleted) {
+    (async () => {
+      try {
+        const { count } = await sb
+          .from("move_survey_photos")
+          .select("id", { count: "exact", head: true })
+          .eq("move_id", move.id);
+        const photoCount = count ?? 0;
+        const clientName = ((move.client_name as string | null) ?? "").trim();
+        const moveCode = (move.move_code as string | null) ?? "";
+        await notifyAllAdmins({
+          eventSlug: "client_survey_photos_submitted",
+          title: `Pre-move photos submitted${moveCode ? ` — ${moveCode}` : ""}`,
+          body:
+            (clientName ? `${clientName} ` : "Client ") +
+            `submitted ${photoCount} room photo${photoCount === 1 ? "" : "s"}. ` +
+            `Review before move day to flag anything the inventory missed.`,
+          icon: "camera",
+          link: `/admin/moves/${move.id}`,
+          sourceType: "move",
+          sourceId: String(move.id),
+        });
+      } catch (e) {
+        console.warn("[survey] hot alert dispatch failed:", e);
+      }
+    })();
+  }
+
   return NextResponse.json({ ok: true });
 }

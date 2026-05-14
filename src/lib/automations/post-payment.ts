@@ -17,6 +17,7 @@ import {
 } from "@/lib/email-templates";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatCurrency } from "@/lib/format-currency";
+import { formatMoveDate } from "@/lib/date-format";
 import { getCompanyDisplayName, getAdminNotificationEmail } from "@/lib/config";
 import { autoScheduleMove } from "@/lib/scheduling/auto-schedule";
 import { generateWelcomePackageToken } from "@/lib/welcome-package-token";
@@ -544,10 +545,44 @@ export async function runPostPaymentActions(
         const surveyUrl = `${baseUrl}/survey/${surveyTokenForEmail}`;
         const resend = getResend();
         const first = clientName.trim().split(/\s+/)[0] || "there";
+
+        // Move date and code give the client context below the CTA so the
+        // email reads as "this is for a specific scheduled move" rather than
+        // a generic ask. Stay defensive — quote.move_date may be missing for
+        // some service types.
+        const moveDateStr = quote.move_date
+          ? formatMoveDate(String(quote.move_date))
+          : null;
+        const moveContextLine = [
+          moveDateStr ? `Move date: ${moveDateStr}` : null,
+          `Reference: ${input.moveCode}`,
+        ]
+          .filter(Boolean)
+          .join("  ·  ");
+
         const html = statusUpdateEmailHtml({
           eyebrow: "Help us prepare",
           headline: "Quick room photos",
-          body: `Hi ${first},<br/><br/>When you have a moment, snap a few photos of your main rooms so your coordinator can double-check the plan. It only takes a couple of minutes on your phone.`,
+          body:
+            `Hi ${first},<br/><br/>` +
+            `Your move is coming up${moveDateStr ? ` on <strong>${moveDateStr}</strong>` : ""}, and your coordinator is getting ready. A quick photo walkthrough of your space lets us:` +
+            `<br/><br/>` +
+            `<ul style="margin:0;padding-left:18px;line-height:1.55;">` +
+            `<li>Confirm the inventory we built from your intake</li>` +
+            `<li>Flag bulky or fragile pieces before crew day</li>` +
+            `<li>Check access details — elevators, stairs, narrow doors</li>` +
+            `<li>Arrive with the right truck, blankets, and dollies</li>` +
+            `</ul>` +
+            `<br/>` +
+            `<strong>What to photograph (about two minutes):</strong>` +
+            `<br/>` +
+            `<ul style="margin:0;padding-left:18px;line-height:1.55;">` +
+            `<li>Each room from the doorway — wide shots, not close-ups</li>` +
+            `<li>Anything heavy, oversized, or fragile</li>` +
+            `<li>The building entrance and elevator if you have one</li>` +
+            `</ul>` +
+            `<br/>` +
+            `Your photos go straight to your coordinator. You can stop and pick it back up later on the same link.`,
           ctaUrl: surveyUrl,
           ctaLabel: "TAKE PHOTOS",
           includeFooter: true,
@@ -557,13 +592,18 @@ export async function runPostPaymentActions(
         await resend.emails.send({
           from: emailFrom,
           to: clientEmail,
-          subject: "Help us prepare — quick photos of your rooms",
+          subject: moveDateStr
+            ? `${first}, help us prepare for your ${moveDateStr} move`
+            : `${first}, help us prepare for your move`,
           html,
           headers: {
             Precedence: "auto",
             "X-Auto-Response-Suppress": "All",
           },
         });
+        // Suppress unused-var warning if moveContextLine is later promoted
+        // into a structured footer slot of statusUpdateEmailHtml.
+        void moveContextLine;
       },
     },
 

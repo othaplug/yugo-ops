@@ -39,7 +39,7 @@ export default async function PhotoSurveyPage({
   // 1) Post-payment move survey
   const { data: move } = await sb
     .from("moves")
-    .select("id, move_code, client_name, survey_completed")
+    .select("id, move_code, client_name, survey_completed, move_size")
     .eq("survey_token", token)
     .maybeSingle();
 
@@ -49,6 +49,7 @@ export default async function PhotoSurveyPage({
         token={token}
         clientName={(move.client_name as string | null) ?? ""}
         alreadyCompleted={!!move.survey_completed}
+        moveSize={(move.move_size as string | null) ?? null}
       />
     );
   }

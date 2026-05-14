@@ -250,6 +250,10 @@ export default function MoveFilesSection({
 }) {
   const [photos, setPhotos] = useState<FileEntry[]>([]);
   const [crewPhotos, setCrewPhotos] = useState<FileEntry[]>([]);
+  // Client pre-move room photos uploaded via the "Help us prepare" survey
+  // (table: move_survey_photos). Surfaced here so coordinators don't have to
+  // hunt for them in a separate block.
+  const [surveyPhotos, setSurveyPhotos] = useState<FileEntry[]>([]);
   const [podFiles, setPodFiles] = useState<FileEntry[]>([]);
   const [signOff, setSignOff] = useState<SignOffData | null>(null);
   const [documents, setDocuments] = useState<FileEntry[]>([]);
@@ -264,7 +268,7 @@ export default function MoveFilesSection({
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [photosRes, crewRes, signoffRes, docsRes, adminRes] =
+      const [photosRes, crewRes, signoffRes, docsRes, adminRes, surveyRes] =
         await Promise.all([
           fetch(`/api/admin/moves/${moveId}/photos`).then((r) => r.json()),
           fetch(`/api/admin/moves/${moveId}/crew-photos`).then((r) => r.json()),
@@ -275,6 +279,9 @@ export default function MoveFilesSection({
           fetch(`/api/admin/move-files?move_id=${moveId}`)
             .then((r) => r.json())
             .catch(() => ({ files: [] })),
+          fetch(`/api/admin/moves/${moveId}/survey-photos`)
+            .then((r) => r.json())
+            .catch(() => ({ photos: [] })),
         ]);
 
       // Move photos
@@ -314,6 +321,26 @@ export default function MoveFilesSection({
         }
       }
       setCrewPhotos(crewArr);
+
+      // Client pre-move survey photos
+      const surveyArr: FileEntry[] = (surveyRes.photos ?? []).map(
+        (p: {
+          id: string;
+          url: string;
+          room?: string;
+          caption?: string | null;
+          date?: string;
+        }) => ({
+          id: p.id,
+          url: p.url,
+          name: p.caption ?? p.room ?? "Room photo",
+          type: "image" as const,
+          badge: "photo" as const,
+          date: p.date || new Date().toISOString(),
+          caption: p.caption ?? p.room ?? undefined,
+        }),
+      );
+      setSurveyPhotos(surveyArr);
 
       // Sign-off / PoD (signature renders only in the Client signature card above; grid is delivery/site photos)
       const so = signoffRes.signOff || signoffRes;
@@ -451,7 +478,7 @@ export default function MoveFilesSection({
     }
   };
 
-  const allPhotoCount = photos.length + crewPhotos.length;
+  const allPhotoCount = photos.length + crewPhotos.length + surveyPhotos.length;
   const sigPreviewUrl =
     signOff?.signature_data_url ||
     (signOff as { signature_url?: string } | null)?.signature_url;
@@ -604,6 +631,14 @@ export default function MoveFilesSection({
                 </div>
               ) : null
             }
+          />
+
+          {/* Client pre-move room photos (uploaded via "Help us prepare" survey) */}
+          <FileGroup
+            label="Pre-Move Photos (Client)"
+            borderColor="border-[#66143D]"
+            files={surveyPhotos}
+            empty="No client photos yet."
           />
 
           {/* Move & Crew Photos */}

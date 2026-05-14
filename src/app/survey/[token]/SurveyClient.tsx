@@ -3,7 +3,9 @@
 import { useState, useCallback } from "react";
 import { Camera, CaretRight, Check } from "@phosphor-icons/react";
 
-const ROOMS: { id: string; label: string }[] = [
+type Room = { id: string; label: string };
+
+const ALL_ROOMS: Room[] = [
   { id: "living_room", label: "Living room" },
   { id: "kitchen", label: "Kitchen" },
   { id: "primary_bedroom", label: "Primary bedroom" },
@@ -13,15 +15,38 @@ const ROOMS: { id: string; label: string }[] = [
   { id: "other", label: "Other" },
 ];
 
+/**
+ * Bedroom count by move size. Studio and 1BR show only the primary; 2BR adds
+ * Bedroom 2; 3BR+ shows all three. Living room, kitchen, basement, and "other"
+ * are always shown so the client can document anything we didn't anticipate.
+ */
+function roomsForMoveSize(moveSize: string | null | undefined): Room[] {
+  const m = (moveSize || "").toLowerCase().trim();
+  let bedroomCount = 2;
+  if (m === "studio" || m === "1br" || m === "partial") bedroomCount = 1;
+  else if (m === "2br") bedroomCount = 2;
+  else if (m === "3br" || m === "4br" || m === "5br_plus") bedroomCount = 3;
+
+  return ALL_ROOMS.filter((r) => {
+    if (r.id === "bedroom_2") return bedroomCount >= 2;
+    if (r.id === "bedroom_3") return bedroomCount >= 3;
+    return true;
+  });
+}
+
 export default function SurveyClient({
   token,
   clientName,
   alreadyCompleted,
+  moveSize,
 }: {
   token: string;
   clientName: string;
   alreadyCompleted: boolean;
+  /** Optional — when set, the bedroom slots are filtered to match the move. */
+  moveSize?: string | null;
 }) {
+  const ROOMS = roomsForMoveSize(moveSize);
   const [completed, setCompleted] = useState(alreadyCompleted);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [busyRoom, setBusyRoom] = useState<string | null>(null);
