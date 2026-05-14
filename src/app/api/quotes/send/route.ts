@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail, TemplateName } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
@@ -473,9 +473,19 @@ export async function POST(req: NextRequest) {
       if (lName) dealProps.lastname = lName;
       if (curatedPrice != null) dealProps.amount = String(curatedPrice);
 
-      safePatchDeal(hsToken, effectiveDealId, dealProps).catch(() => {});
-
-      syncDealStage(effectiveDealId, "quote_sent").catch(() => {});
+      // Run both HubSpot writes inside `after()` so Vercel keeps the
+      // serverless function alive long enough for the PATCH + stage sync
+      // to complete after the response. Otherwise the function dies
+      // mid-call and the deal stays partially populated.
+      const dealIdForSync = effectiveDealId;
+      after(async () => {
+        try {
+          await safePatchDeal(hsToken, dealIdForSync, dealProps);
+          await syncDealStage(dealIdForSync, "quote_sent");
+        } catch (err) {
+          console.error("[quotes/send] hubspot patch+stage:", err);
+        }
+      });
     }
 
     await logAudit({
