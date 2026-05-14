@@ -8,6 +8,7 @@ import React, {
   useEffect,
   Fragment,
 } from "react";
+import { useRouter } from "next/navigation";
 import SchedulingAlternativesCard from "./SchedulingAlternativesCard";
 import SeasonalPricingPreview from "@/components/SeasonalPricingPreview";
 import {
@@ -358,6 +359,10 @@ export default function QuotePageClient({
   const [contractSigned, setContractSigned] = useState(false);
   const [booked, setBooked] = useState(quote.status === "accepted");
   const [paymentMoveId, setPaymentMoveId] = useState<string | null>(null);
+  // Router for redirecting to the dedicated /confirmed page after deposit
+  // payment succeeds. Avoids the quote page rendering tier-picker cards and
+  // a "You're All Set!" banner simultaneously after booking.
+  const router = useRouter();
   /** B2B delivery live tracking (absolute URL). Moves use SchedulingAlternativesCard + move_id instead. */
   const [deliveryTrackingUrl, setDeliveryTrackingUrl] = useState<string | null>(
     null,
@@ -2465,6 +2470,19 @@ export default function QuotePageClient({
                       }
                       if (result.move_id) setPaymentMoveId(result.move_id);
                       setBooked(true);
+                      // Redirect to the dedicated booking-confirmation page so
+                      // the client doesn't see the tier picker beside a
+                      // "You're All Set!" banner. The inline `{booked && …}`
+                      // block stays in place as a defensive fallback if the
+                      // redirect is interrupted (rare). B2B delivery flows
+                      // that need the inline tracking URL keep working —
+                      // they're rendered on the /confirmed page or via the
+                      // emailed tracking link.
+                      const tierParam = (selectedTier ?? "").toString();
+                      const url = tierParam
+                        ? `/quote/${encodeURIComponent(quote.quote_id)}/confirmed?tier=${encodeURIComponent(tierParam)}`
+                        : `/quote/${encodeURIComponent(quote.quote_id)}/confirmed`;
+                      router.replace(url);
                     }}
                     onError={(err) => {
                       console.error("Payment error:", err);

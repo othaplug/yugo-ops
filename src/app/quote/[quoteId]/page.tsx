@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { isFeatureEnabled } from "@/lib/platform-settings";
@@ -73,6 +74,18 @@ export default async function QuotePage({
   }
 
   const st = (quote.status || "").toLowerCase();
+
+  // Booked quotes belong on the dedicated confirmation page, not the tier
+  // picker. Skip the redirect when ?view=1 is set so the client (or support)
+  // can still inspect the original quote for reference. The /confirmed page
+  // links here with ?view=1.
+  const viewRaw = sp.view;
+  const viewParam = Array.isArray(viewRaw) ? viewRaw[0] : viewRaw;
+  const wantsOriginalView = viewParam === "1" || viewParam === "true";
+  if (st === "accepted" && !wantsOriginalView) {
+    redirect(`/quote/${encodeURIComponent(quoteId)}/confirmed`);
+  }
+
   if (st === "declined") {
     return (
       <QuoteExpired
