@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createDeliveryFromB2BQuote } from "@/lib/automations/create-delivery-from-b2b-quote";
 import { runPostPaymentActionsB2BDelivery } from "@/lib/automations/post-payment";
@@ -84,13 +84,22 @@ export async function POST(req: NextRequest) {
     const base = getEmailBaseUrl().replace(/\/$/, "");
     const trackingUrl = `${base}/delivery/track/${encodeURIComponent(trackingToken)}`;
 
-    runPostPaymentActionsB2BDelivery({
-      quoteId: quote.quote_id,
-      deliveryId: d.deliveryId,
-      deliveryNumber: d.deliveryNumber,
-      paymentId: "invoice-booking",
-      amount: 0,
-    }).catch((err) => console.error("[accept-b2b-invoice] post-payment:", err));
+    // Keep the function alive past the response so HubSpot patch + emails finish.
+    const capturedDeliveryId = d.deliveryId;
+    const capturedDeliveryNumber = d.deliveryNumber;
+    after(async () => {
+      try {
+        await runPostPaymentActionsB2BDelivery({
+          quoteId: quote.quote_id,
+          deliveryId: capturedDeliveryId,
+          deliveryNumber: capturedDeliveryNumber,
+          paymentId: "invoice-booking",
+          amount: 0,
+        });
+      } catch (err) {
+        console.error("[accept-b2b-invoice] post-payment:", err);
+      }
+    });
 
     return NextResponse.json({
       success: true,

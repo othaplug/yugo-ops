@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { createHash } from "crypto";
 import { squareClient } from "@/lib/square";
 import { getSquarePaymentConfig } from "@/lib/square-config";
@@ -501,22 +501,46 @@ export async function POST(req: Request) {
     });
 
     // ── 8. Post-payment actions (fire-and-forget) ──
+    // Run the post-payment action chain INSIDE `after()` so Vercel keeps
+    // the serverless function alive long enough for HubSpot patch + emails
+    // + crew assignment to actually complete. The original fire-and-forget
+    // pattern (`.catch(...)`) returned the response, Vercel terminated the
+    // function, and any action that hadn't finished yet died mid-execution
+    // — leaving empty HubSpot Details cards on every successful checkout.
     if (isB2bPay && deliveryId && deliveryNumber && squarePaymentId) {
-      runPostPaymentActionsB2BDelivery({
-        quoteId,
-        deliveryId,
-        deliveryNumber,
-        paymentId: squarePaymentId,
-        amount,
-      }).catch((err) => console.error("[postPayment B2B delivery] error:", err));
+      const capturedDeliveryId = deliveryId;
+      const capturedDeliveryNumber = deliveryNumber;
+      const capturedPaymentId = squarePaymentId;
+      after(async () => {
+        try {
+          await runPostPaymentActionsB2BDelivery({
+            quoteId,
+            deliveryId: capturedDeliveryId,
+            deliveryNumber: capturedDeliveryNumber,
+            paymentId: capturedPaymentId,
+            amount,
+          });
+        } catch (err) {
+          console.error("[postPayment B2B delivery] error:", err);
+        }
+      });
     } else if (moveId && moveCode && squarePaymentId) {
-      runPostPaymentActions({
-        quoteId,
-        moveId,
-        moveCode,
-        paymentId: squarePaymentId,
-        amount,
-      }).catch((err) => console.error("[postPayment] error:", err));
+      const capturedMoveId = moveId;
+      const capturedMoveCode = moveCode;
+      const capturedPaymentId = squarePaymentId;
+      after(async () => {
+        try {
+          await runPostPaymentActions({
+            quoteId,
+            moveId: capturedMoveId,
+            moveCode: capturedMoveCode,
+            paymentId: capturedPaymentId,
+            amount,
+          });
+        } catch (err) {
+          console.error("[postPayment] error:", err);
+        }
+      });
     }
 
     return NextResponse.json({

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { createMoveFromQuote } from "@/lib/automations/create-move-from-quote";
@@ -188,15 +188,26 @@ export async function POST(
       })
       .eq("id", moveResult.moveId);
 
-    runPostPaymentActions({
-      quoteId: humanQuoteId,
-      moveId: moveResult.moveId,
-      moveCode: moveResult.moveCode,
-      paymentId,
-      amount: deposit_amount,
-    }).catch((err) =>
-      console.error("[book-external] post-payment actions failed:", err),
-    );
+    // Wrap in Next 16's `after()` so Vercel keeps the serverless function
+    // alive long enough for the full action chain (HubSpot deal patch,
+    // client confirmation email, crew assignment, internal alert, GCal sync)
+    // to finish AFTER we send the 200. Previously this was a bare
+    // fire-and-forget `.catch(...)`, which got cut off the moment the route
+    // returned — leaving HubSpot deals with empty OPS+ Details cards on
+    // every external booking. (Sandra Charles MV-30240, May 13.)
+    after(async () => {
+      try {
+        await runPostPaymentActions({
+          quoteId: humanQuoteId,
+          moveId: moveResult.moveId,
+          moveCode: moveResult.moveCode,
+          paymentId,
+          amount: deposit_amount,
+        });
+      } catch (err) {
+        console.error("[book-external] post-payment actions failed:", err);
+      }
+    });
 
     await logActivity({
       entity_type: "quote",

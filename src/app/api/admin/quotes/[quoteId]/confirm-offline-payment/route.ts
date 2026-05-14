@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { createMoveFromQuote } from "@/lib/automations/create-move-from-quote";
@@ -232,15 +232,21 @@ export async function POST(
       const base = getEmailBaseUrl().replace(/\/$/, "");
       const trackingUrl = `${base}/delivery/track/${encodeURIComponent(trackingToken)}`;
 
-      runPostPaymentActionsB2BDelivery({
-        quoteId: humanQuoteId,
-        deliveryId: d.deliveryId,
-        deliveryNumber: d.deliveryNumber,
-        paymentId,
-        amount: payAmount,
-      }).catch((err) =>
-        console.error("[confirm-offline-payment] B2B post-payment:", err),
-      );
+      // `after()` keeps the serverless function alive past the response so
+      // the full action chain (HubSpot patch, emails, etc.) actually finishes.
+      after(async () => {
+        try {
+          await runPostPaymentActionsB2BDelivery({
+            quoteId: humanQuoteId,
+            deliveryId: d.deliveryId,
+            deliveryNumber: d.deliveryNumber,
+            paymentId,
+            amount: payAmount,
+          });
+        } catch (err) {
+          console.error("[confirm-offline-payment] B2B post-payment:", err);
+        }
+      });
 
       await logActivity({
         entity_type: "quote",
@@ -284,15 +290,20 @@ export async function POST(
       })
       .eq("id", quoteId);
 
-    runPostPaymentActions({
-      quoteId: humanQuoteId,
-      moveId: moveResult.moveId,
-      moveCode: moveResult.moveCode,
-      paymentId,
-      amount: payAmount,
-    }).catch((err) =>
-      console.error("[confirm-offline-payment] post-payment:", err),
-    );
+    // `after()` keeps the serverless function alive past the response.
+    after(async () => {
+      try {
+        await runPostPaymentActions({
+          quoteId: humanQuoteId,
+          moveId: moveResult.moveId,
+          moveCode: moveResult.moveCode,
+          paymentId,
+          amount: payAmount,
+        });
+      } catch (err) {
+        console.error("[confirm-offline-payment] post-payment:", err);
+      }
+    });
 
     await logActivity({
       entity_type: "quote",
