@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { squareClient } from "@/lib/square";
+import { squareIdem } from "@/lib/square-idempotency";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { normalizePhone } from "@/lib/phone";
@@ -68,7 +69,7 @@ export async function POST(
           customerId: move.square_customer_id || undefined,
           referenceId: String(move.move_code || moveId),
           note: `Walkthrough change request, ${String(cr.id)}, extras approved`,
-          idempotencyKey: `crew-cr-approve-${requestId}`,
+          idempotencyKey: squareIdem("crew-cr-approve", requestId),
           locationId,
         });
 

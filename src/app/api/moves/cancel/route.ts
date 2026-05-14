@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { squareClient } from "@/lib/square";
+import { squareIdem } from "@/lib/square-idempotency";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
@@ -81,7 +82,7 @@ export async function POST(req: Request) {
             paymentId: move.square_payment_id,
             amountMoney: { amount: BigInt(refundCents), currency: "CAD" },
             reason: `${REASON_LABELS[reason] || reason}${reasonDetail ? ` ${reasonDetail}` : ""}`,
-            idempotencyKey: `refund-${moveId}`,
+            idempotencyKey: squareIdem("refund", moveId),
           });
 
           squareRefundId = refundRes.refund?.id ?? null;

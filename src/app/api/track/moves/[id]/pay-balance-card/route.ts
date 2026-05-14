@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { squareClient } from "@/lib/square";
+import { squareIdem } from "@/lib/square-idempotency";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment";
 import { rateLimit } from "@/lib/rate-limit";
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       customerId: move.square_customer_id || undefined,
       referenceId: move.move_code || moveId,
       note: "Balance + processing fee, tracking page (card on file)",
-      idempotencyKey: `bal-track-card-${moveId}`,
+      idempotencyKey: squareIdem("bal-track-card", moveId),
       locationId,
     });
 

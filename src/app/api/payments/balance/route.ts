@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { squareClient } from "@/lib/square";
+import { squareIdem } from "@/lib/square-idempotency";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
         const cardRes = await squareClient.cards.create({
           sourceId,
           card: { customerId: move.square_customer_id },
-          idempotencyKey: `bal-card-${moveId}`,
+          idempotencyKey: squareIdem("bal-card", moveId),
         });
         cardId = cardRes.card?.id;
       } catch {
@@ -78,7 +79,7 @@ export async function POST(req: Request) {
       customerId: move.square_customer_id || undefined,
       referenceId: move.move_code || moveId,
       note: "Balance + processing fee, client payment",
-      idempotencyKey: `bal-pay-${moveId}`,
+      idempotencyKey: squareIdem("bal-pay", moveId),
       locationId,
     });
 

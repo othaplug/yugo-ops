@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 import { squareClient } from "@/lib/square";
+import { squareIdem } from "@/lib/square-idempotency";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -96,7 +97,7 @@ export async function POST(
     const cardRes = await squareClient.cards.create({
       sourceId,
       card: { customerId: squareCustomerId },
-      idempotencyKey: `partner-card-${partnerId}`,
+      idempotencyKey: squareIdem("partner-card", partnerId),
     });
     squareCardId  = cardRes.card?.id ?? "";
     cardLastFour  = cardRes.card?.last4 ?? "";

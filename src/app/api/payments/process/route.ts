@@ -14,6 +14,7 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { rateLimit } from "@/lib/rate-limit";
 import { isQuoteExpiredForBooking, quoteExpiryBlockedStatuses } from "@/lib/quote-expiry";
 import { squareThrownErrorStructured } from "@/lib/square-payment-errors";
+import { squareIdem } from "@/lib/square-idempotency";
 import { logActivity } from "@/lib/activity";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
 import { buildPaymentFailedClientEmailHtml } from "@/lib/email/payment-failed-client-email";
@@ -216,7 +217,7 @@ export async function POST(req: Request) {
         const cardRes = await squareClient.cards.create({
           sourceId,
           card: { customerId: squareCustomerId! },
-          idempotencyKey: `card-${quoteId}-${nonceHash}`,
+          idempotencyKey: squareIdem("card", quoteId, nonceHash),
         });
         squareCardId = cardRes.card?.id;
       } catch (e) {
@@ -260,9 +261,13 @@ export async function POST(req: Request) {
       // When using a stored card, key off the card ID so the same card is always
       // idempotent regardless of retryCount. When falling back to the raw nonce,
       // key off the nonce hash so each unique nonce is idempotent on its own.
+      // squareIdem() hashes the key when it would exceed 45 chars (Square's
+      // limit) — the previous concatenated form blew the cap whenever a
+      // stored card token (`ccof:…`) made the key 48+ chars, producing
+      // VALUE_TOO_LONG and a hard payment failure (YG-30240, attempt #3).
       const payIdempotencyKey = squareCardId
-        ? `pay-${quoteId}-card-${squareCardId}`
-        : `pay-${quoteId}-nonce-${nonceHash}`;
+        ? squareIdem("pay", quoteId, "card", squareCardId)
+        : squareIdem("pay", quoteId, "nonce", nonceHash);
 
       try {
         const paymentRes = await squareClient.payments.create({

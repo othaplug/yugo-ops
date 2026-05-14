@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { squareClient } from "@/lib/square";
+import { squareIdem } from "@/lib/square-idempotency";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { sendEmail } from "@/lib/email/send";
 
@@ -90,7 +91,7 @@ export async function GET(req: NextRequest) {
         customerId: org.square_customer_id || undefined,
         referenceId: stmt.statement_number,
         note: `Yugo statement ${stmt.statement_number}, ${org.name}`,
-        idempotencyKey: `stmt-auto-${stmt.id}-${new Date().toISOString().split("T")[0]}`,
+        idempotencyKey: squareIdem("stmt-auto", stmt.id, new Date().toISOString().split("T")[0]),
         locationId,
       });
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { squareClient } from "@/lib/square";
+import { squareIdem } from "@/lib/square-idempotency";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { sendEmail } from "@/lib/email/send";
@@ -166,7 +167,7 @@ export async function GET(req: NextRequest) {
               customerId: order.square_customer_id || undefined,
               referenceId: order.order_number,
               note: `Late bin return fee (day ${daysOverdue})`,
-              idempotencyKey: `bin-late-${order.id}-${todayStr}`,
+              idempotencyKey: squareIdem("bin-late", order.id, todayStr),
               locationId,
             });
 
@@ -242,7 +243,7 @@ export async function GET(req: NextRequest) {
               customerId: order.square_customer_id || undefined,
               referenceId: order.order_number,
               note: `Bin replacement, 30+ days overdue, ${order.bin_count} bins × $${replacementFeePerBin}`,
-              idempotencyKey: `bin-replace-${order.id}`,
+              idempotencyKey: squareIdem("bin-replace", order.id),
               locationId,
             });
           }

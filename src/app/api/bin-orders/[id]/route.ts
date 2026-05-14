@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { squareClient } from "@/lib/square";
+import { squareIdem } from "@/lib/square-idempotency";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { requireAdmin } from "@/lib/api-auth";
@@ -103,7 +104,7 @@ export async function PATCH(
         customerId: order.square_customer_id || undefined,
         referenceId: order.order_number,
         note: `Bin order balance ${order.order_number}`,
-        idempotencyKey: `bin-bal-${id}-${randomUUID()}`,
+        idempotencyKey: squareIdem("bin-bal", id, randomUUID()),
         locationId,
       });
       if (!payRes.payment?.id) {
@@ -187,7 +188,7 @@ export async function PATCH(
             customerId: order.square_customer_id || undefined,
             referenceId: order.order_number,
             note: `Missing bins charge: ${binsMissing} bin(s) x $${MISSING_BIN_FEE}`,
-            idempotencyKey: `bin-missing-${id}`,
+            idempotencyKey: squareIdem("bin-missing", id),
             locationId,
           });
         }
@@ -267,7 +268,7 @@ export async function PATCH(
           customerId: order.square_customer_id || undefined,
           referenceId: order.order_number,
           note: `Bin bundle upgrade ${order.order_number}`,
-          idempotencyKey: `bin-upg-${id}-${randomUUID()}`,
+          idempotencyKey: squareIdem("bin-upg", id, randomUUID()),
           locationId,
         });
         if (!payRes.payment?.id) {

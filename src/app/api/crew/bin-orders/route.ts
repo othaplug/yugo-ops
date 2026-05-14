@@ -5,6 +5,7 @@ import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { getTodayString } from "@/lib/business-timezone";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { squareClient } from "@/lib/square";
+import { squareIdem } from "@/lib/square-idempotency";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 
 const MISSING_BIN_FEE = 20;
@@ -120,7 +121,7 @@ export async function PATCH(req: NextRequest) {
             customerId: order.square_customer_id || undefined,
             referenceId: order.order_number,
             note: `Missing bins, ${binsMissing} × $${MISSING_BIN_FEE}`,
-            idempotencyKey: `bin-missing-crew-${id}`,
+            idempotencyKey: squareIdem("bin-missing-crew", id),
             locationId,
           });
         }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { squareClient } from "@/lib/square";
+import { squareIdem } from "@/lib/square-idempotency";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { squarePaymentErrorsToMessage, squareThrownErrorMessage } from "@/lib/square-payment-errors";
 
@@ -76,7 +77,7 @@ export async function POST(
       );
     }
 
-    const idempotencyKey = `tip-delivery-${deliveryId}`;
+    const idempotencyKey = squareIdem("tip-delivery", deliveryId);
     const paymentRes = await squareClient.payments.create({
       sourceId,
       amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
