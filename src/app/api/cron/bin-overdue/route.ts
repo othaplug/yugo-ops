@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
         // Notify coordinator
         const adminEmail = process.env.SUPER_ADMIN_EMAIL;
         if (adminEmail) {
-          const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://yugoplus.co"}/admin/bin-rentals/${order.id}`;
+          const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.yugoplus.co"}/admin/bin-rentals/${order.id}`;
           await sendEmail({
             to: adminEmail,
             subject: `Overdue bin order: ${order.order_number}, ${daysOverdue} days late`,
@@ -201,7 +201,7 @@ export async function GET(req: NextRequest) {
         const adminEmail = process.env.SUPER_ADMIN_EMAIL;
         if (adminEmail) {
           const totalLate = (Number(order.late_return_fees) || 0) + daysOverdue * lateFeePerDay;
-          const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://yugoplus.co"}/admin/bin-rentals/${order.id}`;
+          const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.yugoplus.co"}/admin/bin-rentals/${order.id}`;
           await sendEmail({
             to: adminEmail,
             subject: `Escalation: ${order.order_number} ${daysOverdue} days late`,

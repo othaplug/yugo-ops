@@ -3,14 +3,17 @@
  * Prefer NEXT_PUBLIC_APP_URL in production (e.g. https://helloyugo.com or https://app.helloyugo.com).
  * NEXT_PUBLIC_EMAIL_APP_URL overrides for email links only if you need a different sending-domain URL.
  *
- * Important for review links: this URL must be the exact origin where the Next app (and proxy) run.
- * If emails point at a different host than the app, set NEXT_PUBLIC_EMAIL_APP_URL to the app origin
- * so tracked links hit the same app and don’t get 401.
+ * CANONICAL DEFAULT: `https://www.yugoplus.co`, NOT the apex. The Vercel
+ * project serves the apex with a 307 → www redirect, and many integrations
+ * (Square webhooks, Stripe webhooks, etc.) do NOT follow redirects on
+ * POSTs — so any time a server-to-server caller hit the apex URL, the
+ * request got dropped silently. Defaulting to www end-to-end keeps every
+ * outbound link aimed at a URL that responds with 200, not 307.
  */
 export function getEmailBaseUrl(): string {
   const url =
     (process.env.NEXT_PUBLIC_EMAIL_APP_URL || "").trim() ||
     (process.env.NEXT_PUBLIC_APP_URL || "").trim() ||
-    "https://yugoplus.co";
+    "https://www.yugoplus.co";
   return url.replace(/\/$/, "");
 }

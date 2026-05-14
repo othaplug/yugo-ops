@@ -77,7 +77,10 @@ const FEATURE_DEFAULTS: Record<string, string> = {
   followup_max_attempts: "3",
   sms_eta_enabled: "false",
   quote_sms_enabled: "true",
-  public_domain: "yugoplus.co",
+  // Canonical client-facing host — must be www, NOT the apex. The apex
+  // 307-redirects to www on Vercel, and any webhook-style POST aimed at
+  // the apex gets dropped because most senders don't follow redirects.
+  public_domain: "www.yugoplus.co",
   sms_enabled: "true",
   sms_followup_enabled: "true",
   sms_premove_enabled: "true",

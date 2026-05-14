@@ -239,7 +239,7 @@ export async function POST(req: NextRequest) {
     // Notify admin
     const adminEmail = process.env.SUPER_ADMIN_EMAIL;
     if (adminEmail) {
-      const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || "https://yugoplus.co"}/admin/bin-rentals/${binOrder.id}`;
+      const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || "https://www.yugoplus.co"}/admin/bin-rentals/${binOrder.id}`;
       sendEmail({
         to: adminEmail,
         subject: `New bin order ${orderNumber}, ${clientName}`,

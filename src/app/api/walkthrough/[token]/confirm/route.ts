@@ -60,7 +60,7 @@ export async function POST(
     if (adminEmail) {
       const firstName = (move.client_name as string | null)?.split(" ")[0] ?? "Client";
       const moveCode = move.move_code ? `#${move.move_code}` : moveId.slice(0, 8);
-      const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://yugoplus.co"}/admin/moves/${move.move_code || moveId}`;
+      const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.yugoplus.co"}/admin/moves/${move.move_code || moveId}`;
       await resend.emails.send({
         from,
         to: adminEmail,

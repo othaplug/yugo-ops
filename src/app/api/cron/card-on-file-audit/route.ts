@@ -152,7 +152,7 @@ async function alertNoCard(
           year: "numeric",
         })
       : "TBD";
-    const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://yugoplus.co"}/admin/moves/${move.move_code || move.id}`;
+    const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.yugoplus.co"}/admin/moves/${move.move_code || move.id}`;
     await sendEmail({
       to: adminEmail,
       subject: `No card on file: ${move.move_code} — manual balance collection needed`,
