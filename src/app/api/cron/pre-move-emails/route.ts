@@ -4,6 +4,7 @@ import { sendEmail } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
 import { sendMoveReminderSms } from "@/lib/quote-sms";
+import { getMoveCrewSize } from "@/lib/moves/crew-size";
 import { moveMatchesBalanceReminder48hWindow } from "@/lib/quotes/estate-schedule";
 import { statusUpdateEmailHtml } from "@/lib/email-templates";
 import {
@@ -376,8 +377,9 @@ export async function GET(req: NextRequest) {
       `
       id, move_code, client_name, client_email, client_phone,
       scheduled_date, scheduled_time, from_address, to_address,
-      crew_id, crew_size, truck_info, arrival_window, tier_selected,
-      crews:crew_id(name, members)
+      crew_id, crew_size, est_crew_size, assigned_members,
+      truck_info, arrival_window, tier_selected,
+      crews:crew_id(name)
     `,
     )
     .in("status", ["confirmed", "scheduled"])
@@ -402,12 +404,21 @@ export async function GET(req: NextRequest) {
       const trackingUrl = `${baseUrl}/track/move/${move.move_code ?? move.id}?token=${trackToken}`;
 
       const crewRaw = move.crews as
-        | { name: string; members: string[] }
-        | { name: string; members: string[] }[]
+        | { name: string }
+        | { name: string }[]
         | null;
       const crew = Array.isArray(crewRaw) ? (crewRaw[0] ?? null) : crewRaw;
       const crewLeadName = crew?.name || null;
-      const crewSize = move.crew_size ?? (crew?.members?.length || null);
+      // Source-of-truth crew size — see src/lib/moves/crew-size.ts.
+      // Previously fell back to crews.members.length which is the entire
+      // crew ROSTER, not the count assigned to this specific move (the
+      // MV-30211 "crew of 4" bug — Alpha had 4 movers on staff but only 2
+      // were assigned to that move).
+      const crewSize = getMoveCrewSize({
+        assigned_members: move.assigned_members as string[] | null | undefined,
+        crew_size: move.crew_size as number | null | undefined,
+        est_crew_size: move.est_crew_size as number | null | undefined,
+      });
 
       try {
         const isEstate24 =
