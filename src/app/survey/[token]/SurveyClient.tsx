@@ -115,9 +115,15 @@ export default function SurveyClient({
           });
           if (!res.ok) {
             const j = await res.json().catch(() => ({}));
-            throw new Error(
-              typeof j.error === "string" ? j.error : "Upload failed",
-            );
+            // Server returns { error, detail? }. When detail is present it's
+            // a server-generated string (storage SDK error) — show both so
+            // the client / coordinator can act on it instead of guessing.
+            const head = typeof j.error === "string" ? j.error : "Upload failed";
+            const tail =
+              typeof j.detail === "string" && j.detail.trim()
+                ? ` — ${j.detail.trim()}`
+                : "";
+            throw new Error(`${head}${tail}`);
           }
           setCounts((c) => ({ ...c, [uiKey]: (c[uiKey] || 0) + 1 }));
         }

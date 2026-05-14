@@ -48,16 +48,43 @@ export async function POST(
   if (mErr || !move) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const ext = file.type.includes("png") ? "png" : "jpg";
+  // Pick a sensible extension from the MIME type so iPhone HEIC / WebP /
+  // GIF uploads keep their format instead of being mis-tagged as .jpg.
+  const mime = (file.type || "").toLowerCase();
+  let ext = "jpg";
+  if (mime.includes("png")) ext = "png";
+  else if (mime.includes("webp")) ext = "webp";
+  else if (mime.includes("heic")) ext = "heic";
+  else if (mime.includes("heif")) ext = "heif";
+  else if (mime.includes("gif")) ext = "gif";
   const storagePath = `survey/${move.id}/${room}_${Date.now()}.${ext}`;
 
-  const { error: upErr } = await sb.storage.from("move-assets").upload(storagePath, buffer, {
-    contentType: file.type || "image/jpeg",
-    upsert: false,
-  });
+  const { error: upErr } = await sb.storage
+    .from("move-assets")
+    .upload(storagePath, buffer, {
+      contentType: file.type || "image/jpeg",
+      upsert: false,
+    });
   if (upErr) {
-    console.error("[survey] upload", upErr);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    // Surface the underlying cause so we don't repeat the "bucket-not-found"
+    // silent failure that left the client staring at a generic error. Storage
+    // SDK errors carry a `message` (and sometimes `statusCode`).
+    const detail =
+      (upErr as { message?: string; statusCode?: string | number }).message ??
+      String(upErr);
+    console.error("[survey] storage upload failed", {
+      path: storagePath,
+      detail,
+      mime,
+    });
+    return NextResponse.json(
+      {
+        error: "Upload failed",
+        // Safe to expose: this is a server-generated string, not user input.
+        detail: detail.slice(0, 200),
+      },
+      { status: 500 },
+    );
   }
 
   const {
@@ -71,7 +98,10 @@ export async function POST(
     notes,
   });
 
-  if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
+  if (insErr) {
+    console.error("[survey] db insert failed", insErr);
+    return NextResponse.json({ error: insErr.message }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true, url: publicUrl });
 }
