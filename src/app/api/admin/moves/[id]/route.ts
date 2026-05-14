@@ -298,13 +298,16 @@ export async function PATCH(
           return NextResponse.json({ error: "Square location not configured" }, { status: 503 });
         }
 
+        // Square caps idempotency_key at 45 characters. UUID id is already 36
+        // chars, so `bal-manual-${id}` (47) was rejected with VALUE_TOO_LONG.
+        // Use the same short prefix style as bal-card-/bal-pay- elsewhere.
         const paymentRes = await squareClient.payments.create({
           sourceId: resolvedCardId,
           amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
           customerId: move.square_customer_id || undefined,
           referenceId: move.move_code || id,
           note: `Balance payment, manual charge by admin`,
-          idempotencyKey: `bal-manual-${id}`,
+          idempotencyKey: `bal-m-${id}`,
           locationId,
         });
 
