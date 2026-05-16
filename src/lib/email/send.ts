@@ -305,7 +305,28 @@ export async function getEmailFrom(): Promise<string> {
   }
 }
 
+/**
+ * Permanent recipient mute list. Any email aimed at one of these addresses
+ * is dropped before it leaves the process. Applies to EVERY caller of
+ * sendEmail — admin notifications, transactional templates, ops alerts,
+ * direct sends from cron jobs, anything.
+ *
+ * Add or remove entries here intentionally. There is no DB-level override.
+ */
+const PERMANENT_RECIPIENT_MUTE: ReadonlySet<string> = new Set([
+  "oche@helloyugo.com",
+]);
+
 export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult> {
+  // Structural guard — block muted recipients at the I/O boundary so no
+  // upstream code path can accidentally route mail to them, regardless
+  // of platform_config / SUPER_ADMIN_EMAIL / notification preferences.
+  const toLower = String(opts.to ?? "").trim().toLowerCase();
+  if (toLower && PERMANENT_RECIPIENT_MUTE.has(toLower)) {
+    console.log(`[sendEmail] dropped: recipient ${toLower} is permanently muted`);
+    return { success: true, id: "muted" };
+  }
+
   let html = opts.html ?? renderTemplate(opts.template!, opts.data);
   html = finalizeClientEmailHtml(html);
 

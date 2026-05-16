@@ -27,6 +27,28 @@ function normalizeRecipientEmail(raw: string | null | undefined): string | null 
   return t.length > 0 ? t : null;
 }
 
+/**
+ * Permanent email mute list. Recipients in this set NEVER receive admin
+ * notification emails, regardless of per-event preferences, regardless of
+ * future notification_event slugs added to the catalog, regardless of any
+ * code path that bypasses preferences.
+ *
+ * Push notifications + in-app alerts still fire (preferences govern those).
+ * This list only blocks the outbound `sendEmail` channel.
+ *
+ * Add to or remove from this set explicitly — there is no DB-level override.
+ * The intent is that this is a hard, code-enforced guarantee for accounts
+ * that should never get notification email.
+ */
+const PERMANENT_EMAIL_MUTE: ReadonlySet<string> = new Set([
+  "oche@helloyugo.com",
+]);
+
+function isPermanentlyMutedForEmail(email: string | null | undefined): boolean {
+  const norm = normalizeRecipientEmail(email);
+  return norm !== null && PERMANENT_EMAIL_MUTE.has(norm);
+}
+
 function parseExcludedRecipientEmails(data: NotificationData): Set<string> {
   const raw = data.excludeRecipientEmails;
   const out = new Set<string>();
@@ -101,10 +123,12 @@ export async function sendNotification(
   const normalizedTo = normalizeRecipientEmail(email);
   const skipEmailForExcluded =
     normalizedTo != null && excludedEmails.has(normalizedTo);
+  // Hard structural guard — see PERMANENT_EMAIL_MUTE comment above.
+  const skipEmailForMute = isPermanentlyMutedForEmail(email);
 
   const results: { email?: boolean; sms?: boolean; push?: boolean } = {};
 
-  if (emailEnabled && email && data.subject && !skipEmailForExcluded) {
+  if (emailEnabled && email && data.subject && !skipEmailForExcluded && !skipEmailForMute) {
     try {
       let html: string;
       if (data.html && typeof data.html === "string" && data.html.trimStart().startsWith("<!DOCTYPE")) {
