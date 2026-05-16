@@ -194,8 +194,10 @@ export default function AllMovesV3Client({
         effective(m).toLowerCase(),
       ),
     ).length;
+    // `paid` is a payment flag — a move can be paid in advance and still be
+    // scheduled for a future date. Don't count it as completed for the KPIs.
     const completedMoves = moves.filter((m) =>
-      ["completed", "delivered", "paid"].includes(effective(m).toLowerCase()),
+      ["completed", "delivered"].includes(effective(m).toLowerCase()),
     );
     const completed = completedMoves.length;
     const avgMargin =
@@ -577,10 +579,14 @@ export default function AllMovesV3Client({
         board={{
           groupBy: (m) => {
             const s = effective(m).toLowerCase();
-            if (["completed", "delivered", "paid"].includes(s)) return "completed";
+            // `paid` / `final_payment_received` are payment flags, NOT operational
+            // status — a move can be paid in advance and still be scheduled for
+            // a future date. Match getStatusLabel() in lib/move-status.ts which
+            // intentionally surfaces these as "Scheduled" to the operator.
+            if (["completed", "delivered"].includes(s)) return "completed";
             if (["cancelled", "canceled", "expired", "no_show"].includes(s)) return "cancelled";
             if (["in_progress", "en_route", "loading", "unloading", "in_transit"].includes(s)) return "in_progress";
-            if (["scheduled", "booked", "confirmed"].includes(s)) return "scheduled";
+            if (["scheduled", "booked", "confirmed", "paid", "final_payment_received"].includes(s)) return "scheduled";
             return "draft";
           },
           columns: [

@@ -137,7 +137,12 @@ export default async function AllMovesPage() {
       m.status,
       latestSessionByMoveId[m.id]?.status ?? null,
     );
-    const isCompleted = ["completed", "delivered", "paid"].includes(String(display_status || "").toLowerCase());
+    // `paid` is a payment flag, NOT an operational stage — a move can be
+    // paid in advance and still be scheduled for a future date. Only treat
+    // a move as completed for actual-cost recalculation when it has truly
+    // been executed. See lib/move-status.ts → getStatusLabel: "paid" is
+    // intentionally surfaced as "Scheduled" to operators.
+    const isCompleted = ["completed", "delivered"].includes(String(display_status || "").toLowerCase());
 
     const effectivePrice = Number(m.final_amount ?? m.total_price ?? m.estimate ?? 0);
 
