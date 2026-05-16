@@ -10290,29 +10290,32 @@ export default function QuoteFormClient({
             </div>
             ) : (
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-stretch">
-              <button
-                type="button"
-                onClick={() => void handleGenerate()}
-                disabled={
-                  generating ||
-                  serviceType === "b2b_delivery" ||
-                  serviceType === "b2b_oneoff"
-                }
-                className="admin-btn admin-btn-primary admin-btn-lg flex-1"
-              >
-                {generating ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating…
-                  </>
-                ) : serviceType === "b2b_delivery" ||
-                  serviceType === "b2b_oneoff" ? (
-                  "Use B2B Jobs"
-                ) : quoteId ? (
-                  "Regenerate"
-                ) : (
-                  "Generate Quote"
-                )}
-              </button>
+              {(serviceType === "b2b_delivery" || serviceType === "b2b_oneoff") ? (
+                <a
+                  href="/admin/b2b/jobs"
+                  className="admin-btn admin-btn-primary admin-btn-lg flex-1 text-center"
+                >
+                  Go to B2B Jobs →
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void handleGenerate()}
+                  disabled={generating}
+                  className="admin-btn admin-btn-primary admin-btn-lg flex-1"
+                >
+                  {generating ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating…
+                    </>
+                  ) : quoteId ? (
+                    "Regenerate"
+                  ) : (
+                    "Generate Quote"
+                  )}
+                </button>
+              )}
+              {serviceType !== "b2b_delivery" && serviceType !== "b2b_oneoff" && (
               <button
                 type="button"
                 onClick={handleSend}
@@ -10320,9 +10323,7 @@ export default function QuoteFormClient({
                   sending ||
                   !quoteId ||
                   sendSuccess ||
-                  !email?.trim() ||
-                  serviceType === "b2b_delivery" ||
-                  serviceType === "b2b_oneoff"
+                  !email?.trim()
                 }
                 className={`admin-btn admin-btn-lg flex-1 ${
                   sendSuccess
@@ -10343,9 +10344,6 @@ export default function QuoteFormClient({
                     />
                     Sent
                   </span>
-                ) : serviceType === "b2b_delivery" ||
-                  serviceType === "b2b_oneoff" ? (
-                  "Use B2B Jobs"
                 ) : quoteId && !email?.trim() ? (
                   "Add client email"
                 ) : (
@@ -10354,6 +10352,7 @@ export default function QuoteFormClient({
                   </>
                 )}
               </button>
+              )}
               <button
                 type="button"
                 onClick={() =>

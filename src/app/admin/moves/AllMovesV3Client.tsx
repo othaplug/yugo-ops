@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatMoveDate, formatAdminCreatedAt } from "@/lib/date-format";
 import { formatCurrency } from "@/lib/format-currency";
-import { serviceTypeDisplayLabel } from "@/lib/displayLabels";
+import { serviceTypeDisplayLabel, portfolioPmMoveServiceLabel } from "@/lib/displayLabels";
 import { TIERED_SERVICE_TYPES, QUOTE_SERVICE_TYPE_DEFINITIONS } from "@/lib/quote-service-types";
 import { formatJobId, getMoveCode, getMoveDetailPath } from "@/lib/move-code";
 import { getStatusLabel } from "@/lib/move-status";
@@ -340,7 +340,7 @@ export default function AllMovesV3Client({
         cell: (m) => (
           <span className="inline-flex flex-col gap-0.5">
             <span className="text-[12px] text-[var(--yu3-ink)]">
-              {serviceTypeDisplayLabel(normalizeType(m)) ||
+              {portfolioPmMoveServiceLabel(m) ||
                 toTitleCase(normalizeType(m))}
             </span>
             {moveSegment(m) === "pm" && (
@@ -610,7 +610,7 @@ export default function AllMovesV3Client({
                 {m.client_name || "—"}
               </div>
               <div className="text-[10px] text-[var(--yu3-ink-muted)]">
-                {serviceTypeDisplayLabel(m.service_type ?? m.move_type)}
+                {portfolioPmMoveServiceLabel(m)}
               </div>
               <div className="text-[10px] text-[var(--yu3-ink-muted)] truncate">
                 {m.from_address || "—"}

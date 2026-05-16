@@ -46,6 +46,7 @@ interface JobInventoryProps {
   readOnly?: boolean;
   /** Increment after walkthrough (or similar) to refetch server verifications. */
   verificationRefreshEpoch?: number;
+  boxEstimate?: number | null;
 }
 
 export default function JobInventory({
@@ -59,6 +60,7 @@ export default function JobInventory({
   onCountChange,
   readOnly = false,
   verificationRefreshEpoch = 0,
+  boxEstimate,
 }: JobInventoryProps) {
   const { toast } = useToast();
   const [verifiedIds, setVerifiedIds] = useState<Set<string>>(new Set());
@@ -89,6 +91,8 @@ export default function JobInventory({
   const [extraQty, setExtraQty] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
+  const [actualBoxCount, setActualBoxCount] = useState<string>("");
+  const [boxSaving, setBoxSaving] = useState(false);
 
   const isUnloading = [
     "unloading",
@@ -320,6 +324,21 @@ export default function JobInventory({
       toast(e instanceof Error ? e.message : "Failed to submit request", "x");
     }
     setSubmitting(false);
+  };
+
+  const handleSaveBoxCount = async () => {
+    const n = parseInt(actualBoxCount, 10);
+    if (Number.isNaN(n) || n < 0) return;
+    setBoxSaving(true);
+    try {
+      await fetch(`/api/crew/inventory/${encodeURIComponent(jobId)}/boxes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ actual_box_count: n }),
+      });
+    } catch {}
+    setBoxSaving(false);
   };
 
   if (
@@ -636,6 +655,43 @@ export default function JobInventory({
           )}
         </>
       )}
+      {(boxEstimate != null && boxEstimate > 0) && (
+        <div className="mt-3 rounded-[12px] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] overflow-hidden">
+          <div className="flex items-center gap-2 border-b border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/60 px-3 py-2.5">
+            <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--yu3-wine)] leading-none [font-family:var(--font-body)]">
+              Boxes
+            </span>
+          </div>
+          <div className="px-3 py-3 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] text-[var(--yu3-ink-muted)] [font-family:var(--font-body)]">Estimated</span>
+              <span className="text-[13px] font-semibold text-[var(--yu3-ink)] tabular-nums [font-family:var(--font-body)]">{boxEstimate}</span>
+            </div>
+            {!readOnly && (
+              <div className="flex items-center gap-2">
+                <label className="text-[12px] text-[var(--yu3-ink-muted)] shrink-0 [font-family:var(--font-body)]">Actual count</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={actualBoxCount}
+                  onChange={(e) => setActualBoxCount(e.target.value)}
+                  placeholder={String(boxEstimate)}
+                  className="flex-1 border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)] px-2.5 py-1.5 text-[13px] text-[var(--yu3-ink)] outline-none [font-family:var(--font-body)] focus:border-[var(--yu3-wine)]/50 tabular-nums"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveBoxCount}
+                  disabled={boxSaving || actualBoxCount === ""}
+                  className="shrink-0 border border-[var(--yu3-wine)]/40 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--yu3-wine)] [font-family:var(--font-body)] leading-none disabled:opacity-40 transition-colors hover:bg-[var(--yu3-wine-tint)]/40"
+                >
+                  {boxSaving ? "…" : "Save"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {addExtraOpen && (
         <div className="modal-overlay fixed inset-0 z-[99999] flex animate-fade-in items-center justify-center p-4">
           <div className="max-h-[90dvh] w-full max-w-[340px] animate-fade-in overflow-y-auto border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-5 shadow-[var(--yu3-shadow-lg)]">

@@ -852,5 +852,9 @@ export async function GET(
     operationalAlerts,
     tipReportNeeded,
     moveProjectDay,
+    boxEstimate:
+      (m as { client_box_count?: number | null }).client_box_count != null
+        ? Math.round(Number((m as { client_box_count?: number | null }).client_box_count))
+        : null,
   });
 }

@@ -270,6 +270,7 @@ interface JobDetail {
   tenantPresent?: boolean;
   buildingContactName?: string | null;
   buildingContactPhone?: string | null;
+  boxEstimate?: number | null;
   /** Residential multi-day move_projects context for this calendar day */
   moveProjectDay?: {
     projectId: string;
@@ -1603,9 +1604,12 @@ export default function CrewJobPage({
           {jobCompleted && jobType === "move" && (
             <CrewBuildingReportCard
               moveId={job.id}
-              address={job.toAddress}
-              lat={job.toLat ?? null}
-              lng={job.toLng ?? null}
+              fromAddress={job.fromAddress}
+              fromLat={job.fromLat ?? null}
+              fromLng={job.fromLng ?? null}
+              toAddress={job.toAddress}
+              toLat={job.toLat ?? null}
+              toLng={job.toLng ?? null}
             />
           )}
 
@@ -2205,6 +2209,7 @@ export default function CrewJobPage({
             }}
             readOnly={isCompleted}
             verificationRefreshEpoch={inventoryVerifyEpoch}
+            boxEstimate={job.boxEstimate ?? null}
           />
         </div>
       )}

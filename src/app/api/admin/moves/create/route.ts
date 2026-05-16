@@ -625,6 +625,16 @@ export async function POST(req: NextRequest) {
         est_cost_total: estCostTotal,
         margin_flag:
           estMarginPercent != null ? getMarginFlag(estMarginPercent) : null,
+        // Deposit — only set when coordinator confirmed collection
+        ...(body.deposit_paid === "true" && body.deposit_amount
+          ? {
+              deposit_paid: true,
+              deposit_amount: parseFloat(String(body.deposit_amount)) || null,
+              deposit_method: (body.deposit_method as string)?.trim() || null,
+              deposit_paid_at: (body.deposit_paid_at as string)?.trim() || null,
+              deposit_note: (body.deposit_note as string)?.trim() || null,
+            }
+          : {}),
         updated_at: new Date().toISOString(),
       })
       .select("id, move_code")

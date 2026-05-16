@@ -1287,9 +1287,9 @@ export default function ProfitabilityClient() {
               }
             />
             <StatCard
-              label="Monthly overhead"
-              value={formatCurrency(overhead?.total ?? 0)}
-              sub="Company-wide (not allocated per job)"
+              label="Total Revenue"
+              value={formatCurrency(summary?.totalRevenue ?? 0)}
+              sub={`${summary?.moveCount ?? 0} completed jobs · ${getRange(preset).label}`}
               className="text-[var(--tx)]"
               bgClass="bg-[var(--card)] border-[var(--brd)]/40"
               icon={null}

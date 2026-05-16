@@ -21,11 +21,13 @@ function stringifyHubSpotProps(extra: Record<string, string | number | boolean> 
  * @param hubspotDealId   Deal ID from quotes/moves/deliveries
  * @param yugoTrigger     e.g. sent, viewed, confirmed, scheduled, completed, cancelled, expired, quote_sent
  * @param extraProperties Additional deal properties (HubSpot string values)
+ * @param moveDate        YYYY-MM-DD or ISO date for the actual move/job date — used as closedate on booking/completion
  */
 export async function syncDealStage(
   hubspotDealId: string | null | undefined,
   yugoTrigger: string,
   extraProperties?: Record<string, string | number | boolean>,
+  moveDate?: string | null,
 ): Promise<void> {
   if (!hubspotDealId?.trim()) return;
 
@@ -56,12 +58,22 @@ export async function syncDealStage(
       ...stringifyHubSpotProps(extraProperties),
     };
 
+    const resolveMoveDate = (): string => {
+      if (moveDate) {
+        const d = new Date(moveDate);
+        if (!isNaN(d.getTime())) return d.toISOString();
+      }
+      return new Date().toISOString();
+    };
+
     if (
       logical === "closed_won" ||
       yugoTrigger === "completed" ||
-      yugoTrigger === "paid"
+      yugoTrigger === "paid" ||
+      yugoTrigger === "scheduled" ||
+      yugoTrigger === "confirmed"
     ) {
-      properties.closedate = new Date().toISOString();
+      properties.closedate = resolveMoveDate();
     }
     if (
       logical === "closed_lost" &&
@@ -144,9 +156,9 @@ export function deliveryStatusToHubspotTrigger(statusRaw: string | null | undefi
 export async function syncDealStageByMoveId(moveId: string, newStatus: string): Promise<void> {
   try {
     const sb = createAdminClient();
-    const { data } = await sb.from("moves").select("hubspot_deal_id").eq("id", moveId).single();
+    const { data } = await sb.from("moves").select("hubspot_deal_id, scheduled_date").eq("id", moveId).single();
     if (data?.hubspot_deal_id) {
-      await syncDealStage(data.hubspot_deal_id, newStatus);
+      await syncDealStage(data.hubspot_deal_id, newStatus, undefined, data.scheduled_date as string | null);
     }
   } catch {
     // never block

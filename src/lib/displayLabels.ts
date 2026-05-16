@@ -64,17 +64,31 @@ const isB2bOneOffSlug = (raw: string | null | undefined) => {
   return v === "b2b_oneoff" || v === "b2b_one_off";
 };
 
-/** Portfolio PM batches store `service_type` b2b_oneoff but admin copy must not read as delivery. */
+/** Any service_type slug that should show as "PM Move" when is_pm_move is true */
+const isB2bOrDeliverySlug = (raw: string | null | undefined) => {
+  const v = typeof raw === "string" ? raw.trim().toLowerCase() : "";
+  return (
+    v === "b2b_oneoff" ||
+    v === "b2b_one_off" ||
+    v === "b2b_delivery" ||
+    v.startsWith("b2b")
+  );
+};
+
+/**
+ * Resolve the human label for a move's service type, with PM override.
+ * PM moves must NEVER show as "B2B Delivery" — use this everywhere a move has is_pm_move context.
+ */
 export function portfolioPmMoveServiceLabel(move: {
   service_type?: string | null;
   is_pm_move?: boolean | null;
 }): string {
-  if (move.is_pm_move && isB2bOneOffSlug(move.service_type)) {
-    return "Property management move";
+  if (move.is_pm_move && isB2bOrDeliverySlug(move.service_type)) {
+    return "PM Move";
   }
   if (move.is_pm_move) {
     const st = serviceTypeDisplayLabel(move.service_type);
-    if (!st.trim() || st === "—") return "Property management move";
+    if (!st.trim() || st === "—") return "PM Move";
     return st;
   }
   return serviceTypeDisplayLabel(move.service_type);

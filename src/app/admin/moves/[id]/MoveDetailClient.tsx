@@ -563,6 +563,35 @@ export default function MoveDetailClient({
     null,
   );
   const [reviewReminderLoading, setReviewReminderLoading] = useState(false);
+
+  // HubSpot duplicate deal banner (set from ?hs_dup=&hs_name= query params)
+  const hsDupId = searchParams.get("hs_dup");
+  const hsDupName = searchParams.get("hs_name");
+  const [hsBannerDismissed, setHsBannerDismissed] = useState(false);
+  const [hsLinking, setHsLinking] = useState(false);
+
+  const linkHubSpotDeal = async (dealId: string) => {
+    setHsLinking(true);
+    try {
+      const res = await fetch(`/api/admin/moves/${move.id}/hubspot-link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deal_id: dealId }),
+      });
+      if (res.ok) {
+        toast("HubSpot deal linked.", "check");
+        setHsBannerDismissed(true);
+        router.replace(pathname, { scroll: false });
+      } else {
+        toast("Failed to link deal. Try again.", "x");
+      }
+    } catch {
+      toast("Failed to link deal.", "x");
+    } finally {
+      setHsLinking(false);
+    }
+  };
+
   const selectedCrew = crews.find((c) => c.id === move.crew_id);
   const crewMembers =
     selectedCrew?.members && Array.isArray(selectedCrew.members)
@@ -859,7 +888,7 @@ export default function MoveDetailClient({
     move as { operationalAlerts?: OperationalJobAlerts | null }
   ).operationalAlerts;
 
-  const serviceLabel = serviceTypeDisplayLabel(move.service_type);
+  const serviceLabel = portfolioPmMoveServiceLabel(move);
   const serviceEyebrow = `Operations · ${serviceLabel}`;
 
   const kpiTiles = useMemo(
@@ -981,6 +1010,35 @@ export default function MoveDetailClient({
       {isCompleted && (
         <div className="rounded-[var(--yu3-r-md)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-subtle)] px-4 py-2.5 text-[12px] text-[var(--yu3-ink-muted)]">
           This move is complete. Some fields are locked for transparency.
+        </div>
+      )}
+
+      {hsDupId && hsDupName && !hsBannerDismissed && (
+        <div className="rounded-[var(--yu3-r-md)] border border-amber-300 bg-amber-50 p-4">
+          <p className="text-[13px] font-medium text-amber-900">
+            HubSpot has an open deal for this client
+          </p>
+          <p className="text-[12px] text-amber-700 mt-0.5">
+            {hsDupName}
+          </p>
+          <div className="flex gap-3 mt-3">
+            <button
+              onClick={() => linkHubSpotDeal(hsDupId)}
+              disabled={hsLinking}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-800 text-white text-[12px] font-medium hover:bg-amber-900 disabled:opacity-50 transition-colors"
+            >
+              {hsLinking ? "Linking…" : "Link this deal to the move →"}
+            </button>
+            <button
+              onClick={() => {
+                setHsBannerDismissed(true);
+                router.replace(pathname, { scroll: false });
+              }}
+              className="inline-flex items-center px-3 py-1.5 rounded-lg border border-amber-300 text-[12px] font-medium text-amber-800 hover:bg-amber-100 transition-colors"
+            >
+              Create new deal instead
+            </button>
+          </div>
         </div>
       )}
 

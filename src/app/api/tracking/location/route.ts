@@ -10,6 +10,10 @@ const RATE_LIMIT_MS = 2000;
 const RATE_LIMIT_MS_NAVIGATION = 1000;
 const rateLimit = new Map<string, number>();
 const GEOFENCE_RADIUS_M = 100;
+/** GPS speed threshold (m/s) for departure detection — filters GPS drift */
+const DEPART_MIN_SPEED_MS = 1.5; // ~5.4 km/h
+/** Distance from pickup before auto-advancing loading → en_route_to_destination */
+const DEPART_LOADING_RADIUS_M = 400;
 
 /** Navigation: long stop during en-route without GPS speed implying movement */
 const NAV_STOP_MS = 5 * 60 * 1000;
@@ -368,6 +372,61 @@ export async function POST(req: NextRequest) {
               })
               .eq("id", sessionId);
           }
+        }
+      }
+    }
+  }
+
+  // Departure detection: auto-advance loading → en_route_to_destination when crew leaves pickup
+  if (
+    !autoAdvanced &&
+    session.is_active &&
+    session.job_type === "move" &&
+    sessionStatus === "loading" &&
+    session.job_id
+  ) {
+    const { data: depMove } = await admin
+      .from("moves")
+      .select("from_lat, from_lng, to_lat, to_lng, status")
+      .eq("id", session.job_id as string)
+      .single();
+
+    if (depMove) {
+      const fromLat = depMove.from_lat != null ? Number(depMove.from_lat) : null;
+      const fromLng = depMove.from_lng != null ? Number(depMove.from_lng) : null;
+      const hasDestination = depMove.to_lat != null && depMove.to_lng != null;
+
+      const moveDone = ["completed", "cancelled", "delivered", "job_complete"].includes(
+        String((depMove as { status?: string }).status || "").toLowerCase(),
+      );
+
+      if (!moveDone && hasDestination && fromLat != null && fromLng != null) {
+        const distFromPickup = haversineM(latNum, lngNum, fromLat, fromLng);
+        const spd = speed != null ? Number(speed) : NaN;
+        const isMoving = !Number.isNaN(spd) && spd >= DEPART_MIN_SPEED_MS;
+
+        if (distFromPickup > DEPART_LOADING_RADIUS_M && isMoving) {
+          sessionStatus = "en_route_to_destination";
+          autoAdvanced = true;
+
+          const checkpoints = Array.isArray(session.checkpoints) ? [...session.checkpoints] : [];
+          checkpoints.push({
+            status: "en_route_to_destination",
+            timestamp: ts,
+            lat: latNum,
+            lng: lngNum,
+            note: `Auto-advanced: GPS detected departure from pickup (${Math.round(distFromPickup)}m away, ${Math.round(spd * 3.6)} km/h)`,
+          });
+
+          await admin
+            .from("tracking_sessions")
+            .update({
+              status: "en_route_to_destination",
+              checkpoints,
+              last_location: lastLocation,
+              updated_at: ts,
+            })
+            .eq("id", sessionId);
         }
       }
     }

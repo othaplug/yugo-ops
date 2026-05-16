@@ -28,15 +28,15 @@ export type OperationalJobAlerts = {
 function statusProgressFraction(
   status: string | null | undefined,
   jobType: "move" | "delivery",
-): number {
+): number | null {
   const raw = (status || "").trim()
-  if (!raw) return 0.18
+  if (!raw) return null
   const flow =
     jobType === "move" ? MOVE_STATUS_FLOW : DELIVERY_STATUS_FLOW
   const st =
     jobType === "delivery" ? normalizeDeliveryStatus(raw) : (raw as TrackingStatus)
   const idx = flow.indexOf(st as TrackingStatus)
-  if (idx < 0) return 0.18
+  if (idx < 0) return null
   return (idx + 1) / flow.length
 }
 
@@ -89,13 +89,17 @@ export function computeOperationalJobAlerts(input: {
     }
   }
 
-  const p = Math.max(
-    0.12,
-    Math.min(1, statusProgressFraction(input.trackingStatus, input.jobType)),
-  )
-  let projectedTotal = elapsed / p
-  const maxSanity = Math.max(allocated * 8, elapsed + allocated * 4)
-  projectedTotal = Math.min(projectedTotal, maxSanity)
+  const rawP = statusProgressFraction(input.trackingStatus, input.jobType)
+  let projectedTotal: number
+  if (rawP != null && rawP > 0) {
+    const p = Math.min(1, rawP)
+    // Cap projection at 3× allocated to avoid absurd values
+    const maxSanity = Math.max(allocated * 3, elapsed + allocated)
+    projectedTotal = Math.min(elapsed / p, maxSanity)
+  } else {
+    // Status unknown — can't extrapolate, use elapsed as lower bound
+    projectedTotal = elapsed
+  }
 
   const scheduleOver =
     elapsed >= allocated || projectedTotal > allocated

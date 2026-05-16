@@ -408,6 +408,13 @@ export default function CreateMoveForm({
   const plannerScheduleEpochRef = useRef({ anchor: "", n: 0 });
   const [quoteScopeLoading, setQuoteScopeLoading] = useState(false);
 
+  // Deposit state
+  const [depositCollected, setDepositCollected] = useState<"yes" | "no" | "">("");
+  const [depositAmount, setDepositAmount] = useState("");
+  const [depositMethod, setDepositMethod] = useState<"card" | "cash" | "e_transfer" | "cheque" | "other" | "">("");
+  const [depositDate, setDepositDate] = useState("");
+  const [depositNote, setDepositNote] = useState("");
+
   // Office-only state
   const [companyName, setCompanyName] = useState("");
 
@@ -1091,6 +1098,13 @@ export default function CreateMoveForm({
       formData.append("arrival_window", arrivalWindow);
       formData.append("access_notes", accessNotes);
       formData.append("internal_notes", internalNotes);
+      if (depositCollected === "yes" && depositAmount) {
+        formData.append("deposit_paid", "true");
+        formData.append("deposit_amount", depositAmount);
+        if (depositMethod) formData.append("deposit_method", depositMethod);
+        if (depositDate) formData.append("deposit_paid_at", depositDate);
+        if (depositNote) formData.append("deposit_note", depositNote);
+      }
       if (extraFromStops.length > 0 || extraToStops.length > 0) {
         formData.append(
           "additional_stops",
@@ -1285,22 +1299,19 @@ export default function CreateMoveForm({
       } else {
         toast("Move created.", "check");
       }
-      if (data.hubspotDuplicate) {
-        toast(
-          "HubSpot already has an open deal for this client email. Link that deal on the move page if this job should use it.",
-          "alertTriangle",
-        );
-      } else if (data.hubspotAutoCreateFailed) {
+      if (data.hubspotAutoCreateFailed) {
         toast(
           "HubSpot did not create a deal automatically. Check App Settings for HubSpot pipeline, booked stage, access token, and server logs.",
           "alertTriangle",
         );
       }
-      router.push(
-        data.move_code
-          ? `/admin/moves/${data.move_code}`
-          : `/admin/moves/${data.id}`,
-      );
+      const slug = data.move_code
+        ? `/admin/moves/${data.move_code}`
+        : `/admin/moves/${data.id}`;
+      const dest = data.hubspotDuplicate
+        ? `${slug}?hs_dup=${encodeURIComponent(data.hubspotDuplicate.dealId)}&hs_name=${encodeURIComponent(data.hubspotDuplicate.dealName)}`
+        : slug;
+      router.push(dest);
       router.refresh();
     } catch (err) {
       toast(err instanceof Error ? err.message : "Failed to create move", "x");
@@ -3632,6 +3643,79 @@ export default function CreateMoveForm({
                       Upload PDF
                     </label>
                   </div>
+                </div>
+
+                {/* Deposit */}
+                <div className="mt-5 space-y-3">
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                    Deposit
+                  </h3>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setDepositCollected("yes")}
+                      className={`px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-colors ${depositCollected === "yes" ? "bg-[var(--yu3-success,#2B5C3B)] text-white border-transparent" : "border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--card)]"}`}
+                    >
+                      Deposit collected
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDepositCollected("no")}
+                      className={`px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-colors ${depositCollected === "no" ? "bg-[var(--tx3)] text-white border-transparent" : "border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--card)]"}`}
+                    >
+                      Not yet
+                    </button>
+                  </div>
+                  {depositCollected === "yes" && (
+                    <div className="grid sm:grid-cols-2 gap-3 max-w-xl">
+                      <div>
+                        <label className="admin-premium-label admin-premium-label--tight mb-1">Amount</label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="e.g. 250"
+                          value={depositAmount}
+                          onChange={(e) => setDepositAmount(e.target.value)}
+                          className={fieldInput}
+                        />
+                      </div>
+                      <div>
+                        <label className="admin-premium-label admin-premium-label--tight mb-1">Method</label>
+                        <select
+                          value={depositMethod}
+                          onChange={(e) => setDepositMethod(e.target.value as typeof depositMethod)}
+                          className={fieldInput}
+                        >
+                          <option value="">Select method</option>
+                          <option value="card">Card</option>
+                          <option value="cash">Cash</option>
+                          <option value="e_transfer">E-Transfer</option>
+                          <option value="cheque">Cheque</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="admin-premium-label admin-premium-label--tight mb-1">Date collected</label>
+                        <input
+                          type="date"
+                          value={depositDate}
+                          onChange={(e) => setDepositDate(e.target.value)}
+                          className={fieldInput}
+                        />
+                      </div>
+                      <div>
+                        <label className="admin-premium-label admin-premium-label--tight mb-1">Reference / note (optional)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Square receipt #..."
+                          value={depositNote}
+                          onChange={(e) => setDepositNote(e.target.value)}
+                          className={fieldInput}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}

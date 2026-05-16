@@ -441,6 +441,61 @@ export async function PATCH(
       return NextResponse.json({ ok: true, email: clientEmail, amount: balanceAmount });
     }
 
+    if (action === "update_details") {
+      const admin = createAdminClient();
+      const {
+        from_address, to_address, delivery_address,
+        from_lat, from_lng, to_lat, to_lng,
+        from_access, to_access, access_notes,
+        scheduled_date, arrival_window,
+        est_hours, estimated_duration_minutes, margin_alert_minutes,
+        crew_id, coordinator_name,
+        complexity_indicators, internal_notes,
+      } = body as Record<string, unknown>;
+
+      const updatePayload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+
+      if (from_address !== undefined) updatePayload.from_address = from_address;
+      if (to_address !== undefined) {
+        updatePayload.to_address = to_address;
+        updatePayload.delivery_address = delivery_address ?? to_address;
+      }
+      if (from_lat !== undefined) updatePayload.from_lat = from_lat;
+      if (from_lng !== undefined) updatePayload.from_lng = from_lng;
+      if (to_lat !== undefined) updatePayload.to_lat = to_lat;
+      if (to_lng !== undefined) updatePayload.to_lng = to_lng;
+      if (from_access !== undefined) updatePayload.from_access = from_access;
+      if (to_access !== undefined) updatePayload.to_access = to_access;
+      if (access_notes !== undefined) updatePayload.access_notes = access_notes;
+      if (scheduled_date !== undefined) updatePayload.scheduled_date = scheduled_date;
+      if (arrival_window !== undefined) updatePayload.arrival_window = arrival_window;
+      if (est_hours !== undefined) updatePayload.est_hours = est_hours;
+      if (estimated_duration_minutes !== undefined) updatePayload.estimated_duration_minutes = estimated_duration_minutes;
+      if (margin_alert_minutes !== undefined) updatePayload.margin_alert_minutes = margin_alert_minutes;
+      if (crew_id !== undefined) updatePayload.crew_id = crew_id;
+      if (coordinator_name !== undefined) updatePayload.coordinator_name = coordinator_name;
+      if (complexity_indicators !== undefined) updatePayload.complexity_indicators = complexity_indicators;
+      if (internal_notes !== undefined) updatePayload.internal_notes = internal_notes;
+
+      const { data: updated, error: updateErr } = await admin
+        .from("moves")
+        .update(updatePayload)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 400 });
+      await logAudit({
+        userId: authUser?.id,
+        userEmail: authUser?.email,
+        action: "edit_move",
+        resourceType: "move",
+        resourceId: id,
+        details: { fields: Object.keys(updatePayload) },
+      });
+      return NextResponse.json(updated);
+    }
+
     if (action === "update_status") {
       const admin = createAdminClient();
       const { status } = body as { status?: string };

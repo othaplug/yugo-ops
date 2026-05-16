@@ -20,6 +20,9 @@ import {
   Button,
   TierLetterBadge,
   residentialTierFullLabel,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
 } from "@/design-system/admin/primitives";
 import { StatusPill, TrendPill } from "@/design-system/admin/primitives/Badge";
 import { Avatar, AvatarStack } from "@/design-system/admin/primitives";
@@ -464,9 +467,98 @@ export default function CommandCenterV3Client({
             {attentionCount > 0 ? (
               <>
                 <span className="inline-block h-3 w-px bg-[var(--yu3-line)]" />
-                <StatusPill tone="warning">
-                  {attentionCount} need attention
-                </StatusPill>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="inline-flex cursor-pointer">
+                      <StatusPill tone="warning">
+                        {attentionCount} need attention
+                      </StatusPill>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 p-3" align="start">
+                    <p className="text-[11px] font-semibold text-[var(--yu3-ink-muted)] uppercase tracking-wider mb-2">
+                      Needs attention
+                    </p>
+                    <div className="flex flex-col gap-0.5">
+                      {actionTasks.length > 0 && (
+                        <Link
+                          href="/admin/change-requests"
+                          className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-[var(--yu3-bg-surface-sunken)] transition-colors"
+                        >
+                          <span className="text-[13px] text-[var(--yu3-ink-strong)]">Open tasks</span>
+                          <span className="text-[11px] font-semibold text-[var(--yu3-warning)] bg-[var(--yu3-warning-tint)] rounded-full px-2 py-0.5 yu3-num">
+                            {actionTasks.length}
+                          </span>
+                        </Link>
+                      )}
+                      {unassignedJobs.length > 0 && (
+                        <Link
+                          href="/admin/dispatch"
+                          className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-[var(--yu3-bg-surface-sunken)] transition-colors"
+                        >
+                          <span className="text-[13px] text-[var(--yu3-ink-strong)]">Unassigned jobs</span>
+                          <span className="text-[11px] font-semibold text-[var(--yu3-wine,#8B1A4A)] bg-[var(--yu3-wine-tint,#fdf2f7)] rounded-full px-2 py-0.5 yu3-num">
+                            {unassignedJobs.length}
+                          </span>
+                        </Link>
+                      )}
+                      {(leadPulse?.needsAttention ?? 0) > 0 && (
+                        <Link
+                          href="/admin/leads?attention=1"
+                          className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-[var(--yu3-bg-surface-sunken)] transition-colors"
+                        >
+                          <span className="text-[13px] text-[var(--yu3-ink-strong)]">Leads needing follow-up</span>
+                          <span className="text-[11px] font-semibold text-[var(--yu3-forest,#2B5C3B)] bg-[var(--yu3-forest-tint,#f0f7f2)] rounded-full px-2 py-0.5 yu3-num">
+                            {leadPulse!.needsAttention}
+                          </span>
+                        </Link>
+                      )}
+                      {overdueCount > 0 && (
+                        <Link
+                          href="/admin/finance/invoices?overdue=1"
+                          className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-[var(--yu3-bg-surface-sunken)] transition-colors"
+                        >
+                          <span className="text-[13px] text-[var(--yu3-ink-strong)]">Overdue invoices</span>
+                          <span className="text-[11px] font-semibold text-[var(--yu3-danger,#C0392B)] bg-[var(--yu3-danger-tint,#fdf2f0)] rounded-full px-2 py-0.5 yu3-num">
+                            {overdueCount}
+                          </span>
+                        </Link>
+                      )}
+                    </div>
+                    {(leadPulse?.attentionPreview ?? []).length > 0 && (
+                      <>
+                        <div className="border-t border-[var(--yu3-line-subtle)] my-2" />
+                        <p className="text-[11px] text-[var(--yu3-ink-muted)] mb-1 px-2">
+                          Recent leads
+                        </p>
+                        {(leadPulse!.attentionPreview ?? []).slice(0, 3).map((l) => (
+                          <Link
+                            key={l.id}
+                            href={`/admin/leads/${l.id}`}
+                            className="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-[var(--yu3-bg-surface-sunken)] transition-colors"
+                          >
+                            <span className="text-[12px] text-[var(--yu3-ink-strong)] truncate">
+                              {[l.first_name, l.last_name].filter(Boolean).join(" ") || l.lead_number}
+                            </span>
+                            <CaretRight size={10} className="text-[var(--yu3-ink-faint)] flex-none ml-2" />
+                          </Link>
+                        ))}
+                      </>
+                    )}
+                    <div className="border-t border-[var(--yu3-line-subtle)] mt-2 pt-2">
+                      <button
+                        onClick={() =>
+                          document
+                            .getElementById("attention-section")
+                            ?.scrollIntoView({ behavior: "smooth" })
+                        }
+                        className="w-full text-[12px] text-[var(--yu3-ink-muted)] text-center py-1 hover:text-[var(--yu3-ink-strong)] transition-colors"
+                      >
+                        Scroll to details ↓
+                      </button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </>
             ) : null}
           </>
@@ -684,7 +776,7 @@ export default function CommandCenterV3Client({
 
       {/* Row 4 — Attention (tasks / unassigned / leads) */}
       {attentionCount > 0 ? (
-        <section className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+        <section id="attention-section" className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           <AttentionCard
             eyebrow="Needs action"
             title="Open tasks"

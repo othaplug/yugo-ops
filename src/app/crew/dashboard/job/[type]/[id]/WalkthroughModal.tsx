@@ -819,9 +819,6 @@ export default function WalkthroughModal({
                               : `Score ${e.weight_score}`}
                         </p>
                       </div>
-                      <span className="text-[13px] font-semibold text-[var(--yu3-wine)]">
-                        {e.surcharge != null ? `+$${e.surcharge}` : "—"}
-                      </span>
                       <button
                         type="button"
                         onClick={() => removeExtra(i)}
@@ -1102,101 +1099,39 @@ export default function WalkthroughModal({
                         <span className="text-[13px] text-[var(--yu3-ink)]">
                           {e.item_name} {e.quantity > 1 && `×${e.quantity}`}
                         </span>
-                        <span className="text-[13px] font-semibold text-[var(--yu3-wine)]">
-                          {e.surcharge != null ? `+$${e.surcharge}` : "—"}
-                        </span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Missing items (all flagged missing; move rows may show estimated credit) */}
+              {/* Missing items */}
               {items.filter((i) => i.status === "missing").length > 0 && (
                 <div>
                   <p className="text-[10px] font-bold text-[var(--yu3-ink-faint)] uppercase tracking-wider mb-2">
-                    {jobType === "move"
-                      ? "Missing Items (credit)"
-                      : "Missing Items"}
+                    Missing Items
                   </p>
                   <div className="space-y-1.5">
                     {items
                       .filter((i) => i.status === "missing")
-                      .map((m) => {
-                        const credit =
-                          jobType === "move" && !m.id.startsWith("noid-")
-                            ? creditForRemovedLine({
-                                move_inventory_id: m.id,
-                                item_name: m.item_name,
-                                item_slug: null,
-                                weight_score: 1,
-                                quantity: m.quantity ?? 1,
-                              })
-                            : null;
-                        return (
-                          <div
-                            key={m.id}
-                            className="flex items-center justify-between px-3 py-2 rounded-lg border border-[var(--yu3-line-subtle)]/50"
-                          >
-                            <span className="text-[13px] text-[var(--yu3-ink)]">
-                              {m.item_name}{" "}
-                              {(m.quantity ?? 1) > 1 && `×${m.quantity}`}
-                            </span>
-                            {credit != null ? (
-                              <span className="text-[13px] font-semibold text-red-700">
-                                -${credit}
-                              </span>
-                            ) : (
-                              <span className="text-[11px] text-[var(--yu3-ink-faint)]">
-                                Flagged
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
+                      .map((m) => (
+                        <div
+                          key={m.id}
+                          className="flex items-center justify-between px-3 py-2 rounded-lg border border-[var(--yu3-line-subtle)]/50"
+                        >
+                          <span className="text-[13px] text-[var(--yu3-ink)]">
+                            {m.item_name}{" "}
+                            {(m.quantity ?? 1) > 1 && `×${m.quantity}`}
+                          </span>
+                          <span className="text-[11px] text-[var(--yu3-ink-faint)]">
+                            Flagged
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 </div>
               )}
 
-              {/* Net change */}
-              {hasDiscrepancyForSubmit && (
-                <div className="rounded-xl border border-[var(--yu3-wine)]/12 bg-gradient-to-br from-[#FFFBF7] to-[var(--yu3-wine-tint)]/40 px-4 py-3 space-y-1.5">
-                  <div className="flex items-center justify-between text-[13px]">
-                    <span className="text-[var(--yu3-wine)]/55 [font-family:var(--font-body)]">
-                      Subtotal change
-                    </span>
-                    <span
-                      className={`font-semibold [font-family:var(--font-body)] ${netDelta >= 0 ? "text-[var(--yu3-ink)]" : "text-[var(--yu3-wine)]"}`}
-                    >
-                      {netDelta >= 0 ? "+" : ""}
-                      {netDelta >= 0
-                        ? `$${netDelta}`
-                        : `-$${Math.abs(netDelta)}`}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-[12px] text-[var(--yu3-wine)]/45 [font-family:var(--font-body)]">
-                    <span>HST (13%)</span>
-                    <span>
-                      {hst >= 0 ? "+" : ""}
-                      {hst >= 0
-                        ? `$${hst.toFixed(2)}`
-                        : `-$${Math.abs(hst).toFixed(2)}`}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-[14px] font-bold border-t border-[var(--yu3-wine)]/10 pt-1.5 mt-1.5 [font-family:var(--font-body)]">
-                    <span className="text-[var(--yu3-ink-strong)]">Net change</span>
-                    <span
-                      className={
-                        total >= 0 ? "text-[var(--yu3-ink-strong)]" : "text-[var(--yu3-wine)]"
-                      }
-                    >
-                      {total >= 0
-                        ? `+$${total.toFixed(2)}`
-                        : `-$${Math.abs(total).toFixed(2)}`}
-                    </span>
-                  </div>
-                </div>
-              )}
 
               {/* No-change hint */}
               {!hasDiscrepancyForSubmit && (

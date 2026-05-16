@@ -1,11 +1,11 @@
 /**
- * Display money (old format): $1,234 or $1,234.50
- * - Comma thousands, decimals only when needed
+ * Display money: $1,234 — always rounds to nearest dollar.
+ * Use formatCurrencyEmail for receipts/invoices that need exact cents.
  */
 export function formatCurrency(value: number | string | null | undefined): string {
   const n = typeof value === "string" ? parseFloat(value) : Number(value);
   if (Number.isNaN(n)) return "$0";
-  return `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  return `$${Math.round(n).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
 /** HTML emails and receipts — always two decimals for alignment and trust. */

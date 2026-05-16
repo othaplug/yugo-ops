@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import ModalOverlay from "../../components/ModalOverlay";
 import { Icon } from "@/components/AppIcons";
@@ -121,7 +120,6 @@ export default function EditMoveDetailsModal({
 }: EditMoveDetailsModalProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const supabase = createClient();
   const [fromAddress, setFromAddress] = useState(initial.from_address || "");
   const [toAddress, setToAddress] = useState(initial.to_address || "");
   const [fromLat, setFromLat] = useState<number | null>(
@@ -318,30 +316,27 @@ export default function EditMoveDetailsModal({
       });
     }
 
-    const { data, error } = await supabase
-      .from("moves")
-      .update(updatePayload)
-      .eq("id", moveId)
-      .select()
-      .single();
+    const res = await fetch(`/api/admin/moves/${moveId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "update_details", ...updatePayload }),
+    });
+    const data = await res.json().catch(() => ({}));
     setSaving(false);
-    if (error) {
-      toast(error.message || "Failed to save", "alertTriangle");
+    if (!res.ok) {
+      toast(typeof data.error === "string" ? data.error : "Failed to save", "alertTriangle");
       return;
     }
-    if (data) {
-      onSaved?.(data);
-      onClose();
-      router.refresh();
-      toast("Move details updated", "check");
-      // Fire-and-forget GCal sync whenever scheduling fields are saved
-      if (section !== "notes") {
-        fetch("/api/admin/gcal/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ jobType: "move", jobId: moveId }),
-        }).catch(() => {});
-      }
+    onSaved?.(data);
+    onClose();
+    router.refresh();
+    toast("Move details updated", "check");
+    if (section !== "notes") {
+      fetch("/api/admin/gcal/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobType: "move", jobId: moveId }),
+      }).catch(() => {});
     }
   };
 

@@ -262,7 +262,16 @@ export function buildAllDealProperties(src: YugoDealSource): Record<string, stri
   if (svcVal) out.service_type = svcVal
 
   const moveDateIso = isoDateOnly(src.moveDate)
-  if (moveDateIso) out.move_date = moveDateIso
+  if (moveDateIso) {
+    out.move_date = moveDateIso
+    // closedate is HubSpot's standard "Close Date" — set to the actual move date
+    // so deals don't show "--" in the pipeline view
+    try {
+      out.closedate = new Date(moveDateIso).toISOString()
+    } catch {
+      // invalid date — skip
+    }
+  }
 
   // move_size enum — "Studio", "1BR", "2BR", "3BR", "4BR+", "Commercial",
   // "Specialty", "Single Item". Omit for B2B verticals where size isn't
