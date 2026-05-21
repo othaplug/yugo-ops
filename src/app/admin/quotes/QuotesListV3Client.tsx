@@ -464,7 +464,18 @@ export default function QuotesListV3Client({
       {
         id: "edit",
         label: "Edit",
-        run: (r) => router.push(`${quoteDetailPath(r)}/edit`),
+        run: (r) => {
+          // Drafts resume in the full create flow (prefilled, in-place
+          // update). Sent/accepted/etc. quotes continue to use the
+          // legacy edit screen.
+          const st = String(r.status || "").toLowerCase();
+          if (st === "draft") {
+            const slug = (r.quote_id || "").trim() || r.id;
+            router.push(`/admin/quotes/new?resume_draft=${encodeURIComponent(slug)}`);
+            return;
+          }
+          router.push(`${quoteDetailPath(r)}/edit`);
+        },
       },
       {
         id: "copy-link",

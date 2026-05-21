@@ -1056,15 +1056,29 @@ export default function QuoteDetailClient({
           <div className="flex items-center gap-2 flex-wrap pt-1">
             <button
               type="button"
-              onClick={() =>
+              onClick={() => {
+                // Drafts open in the full New Quote create flow (with all
+                // fields prefilled) instead of the legacy edit screen, so
+                // coordinators see the same UI they used to build the quote.
+                // The generate API does an in-place update because the form
+                // sends quote_id alongside the payload — see resume_draft
+                // handling in QuoteFormClient.
+                const st = String(quote.status || "").toLowerCase();
+                const isDraft = st === "draft";
+                if (isDraft) {
+                  router.push(
+                    `/admin/quotes/new?resume_draft=${encodeURIComponent(quote.quote_id)}`,
+                  );
+                  return;
+                }
                 router.push(
                   isB2BDeliveryQuoteServiceType(
                     String(quote.service_type || ""),
                   )
                     ? `/admin/quotes/new?copy_quote=${encodeURIComponent(quote.quote_id)}`
                     : `/admin/quotes/${quote.quote_id}/edit`,
-                )
-              }
+                );
+              }}
               className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
             >
               <Pencil

@@ -2566,6 +2566,11 @@ export default function QuoteFormClient({
 
   const copyQuoteParam = searchParams.get("copy_quote")?.trim() || "";
   const copyQuotePrefillDone = useRef(false);
+  // `resume_draft` = open this draft in the create flow (not the edit
+  // screen) with all fields prefilled. Saves update the original quote
+  // in place (we set quoteId below) instead of minting a new draft.
+  const resumeDraftParam = searchParams.get("resume_draft")?.trim() || "";
+  const resumeDraftDone = useRef(false);
 
   // ── Copy from existing quote (B2B / commercial edit entry) ─────────────
   useEffect(() => {
@@ -2643,6 +2648,139 @@ export default function QuoteFormClient({
       }
     })();
   }, [copyQuoteParam]);
+
+  // ── Resume an existing draft in the create flow ─────────────────────
+  // When the user clicks "Edit all details" on a draft (or the row action
+  // on the quotes list), we route here with ?resume_draft=YG-XXXX. Same
+  // copy-prefill endpoint, but two key differences vs ?copy_quote=:
+  //   1. setQuoteId(resumeDraftParam) so buildPayload sends quote_id and
+  //      /api/quotes/generate updates the original row in place
+  //      (route.ts isUpdate path), never minting a new draft.
+  //   2. Prefill covers residential fields (move_size, recommended_tier,
+  //      selected_addons, quote_items, junk fields, etc.) — the
+  //      copy_quote effect only covers B2B + addresses.
+  useEffect(() => {
+    if (!resumeDraftParam || resumeDraftDone.current) return;
+    resumeDraftDone.current = true;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/admin/quotes/copy-prefill?quote_id=${encodeURIComponent(resumeDraftParam)}`,
+        );
+        if (!res.ok) return;
+        const data = (await res.json()) as { quote?: Record<string, unknown> };
+        const Q = data.quote;
+        if (!Q) return;
+
+        // Mark this as an in-place save so generate updates the draft
+        // row instead of creating a new YG-####.
+        setQuoteId(String(Q.quote_id ?? resumeDraftParam));
+
+        // Reuse the same field-by-field restoration as copy_quote for
+        // service type / contact / addresses / move date / access. The
+        // copy_quote effect already ran for any copy_quote param; this
+        // block stands alone for resume_draft. Kept narrowly focused on
+        // fields the user actually edits — anything not restored will
+        // recompute on first Generate.
+        const cStr = (v: unknown) => (v != null ? String(v).trim() : "");
+        const st = String(Q.service_type || "");
+        const nextService =
+          st === "b2b_oneoff" || st === "b2b_delivery" ? "b2b_delivery" : st;
+        if (nextService && isDefinedQuoteServiceType(nextService)) {
+          setServiceType(nextService);
+        }
+        const contacts = Q.contacts as
+          | Record<string, unknown>
+          | Record<string, unknown>[]
+          | null
+          | undefined;
+        const contact = Array.isArray(contacts) ? contacts[0] : contacts;
+        const nm = cStr(contact?.name);
+        if (nm) {
+          const parts = nm.split(/\s+/);
+          setFirstName(parts[0] || "");
+          setLastName(parts.slice(1).join(" ") || "");
+        }
+        if (cStr(contact?.email)) setEmail(cStr(contact?.email).toLowerCase());
+        if (cStr(contact?.phone)) setPhone(formatPhone(cStr(contact?.phone)));
+        if (cStr(Q.from_address)) setFromAddress(cStr(Q.from_address));
+        if (cStr(Q.to_address)) setToAddress(cStr(Q.to_address));
+        if (cStr(Q.move_date)) setMoveDate(cStr(Q.move_date).slice(0, 10));
+        if (cStr(Q.from_access)) setFromAccess(cStr(Q.from_access));
+        if (cStr(Q.to_access)) setToAccess(cStr(Q.to_access));
+
+        // Residential / single-item extras
+        const moveSize = cStr(Q.move_size);
+        if (moveSize) setMoveSize(moveSize);
+        const recTier = cStr(Q.recommended_tier).toLowerCase();
+        if (recTier === "estate") setRecommendedTier("estate");
+        else if (recTier === "signature") setRecommendedTier("signature");
+        else if (recTier === "curated" || recTier === "essential") {
+          setRecommendedTier("essential");
+        }
+
+        // selected_addons: stored as Array<{addon_id, quantity, tier_index?}>
+        const selAddonsRaw = Q.selected_addons;
+        if (Array.isArray(selAddonsRaw) && selAddonsRaw.length > 0) {
+          const restored = new Map<string, AddonSelection>();
+          for (const row of selAddonsRaw) {
+            const r = row as Record<string, unknown>;
+            const id = cStr(r.addon_id);
+            if (!id) continue;
+            restored.set(id, {
+              addon_id: id,
+              quantity: Math.max(1, Math.floor(Number(r.quantity) || 1)),
+              tier_index:
+                typeof r.tier_index === "number" ? r.tier_index : undefined,
+              slug: typeof r.slug === "string" ? r.slug : undefined,
+            } as AddonSelection);
+          }
+          if (restored.size > 0) setSelectedAddons(restored);
+        }
+
+        // Single-item per-line rows (Phase 1 of multi-item refactor)
+        const quoteItemsRaw = Q.quote_items;
+        if (Array.isArray(quoteItemsRaw) && quoteItemsRaw.length > 0) {
+          const rows: SingleItemLine[] = quoteItemsRaw
+            .filter(
+              (x): x is Record<string, unknown> =>
+                x !== null && typeof x === "object",
+            )
+            .map((x, idx) => ({
+              id: String(x.id ?? `resume-${idx}`),
+              item_description: String(x.item_description ?? ""),
+              item_category: String(x.item_category ?? "standard_furniture"),
+              weight_class: String(x.weight_class ?? ""),
+              assembly: String(x.assembly ?? "None"),
+              stair_carry: !!x.stair_carry,
+              stair_flights:
+                typeof x.stair_flights === "number" && x.stair_flights > 0
+                  ? x.stair_flights
+                  : undefined,
+              quantity: Math.max(1, Math.floor(Number(x.quantity ?? 1))) || 1,
+            }));
+          if (rows.length > 0) setSingleItemRows(rows);
+        }
+
+        // Junk-removal stop fields (Phase 1)
+        const jpFrom = cStr((Q as { junk_pickup_from?: unknown }).junk_pickup_from);
+        if (jpFrom === "origin" || jpFrom === "destination" || jpFrom === "both") {
+          setJunkPickupFrom(jpFrom);
+        }
+        const jpItems = cStr(
+          (Q as { junk_items_description?: unknown }).junk_items_description,
+        );
+        if (jpItems) setJunkItemsDescription(jpItems);
+
+        setLeadQuoteBanner(
+          `Resuming draft ${cStr(Q.quote_id) || resumeDraftParam}. Edit fields, then Save to update — a new quote will not be created.`,
+        );
+      } catch (e) {
+        console.warn("[quote-form] resume_draft prefill failed:", e);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeDraftParam]);
 
   useEffect(() => {
     const leadForPrev =
