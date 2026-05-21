@@ -2772,6 +2772,184 @@ export default function QuoteFormClient({
         );
         if (jpItems) setJunkItemsDescription(jpItems);
 
+        // ── factors_applied source for every-other field ──
+        const fa =
+          Q.factors_applied &&
+          typeof Q.factors_applied === "object" &&
+          !Array.isArray(Q.factors_applied)
+            ? (Q.factors_applied as Record<string, unknown>)
+            : {};
+        const faNum = (k: string): number | null => {
+          const v = fa[k];
+          const n = typeof v === "number" ? v : Number(v ?? NaN);
+          return Number.isFinite(n) ? n : null;
+        };
+
+        // White-glove restoration
+        if (nextService === "white_glove") {
+          const wgItemsRaw = fa.white_glove_items;
+          if (Array.isArray(wgItemsRaw) && wgItemsRaw.length > 0) {
+            const rows = wgItemsRaw
+              .filter(
+                (x): x is Record<string, unknown> =>
+                  x !== null && typeof x === "object",
+              )
+              .map((x, idx) => ({
+                id: String(x.id ?? `wg-${idx}`),
+                description: String(x.description ?? ""),
+                quantity: Math.max(1, Math.floor(Number(x.quantity ?? 1))) || 1,
+                category: typeof x.category === "string" ? x.category : "",
+                weight_class:
+                  typeof x.weight_class === "string" ? x.weight_class : "",
+                assembly:
+                  typeof x.assembly === "string" ? x.assembly : "none",
+                is_fragile: !!x.is_fragile,
+                is_high_value: !!x.is_high_value,
+                notes: typeof x.notes === "string" ? x.notes : "",
+                slug: typeof x.slug === "string" ? x.slug : undefined,
+                is_custom: !!x.is_custom,
+              })) as WhiteGloveItemRow[];
+            if (rows.length > 0) setWhiteGloveItemRows(rows);
+          }
+          const dv = faNum("declared_value");
+          if (dv != null && dv > 0) setDeclaredValue(String(dv));
+          if (fa.white_glove_debris_removal === true) setWgDebrisRemoval(true);
+          const gw = faNum("white_glove_guaranteed_window_hours");
+          if (gw != null && (gw === 2 || gw === 3 || gw === 4)) {
+            setWgGuaranteedWindow(true);
+            setWgGuaranteedWindowHours(gw as 2 | 3 | 4);
+          }
+          const wgReqs = fa.specialty_building_requirements;
+          if (Array.isArray(wgReqs)) {
+            setWgBuildingReqs(
+              wgReqs.filter((s): s is string => typeof s === "string"),
+            );
+          }
+          const wgNote = cStr(fa.white_glove_building_requirements_note);
+          if (wgNote) setWgBuildingNote(wgNote);
+          const wgDelivInstr = cStr(fa.white_glove_delivery_instructions);
+          if (wgDelivInstr) setWgDeliveryInstructions(wgDelivInstr);
+        }
+
+        // Office-move restoration
+        if (nextService === "office_move") {
+          const sq = faNum("square_footage");
+          if (sq != null && sq > 0) setSqft(String(sq));
+          const ws = faNum("workstation_count");
+          if (ws != null && ws > 0) setWsCount(String(ws));
+          if (fa.has_it_equipment === true || fa.office_server_room === true) {
+            setHasIt(true);
+          }
+          if (fa.has_conference_room === true) setHasConf(true);
+          if (fa.has_reception_area === true) setHasReception(true);
+          const timing = cStr(fa.timing_preference);
+          if (timing) setTimingPref(timing);
+          const desks = faNum("office_desks_count");
+          if (desks != null) setOfficeDesks(String(desks));
+          const chairs = faNum("office_chairs_count");
+          if (chairs != null) setOfficeChairs(String(chairs));
+          const filing = faNum("office_filing_cabinets_count");
+          if (filing != null) setOfficeFiling(String(filing));
+          const boardroom = faNum("office_boardroom_count");
+          if (boardroom != null && boardroom > 0) {
+            setOfficeBoardroomCount(boardroom);
+          }
+          // office_kitchen_break_room is a boolean state — coerce truthy
+          // strings ("yes", "true") plus actual true to true.
+          const kitchenRaw = fa.office_kitchen_break_room;
+          if (
+            kitchenRaw === true ||
+            (typeof kitchenRaw === "string" &&
+              ["yes", "true", "1"].includes(kitchenRaw.toLowerCase()))
+          ) {
+            setOfficeKitchen(true);
+          }
+          const crewOv = faNum("office_crew_size");
+          if (crewOv != null && crewOv > 0) setOfficeCrewSize(crewOv);
+          const hrsOv = faNum("office_estimated_hours");
+          if (hrsOv != null && hrsOv > 0) setOfficeEstHours(hrsOv);
+          const trucksOv = faNum("office_truck_count");
+          if (trucksOv != null && trucksOv >= 2) {
+            setOfficeTruckCount(trucksOv);
+          }
+        }
+
+        // Event restoration (single-event view; multi-leg restoration is
+        // best-effort — falls back to single if event_legs not stored).
+        if (nextService === "event") {
+          const evName = cStr(fa.event_name);
+          if (evName) setEventName(evName);
+          const venue = cStr(Q.venue_address) || cStr(fa.venue_address);
+          if (venue) setVenueAddress(venue);
+          const evReturn = cStr(fa.event_return_date);
+          if (evReturn) setEventReturnDate(evReturn.slice(0, 10));
+          if (fa.event_is_luxury === true) setEventLuxury(true);
+          const evTruck = cStr(fa.event_truck_type);
+          if (evTruck) setEventTruckType(evTruck);
+          if (fa.event_setup_required === true) setEventSetupRequired(true);
+          const setupHours = faNum("event_setup_hours");
+          if (setupHours != null && setupHours > 0) {
+            setEventSetupHours(setupHours);
+          }
+          const setupInstr = cStr(fa.event_setup_instructions);
+          if (setupInstr) setEventSetupInstructions(setupInstr);
+          if (fa.event_same_day === true) setEventSameDay(true);
+          const pickupTime = cStr(fa.event_pickup_time_after);
+          if (pickupTime) setEventPickupTimeAfter(pickupTime);
+        }
+
+        // Specialty restoration
+        if (nextService === "specialty") {
+          const sType = cStr(fa.specialty_type) || cStr(Q.specialty_type);
+          if (sType) setSpecialtyType(sType);
+          const sDesc =
+            cStr(fa.specialty_item_description) ||
+            cStr(Q.specialty_item_description);
+          if (sDesc) setSpecialtyItemDescription(sDesc);
+          const sWeight =
+            cStr(fa.specialty_weight_class) || cStr(Q.specialty_weight_class);
+          if (sWeight) setSpecialtyWeightClass(sWeight);
+          const sReqs =
+            (fa.specialty_requirements as unknown) ||
+            (Q.specialty_requirements as unknown);
+          if (Array.isArray(sReqs)) {
+            setSpecialtyRequirements(
+              sReqs.filter((s): s is string => typeof s === "string"),
+            );
+          }
+          const sNotes = cStr(fa.specialty_notes);
+          if (sNotes) setSpecialtyNotes(sNotes);
+        }
+
+        // Crating pieces (any service type that supports it). The state
+        // shape is { description, size: small|medium|large|oversized }[];
+        // older quotes may have stored richer attributes that we drop.
+        const cratingRaw = Q.crating_pieces;
+        if (Array.isArray(cratingRaw) && cratingRaw.length > 0) {
+          const SIZE_ALLOW = new Set(["small", "medium", "large", "oversized"]);
+          const pieces = cratingRaw
+            .filter(
+              (x): x is Record<string, unknown> =>
+                x !== null && typeof x === "object",
+            )
+            .map((x) => {
+              const sizeRaw = String(x.size ?? "").toLowerCase();
+              const size = (SIZE_ALLOW.has(sizeRaw) ? sizeRaw : "medium") as
+                | "small"
+                | "medium"
+                | "large"
+                | "oversized";
+              return {
+                description: String(x.description ?? ""),
+                size,
+              };
+            });
+          if (pieces.length > 0) {
+            setCratingRequired(true);
+            setCratingItems(pieces);
+          }
+        }
+
         setLeadQuoteBanner(
           `Resuming draft ${cStr(Q.quote_id) || resumeDraftParam}. Edit fields, then Save to update — a new quote will not be created.`,
         );
