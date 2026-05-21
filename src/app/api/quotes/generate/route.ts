@@ -2324,8 +2324,31 @@ async function calcSingleItem(
     price = cfgNum(config, "single_item_floor", 150);
   }
 
-  // Addons (includes junk_removal tier price) folded in last
-  price += addonResult.total;
+  // ── Suppress assembly addons that the per-line assembly fee already
+  // covers. Without this, a coordinator who picks "Both" on an item AND
+  // ticks the disassembly_assembly addon pays for the same labour twice:
+  // once via single_item_assembly per-line fee, once via the addon's flat
+  // price (e.g. $140). The UI also shows the matching addon as locked
+  // "Included" — both surfaces must agree.
+  const itemsHaveAssembly = lineCosts.some((lc) => lc.assembly > 0);
+  const SUPPRESSED_ASSEMBLY_SLUGS = new Set([
+    "disassembly",
+    "assembly",
+    "disassembly_assembly",
+  ]);
+  const suppressedAddonTotal = itemsHaveAssembly
+    ? (addonResult.breakdown || []).reduce(
+        (s, b) =>
+          SUPPRESSED_ASSEMBLY_SLUGS.has((b.slug || "").toLowerCase())
+            ? s + (b.price ?? 0)
+            : s,
+        0,
+      )
+    : 0;
+
+  // Addons (includes junk_removal tier price) folded in last, minus any
+  // double-counted assembly addons.
+  price += addonResult.total - suppressedAddonTotal;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
   const deposit = await calculateDeposit(sb, "single_item", price);
@@ -2395,6 +2418,10 @@ async function calcSingleItem(
       junk_pickup_from: junkPickupFrom || null,
       junk_items_description: input.junk_items_description?.trim() || null,
       junk_stop_fee: junkStopFee,
+      // Surfaced so admin + client surfaces can show "Assembly already
+      // included from item selection" instead of charging twice.
+      assembly_addon_suppressed: itemsHaveAssembly,
+      assembly_addon_suppressed_amount: suppressedAddonTotal,
     },
   };
 }
@@ -3680,6 +3707,44 @@ function omitMarginEstimateFields(factors: unknown): unknown {
 // ═══════════════════════════════════════════════
 
 export async function POST(req: NextRequest) {
+  // ─────────────────────────────────────────────────────────────────────
+  // Outer try/catch around the entire handler.
+  //
+  // Background: this handler is ~1,500 lines covering every service type's
+  // pricing math, distance lookups, addon resolution, DB writes, HubSpot
+  // sync, and version snapshots. Any unhandled throw inside that block
+  // bubbles up as a generic Next.js 500 with no body, which the admin
+  // form surfaces as a bare "Failed to fetch" toast — useless for
+  // debugging in production.
+  //
+  // The catch logs a structured error to the server (visible in Vercel
+  // function logs) and returns a JSON body with a short detail string so
+  // the form can show "Quote generation failed — {real cause}" instead
+  // of "Failed to fetch". detail is capped at 200 chars to avoid leaking
+  // stack traces to the client.
+  // ─────────────────────────────────────────────────────────────────────
+  try {
+    return await handleQuoteGenerate(req);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : undefined;
+    console.error("[quotes/generate] Fatal error:", {
+      message,
+      stack,
+      timestamp: new Date().toISOString(),
+      url: req.url,
+    });
+    return NextResponse.json(
+      {
+        error: "Quote generation failed",
+        detail: message.slice(0, 200),
+      },
+      { status: 500 },
+    );
+  }
+}
+
+async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   const { user: authUser, error: authErr } = await requireAuth();
   if (authErr) return authErr;
 

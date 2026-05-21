@@ -3088,6 +3088,34 @@ export default function QuoteFormClient({
     }
     return base;
   }, [allAddons, serviceType, recommendedTier]);
+
+  // ── Single-item assembly addon suppression ────────────────────────────
+  // When a coordinator picks assembly on an individual item row in the
+  // Items section, the matching add-on (disassembly / assembly /
+  // disassembly_assembly) must NOT also be a chargeable checkbox — the
+  // engine already counts the per-line assembly fee. Without this lock,
+  // selecting "Both" on a line + ticking the bundle add-on double-charges
+  // ($75 per-line + $140 add-on = $215 for one assembly job).
+  // Returns the set of addon SLUGS to render as locked "Included" pills.
+  const lockedAssemblyAddonSlugs = useMemo(() => {
+    const set = new Set<string>();
+    if (serviceType !== "single_item") return set;
+    const anyDisassemblyAtPickup = singleItemRows.some((r) =>
+      (r.assembly || "").toLowerCase().includes("disassembly"),
+    );
+    const anyAssemblyAtDelivery = singleItemRows.some((r) => {
+      const a = (r.assembly || "").toLowerCase();
+      // "Assembly at delivery" matches; "Both" implies it too. Exclude pure
+      // "disassembly at pickup" which only does the pickup side.
+      return a === "both" || a === "assembly at delivery";
+    });
+    if (anyDisassemblyAtPickup) set.add("disassembly");
+    if (anyAssemblyAtDelivery) set.add("assembly");
+    if (anyDisassemblyAtPickup && anyAssemblyAtDelivery) {
+      set.add("disassembly_assembly");
+    }
+    return set;
+  }, [serviceType, singleItemRows]);
   const popularAddons = useMemo(
     () => applicableAddons.filter((a) => a.is_popular),
     [applicableAddons],
@@ -10095,6 +10123,37 @@ export default function QuoteFormClient({
                     {popularAddons.map((addon) => {
                       const sel = selectedAddons.get(addon.id);
                       const isSelected = !!sel;
+                      // Assembly addon already covered by per-line item
+                      // assembly — render locked "Included" pill, no charge.
+                      const isAssemblyLocked = lockedAssemblyAddonSlugs.has(
+                        (addon.slug || "").toLowerCase(),
+                      );
+                      if (isAssemblyLocked) {
+                        return (
+                          <div
+                            key={addon.id}
+                            className="flex items-start gap-2.5 rounded-lg border border-[var(--grn)]/30 bg-[var(--grn)]/8 px-3 py-2"
+                          >
+                            <Check
+                              size={14}
+                              weight="bold"
+                              className="shrink-0 mt-0.5 text-[var(--grn)]"
+                              aria-hidden
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[12px] font-medium text-[var(--tx)]">
+                                {addon.name}
+                              </p>
+                              <p className="text-[10px] text-[var(--tx3)] mt-0.5 leading-snug">
+                                Included from item selection — no extra charge.
+                              </p>
+                            </div>
+                            <span className="text-[10px] font-semibold text-[var(--grn)] shrink-0">
+                              Included
+                            </span>
+                          </div>
+                        );
+                      }
                       let displayPrice = "";
                       if (addon.price_type === "flat")
                         displayPrice = fmtPrice(addon.price);
@@ -10200,6 +10259,38 @@ export default function QuoteFormClient({
                       otherAddons.map((addon) => {
                         const sel = selectedAddons.get(addon.id);
                         const isSelected = !!sel;
+                        // Same suppression as the popular-addons block —
+                        // see lockedAssemblyAddonSlugs.
+                        const isAssemblyLocked =
+                          lockedAssemblyAddonSlugs.has(
+                            (addon.slug || "").toLowerCase(),
+                          );
+                        if (isAssemblyLocked) {
+                          return (
+                            <div
+                              key={addon.id}
+                              className="flex items-start gap-2.5 rounded-lg border border-[var(--grn)]/30 bg-[var(--grn)]/8 px-3 py-2"
+                            >
+                              <Check
+                                size={14}
+                                weight="bold"
+                                className="shrink-0 mt-0.5 text-[var(--grn)]"
+                                aria-hidden
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[12px] font-medium text-[var(--tx)]">
+                                  {addon.name}
+                                </p>
+                                <p className="text-[10px] text-[var(--tx3)] mt-0.5 leading-snug">
+                                  Included from item selection — no extra charge.
+                                </p>
+                              </div>
+                              <span className="text-[10px] font-semibold text-[var(--grn)] shrink-0">
+                                Included
+                              </span>
+                            </div>
+                          );
+                        }
                         let displayPrice = "";
                         if (addon.price_type === "flat")
                           displayPrice = fmtPrice(addon.price);
