@@ -143,6 +143,7 @@ import { formatAddressForDisplay } from "@/lib/format-text";
 import { getDisplayLabel, VALUATION_TIER_LABELS } from "@/lib/displayLabels";
 import { SafeText } from "@/components/SafeText";
 import { getSingleItemQuoteCopy } from "@/lib/quotes/single-item-copy";
+import { decideBookingPayment } from "@/lib/quotes/booking-payment-window";
 import {
   getB2BQuoteHero,
   getLogisticsLoadingUnloadingFeature,
@@ -863,6 +864,20 @@ export default function QuotePageClient({
     totalBeforeTax,
     grandTotal,
   ]);
+
+  /* ── Booking payment window — full payment vs deposit ──
+     When move is < 48h away, charge the full grand total at booking.
+     Server enforces independently (no client trust). See
+     src/lib/quotes/booking-payment-window.ts. */
+  const bookingPayment = useMemo(() => {
+    return decideBookingPayment({
+      moveDate: quote.move_date,
+      deposit,
+      grandTotal,
+    });
+  }, [quote.move_date, deposit, grandTotal]);
+  const bookingAmount = bookingPayment.amountToCharge;
+  const bookingRequiresFullPayment = bookingPayment.requireFullPayment;
 
   /* ── Contract data for ContractSign component ── */
   const contractAddonsList = useMemo((): ContractAddon[] => {
@@ -2450,8 +2465,34 @@ export default function QuotePageClient({
                     </button>
                   </div>
                 ) : (
-                  <SquarePaymentForm
-                    amount={deposit}
+                  <>
+                    {bookingRequiresFullPayment && (
+                      <div
+                        className="mb-3 rounded-xl border px-4 py-3"
+                        style={{
+                          borderColor: `${WINE}33`,
+                          backgroundColor: `${WINE}0D`,
+                        }}
+                      >
+                        <p
+                          className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1"
+                          style={{ color: WINE }}
+                        >
+                          Full payment due now
+                        </p>
+                        <p
+                          className="text-[12px] leading-snug"
+                          style={{ color: shellInk.body }}
+                        >
+                          Your move is within {bookingPayment.thresholdHours}{" "}
+                          hours, so the full balance is collected at booking
+                          (deposit + remaining balance together). Same total
+                          as quoted, just paid in one step.
+                        </p>
+                      </div>
+                    )}
+                    <SquarePaymentForm
+                      amount={bookingAmount}
                     quoteId={quote.quote_id}
                     clientName={signedName}
                     clientEmail={contactEmail ?? ""}
@@ -2465,19 +2506,27 @@ export default function QuotePageClient({
                     }
                     footerNoteColor={shellInk.muted}
                     amountHeading={
-                      isB2BDeliveryQuoteServiceType(quote.service_type) &&
-                      !binRentalBooking
+                      // Inside the 48h window, full payment is collected
+                      // up-front — see booking-payment-window.ts. Heading
+                      // and submit label must reflect that or the client
+                      // sees "Deposit amount" then gets charged the total.
+                      bookingRequiresFullPayment
                         ? "TOTAL DUE NOW"
-                        : binRentalBooking
+                        : isB2BDeliveryQuoteServiceType(quote.service_type) &&
+                            !binRentalBooking
                           ? "TOTAL DUE NOW"
-                          : "DEPOSIT AMOUNT"
+                          : binRentalBooking
+                            ? "TOTAL DUE NOW"
+                            : "DEPOSIT AMOUNT"
                     }
                     submitLabel={
-                      binRentalBooking
-                        ? `PAY ${fmtPrice(deposit)} & BOOK`
-                        : isB2BDeliveryQuoteServiceType(quote.service_type)
-                          ? `PAY ${fmtPrice(deposit)} & CONFIRM DELIVERY`
-                          : `PAY ${fmtPrice(deposit)} & BOOK MY MOVE`
+                      bookingRequiresFullPayment
+                        ? `PAY ${fmtPrice(bookingAmount)} & BOOK MY MOVE`
+                        : binRentalBooking
+                          ? `PAY ${fmtPrice(bookingAmount)} & BOOK`
+                          : isB2BDeliveryQuoteServiceType(quote.service_type)
+                            ? `PAY ${fmtPrice(bookingAmount)} & CONFIRM DELIVERY`
+                            : `PAY ${fmtPrice(bookingAmount)} & BOOK MY MOVE`
                     }
                     onSuccess={(result) => {
                       if (
@@ -2510,7 +2559,8 @@ export default function QuotePageClient({
                     onError={(err) => {
                       console.error("Payment error:", err);
                     }}
-                  />
+                    />
+                  </>
                 )}
               </div>
             </section>

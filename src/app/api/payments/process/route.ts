@@ -11,6 +11,7 @@ import {
   sendB2BTrackingNotifications,
 } from "@/lib/delivery-tracking-tokens";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
+import { decideBookingPayment } from "@/lib/quotes/booking-payment-window";
 import { rateLimit } from "@/lib/rate-limit";
 import { isQuoteExpiredForBooking, quoteExpiryBlockedStatuses } from "@/lib/quote-expiry";
 import { squareThrownErrorStructured } from "@/lib/square-payment-errors";
@@ -106,6 +107,58 @@ export async function POST(req: Request) {
           { error: "Payment amount does not match the quoted total. Refresh the page or contact your coordinator." },
           { status: 400 },
         );
+      }
+    }
+
+    // ── Server-side 48h booking-window enforcement ──
+    // If a quote is being booked inside the full-payment window, the client
+    // MUST pay the full grand total — not the deposit. We enforce this
+    // independently of the client so a stale form (or someone crafting a
+    // payment payload manually) can't bypass it. Bin rental and B2B
+    // invoice flows are exempt (they're full-pay or net-30 already).
+    if (
+      svc !== "bin_rental" &&
+      !isB2BInvoiceQuote(factors, svc) &&
+      quote.move_date
+    ) {
+      const taxRateForCheck = Number(factors?.tax_rate ?? 0.13);
+      const customPrice = Number(quote.custom_price ?? 0);
+      const depositOnQuote = Number(quote.deposit_amount ?? 0);
+      // Best-effort grand total: prefer the stored custom_price (already
+      // tax-inclusive on most service types) when available; otherwise
+      // approximate from deposit. Tolerance below covers any drift.
+      const grandTotalForCheck =
+        customPrice > 0
+          ? Math.round(customPrice * (1 + taxRateForCheck))
+          : depositOnQuote;
+      const decision = decideBookingPayment({
+        moveDate: quote.move_date as string,
+        deposit: depositOnQuote,
+        grandTotal: grandTotalForCheck,
+        serverSide: true,
+      });
+      if (decision.requireFullPayment) {
+        // Require client to pay at least 98% of the grand total (allow 2%
+        // tolerance for rounding / tax delta between client and server).
+        const minRequired = Math.floor(grandTotalForCheck * 0.98);
+        if (Number(amount) < minRequired) {
+          console.warn("[payments/process] full-payment required, deposit submitted", {
+            quoteId,
+            moveDate: quote.move_date,
+            hoursUntilMove: decision.hoursUntilMove,
+            submittedAmount: amount,
+            grandTotal: grandTotalForCheck,
+          });
+          return NextResponse.json(
+            {
+              error: `Your move is in ${decision.hoursUntilMove} hours, so the full balance is collected at booking. Refresh the page — the form will switch to full payment automatically.`,
+              code: "FULL_PAYMENT_REQUIRED",
+              hours_until_move: decision.hoursUntilMove,
+              grand_total: grandTotalForCheck,
+            },
+            { status: 400 },
+          );
+        }
       }
     }
 
