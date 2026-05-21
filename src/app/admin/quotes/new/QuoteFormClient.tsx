@@ -107,6 +107,11 @@ import {
 } from "@/lib/pricing/weight-tiers";
 import { QUOTE_SERVICE_TYPE_DEFINITIONS } from "@/lib/quote-service-types";
 import { quoteNumericSuffixForHubSpot } from "@/lib/quotes/quote-id";
+import {
+  emptySingleItemLine,
+  SINGLE_ITEM_MAX_LINES,
+  type SingleItemLine,
+} from "@/lib/quotes/single-item-types";
 import InventoryInput, {
   type InventoryItemEntry,
 } from "@/components/inventory/InventoryInput";
@@ -1522,6 +1527,21 @@ export default function QuoteFormClient({
   const [numItems, setNumItems] = useState(1);
   const [singleItemSpecialHandling, setSingleItemSpecialHandling] =
     useState("");
+
+  // Phase 1+ multi-item array. The pricing engine reads from this first;
+  // the scalar fields above are kept populated from row[0] for downstream
+  // consumers (HubSpot deal name, emails) that haven't been migrated yet.
+  const [singleItemRows, setSingleItemRows] = useState<SingleItemLine[]>(() => [
+    emptySingleItemLine(),
+  ]);
+
+  // Junk-removal stop (revealed when the junk_removal addon is selected).
+  // We deliberately don't capture a drop-off address — crew uses any
+  // disposal facility on their own schedule.
+  const [junkPickupFrom, setJunkPickupFrom] = useState<
+    "" | "origin" | "destination" | "both"
+  >("");
+  const [junkItemsDescription, setJunkItemsDescription] = useState("");
 
   // White glove
   const [declaredValue, setDeclaredValue] = useState("");
@@ -4262,15 +4282,34 @@ export default function QuoteFormClient({
         }
       }
       if (serviceType === "single_item") {
-        base.item_description = itemDescription.trim() || undefined;
-        base.item_category = itemCategory;
-        base.item_weight_class = itemWeight || undefined;
-        base.assembly_needed = assembly;
-        base.stair_carry = stairCarry;
-        base.stair_flights = stairFlights;
-        base.number_of_items = numItems;
+        // Multi-item array is the canonical source for the pricing engine.
+        // The legacy scalars below are derived from row[0] so downstream
+        // consumers (HubSpot deal names, confirmation emails, etc.) keep
+        // working until Phase 5 migrates them.
+        const cleanedRows = singleItemRows
+          .filter((r) => r.item_description.trim() || r.item_category)
+          .slice(0, SINGLE_ITEM_MAX_LINES);
+        base.quote_items = cleanedRows;
+        const primary = cleanedRows[0];
+        base.item_description = primary?.item_description.trim() || undefined;
+        base.item_category = primary?.item_category || itemCategory;
+        base.item_weight_class = primary?.weight_class || undefined;
+        base.assembly_needed = primary?.assembly || "None";
+        base.stair_carry = !!primary?.stair_carry;
+        base.stair_flights = primary?.stair_flights ?? 1;
+        // Total units across all lines — engine uses for hour estimate.
+        base.number_of_items = cleanedRows.reduce(
+          (s, r) => s + Math.max(1, Math.floor(r.quantity || 1)),
+          0,
+        ) || 1;
         base.single_item_special_handling =
           singleItemSpecialHandling.trim() || undefined;
+        // Junk-removal stop (only meaningful when the addon is selected;
+        // engine guards on that and ignores when the addon isn't picked).
+        if (junkPickupFrom) base.junk_pickup_from = junkPickupFrom;
+        if (junkItemsDescription.trim()) {
+          base.junk_items_description = junkItemsDescription.trim();
+        }
       }
       if (serviceType === "white_glove") {
         const items = whiteGloveItemRows
@@ -4730,6 +4769,9 @@ export default function QuoteFormClient({
       b2bOverrideReason,
       b2bEmbedSnapshot,
       singleItemSpecialHandling,
+      singleItemRows,
+      junkPickupFrom,
+      junkItemsDescription,
       specialtyBuildingReqs,
       specialtyAccessDifficulty,
       binBundleType,
@@ -7794,109 +7836,266 @@ export default function QuoteFormClient({
                       className={`${fieldInput} resize-y min-h-[88px]`}
                     />
                   </div>
-                  <Field label="Item description *">
-                    <input
-                      value={itemDescription}
-                      onChange={(e) => setItemDescription(e.target.value)}
-                      placeholder="e.g. Leather sectional sofa, Dining table, Queen bed"
-                      className={fieldInput}
-                    />
-                  </Field>
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
-                    <Field label="Category">
-                      <select
-                        value={itemCategory}
-                        onChange={(e) => setItemCategory(e.target.value)}
-                        className={`${fieldInput} min-w-0`}
+                  {/* ── Multi-item list (Phase 1+) ── */}
+                  <div className="space-y-3">
+                    {singleItemRows.map((row, idx) => (
+                      <div
+                        key={row.id}
+                        className="rounded-lg border border-[var(--brd)] bg-[var(--card)] p-3 relative"
                       >
-                        {SINGLE_ITEM_CATEGORIES.map((c) => (
-                          <option key={c.value} value={c.value}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Weight Class">
-                      <select
-                        value={itemWeight}
-                        onChange={(e) => setItemWeight(e.target.value)}
-                        className={`${fieldInput} min-w-0`}
-                      >
-                        <option value="">Select…</option>
-                        {WEIGHT_CLASSES.map((w) => (
-                          <option key={w} value={w}>
-                            {w}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Number of Items">
-                      <input
-                        type="number"
-                        min={1}
-                        max={5}
-                        value={numItems}
-                        onChange={(e) =>
-                          setNumItems(Number(e.target.value) || 1)
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)]">
+                            Item {idx + 1}
+                          </p>
+                          {singleItemRows.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSingleItemRows((rs) =>
+                                  rs.filter((r) => r.id !== row.id),
+                                )
+                              }
+                              className="p-1 rounded-md text-[var(--tx3)] hover:text-[var(--red)] hover:bg-[var(--red)]/8 transition-colors"
+                              aria-label={`Remove item ${idx + 1}`}
+                            >
+                              <X size={14} weight="bold" />
+                            </button>
+                          )}
+                        </div>
+                        <Field label="Description *">
+                          <input
+                            value={row.item_description}
+                            onChange={(e) =>
+                              setSingleItemRows((rs) =>
+                                rs.map((r) =>
+                                  r.id === row.id
+                                    ? { ...r, item_description: e.target.value }
+                                    : r,
+                                ),
+                              )
+                            }
+                            placeholder="e.g. Leather sectional sofa, Queen bed frame"
+                            className={fieldInput}
+                          />
+                        </Field>
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end mt-2">
+                          <Field label="Category">
+                            <select
+                              value={row.item_category}
+                              onChange={(e) =>
+                                setSingleItemRows((rs) =>
+                                  rs.map((r) =>
+                                    r.id === row.id
+                                      ? { ...r, item_category: e.target.value }
+                                      : r,
+                                  ),
+                                )
+                              }
+                              className={`${fieldInput} min-w-0`}
+                            >
+                              {SINGLE_ITEM_CATEGORIES.map((c) => (
+                                <option key={c.value} value={c.value}>
+                                  {c.label}
+                                </option>
+                              ))}
+                            </select>
+                          </Field>
+                          <Field label="Weight">
+                            <select
+                              value={row.weight_class}
+                              onChange={(e) =>
+                                setSingleItemRows((rs) =>
+                                  rs.map((r) =>
+                                    r.id === row.id
+                                      ? { ...r, weight_class: e.target.value }
+                                      : r,
+                                  ),
+                                )
+                              }
+                              className={`${fieldInput} min-w-0`}
+                            >
+                              <option value="">Select…</option>
+                              {WEIGHT_CLASSES.map((w) => (
+                                <option key={w} value={w}>
+                                  {w}
+                                </option>
+                              ))}
+                            </select>
+                          </Field>
+                          <Field label="Qty">
+                            <input
+                              type="number"
+                              min={1}
+                              max={10}
+                              value={row.quantity}
+                              onChange={(e) =>
+                                setSingleItemRows((rs) =>
+                                  rs.map((r) =>
+                                    r.id === row.id
+                                      ? {
+                                          ...r,
+                                          quantity: Math.max(
+                                            1,
+                                            Number(e.target.value) || 1,
+                                          ),
+                                        }
+                                      : r,
+                                  ),
+                                )
+                              }
+                              className={`${fieldInput} w-14 min-w-0`}
+                            />
+                          </Field>
+                          <Field label="Assembly">
+                            <select
+                              value={row.assembly}
+                              onChange={(e) =>
+                                setSingleItemRows((rs) =>
+                                  rs.map((r) =>
+                                    r.id === row.id
+                                      ? { ...r, assembly: e.target.value }
+                                      : r,
+                                  ),
+                                )
+                              }
+                              className={`${fieldInput} min-w-0`}
+                            >
+                              {ASSEMBLY_OPTIONS.map((a) => (
+                                <option key={a} value={a}>
+                                  {a}
+                                </option>
+                              ))}
+                            </select>
+                          </Field>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] font-bold uppercase text-[var(--tx3)] shrink-0">
+                              Stairs
+                            </span>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={row.stair_carry}
+                              onClick={() =>
+                                setSingleItemRows((rs) =>
+                                  rs.map((r) =>
+                                    r.id === row.id
+                                      ? { ...r, stair_carry: !r.stair_carry }
+                                      : r,
+                                  ),
+                                )
+                              }
+                              className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${row.stair_carry ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
+                            >
+                              <span
+                                className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${row.stair_carry ? "translate-x-4" : ""}`}
+                              />
+                            </button>
+                            {row.stair_carry && (
+                              <input
+                                type="number"
+                                min={1}
+                                max={10}
+                                value={row.stair_flights ?? 1}
+                                onChange={(e) =>
+                                  setSingleItemRows((rs) =>
+                                    rs.map((r) =>
+                                      r.id === row.id
+                                        ? {
+                                            ...r,
+                                            stair_flights:
+                                              Number(e.target.value) || 1,
+                                          }
+                                        : r,
+                                    ),
+                                  )
+                                }
+                                className={`${fieldInput} w-12 py-1 min-w-0`}
+                                title="Flights"
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {singleItemRows.length < SINGLE_ITEM_MAX_LINES && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSingleItemRows((rs) => [
+                            ...rs,
+                            emptySingleItemLine(),
+                          ])
                         }
-                        className={`${fieldInput} w-14 min-w-0`}
-                      />
-                    </Field>
-                    <Field label="Assembly">
-                      <select
-                        value={assembly}
-                        onChange={(e) => setAssembly(e.target.value)}
-                        className={`${fieldInput} min-w-0`}
+                        className="w-full py-2.5 rounded-lg border border-dashed border-[var(--brd)] text-[11px] font-semibold uppercase tracking-wide text-[var(--tx3)] hover:border-[var(--admin-primary-fill)] hover:text-[var(--admin-primary-fill)] transition-colors flex items-center justify-center gap-2"
                       >
-                        {ASSEMBLY_OPTIONS.map((a) => (
-                          <option key={a} value={a}>
-                            {a}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] font-bold uppercase text-[var(--tx3)] shrink-0">
-                        Stair Carry
-                      </span>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={stairCarry}
-                        onClick={() => setStairCarry(!stairCarry)}
-                        className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${stairCarry ? "bg-[var(--admin-primary-fill)]" : "bg-[var(--brd)]"}`}
-                      >
-                        <span
-                          className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`}
-                        />
+                        <Plus size={12} weight="bold" />
+                        Add another item ({singleItemRows.length}/
+                        {SINGLE_ITEM_MAX_LINES})
                       </button>
-                      {stairCarry && (
-                        <input
-                          type="number"
-                          min={1}
-                          max={10}
-                          value={stairFlights}
-                          onChange={(e) =>
-                            setStairFlights(Number(e.target.value) || 1)
-                          }
-                          className={`${fieldInput} w-12 py-1 min-w-0`}
-                          title="Flights"
-                        />
-                      )}
-                    </div>
+                    )}
                   </div>
-                  {numItems >= 3 && (
-                    <p className="text-[10px] text-[var(--tx3)] mt-1 max-w-md leading-snug">
-                      For 3+ items of different types, our{" "}
-                      <button
-                        type="button"
-                        onClick={() => setServiceType("white_glove")}
-                        className="font-semibold text-[var(--admin-primary-fill)] underline underline-offset-2 hover:opacity-90"
-                      >
-                        White Glove service
-                      </button>{" "}
-                      offers itemized pricing with assembly and premium handling.
-                    </p>
+
+                  {/* ── Junk-removal sub-section (only when addon selected) ── */}
+                  {Array.from(selectedAddons.values()).some((a) => {
+                    const slug = (
+                      allAddons.find((x) => x.id === a.addon_id)?.slug ?? ""
+                    ).toLowerCase();
+                    return slug === "junk_removal";
+                  }) && (
+                    <div className="mt-3 p-3 rounded-lg border border-[var(--brd)] bg-[var(--bg)] space-y-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx)]">
+                        Junk removal details
+                      </p>
+                      <p className="text-[10px] text-[var(--tx3)] leading-snug">
+                        Disposal + truck volume is covered by the tier you
+                        picked. The crew uses any facility on their schedule —
+                        no drop address required.
+                      </p>
+                      <div>
+                        <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--tx3)] block mb-1.5">
+                          Pick up junk from
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {(
+                            [
+                              ["origin", "Pickup address"],
+                              ["destination", "Delivery address"],
+                              ["both", "Both"],
+                            ] as const
+                          ).map(([val, label]) => (
+                            <label
+                              key={val}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-[11px] cursor-pointer transition-colors ${
+                                junkPickupFrom === val
+                                  ? "border-[var(--admin-primary-fill)] bg-[var(--admin-primary-fill)]/10 text-[var(--tx)]"
+                                  : "border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--tx)]"
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="junkPickupFrom"
+                                value={val}
+                                checked={junkPickupFrom === val}
+                                onChange={() => setJunkPickupFrom(val)}
+                                className="sr-only"
+                              />
+                              {label}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <Field label="Items to remove (internal note)">
+                        <textarea
+                          value={junkItemsDescription}
+                          onChange={(e) =>
+                            setJunkItemsDescription(e.target.value)
+                          }
+                          rows={2}
+                          placeholder="e.g. King mattress, broken dresser, old chair"
+                          className={`${fieldInput} resize-y min-h-[56px]`}
+                        />
+                      </Field>
+                    </div>
                   )}
                 </div>
               )}
