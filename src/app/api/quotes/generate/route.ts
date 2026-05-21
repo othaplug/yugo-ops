@@ -49,11 +49,16 @@ import { buildBinRentalQuoteResponse } from "./bin-rental-flow";
 import {
   calculateDampenedInventoryModifier,
   crewLoadedHourlyRate,
+  // estimateFuelCostWithDeadhead is intentionally retained in the import
+  // list — other code paths (office_move, single_item, etc.) still use
+  // the simpler flat-deadhead estimator. The residential margin path
+  // below now uses calcThreeLegFuelCost from three-leg-fuel.ts.
   estimateFuelCostWithDeadhead,
   estimateOperationalSuppliesCost,
   estimateTruckCostPerMove,
   expectedInventoryScoreForMoveSize,
 } from "@/lib/pricing/margin-cost-model";
+import { calcThreeLegFuelCost } from "@/lib/pricing/three-leg-fuel";
 import { evaluateServiceAreaForQuote } from "@/lib/pricing/service-area";
 import {
   aggregateAccessSurchargesForLabourValidation,
@@ -1832,7 +1837,22 @@ async function calcResidential(
   const estLabourCost = Math.round(actualEstHours * (labour?.crewSize ?? minCrew) * loadedRate);
   const estateLoadedMultiDayCost = estateLoadedLabourCost(estateDayPlan, loadedRate);
   const estTruckCost = estimateTruckCostPerMove(recTruck, config);
-  const estFuelCost = estimateFuelCostWithDeadhead(distKm, recTruck, config);
+  // Three-leg fuel: office→pickup deadhead + loaded job route + dropoff→office
+  // deadhead. Falls back to a 1.5× multiplier when coordinates aren't passed
+  // through. See src/lib/pricing/three-leg-fuel.ts. The old single-leg +
+  // flat 15km estimator (estimateFuelCostWithDeadhead) undercounted any
+  // out-of-town job — e.g. Stouffville quotes were priced for 11.7km of
+  // fuel when actual driving was ~120km round-trip.
+  const fuelBreakdown = calcThreeLegFuelCost({
+    pickupLat: input.from_lat,
+    pickupLng: input.from_lng,
+    dropoffLat: input.to_lat,
+    dropoffLng: input.to_lng,
+    jobRouteKm: distKm,
+    truckType: recTruck,
+    config,
+  });
+  const estFuelCost = fuelBreakdown.total;
   const estSuppliesCost = estimateOperationalSuppliesCost(input.inventory_items ?? []);
   const estTotalCost = estLabourCost + estTruckCost + estFuelCost + estSuppliesCost;
   const estTotalCostEstateOps = estTotalCost - estLabourCost + estateLoadedMultiDayCost;
@@ -1917,6 +1937,17 @@ async function calcResidential(
         supplies: estSuppliesCost,
         total: estTotalCost,
         total_estate_ops: estTotalCostEstateOps,
+        // Three-leg fuel detail — let the admin margin card expand to
+        // show why the fuel cost is what it is. See three-leg-fuel.ts.
+        fuel_breakdown: {
+          deadhead_out_km: fuelBreakdown.deadheadOutKm,
+          deadhead_out_cost: fuelBreakdown.deadheadOutCost,
+          job_route_km: fuelBreakdown.jobRouteKm,
+          job_route_cost: fuelBreakdown.jobRouteCost,
+          deadhead_return_km: fuelBreakdown.deadheadReturnKm,
+          deadhead_return_cost: fuelBreakdown.deadheadReturnCost,
+          precise: fuelBreakdown.precise,
+        },
       },
       estate_day_plan: {
         days: estateDayPlan.days,
