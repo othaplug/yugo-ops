@@ -13,6 +13,13 @@ import {
   mergedRatesWithBundleTiers,
   prepareB2bLineItemsForDimensionalEngine,
 } from "@/lib/b2b-dimensional-quote-prep";
+import { getZoneFromDistance } from "@/lib/b2b/zone-detector";
+import { parseRateCard } from "@/lib/b2b/rate-card-types";
+import { calcCabinetPrice, calcAppliancePrice } from "@/lib/b2b/cabinet-pricing";
+import { calcFlooringPrice, type FlooringMaterial, type FlooringHandling } from "@/lib/b2b/flooring-pricing";
+
+/** Vertical codes that use flat-band rate card instead of the dimensional engine. */
+const FLAT_BAND_VERTICALS = new Set(["cabinetry", "appliance", "flooring"]);
 
 const TAX_FALLBACK = 0.13;
 
@@ -117,6 +124,144 @@ export async function POST(req: NextRequest) {
         assembly_required: !!o.assembly_required,
       });
     }
+
+    // ── Flat-band rate card path (cabinetry, flooring, appliance) ────────────
+    if (FLAT_BAND_VERTICALS.has(verticalCode)) {
+      const rcRaw = config.get("b2b_rate_card");
+      const rateCard = rcRaw ? parseRateCard(JSON.parse(rcRaw)) : null;
+      if (!rateCard) {
+        return NextResponse.json(
+          { error: "Rate card not configured — run the b2b_rate_card SQL migration" },
+          { status: 500 },
+        );
+      }
+
+      const deliveryKmFromOffice = await straightLineKmFromGtaCore(deliveryMain);
+      const zone = getZoneFromDistance(deliveryKmFromOffice ?? 0);
+
+      const totalUnits = lines.reduce((s, l) => s + Math.max(1, l.quantity), 0);
+      const isPartner = !!orgId;
+      const isWeekend = scheduledDate ? isMoveDateWeekend(scheduledDate) : false;
+      const hasLongCarry =
+        pickupAccess === "long_carry" || deliveryAccess === "long_carry";
+      const stairFlights =
+        typeof body.stairs_flights === "number" && body.stairs_flights > 0
+          ? Math.floor(body.stairs_flights)
+          : 0;
+
+      // Heavy / overweight counts from weight_category on line items
+      const heavyItemCount = lines.reduce((s, l) => {
+        const wc = (l.weight_category ?? "").toLowerCase();
+        return s + (wc === "heavy" || wc === "very_heavy" ? l.quantity : 0);
+      }, 0);
+      const overweightItemCount = lines.reduce((s, l) => {
+        const wc = (l.weight_category ?? "").toLowerCase();
+        return s + (wc === "super_heavy" ? l.quantity : 0);
+      }, 0);
+
+      let result: ReturnType<typeof calcCabinetPrice>;
+
+      if (verticalCode === "flooring") {
+        const rawMat = typeof body.flooring_material === "string"
+          ? body.flooring_material.toLowerCase()
+          : "vinyl";
+        const material: FlooringMaterial =
+          rawMat === "hardwood" || rawMat === "tile" ? rawMat : "vinyl";
+        const rawHandling = handlingType.toLowerCase();
+        const handling: FlooringHandling =
+          rawHandling === "inside" ||
+          rawHandling === "room_placement" ||
+          rawHandling === "room_of_choice" ||
+          rawHandling === "white_glove"
+            ? "inside"
+            : "curbside";
+
+        const boxCount =
+          typeof body.box_count === "number" && body.box_count > 0
+            ? Math.round(body.box_count)
+            : totalUnits;
+
+        result = calcFlooringPrice(
+          {
+            boxCount,
+            material,
+            handling,
+            zone,
+            isPartner,
+            addons: {
+              stairsFlights: stairFlights,
+              longCarry: hasLongCarry,
+              weekend: isWeekend,
+            },
+          },
+          rateCard,
+        );
+      } else if (verticalCode === "appliance") {
+        result = calcAppliancePrice(
+          {
+            pieceCount: totalUnits,
+            zone,
+            isPartner,
+            addons: {
+              longCarry: hasLongCarry,
+              stairsFlights: stairFlights,
+              weekend: isWeekend,
+              heavyItemCount,
+            },
+          },
+          rateCard,
+        );
+      } else {
+        // cabinetry
+        const declaredValRaw = lines.find((l) => l.declared_value)?.declared_value;
+        const insuranceDeclaredValue = declaredValRaw
+          ? Number(declaredValRaw.replace(/[^0-9.]/g, "")) || undefined
+          : undefined;
+
+        result = calcCabinetPrice(
+          {
+            pieceCount: totalUnits,
+            zone,
+            isPartner,
+            addons: {
+              longCarry: hasLongCarry,
+              stairsFlights: stairFlights,
+              weekend: isWeekend,
+              heavyItemCount,
+              overweightItemCount,
+              insuranceDeclaredValue,
+            },
+          },
+          rateCard,
+        );
+      }
+
+      const taxRate = cfgNum(config, "tax_rate", TAX_FALLBACK);
+      const preRoundSubtotal = result.total;
+      const rounding = cfgNum(config, "rounding_nearest", 25);
+      const roundedPreTax = roundTo(preRoundSubtotal, rounding);
+      const hst = Math.round(roundedPreTax * taxRate * 100) / 100;
+
+      return NextResponse.json({
+        ok: true,
+        subtotal_pre_round: preRoundSubtotal,
+        access_surcharge: 0,
+        multi_stop_surcharge: 0,
+        rounded_pre_tax: roundedPreTax,
+        hst,
+        total_with_tax: Math.round((roundedPreTax + hst) * 100) / 100,
+        breakdown: result.breakdown,
+        includes: [`${totalUnits} item${totalUnits !== 1 ? "s" : ""}`, zone.replace(/_/g, " "), isPartner ? "partner rate" : "standard rate"],
+        truck: "sprinter",
+        crew: 2,
+        estimated_hours: null,
+        total_distance_km: distKm,
+        stop_count: 2,
+        requires_custom_quote: result.requiresCustomQuote,
+        pricing_engine: "flat_band",
+      });
+    }
+    // ── End flat-band path ────────────────────────────────────────────────────
 
     const loaded = await loadB2BVerticalPricing(admin, verticalCode, orgId);
     if (!loaded) {

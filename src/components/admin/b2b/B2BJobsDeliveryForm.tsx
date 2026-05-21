@@ -617,6 +617,8 @@ export default function B2BJobsDeliveryForm({
     crew: number;
     estimated_hours: number;
     access_surcharge: number;
+    requires_custom_quote?: boolean;
+    pricing_engine?: string;
   };
   const [clientEstimate, setClientEstimate] = useState<B2bPriceBlock | null>(
     null,
@@ -624,6 +626,7 @@ export default function B2BJobsDeliveryForm({
   const [serverPricing, setServerPricing] = useState<B2bPriceBlock | null>(
     null,
   );
+  const [flooringMaterial, setFlooringMaterial] = useState<"vinyl" | "hardwood" | "tile">("vinyl");
 
   const effectiveOrgId =
     applyPartnerRates && partnerOrgId.trim() ? partnerOrgId.trim() : null;
@@ -771,6 +774,8 @@ export default function B2BJobsDeliveryForm({
           haul_away_units: haulAwayUnits ? Number(haulAwayUnits) : undefined,
           returns_pickup: returnsPickup,
           same_day: sameDay,
+          flooring_material: flooringMaterial || undefined,
+          box_count: boxCount ? Number(boxCount) : undefined,
         }),
       });
       const data = await res.json();
@@ -784,6 +789,8 @@ export default function B2BJobsDeliveryForm({
           crew: data.crew,
           estimated_hours: data.estimated_hours,
           access_surcharge: data.access_surcharge ?? 0,
+          requires_custom_quote: !!data.requires_custom_quote,
+          pricing_engine: typeof data.pricing_engine === "string" ? data.pricing_engine : undefined,
         });
       }
     } catch {
@@ -820,6 +827,8 @@ export default function B2BJobsDeliveryForm({
     haulAwayUnits,
     returnsPickup,
     sameDay,
+    flooringMaterial,
+    boxCount,
   ]);
 
   useLayoutEffect(() => {
@@ -1648,6 +1657,8 @@ export default function B2BJobsDeliveryForm({
           haul_away_units: haulAwayUnits ? Number(haulAwayUnits) : undefined,
           returns_pickup: returnsPickup,
           same_day: sameDay,
+          flooring_material: flooringMaterial || undefined,
+          box_count: boxCount ? Number(boxCount) : undefined,
         }),
       });
       const pvData = await pv.json();
@@ -1669,6 +1680,8 @@ export default function B2BJobsDeliveryForm({
         crew: pvData.crew,
         estimated_hours: pvData.estimated_hours,
         access_surcharge: pvData.access_surcharge ?? 0,
+        requires_custom_quote: !!pvData.requires_custom_quote,
+        pricing_engine: typeof pvData.pricing_engine === "string" ? pvData.pricing_engine : undefined,
       });
 
       const ovAmt = parseNumberInput(overridePrice);
@@ -2702,6 +2715,31 @@ export default function B2BJobsDeliveryForm({
           </div>
         )}
 
+        {/* ── Flooring material selector ── */}
+        {verticalCode === "flooring" && (
+          <div className="pt-2 border-t border-[var(--brd)]/60">
+            <p className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx2)] mb-2">
+              Flooring material
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {(["vinyl", "hardwood", "tile"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setFlooringMaterial(m)}
+                  className={`px-3 py-1.5 rounded-md text-[12px] font-medium border transition-colors capitalize ${
+                    flooringMaterial === m
+                      ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                      : "bg-transparent text-[var(--tx)] border-[var(--brd)] hover:bg-[var(--bg2)]"
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Box-count shortcut (TERTIARY, flooring only) ── */}
         {routeMode !== "multi" &&
           verticalCode === "flooring" &&
@@ -3479,6 +3517,21 @@ export default function B2BJobsDeliveryForm({
               <p className="text-[10px] text-[var(--tx3)]">
                 Calculating route distance…
               </p>
+            )}
+            {serverPricing?.requires_custom_quote && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl dark:bg-amber-900/20 dark:border-amber-700/50">
+                <p className="text-[12px] font-semibold text-amber-800 dark:text-amber-200">
+                  Custom quote required
+                </p>
+                {serverPricing.breakdown[0] && (
+                  <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">
+                    {serverPricing.breakdown[0].label}
+                  </p>
+                )}
+                <p className="text-[10px] text-[var(--tx3)] mt-1.5">
+                  Use the price override below to enter a manually calculated amount.
+                </p>
+              </div>
             )}
             <button
               type="button"
