@@ -57,9 +57,13 @@ function buildRows(args: {
   // as flat fees; adding a $650 day rate on top would double-charge the
   // client — see YG-30238). Keep this in sync with detectDayCount in
   // src/lib/quotes/move-scope.ts.
+  //
+  // STRICT rule (tightened): packing/unpacking day rate auto-fires ONLY
+  // when tier === "estate" AND home is 3BR+. Previously 4BR/5BR_plus also
+  // fired on every tier, which overpriced Essential/Signature large-home
+  // moves where clients pack themselves.
   const isLargeHome = ms === "3br" || ms === "4br" || ms === "5br_plus"
-  const hasPacking =
-    (tier === "estate" && isLargeHome) || ms === "4br" || ms === "5br_plus"
+  const hasPacking = tier === "estate" && isLargeHome
   const hasUnpacking = tier === "estate" && isLargeHome
 
   const CRATING_TYPES = new Set([
@@ -78,18 +82,17 @@ function buildRows(args: {
   rows.push({
     key: "pack",
     checked: hasPacking,
-    locked:
-      (tier === "estate" && isLargeHome) ||
-      ms === "4br" ||
-      ms === "5br_plus",
+    // Only LOCKED when the structural auto-trigger fires (Estate + 3BR+).
+    // For every other combination, the row is unlocked so the coordinator
+    // can toggle it on manually if they need a labour-pack scope they're
+    // pricing separately from the addon fee.
+    locked: tier === "estate" && isLargeHome,
     title: "Packing day",
-    dayNote: hasPacking ? "+1 day" : "Add-on fee (single-day)",
+    dayNote: hasPacking ? "+1 day" : "Optional — not auto-included",
     amountNote:
       tier === "estate" && isLargeHome
         ? "Included with Estate tier (+ packing day)"
-        : hasPacking
-          ? `$${args.packDayRate.toLocaleString("en-CA")} (${args.packDayRate.toLocaleString("en-CA")} per packing day)`
-          : "Flat add-on fee — no separate day rate",
+        : "Add-on fee only — no day rate unless added manually",
   })
 
   rows.push({
@@ -271,21 +274,27 @@ export default function MoveScopeSection({
             <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--tx3)]">
               Days needed
             </p>
-            <p className="text-[11px] text-[var(--tx)] mt-1">
-              Auto-detected:{" "}
-              <span className="font-semibold">{detectedReason}</span>
-              {moveScopeDaysOverride != null && (
-                <span className="text-[var(--tx3)]">
-                  {" "}
-                  · Stored: {scopePreview.effectiveDays} days
-                </span>
-              )}
+            {/*
+              Single clear label based on the EFFECTIVE day count being
+              priced — no more "Auto-detected: X · Stored: Y" exposing
+              internal state to the coordinator. The system suggestion
+              moves to a muted sub-line only when it differs from what's
+              currently being applied (i.e. coordinator overrode).
+            */}
+            <p className="text-[13px] font-semibold text-[var(--tx)] mt-1 tabular-nums">
+              {scopePreview.effectiveDays === 1
+                ? "Single-day move"
+                : `${scopePreview.effectiveDays}-day service`}
             </p>
-            {detectedDaysOnly !== scopePreview.effectiveDays &&
-              moveScopeDaysOverride == null && (
-                <p className="text-[10px] text-[var(--tx3)] mt-1">
-                  Effective calendar days ({scopePreview.effectiveDays}) reflect
-                  add-on schedule padding.
+            <p className="text-[10px] text-[var(--tx3)] mt-0.5">
+              {detectedReason}
+            </p>
+            {moveScopeDaysOverride != null &&
+              detectedDaysOnly !== moveScopeDaysOverride && (
+                <p className="text-[10px] text-[var(--tx3)] mt-1 leading-snug">
+                  System suggests {detectedDaysOnly}{" "}
+                  {detectedDaysOnly === 1 ? "day" : "days"} —
+                  coordinator override applied.
                 </p>
               )}
           </div>
@@ -325,6 +334,24 @@ export default function MoveScopeSection({
             </button>
           </div>
         </div>
+
+        {/* Soft warning: Estate 3BR+ moves typically need a packing day. If
+            coordinator forces a single-day override on one, flag it. Not a
+            block — small Estate moves (1BR/2BR, intentional same-day) are
+            valid. */}
+        {tierNorm === "estate" &&
+          (normMoveSizeKey(moveSize) === "3br" ||
+            normMoveSizeKey(moveSize) === "4br" ||
+            normMoveSizeKey(moveSize) === "5br_plus") &&
+          moveScopeDaysOverride != null &&
+          moveScopeDaysOverride === 1 && (
+            <p className="text-[10px] text-amber-700 leading-snug">
+              Note: Estate moves for{" "}
+              {normMoveSizeKey(moveSize).toUpperCase().replace("_", " ")} typically
+              run multi-day with a separate packing day. Confirm with the client
+              before sending.
+            </p>
+          )}
 
         <div className="border-t border-[var(--brd)]/40 pt-3 space-y-2">
           <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--tx3)]">

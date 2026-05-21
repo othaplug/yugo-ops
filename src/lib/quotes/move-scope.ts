@@ -41,27 +41,29 @@ export function detectDayCount(input: MoveScopeDetectionInput): number {
   // ─────────────────────────────────────────────────────────────────────────
   // Day-rate billing (Mode B) — STRUCTURAL triggers only.
   //
-  // Packing/unpacking ADD-ONS (full_packing, unpacking slugs) are Mode A:
-  // they bill a flat fee via the addons table (`calculateAddons`) and the
-  // crew packs/unpacks within the single move day on standard 1BR/2BR moves.
-  // They MUST NOT also trigger a separate $650 day rate here or the quote
-  // double-charges the client (see YG-30238).
+  // Packing/unpacking auto-triggers are now STRICT:
+  //   - Estate tier + 3BR/4BR/5BR_plus → auto pack day + unpack day
+  //   - Everything else                → no auto pack/unpack day
   //
-  // Structural multi-day triggers:
-  //   - Estate tier with large home (3BR+)
-  //   - 4BR / 5BR_plus (inherently multi-day regardless of tier)
-  //   - Specialty crating
-  //   - 5BR_plus extra volume day
+  // Previously 4BR / 5BR_plus auto-fired a pack day on every tier. That
+  // was wrong: a 4BR Essential or Signature client packs themselves;
+  // crew labour is the move day only. Coordinators reported over-priced
+  // quotes for 4BR Essential moves because the engine added $650 they
+  // didn't need.
+  //
+  // Packing/unpacking ADD-ONS (full_packing, unpacking slugs) are Mode A:
+  // they bill a flat fee via the addons table and the crew packs within
+  // the single move day. They MUST NOT trigger a day rate here.
+  //
+  // Other structural multi-day triggers (specialty crating, 5BR_plus
+  // volume) are handled below — they're unrelated to packing.
   // ─────────────────────────────────────────────────────────────────────────
   const isLargeHome = ms === "3br" || ms === "4br" || ms === "5br_plus"
 
-  const hasPacking =
-    (tier === "estate" && isLargeHome) || ms === "4br" || ms === "5br_plus"
-
+  const hasPacking = tier === "estate" && isLargeHome
   if (hasPacking) days += 1
 
   const hasUnpacking = tier === "estate" && isLargeHome
-
   if (hasUnpacking) days += 1
 
   const hasSpecialtyCrating =
@@ -149,9 +151,9 @@ export function computeMoveScopeAddonPreTax(
   // ─────────────────────────────────────────────────────────────────────────
   const isLargeHome = ms === "3br" || ms === "4br" || ms === "5br_plus"
 
-  const hasPacking =
-    (tier === "estate" && isLargeHome) || ms === "4br" || ms === "5br_plus"
-
+  // STRICT auto-trigger: Estate + large home only.
+  // Keep in lockstep with detectDayCount above.
+  const hasPacking = tier === "estate" && isLargeHome
   const hasUnpacking = tier === "estate" && isLargeHome
 
   const hasSpecialtyCrating =
