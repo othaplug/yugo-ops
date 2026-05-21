@@ -1103,8 +1103,13 @@ export default function CrewJobPage({
   const originLabel = useLogisticsCopy ? "Origin" : "Pickup";
   const destinationLabel = useLogisticsCopy ? "Destination" : "Drop-off";
 
+  // pb-28 on PageContent leaves room below the content so the bottom-left
+  // FloatingActionMenu (CrewMobileFloatingNav, fixed positioning, ~3.5rem
+  // square + safe-area inset) never sits on top of the last items in the
+  // Timeline. Screenshot showed the home icon clipping the leading "E" of
+  // "En route to pickup" — that was the FAB occluding the timeline tail.
   return (
-    <PageContent className="crew-job-premium w-full min-w-0 max-w-[520px] mx-auto">
+    <PageContent className="crew-job-premium w-full min-w-0 max-w-[520px] mx-auto pb-28">
       <Suspense fallback={null}>
         <OpenNavFromQuery setNavOpen={setNavOpen} />
       </Suspense>
@@ -1534,21 +1539,38 @@ export default function CrewJobPage({
             </div>
           )}
 
-          {showClientPreMovePrepBanner && job && (
+          {/*
+            Pre-move prep card has two modes:
+            - INCOMPLETE → full card with prompt to confirm access/parking
+              with dispatch. This is actionable for the crew.
+            - COMPLETE → compact single-line confirmation. The client is
+              done; the crew doesn't need a 25%-of-viewport green panel
+              telling them so. A small forest-tinted strip is enough.
+          */}
+          {showClientPreMovePrepBanner && job && job.preMoveChecklistAllComplete && (
+            <div className="mx-2 flex items-center gap-2 rounded-[var(--yu3-r-md)] border border-[var(--yu3-forest)]/25 bg-[var(--yu3-forest)]/5 px-3 py-2">
+              <ListChecks
+                size={14}
+                weight="bold"
+                className="shrink-0 text-[var(--yu3-forest)]"
+                aria-hidden
+              />
+              <p className="text-[11px] leading-snug text-[var(--yu3-forest)] [font-family:var(--font-body)]">
+                Client pre-move prep complete
+                {job.preMoveChecklistDone != null && job.preMoveChecklistTotal != null
+                  ? ` (${job.preMoveChecklistDone}/${job.preMoveChecklistTotal})`
+                  : ""}
+                {job.preMoveChecklistNotifiedAt
+                  ? " · coordinator + ops notified"
+                  : ""}
+              </p>
+            </div>
+          )}
+          {showClientPreMovePrepBanner && job && !job.preMoveChecklistAllComplete && (
               <div
-                className={`mx-2 flex items-start gap-3 rounded-[var(--yu3-r-xl)] border px-4 py-3 ${
-                  job.preMoveChecklistAllComplete
-                    ? "border-[var(--yu3-forest)]/30 bg-[var(--yu3-forest)]/8"
-                    : "border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/80"
-                }`}
+                className="mx-2 flex items-start gap-3 rounded-[var(--yu3-r-xl)] border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface-sunken)]/80 px-4 py-3"
               >
-                <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--yu3-r-lg)] ${
-                    job.preMoveChecklistAllComplete
-                      ? "bg-[var(--yu3-forest)]/20 text-[var(--yu3-forest)]"
-                      : "bg-[var(--yu3-wine-tint)] text-[var(--yu3-ink-muted)]"
-                  }`}
-                >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--yu3-r-lg)] bg-[var(--yu3-wine-tint)] text-[var(--yu3-ink-muted)]">
                   <ListChecks size={22} weight="bold" aria-hidden />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -1556,23 +1578,9 @@ export default function CrewJobPage({
                     Client pre-move prep
                   </p>
                   <p className="text-[12px] text-[var(--yu3-ink-muted)] mt-1 leading-snug">
-                    {job.preMoveChecklistAllComplete ? (
-                      <>
-                        Checklist complete ({job.preMoveChecklistDone}/
-                        {job.preMoveChecklistTotal}
-                        ).{" "}
-                        {job.preMoveChecklistNotifiedAt
-                          ? "Coordinator and ops were emailed when they finished."
-                          : "They finished every item in their tracking link."}
-                      </>
-                    ) : (
-                      <>
-                        {job.preMoveChecklistDone ?? 0}/
-                        {job.preMoveChecklistTotal} items done in their tracking
-                        link. Confirm access and parking with dispatch if
-                        needed.
-                      </>
-                    )}
+                    {job.preMoveChecklistDone ?? 0}/
+                    {job.preMoveChecklistTotal} items done in their tracking
+                    link. Confirm access and parking with dispatch if needed.
                   </p>
                 </div>
               </div>

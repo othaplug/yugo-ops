@@ -13,6 +13,7 @@ import {
   ArrowRight,
   ArrowsSplit,
   Compass,
+  DotsThreeVertical,
   ForkKnife,
   List,
   MapPin,
@@ -24,6 +25,7 @@ import {
   SpeakerSlash,
   TrafficCone,
   Warning,
+  X,
 } from "@phosphor-icons/react";
 import GlobalModal from "@/components/ui/Modal";
 import { markCrewLocationAllowed } from "@/lib/crew/useCrewPersistentTracking";
@@ -377,6 +379,76 @@ function CrewNavOpsFloatingControls({
   onAlternatesOpen: () => void;
 }) {
   const { current: mapRef } = useMap();
+  // Tray collapse: only Recenter + Mute are always visible during driving.
+  // Compass realign, route options, and report-issue live behind "More"
+  // (DotsThreeVertical). Five always-visible buttons were competing with
+  // turn-instruction visual hierarchy — now only the safety-critical ones
+  // stay on-screen by default.
+  const [trayOpen, setTrayOpen] = useState(false);
+
+  const compassBtn = (
+    <button
+      key="compass"
+      type="button"
+      className={NAV_FLOAT_BTN}
+      aria-label="Realign to driving view"
+      title="Driving view"
+      onClick={() => {
+        const u = userPos;
+        const m = mapRef?.getMap?.();
+        if (!u || !m) return;
+        try {
+          easeToFirstPersonNav(m, u, navBearingDeg, setMapBearing, 500);
+        } catch {
+          /* ignore */
+        }
+        setTrayOpen(false);
+      }}
+    >
+      <span className="relative flex h-8 w-8 items-center justify-center">
+        <Compass className="absolute text-[#A8A29E]" size={26} weight="regular" aria-hidden />
+        <span
+          className="relative z-[1] text-[8px] font-bold text-red-500 drop-shadow"
+          style={{ transform: `rotate(${-mapBearing}deg)` }}
+          aria-hidden
+        >
+          N
+        </span>
+      </span>
+    </button>
+  );
+
+  const routeOptionsBtn = (
+    <button
+      key="route"
+      type="button"
+      className={NAV_FLOAT_BTN}
+      aria-label="Route options"
+      title="Route options"
+      onClick={() => {
+        onAlternatesOpen();
+        setTrayOpen(false);
+      }}
+    >
+      <List size={22} weight="bold" aria-hidden />
+    </button>
+  );
+
+  const reportBtn = (
+    <button
+      key="report"
+      type="button"
+      className={NAV_FLOAT_BTN}
+      aria-label="Report road issue"
+      title="Report"
+      onClick={() => {
+        onReportOpen();
+        setTrayOpen(false);
+      }}
+    >
+      <Warning size={22} weight="bold" className="text-amber-600" aria-hidden />
+    </button>
+  );
 
   return (
     <div
@@ -386,44 +458,33 @@ function CrewNavOpsFloatingControls({
       }}
     >
       <div className="flex flex-col items-center gap-2.5">
+        {/* Tray content — expands above the always-visible controls so the
+           closer-to-thumb buttons (Recenter, Mute) stay anchored. */}
+        {trayOpen && (
+          <div className="flex flex-col items-center gap-2.5 pb-1">
+            {compassBtn}
+            {routeOptionsBtn}
+            {reportBtn}
+          </div>
+        )}
+
+        {/* More / Close toggle */}
         <button
           type="button"
           className={NAV_FLOAT_BTN}
-          aria-label="Realign to driving view"
-          title="Driving view"
-          onClick={() => {
-            const u = userPos;
-            const m = mapRef?.getMap?.();
-            if (!u || !m) return;
-            try {
-              easeToFirstPersonNav(m, u, navBearingDeg, setMapBearing, 500);
-            } catch {
-              /* ignore */
-            }
-          }}
+          aria-label={trayOpen ? "Close tools" : "More tools"}
+          aria-expanded={trayOpen}
+          title={trayOpen ? "Close" : "More"}
+          onClick={() => setTrayOpen((v) => !v)}
         >
-          <span className="relative flex h-8 w-8 items-center justify-center">
-            <Compass className="absolute text-[#A8A29E]" size={26} weight="regular" aria-hidden />
-            <span
-              className="relative z-[1] text-[8px] font-bold text-red-500 drop-shadow"
-              style={{ transform: `rotate(${-mapBearing}deg)` }}
-              aria-hidden
-            >
-              N
-            </span>
-          </span>
+          {trayOpen ? (
+            <X size={22} weight="bold" className="text-neutral-700" aria-hidden />
+          ) : (
+            <DotsThreeVertical size={26} weight="bold" aria-hidden />
+          )}
         </button>
 
-        <button
-          type="button"
-          className={NAV_FLOAT_BTN}
-          aria-label="Route options"
-          title="Route options"
-          onClick={onAlternatesOpen}
-        >
-          <List size={22} weight="bold" aria-hidden />
-        </button>
-
+        {/* Always visible — Mute (voice safety) */}
         <button
           type="button"
           className={NAV_FLOAT_BTN}
@@ -431,10 +492,6 @@ function CrewNavOpsFloatingControls({
           title={voiceMuted ? "Voice off" : "Voice on"}
           onClick={onVoiceToggle}
         >
-          {/* Muted state uses a neutral gray, NOT red. Red reads as "alarm /
-             something is wrong" and crew were driving with voice off because
-             the icon looked hostile. Neutral gray = "this is off, tap to
-             turn on" — same convention as iOS system mute. */}
           {voiceMuted ? (
             <SpeakerSlash
               size={22}
@@ -447,10 +504,7 @@ function CrewNavOpsFloatingControls({
           )}
         </button>
 
-        <button type="button" className={NAV_FLOAT_BTN} aria-label="Report road issue" title="Report" onClick={onReportOpen}>
-          <Warning size={22} weight="bold" className="text-amber-600" aria-hidden />
-        </button>
-
+        {/* Always visible — Recenter (the most-tapped control) */}
         <button
           type="button"
           className={NAV_FLOAT_BTN}
