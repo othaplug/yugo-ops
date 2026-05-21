@@ -52,7 +52,10 @@ export function getActivityHref(e: ActivityEventRow): string {
       ? `/admin/deliveries/${e.entity_id}`
       : "/admin/deliveries";
   if (e.entity_type === "invoice") return "/admin/invoices";
-  if (e.entity_type === "quote") return `/admin/quotes/${e.entity_id}/edit`;
+  if (e.entity_type === "quote") {
+    // Unified edit flow — see QuoteDetailClient + QuoteFormClient
+    return `/admin/quotes/new?edit_quote=${encodeURIComponent(e.entity_id)}`;
+  }
   if (e.entity_type === "crew") return "/admin/platform";
   return "/admin/activity";
 }

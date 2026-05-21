@@ -53,7 +53,11 @@ function getEntityHref(e: ActivityEventRow): string | null {
       ? `/admin/deliveries/${e.entity_id}`
       : "/admin/deliveries";
   if (t === "invoice") return "/admin/invoices";
-  if (t === "quote" && e.entity_id) return `/admin/quotes/${e.entity_id}/edit`;
+  if (t === "quote" && e.entity_id) {
+    // All quote edits flow through the unified create form. Legacy /edit
+    // screen still resolves but isn't the primary entry anymore.
+    return `/admin/quotes/new?edit_quote=${encodeURIComponent(e.entity_id)}`;
+  }
   return null;
 }
 

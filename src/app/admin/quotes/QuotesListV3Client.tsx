@@ -465,16 +465,12 @@ export default function QuotesListV3Client({
         id: "edit",
         label: "Edit",
         run: (r) => {
-          // Drafts resume in the full create flow (prefilled, in-place
-          // update). Sent/accepted/etc. quotes continue to use the
-          // legacy edit screen.
-          const st = String(r.status || "").toLowerCase();
-          if (st === "draft") {
-            const slug = (r.quote_id || "").trim() || r.id;
-            router.push(`/admin/quotes/new?resume_draft=${encodeURIComponent(slug)}`);
-            return;
-          }
-          router.push(`${quoteDetailPath(r)}/edit`);
+          // All edits route through the full create flow (any status).
+          // Non-draft saves write a revision via the generate API's
+          // isUpdate path — version counter increments, is_revised
+          // flips when the quote was previously sent/viewed.
+          const slug = (r.quote_id || "").trim() || r.id;
+          router.push(`/admin/quotes/new?edit_quote=${encodeURIComponent(slug)}`);
         },
       },
       {

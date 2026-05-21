@@ -2566,10 +2566,22 @@ export default function QuoteFormClient({
 
   const copyQuoteParam = searchParams.get("copy_quote")?.trim() || "";
   const copyQuotePrefillDone = useRef(false);
-  // `resume_draft` = open this draft in the create flow (not the edit
-  // screen) with all fields prefilled. Saves update the original quote
-  // in place (we set quoteId below) instead of minting a new draft.
-  const resumeDraftParam = searchParams.get("resume_draft")?.trim() || "";
+  // Unified quote-edit entry point. Two query params accepted:
+  //   ?resume_draft=YG-XXXX  — legacy alias, drafts only (kept for back-compat
+  //                            with anyone who bookmarked the URL)
+  //   ?edit_quote=YG-XXXX    — canonical, any status (draft, sent, accepted,
+  //                            etc.). Routes all edits through this builder
+  //                            so coordinators never see the legacy /edit
+  //                            screen.
+  // Both behave identically — the form sets quoteId so saves update the
+  // original row in place (generate API isUpdate path). The status of the
+  // source quote drives banner copy (draft = "Resuming draft" /
+  // sent+ = "Editing quote · revision N").
+  const resumeDraftParam = (
+    searchParams.get("edit_quote")?.trim() ||
+    searchParams.get("resume_draft")?.trim() ||
+    ""
+  );
   const resumeDraftDone = useRef(false);
 
   // ── Copy from existing quote (B2B / commercial edit entry) ─────────────
@@ -2950,9 +2962,22 @@ export default function QuoteFormClient({
           }
         }
 
-        setLeadQuoteBanner(
-          `Resuming draft ${cStr(Q.quote_id) || resumeDraftParam}. Edit fields, then Save to update — a new quote will not be created.`,
-        );
+        // Banner copy adapts to the source quote's current status so the
+        // coordinator knows whether they're tweaking a draft or revising a
+        // quote the client has already seen / accepted.
+        const sourceStatus = String(Q.status ?? "").toLowerCase();
+        const sourceVersion = typeof Q.version === "number" ? Q.version : null;
+        const quoteCode = cStr(Q.quote_id) || resumeDraftParam;
+        if (sourceStatus === "draft" || !sourceStatus) {
+          setLeadQuoteBanner(
+            `Resuming draft ${quoteCode}. Edit fields, then Save to update — a new quote will not be created.`,
+          );
+        } else {
+          const versionLabel = sourceVersion ? ` · v${sourceVersion}` : "";
+          setLeadQuoteBanner(
+            `Editing ${quoteCode}${versionLabel} (current status: ${sourceStatus.toUpperCase()}). Saving creates a new revision of this quote — the client link stays the same. Use the override fields if you're adjusting price.`,
+          );
+        }
       } catch (e) {
         console.warn("[quote-form] resume_draft prefill failed:", e);
       }

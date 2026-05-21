@@ -340,7 +340,7 @@ export default function MoveProjectDetailClient({
           <div className="flex flex-wrap gap-2">
             {quoteId ? (
               <Link
-                href={`/admin/quotes/${encodeURIComponent(quoteId)}/edit`}
+                href={`/admin/quotes/new?edit_quote=${encodeURIComponent(quoteId)}`}
                 className="text-[10px] font-bold uppercase tracking-wide px-3 py-1.5 rounded border border-[var(--brd)] text-[var(--tx)] hover:bg-[var(--gdim)]"
               >
                 Open quote
