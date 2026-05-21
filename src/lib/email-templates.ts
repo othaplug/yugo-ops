@@ -1612,11 +1612,12 @@ export function bookingConfirmationEmail(params: {
   const name = (clientName || "").split(" ")[0];
 
   const dateDisplay = moveDate
-    ? new Date(moveDate + "T00:00:00").toLocaleDateString("en-CA", {
+    ? new Date(moveDate + "T12:00:00").toLocaleDateString("en-CA", {
         weekday: "long",
         year: "numeric",
         month: "long",
         day: "numeric",
+        timeZone: "America/Toronto",
       })
     : "To be confirmed";
 
@@ -1742,11 +1743,12 @@ export interface TierConfirmationParams {
 
 function confirmDateDisplay(dateStr: string | null): string {
   if (!dateStr) return "To be confirmed";
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-CA", {
+  return new Date(dateStr + "T12:00:00").toLocaleDateString("en-CA", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "America/Toronto",
   });
 }
 
@@ -2649,10 +2651,11 @@ export function internalBookingAlertEmail(params: {
   } = params;
 
   const dateDisplay = moveDate
-    ? new Date(moveDate + "T00:00:00").toLocaleDateString("en-CA", {
+    ? new Date(moveDate + "T12:00:00").toLocaleDateString("en-CA", {
         weekday: "short",
         month: "short",
         day: "numeric",
+        timeZone: "America/Toronto",
       })
     : "TBD";
 

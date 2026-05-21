@@ -303,11 +303,12 @@ export interface QuoteTemplateData {
 
 function dateDisplay(dateStr: string | null | undefined): string {
   if (!dateStr) return "To be confirmed";
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-CA", {
+  return new Date(dateStr + "T12:00:00").toLocaleDateString("en-CA", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "America/Toronto",
   });
 }
 
@@ -319,6 +320,7 @@ function expiryNote(expiresAt: string | null | undefined): string {
     month: "long",
     day: "numeric",
     year: "numeric",
+    timeZone: "America/Toronto",
   });
   const textStyle = `font-size:13px;color:${EMAIL_QUOTE_EXPIRY_TEXT} !important;-webkit-text-fill-color:${EMAIL_QUOTE_EXPIRY_TEXT};font-weight:600;line-height:1.55;`;
   const boxStyle = `background-color:${EMAIL_QUOTE_EXPIRY_BG};border-top:1px solid ${EMAIL_QUOTE_EXPIRY_BORDER};border-bottom:1px solid ${EMAIL_QUOTE_EXPIRY_BORDER};padding:14px 16px;`;

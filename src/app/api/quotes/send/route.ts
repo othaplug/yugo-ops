@@ -73,11 +73,12 @@ function quoteSubject(
 
 function fmtEmailDay(dateStr: string | null | undefined): string {
   if (!dateStr) return "To be confirmed";
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-CA", {
+  return new Date(dateStr + "T12:00:00").toLocaleDateString("en-CA", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "America/Toronto",
   });
 }
 

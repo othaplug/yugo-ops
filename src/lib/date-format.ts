@@ -19,11 +19,14 @@ export { sameCalendarYearInAppTz } from "@/lib/display-date-format";
 export function parseDateOnly(value: string | null | undefined): Date | null {
   if (value == null || value === "") return null;
   const s = String(value).trim();
-  // YYYY-MM-DD - parse as local date (avoids UTC midnight → previous day in western timezones)
+  // YYYY-MM-DD - use UTC noon so rendering in any timezone (America/Toronto, UTC, etc.)
+  // always lands on the correct calendar day. Local-midnight would be June 14 8 PM EDT
+  // on a UTC server, which toLocaleDateString("…", {timeZone:"America/Toronto"}) renders
+  // as the previous day.
   const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (isoMatch) {
     const [, y, m, d] = isoMatch;
-    return new Date(Number(y), Number(m) - 1, Number(d));
+    return new Date(Date.UTC(Number(y), Number(m) - 1, Number(d), 12, 0, 0));
   }
   // "Feb 23" or "Feb 23 2026" - parse as local
   const monthDayMatch = s.match(/^(\w+)\s+(\d{1,2})(?:\s*,?\s*(\d{4}))?$/i);

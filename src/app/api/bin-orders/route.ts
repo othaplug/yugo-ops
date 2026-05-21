@@ -84,7 +84,9 @@ export async function POST(req: NextRequest) {
     const total = Math.round((subtotal + hst) * 100) / 100;
 
     // ── Calculate dates ──
-    const moveDateObj = new Date(moveDate);
+    // Use noon UTC so getDate()/setDate() date arithmetic and toLocaleDateString
+    // both land on the correct Toronto calendar day regardless of server timezone.
+    const moveDateObj = new Date(moveDate + "T12:00:00");
     const dropOffDate = new Date(moveDateObj);
     dropOffDate.setDate(dropOffDate.getDate() - 7);
     const pickupDate = new Date(moveDateObj);
@@ -312,7 +314,7 @@ export async function GET(req: NextRequest) {
 // ── Helpers ──
 
 function formatDateShort(d: Date): string {
-  return d.toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Toronto" });
 }
 
 function buildConfirmationEmail(d: {

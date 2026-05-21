@@ -113,8 +113,9 @@ function getSeason(dateStr: string | null): string | null {
 
 function getDayOfWeek(dateStr: string | null): string | null {
   if (!dateStr) return null;
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-CA", {
+  return new Date(dateStr + "T12:00:00").toLocaleDateString("en-CA", {
     weekday: "long",
+    timeZone: "America/Toronto",
   });
 }
 
@@ -483,13 +484,14 @@ export async function runPostPaymentActions(
         const templateFn = templateFns[tier] ?? signatureConfirmationEmail;
 
         const estateDateLabel = quote.move_date
-          ? new Date(quote.move_date + "T00:00:00").toLocaleDateString(
+          ? new Date(quote.move_date + "T12:00:00").toLocaleDateString(
               "en-CA",
               {
                 weekday: "long",
                 month: "long",
                 day: "numeric",
                 year: "numeric",
+                timeZone: "America/Toronto",
               },
             )
           : input.moveCode;
@@ -694,9 +696,9 @@ export async function runPostPaymentActions(
         const { estateBookingAdminEmailHtml } =
           await import("@/lib/email/admin-templates");
         const dateLabel = quote.move_date
-          ? new Date(quote.move_date + "T00:00:00").toLocaleDateString(
+          ? new Date(quote.move_date + "T12:00:00").toLocaleDateString(
               "en-CA",
-              { month: "short", day: "numeric" },
+              { month: "short", day: "numeric", timeZone: "America/Toronto" },
             )
           : "TBD";
 

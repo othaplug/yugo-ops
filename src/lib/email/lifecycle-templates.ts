@@ -42,13 +42,14 @@ function firstName(full: string | undefined): string {
 function dateDisplay(dateStr: string | null | undefined): string {
   if (!dateStr) return "To be confirmed";
   const raw = dateStr.trim();
-  const d = raw.includes("T") ? new Date(raw) : new Date(`${raw}T00:00:00`);
+  const d = raw.includes("T") ? new Date(raw) : new Date(`${raw}T12:00:00`);
   if (Number.isNaN(d.getTime())) return "To be confirmed";
   return d.toLocaleDateString("en-CA", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "America/Toronto",
   });
 }
 
@@ -1568,10 +1569,11 @@ export interface MoveAnniversaryEmailData {
 export function moveAnniversaryEmail(d: MoveAnniversaryEmailData): string {
   const name = firstName(d.clientName);
   const moveDateStr = d.moveDate
-    ? new Date(d.moveDate + "T00:00:00").toLocaleDateString("en-CA", {
+    ? new Date(d.moveDate + "T12:00:00").toLocaleDateString("en-CA", {
         month: "long",
         day: "numeric",
         year: "numeric",
+        timeZone: "America/Toronto",
       })
     : "last year";
   const route =
