@@ -28,6 +28,7 @@ import {
   singleItemWalkUpSurcharge,
   type OfficeScheduleFlags,
 } from "@/lib/pricing/non-residential-quote-calcs";
+import { resolveSingleItemLines, type SingleItemLine } from "@/lib/quotes/single-item-types";
 import {
   formatTruckBreakdownLine,
   formatTruckResidentialUpgradeLine,
@@ -203,6 +204,25 @@ interface QuoteInput {
   stair_carry?: boolean;
   stair_flights?: number;
   number_of_items?: number;
+  /**
+   * Multi-item array for single_item quotes. When present and non-empty,
+   * the pricing engine reads from this instead of the scalars above. See
+   * src/lib/quotes/single-item-types.ts for the schema. Up to 8 lines.
+   */
+  quote_items?: Array<{
+    id?: string;
+    item_description?: string;
+    item_category?: string;
+    weight_class?: string;
+    assembly?: string;
+    stair_carry?: boolean;
+    stair_flights?: number;
+    quantity?: number;
+  }>;
+  // Junk-removal stop — captured when addons includes junk_removal.
+  junk_pickup_from?: "origin" | "destination" | "both";
+  /** Internal-only items list. Helps coordinator size the truck tier. */
+  junk_items_description?: string;
   // White glove
   declared_value?: number;
   /** Multi-line curated delivery items (preferred). Legacy single-line fields remain as fallback. */
@@ -2148,7 +2168,6 @@ async function calcSingleItem(
 ) {
   const distKm = distInfo?.distance_km ?? 0;
 
-  const category = singleItemPricingCategory(input.item_category, input.item_weight_class);
   const baseRates: Record<string, number> = {
     small_light: cfgNum(config, "single_item_small", 150),
     medium: cfgNum(config, "single_item_medium", 225),
@@ -2157,17 +2176,100 @@ async function calcSingleItem(
     extra_heavy: cfgNum(config, "single_item_extra_heavy", 550),
     fragile: cfgNum(config, "single_item_fragile", 350),
   };
-  const baseCat = baseRates[category] ?? cfgNum(config, "single_item_medium", 225);
   const addRate = cfgNum(config, "single_item_additional_item_rate", 0.6);
-  const itemCount = Math.min(5, Math.max(1, Math.floor(input.number_of_items ?? 1)));
-  let price =
-    baseCat + (itemCount > 1 ? (itemCount - 1) * baseCat * addRate : 0);
+  const stairPerFlight = cfgNum(config, "stair_carry_per_flight", 50);
+  const assemblyFee = cfgNum(config, "single_item_assembly", 75);
 
+  // ── Resolve lines (array-first, scalar fallback) ───────────────────────
+  // Phase 1 added quote_items[]. Older quotes still ship the scalars
+  // (item_description, item_category, etc.). resolveSingleItemLines is the
+  // single source of truth for converting either shape into a uniform array.
+  const lines: SingleItemLine[] = resolveSingleItemLines(input.quote_items, {
+    item_description: input.item_description,
+    item_category: input.item_category,
+    item_weight_class: input.item_weight_class,
+    assembly_needed: input.assembly_needed,
+    stair_carry: input.stair_carry,
+    stair_flights: input.stair_flights,
+    number_of_items: input.number_of_items,
+  });
+
+  // Safety net: if no lines were produced (e.g. brand-new draft), synthesize
+  // a single medium row so pricing doesn't divide by zero.
+  const effectiveLines: SingleItemLine[] =
+    lines.length > 0
+      ? lines
+      : [
+          {
+            id: "fallback-0",
+            item_description: "",
+            item_category: "standard_furniture",
+            weight_class: "",
+            assembly: "None",
+            stair_carry: false,
+            quantity: 1,
+          },
+        ];
+
+  // Per-line price contributions. Each line carries:
+  //   base = baseRates[mappedCategory] × quantity
+  //   assembly = assemblyFee if assembly != none (charged ONCE per line, not
+  //     per unit inside the line — assembling two identical bedside tables
+  //     is one setup, not two)
+  //   stair = stair_flights × stairPerFlight × quantity (per unit on stairs)
+  type LineCost = {
+    line: SingleItemLine;
+    mappedCategory: ReturnType<typeof singleItemPricingCategory>;
+    unitBase: number;
+    base: number;
+    assembly: number;
+    stair: number;
+  };
+
+  const lineCosts: LineCost[] = effectiveLines.map((l) => {
+    const mappedCategory = singleItemPricingCategory(l.item_category, l.weight_class);
+    const unitBase = baseRates[mappedCategory] ?? baseRates.medium;
+    const qty = Math.max(1, Math.floor(l.quantity ?? 1));
+    const base = unitBase * qty;
+    const asmRaw = (l.assembly || "None").toLowerCase().trim();
+    const needsAssembly =
+      asmRaw.includes("both") ||
+      asmRaw.includes("assembly") ||
+      asmRaw.includes("disassembly");
+    const assembly = needsAssembly ? assemblyFee : 0;
+    const stair = l.stair_carry
+      ? stairPerFlight * Math.max(1, l.stair_flights ?? 1) * qty
+      : 0;
+    return { line: l, mappedCategory, unitBase, base, assembly, stair };
+  });
+
+  // Volume discount: most-expensive line (by per-unit base) pays full; every
+  // additional line discounts to addRate (60% by default) of its own base.
+  // Quantity multiplier within a single line is NOT discounted — two identical
+  // chairs are still two chairs to load. The discount applies between distinct
+  // line items only, preserving the spirit of the old single-rate × addRate
+  // formula while supporting per-line categories.
+  const sortedByUnitBaseDesc = [...lineCosts].sort(
+    (a, b) => b.unitBase - a.unitBase,
+  );
+  const idxByLineId = new Map<string, number>();
+  sortedByUnitBaseDesc.forEach((lc, i) => idxByLineId.set(lc.line.id, i));
+
+  const discountedBaseTotal = lineCosts.reduce((sum, lc) => {
+    const rank = idxByLineId.get(lc.line.id) ?? 0;
+    const factor = rank === 0 ? 1 : addRate;
+    return sum + lc.base * factor;
+  }, 0);
+
+  let price = discountedBaseTotal;
+
+  // Distance over free km
   const distFree = cfgNum(config, "single_item_dist_free_km", 40);
   if (distKm > distFree) {
     price += (distKm - distFree) * cfgNum(config, "single_item_per_km", 3);
   }
 
+  // Access surcharges (move-level; not per-line)
   async function singleItemAccessOne(access: string | undefined): Promise<number> {
     const w = singleItemWalkUpSurcharge(access, config);
     if (w > 0) return w;
@@ -2180,33 +2282,61 @@ async function calcSingleItem(
   const accessTotal = fromAccessSi + toAccessSi;
   price += accessTotal;
 
-  const asmRaw = (input.assembly_needed ?? "none").toLowerCase().trim();
-  const assemblyNeeded = asmRaw.includes("both") || asmRaw.includes("assembly") || asmRaw.includes("disassembly");
-  const assemblySurcharge = assemblyNeeded ? cfgNum(config, "single_item_assembly", 75) : 0;
-  price += assemblySurcharge;
+  // Per-line assembly + stair charges
+  const assemblySurchargeTotal = lineCosts.reduce((s, lc) => s + lc.assembly, 0);
+  const stairSurchargeTotal = lineCosts.reduce((s, lc) => s + lc.stair, 0);
+  price += assemblySurchargeTotal + stairSurchargeTotal;
 
-  const stairPerFlight = cfgNum(config, "stair_carry_per_flight", 50);
-  if (input.stair_carry) price += stairPerFlight * (input.stair_flights ?? 1);
-
+  // Move-level parking + truck — driven by the heaviest line
+  const heaviestCategory =
+    sortedByUnitBaseDesc[0]?.mappedCategory ?? "medium";
   const plcSi = parkingLongCarryLineTotal(config, input, "both");
   const defaultTruck =
-    category === "extra_heavy" || category === "heavy" ? "16ft" : "sprinter";
+    heaviestCategory === "extra_heavy" || heaviestCategory === "heavy"
+      ? "16ft"
+      : "sprinter";
   const truckSi = normalizeTruckType(input.truck_type ?? defaultTruck);
   price += plcSi.total + getTruckFeeSync(truckSi, config);
 
+  // ── Junk-removal stop fee ──────────────────────────────────────────────
+  // The addons.junk_removal tier already covers disposal + truck volume.
+  // This is the LABOUR fee for the time spent loading junk at the move
+  // pickup/delivery — no distance math, no drop address.
+  const junkPickupFrom = (input.junk_pickup_from || "").trim();
+  const isJunkAddonSelected = (addonResult.breakdown || []).some(
+    (b) => (b.slug || "").toLowerCase() === "junk_removal",
+  );
+  const junkOneSide = cfgNum(config, "junk_stop_fee_one_side", 50);
+  const junkBothSides = cfgNum(config, "junk_stop_fee_both_sides", 100);
+  let junkStopFee = 0;
+  if (isJunkAddonSelected && junkPickupFrom) {
+    if (junkPickupFrom === "both") junkStopFee = junkBothSides;
+    else if (junkPickupFrom === "origin" || junkPickupFrom === "destination") {
+      junkStopFee = junkOneSide;
+    }
+  }
+  price += junkStopFee;
+
+  // Round + floor
   const roundingSi = cfgNum(config, "rounding_nearest", 25);
   price = roundTo(price, roundingSi);
   if (price < cfgNum(config, "single_item_floor", 150)) {
     price = cfgNum(config, "single_item_floor", 150);
   }
 
+  // Addons (includes junk_removal tier price) folded in last
   price += addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
   const deposit = await calculateDeposit(sb, "single_item", price);
 
-  const estHours = estimateSingleItemHours(category, itemCount, assemblyNeeded);
-  const estCrew = category === "extra_heavy" ? 3 : 2;
+  const totalUnits = effectiveLines.reduce(
+    (s, l) => s + Math.max(1, Math.floor(l.quantity ?? 1)),
+    0,
+  );
+  const anyAssembly = lineCosts.some((lc) => lc.assembly > 0);
+  const estHours = estimateSingleItemHours(heaviestCategory, totalUnits, anyAssembly);
+  const estCrew = heaviestCategory === "extra_heavy" ? 3 : 2;
 
   const siFeatures = await fetchTierFeatures(sb, "single_item", "custom");
   const singleItemIncludes = siFeatures.length > 0 ? siFeatures : [
@@ -2225,23 +2355,46 @@ async function calcSingleItem(
       includes: singleItemIncludes,
     } as TierResult,
     factors: {
-      single_item_pricing_model: "category_flat",
-      single_item_category: category,
-      single_item_base_category_rate: baseCat,
-      single_item_quantity: itemCount,
+      single_item_pricing_model: "per_line_category_flat",
+      single_item_category: heaviestCategory,
+      single_item_base_category_rate: sortedByUnitBaseDesc[0]?.unitBase ?? 0,
+      single_item_quantity: totalUnits,
       single_item_additional_item_rate: addRate,
+      // Per-line breakdown — surfaced so the client quote page and admin
+      // detail can show what each item contributed.
+      single_item_lines: lineCosts.map((lc) => ({
+        id: lc.line.id,
+        item_description: lc.line.item_description,
+        item_category: lc.line.item_category,
+        weight_class: lc.line.weight_class,
+        assembly: lc.line.assembly,
+        stair_carry: lc.line.stair_carry,
+        stair_flights: lc.line.stair_flights,
+        quantity: lc.line.quantity,
+        mapped_category: lc.mappedCategory,
+        unit_base: lc.unitBase,
+        base: lc.base,
+        assembly_fee: lc.assembly,
+        stair_fee: lc.stair,
+      })),
       distance_km: distKm,
-      item_description: input.item_description || null,
-      item_category: input.item_category || null,
-      weight_class: input.item_weight_class || null,
+      // Legacy scalars kept for downstream compatibility (HubSpot, emails, etc.)
+      item_description: effectiveLines[0]?.item_description || null,
+      item_category: effectiveLines[0]?.item_category || null,
+      weight_class: effectiveLines[0]?.weight_class || null,
       access_surcharge: accessTotal,
       single_item_special_handling: input.single_item_special_handling?.trim() || null,
-      assembly_surcharge: assemblySurcharge,
+      assembly_surcharge: assemblySurchargeTotal,
+      stair_carry_surcharge: stairSurchargeTotal,
       parking_long_carry_total: plcSi.total,
       truck_recommended: truckSi,
       truck_surcharge: getTruckFeeSync(truckSi, config),
       single_item_hours_estimated: estHours,
       single_item_crew_estimated: estCrew,
+      // Junk-removal stop — surfaced for admin + crew sheet visibility.
+      junk_pickup_from: junkPickupFrom || null,
+      junk_items_description: input.junk_items_description?.trim() || null,
+      junk_stop_fee: junkStopFee,
     },
   };
 }
@@ -4700,6 +4853,20 @@ export async function POST(req: NextRequest) {
       multi_location: multiLocQuote,
       additional_origins: input.additional_pickup_addresses ?? [],
       additional_destinations: input.additional_dropoff_addresses ?? [],
+      // ── Single-item multi-line + junk-removal stop (Phase 1 schema) ───
+      // For non-single_item service types these are empty/null defaults, which
+      // is what the columns already are. We always write them on single_item
+      // so re-saves don't leave stale per-line data.
+      ...(svcType === "single_item"
+        ? {
+            quote_items: Array.isArray(input.quote_items)
+              ? input.quote_items
+              : [],
+            junk_pickup_from: input.junk_pickup_from ?? null,
+            junk_items_description:
+              input.junk_items_description?.trim() || null,
+          }
+        : {}),
       // ── Version tracking (in-place updates only) ──────────────────────
       ...(isUpdate && existingQuoteSnapshot ? {
         version: ((existingQuoteSnapshot.version as number) ?? 1) + 1,
