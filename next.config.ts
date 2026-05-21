@@ -38,6 +38,24 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["square"],
   async redirects() {
     return [
+      // ── Legacy domain redirect ────────────────────────────────────────
+      // The platform moved from opsplus.co → yugoplus.co. Crew phones,
+      // bookmarks, and any historical links still hit the old domain and
+      // show "opsplus.co" in the URL bar, which fails brand integrity and
+      // splits auth/audit trails. 308 permanent redirect preserves the
+      // path/query and tells crawlers to update.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "opsplus.co" }],
+        destination: "https://yugoplus.co/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.opsplus.co" }],
+        destination: "https://yugoplus.co/:path*",
+        permanent: true,
+      },
       { source: "/admin/invoices", destination: "/admin/finance/invoices", permanent: false },
       { source: "/admin/invoices/new", destination: "/admin/finance/invoices/new", permanent: false },
       { source: "/admin/revenue", destination: "/admin/finance/revenue", permanent: false },

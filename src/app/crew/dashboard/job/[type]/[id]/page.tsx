@@ -2540,6 +2540,8 @@ export default function CrewJobPage({
           jobType={jobType}
           truckType={job.truckType ?? null}
           fuelPriceCadPerLitre={job.fuelPriceCadPerLitre ?? null}
+          moveCode={job.jobId}
+          clientName={job.clientName}
           onExit={() => setNavOpen(false)}
           onArrived={handleNavigationArrived}
           onAutoAdvanced={fetchSession}

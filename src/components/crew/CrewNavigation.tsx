@@ -428,11 +428,20 @@ function CrewNavOpsFloatingControls({
           type="button"
           className={NAV_FLOAT_BTN}
           aria-label={voiceMuted ? "Turn voice guidance on" : "Mute voice guidance"}
-          title={voiceMuted ? "Voice on" : "Voice muted"}
+          title={voiceMuted ? "Voice off" : "Voice on"}
           onClick={onVoiceToggle}
         >
+          {/* Muted state uses a neutral gray, NOT red. Red reads as "alarm /
+             something is wrong" and crew were driving with voice off because
+             the icon looked hostile. Neutral gray = "this is off, tap to
+             turn on" — same convention as iOS system mute. */}
           {voiceMuted ? (
-            <SpeakerSlash size={22} weight="bold" className="text-red-600" aria-hidden />
+            <SpeakerSlash
+              size={22}
+              weight="bold"
+              className="text-neutral-400"
+              aria-hidden
+            />
           ) : (
             <SpeakerHigh size={22} weight="bold" aria-hidden />
           )}
@@ -844,6 +853,8 @@ export function CrewNavigation({
   jobType,
   truckType,
   fuelPriceCadPerLitre,
+  moveCode,
+  clientName,
   onExit,
   onArrived,
   onAutoAdvanced,
@@ -856,6 +867,10 @@ export function CrewNavigation({
   truckType?: string | null;
   /** From platform settings (gas or diesel $/L); optional — defaults to gasoline default. */
   fuelPriceCadPerLitre?: number | null;
+  /** Job code (e.g. "MV-30242") for the persistent job-context chip. */
+  moveCode?: string | null;
+  /** Client name for the persistent job-context chip. */
+  clientName?: string | null;
   onExit: () => void;
   onArrived: () => void;
   onAutoAdvanced?: () => void;
@@ -879,6 +894,13 @@ export function CrewNavigation({
   const [reportBusy, setReportBusy] = useState(false);
   const [etaLabel, setEtaLabel] = useState("—");
   const [distRemainLabel, setDistRemainLabel] = useState("—");
+  // When the crew is within 500 m of the destination, swap the Exit button
+  // for an "I've Arrived" CTA. At 100 m the system also auto-arrives via
+  // onArrived (see ARRIVAL_RADIUS_M). The 500 m window gives crew control
+  // for buildings where GPS drift around tall structures can hold them at
+  // 100–300 m for the last few minutes of approach.
+  const ARRIVE_CTA_RADIUS_M = 500;
+  const [nearDestination, setNearDestination] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [speedDisplay, setSpeedDisplay] = useState<string | null>(null);
   /** Degrees clockwise from north — device heading or course-over-ground. */
@@ -944,16 +966,11 @@ export function CrewNavigation({
 
   const mapStyle = "mapbox://styles/mapbox/light-v11";
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const v = window.localStorage.getItem(VOICE_STORAGE_KEY);
-      if (v === "0") setVoiceOn(false);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
+  // Voice guidance defaults to ON for every navigation session. We
+  // deliberately do NOT restore the previous muted state from localStorage
+  // here — crew were starting jobs with voice off after one stale toggle,
+  // which is a real safety hazard in a moving truck. The toggle still
+  // works in-session; persistence is intentionally per-session only.
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -1376,8 +1393,10 @@ export function CrewNavigation({
           distToDestM > MAX_DISPLAY_REMAIN_M
         ) {
           setDistRemainLabel("—");
+          setNearDestination(false);
         } else {
           setDistRemainLabel(formatDistanceM(displayRemainM));
+          setNearDestination(distToDestM <= ARRIVE_CTA_RADIUS_M);
         }
 
         let etaSec: number | null = null;
@@ -1748,6 +1767,23 @@ export function CrewNavigation({
       </div>
 
       <div className="shrink-0 rounded-t-[1.35rem] bg-white text-[#1A1816] shadow-[0_-10px_40px_rgba(0,0,0,0.18)]">
+        {/* Persistent job-context chip — always visible during navigation so
+           dispatch can ask "where are you on MV-####?" without crew exiting
+           the nav screen to check. Renders nothing if neither field is set
+           (e.g. preview/demo without job context). */}
+        {(moveCode || clientName) && (
+          <div className="flex items-center gap-2 px-4 pt-3 -mb-1">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#5C1A33]/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#5C1A33]">
+              {moveCode ?? "Job"}
+              {clientName ? (
+                <>
+                  <span aria-hidden className="text-[#5C1A33]/40">·</span>
+                  <span className="normal-case tracking-normal">{clientName}</span>
+                </>
+              ) : null}
+            </span>
+          </div>
+        )}
         <div className="flex flex-wrap items-end justify-between gap-3 px-4 pb-3 pt-4">
           <div className="min-w-0 flex-1">
             <p className="text-[clamp(1.75rem,6vw,2.25rem)] font-bold leading-none tracking-tight text-[#5C1A33]">{etaLabel}</p>
@@ -1766,13 +1802,37 @@ export function CrewNavigation({
             >
               <ArrowsSplit size={24} weight="bold" aria-hidden />
             </button>
-            <button
-              type="button"
-              onClick={onExit}
-              className="rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-900/40"
-            >
-              Exit
-            </button>
+            {/* At <500 m the primary CTA is constructive ("I've Arrived").
+               Above that, the only way to leave is a small confirm-gated
+               text button — never a red full-weight button while moving. */}
+            {nearDestination ? (
+              <button
+                type="button"
+                onClick={onArrived}
+                className="rounded-xl bg-[#2C3E2D] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#22332B] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C3E2D]/50"
+                aria-label="Confirm arrival"
+              >
+                I&apos;ve arrived
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  if (
+                    typeof window !== "undefined" &&
+                    !window.confirm("Exit navigation? Your route progress will be lost.")
+                  ) {
+                    return;
+                  }
+                  onExit();
+                }}
+                className="rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-[12px] font-semibold text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-400/40"
+                aria-label="Exit navigation"
+                title="Exit navigation"
+              >
+                Exit
+              </button>
+            )}
           </div>
         </div>
         <p className="line-clamp-2 px-4 pb-1 text-[12px] text-neutral-500">{destination.address}</p>
