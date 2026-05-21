@@ -8,6 +8,7 @@ import { buildAllDealProperties } from "@/lib/hubspot/deal-properties-builder";
 import { safePatchDeal } from "@/lib/hubspot/safe-deal-write";
 import { requireStaff } from "@/lib/api-auth";
 import { rateLimit } from "@/lib/rate-limit";
+import { getSingleItemQuoteCopy } from "@/lib/quotes/single-item-copy";
 import { logAudit } from "@/lib/audit";
 import { logActivity } from "@/lib/activity";
 import { getCompanyDisplayName } from "@/lib/config";
@@ -52,6 +53,9 @@ function quoteSubject(
   quoteId: string,
   serviceType: string,
   eventName?: string | null,
+  /** When set for single_item, replaces the default "Your Delivery Quote"
+   *  prefix with the residential-aware variant ("Your Move Quote"). */
+  singleItemSubjectOverride?: string | null,
 ): string {
   const namePart = firstName ? `${firstName}, ` : "";
   if (serviceType === "event" && eventName?.trim()) {
@@ -59,6 +63,9 @@ function quoteSubject(
   }
   if (serviceType === "bin_rental") {
     return `${namePart}Your Yugo Bin Rental Quote (${quoteId})`;
+  }
+  if (serviceType === "single_item" && singleItemSubjectOverride?.trim()) {
+    return `${namePart}${singleItemSubjectOverride.trim()} ${quoteId}`;
   }
   const subjectBase = SERVICE_SUBJECT[serviceType] ?? "Your Quote is Ready";
   return `${namePart}${subjectBase} ${quoteId}`;
@@ -182,7 +189,35 @@ export async function POST(req: NextRequest) {
     const expiryDays = parseInt(coordConfig?.find((c) => c.key === "quote_expiry_days")?.value || "7", 10);
 
     const eventNameForSubject = (factors.event_name as string) ?? null;
-    const subject = quoteSubject(firstName, quoteId, serviceType, eventNameForSubject);
+    // For single_item, the subject prefix mirrors the residential/commercial
+    // detection on the quote page itself — see src/lib/quotes/single-item-copy.ts.
+    let singleItemSubjectOverride: string | null = null;
+    if (serviceType === "single_item") {
+      const copy = getSingleItemQuoteCopy({
+        from_access: (quote as { from_access?: string | null }).from_access,
+        to_access: (quote as { to_access?: string | null }).to_access,
+        walkthrough_notes: (quote as { walkthrough_notes?: string | null }).walkthrough_notes,
+        booking_notes: (quote as { booking_notes?: string | null }).booking_notes,
+        quote_items: (quote as { quote_items?: unknown }).quote_items,
+        scalars: {
+          item_description: factors.item_description as string | null | undefined,
+          item_category: factors.item_category as string | null | undefined,
+          item_weight_class: factors.weight_class as string | null | undefined,
+          assembly_needed: factors.assembly as string | null | undefined,
+          stair_carry: factors.stair_carry as boolean | null | undefined,
+          stair_flights: factors.stair_flights as number | null | undefined,
+          number_of_items: factors.single_item_quantity as number | null | undefined,
+        },
+      });
+      singleItemSubjectOverride = copy.emailSubject;
+    }
+    const subject = quoteSubject(
+      firstName,
+      quoteId,
+      serviceType,
+      eventNameForSubject,
+      singleItemSubjectOverride,
+    );
     const platformCompanyName = await getCompanyDisplayName();
 
     const storedMoveSize = (quote.move_size as string | null) ?? null;

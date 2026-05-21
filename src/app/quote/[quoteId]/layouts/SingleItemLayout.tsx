@@ -8,6 +8,11 @@ import {
   calculateDeposit,
 } from "../quote-shared";
 import { toTitleCase } from "@/lib/format-text";
+import {
+  resolveSingleItemLines,
+  type SingleItemLine,
+} from "@/lib/quotes/single-item-types";
+import { getSingleItemQuoteCopy } from "@/lib/quotes/single-item-copy";
 
 interface Props {
   quote: Quote;
@@ -33,8 +38,41 @@ export default function SingleItemLayout({
   const deposit = calculateDeposit("single_item", price);
   const isFullPayment = price < 500;
 
-  const category = toTitleCase((f?.item_category as string) ?? "item");
-  const weight = f?.weight_class as string | undefined;
+  // Resolve the per-line array. Old quotes with scalar fields synthesize
+  // a one-row array; new quotes pass through unchanged. Single source of
+  // truth — see src/lib/quotes/single-item-types.ts.
+  const quoteItemsRaw = (quote as unknown as { quote_items?: unknown }).quote_items;
+  const lines: SingleItemLine[] = resolveSingleItemLines(quoteItemsRaw, {
+    item_description: f?.item_description as string | null | undefined,
+    item_category: f?.item_category as string | null | undefined,
+    item_weight_class: f?.weight_class as string | null | undefined,
+    assembly_needed: f?.assembly as string | null | undefined,
+    stair_carry: f?.stair_carry as boolean | null | undefined,
+    stair_flights: f?.stair_flights as number | null | undefined,
+    number_of_items: f?.single_item_quantity as number | null | undefined,
+  });
+
+  // Residential vs commercial copy mode — see single-item-copy.ts for the
+  // detection rules. Uses access types + per-line signals + free-text notes.
+  const copy = getSingleItemQuoteCopy({
+    from_access: quote.from_access as string | null | undefined,
+    to_access: quote.to_access as string | null | undefined,
+    walkthrough_notes: (quote as unknown as { walkthrough_notes?: string | null })
+      .walkthrough_notes,
+    booking_notes: (quote as unknown as { booking_notes?: string | null })
+      .booking_notes,
+    quote_items: quoteItemsRaw,
+    scalars: {
+      item_description: f?.item_description as string | null | undefined,
+      item_category: f?.item_category as string | null | undefined,
+      item_weight_class: f?.weight_class as string | null | undefined,
+      assembly_needed: f?.assembly as string | null | undefined,
+      stair_carry: f?.stair_carry as boolean | null | undefined,
+      stair_flights: f?.stair_flights as number | null | undefined,
+      number_of_items: f?.single_item_quantity as number | null | undefined,
+    },
+  });
+
   const specialHandling =
     typeof f?.single_item_special_handling === "string" &&
     f.single_item_special_handling.trim().length > 0
@@ -47,47 +85,36 @@ export default function SingleItemLayout({
   const truckBreakdown: string | null = null;
   const includes = (f?.includes as string[] | undefined) ?? DEFAULT_INCLUDES;
 
+  // Junk-removal display: client sees what's being hauled away (confirms
+  // the scope they discussed with the coordinator). We deliberately don't
+  // mention a drop-off facility — that's an operational detail.
+  const junkPickupFrom = (f?.junk_pickup_from as string | null) ?? null;
+  const junkItems = (f?.junk_items_description as string | null) ?? null;
+  const showJunkLine = junkPickupFrom && junkItems && junkItems.trim().length > 0;
+
   return (
     <section className="mb-10 space-y-6">
       {/* Item details */}
       <div>
-        <div className="flex items-start gap-4">
-          <OfficeChair
-            className="w-7 h-7 shrink-0 mt-0.5"
-            style={{ color: WINE }}
-            weight="duotone"
-            aria-hidden
-          />
-          <div>
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <span
-                className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
-                style={{ backgroundColor: `${FOREST}15`, color: FOREST }}
-              >
-                {category}
-              </span>
-              {weight && (
-                <span
-                  className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
-                  style={{ backgroundColor: `${FOREST}10`, color: FOREST }}
-                >
-                  {weight}
-                </span>
-              )}
-            </div>
-            <p
-              className="text-[var(--text-base)] font-semibold"
-              style={{ color: FOREST }}
-            >
-              {(f?.item_description as string) ?? "Single Item Delivery"}
+        {lines.length === 1 ? (
+          // Single-item view: keep the existing icon + label treatment.
+          <SingleItemHeader line={lines[0]!} fallbackLabel={copy.itemFallbackLabel} />
+        ) : (
+          // Multi-item view: stacked cards.
+          <div className="space-y-3">
+            <p className="text-[10px] font-bold tracking-[0.14em] uppercase" style={{ color: `${FOREST}80` }}>
+              {lines.length} items
             </p>
-            {f?.assembly_surcharge != null && (
-              <p className="text-[11px] mt-1" style={{ color: `${FOREST}60` }}>
-                Full assembly included where quoted.
-              </p>
-            )}
+            {lines.map((l, i) => (
+              <SingleItemHeader
+                key={l.id || i}
+                line={l}
+                fallbackLabel={`${copy.itemFallbackLabel} ${i + 1}`}
+                compact
+              />
+            ))}
           </div>
-        </div>
+        )}
 
         {/* Route */}
         <div className="mt-4 pt-4 border-t border-[var(--brd)]/30">
@@ -109,7 +136,7 @@ export default function SingleItemLayout({
             />
             <div className="flex-1 min-w-0 text-right">
               <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">
-                DELIVERY
+                {copy.mode === "residential" ? "DESTINATION" : "DELIVERY"}
               </p>
               <p
                 className="text-[12px] font-medium truncate"
@@ -126,7 +153,7 @@ export default function SingleItemLayout({
             >
               {quote.distance_km} km
               {quote.drive_time_min
-                ? ` \u00b7 ~${quote.drive_time_min} min`
+                ? ` · ~${quote.drive_time_min} min`
                 : ""}
             </p>
           )}
@@ -155,7 +182,7 @@ export default function SingleItemLayout({
 
       {/* Service includes */}
       <div className="pt-6 border-t border-[var(--brd)]/30">
-        <h2 className="admin-section-h2 mb-3">Your Delivery Includes</h2>
+        <h2 className="admin-section-h2 mb-3">{copy.includesSectionLabel}</h2>
         <div className="space-y-2">
           {includes.map((item, i) => (
             <div key={i} className="flex items-start gap-2">
@@ -171,6 +198,20 @@ export default function SingleItemLayout({
               </span>
             </div>
           ))}
+          {showJunkLine && (
+            <div className="flex items-start gap-2">
+              <Check
+                className="w-3.5 h-3.5 shrink-0 mt-0.5"
+                style={{ color: FOREST }}
+              />
+              <span
+                className="text-[12px] leading-snug"
+                style={{ color: FOREST }}
+              >
+                Junk removal: {junkItems} — hauled away. Disposal included.
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -224,17 +265,87 @@ export default function SingleItemLayout({
               <Check className="w-4 h-4" /> SELECTED
             </span>
           ) : isFullPayment ? (
-            `CONFIRM DELIVERY · ${fmtPrice(price + tax)}`
+            copy.confirmButtonLabel(fmtPrice(price + tax))
           ) : (
-            `CONFIRM DELIVERY · ${fmtPrice(deposit)} DEPOSIT`
+            copy.confirmButtonLabel(`${fmtPrice(deposit)} DEPOSIT`)
           )}
         </button>
         <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
-          {isFullPayment
-            ? "Full payment is due no later than 48 hours before your scheduled delivery."
-            : "Deposit due now. Remaining balance is due no later than 48 hours before your scheduled delivery."}
+          {copy.paymentNote(isFullPayment)}
         </p>
       </div>
     </section>
+  );
+}
+
+function SingleItemHeader({
+  line,
+  fallbackLabel,
+  compact,
+}: {
+  line: SingleItemLine;
+  fallbackLabel: string;
+  compact?: boolean;
+}) {
+  const category = toTitleCase(line.item_category || "item").replace(/_/g, " ");
+  const weight = line.weight_class || null;
+  const qty = Math.max(1, Math.floor(line.quantity || 1));
+  const description = line.item_description?.trim() || fallbackLabel;
+  return (
+    <div className="flex items-start gap-4">
+      <OfficeChair
+        className={compact ? "w-5 h-5 shrink-0 mt-0.5" : "w-7 h-7 shrink-0 mt-0.5"}
+        style={{ color: WINE }}
+        weight="duotone"
+        aria-hidden
+      />
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 flex-wrap mb-1">
+          <span
+            className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
+            style={{ backgroundColor: `${FOREST}15`, color: FOREST }}
+          >
+            {category}
+          </span>
+          {weight && (
+            <span
+              className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
+              style={{ backgroundColor: `${FOREST}10`, color: FOREST }}
+            >
+              {weight}
+            </span>
+          )}
+          {qty > 1 && (
+            <span
+              className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
+              style={{ backgroundColor: `${FOREST}10`, color: FOREST }}
+            >
+              ×{qty}
+            </span>
+          )}
+        </div>
+        <p
+          className={
+            compact
+              ? "text-[13px] font-semibold"
+              : "text-[var(--text-base)] font-semibold"
+          }
+          style={{ color: FOREST }}
+        >
+          {description}
+        </p>
+        {line.stair_carry && (
+          <p className="text-[11px] mt-1" style={{ color: `${FOREST}60` }}>
+            Stair carry · {line.stair_flights ?? 1} flight
+            {(line.stair_flights ?? 1) === 1 ? "" : "s"}
+          </p>
+        )}
+        {line.assembly && line.assembly.toLowerCase() !== "none" && (
+          <p className="text-[11px] mt-1" style={{ color: `${FOREST}60` }}>
+            {line.assembly} included.
+          </p>
+        )}
+      </div>
+    </div>
   );
 }

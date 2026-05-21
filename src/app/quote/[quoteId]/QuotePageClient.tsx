@@ -142,6 +142,7 @@ import {
 import { formatAddressForDisplay } from "@/lib/format-text";
 import { getDisplayLabel, VALUATION_TIER_LABELS } from "@/lib/displayLabels";
 import { SafeText } from "@/components/SafeText";
+import { getSingleItemQuoteCopy } from "@/lib/quotes/single-item-copy";
 import {
   getB2BQuoteHero,
   getLogisticsLoadingUnloadingFeature,
@@ -1339,6 +1340,28 @@ export default function QuotePageClient({
           "Custom one-off logistics with coordinator-built pricing. Review scope and confirm to secure your date.",
       };
     }
+    // Single-item context-aware hero: residential moves see "Your Move
+    // Quote", commercial deliveries see "Your Delivery Quote". Detection
+    // uses access types + per-line signals — see single-item-copy.ts.
+    if (quote.service_type === "single_item") {
+      const copy = getSingleItemQuoteCopy({
+        from_access: quote.from_access as string | null | undefined,
+        to_access: quote.to_access as string | null | undefined,
+        walkthrough_notes: (quote as unknown as { walkthrough_notes?: string | null }).walkthrough_notes,
+        booking_notes: (quote as unknown as { booking_notes?: string | null }).booking_notes,
+        quote_items: (quote as unknown as { quote_items?: unknown }).quote_items,
+        scalars: {
+          item_description: fa?.item_description as string | null | undefined,
+          item_category: fa?.item_category as string | null | undefined,
+          item_weight_class: fa?.weight_class as string | null | undefined,
+          assembly_needed: fa?.assembly as string | null | undefined,
+          stair_carry: fa?.stair_carry as boolean | null | undefined,
+          stair_flights: fa?.stair_flights as number | null | undefined,
+          number_of_items: fa?.single_item_quantity as number | null | undefined,
+        },
+      });
+      return { headline: copy.pageTitle, subtitle: copy.pageSubtitle };
+    }
     const base = HERO_CONFIG[quote.service_type] ?? HERO_CONFIG.local_move;
     if (isB2BDeliveryQuoteServiceType(quote.service_type)) {
       const code =
@@ -1350,7 +1373,7 @@ export default function QuotePageClient({
       return getB2BQuoteHero(code, handling);
     }
     return base;
-  }, [quote.service_type, quote.factors_applied]);
+  }, [quote]);
   const dateLabel =
     quote.service_type === "single_item" ||
     quote.service_type === "white_glove" ||
