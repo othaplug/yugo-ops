@@ -2889,6 +2889,11 @@ export default function MoveDetailClient({
         </div>
       )}
 
+      {/* Single-item per-line list + junk-removal task — only renders when
+          the underlying data is present, so this is a no-op for tiered moves
+          and any single_item quote that doesn't use the new fields. */}
+      <SingleItemTaskBlock move={move as unknown as Record<string, unknown>} />
+
       {/* Inventory, Files & Media */}
       <MoveInventorySection
         moveId={move.id}
@@ -3892,6 +3897,131 @@ function MoveOverviewDocumentsSection({
               </div>
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Coordinator-facing view of single-item per-line items + junk-removal task.
+ * Reads from move.factors_applied (written by /api/quotes/generate
+ * calcSingleItem in Phase 2). Renders nothing when the move doesn't have
+ * single-item data — safe to mount on every move detail.
+ */
+function SingleItemTaskBlock({
+  move,
+}: {
+  move: Record<string, unknown>;
+}) {
+  const serviceType = String(move.service_type ?? "").trim();
+  if (serviceType !== "single_item") return null;
+
+  const fa = (move.factors_applied as Record<string, unknown> | null) ?? null;
+  const lines =
+    fa && Array.isArray(fa.single_item_lines)
+      ? (fa.single_item_lines as Array<{
+          id?: string;
+          item_description?: string;
+          item_category?: string;
+          weight_class?: string;
+          quantity?: number;
+          assembly?: string;
+          stair_carry?: boolean;
+          stair_flights?: number;
+          mapped_category?: string;
+          base?: number;
+          assembly_fee?: number;
+          stair_fee?: number;
+        }>)
+      : [];
+  const junkPickupFrom =
+    typeof fa?.junk_pickup_from === "string" ? fa.junk_pickup_from : "";
+  const junkItems =
+    typeof fa?.junk_items_description === "string"
+      ? fa.junk_items_description.trim()
+      : "";
+  const junkStopFee =
+    typeof fa?.junk_stop_fee === "number" ? Number(fa.junk_stop_fee) : 0;
+  const hasJunk = junkPickupFrom && junkItems;
+
+  if (lines.length === 0 && !hasJunk) return null;
+
+  const pickupLabel =
+    junkPickupFrom === "origin"
+      ? "Pickup address (origin)"
+      : junkPickupFrom === "destination"
+        ? "Delivery address (destination)"
+        : junkPickupFrom === "both"
+          ? "Both addresses"
+          : "—";
+
+  return (
+    <div className="rounded-xl border border-[var(--yu3-line-subtle)] bg-[var(--yu3-bg-surface)] p-4 mb-3 space-y-3">
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--yu3-ink-muted)]">
+        Items & tasks
+      </p>
+
+      {lines.length > 0 && (
+        <div className="space-y-1.5">
+          {lines.map((l, i) => {
+            const qty = Math.max(1, Math.floor(l.quantity ?? 1));
+            const cat = (l.item_category || l.mapped_category || "").replace(
+              /_/g,
+              " ",
+            );
+            return (
+              <div
+                key={l.id || i}
+                className="flex items-baseline justify-between gap-3 text-[12px]"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium text-[var(--yu3-ink)] truncate">
+                    {qty > 1 ? `${qty}× ` : ""}
+                    {l.item_description || `Item ${i + 1}`}
+                  </p>
+                  <p className="text-[10px] text-[var(--yu3-ink-muted)] mt-0.5">
+                    {cat}
+                    {l.weight_class ? ` · ${l.weight_class}` : ""}
+                    {l.stair_carry
+                      ? ` · stairs (${l.stair_flights ?? 1} flights)`
+                      : ""}
+                    {l.assembly && l.assembly.toLowerCase() !== "none"
+                      ? ` · ${l.assembly}`
+                      : ""}
+                  </p>
+                </div>
+                {typeof l.base === "number" && (
+                  <p className="shrink-0 text-[10px] tabular-nums text-[var(--yu3-ink-muted)]">
+                    ${l.base.toLocaleString()}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {hasJunk && (
+        <div className="rounded-lg border border-[var(--yu3-wine)]/15 bg-[var(--yu3-wine)]/5 p-3">
+          <div className="flex items-center justify-between gap-3 mb-1.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--yu3-wine)]">
+              Junk removal task
+            </p>
+            {junkStopFee > 0 && (
+              <p className="text-[10px] tabular-nums text-[var(--yu3-ink-muted)]">
+                stop fee +${junkStopFee.toLocaleString()}
+              </p>
+            )}
+          </div>
+          <p className="text-[12px] text-[var(--yu3-ink)] leading-snug">
+            Load from <span className="font-medium">{pickupLabel}</span>:{" "}
+            {junkItems}
+          </p>
+          <p className="text-[10px] text-[var(--yu3-ink-muted)] mt-1.5 leading-snug">
+            Crew disposes at any facility on their own schedule. No drop-off
+            address required.
+          </p>
         </div>
       )}
     </div>
