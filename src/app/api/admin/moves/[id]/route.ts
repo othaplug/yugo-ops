@@ -451,6 +451,7 @@ export async function PATCH(
         est_hours, estimated_duration_minutes, margin_alert_minutes,
         crew_id, coordinator_name,
         complexity_indicators, internal_notes,
+        truck_primary, truck_secondary,
       } = body as Record<string, unknown>;
 
       const updatePayload: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -476,6 +477,8 @@ export async function PATCH(
       if (coordinator_name !== undefined) updatePayload.coordinator_name = coordinator_name;
       if (complexity_indicators !== undefined) updatePayload.complexity_indicators = complexity_indicators;
       if (internal_notes !== undefined) updatePayload.internal_notes = internal_notes;
+      if (truck_primary !== undefined) updatePayload.truck_primary = truck_primary;
+      if (truck_secondary !== undefined) updatePayload.truck_secondary = truck_secondary;
 
       const { data: updated, error: updateErr } = await admin
         .from("moves")

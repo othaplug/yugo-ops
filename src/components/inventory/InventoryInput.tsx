@@ -269,11 +269,25 @@ export default function InventoryInput({
   const addCustomItem = useCallback(() => {
     const name = customName.trim();
     if (!name) return;
+    const tierCode = normalizeB2bWeightCategory(customTier);
+    // weight_score drives truck capacity / inventory scoring; using a flat 1
+    // for every custom item undercounts heavy/very-heavy custom additions and
+    // overcounts light ones. Pick a representative score from the chosen tier
+    // (matches the residential catalog: sofa=2.0=heavy, lamp=0.4=light, etc.).
+    const tierToScore: Record<string, number> = {
+      light: 0.4,
+      standard: 1.0,
+      heavy: 2.0,
+      very_heavy: 3.2,
+      super_heavy: 3.7,
+      extreme: 4.5,
+    };
+    const tierScore = tierToScore[tierCode] ?? 1.0;
     const entry: InventoryItemEntry = {
       name,
       quantity: 1,
-      weight_score: 1,
-      weight_tier_code: normalizeB2bWeightCategory(customTier),
+      weight_score: tierScore,
+      weight_tier_code: tierCode,
       isCustom: true,
       room: "other",
       fragile: nameImpliesFragile(name),

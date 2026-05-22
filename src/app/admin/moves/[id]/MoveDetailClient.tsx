@@ -2815,7 +2815,12 @@ export default function MoveDetailClient({
       {pendingInventoryChange &&
         ["pending", "admin_reviewing", "client_confirming"].includes(
           pendingInventoryChange.status,
-        ) && <InventoryChangeRequestPanel request={pendingInventoryChange} />}
+        ) && (
+          <InventoryChangeRequestPanel
+            request={pendingInventoryChange}
+            moveId={move.id}
+          />
+        )}
 
       {pendingModifications.length > 0 && (
         <div className="rounded-xl border border-amber-500/35 bg-amber-500/[0.06] p-4 mb-6">
@@ -2988,6 +2993,22 @@ export default function MoveDetailClient({
         maxWidth="sm"
       >
         <div className="p-5 space-y-4">
+          {/* Move context — answers the "available for what date/time?"
+              question a coordinator hits before picking crew. Without this
+              the modal floated free of the move it was assigning to. */}
+          <div className="rounded-md border border-[var(--brd)]/60 bg-[var(--bg)]/40 px-3 py-2">
+            <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-0.5">
+              Assigning for
+            </p>
+            <p className="text-[13px] font-medium text-[var(--tx)]">
+              {formatMoveDate(move.scheduled_date)}
+              {move.arrival_window ? ` · ${move.arrival_window}` : ""}
+            </p>
+            <p className="text-[10px] text-[var(--tx3)] mt-0.5">
+              {move.move_code}
+              {move.service_type ? ` · ${move.service_type}` : ""}
+            </p>
+          </div>
           {!moveInProgress && (
             <RecommendedCrewPanel
               moveId={move.id}
@@ -3083,6 +3104,31 @@ export default function MoveDetailClient({
                   </label>
                 ))}
               </div>
+              {/* Summary: previews exactly what Save Assignments will commit
+                  — team name + checked member list — so the coordinator can
+                  verify the result before clicking. Previously the button
+                  was unlabeled beyond "Save Assignments". */}
+              {assignedMembers.size > 0 ? (
+                <p className="text-[11px] text-[var(--yu3-ink-muted)] text-center">
+                  Assigning{" "}
+                  <span className="font-semibold text-[var(--yu3-ink)]">
+                    {Array.from(assignedMembers).join(", ")}
+                  </span>
+                  {selectedCrew?.name ? (
+                    <>
+                      {" "}from{" "}
+                      <span className="font-semibold text-[var(--yu3-ink)]">
+                        {selectedCrew.name}
+                      </span>
+                    </>
+                  ) : null}
+                  {" "}to {move.move_code}.
+                </p>
+              ) : (
+                <p className="text-[11px] text-amber-600 text-center">
+                  No members checked — Save will leave this move unassigned.
+                </p>
+              )}
               <button
                 type="button"
                 onClick={async () => {

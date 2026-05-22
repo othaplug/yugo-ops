@@ -279,14 +279,34 @@ export function tierRequiresActualWeight(code: string | undefined | null): boole
   return !!(t?.manualWeightRequired || t?.requiresReview);
 }
 
-/** Map legacy inventory weight_score (0.3–3) to a default tier for new UI. */
+/**
+ * Map legacy inventory weight_score (0.1–3.5) to a default tier for new UI.
+ *
+ * Calibrated against the residential catalog (item_weights table):
+ *   0.1–0.3  pillows, sheets, decor                 → light
+ *   0.5–1.4  basic bed frames, small TV stands,
+ *            nightstand, ottoman, side table        → standard
+ *   1.5–2.4  sofa (2.0), dresser (2.0), dining
+ *            table (2.0), queen bed frame (2.0),
+ *            fridge (2.0), wardrobe (2.0)           → heavy
+ *   2.5–2.9  patio set (2.5), adjustable base
+ *            queen (2.8), storage bed queen (2.5)   → heavy (still 2-person, no crew bump)
+ *   3.0–3.4  storage bed king (3.0), adjustable
+ *            base king (3.5)                        → very_heavy
+ *   3.5–3.9  upright piano, safe, marble table      → super_heavy
+ *   ≥ 4.0    grand piano, hot tub, slate pool tbl   → extreme
+ *
+ * Prior breakpoints had 2.0 score → "very_heavy" (300–500 lbs / +35% surcharge),
+ * which incorrectly flagged Queen Bed Frame and most living-room furniture as
+ * very_heavy. The catalog uses 2.0 as the "heavy" anchor (150–300 lbs).
+ */
 export function inferWeightTierFromLegacyScore(score: number): WeightTierCode {
   if (!Number.isFinite(score)) return "standard";
-  if (score <= 0.5) return "light";
-  if (score <= 1.0) return "standard";
-  if (score <= 1.75) return "heavy";
-  if (score <= 2.25) return "very_heavy";
-  if (score < 3.0) return "super_heavy";
+  if (score <= 0.4) return "light";
+  if (score < 1.5) return "standard";
+  if (score < 3.0) return "heavy";
+  if (score < 3.5) return "very_heavy";
+  if (score < 4.0) return "super_heavy";
   return "extreme";
 }
 

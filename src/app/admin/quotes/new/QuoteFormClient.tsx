@@ -1983,6 +1983,14 @@ export default function QuoteFormClient({
   const [perPickupInventory, setPerPickupInventory] = useState<
     InventoryItemEntry[][]
   >([]);
+  /**
+   * Per-pickup client box count. Parallel to perPickupInventory.
+   * Pickup 0 syncs with clientBoxCount; pickup 1+ contribute their own boxes
+   * that get summed into the engine's total box count. Previously the form
+   * hid the box input on pickup 2+ entirely, which silently dropped those
+   * boxes from inventory scoring.
+   */
+  const [perPickupBoxCount, setPerPickupBoxCount] = useState<number[]>([]);
   const pickupAddressList = useMemo(
     () =>
       [fromAddress, ...extraFromStops.map((s) => s.address)]
@@ -2433,7 +2441,20 @@ export default function QuoteFormClient({
     return inventoryLinesForScore.reduce((sum, i) => sum + i.quantity, 0);
   }, [inventoryLinesForScore]);
 
-  const clientBoxCountNum = Number(clientBoxCount) || 0;
+  /**
+   * Total client box count across all pickups. Pickup 0 lives in
+   * `clientBoxCount` (top-level state); pickup 1+ in `perPickupBoxCount`.
+   * Engine + score use the sum so extra-pickup boxes actually count.
+   */
+  const extraPickupBoxesTotal = useMemo(
+    () =>
+      multiPickupInventoryMode
+        ? perPickupBoxCount.slice(1).reduce((acc, n) => acc + (Number(n) || 0), 0)
+        : 0,
+    [multiPickupInventoryMode, perPickupBoxCount],
+  );
+  const clientBoxCountNum =
+    (Number(clientBoxCount) || 0) + extraPickupBoxesTotal;
   const boxScore = clientBoxCountNum * 0.3;
   const inventoryScoreWithBoxes = inventoryScore + boxScore;
 
@@ -4568,10 +4589,13 @@ export default function QuoteFormClient({
 
       if (serviceType === "local_move" || serviceType === "long_distance") {
         base.move_size = moveSize;
+        // Sum pickup-0 + extra-pickup boxes so multi-origin moves don't
+        // silently drop the boxes coming from pickup 2+ (see
+        // clientBoxCountNum derivation in the score block above).
         base.client_box_count =
-          clientBoxCount !== "" && clientBoxCount != null
+          (clientBoxCount !== "" && clientBoxCount != null
             ? Number(clientBoxCount)
-            : 0;
+            : 0) + extraPickupBoxesTotal;
         base.specialty_items =
           specialtyItems.length > 0 ? specialtyItems : undefined;
         if (multiPickupInventoryMode && perPickupInventory.length > 0) {
@@ -7812,14 +7836,22 @@ export default function QuoteFormClient({
                               toAccess={toAccess}
                               showLabourEstimate={false}
                               boxCount={
-                                idx === 0 ? Number(clientBoxCount) || 0 : 0
-                              }
-                              onBoxCountChange={
                                 idx === 0
-                                  ? (n) =>
-                                      setClientBoxCount(n > 0 ? String(n) : "")
-                                  : undefined
+                                  ? Number(clientBoxCount) || 0
+                                  : perPickupBoxCount[idx] ?? 0
                               }
+                              onBoxCountChange={(n) => {
+                                if (idx === 0) {
+                                  setClientBoxCount(n > 0 ? String(n) : "");
+                                } else {
+                                  setPerPickupBoxCount((prev) => {
+                                    const copy = [...prev];
+                                    while (copy.length <= idx) copy.push(0);
+                                    copy[idx] = Math.max(0, Math.floor(n));
+                                    return copy;
+                                  });
+                                }
+                              }}
                               mode={
                                 serviceType === "office_move"
                                   ? "commercial"

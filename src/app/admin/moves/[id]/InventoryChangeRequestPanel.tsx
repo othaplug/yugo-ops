@@ -17,6 +17,7 @@ type TruckA = {
 
 export default function InventoryChangeRequestPanel({
   request,
+  moveId,
 }: {
   request: {
     id: string;
@@ -30,6 +31,8 @@ export default function InventoryChangeRequestPanel({
     admin_notes: string | null;
     decline_reason: string | null;
   };
+  /** Required for the one-click truck upgrade. Omit to hide the upgrade button. */
+  moveId?: string;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -37,7 +40,43 @@ export default function InventoryChangeRequestPanel({
   const [adjustDelta, setAdjustDelta] = useState(String(request.auto_calculated_delta));
   const [adjustNote, setAdjustNote] = useState("");
   const [declineReason, setDeclineReason] = useState("");
-  const [busy, setBusy] = useState<"approve" | "decline" | "adjust" | null>(null);
+  const [busy, setBusy] = useState<"approve" | "decline" | "adjust" | "upgrade" | null>(null);
+
+  /** Pull "Upgrade to 20ft (55 capacity)" → "20ft" for the upgrade action. */
+  function parseRecommendedTruck(rec: string | null | undefined): string | null {
+    if (!rec) return null;
+    const m = rec.match(/(\d+ft|sprinter|cargo van)/i);
+    return m ? m[1].toLowerCase().replace(/\s+/g, "_") : null;
+  }
+  const recommendedTruck = parseRecommendedTruck(
+    request.truck_assessment?.recommendation,
+  );
+
+  const upgradeTruck = async () => {
+    if (!moveId || !recommendedTruck) return;
+    setBusy("upgrade");
+    try {
+      const res = await fetch(`/api/admin/moves/${moveId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          action: "update_details",
+          truck_primary: recommendedTruck,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(typeof data.error === "string" ? data.error : "Failed");
+      }
+      toast(`Truck upgraded to ${recommendedTruck.toUpperCase()}.`, "check");
+      router.refresh();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Truck upgrade failed", "x");
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const added = Array.isArray(request.items_added) ? request.items_added : [];
   const removed = Array.isArray(request.items_removed) ? request.items_removed : [];
@@ -66,15 +105,24 @@ export default function InventoryChangeRequestPanel({
 
   return (
     <div className="rounded-xl border border-amber-500/35 bg-amber-500/[0.06] p-4 mb-6">
-      <div className="flex items-start gap-2 mb-3">
+      <div className="flex items-start gap-2 mb-1">
         <Warning className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" weight="regular" />
-        <div>
+        <div className="flex-1">
           <h3 className="text-[12px] font-bold text-[var(--tx)]">Pending inventory change request</h3>
           <p className="text-[10px] text-[var(--tx3)] mt-0.5">
             Submitted {new Date(request.submitted_at).toLocaleString()}
           </p>
         </div>
+        {/* Admin-only marker so it's unambiguous: every figure on this card
+            is internal pricing, never shown to the client. The client's
+            view of the change is a separate notification flow. */}
+        <span className="shrink-0 text-[8px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)] px-1.5 py-0.5 rounded border border-[var(--brd)]/60">
+          Admin only
+        </span>
       </div>
+      <p className="text-[9px] text-[var(--tx3)] mb-3 ml-7">
+        Internal pricing — coordinators see this card; clients do not.
+      </p>
 
       {added.length > 0 && (
         <div className="mb-3">
@@ -127,7 +175,7 @@ export default function InventoryChangeRequestPanel({
       </div>
 
       {truck && (
-        <div className="text-[10px] text-[var(--tx3)] mb-3 space-y-0.5">
+        <div className="text-[10px] text-[var(--tx3)] mb-3 space-y-1">
           <div>
             Truck: {truck.current_truck}, score {truck.current_score ?? "-"} / cap {truck.truck_capacity ?? "-"}
           </div>
@@ -135,21 +183,41 @@ export default function InventoryChangeRequestPanel({
             After change: {truck.new_score ?? "-"} / {truck.truck_capacity ?? "-"}{" "}
             {truck.fits ? <span className="text-emerald-600 font-semibold">Fits</span> : <span className="text-amber-600 font-semibold">Over capacity</span>}
           </div>
-          {truck.recommendation && <div className="text-amber-600/90">{truck.recommendation}</div>}
+          {truck.recommendation && (
+            <div className="flex items-center gap-2 pt-1">
+              <span className="text-amber-600/90 flex-1">{truck.recommendation}</span>
+              {moveId && recommendedTruck ? (
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={upgradeTruck}
+                  className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-600 text-white hover:bg-amber-700 transition-colors disabled:opacity-50 shrink-0"
+                  title="Reassign this move to the recommended truck size in one click"
+                >
+                  {busy === "upgrade" ? "…" : `Upgrade to ${recommendedTruck.toUpperCase()}`}
+                </button>
+              ) : null}
+            </div>
+          )}
         </div>
       )}
 
       <div className="text-[10px] text-[var(--tx3)] mb-3">Est. time impact: +{timeImpact}h (guideline)</div>
 
       {!adjustOpen ? (
-        <div className="flex flex-wrap gap-2">
+        // Button hierarchy reads left-to-right by reversibility:
+        //   Decline   — neutral text button (reversible via re-request)
+        //   Adjust    — primary action; coordinator usually wants to tweak
+        //               the auto-calc before committing
+        //   Accept    — green confirm; only after the price reads correctly
+        <div className="flex flex-wrap items-center gap-2 justify-end">
           <button
             type="button"
             disabled={busy !== null}
-            onClick={() => run({ action: "approve" })}
-            className="px-3 py-2 rounded-lg text-[11px] font-bold bg-[var(--grn)]/90 text-white disabled:opacity-50"
+            onClick={() => run({ action: "decline", decline_reason: declineReason || "Unable to accommodate this change." })}
+            className="px-3 py-2 rounded-lg text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] hover:bg-[var(--brd)]/30 disabled:opacity-50 transition-colors"
           >
-            {busy === "approve" ? "…" : `Accept (${request.auto_calculated_delta >= 0 ? "+" : ""}${formatCurrency(request.auto_calculated_delta)})`}
+            {busy === "decline" ? "…" : "Decline"}
           </button>
           <button
             type="button"
@@ -158,17 +226,17 @@ export default function InventoryChangeRequestPanel({
               setAdjustDelta(String(request.auto_calculated_delta));
               setAdjustOpen(true);
             }}
-            className="px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] disabled:opacity-50"
+            className="px-3 py-2 rounded-lg text-[11px] font-bold border border-[var(--admin-primary-fill)] text-[var(--admin-primary-fill)] hover:bg-[var(--admin-primary-fill)]/10 disabled:opacity-50 transition-colors"
           >
             Adjust price
           </button>
           <button
             type="button"
             disabled={busy !== null}
-            onClick={() => run({ action: "decline", decline_reason: declineReason || "Unable to accommodate this change." })}
-            className="px-3 py-1 rounded text-[11px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all disabled:opacity-50"
+            onClick={() => run({ action: "approve" })}
+            className="px-3 py-2 rounded-lg text-[11px] font-bold bg-[var(--grn)]/90 text-white hover:bg-[var(--grn)] disabled:opacity-50 transition-colors"
           >
-            Decline
+            {busy === "approve" ? "…" : `Accept (${request.auto_calculated_delta >= 0 ? "+" : ""}${formatCurrency(request.auto_calculated_delta)})`}
           </button>
         </div>
       ) : (

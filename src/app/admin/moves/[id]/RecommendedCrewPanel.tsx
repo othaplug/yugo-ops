@@ -1,7 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowsClockwise, CircleNotch, Users } from "@phosphor-icons/react";
+import { ArrowsClockwise, CircleNotch, Info, Users } from "@phosphor-icons/react";
+
+/**
+ * Score is computed in src/lib/crew/recommendation.ts (recommendCrew):
+ *   base 50
+ *   + specialty match (up to +30 by service type / tier / piano / art)
+ *   + high-value bonus when estimate > $3k (up to +20)
+ *   + avg_satisfaction × 5 (5-star → +25)
+ *   − damage_rate × 50 (10% damage → −5)
+ *   − max(0, avg_hours_vs_estimate) × 5 (slow finish penalty)
+ *   + on_time_rate × 10 (punctuality)
+ */
+const SCORE_TOOLTIP =
+  "Composite score: specialty match (30), satisfaction (25), high-value bonus (20), punctuality (10), minus damage and time-overrun penalties. Brand-new crew anchor at 50.";
 
 interface CrewRecommendation {
   crew: {
@@ -151,19 +164,31 @@ export default function RecommendedCrewPanel({
                 </p>
 
                 <div className="flex flex-wrap items-center gap-3 text-[11px] text-[var(--tx3)]">
-                  <span>
-                    Satisfaction {rec.crew.avg_satisfaction?.toFixed(1) ?? "—"}
-                  </span>
-                  <span>
-                    {rec.crew.damage_rate === 0
-                      ? "Zero damage"
-                      : `${(rec.crew.damage_rate * 100).toFixed(0)}% damage`}
-                  </span>
+                  {rec.crew.total_jobs > 0 ? (
+                    <>
+                      <span>
+                        Satisfaction {rec.crew.avg_satisfaction?.toFixed(1) ?? "—"}
+                      </span>
+                      <span>
+                        {rec.crew.damage_rate === 0
+                          ? "Zero damage"
+                          : `${(rec.crew.damage_rate * 100).toFixed(0)}% damage`}
+                      </span>
+                      <span className="text-[var(--brd)]">·</span>
+                      <span>{rec.crew.total_jobs} jobs</span>
+                    </>
+                  ) : (
+                    // Zero-jobs crew: showing "Satisfaction 0.0 · Zero damage"
+                    // reads as a perfect record when it's actually no record.
+                    <span className="italic text-[var(--tx3)]">No ratings yet</span>
+                  )}
                   <span className="text-[var(--brd)]">·</span>
-                  <span>{rec.crew.total_jobs} jobs</span>
-                  <span className="text-[var(--brd)]">·</span>
-                  <span className="font-semibold text-[var(--tx)]">
+                  <span
+                    className="font-semibold text-[var(--tx)] inline-flex items-center gap-1"
+                    title={SCORE_TOOLTIP}
+                  >
                     Score {rec.score}
+                    <Info size={11} className="text-[var(--tx3)] cursor-help" />
                   </span>
                 </div>
               </div>

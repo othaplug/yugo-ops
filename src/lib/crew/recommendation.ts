@@ -239,9 +239,14 @@ function generateRecommendationReason(
     reasons.push("Office relocation specialist");
   }
 
-  return reasons.length > 0
-    ? reasons.slice(0, 3).join(". ")
-    : "Available and qualified";
+  if (reasons.length > 0) return reasons.slice(0, 3).join(". ");
+
+  // Distinguish "we checked and they look fine" from "they have no track
+  // record yet". The previous flat "Available and qualified" line read as a
+  // green light for a brand-new crew member with 0 jobs, which it isn't.
+  return crew.total_jobs > 0
+    ? "Available; no specialty signal"
+    : "Available, no track record yet";
 }
 
 // ═══════════════════════════════════════════════
@@ -261,6 +266,20 @@ export async function recommendCrew(
     .order("avg_satisfaction", { ascending: false });
 
   if (!profiles?.length) return [];
+
+  // Exclude platform staff (owner / admin / coordinator) from crew
+  // recommendations. They sometimes accumulate a crew_profiles row from test
+  // jobs but should never be suggested as crew on a client move. We filter
+  // by membership in platform_users rather than by crew_profiles.role
+  // (which is "lead" | "member" | null and doesn't carry admin/owner info).
+  const { data: platformStaff } = await admin
+    .from("platform_users")
+    .select("user_id");
+  const platformUserIds = new Set(
+    (platformStaff ?? [])
+      .map((r: { user_id?: string | null }) => r.user_id)
+      .filter((id): id is string => !!id),
+  );
 
   // If we have a date, filter to crew without conflicts that day
   let availableUserIds: Set<string> | null = null;
@@ -292,6 +311,7 @@ export async function recommendCrew(
 
   const scored = (profiles as CrewProfileRow[])
     .filter((crew) => {
+      if (platformUserIds.has(crew.user_id)) return false;
       if (availableUserIds && !availableUserIds.has(crew.user_id)) return false;
       if (move.has_piano && !crew.can_handle_piano) return false;
       return true;

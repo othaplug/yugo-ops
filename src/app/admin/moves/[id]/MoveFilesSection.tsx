@@ -85,6 +85,147 @@ const BADGE_LABELS: Record<string, string> = {
   upload: "Uploaded",
 };
 
+// ─── Photo lightbox (multi-photo, with keyboard nav + counter) ──────────────
+
+/**
+ * Replaces the single-image lightbox with a real photo viewer:
+ *   - Photo counter (1 / 9)
+ *   - Prev / next arrow buttons (skipped when at the ends)
+ *   - Keyboard nav: ←  →  Esc
+ *   - Thumbnail strip along the bottom
+ *   - Backdrop click-to-close + dedicated X close
+ *   - object-contain on the main image so portrait phone photos don't
+ *     overflow a landscape viewport.
+ */
+function PhotoLightbox({
+  files,
+  index,
+  onClose,
+  onIndex,
+}: {
+  files: FileEntry[];
+  index: number;
+  onClose: () => void;
+  onIndex: (next: number) => void;
+}) {
+  const current = files[index];
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowRight" && index < files.length - 1) onIndex(index + 1);
+      else if (e.key === "ArrowLeft" && index > 0) onIndex(index - 1);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [index, files.length, onClose, onIndex]);
+
+  if (!current) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[99999] flex items-center justify-center modal-overlay"
+      onClick={onClose}
+    >
+      {/* Header strip — caption + counter + close */}
+      <div
+        className="absolute top-0 inset-x-0 flex items-center justify-between gap-4 px-4 py-3 bg-black/50 text-white"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="min-w-0">
+          <p className="text-[12px] font-medium truncate">
+            {current.caption || current.name || "Photo"}
+          </p>
+          <p className="text-[10px] text-white/70 mt-0.5">{formatShort(current.date)}</p>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="text-[11px] text-white/80 tabular-nums">
+            {index + 1} / {files.length}
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-white/10"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Image — object-contain so portrait photos in landscape windows
+          don't overflow. The container is click-through to the backdrop;
+          the image itself stops propagation. */}
+      <img
+        src={current.url}
+        alt={current.caption || current.name || "Photo"}
+        className="max-w-[92vw] max-h-[80vh] object-contain rounded-xl shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      />
+
+      {/* Prev arrow */}
+      {index > 0 && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onIndex(index - 1);
+          }}
+          aria-label="Previous photo"
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 text-white text-2xl leading-none"
+        >
+          ‹
+        </button>
+      )}
+      {/* Next arrow */}
+      {index < files.length - 1 && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onIndex(index + 1);
+          }}
+          aria-label="Next photo"
+          className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 text-white text-2xl leading-none"
+        >
+          ›
+        </button>
+      )}
+
+      {/* Thumbnail strip */}
+      {files.length > 1 && (
+        <div
+          className="absolute bottom-0 inset-x-0 px-4 py-3 bg-black/50 overflow-x-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex gap-2 justify-center min-w-min">
+            {files.map((f, i) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => onIndex(i)}
+                className={`shrink-0 w-12 h-12 rounded-md overflow-hidden border-2 transition ${
+                  i === index
+                    ? "border-white opacity-100"
+                    : "border-transparent opacity-60 hover:opacity-90"
+                }`}
+                aria-label={`Photo ${i + 1}`}
+              >
+                {f.type === "image" ? (
+                  <img src={f.url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="flex items-center justify-center w-full h-full text-white/60 text-[9px]">
+                    PDF
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Collapsible group ────────────────────────────────────────────────────────
 
 function FileGroup({
@@ -111,7 +252,8 @@ function FileGroup({
   onDeleteFile?: (id: string) => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  /** When non-null, the lightbox shows files[lightboxIndex]; arrows navigate within this group. */
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   if (files.length === 0 && !extra) return null;
 
@@ -149,12 +291,12 @@ function FileGroup({
                 </p>
               ) : null}
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                {files.map((f) => (
+                {files.map((f, idx) => (
                   <div key={f.id} className="relative group">
                     {f.type === "image" ? (
                       <button
                         type="button"
-                        onClick={() => setLightbox(f.url)}
+                        onClick={() => setLightboxIndex(idx)}
                         className="block w-full aspect-square rounded-lg overflow-hidden border border-[var(--brd)]/60 bg-[var(--bg)] hover:border-[var(--gold)]/50 transition-colors"
                       >
                         <img
@@ -214,26 +356,14 @@ function FileGroup({
         </>
       )}
 
-      {/* Lightbox */}
-      {lightbox && (
-        <div
-          className="fixed inset-0 z-[99999] flex items-center justify-center modal-overlay"
-          onClick={() => setLightbox(null)}
-        >
-          <button
-            type="button"
-            className="absolute top-4 right-4 text-white p-2 rounded-full hover:bg-white/10"
-            onClick={() => setLightbox(null)}
-          >
-            <X className="w-6 h-6" />
-          </button>
-          <img
-            src={lightbox}
-            alt=""
-            className="max-w-[90vw] max-h-[90vh] rounded-xl shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
+      {/* Lightbox — index-based, navigates within this group's files */}
+      {lightboxIndex != null && (
+        <PhotoLightbox
+          files={files}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onIndex={(n) => setLightboxIndex(n)}
+        />
       )}
     </div>
   );
@@ -500,6 +630,14 @@ export default function MoveFilesSection({
             <button
               type="button"
               onClick={async () => {
+                // Confirm before overwriting: regenerating produces new
+                // contract + proof-of-delivery PDFs that replace the
+                // existing ones. A coordinator clicking by accident can
+                // lose the version a client already received.
+                const ok = window.confirm(
+                  "Regenerate documents?\n\nThis overwrites the existing PDFs for this move (contract, proof of delivery, etc.). Any version a client has already received remains in their inbox but the linked file here will change."
+                );
+                if (!ok) return;
                 setRegenerating(true);
                 try {
                   const res = await fetch(
@@ -520,6 +658,7 @@ export default function MoveFilesSection({
                 }
               }}
               disabled={regenerating}
+              title="Rebuild the contract and proof-of-delivery PDFs for this move. Overwrites the existing files."
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] hover:bg-[var(--brd)] transition-colors disabled:opacity-60"
             >
               <RefreshCw

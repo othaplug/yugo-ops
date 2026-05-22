@@ -1425,6 +1425,24 @@ async function calcResidential(
     buildingUnloadingExtraMin = cTo.unloadingExtraMinutes;
   }
 
+  // Multi-pickup premium: each additional pickup beyond the first adds a flat
+  // surcharge. Reflects the real logistics cost of staging the truck at
+  // multiple origins (extra drive time, loading sequencing, coordination
+  // overhead). Previously zero — a 2-origin move priced identically to a
+  // 1-origin move of the same size. Config: `multi_pickup_premium`, default
+  // $400/extra-pickup. Mirrors the `multi_origin_premium` pattern used by
+  // project quotes (residential-project-quote-lines.ts).
+  const extraPickupCount = Math.max(
+    0,
+    (input.additional_pickup_addresses ?? []).filter(
+      (a) => String(a.address ?? "").trim().length > 0,
+    ).length,
+  );
+  const multiPickupPremium =
+    extraPickupCount > 0
+      ? extraPickupCount * cfgNum(config, "multi_pickup_premium", 400)
+      : 0;
+
   const surchargesTotal =
     accessSurcharge +
     specialtySurcharge +
@@ -1432,7 +1450,8 @@ async function calcResidential(
     truckSur +
     deadheadSurcharge +
     mobilizationFee +
-    buildingComplexityCharge;
+    buildingComplexityCharge +
+    multiPickupPremium;
   operationalPrice += surchargesTotal;
 
   pd("Step 4 — fixed surcharges (additive):", {
@@ -1452,6 +1471,8 @@ async function calcResidential(
     deadhead_per_km: deadheadPerKm,
     deadhead_surcharge: deadheadSurcharge,
     mobilization_fee: mobilizationFee,
+    extra_pickup_count: extraPickupCount,
+    multi_pickup_premium: multiPickupPremium,
     surcharges_total: surchargesTotal,
   });
   pd("Step 4 — operational_price after surcharges (before market stack):", operationalPrice);
@@ -1883,6 +1904,8 @@ async function calcResidential(
       neighbourhood_tier: neighbourhood.tier,
       access_surcharge: accessSurcharge,
       specialty_surcharge: specialtySurcharge,
+      multi_pickup_premium: multiPickupPremium,
+      multi_pickup_count: extraPickupCount,
       labour_delta: labourDelta,
       labour_component: labourDelta,
       labour_delta_essential: tieredLabourDelta.essential,
