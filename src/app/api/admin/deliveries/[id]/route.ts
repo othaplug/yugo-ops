@@ -9,6 +9,7 @@ import { syncDealStageByDeliveryId } from "@/lib/hubspot/sync-deal-stage";
 import { ensureB2bDeliverySchedule } from "@/lib/calendar/ensure-b2b-delivery-schedule";
 import { notifyJobCompletedForCrewProfiles } from "@/lib/crew/profile-after-job";
 import { triggerDeliveryGCalSync } from "@/lib/google-calendar/sync-utils";
+import { generateInstallPhotoReport } from "@/lib/designer-projects/photo-report";
 
 const STATUS_NOTIFICATIONS: Record<string, { title: (label: string) => string; icon: string }> = {
   confirmed: { title: (l) => `Delivery confirmed: ${l}`, icon: "check" },
@@ -277,6 +278,19 @@ export async function PATCH(
     notifyJobCompletedForCrewProfiles(admin, { jobType: "delivery", jobId: id }).catch((e) =>
       console.error("[crew-profile] admin delivery complete:", e),
     );
+
+    // Fire photo report for any designer project whose install delivery just completed
+    const { data: linkedProject } = await admin
+      .from("projects")
+      .select("id")
+      .eq("delivery_job_id", id)
+      .not("designer_phase", "is", null)
+      .maybeSingle();
+    if (linkedProject) {
+      generateInstallPhotoReport(linkedProject.id).catch((e) =>
+        console.error("[designer-projects] photo-report fire failed:", e),
+      );
+    }
   }
 
   await ensureB2bDeliverySchedule(admin, id).catch((e) =>

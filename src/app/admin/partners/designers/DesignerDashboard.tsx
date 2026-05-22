@@ -83,7 +83,7 @@ export default function DesignerDashboard({
         <div className="flex items-center gap-2">
           <CreateDeliveryDropdown
             type="designer"
-            createProjectHref="/admin/projects/new?partnerType=designer"
+            createProjectHref="/admin/b2b/designer-projects/new"
             addPartnerHref="/admin/partners/onboard"
           />
         </div>
@@ -143,7 +143,7 @@ export default function DesignerDashboard({
           <div>
             <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)] mb-4 flex items-center justify-between">
               <span>Projects</span>
-              <Link href="/admin/deliveries?view=projects" className="admin-view-all-link">
+              <Link href="/admin/b2b/designer-projects" className="admin-view-all-link">
                 View all projects
               </Link>
             </div>
@@ -151,7 +151,7 @@ export default function DesignerDashboard({
               {allProjects.length === 0 ? (
                 <div className="px-4 py-10 text-center">
                   <p className="text-[12px] text-[var(--tx3)] mb-2">No projects yet.</p>
-                  <Link href="/admin/projects/new?partnerType=designer" className="text-[12px] font-semibold text-[var(--accent-text)] hover:underline">Create your first designer project →</Link>
+                  <Link href="/admin/b2b/designer-projects/new" className="text-[12px] font-semibold text-[var(--accent-text)] hover:underline">Create your first designer project →</Link>
                 </div>
               ) : allProjects.map((project) => {
                 const org = Array.isArray(project.organizations) ? project.organizations[0] : project.organizations;
@@ -160,7 +160,7 @@ export default function DesignerDashboard({
                 const statusLabel = (project.status || "").replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
                 return (
                   <div key={project.id} className="flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--bg)]/50 transition-colors">
-                    <Link href={`/admin/projects/${project.id}?from=designers`} className="flex items-center justify-between min-w-0 flex-1">
+                    <Link href={`/admin/b2b/designer-projects/${project.id}`} className="flex items-center justify-between min-w-0 flex-1">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-[13px] font-semibold text-[var(--tx)] truncate">{project.project_name}</span>

@@ -7,6 +7,7 @@ import { cn } from "@/design-system/admin/lib/cn"
 const LINKS = [
   { href: "/admin/b2b/jobs", label: "Jobs" },
   { href: "/admin/b2b/jobs/inbound", label: "Inbound shipments" },
+  { href: "/admin/b2b/designer-projects", label: "Designer Projects" },
 ] as const
 
 export function B2bJobsSubNav() {

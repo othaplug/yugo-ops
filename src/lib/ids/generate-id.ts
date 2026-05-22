@@ -9,11 +9,12 @@ import type { SupabaseClient } from "@supabase/supabase-js"
  * YG  — Residential/office/specialty/event/white-glove/labour/bin QUOTES
  * MV  — Confirmed MOVES (any tier, any type — residential, office, PM, estate)
  * DLV — ALL delivery-related records (B2B quotes, B2B jobs, one-offs, partner deliveries)
+ * DP  — Designer Projects (interior designer coordination projects)
  *
  * Quote → move / quote → delivery reuse the same numeric suffix (YG-30245 → MV-30245 / DLV-30245).
  * Use generateRecordId only for brand-new records (new quotes, direct move/delivery without a quote).
  */
-export type RecordPrefix = "YG" | "MV" | "DLV"
+export type RecordPrefix = "YG" | "MV" | "DLV" | "DP"
 
 /**
  * Call generate_record_id(prefix) on the Supabase DB and return the result.

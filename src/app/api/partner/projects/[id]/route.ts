@@ -20,7 +20,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   if (dbErr || !project) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const [{ data: phases }, { data: inventory }, { data: timeline }, { data: deliveries }] =
+  const [{ data: phases }, { data: inventory }, { data: timeline }, { data: deliveries }, { data: vendors }] =
     await Promise.all([
       db
         .from("project_phases")
@@ -54,6 +54,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         .select("id, delivery_number, status, scheduled_date, time_slot, total_price, items, phase_id")
         .eq("project_id", id)
         .order("scheduled_date"),
+      db
+        .from("project_vendors")
+        .select("id, vendor_name, readiness, readiness_notes, pickup_date, pickup_window, sort_order")
+        .eq("project_id", id)
+        .order("sort_order"),
     ]);
 
   return NextResponse.json({
@@ -62,6 +67,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     inventory: inventory || [],
     timeline: timeline || [],
     deliveries: deliveries || [],
+    project_vendors: vendors || [],
   });
 }
 

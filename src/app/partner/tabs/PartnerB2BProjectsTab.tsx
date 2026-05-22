@@ -89,6 +89,16 @@ interface ProjectSummary {
   nextDeliveryDate: string | null;
 }
 
+interface ProjectVendorSummary {
+  id: string;
+  vendor_name: string;
+  readiness: string;
+  readiness_notes: string | null;
+  pickup_date: string | null;
+  pickup_window: string | null;
+  sort_order: number;
+}
+
 interface ProjectDetail {
   id: string;
   project_number: string;
@@ -104,6 +114,7 @@ interface ProjectDetail {
   inventory: InventoryItem[];
   timeline: TimelineEntry[];
   deliveries: DeliveryLink[];
+  project_vendors?: ProjectVendorSummary[];
 }
 
 interface TimelineEntry {
@@ -1573,6 +1584,62 @@ export default function PartnerB2BProjectsTab({
               </p>
             )}
           </div>
+
+          {/* Coordinator-confirmed vendor readiness (from project_vendors if present) */}
+          {(p.project_vendors || []).length > 0 && (
+            <div className="mb-4 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
+              <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">
+                Vendor Coordination
+              </div>
+              <div className="space-y-2">
+                {(p.project_vendors || [])
+                  .sort((a: ProjectVendorSummary, b: ProjectVendorSummary) => a.sort_order - b.sort_order)
+                  .map((vendor: ProjectVendorSummary) => {
+                    const dot =
+                      vendor.readiness === "confirmed" ? "bg-emerald-500" :
+                      vendor.readiness === "received"  ? "bg-[#2C3E2D]" :
+                      vendor.readiness === "delayed"   ? "bg-red-400" :
+                      vendor.readiness === "partial"   ? "bg-amber-400" :
+                      "bg-gray-300";
+                    const label =
+                      vendor.readiness === "confirmed" ? "Confirmed" :
+                      vendor.readiness === "received"  ? "Received" :
+                      vendor.readiness === "delayed"   ? "Delayed" :
+                      vendor.readiness === "partial"   ? "Partial" :
+                      "Pending";
+                    return (
+                      <div key={vendor.id} className="flex items-center justify-between text-[12px]">
+                        <span className="text-[var(--tx)]">{vendor.vendor_name}</span>
+                        <div className="flex items-center gap-1.5">
+                          <div className={`w-2 h-2 rounded-full ${dot}`} />
+                          <span className="text-[var(--tx3)]">{label}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+              {/* Overall progress dots */}
+              <div className="flex items-center gap-1 mt-3 pt-2 border-t border-[var(--brd)]/30">
+                {(p.project_vendors || []).map((v: ProjectVendorSummary) => (
+                  <div
+                    key={v.id}
+                    className={`w-2 h-2 rounded-full ${
+                      ["confirmed", "received"].includes(v.readiness) ? "bg-emerald-500" :
+                      v.readiness === "delayed" ? "bg-red-400" :
+                      v.readiness === "partial" ? "bg-amber-400" :
+                      "bg-gray-200"
+                    }`}
+                    title={`${v.vendor_name}: ${v.readiness}`}
+                  />
+                ))}
+                <span className="text-[10px] text-[var(--tx3)] ml-1.5">
+                  {(p.project_vendors || []).filter((v: ProjectVendorSummary) =>
+                    ["confirmed", "received"].includes(v.readiness)
+                  ).length}/{(p.project_vendors || []).length} confirmed
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Vendor Status, compact summary */}
           {inv.length > 0 && (
