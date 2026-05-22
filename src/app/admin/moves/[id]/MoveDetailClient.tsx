@@ -3787,6 +3787,12 @@ export default function MoveDetailClient({
           access_notes: move.access_notes,
           complexity_indicators: move.complexity_indicators ?? [],
           internal_notes: stripClientMessagesFromNotes(move.internal_notes),
+          // Multi-pickup / multi-dropoff are stored on the LINKED quote,
+          // not the move row. The parent page.tsx loads them from the
+          // quote and passes them in here so the modal can present them
+          // for editing.
+          additional_pickup_addresses: additionalOrigins,
+          additional_dropoff_addresses: additionalDestinations,
         }}
         onSaved={(updates) => {
           setMove((prev: any) => ({ ...prev, ...updates }));

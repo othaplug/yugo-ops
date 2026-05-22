@@ -6,6 +6,8 @@ import ModalOverlay from "../../components/ModalOverlay";
 import { Icon } from "@/components/AppIcons";
 import { useToast } from "../../components/Toast";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
+import { type StopEntry } from "@/components/ui/MultiStopAddressField";
+import { Plus, X as XIcon } from "@phosphor-icons/react";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { ArrowRight } from "@phosphor-icons/react";
 import { capMarginAlertMinutes } from "@/lib/jobs/duration-estimate";
@@ -40,14 +42,30 @@ function isMoveInProgress(
   const st = (stage || "").toLowerCase().replace(/-/g, "_");
   return IN_PROGRESS_STATUSES.includes(s) || IN_PROGRESS_STATUSES.includes(st);
 }
-const ACCESS_OPTIONS = [
-  "Elevator",
-  "Stairs",
-  "Loading dock",
-  "Parking",
-  "Gate / Buzz code",
-  "Ground floor",
-  "Building access required",
+/**
+ * Access type options — value/label pairs that match the canonical slugs
+ * stored on moves.from_access / moves.to_access (and quotes.from_access /
+ * quotes.to_access). Earlier this was a flat array of Capitalized strings
+ * that doubled as both value AND label — so the DB-stored "elevator" never
+ * matched the option value "Elevator" and the dropdown rendered as
+ * "Select…" instead of the actual saved access. Mirrors the list used in
+ * the quote creation form (src/app/admin/quotes/new/QuoteFormClient.tsx).
+ */
+const ACCESS_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "Select…" },
+  { value: "elevator", label: "Elevator" },
+  { value: "concierge", label: "Concierge" },
+  { value: "ground_floor", label: "Ground floor" },
+  { value: "loading_dock", label: "Loading dock" },
+  { value: "basement", label: "Basement" },
+  { value: "basement_stairs", label: "Basement (stairs)" },
+  { value: "basement_walkout", label: "Basement (walk-out)" },
+  { value: "walk_up_2nd", label: "Walk-up (2nd floor)" },
+  { value: "walk_up_3rd", label: "Walk-up (3rd floor)" },
+  { value: "walk_up_4th_plus", label: "Walk-up (4th+)" },
+  { value: "long_carry", label: "Long carry" },
+  { value: "narrow_stairs", label: "Narrow stairs" },
+  { value: "no_parking_nearby", label: "No parking nearby" },
 ];
 
 interface EditMoveDetailsModalProps {
@@ -77,6 +95,12 @@ interface EditMoveDetailsModalProps {
     access_notes?: string | null;
     complexity_indicators?: string[] | null;
     internal_notes?: string | null;
+    /** Additional pickup addresses (from the linked quote). Edits here
+     *  flow back to quotes.additional_origins so the move-detail page
+     *  and the client-facing tracking page stay in sync. */
+    additional_pickup_addresses?: { address?: string | null }[] | null;
+    /** Additional drop-off addresses (from the linked quote). */
+    additional_dropoff_addresses?: { address?: string | null }[] | null;
   };
   crews?: { id: string; name: string }[];
   isCompleted?: boolean;
@@ -182,6 +206,21 @@ export default function EditMoveDetailsModal({
   const [toAccess, setToAccess] = useState(
     initial.to_access || parsed.toAccess,
   );
+  // Extra pickups / drop-offs sourced from the linked quote. The modal
+  // shows them as additional address rows below the primary; saving
+  // updates moves.from_address (primary) AND
+  // quotes.additional_origins (the extras), so the move-detail page +
+  // client-facing track page stay consistent.
+  const [extraFromStops, setExtraFromStops] = useState<StopEntry[]>(() =>
+    (initial.additional_pickup_addresses ?? [])
+      .map((s) => ({ address: (s?.address ?? "").trim() }))
+      .filter((s) => s.address.length > 0),
+  );
+  const [extraToStops, setExtraToStops] = useState<StopEntry[]>(() =>
+    (initial.additional_dropoff_addresses ?? [])
+      .map((s) => ({ address: (s?.address ?? "").trim() }))
+      .filter((s) => s.address.length > 0),
+  );
   const [complexityIndicators, setComplexityIndicators] = useState<string[]>(
     Array.isArray(initial.complexity_indicators)
       ? initial.complexity_indicators
@@ -227,6 +266,16 @@ export default function EditMoveDetailsModal({
     const p = parseAccessNotes(initial.access_notes);
     setFromAccess(initial.from_access || p.fromAccess);
     setToAccess(initial.to_access || p.toAccess);
+    setExtraFromStops(
+      (initial.additional_pickup_addresses ?? [])
+        .map((s) => ({ address: (s?.address ?? "").trim() }))
+        .filter((s) => s.address.length > 0),
+    );
+    setExtraToStops(
+      (initial.additional_dropoff_addresses ?? [])
+        .map((s) => ({ address: (s?.address ?? "").trim() }))
+        .filter((s) => s.address.length > 0),
+    );
     setComplexityIndicators(
       Array.isArray(initial.complexity_indicators)
         ? initial.complexity_indicators
@@ -309,6 +358,17 @@ export default function EditMoveDetailsModal({
         });
       }
     }
+    // Extra pickups / drop-offs — persisted to the linked quote, not the
+    // move row (moves has no additional_origins columns). The PATCH route
+    // copies these onto quotes.additional_origins / additional_destinations
+    // so the move-detail page + client tracking page pick them up.
+    const trimmedExtraPickups = extraFromStops
+      .map((s) => ({ address: (s.address ?? "").trim() }))
+      .filter((s) => s.address.length > 0);
+    const trimmedExtraDropoffs = extraToStops
+      .map((s) => ({ address: (s.address ?? "").trim() }))
+      .filter((s) => s.address.length > 0);
+
     if (section === "notes") {
       updatePayload.internal_notes = internalNotes.trim() || null;
     } else if (section === "addresses") {
@@ -328,6 +388,8 @@ export default function EditMoveDetailsModal({
         access_notes: accessNotesMerged,
         crew_id: crewId.trim() || null,
         coordinator_name: coordinatorName.trim() || null,
+        additional_pickup_addresses: trimmedExtraPickups,
+        additional_dropoff_addresses: trimmedExtraDropoffs,
       });
     } else {
       Object.assign(updatePayload, {
@@ -350,6 +412,8 @@ export default function EditMoveDetailsModal({
           ? complexityIndicators
           : null,
         internal_notes: internalNotes.trim() || null,
+        additional_pickup_addresses: trimmedExtraPickups,
+        additional_dropoff_addresses: trimmedExtraDropoffs,
       });
     }
 
@@ -427,6 +491,7 @@ export default function EditMoveDetailsModal({
                 </h3>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-3">
+                    {/* Primary FROM address + access. */}
                     <AddressAutocomplete
                       value={fromAddress}
                       onRawChange={setFromAddress}
@@ -445,16 +510,28 @@ export default function EditMoveDetailsModal({
                         onChange={(e) => setFromAccess(e.target.value)}
                         className={inputBase}
                       >
-                        <option value="">Select…</option>
                         {ACCESS_OPTIONS.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
+                          <option key={o.value} value={o.value}>
+                            {o.label}
                           </option>
                         ))}
                       </select>
                     </Field>
+                    {/* Additional pickups — sourced from
+                        quotes.additional_origins when the modal opens. On
+                        save, the array is sent back and persisted to the
+                        linked quote (moves has no extra-pickup columns). */}
+                    <ExtraStopsList
+                      label="Additional pickups"
+                      placeholder="Additional pickup address"
+                      stops={extraFromStops}
+                      onChange={setExtraFromStops}
+                      inputClassName={inputBase}
+                      addLabel="+ Add another pickup"
+                    />
                   </div>
                   <div className="space-y-3">
+                    {/* Primary TO address + access. */}
                     <AddressAutocomplete
                       value={toAddress}
                       onRawChange={setToAddress}
@@ -473,14 +550,22 @@ export default function EditMoveDetailsModal({
                         onChange={(e) => setToAccess(e.target.value)}
                         className={inputBase}
                       >
-                        <option value="">Select…</option>
                         {ACCESS_OPTIONS.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
+                          <option key={o.value} value={o.value}>
+                            {o.label}
                           </option>
                         ))}
                       </select>
                     </Field>
+                    {/* Additional drop-offs. */}
+                    <ExtraStopsList
+                      label="Additional drop-offs"
+                      placeholder="Additional drop-off address"
+                      stops={extraToStops}
+                      onChange={setExtraToStops}
+                      inputClassName={inputBase}
+                      addLabel="+ Add another drop-off"
+                    />
                   </div>
                 </div>
               </section>
@@ -743,5 +828,87 @@ export default function EditMoveDetailsModal({
         </div>
       </form>
     </ModalOverlay>
+  );
+}
+
+/**
+ * Edit-mode helper: renders a list of extra address inputs (pickups or
+ * drop-offs beyond the primary). Each row has its own AddressAutocomplete
+ * and a remove button; a + button below adds a blank row. Trims to non-
+ * empty addresses at save time. Used by EditMoveDetailsModal to edit
+ * quotes.additional_origins / additional_destinations.
+ */
+function ExtraStopsList({
+  label,
+  placeholder,
+  stops,
+  onChange,
+  inputClassName,
+  addLabel,
+  maxStops = 5,
+}: {
+  label: string;
+  placeholder: string;
+  stops: StopEntry[];
+  onChange: (stops: StopEntry[]) => void;
+  inputClassName?: string;
+  addLabel: string;
+  maxStops?: number;
+}) {
+  return (
+    <div className="pt-2 border-t border-[var(--brd)]/40 space-y-2">
+      <p className="text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wide">
+        {label}
+      </p>
+      {stops.length === 0 && (
+        <p className="text-[11px] text-[var(--tx3)]">No additional stops.</p>
+      )}
+      {stops.map((s, i) => (
+        <div key={`xs-${i}`} className="flex items-center gap-2">
+          <span className="text-[10px] font-bold text-[var(--tx3)] shrink-0 w-6">
+            +{i + 1}
+          </span>
+          <div className="flex-1 min-w-0">
+            <AddressAutocomplete
+              value={s.address}
+              onRawChange={(raw) =>
+                onChange(
+                  stops.map((x, j) => (j === i ? { ...x, address: raw } : x)),
+                )
+              }
+              onChange={(r) =>
+                onChange(
+                  stops.map((x, j) =>
+                    j === i
+                      ? { address: r.fullAddress, lat: r.lat, lng: r.lng }
+                      : x,
+                  ),
+                )
+              }
+              placeholder={placeholder}
+              className={inputClassName}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => onChange(stops.filter((_, j) => j !== i))}
+            className="shrink-0 p-1.5 rounded-md text-[var(--tx3)] hover:text-red-600 hover:bg-red-50 transition-colors"
+            title="Remove this stop"
+          >
+            <XIcon className="w-3 h-3" />
+          </button>
+        </div>
+      ))}
+      {stops.length < maxStops && (
+        <button
+          type="button"
+          onClick={() => onChange([...stops, { address: "" }])}
+          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--admin-primary-fill)] hover:opacity-80"
+        >
+          <Plus className="w-3 h-3" weight="bold" />
+          {addLabel}
+        </button>
+      )}
+    </div>
   );
 }

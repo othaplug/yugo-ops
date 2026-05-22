@@ -452,6 +452,13 @@ export async function PATCH(
         crew_id, coordinator_name,
         complexity_indicators, internal_notes,
         truck_primary, truck_secondary,
+        // Multi-pickup / multi-dropoff -- persisted on the LINKED quote
+        // (moves has no such columns). We pass them through here so the
+        // admin edit modal can manage them alongside the primary
+        // addresses. Move-detail page already reads them from the quote
+        // (see /admin/moves/[id]/page.tsx).
+        additional_pickup_addresses,
+        additional_dropoff_addresses,
       } = body as Record<string, unknown>;
 
       const updatePayload: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -488,6 +495,42 @@ export async function PATCH(
         .single();
 
       if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 400 });
+
+      // Multi-stop sync: if the modal sent additional_pickup_addresses /
+      // additional_dropoff_addresses, write them onto the linked quote.
+      // The arrays come in as { address: string }[]; we normalize and
+      // drop empties before persisting.
+      const quoteIdLinked = (updated as { quote_id?: string | null }).quote_id;
+      if (
+        quoteIdLinked &&
+        (additional_pickup_addresses !== undefined ||
+          additional_dropoff_addresses !== undefined)
+      ) {
+        const quotePatch: Record<string, unknown> = {};
+        if (Array.isArray(additional_pickup_addresses)) {
+          quotePatch.additional_origins = (
+            additional_pickup_addresses as { address?: string }[]
+          )
+            .map((s) => ({ address: (s?.address ?? "").trim() }))
+            .filter((s) => s.address.length > 0);
+        }
+        if (Array.isArray(additional_dropoff_addresses)) {
+          quotePatch.additional_destinations = (
+            additional_dropoff_addresses as { address?: string }[]
+          )
+            .map((s) => ({ address: (s?.address ?? "").trim() }))
+            .filter((s) => s.address.length > 0);
+        }
+        if (Object.keys(quotePatch).length > 0) {
+          quotePatch.multi_location =
+            ((quotePatch.additional_origins as unknown[] | undefined)?.length ??
+              0) > 0 ||
+            ((quotePatch.additional_destinations as unknown[] | undefined)
+              ?.length ?? 0) > 0;
+          await admin.from("quotes").update(quotePatch).eq("id", quoteIdLinked);
+        }
+      }
+
       await logAudit({
         userId: authUser?.id,
         userEmail: authUser?.email,
