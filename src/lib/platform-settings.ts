@@ -96,10 +96,19 @@ const FEATURE_DEFAULTS: Record<string, string> = {
 /**
  * Server-side: read one or more feature flags from platform_config.
  * Returns the value as a string, or the default if not found.
+ *
+ * Defaults: keys present in FEATURE_DEFAULTS get their declared default.
+ * Keys NOT in FEATURE_DEFAULTS default to an EMPTY STRING — not "false".
+ * The literal-"false"-as-default behavior caused a real bug where the
+ * track page asked for "coordinator_name" (a text setting that isn't in
+ * FEATURE_DEFAULTS) and got back the string "false", which the UI then
+ * rendered as the coordinator's name. Empty string is the safer default
+ * because boolean callers compare against "true" anyway (see
+ * isFeatureEnabled below).
  */
 export async function getFeatureConfig(keys: string[]): Promise<Record<string, string>> {
   const result: Record<string, string> = {};
-  for (const k of keys) result[k] = FEATURE_DEFAULTS[k] ?? "false";
+  for (const k of keys) result[k] = FEATURE_DEFAULTS[k] ?? "";
 
   try {
     const admin = createAdminClient();
@@ -109,7 +118,7 @@ export async function getFeatureConfig(keys: string[]): Promise<Record<string, s
       .in("key", keys);
     if (data) {
       for (const row of data) {
-        result[row.key] = row.value ?? FEATURE_DEFAULTS[row.key] ?? "false";
+        result[row.key] = row.value ?? FEATURE_DEFAULTS[row.key] ?? "";
       }
     }
   } catch { /* use defaults */ }

@@ -274,7 +274,12 @@ export async function POST(req: Request) {
         });
         squareCardId = cardRes.card?.id;
       } catch (e) {
-        console.error("[Square] card storage failed:", e);
+        const cardErr = squareThrownErrorStructured(e);
+        const isCardTokenUsed = cardErr.code === "CARD_TOKEN_USED";
+        console.error(
+          `[Square] card storage failed: code=${cardErr.code ?? "—"} ` +
+            `category=${cardErr.category ?? "—"} status=${cardErr.statusCode ?? "?"}`,
+        );
         // Card create failed — the card may already be on file from a prior session.
         // Fall back to listing the customer's stored cards before giving up.
         if (squareCustomerId) {
@@ -288,8 +293,14 @@ export async function POST(req: Request) {
             // list also failed — proceed without a stored card
           }
         }
-        // Alert admin so we know card storage is broken for this booking
-        if (!squareCardId) {
+        // Alert admin so we know card storage is broken for this booking.
+        // Skip the alert when the failure is CARD_TOKEN_USED — that's a
+        // user-retry artifact (Square nonces are single-use, so a second
+        // submit with the same nonce will always fail card.create even
+        // though the underlying card is fine). The downstream payment
+        // attempt will either succeed via the recovered card-on-file or
+        // surface its own structured failure with real signal.
+        if (!squareCardId && !isCardTokenUsed) {
           notifyAdmins("payment_failed", {
             quoteId,
             sourceId: quoteId,
@@ -415,7 +426,25 @@ export async function POST(req: Request) {
             () => {},
           );
 
-        notifyAdmins("payment_failed", {
+        // CARD_TOKEN_USED is a user-retry artifact, not an operational
+        // alert: Square nonces are single-use, so a double-click on Pay or
+        // a network retry hits this code with no real signal for admin to
+        // act on. The webhook_logs row above still captures the full
+        // structured error for diagnostics. We also peek at the quotes
+        // row to see if a prior attempt already captured a payment — if
+        // so this retry is harmless noise.
+        const { data: paymentCheckQuote } = await supabase
+          .from("quotes")
+          .select("square_payment_id, status")
+          .eq("id", quote.id)
+          .maybeSingle();
+        const priorPaymentExists =
+          typeof paymentCheckQuote?.square_payment_id === "string" &&
+          paymentCheckQuote.square_payment_id.trim().length > 0;
+        const shouldAlertAdmin =
+          structured.code !== "CARD_TOKEN_USED" && !priorPaymentExists;
+
+        if (shouldAlertAdmin) notifyAdmins("payment_failed", {
           quoteId,
           sourceId: quote.id,
           subject: structured.code
@@ -436,6 +465,28 @@ export async function POST(req: Request) {
             ? [clientEmail.trim().toLowerCase()]
             : [],
         }).catch(() => {});
+
+        // Same noise-suppression for the client-facing failure email — when
+        // a prior attempt already captured a payment and the only failure
+        // is CARD_TOKEN_USED, we don't want to confuse the client by
+        // telling them their payment failed.
+        if (!shouldAlertAdmin) {
+          // Skip the client failure email; the prior successful payment
+          // remains valid and the booking flow continues normally on the
+          // client's next refresh.
+          return NextResponse.json(
+            {
+              ok: true,
+              quoteId,
+              squarePaymentId: priorPaymentExists
+                ? paymentCheckQuote?.square_payment_id
+                : null,
+              code: structured.code,
+              note: "Existing payment found; retry skipped.",
+            },
+            { status: 200 },
+          );
+        }
 
         const firstPayName = clientName.trim().split(/\s+/)[0] || "there";
         buildPaymentFailedClientEmailHtml({

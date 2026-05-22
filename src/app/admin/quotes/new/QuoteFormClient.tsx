@@ -1317,6 +1317,11 @@ export default function QuoteFormClient({
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  // Coordinator assigned to this quote — surfaced on the client tracking
+  // page after booking. Stored in factors_applied.coordinator_name and
+  // copied to moves.coordinator_name when the move is created from the
+  // quote (createMoveFromQuote).
+  const [coordinatorName, setCoordinatorName] = useState("");
   const [quoteFlowStep, setQuoteFlowStep] = useState(0);
   const quoteFlowContentRef = useRef<HTMLDivElement>(null);
 
@@ -4580,6 +4585,7 @@ export default function QuoteFormClient({
         client_name: clientName || undefined,
         client_email: email || undefined,
         client_phone: phone ? normalizePhone(phone) : undefined,
+        coordinator_name: coordinatorName.trim() || undefined,
         referral_id: referralId || undefined,
         from_parking: fromParking,
         to_parking: toParking,
@@ -6232,6 +6238,23 @@ export default function QuoteFormClient({
                           {b2bSubmitErrors.phone}
                         </p>
                       ) : null}
+                    </div>
+                    {/* Coordinator — the staff member who owns this quote.
+                        Surfaced on the client tracking page after booking
+                        so the client knows who to call. Stored in
+                        factors_applied.coordinator_name on the quote and
+                        copied to moves.coordinator_name when the move is
+                        created from the quote. */}
+                    <div className="col-span-2">
+                      <Field label="Coordinator (optional)">
+                        <input
+                          type="text"
+                          value={coordinatorName}
+                          onChange={(e) => setCoordinatorName(e.target.value)}
+                          placeholder="e.g. Jon"
+                          className={fieldInput}
+                        />
+                      </Field>
                     </div>
                   </div>
                   {clientSearching && (

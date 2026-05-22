@@ -408,6 +408,11 @@ interface QuoteInput {
   client_name?: string;
   client_email?: string;
   client_phone?: string;
+  /** Coordinator owning this quote (free-text). Stored in
+   *  factors_applied.coordinator_name and copied to moves.coordinator_name
+   *  when the move is created from the quote. Surfaced on the client
+   *  tracking page so the client knows who to call. */
+  coordinator_name?: string;
   /** Multi-day move project planner payload (validated with moveProjectPayloadSchema). */
   move_project?: unknown;
   /** When true, detach and delete linked move_projects row for this quote. */
@@ -4776,6 +4781,15 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       override_price_pre_tax: quoteOvr,
       override_reason: quoteOvrReason,
     };
+  }
+
+  // Persist the coordinator's name into factors_applied so the
+  // booking → move-create path can copy it onto moves.coordinator_name.
+  // Kept as a string (never the literal "false") — empty trims become null.
+  if (typeof input.coordinator_name === "string") {
+    const trimmed = input.coordinator_name.trim();
+    (factors as Record<string, unknown>).coordinator_name =
+      trimmed.length > 0 ? trimmed : null;
   }
 
   const factorsRecord = factors as Record<string, unknown>

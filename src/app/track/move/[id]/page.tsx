@@ -195,17 +195,27 @@ export default async function TrackMovePage({
   //   1. moves.coordinator_name (per-move override, set on quote/move create)
   //   2. platform_config.coordinator_name (org default)
   //   3. fallback: null → client UI shows Yugo logo
+  //
+  // Defensive guard: getFeatureConfig used to fall back to the literal
+  // string "false" for any key not in FEATURE_DEFAULTS (now fixed to
+  // empty string). We still strip literal "false" / "true" here so a
+  // legacy platform_config row with one of those values doesn't render
+  // as the coordinator's name on the client tracking page.
+  const isNameValue = (v: string | null | undefined): string | null => {
+    const t = (v ?? "").trim();
+    if (!t) return null;
+    if (t.toLowerCase() === "false" || t.toLowerCase() === "true") return null;
+    return t;
+  };
   const coordinatorCfg = await getFeatureConfig(["coordinator_name", "coordinator_phone"]);
   const trackCoordinatorName: string | null =
-    (typeof (move as { coordinator_name?: string | null }).coordinator_name === "string" &&
-      (move as { coordinator_name?: string | null }).coordinator_name?.trim()) ||
-    (coordinatorCfg.coordinator_name?.trim() || null) ||
-    null;
+    isNameValue(
+      (move as { coordinator_name?: string | null }).coordinator_name,
+    ) ?? isNameValue(coordinatorCfg.coordinator_name);
   const trackCoordinatorPhone: string | null =
-    (typeof (move as { coordinator_phone?: string | null }).coordinator_phone === "string" &&
-      (move as { coordinator_phone?: string | null }).coordinator_phone?.trim()) ||
-    (coordinatorCfg.coordinator_phone?.trim() || null) ||
-    null;
+    isNameValue(
+      (move as { coordinator_phone?: string | null }).coordinator_phone,
+    ) ?? isNameValue(coordinatorCfg.coordinator_phone);
 
   let moveProjectForTrack: {
     project: Record<string, unknown>;

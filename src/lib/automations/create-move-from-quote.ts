@@ -418,6 +418,16 @@ export async function createMoveFromQuote(
     /** Fresh moves must not inherit quote-linked planner previews; multi-day attach sets this after insert. */
     move_project_id: null,
 
+    // Coordinator copied from quote.factors_applied.coordinator_name (set
+    // in the quote creation form). Surfaced on the client tracking page
+    // post-booking. Falls back to null when the coordinator wasn't set
+    // during quote creation — the page renders the YUGO logo + dispatch
+    // phone in that case.
+    coordinator_name:
+      typeof (factors as { coordinator_name?: unknown }).coordinator_name === "string"
+        ? ((factors as { coordinator_name: string }).coordinator_name.trim() || null)
+        : null,
+
     client_box_count: clientBoxCountForMove(),
 
     preferred_time: preferredTime,
