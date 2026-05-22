@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { isMoveIdUuid, getMoveDetailPath } from "@/lib/move-code";
 import MoveDetailClient from "./MoveDetailClient";
 import { canEditFinalJobPrice } from "@/lib/admin-can-edit-final-price";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 import { fetchMoveProjectWithTree } from "@/lib/move-projects/fetch";
 
 export const dynamic = "force-dynamic";
@@ -161,6 +162,10 @@ export default async function MoveDetailPage({
     .eq("user_id", user?.id ?? "")
     .single();
   const userRole = pu?.role ?? "viewer";
+  // Super admin gate for scope-charge button (mirrors requireStaff()).
+  // Scope charges bypass the quote engine and bill the client directly,
+  // so we keep the surface owner-only.
+  const isSuperAdmin = isSuperAdminEmail(user?.email);
   const canEditPostCompletionPrice = canEditFinalJobPrice(
     pu?.role ?? null,
     user?.email ?? null,
@@ -356,6 +361,7 @@ export default async function MoveDetailPage({
       crews={crews ?? []}
       isOffice={isOffice}
       userRole={userRole}
+      isSuperAdmin={isSuperAdmin}
       additionalFeesCents={additionalFeesCents}
       etaSmsLog={etaSmsLog ?? []}
       reviewRequest={reviewRequest ?? undefined}

@@ -19,10 +19,14 @@ type AuditAction =
   | "quote_status_change"
   | "config_change"
   | "mfa_enrolled"
-  | "mfa_verified";
+  | "mfa_verified"
+  | "scope_charge_added"
+  | "crew_reassigned_in_progress"
+  | "crew_members_changed_in_progress";
 
 type ResourceType =
   | "move"
+  | "delivery"
   | "quote"
   | "contact"
   | "pricing"

@@ -19,6 +19,7 @@ import MoveNotifyButton from "../MoveNotifyButton";
 import ResendTrackingLinkButton from "../ResendTrackingLinkButton";
 import MoveContactModal from "./MoveContactModal";
 import EditMoveDetailsModal from "./EditMoveDetailsModal";
+import ScopeChargeModal from "./ScopeChargeModal";
 import MoveInventorySection from "./MoveInventorySection";
 import InventoryChangeRequestPanel from "./InventoryChangeRequestPanel";
 import MoveFilesSection from "./MoveFilesSection";
@@ -157,6 +158,9 @@ interface MoveDetailClientProps {
   crews?: { id: string; name: string; members?: string[] }[];
   isOffice?: boolean;
   userRole?: string;
+  /** Super-admin gate for surfaces that bypass the standard review path
+   *  (scope-charge mid-job, crew reassignment during in-progress moves). */
+  isSuperAdmin?: boolean;
   additionalFeesCents?: number;
   etaSmsLog?: EtaSmsLogEntry[];
   reviewRequest?: ReviewRequestEntry;
@@ -492,6 +496,7 @@ export default function MoveDetailClient({
   crews = [],
   isOffice,
   userRole = "viewer",
+  isSuperAdmin = false,
   additionalFeesCents = 0,
   etaSmsLog = [],
   reviewRequest,
@@ -548,6 +553,8 @@ export default function MoveDetailClient({
   >(null);
   const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  /** Super-admin only — opens the mid-job scope-charge modal from the Money tab. */
+  const [scopeChargeOpen, setScopeChargeOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editingCard, setEditingCard] = useState<"status" | null>(null);
   const [restartOverrideModal, setRestartOverrideModal] = useState<{
@@ -1967,12 +1974,20 @@ export default function MoveDetailClient({
             <button
               type="button"
               className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--yu3-bg-surface-subtle)] text-[var(--yu3-ink-muted)] transition-opacity opacity-50 hover:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-              onClick={() => !moveInProgress && setCrewModalOpen(true)}
-              disabled={moveInProgress}
+              onClick={() =>
+                (!moveInProgress || isSuperAdmin) && setCrewModalOpen(true)
+              }
+              // Super admins can override the in-progress lock to fix an
+              // assignment mistake (wrong team / wrong members). Regular
+              // admins still see the lock — the active crew is on-site
+              // and reassignment mid-job is operationally risky.
+              disabled={moveInProgress && !isSuperAdmin}
               aria-label="Edit crew"
               title={
                 moveInProgress
-                  ? "Cannot reassign job in progress"
+                  ? isSuperAdmin
+                    ? "Move in progress — super admin override"
+                    : "Cannot reassign job in progress"
                   : "Change crew"
               }
             >
@@ -2019,11 +2034,17 @@ export default function MoveDetailClient({
             ) : (
               <button
                 type="button"
-                onClick={() => !moveInProgress && setCrewModalOpen(true)}
-                disabled={moveInProgress}
-                className={`text-left hover:opacity-90 transition-opacity ${moveInProgress ? "opacity-60 cursor-not-allowed" : ""}`}
+                onClick={() =>
+                  (!moveInProgress || isSuperAdmin) && setCrewModalOpen(true)
+                }
+                disabled={moveInProgress && !isSuperAdmin}
+                className={`text-left hover:opacity-90 transition-opacity ${moveInProgress && !isSuperAdmin ? "opacity-60 cursor-not-allowed" : ""}`}
                 title={
-                  moveInProgress ? "Cannot reassign job in progress" : undefined
+                  moveInProgress
+                    ? isSuperAdmin
+                      ? "Move in progress — super admin override"
+                      : "Cannot reassign job in progress"
+                    : undefined
                 }
               >
                 <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
@@ -2680,6 +2701,22 @@ export default function MoveDetailClient({
                     )}
                   </>
                 )}
+                {/* Super-admin only: mid-job scope charge. Opens a modal
+                    that bumps the outstanding balance, creates an
+                    inventory_change_request (source='admin', auto-approved),
+                    and notifies the client. Gated by isSuperAdmin in the
+                    UI; the API also enforces the gate independently. */}
+                {isSuperAdmin && !isCompleted && (
+                  <button
+                    type="button"
+                    onClick={() => setScopeChargeOpen(true)}
+                    disabled={paymentBtnLoading !== null}
+                    title="Add a mid-job charge (more items / heavier scope / extra time). Super admin only."
+                    className="text-[10px] font-bold px-3 py-1.5 rounded-lg border border-[var(--gold)]/55 text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-colors disabled:opacity-40 uppercase tracking-[0.08em]"
+                  >
+                    + Scope charge
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -2986,6 +3023,29 @@ export default function MoveDetailClient({
         onSaved={(updates) => setMove((prev: any) => ({ ...prev, ...updates }))}
       />
 
+      {/* Mid-job scope charge — super-admin only. Pass tax-inclusive
+          balance so the "New outstanding" preview matches the
+          OVERDUE figure shown on the Money tab. */}
+      {isSuperAdmin && (
+        <ScopeChargeModal
+          open={scopeChargeOpen}
+          onClose={() => setScopeChargeOpen(false)}
+          moveId={move.id}
+          moveCode={move.move_code ?? null}
+          currentBalance={balanceDue + calcHST(balanceDue)}
+          onApplied={(result) => {
+            // Optimistic local update so the Money tab reflects the new
+            // balance before the next router.refresh lands.
+            setMove((prev: any) => ({
+              ...prev,
+              amount: result.new_amount,
+              estimate: result.new_amount,
+              balance_amount: result.new_balance,
+            }));
+          }}
+        />
+      )}
+
       <ModalOverlay
         open={crewModalOpen}
         onClose={() => setCrewModalOpen(false)}
@@ -3025,19 +3085,41 @@ export default function MoveDetailClient({
               }}
             />
           )}
-          {moveInProgress && (
+          {moveInProgress && !isSuperAdmin && (
             <p className="text-[11px] text-amber-600 bg-amber-500/10 rounded-lg p-3">
               Cannot reassign: this move is in progress. Reassignment is only
               allowed before the crew has started.
             </p>
           )}
+          {moveInProgress && isSuperAdmin && (
+            <div className="text-[11px] text-amber-800 bg-amber-500/15 border border-amber-500/30 rounded-lg p-3 leading-snug">
+              <p className="font-bold uppercase tracking-[0.12em] text-[10px] mb-1">
+                Super-admin override
+              </p>
+              <p>
+                This move is in progress. The active crew is on-site. Changes
+                here do NOT auto-notify them — call the lead first before
+                saving. The change is audit-logged.
+              </p>
+            </div>
+          )}
           <div>
             <label className="admin-premium-label">Select Crew</label>
             <select
               value={move.crew_id || ""}
-              disabled={moveInProgress}
+              disabled={moveInProgress && !isSuperAdmin}
               onChange={async (e) => {
-                if (moveInProgress) return;
+                if (moveInProgress && !isSuperAdmin) return;
+                if (
+                  moveInProgress &&
+                  isSuperAdmin &&
+                  !window.confirm(
+                    "Change the assigned team on an in-progress move? The active crew won't be notified automatically.",
+                  )
+                ) {
+                  e.target.value = move.crew_id || "";
+                  return;
+                }
                 const v = e.target.value || null;
                 try {
                   const res = await fetch("/api/dispatch/assign", {
@@ -3047,6 +3129,7 @@ export default function MoveDetailClient({
                       jobId: move.id,
                       jobType: "move",
                       crewId: v,
+                      override: moveInProgress ? true : undefined,
                     }),
                   });
                   const json = await res.json();
@@ -3132,6 +3215,18 @@ export default function MoveDetailClient({
               <button
                 type="button"
                 onClick={async () => {
+                  // Super-admin override flow: in-progress moves get an
+                  // explicit confirm. The API also enforces the gate
+                  // independently.
+                  if (
+                    moveInProgress &&
+                    isSuperAdmin &&
+                    !window.confirm(
+                      "Save crew change on an in-progress move? The active crew won't be notified automatically.",
+                    )
+                  ) {
+                    return;
+                  }
                   const members = Array.from(assignedMembers);
                   try {
                     const res = await fetch("/api/dispatch/assign", {
@@ -3141,6 +3236,7 @@ export default function MoveDetailClient({
                         jobId: move.id,
                         jobType: "move",
                         members,
+                        override: moveInProgress ? true : undefined,
                       }),
                     });
                     const json = await res.json();
@@ -3159,6 +3255,51 @@ export default function MoveDetailClient({
                 className="admin-btn admin-btn-primary w-full"
               >
                 Save Assignments
+              </button>
+              {/* Quick unassign — useful when admin assigned the wrong
+                  team entirely. Clears both crew_id and assigned_members
+                  in one click instead of unchecking each member. */}
+              <button
+                type="button"
+                onClick={async () => {
+                  if (
+                    !window.confirm(
+                      moveInProgress
+                        ? "Unassign all crew from this in-progress move? The active crew will lose access."
+                        : "Unassign all crew from this move?",
+                    )
+                  ) {
+                    return;
+                  }
+                  try {
+                    const res = await fetch("/api/dispatch/assign", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        jobId: move.id,
+                        jobType: "move",
+                        crewId: null,
+                        members: [],
+                        override: moveInProgress ? true : undefined,
+                      }),
+                    });
+                    const json = await res.json();
+                    if (!res.ok) throw new Error(json.error || "Failed to unassign");
+                    if (json.move) setMove(json.move);
+                    setAssignedMembers(new Set());
+                    router.refresh();
+                    setCrewModalOpen(false);
+                    toast("Crew unassigned", "check");
+                  } catch (err) {
+                    toast(
+                      err instanceof Error ? err.message : "Failed to unassign",
+                      "alertTriangle",
+                    );
+                  }
+                }}
+                className="w-full mt-2 text-[11px] font-semibold text-[var(--tx3)] hover:text-red-600 transition-colors py-2"
+              >
+                Unassign all crew
               </button>
             </>
           )}

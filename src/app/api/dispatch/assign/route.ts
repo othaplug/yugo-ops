@@ -3,19 +3,25 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { isDispatchJobInProgress } from "@/lib/dispatch-job-in-progress";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
+import { logAudit } from "@/lib/audit";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 
 /** PATCH: Assign crew to a move or delivery. Staff only. */
 export async function PATCH(req: NextRequest) {
-  const { error: authErr } = await requireStaff();
+  const { user, error: authErr } = await requireStaff();
   if (authErr) return authErr;
+  const adminCtx = { isSuperAdmin: isSuperAdminEmail(user?.email) };
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { jobId, jobType, crewId, members } = body as {
+    const { jobId, jobType, crewId, members, override } = body as {
       jobId: string;
       jobType: "move" | "delivery";
       crewId: string | null;
       members?: string[] | null;
+      /** Super-admin only: bypass the in-progress lock to fix an
+       *  assignment mistake. Audit-logged so the change is traceable. */
+      override?: boolean;
     };
 
     if (!jobId || !jobType) {
@@ -38,8 +44,21 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
-    // members-only update: save assigned_members without changing the crew
+    // members-only update: save assigned_members without changing the crew.
+    // Same in-progress gate applies — checking-out one wrong member during
+    // a live job is still a crew change, so require override + super admin.
     if (crewId === undefined && Array.isArray(members)) {
+      if (isDispatchJobInProgress(existing.status, existing.stage)) {
+        if (!override || !adminCtx?.isSuperAdmin) {
+          return NextResponse.json(
+            {
+              error:
+                "Cannot edit members: job is in progress. Member changes are only allowed before the crew has started.",
+            },
+            { status: 400 },
+          );
+        }
+      }
       const cleanMembers = members.filter((m) => typeof m === "string" && m.trim());
       const { data: updated, error } = await admin
         .from(table)
@@ -48,14 +67,32 @@ export async function PATCH(req: NextRequest) {
         .select()
         .single();
       if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+      if (override && adminCtx?.isSuperAdmin) {
+        await logAudit({
+          userId: user?.id,
+          userEmail: user?.email,
+          action: "crew_members_changed_in_progress",
+          resourceType: jobType,
+          resourceId: existing.id,
+          details: { members: cleanMembers, status: existing.status, stage: existing.stage },
+        });
+      }
       return NextResponse.json({ ok: true, [jobType]: updated });
     }
 
-    if (isDispatchJobInProgress(existing.status, existing.stage)) {
-      return NextResponse.json(
-        { error: "Cannot reassign: job is in progress. Reassignment is only allowed before the crew has started." },
-        { status: 400 }
-      );
+    const jobInProgress = isDispatchJobInProgress(existing.status, existing.stage);
+    if (jobInProgress) {
+      // Super-admin override allows fixing an assignment mistake on an
+      // in-progress move. Other admins still hit the original lock.
+      if (!override || !adminCtx?.isSuperAdmin) {
+        return NextResponse.json(
+          {
+            error:
+              "Cannot reassign: job is in progress. Reassignment is only allowed before the crew has started.",
+          },
+          { status: 400 },
+        );
+      }
     }
 
     const trimmedCrew = crewId && String(crewId).trim() ? String(crewId).trim() : null;
@@ -87,6 +124,21 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    if (override && adminCtx?.isSuperAdmin && jobInProgress) {
+      await logAudit({
+        userId: user?.id,
+        userEmail: user?.email,
+        action: "crew_reassigned_in_progress",
+        resourceType: jobType,
+        resourceId: existing.id,
+        details: {
+          new_crew_id: trimmedCrew,
+          status: existing.status,
+          stage: existing.stage,
+          assigned_members: update.assigned_members,
+        },
+      });
+    }
     return NextResponse.json({ ok: true, [jobType]: updated });
   } catch (err) {
     return NextResponse.json(
