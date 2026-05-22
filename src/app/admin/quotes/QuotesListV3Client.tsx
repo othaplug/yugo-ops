@@ -465,12 +465,15 @@ export default function QuotesListV3Client({
         id: "edit",
         label: "Edit",
         run: (r) => {
-          // All edits route through the full create flow (any status).
-          // Non-draft saves write a revision via the generate API's
-          // isUpdate path — version counter increments, is_revised
-          // flips when the quote was previously sent/viewed.
+          // Route to the single-page edit form (live price preview, all
+          // sections inline). Previously this routed through the
+          // multi-step create form which forced the admin to re-pick
+          // service type just to reach the field they wanted to change.
+          // Both surfaces write a revision via the generate API's
+          // isUpdate path so version history / is_revised behavior is
+          // unchanged.
           const slug = (r.quote_id || "").trim() || r.id;
-          router.push(`/admin/quotes/new?edit_quote=${encodeURIComponent(slug)}`);
+          router.push(`/admin/quotes/${encodeURIComponent(slug)}/edit`);
         },
       },
       {

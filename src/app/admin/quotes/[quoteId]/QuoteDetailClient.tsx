@@ -1057,15 +1057,16 @@ export default function QuoteDetailClient({
             <button
               type="button"
               onClick={() => {
-                // All quote edits (any status) open in the full New Quote
-                // create flow with every field prefilled. The generate API
-                // does an in-place update because the form sends quote_id
-                // alongside the payload, and for non-draft quotes the
-                // engine writes a new version (last_regenerated_at, version
-                // counter, is_revised flag) so the client revision history
-                // stays auditable.
+                // Single-page edit form (live price preview, all sections
+                // inline). Previously this routed to the multi-step create
+                // form at /admin/quotes/new?edit_quote=... which forced
+                // the admin to re-pick the service type and step through
+                // Client / Job details just to reach the field they
+                // actually wanted to change. The flat /edit page is the
+                // canonical "re-quote" surface and writes a new revision
+                // via the generate API the same way.
                 router.push(
-                  `/admin/quotes/new?edit_quote=${encodeURIComponent(quote.quote_id)}`,
+                  `/admin/quotes/${encodeURIComponent(quote.quote_id)}/edit`,
                 );
               }}
               className={ADMIN_TOOLBAR_SECONDARY_ACTION_CLASS}
