@@ -3164,28 +3164,54 @@ export default function MoveDetailClient({
               ))}
             </select>
           </div>
-          {selectedCrew && crewMembers.length > 0 && (
+          {selectedCrew &&
+            (crewMembers.length > 0 || assignedMembers.size > 0) && (
             <>
               <p className="text-[11px] text-[var(--yu3-ink-muted)]">
                 Check or uncheck members to assign to this move.
               </p>
               <div className="space-y-2">
-                {crewMembers.map((m) => (
-                  <label
-                    key={m}
-                    className="flex items-center gap-3 p-2.5 rounded-md border border-[var(--yu3-line)] hover:bg-[var(--yu3-bg-surface)] cursor-pointer transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={assignedMembers.has(m)}
-                      onChange={() => toggleMember(m)}
-                      className="w-4 h-4 rounded border-[var(--yu3-line)] text-[var(--yu3-wine)] focus:ring-[var(--yu3-line)]"
-                    />
-                    <span className="text-[13px] font-medium text-[var(--yu3-ink)]">
-                      {m}
-                    </span>
-                  </label>
-                ))}
+                {/* Render the UNION of (current team roster) + (currently
+                    assigned members). The previous version showed only the
+                    team roster, which made stale assignments invisible: if
+                    a person was assigned to the move and later removed
+                    from the team, they stayed in move.assigned_members
+                    forever (and in the summary line) with no checkbox to
+                    remove them. Now they appear with a "Former member"
+                    badge so the admin can uncheck and save. */}
+                {Array.from(
+                  new Set<string>([...crewMembers, ...Array.from(assignedMembers)]),
+                ).map((m) => {
+                  const isFormerMember = !crewMembers.includes(m);
+                  return (
+                    <label
+                      key={m}
+                      className={`flex items-center gap-3 p-2.5 rounded-md border cursor-pointer transition-colors ${
+                        isFormerMember
+                          ? "border-amber-400/40 bg-amber-50/40 hover:bg-amber-50/70"
+                          : "border-[var(--yu3-line)] hover:bg-[var(--yu3-bg-surface)]"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={assignedMembers.has(m)}
+                        onChange={() => toggleMember(m)}
+                        className="w-4 h-4 rounded border-[var(--yu3-line)] text-[var(--yu3-wine)] focus:ring-[var(--yu3-line)]"
+                      />
+                      <span className="text-[13px] font-medium text-[var(--yu3-ink)] flex-1">
+                        {m}
+                      </span>
+                      {isFormerMember && (
+                        <span
+                          className="text-[9px] font-bold uppercase tracking-[0.12em] text-amber-700 px-1.5 py-0.5 rounded border border-amber-400/40 bg-amber-50"
+                          title={`No longer on ${selectedCrew?.name ?? "this team"}. Uncheck to remove from this move.`}
+                        >
+                          Former member
+                        </span>
+                      )}
+                    </label>
+                  );
+                })}
               </div>
               {/* Summary: previews exactly what Save Assignments will commit
                   — team name + checked member list — so the coordinator can
@@ -3303,11 +3329,13 @@ export default function MoveDetailClient({
               </button>
             </>
           )}
-          {selectedCrew && crewMembers.length === 0 && (
-            <p className="text-[11px] text-[var(--yu3-ink-muted)]">
-              No members in this crew. Add members in Platform Settings → Teams.
-            </p>
-          )}
+          {selectedCrew &&
+            crewMembers.length === 0 &&
+            assignedMembers.size === 0 && (
+              <p className="text-[11px] text-[var(--yu3-ink-muted)]">
+                No members in this crew. Add members in Platform Settings → Teams.
+              </p>
+            )}
           {!selectedCrew && snapshotRoster.length > 0 && (
             <p className="text-[11px] text-[var(--yu3-ink-muted)]">
               Recorded crew (job snapshot): {snapshotRoster.join(", ")}
