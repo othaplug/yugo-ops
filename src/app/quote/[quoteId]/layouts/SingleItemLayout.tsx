@@ -1,4 +1,4 @@
-import { ArrowRight, OfficeChair, Check } from "@phosphor-icons/react";
+import { ArrowRight, Check } from "@phosphor-icons/react";
 import {
   type Quote,
   WINE,
@@ -83,7 +83,29 @@ export default function SingleItemLayout({
       ? f.weight_surcharge
       : 0;
   const truckBreakdown: string | null = null;
-  const includes = (f?.includes as string[] | undefined) ?? DEFAULT_INCLUDES;
+  const baseIncludes = (f?.includes as string[] | undefined) ?? DEFAULT_INCLUDES;
+
+  // Assembly / disassembly are charged per-line in the engine, so they are
+  // already part of the quote total. Surface them in the "What's Included"
+  // section so the client sees the labour they're paying for — otherwise
+  // the bullet list reads like a flat haul.
+  const hasDisassemblyAtPickup = lines.some((l) => {
+    const a = (l.assembly || "").toLowerCase();
+    return a === "both" || a.includes("disassembly");
+  });
+  const hasAssemblyAtDelivery = lines.some((l) => {
+    const a = (l.assembly || "").toLowerCase();
+    return a === "both" || a === "assembly at delivery";
+  });
+  const assemblyIncludes: string[] = [];
+  if (hasDisassemblyAtPickup && hasAssemblyAtDelivery) {
+    assemblyIncludes.push("Disassembly at pickup and reassembly at delivery");
+  } else if (hasAssemblyAtDelivery) {
+    assemblyIncludes.push("Assembly at delivery");
+  } else if (hasDisassemblyAtPickup) {
+    assemblyIncludes.push("Disassembly at pickup");
+  }
+  const includes = [...baseIncludes, ...assemblyIncludes];
 
   // Junk-removal display: client sees what's being hauled away (confirms
   // the scope they discussed with the coordinator). We deliberately don't
@@ -293,12 +315,6 @@ function SingleItemHeader({
   const description = line.item_description?.trim() || fallbackLabel;
   return (
     <div className="flex items-start gap-4">
-      <OfficeChair
-        className={compact ? "w-5 h-5 shrink-0 mt-0.5" : "w-7 h-7 shrink-0 mt-0.5"}
-        style={{ color: WINE }}
-        weight="duotone"
-        aria-hidden
-      />
       <div className="min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-1">
           <span

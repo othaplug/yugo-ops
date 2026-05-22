@@ -142,7 +142,10 @@ import {
 import { formatAddressForDisplay } from "@/lib/format-text";
 import { getDisplayLabel, VALUATION_TIER_LABELS } from "@/lib/displayLabels";
 import { SafeText } from "@/components/SafeText";
-import { getSingleItemQuoteCopy } from "@/lib/quotes/single-item-copy";
+import {
+  detectSingleItemMode,
+  getSingleItemQuoteCopy,
+} from "@/lib/quotes/single-item-copy";
 import { decideBookingPayment } from "@/lib/quotes/booking-payment-window";
 import {
   getB2BQuoteHero,
@@ -189,7 +192,7 @@ const LOGISTICS_INCLUSION_FEATURES: TierFeature[] = [
   },
   {
     card: "Loading & unloading",
-    title: "Trained loading & unloading",
+    title: "Loading & unloading",
     desc: "Careful handling at pickup and delivery",
   },
   {
@@ -1298,6 +1301,34 @@ export default function QuotePageClient({
   /** Truck surcharge is included in the total; never show as a priced line to clients. */
   const truckBreakdownClientNote = useMemo(() => null as string | null, []);
 
+  // For service_type === "single_item", the same quote shape covers two
+  // jobs: small residential moves and commercial point-to-point deliveries.
+  // Detection here drives whether we render the commercial-flavored
+  // InclusionsShowcase (which uses LOGISTICS_INCLUSION_FEATURES + "Your
+  // Delivery Includes" copy) — for residential, we suppress that block and
+  // let SingleItemLayout's own "What's Included" section speak for itself.
+  const singleItemMode = useMemo(() => {
+    if (quote.service_type !== "single_item") return null;
+    return detectSingleItemMode({
+      from_access: quote.from_access as string | null | undefined,
+      to_access: quote.to_access as string | null | undefined,
+      walkthrough_notes: (quote as unknown as { walkthrough_notes?: string | null })
+        .walkthrough_notes,
+      booking_notes: (quote as unknown as { booking_notes?: string | null })
+        .booking_notes,
+      quote_items: (quote as unknown as { quote_items?: unknown }).quote_items,
+      scalars: {
+        item_description: factorsApplied?.item_description as string | null | undefined,
+        item_category: factorsApplied?.item_category as string | null | undefined,
+        item_weight_class: factorsApplied?.weight_class as string | null | undefined,
+        assembly_needed: factorsApplied?.assembly as string | null | undefined,
+        stair_carry: factorsApplied?.stair_carry as boolean | null | undefined,
+        stair_flights: factorsApplied?.stair_flights as number | null | undefined,
+        number_of_items: factorsApplied?.single_item_quantity as number | null | undefined,
+      },
+    });
+  }, [quote, factorsApplied]);
+
   const b2bInvoiceBooking = useMemo(
     () => isB2BInvoiceQuote(factorsApplied, quote.service_type),
     [quote.service_type, factorsApplied],
@@ -1678,17 +1709,25 @@ export default function QuotePageClient({
             </>
           ) : quote.service_type === "single_item" ? (
             <>
-              <InclusionsShowcase
-                ref={comparisonRef}
-                selectedTier={selectedTier}
-                isResidential={isResidential}
-                residentialTierFeatures={residentialTierFeatures}
-                truckPrimary={quote.truck_primary}
-                truckSecondary={quote.truck_secondary}
-                crewSize={quote.est_crew_size}
-                variant="logistics"
-                truckPricingNote={truckBreakdownClientNote}
-              />
+              {/* Residential single-item moves shouldn't see the
+                  commercial "Your Delivery Includes / Shipment visibility"
+                  feature grid — SingleItemLayout below has its own
+                  "What's Included" section. Only commercial deliveries
+                  (dock-to-dock, vendor-shipped) render the logistics
+                  showcase. Detection: see singleItemMode useMemo. */}
+              {singleItemMode === "commercial" ? (
+                <InclusionsShowcase
+                  ref={comparisonRef}
+                  selectedTier={selectedTier}
+                  isResidential={isResidential}
+                  residentialTierFeatures={residentialTierFeatures}
+                  truckPrimary={quote.truck_primary}
+                  truckSecondary={quote.truck_secondary}
+                  crewSize={quote.est_crew_size}
+                  variant="logistics"
+                  truckPricingNote={truckBreakdownClientNote}
+                />
+              ) : null}
               <SingleItemLayout
                 quote={quoteForDisplay}
                 onConfirm={handleConfirm}

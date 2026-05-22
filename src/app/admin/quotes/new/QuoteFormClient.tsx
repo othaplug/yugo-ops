@@ -3451,9 +3451,11 @@ export default function QuoteFormClient({
   const lockedAssemblyAddonSlugs = useMemo(() => {
     const set = new Set<string>();
     if (serviceType !== "single_item") return set;
-    const anyDisassemblyAtPickup = singleItemRows.some((r) =>
-      (r.assembly || "").toLowerCase().includes("disassembly"),
-    );
+    const anyDisassemblyAtPickup = singleItemRows.some((r) => {
+      const a = (r.assembly || "").toLowerCase();
+      // "Disassembly at pickup" matches by substring; "Both" implies it too.
+      return a === "both" || a.includes("disassembly");
+    });
     const anyAssemblyAtDelivery = singleItemRows.some((r) => {
       const a = (r.assembly || "").toLowerCase();
       // "Assembly at delivery" matches; "Both" implies it too. Exclude pure
