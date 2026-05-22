@@ -3175,7 +3175,9 @@ export default function MoveDetailClient({
             </p>
             <p className="text-[10px] text-[var(--tx3)] mt-0.5">
               {move.move_code}
-              {move.service_type ? ` · ${move.service_type}` : ""}
+              {move.service_type
+                ? ` · ${serviceTypeDisplayLabel(move.service_type)}`
+                : ""}
             </p>
           </div>
           {!moveInProgress && (

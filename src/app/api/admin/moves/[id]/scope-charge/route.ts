@@ -162,6 +162,27 @@ export async function POST(
   const newSubtotal =
     Math.round((originalSubtotal + preTaxDelta) * 100) / 100;
 
+  // Map the move's current status to a valid move_phase value. The
+  // inventory_change_requests CHECK constraint only accepts:
+  //   pre_move | at_pickup | during_loading | at_delivery | post_move
+  // (see 20260326000001_move_day_walkthrough.sql). Earlier this sent
+  // "in_progress" which isn't in the list — the insert failed with a
+  // constraint violation and the modal showed a raw Postgres error.
+  const movePhaseFromStatus = ((): string => {
+    const s = String(move.status ?? "").toLowerCase().replace(/-/g, "_");
+    if (
+      s === "loading" ||
+      s === "in_transit" ||
+      s === "en_route_to_destination" ||
+      s === "dispatched"
+    ) return "during_loading";
+    if (s === "arrived_at_pickup" || s === "arrived") return "at_pickup";
+    if (s === "arrived_at_destination" || s === "unloading") return "at_delivery";
+    if (s === "completed" || s === "paid") return "post_move";
+    if (s === "en_route_to_pickup" || s === "en_route") return "at_pickup";
+    return "pre_move";
+  })();
+
   const { data: requestRow, error: insErr } = await db
     .from("inventory_change_requests")
     .insert({
@@ -169,7 +190,7 @@ export async function POST(
       quote_id: move.quote_id ?? null,
       status: "approved",
       source: "admin",
-      move_phase: "in_progress",
+      move_phase: movePhaseFromStatus,
       items_added: itemsAdded,
       items_removed: [],
       auto_calculated_delta: preTaxDelta,

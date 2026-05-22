@@ -23,10 +23,6 @@ import { useToast } from "../../components/Toast";
 import ModalOverlay from "../../components/ModalOverlay";
 import { Plus, Trash } from "@phosphor-icons/react";
 import { formatCurrency } from "@/lib/format-currency";
-import {
-  inferWeightTierFromLegacyScore,
-  getWeightTier,
-} from "@/lib/pricing/weight-tiers";
 
 type ScopeReason =
   | "more_items"
@@ -82,20 +78,6 @@ function newRow(): ItemRow {
   };
 }
 
-/**
- * Rough per-item suggested price by weight_score. Used purely as a guidance
- * value in the modal so the admin doesn't type a charge of $20 for moving a
- * piano. Backend re-derives the actual delta from charge_amount.
- */
-function suggestedPricePerItem(weightScore: number): number {
-  if (weightScore <= 0.4) return 25;
-  if (weightScore < 1.5) return 45;
-  if (weightScore < 3.0) return 90;
-  if (weightScore < 3.5) return 175;
-  if (weightScore < 4.0) return 275;
-  return 400;
-}
-
 const HST_RATE = 0.13;
 
 export default function ScopeChargeModal({
@@ -136,27 +118,16 @@ export default function ScopeChargeModal({
 
   const moreItemsSelected = reasons.has("more_items");
 
-  // Auto-calculated price from itemized list (only shown when "more_items"
-  // is selected). Sums suggested per-item prices × quantity. Admin can
-  // override by typing a different chargeInput.
-  const itemAutoSubtotal = useMemo(() => {
-    if (!moreItemsSelected) return 0;
-    let sum = 0;
-    for (const r of items) {
-      if (!r.item_name.trim()) continue;
-      sum += suggestedPricePerItem(r.weight_score) * Math.max(1, r.quantity);
-    }
-    return Math.round(sum * 100) / 100;
-  }, [items, moreItemsSelected]);
-
-  // Effective charge amount — admin's explicit input overrides the auto-
-  // calculated subtotal. Empty input + "More items" selected → use auto.
+  // Charge amount is admin-typed. Earlier the modal auto-suggested a
+  // per-item price by weight tier ($45 × qty for "Standard", etc.) and
+  // pre-filled the charge input — but the heuristic was misleading on
+  // real-world scope additions (the actual charge isn't a function of
+  // weight alone) and produced confusing $9,000 numbers for a $50 box.
+  // The admin now decides the dollar amount manually.
   const effectiveCharge = useMemo(() => {
     const typed = Number(chargeInput);
-    if (Number.isFinite(typed) && typed > 0) return typed;
-    if (moreItemsSelected && itemAutoSubtotal > 0) return itemAutoSubtotal;
-    return 0;
-  }, [chargeInput, moreItemsSelected, itemAutoSubtotal]);
+    return Number.isFinite(typed) && typed > 0 ? typed : 0;
+  }, [chargeInput]);
 
   const preTaxDelta = useMemo(() => {
     if (effectiveCharge <= 0) return 0;
@@ -315,22 +286,18 @@ export default function ScopeChargeModal({
           </div>
         </section>
 
-        {/* Items list — only when "more_items" is selected */}
+        {/* Items list — only when "more_items" is selected. The admin
+            types the charge amount manually below; we no longer auto-
+            suggest a per-item price (the heuristic was misleading on
+            real-world items where the actual rate isn't a function of
+            weight alone). */}
         {moreItemsSelected && (
           <section className="rounded-xl border border-[var(--brd)]/70 bg-[var(--card)] p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)]">
-                New items
-              </h3>
-              <span className="text-[10px] text-[var(--tx3)]">
-                Auto-calculated: {formatCurrency(itemAutoSubtotal)} pre-tax
-              </span>
-            </div>
+            <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)]">
+              New items
+            </h3>
             <div className="space-y-2">
               {items.map((row) => {
-                const tier = getWeightTier(
-                  inferWeightTierFromLegacyScore(row.weight_score),
-                );
                 return (
                   <div
                     key={row.key}
@@ -353,7 +320,7 @@ export default function ScopeChargeModal({
                         })
                       }
                       className={inputBase}
-                      title="Weight tier — affects suggested per-item price"
+                      title="Weight tier — recorded for crew/truck planning"
                     >
                       <option value={0.4}>Light</option>
                       <option value={1.0}>Standard</option>
@@ -384,14 +351,6 @@ export default function ScopeChargeModal({
                     >
                       <Trash className="w-3.5 h-3.5" />
                     </button>
-                    <p className="col-span-4 text-[10px] text-[var(--tx3)] -mt-1 pl-1">
-                      {tier?.label ?? "Standard"} · suggested{" "}
-                      {formatCurrency(suggestedPricePerItem(row.weight_score))} ×{" "}
-                      {row.quantity} ={" "}
-                      {formatCurrency(
-                        suggestedPricePerItem(row.weight_score) * row.quantity,
-                      )}
-                    </p>
                   </div>
                 );
               })}
@@ -420,11 +379,7 @@ export default function ScopeChargeModal({
               step="0.01"
               value={chargeInput}
               onChange={(e) => setChargeInput(e.target.value)}
-              placeholder={
-                moreItemsSelected && itemAutoSubtotal > 0
-                  ? `${itemAutoSubtotal.toFixed(2)} (auto)`
-                  : "0.00"
-              }
+              placeholder="0.00"
               className={`${inputBase} text-[15px] font-medium w-40`}
             />
           </div>
