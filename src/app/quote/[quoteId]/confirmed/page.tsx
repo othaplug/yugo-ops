@@ -47,7 +47,7 @@ export default async function QuoteConfirmedPage({
   const { data: quote, error } = await sb
     .from("quotes")
     .select(
-      "quote_id, status, service_type, move_date, from_address, to_address, recommended_tier, selected_tier, contact_id",
+      "quote_id, status, service_type, move_date, from_address, to_address, additional_origins, additional_destinations, recommended_tier, selected_tier, contact_id",
     )
     .eq("quote_id", quoteId)
     .maybeSingle();
@@ -147,20 +147,59 @@ export default async function QuoteConfirmedPage({
                 value={moveDateStr}
               />
             )}
-            {quote.from_address && (
-              <SummaryRow
-                label="From"
-                value={String(quote.from_address)}
-                align="right"
-              />
-            )}
-            {quote.to_address && (
-              <SummaryRow
-                label="To"
-                value={String(quote.to_address)}
-                align="right"
-              />
-            )}
+            {(() => {
+              // Build a combined list of all pickups (primary + extras) and
+              // all dropoffs so multi-origin bookings surface every stop.
+              // Previously only from_address / to_address rendered, which
+              // hid the additional pickups the client booked.
+              const pickups: string[] = [];
+              if (quote.from_address) pickups.push(String(quote.from_address));
+              const extraPickups = Array.isArray(
+                (quote as { additional_origins?: { address?: string }[] | null })
+                  .additional_origins,
+              )
+                ? ((quote as { additional_origins: { address?: string }[] })
+                    .additional_origins)
+                : [];
+              for (const s of extraPickups) {
+                const a = (s?.address ?? "").trim();
+                if (a) pickups.push(a);
+              }
+              const dropoffs: string[] = [];
+              if (quote.to_address) dropoffs.push(String(quote.to_address));
+              const extraDropoffs = Array.isArray(
+                (quote as {
+                  additional_destinations?: { address?: string }[] | null;
+                }).additional_destinations,
+              )
+                ? ((quote as { additional_destinations: { address?: string }[] })
+                    .additional_destinations)
+                : [];
+              for (const s of extraDropoffs) {
+                const a = (s?.address ?? "").trim();
+                if (a) dropoffs.push(a);
+              }
+              return (
+                <>
+                  {pickups.map((addr, i) => (
+                    <SummaryRow
+                      key={`p-${i}`}
+                      label={i === 0 ? (pickups.length > 1 ? `From (1 of ${pickups.length})` : "From") : `Pickup ${i + 1}`}
+                      value={addr}
+                      align="right"
+                    />
+                  ))}
+                  {dropoffs.map((addr, i) => (
+                    <SummaryRow
+                      key={`d-${i}`}
+                      label={i === 0 ? (dropoffs.length > 1 ? `To (1 of ${dropoffs.length})` : "To") : `Drop-off ${i + 1}`}
+                      value={addr}
+                      align="right"
+                    />
+                  ))}
+                </>
+              );
+            })()}
           </div>
         </div>
 

@@ -81,12 +81,32 @@ export default async function MoveDetailPage({
   // of truth, it should be the source of truth at the moment of move creation —
   // not on every read.
   const moveQuoteId = (move as { quote_id?: string | null }).quote_id;
+  // Multi-origin / multi-destination addresses live on the linked quote.
+  // Hoist them onto the move object so MoveDetailClient can render every
+  // pickup, not just the primary. Previously the move detail page only
+  // showed the primary from/to, hiding any extras the client booked.
+  let linkedAdditionalOrigins:
+    | { address?: string | null }[]
+    | null = null;
+  let linkedAdditionalDestinations:
+    | { address?: string | null }[]
+    | null = null;
   if (moveQuoteId) {
     const { data: linkedQuote } = await db
       .from("quotes")
-      .select("est_hours")
+      .select("est_hours, additional_origins, additional_destinations")
       .eq("id", moveQuoteId)
       .maybeSingle();
+    linkedAdditionalOrigins = Array.isArray(linkedQuote?.additional_origins)
+      ? (linkedQuote.additional_origins as { address?: string | null }[])
+      : null;
+    linkedAdditionalDestinations = Array.isArray(
+      linkedQuote?.additional_destinations,
+    )
+      ? (linkedQuote.additional_destinations as {
+          address?: string | null;
+        }[])
+      : null;
     const qehRaw = linkedQuote?.est_hours;
     const qeh =
       qehRaw != null && Number.isFinite(Number(qehRaw)) && Number(qehRaw) > 0
@@ -362,6 +382,8 @@ export default async function MoveDetailPage({
       isOffice={isOffice}
       userRole={userRole}
       isSuperAdmin={isSuperAdmin}
+      additionalOrigins={linkedAdditionalOrigins ?? []}
+      additionalDestinations={linkedAdditionalDestinations ?? []}
       additionalFeesCents={additionalFeesCents}
       etaSmsLog={etaSmsLog ?? []}
       reviewRequest={reviewRequest ?? undefined}

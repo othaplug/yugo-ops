@@ -1727,17 +1727,83 @@ export default function QuoteDetailClient({
                       : "TBD"}
                   </p>
                 </div>
-                {/* Route */}
+                {/* Route — shows every pickup and drop-off. Multi-origin
+                    quotes used to surface only the primary from/to,
+                    hiding the extras. */}
                 <div>
                   <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)] mb-1.5">
                     Route
                   </p>
-                  <p className="text-[12px] font-medium text-[var(--tx)] leading-snug">
-                    {quote.from_address}
-                  </p>
-                  <p className="text-[12px] text-[var(--tx3)] leading-snug">
-                    → {quote.to_address}
-                  </p>
+                  {(() => {
+                    const extraPickups = Array.isArray(
+                      (quote as { additional_origins?: { address?: string }[] | null })
+                        .additional_origins,
+                    )
+                      ? ((quote as { additional_origins: { address?: string }[] })
+                          .additional_origins)
+                      : [];
+                    const extraDropoffs = Array.isArray(
+                      (quote as {
+                        additional_destinations?: { address?: string }[] | null;
+                      }).additional_destinations,
+                    )
+                      ? ((quote as { additional_destinations: { address?: string }[] })
+                          .additional_destinations)
+                      : [];
+                    const pickups: string[] = [];
+                    if (quote.from_address) pickups.push(String(quote.from_address));
+                    for (const s of extraPickups) {
+                      const a = (s?.address ?? "").trim();
+                      if (a) pickups.push(a);
+                    }
+                    const dropoffs: string[] = [];
+                    if (quote.to_address) dropoffs.push(String(quote.to_address));
+                    for (const s of extraDropoffs) {
+                      const a = (s?.address ?? "").trim();
+                      if (a) dropoffs.push(a);
+                    }
+                    return (
+                      <>
+                        {pickups.map((addr, i) => (
+                          <p
+                            key={`pick-${i}`}
+                            className={
+                              i === 0
+                                ? "text-[12px] font-medium text-[var(--tx)] leading-snug"
+                                : "text-[11px] text-[var(--tx2)] leading-snug pl-3"
+                            }
+                          >
+                            {i === 0 ? null : (
+                              <span className="text-[var(--tx3)] mr-1">+</span>
+                            )}
+                            {addr}
+                          </p>
+                        ))}
+                        {dropoffs.map((addr, i) => (
+                          <p
+                            key={`drop-${i}`}
+                            className={
+                              i === 0
+                                ? "text-[12px] text-[var(--tx3)] leading-snug"
+                                : "text-[11px] text-[var(--tx2)] leading-snug pl-3"
+                            }
+                          >
+                            {i === 0 ? "→ " : <span className="text-[var(--tx3)] mr-1">+</span>}
+                            {addr}
+                          </p>
+                        ))}
+                        {(extraPickups.length > 0 ||
+                          extraDropoffs.length > 0) && (
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--gold)] mt-1">
+                            Multi-location ·{" "}
+                            {pickups.length > 1 ? `${pickups.length} pickups` : ""}
+                            {pickups.length > 1 && dropoffs.length > 1 ? " · " : ""}
+                            {dropoffs.length > 1 ? `${dropoffs.length} drop-offs` : ""}
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
                   {quote.distance_km && (
                     <p className="text-[10px] text-[var(--tx3)] mt-1">
                       {quote.distance_km} km

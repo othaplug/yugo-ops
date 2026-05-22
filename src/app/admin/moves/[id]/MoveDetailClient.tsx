@@ -162,6 +162,12 @@ interface MoveDetailClientProps {
   /** Super-admin gate for surfaces that bypass the standard review path
    *  (scope-charge mid-job, crew reassignment during in-progress moves). */
   isSuperAdmin?: boolean;
+  /** Multi-origin / multi-destination addresses sourced from the linked
+   *  quote (moves don't store these). Rendered alongside the primary
+   *  from/to in the address blocks so multi-pickup bookings surface
+   *  every stop. */
+  additionalOrigins?: { address?: string | null }[];
+  additionalDestinations?: { address?: string | null }[];
   additionalFeesCents?: number;
   etaSmsLog?: EtaSmsLogEntry[];
   reviewRequest?: ReviewRequestEntry;
@@ -498,6 +504,8 @@ export default function MoveDetailClient({
   isOffice,
   userRole = "viewer",
   isSuperAdmin = false,
+  additionalOrigins = [],
+  additionalDestinations = [],
   additionalFeesCents = 0,
   etaSmsLog = [],
   reviewRequest,
@@ -1457,19 +1465,45 @@ export default function MoveDetailClient({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-[12px]">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
-                  From
+                  From{additionalOrigins.length > 0 && ` (${additionalOrigins.length + 1} pickups)`}
                 </p>
                 <p className="text-[var(--yu3-ink)] leading-snug">
                   {move.from_address || "—"}
                 </p>
+                {additionalOrigins.map((s, i) => {
+                  const a = (s?.address ?? "").trim();
+                  if (!a) return null;
+                  return (
+                    <p
+                      key={`addl-from-overview-${i}`}
+                      className="text-[var(--yu3-ink-muted)] leading-snug mt-0.5"
+                    >
+                      <span className="text-[var(--yu3-ink-faint)] mr-1">+</span>
+                      {a}
+                    </p>
+                  );
+                })}
               </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
-                  To
+                  To{additionalDestinations.length > 0 && ` (${additionalDestinations.length + 1} drop-offs)`}
                 </p>
                 <p className="text-[var(--yu3-ink)] leading-snug">
                   {move.to_address || move.delivery_address || "—"}
                 </p>
+                {additionalDestinations.map((s, i) => {
+                  const a = (s?.address ?? "").trim();
+                  if (!a) return null;
+                  return (
+                    <p
+                      key={`addl-to-overview-${i}`}
+                      className="text-[var(--yu3-ink-muted)] leading-snug mt-0.5"
+                    >
+                      <span className="text-[var(--yu3-ink-faint)] mr-1">+</span>
+                      {a}
+                    </p>
+                  );
+                })}
               </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--yu3-ink-muted)] mb-0.5">
@@ -1944,6 +1978,11 @@ export default function MoveDetailClient({
             <div>
               <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                 From
+                {additionalOrigins.length > 0 && (
+                  <span className="ml-1 text-[var(--yu3-wine)] normal-case">
+                    · {additionalOrigins.length + 1} pickups
+                  </span>
+                )}
               </span>
               <div className="text-[13px] font-medium text-[var(--yu3-ink)]">
                 {move.from_address || "-"}
@@ -1953,10 +1992,30 @@ export default function MoveDetailClient({
                   {formatAccessForDisplay(move.from_access)}
                 </div>
               )}
+              {additionalOrigins.map((s, i) => {
+                const a = (s?.address ?? "").trim();
+                if (!a) return null;
+                return (
+                  <div
+                    key={`addl-from-${i}`}
+                    className="text-[12px] text-[var(--yu3-ink)] mt-1.5 pl-3 border-l-2 border-[var(--yu3-line-subtle)]"
+                  >
+                    <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88 block">
+                      Pickup {i + 2}
+                    </span>
+                    {a}
+                  </div>
+                );
+              })}
             </div>
             <div>
               <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88">
                 To
+                {additionalDestinations.length > 0 && (
+                  <span className="ml-1 text-[var(--yu3-wine)] normal-case">
+                    · {additionalDestinations.length + 1} drop-offs
+                  </span>
+                )}
               </span>
               <div className="text-[13px] font-medium text-[var(--yu3-ink)]">
                 {move.to_address || move.delivery_address || "-"}
@@ -1966,6 +2025,21 @@ export default function MoveDetailClient({
                   {formatAccessForDisplay(move.to_access)}
                 </div>
               )}
+              {additionalDestinations.map((s, i) => {
+                const a = (s?.address ?? "").trim();
+                if (!a) return null;
+                return (
+                  <div
+                    key={`addl-to-${i}`}
+                    className="text-[12px] text-[var(--yu3-ink)] mt-1.5 pl-3 border-l-2 border-[var(--yu3-line-subtle)]"
+                  >
+                    <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--yu3-ink-muted)]/88 block">
+                      Drop-off {i + 2}
+                    </span>
+                    {a}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
