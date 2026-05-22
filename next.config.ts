@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 // Proxy/middleware runs on Edge: only NEXT_PUBLIC_* (and this `env` map) are inlined at
 // build time. Map SUPABASE_* → public names so hosting setups that omit NEXT_PUBLIC_*
@@ -34,6 +35,11 @@ const nextConfig: NextConfig = {
     // Do not use `optimizePackageImports` for `@phosphor-icons/react`: Next can elide or
     // mis-resolve barrel exports so some icons become `undefined` at runtime (React 185:
     // "Element type is invalid"). Subpath imports (see AppIcons) are the per-icon alternative.
+  },
+  turbopack: {
+    // Pin root to this directory so Turbopack doesn't get confused by the
+    // parent repo's lockfile when running from inside a git worktree.
+    root: path.resolve(__dirname),
   },
   serverExternalPackages: ["square"],
   async redirects() {
