@@ -3023,16 +3023,17 @@ export default function MoveDetailClient({
         onSaved={(updates) => setMove((prev: any) => ({ ...prev, ...updates }))}
       />
 
-      {/* Mid-job scope charge — super-admin only. Pass tax-inclusive
-          balance so the "New outstanding" preview matches the
-          OVERDUE figure shown on the Money tab. */}
+      {/* Mid-job scope charge — super-admin only. Pass the pre-tax
+          balance so the preview's headline number matches the OVERDUE
+          card on the Money tab. The card shows $X with "+$Y HST" as a
+          separate line; the modal mirrors that split internally. */}
       {isSuperAdmin && (
         <ScopeChargeModal
           open={scopeChargeOpen}
           onClose={() => setScopeChargeOpen(false)}
           moveId={move.id}
           moveCode={move.move_code ?? null}
-          currentBalance={balanceDue + calcHST(balanceDue)}
+          currentBalancePreTax={balanceDue}
           onApplied={(result) => {
             // Optimistic local update so the Money tab reflects the new
             // balance before the next router.refresh lands.
