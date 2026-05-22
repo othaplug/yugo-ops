@@ -355,6 +355,46 @@ export default async function MoveDetailPage({
     ),
   );
 
+  // Resolve add-on details for display on the move page
+  const rawMoveAddons = (move as { addons?: unknown }).addons;
+  let resolvedAddons: { name: string; slug: string; qty?: number; price: number }[] = [];
+  if (Array.isArray(rawMoveAddons) && rawMoveAddons.length > 0) {
+    const addonIds = (rawMoveAddons as { addon_id?: string }[])
+      .map((a) => a.addon_id)
+      .filter(Boolean) as string[];
+    if (addonIds.length > 0) {
+      const { data: addonRows } = await db
+        .from("addons")
+        .select("id, name, slug, price, price_type, tiers, percent_value")
+        .in("id", addonIds);
+
+      const movePrice = Number((move as { custom_price?: unknown; total_price?: unknown }).custom_price ?? 0) || 0;
+
+      for (const sel of rawMoveAddons as { addon_id?: string; slug?: string; quantity?: number; tier_index?: number }[]) {
+        const rec = (addonRows ?? []).find((r) => r.id === sel.addon_id) as {
+          id: string; name: string; slug: string;
+          price: number; price_type: string;
+          tiers: { price: number }[] | null;
+          percent_value: number | null;
+        } | null;
+        if (!rec) continue;
+        let linePrice = 0;
+        switch (rec.price_type) {
+          case "flat": linePrice = rec.price; break;
+          case "per_unit": linePrice = rec.price * (sel.quantity || 1); break;
+          case "tiered": linePrice = rec.tiers?.[sel.tier_index ?? 0]?.price ?? 0; break;
+          case "percent": linePrice = Math.round(movePrice * (rec.percent_value ?? 0)); break;
+        }
+        resolvedAddons.push({
+          name: rec.name,
+          slug: rec.slug,
+          qty: rec.price_type === "per_unit" ? (sel.quantity ?? 1) : undefined,
+          price: linePrice,
+        });
+      }
+    }
+  }
+
   const mpResidentialId = (move as { move_project_id?: string | null }).move_project_id;
   let residentialMoveProject: {
     project: Record<string, unknown>;
@@ -382,6 +422,7 @@ export default async function MoveDetailPage({
       isOffice={isOffice}
       userRole={userRole}
       isSuperAdmin={isSuperAdmin}
+      resolvedAddons={resolvedAddons}
       additionalOrigins={linkedAdditionalOrigins ?? []}
       additionalDestinations={linkedAdditionalDestinations ?? []}
       additionalFeesCents={additionalFeesCents}

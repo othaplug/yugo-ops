@@ -221,6 +221,9 @@ export async function runPostPaymentActions(
     .filter(Boolean) as string[];
 
   let addonRevenue = 0;
+  // Resolved add-on lines for the confirmation email
+  const resolvedAddonLines: { name: string; qty?: number; price: number }[] = [];
+
   if (addonCount > 0) {
     const addonIds = selectedAddons
       .map((a) => a.addon_id)
@@ -229,13 +232,14 @@ export async function runPostPaymentActions(
     if (addonIds.length > 0) {
       const { data: addonRecords } = await supabase
         .from("addons")
-        .select("id, price, price_type, tiers, percent_value")
+        .select("id, name, price, price_type, tiers, percent_value")
         .in("id", addonIds);
 
       for (const sel of selectedAddons) {
         const record = (addonRecords ?? []).find(
           (r) => r.id === sel.addon_id,
         ) as {
+          name: string;
           price: number;
           price_type: string;
           tiers: { price: number }[] | null;
@@ -243,20 +247,33 @@ export async function runPostPaymentActions(
         } | null;
         if (!record) continue;
 
+        let linePrice = 0;
         switch (record.price_type) {
           case "flat":
-            addonRevenue += record.price;
+            linePrice = record.price;
+            addonRevenue += linePrice;
             break;
           case "per_unit":
-            addonRevenue += record.price * (sel.quantity || 1);
+            linePrice = record.price * (sel.quantity || 1);
+            addonRevenue += linePrice;
             break;
           case "tiered":
-            addonRevenue += record.tiers?.[sel.tier_index ?? 0]?.price ?? 0;
+            linePrice = record.tiers?.[sel.tier_index ?? 0]?.price ?? 0;
+            addonRevenue += linePrice;
             break;
           case "percent":
-            addonRevenue += Math.round(basePrice * (record.percent_value ?? 0));
+            linePrice = Math.round(basePrice * (record.percent_value ?? 0));
+            addonRevenue += linePrice;
             break;
         }
+
+        resolvedAddonLines.push({
+          name: record.name,
+          qty: record.price_type === "per_unit" && (sel.quantity ?? 1) > 1
+            ? sel.quantity
+            : undefined,
+          price: linePrice,
+        });
       }
     }
   }
@@ -467,6 +484,7 @@ export async function runPostPaymentActions(
           coordinatorPhone: (move.coordinator_phone as string) || null,
           coordinatorEmail: (move.coordinator_email as string) || null,
           welcomePackageUrl,
+          addonLines: resolvedAddonLines.length > 0 ? resolvedAddonLines : undefined,
         };
 
         const templateFns: Record<

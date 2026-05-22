@@ -238,6 +238,7 @@ interface MoveDetailClientProps {
       days?: Record<string, unknown>[];
     }[];
   } | null;
+  resolvedAddons?: { name: string; slug: string; qty?: number; price: number }[];
 }
 import {
   MOVE_STATUS_OPTIONS,
@@ -521,6 +522,7 @@ export default function MoveDetailClient({
   moveWaivers = [],
   pmLinkedPeer = null,
   residentialMoveProject = null,
+  resolvedAddons = [],
 }: MoveDetailClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -3021,6 +3023,35 @@ export default function MoveDetailClient({
         moveType={move.move_type}
       />
       <MoveFilesSection moveId={move.id} moveStatus={move.status} />
+
+      {/* Add-ons selected by the client at booking */}
+      {resolvedAddons.length > 0 && (
+        <div className="border-t border-[var(--yu3-line-subtle)] py-4">
+          <div className="text-[10px] font-bold tracking-widest uppercase text-[var(--yu3-ink-muted)] mb-3">
+            Add-ons
+          </div>
+          <div className="space-y-1">
+            {resolvedAddons.map((a, i) => (
+              <div key={i} className="flex items-center justify-between text-sm">
+                <span className="text-[var(--yu3-ink-base)]">
+                  {a.name}{a.qty && a.qty > 1 ? ` ×${a.qty}` : ""}
+                </span>
+                <span className="text-[var(--yu3-ink-muted)] font-medium tabular-nums">
+                  ${a.price.toFixed(2)}
+                </span>
+              </div>
+            ))}
+            {resolvedAddons.length > 1 && (
+              <div className="flex items-center justify-between text-sm pt-1 border-t border-[var(--yu3-line-subtle)] mt-1">
+                <span className="text-[var(--yu3-ink-muted)] text-xs uppercase tracking-wide font-semibold">Total add-ons</span>
+                <span className="text-[var(--yu3-ink-base)] font-semibold tabular-nums">
+                  ${resolvedAddons.reduce((s, a) => s + a.price, 0).toFixed(2)}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Reported Issues from crew */}
       <IncidentsSection jobId={move.id} jobType="move" />

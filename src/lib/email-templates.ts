@@ -1739,6 +1739,8 @@ export interface TierConfirmationParams {
   crewNames?: string | null;
   /** Token URL for `/estate/welcome/[token]` (Estate tier only). */
   welcomePackageUrl?: string | null;
+  /** Add-ons selected by the client at booking time. Omit/empty = no section rendered. */
+  addonLines?: { name: string; qty?: number; price: number }[];
 }
 
 function confirmDateDisplay(dateStr: string | null): string {
@@ -1750,6 +1752,36 @@ function confirmDateDisplay(dateStr: string | null): string {
     day: "numeric",
     timeZone: "America/Toronto",
   });
+}
+
+/** Renders an add-ons block for tier confirmation emails. Returns "" when there are no add-ons. */
+function renderAddonLinesHtml(
+  lines: { name: string; qty?: number; price: number }[] | undefined,
+  opts: {
+    sectionRule: string;
+    labelStyle: string;
+    valueStyle: string;
+    borderBetween: string;
+  },
+): string {
+  if (!lines || lines.length === 0) return "";
+  const rows = lines
+    .map((l, i) =>
+      emailNestedKvRow({
+        borderTop: i === 0 ? "none" : opts.borderBetween,
+        labelStyle: opts.labelStyle,
+        valueStyle: opts.valueStyle,
+        label: l.qty && l.qty > 1 ? `${l.name} ×${l.qty}` : l.name,
+        valueHtml: formatCurrencyEmail(l.price),
+      }),
+    )
+    .join("");
+  return `
+    ${opts.sectionRule}
+    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">Add-ons</div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;font-size:12px;border-collapse:collapse">
+      ${rows}
+    </table>`;
 }
 
 /** @deprecated Use essentialConfirmationEmail */
@@ -1835,6 +1867,13 @@ export function essentialConfirmationEmail(p: TierConfirmationParams): string {
         })}
       </table>
     </td></tr></table>
+
+    ${renderAddonLinesHtml(p.addonLines, {
+      sectionRule: premiumSectionRule(),
+      labelStyle: `padding:4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`,
+      valueStyle: `padding:4px 0;font-size:12px;color:${PREMIUM_BODY};font-weight:600;text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`,
+      borderBetween: `1px solid ${PREMIUM_RULE}`,
+    })}
 
     ${premiumSectionRule()}
     <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">What to expect</div>
@@ -1974,6 +2013,13 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
     <div style="font-size:12px;line-height:2">
       ${includesHtml || `<span style="color:${PREMIUM_BODY_MUTED}">Details confirmed with your coordinator.</span>`}
     </div>
+
+    ${renderAddonLinesHtml(p.addonLines, {
+      sectionRule: premiumSectionRule(),
+      labelStyle: sL,
+      valueStyle: sV,
+      borderBetween: sB,
+    })}
 
     ${premiumSectionRule()}
     <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">Before your move</div>
@@ -2352,6 +2398,19 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
     <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;margin:0 0 4px;background-color:${ESTATE_WINE_SURFACE_PAGE};">
       ${includesRows}
     </table>
+
+    ${p.addonLines && p.addonLines.length > 0 ? `
+    ${estateWineDivider()}
+    ${estateWineLabel("Add-ons")}
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="font-size:14px;border-collapse:collapse;table-layout:fixed;width:100%;border:${eTableOuter};background-color:${ESTATE_WINE_SURFACE_PAGE};">
+      ${(p.addonLines as { name: string; qty?: number; price: number }[]).map((l, i) => emailNestedKvRow({
+        borderTop: i === 0 ? "none" : eDiv,
+        labelStyle: eLbl,
+        valueStyle: eVal,
+        label: l.qty && l.qty > 1 ? `${l.name} ×${l.qty}` : l.name,
+        valueHtml: formatCurrencyEmail(l.price),
+      })).join("")}
+    </table>` : ""}
 
     ${estateWineDivider()}
 
