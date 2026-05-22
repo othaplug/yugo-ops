@@ -17,6 +17,7 @@ import {
 } from "@phosphor-icons/react";
 import MoveNotifyButton from "../MoveNotifyButton";
 import ResendTrackingLinkButton from "../ResendTrackingLinkButton";
+import ResendBookingEmailsButton from "../ResendBookingEmailsButton";
 import MoveContactModal from "./MoveContactModal";
 import EditMoveDetailsModal from "./EditMoveDetailsModal";
 import ScopeChargeModal from "./ScopeChargeModal";
@@ -979,6 +980,7 @@ export default function MoveDetailClient({
               <>
                 <MoveNotifyButton move={move} />
                 <ResendTrackingLinkButton move={move} />
+                {isSuperAdmin && <ResendBookingEmailsButton move={move} />}
                 <PageMetaDivider />
               </>
             )}
