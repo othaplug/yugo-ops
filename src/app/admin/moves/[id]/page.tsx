@@ -68,10 +68,17 @@ export default async function MoveDetailPage({
 
   if (error || !move) notFound();
 
-  // Self-heal: if move.est_hours is missing or estimated_duration_minutes is out of sync
-  // with the linked quote's est_hours, fix it on read so the duration shown here always
-  // matches the quote page (~Xh shown on the quote → X*60 minutes on the move).
-  // This is the authoritative source of truth: quote.est_hours.
+  // Self-heal: backfill est_hours / estimated_duration_minutes from the linked
+  // quote ONLY when the move is missing them. This handles legacy moves created
+  // before the quote→move sync was wired up.
+  //
+  // Important: we no longer overwrite values that differ from the quote, because
+  // the EditMoveDetailsModal lets a coordinator manually override the allocated
+  // job time (and it writes est_hours + estimated_duration_minutes in lockstep).
+  // The previous heuristic ("drift > 0.01h" / ">5 min") silently reverted those
+  // manual edits on the very next page load. If quote.est_hours is the source
+  // of truth, it should be the source of truth at the moment of move creation —
+  // not on every read.
   const moveQuoteId = (move as { quote_id?: string | null }).quote_id;
   if (moveQuoteId) {
     const { data: linkedQuote } = await db
@@ -86,32 +93,40 @@ export default async function MoveDetailPage({
         : null;
     if (qeh != null) {
       const expectedMinutes = Math.round(qeh * 60);
-      const currentEstHours = Number(
-        (move as { est_hours?: number | string | null }).est_hours ?? 0,
-      );
-      const currentMinutes = Number(
-        (move as { estimated_duration_minutes?: number | null })
-          .estimated_duration_minutes ?? 0,
-      );
-      const estHoursStale =
-        !currentEstHours ||
-        Math.abs(currentEstHours - qeh) > 0.01;
-      const minutesStale = Math.abs(currentMinutes - expectedMinutes) > 5;
+      const currentEstHoursRaw = (
+        move as { est_hours?: number | string | null }
+      ).est_hours;
+      const currentEstHours = Number(currentEstHoursRaw ?? 0);
+      const currentMinutesRaw = (
+        move as { estimated_duration_minutes?: number | null }
+      ).estimated_duration_minutes;
+      const currentMinutes = Number(currentMinutesRaw ?? 0);
+      // "Missing" = null/undefined or zero. Any positive value (including a
+      // value that differs from the quote) is treated as intentional and
+      // left alone.
+      const estHoursMissing =
+        currentEstHoursRaw == null || !Number.isFinite(currentEstHours) || currentEstHours <= 0;
+      const minutesMissing =
+        currentMinutesRaw == null || !Number.isFinite(currentMinutes) || currentMinutes <= 0;
       const isImmutable = ["completed", "cancelled", "no_show"].includes(
         String((move as { status?: string }).status ?? "").toLowerCase(),
       );
-      if ((estHoursStale || minutesStale) && !isImmutable) {
+      if ((estHoursMissing || minutesMissing) && !isImmutable) {
+        const patch: Record<string, unknown> = {};
+        if (estHoursMissing) patch.est_hours = qeh;
+        if (minutesMissing) patch.estimated_duration_minutes = expectedMinutes;
         await db
           .from("moves")
-          .update({
-            est_hours: qeh,
-            estimated_duration_minutes: expectedMinutes,
-          })
+          .update(patch)
           .eq("id", (move as { id: string }).id);
         // Patch the in-memory copy so the rendered page matches DB without re-fetch
-        (move as Record<string, unknown>).est_hours = qeh;
-        (move as Record<string, unknown>).estimated_duration_minutes =
-          expectedMinutes;
+        if (estHoursMissing) {
+          (move as Record<string, unknown>).est_hours = qeh;
+        }
+        if (minutesMissing) {
+          (move as Record<string, unknown>).estimated_duration_minutes =
+            expectedMinutes;
+        }
       }
     }
   }

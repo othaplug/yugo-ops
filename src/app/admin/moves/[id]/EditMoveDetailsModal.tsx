@@ -1,16 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import ModalOverlay from "../../components/ModalOverlay";
 import { Icon } from "@/components/AppIcons";
 import { useToast } from "../../components/Toast";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
-import {
-  CaretDown as ChevronDown,
-  CaretRight as ChevronRight,
-} from "@phosphor-icons/react";
+import { ArrowRight } from "@phosphor-icons/react";
 import { capMarginAlertMinutes } from "@/lib/jobs/duration-estimate";
 import { formatMinutesAsHhMm, parseHhMmToMinutes } from "@/lib/duration-hhmm";
 
@@ -162,6 +159,23 @@ export default function EditMoveDetailsModal({
     }
     return "";
   });
+  const [marginAlertHhMm, setMarginAlertHhMm] = useState(() => {
+    const v = initial.margin_alert_minutes;
+    if (v != null && Number.isFinite(Number(v)) && Number(v) > 0) {
+      return formatMinutesAsHhMm(Math.round(Number(v)));
+    }
+    return "";
+  });
+  // Snapshot of initial allocated time so we can show a "Was X → Y" diff
+  // when the admin types something different. Without this feedback,
+  // there's no in-modal confirmation that the change is being staged.
+  const initialAllocatedHhMm = useMemo(() => {
+    const v = initial.estimated_duration_minutes;
+    if (v != null && Number.isFinite(Number(v)) && Number(v) > 0) {
+      return formatMinutesAsHhMm(Math.round(Number(v)));
+    }
+    return "";
+  }, [initial.estimated_duration_minutes]);
   const [fromAccess, setFromAccess] = useState(
     initial.from_access || parsed.fromAccess,
   );
@@ -182,7 +196,6 @@ export default function EditMoveDetailsModal({
     initial.coordinator_name || "",
   );
   const [saving, setSaving] = useState(false);
-  const [showOptional, setShowOptional] = useState(false);
 
   // Sync form state when modal opens. Only [open, moveId] so dependency array size never changes.
   useEffect(() => {
@@ -201,6 +214,14 @@ export default function EditMoveDetailsModal({
         setAllocatedJobHhMm(formatMinutesAsHhMm(Math.round(Number(v))));
       } else {
         setAllocatedJobHhMm("");
+      }
+    }
+    {
+      const v = initial.margin_alert_minutes;
+      if (v != null && Number.isFinite(Number(v)) && Number(v) > 0) {
+        setMarginAlertHhMm(formatMinutesAsHhMm(Math.round(Number(v))));
+      } else {
+        setMarginAlertHhMm("");
       }
     }
     const p = parseAccessNotes(initial.access_notes);
@@ -244,6 +265,7 @@ export default function EditMoveDetailsModal({
     const updatePayload: Record<string, unknown> = { updated_at };
     if (section !== "notes") {
       const trimmedAlloc = allocatedJobHhMm.trim();
+      const trimmedMargin = marginAlertHhMm.trim();
       if (trimmedAlloc === "") {
         Object.assign(updatePayload, {
           est_hours: null,
@@ -258,17 +280,32 @@ export default function EditMoveDetailsModal({
           return;
         }
         const M = parsed.minutes;
-        const prev = initial.margin_alert_minutes;
-        const prevN =
-          typeof prev === "string" ? Number.parseFloat(prev) : Number(prev);
-        const uncapped =
-          Number.isFinite(prevN) && prevN > 0 ? Math.max(prevN, M) : M * 2;
+        // Margin alert: when the admin typed a value, honour it (capped to
+        // 2x allocated to keep alerts meaningful). When blank, fall back to
+        // the previous behaviour: keep prior margin if reasonable, else 2x.
+        let marginMinutes: number;
+        if (trimmedMargin !== "") {
+          const parsedMargin = parseHhMmToMinutes(trimmedMargin);
+          if (!parsedMargin.ok) {
+            toast(parsedMargin.message, "alertTriangle");
+            setSaving(false);
+            return;
+          }
+          marginMinutes = capMarginAlertMinutes(M, parsedMargin.minutes);
+        } else {
+          const prev = initial.margin_alert_minutes;
+          const prevN =
+            typeof prev === "string" ? Number.parseFloat(prev) : Number(prev);
+          const uncapped =
+            Number.isFinite(prevN) && prevN > 0 ? Math.max(prevN, M) : M * 2;
+          marginMinutes = capMarginAlertMinutes(M, uncapped);
+        }
         // Keep est_hours in sync with the manually-set duration so the display
         // always reads from est_hours (the authoritative field).
         Object.assign(updatePayload, {
           est_hours: Math.round((M / 60) * 100) / 100,
           estimated_duration_minutes: M,
-          margin_alert_minutes: capMarginAlertMinutes(M, uncapped),
+          margin_alert_minutes: marginMinutes,
         });
       }
     }
@@ -370,17 +407,17 @@ export default function EditMoveDetailsModal({
       open={open}
       onClose={onClose}
       title={modalTitle}
-      maxWidth="lg"
+      maxWidth="3xl"
     >
       <form onSubmit={handleSave} className="flex flex-col min-h-0">
-        <div className="p-5 sm:p-6 space-y-6 overflow-y-auto flex-1">
+        <div className="p-5 sm:p-6 space-y-5 overflow-y-auto flex-1 bg-[var(--bg)]/40">
           {/* Location */}
           {showAddresses && (
             <fieldset
               disabled={isCompleted}
               className={isCompleted ? "opacity-70" : ""}
             >
-              <section className="space-y-2">
+              <section className="rounded-xl border border-[var(--brd)]/70 bg-[var(--card)] p-4 sm:p-5 space-y-3">
                 <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
                   <Icon
                     name="mapPin"
@@ -388,7 +425,7 @@ export default function EditMoveDetailsModal({
                   />
                   Location
                 </h3>
-                <div className="grid sm:grid-cols-2 gap-2">
+                <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-3">
                     <AddressAutocomplete
                       value={fromAddress}
@@ -456,7 +493,7 @@ export default function EditMoveDetailsModal({
               disabled={isCompleted}
               className={isCompleted ? "opacity-70" : ""}
             >
-              <section className="space-y-4 pt-4 border-t border-[var(--brd)]/60">
+              <section className="rounded-xl border border-[var(--brd)]/70 bg-[var(--card)] p-4 sm:p-5 space-y-4">
                 <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
                   <Icon
                     name="calendar"
@@ -464,7 +501,7 @@ export default function EditMoveDetailsModal({
                   />
                   Schedule
                 </h3>
-                <div className="grid sm:grid-cols-2 gap-2">
+                <div className="grid sm:grid-cols-2 gap-4">
                   <Field label="Date">
                     <input
                       type="date"
@@ -491,30 +528,64 @@ export default function EditMoveDetailsModal({
                         )}
                     </select>
                   </Field>
-                  <Field
-                    label="Allocated job time (hours:minutes)"
-                    className="sm:col-span-2"
+                </div>
+                {/* Allocated job time + Margin alert pair. Sub-card so the
+                    two related "on-site time" fields read as one decision.
+                    The diff hint below the allocated input answers the
+                    question "did my change take effect?" before save. */}
+                <div className="rounded-lg border border-[var(--brd)]/50 bg-[var(--bg)]/40 p-3 sm:p-4 space-y-3">
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)]">
+                    On-site work time
+                  </p>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <Field label="Allocated job time (h:mm)">
+                      <input
+                        type="text"
+                        inputMode="text"
+                        autoComplete="off"
+                        value={allocatedJobHhMm}
+                        onChange={(e) => setAllocatedJobHhMm(e.target.value)}
+                        placeholder="e.g. 6:00"
+                        className={inputBase}
+                        aria-describedby="allocated-job-time-hint"
+                      />
+                      {initialAllocatedHhMm &&
+                        allocatedJobHhMm.trim() !== "" &&
+                        allocatedJobHhMm.trim() !== initialAllocatedHhMm && (
+                          <p className="mt-1.5 flex items-center gap-1.5 text-[10px] font-medium text-[var(--gold)]">
+                            <span className="text-[var(--tx3)]">
+                              {initialAllocatedHhMm}
+                            </span>
+                            <ArrowRight className="w-3 h-3" aria-hidden />
+                            <span>{allocatedJobHhMm.trim()}</span>
+                            <span className="text-[var(--tx3)]">
+                              · saves on confirm
+                            </span>
+                          </p>
+                        )}
+                    </Field>
+                    <Field label="Margin alert at (h:mm)">
+                      <input
+                        type="text"
+                        inputMode="text"
+                        autoComplete="off"
+                        value={marginAlertHhMm}
+                        onChange={(e) => setMarginAlertHhMm(e.target.value)}
+                        placeholder="auto (2× allocated)"
+                        className={inputBase}
+                      />
+                    </Field>
+                  </div>
+                  <p
+                    id="allocated-job-time-hint"
+                    className="text-[10px] text-[var(--tx3)] leading-snug"
                   >
-                    <input
-                      type="text"
-                      inputMode="text"
-                      autoComplete="off"
-                      value={allocatedJobHhMm}
-                      onChange={(e) => setAllocatedJobHhMm(e.target.value)}
-                      placeholder="e.g. 6:00"
-                      className={inputBase}
-                      aria-describedby="allocated-job-time-hint"
-                    />
-                    <p
-                      id="allocated-job-time-hint"
-                      className="mt-1.5 text-[10px] text-[var(--tx3)] leading-snug"
-                    >
-                      On-site work time for this job, separate from the arrival
-                      window. Use hours and minutes (for example 2:30). Leave
-                      blank to clear; the move can still fall back to quote
-                      estimated hours if those are set.
-                    </p>
-                  </Field>
+                    On-site work time for this job, separate from the arrival
+                    window. Use hours and minutes (for example 2:30). Margin
+                    alert defaults to 2× allocated when blank. Leave allocated
+                    blank to clear; the move can still fall back to quote
+                    estimated hours if those are set.
+                  </p>
                 </div>
               </section>
             </fieldset>
@@ -522,58 +593,71 @@ export default function EditMoveDetailsModal({
 
           {/* Crew & Coordinator */}
           {showAddresses && (
-            <section className="pt-4 border-t border-[var(--brd)]/60">
-              {crews.length > 0 && (
-                <fieldset
-                  disabled={
-                    isCompleted ||
-                    isMoveInProgress(initial.status, initial.stage)
-                  }
-                  className={
-                    isCompleted ||
-                    isMoveInProgress(initial.status, initial.stage)
-                      ? "opacity-70"
-                      : ""
-                  }
-                >
-                  <Field label="Crew (for live tracking)">
-                    <select
-                      value={crewId}
-                      onChange={(e) => setCrewId(e.target.value)}
-                      className={inputBase}
-                    >
-                      <option value="">No crew assigned</option>
-                      {crews.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                </fieldset>
-              )}
-              <Field
-                label="Coordinator"
-                className={crews.length > 0 ? "mt-4" : ""}
-              >
-                <input
-                  type="text"
-                  value={coordinatorName}
-                  onChange={(e) => setCoordinatorName(e.target.value)}
-                  placeholder="Coordinator name"
-                  className={inputBase}
+            <section className="rounded-xl border border-[var(--brd)]/70 bg-[var(--card)] p-4 sm:p-5 space-y-4">
+              <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
+                <Icon
+                  name="users"
+                  className="w-3.5 h-3.5 text-[var(--gold)]"
                 />
-              </Field>
+                Crew &amp; coordinator
+              </h3>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {crews.length > 0 && (
+                  <fieldset
+                    disabled={
+                      isCompleted ||
+                      isMoveInProgress(initial.status, initial.stage)
+                    }
+                    className={
+                      isCompleted ||
+                      isMoveInProgress(initial.status, initial.stage)
+                        ? "opacity-70"
+                        : ""
+                    }
+                  >
+                    <Field label="Crew (for live tracking)">
+                      <select
+                        value={crewId}
+                        onChange={(e) => setCrewId(e.target.value)}
+                        className={inputBase}
+                      >
+                        <option value="">No crew assigned</option>
+                        {crews.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </fieldset>
+                )}
+                <Field label="Coordinator">
+                  <input
+                    type="text"
+                    value={coordinatorName}
+                    onChange={(e) => setCoordinatorName(e.target.value)}
+                    placeholder="Coordinator name"
+                    className={inputBase}
+                  />
+                </Field>
+              </div>
             </section>
           )}
 
-          {/* Internal notes, shown when section is notes only, or in full modal under optional */}
+          {/* Internal notes + Complexity. Notes-only modal shows just the
+              textarea. Full modal shows a single card with both Complexity
+              indicators and Internal notes visible by default (was hidden
+              behind a chevron — but coordinators reach for these often
+              enough that the extra click was friction). */}
           {showNotes && (
-            <section
-              className={
-                showAddresses ? "pt-4 border-t border-[var(--brd)]/60" : ""
-              }
-            >
+            <section className="rounded-xl border border-[var(--brd)]/70 bg-[var(--card)] p-4 sm:p-5 space-y-4">
+              <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
+                <Icon
+                  name="fileText"
+                  className="w-3.5 h-3.5 text-[var(--gold)]"
+                />
+                {section === "notes" ? "Internal notes" : "Notes & complexity"}
+              </h3>
               {section === "notes" ? (
                 <Field label="Internal notes">
                   <textarea
@@ -585,74 +669,56 @@ export default function EditMoveDetailsModal({
                   />
                 </Field>
               ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setShowOptional(!showOptional)}
-                    className="flex items-center gap-2 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--gold)] transition-colors"
-                  >
-                    {showOptional ? (
-                      <ChevronDown className="w-4 h-4" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4" />
-                    )}
-                    {showOptional ? "Hide" : "Show"} optional details
-                  </button>
-                  {showOptional && (
-                    <div className="mt-4 space-y-4 pl-6 border-l-2 border-[var(--brd)]/50">
-                      <Field label="Complexity indicators">
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {COMPLEXITY_PRESETS.map((preset) => (
-                            <button
-                              key={preset}
-                              type="button"
-                              onClick={() => toggleComplexity(preset)}
-                              className={`px-3 py-1.5 rounded-md text-[11px] font-medium transition-all border ${
-                                complexityIndicators.includes(preset)
-                                  ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
-                                  : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
-                              }`}
-                            >
-                              {preset}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="flex gap-2">
-                          <input
-                            value={customComplexity}
-                            onChange={(e) =>
-                              setCustomComplexity(e.target.value)
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                addCustomComplexity();
-                              }
-                            }}
-                            placeholder="Add custom (Enter to add)"
-                            className={`${inputBase} flex-1`}
-                          />
-                          <button
-                            type="button"
-                            onClick={addCustomComplexity}
-                            className="px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-all shrink-0"
-                          >
-                            Add
-                          </button>
-                        </div>
-                      </Field>
-                      <Field label="Internal notes">
-                        <textarea
-                          value={internalNotes}
-                          onChange={(e) => setInternalNotes(e.target.value)}
-                          placeholder="Client preferences, special instructions, internal-only..."
-                          rows={3}
-                          className={`${inputBase} resize-none min-h-[72px]`}
-                        />
-                      </Field>
+                <div className="space-y-4">
+                  <Field label="Complexity indicators">
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {COMPLEXITY_PRESETS.map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => toggleComplexity(preset)}
+                          className={`px-3 py-1.5 rounded-md text-[11px] font-medium transition-all border ${
+                            complexityIndicators.includes(preset)
+                              ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                              : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
                     </div>
-                  )}
-                </>
+                    <div className="flex gap-2">
+                      <input
+                        value={customComplexity}
+                        onChange={(e) => setCustomComplexity(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addCustomComplexity();
+                          }
+                        }}
+                        placeholder="Add custom (Enter to add)"
+                        className={`${inputBase} flex-1`}
+                      />
+                      <button
+                        type="button"
+                        onClick={addCustomComplexity}
+                        className="px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:bg-[var(--gold)]/5 transition-all shrink-0"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </Field>
+                  <Field label="Internal notes">
+                    <textarea
+                      value={internalNotes}
+                      onChange={(e) => setInternalNotes(e.target.value)}
+                      placeholder="Client preferences, special instructions, internal-only..."
+                      rows={4}
+                      className={`${inputBase} resize-none min-h-[96px]`}
+                    />
+                  </Field>
+                </div>
               )}
             </section>
           )}
