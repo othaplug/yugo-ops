@@ -219,13 +219,20 @@ export async function POST(
     }
   }
 
-  // 3) Update the move totals. Mirrors the approve handler:
-  //    - amount / estimate: bumped by the pre-tax delta
-  //    - balance_amount: bumped by the pre-tax delta (client now owes more)
+  // 3) Update the move totals.
+  //    - amount / estimate: pre-tax engine total, bumped by preTaxDelta.
+  //    - balance_amount: TAX-INCLUSIVE remaining (matches the OVERDUE
+  //      card's display: contract incl HST minus collected). We add the
+  //      full tax-inclusive delta (preTax + HST), NOT just preTaxDelta,
+  //      so the new balance reflects what the client actually owes.
+  //      Earlier versions of this route added only preTaxDelta which
+  //      silently understated the new balance by the HST portion.
   //    - total_paid: freeze at current amount when the move was already
-  //      marked paid so the new delta shows as additional balance owing
+  //      marked paid so the new delta shows as additional balance owing.
   const curBalance = Number(move.balance_amount) || 0;
-  const newBalance = Math.max(0, curBalance + preTaxDelta);
+  const inclusiveDelta =
+    Math.round((preTaxDelta + hstDelta) * 100) / 100;
+  const newBalance = Math.max(0, curBalance + inclusiveDelta);
   const movePaid = !!(
     move.balance_paid_at ||
     move.payment_marked_paid ||

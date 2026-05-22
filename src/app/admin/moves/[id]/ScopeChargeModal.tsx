@@ -103,18 +103,18 @@ export default function ScopeChargeModal({
   onClose,
   moveId,
   moveCode,
-  currentBalancePreTax,
+  currentBalanceInclHst,
   onApplied,
 }: {
   open: boolean;
   onClose: () => void;
   moveId: string;
   moveCode: string | null;
-  /** Pre-tax outstanding balance — same number rendered on the Money tab's
-   *  OVERDUE card, with HST broken out below. The modal renders HST
-   *  separately so the numbers in this preview match what the admin sees
-   *  on the page they clicked from. */
-  currentBalancePreTax: number;
+  /** Tax-inclusive outstanding balance — same number rendered on the Money
+   *  tab's OVERDUE card. balance_amount in this system already includes
+   *  HST (it tracks "contract incl HST minus collected"); the modal must
+   *  not re-apply HST to it or the preview double-taxes. */
+  currentBalanceInclHst: number;
   /** Parent calls router.refresh + setMove on the returned values. */
   onApplied: (result: {
     new_amount: number;
@@ -169,17 +169,14 @@ export default function ScopeChargeModal({
     [preTaxDelta],
   );
 
-  // Display math — mirrors the Money tab card. Pre-tax balances are the
-  // headline numbers; HST is shown as separate "+$X HST" lines so the
-  // admin can verify against the OVERDUE card without doing arithmetic.
-  const currentHst = useMemo(
-    () => Math.round(currentBalancePreTax * HST_RATE * 100) / 100,
-    [currentBalancePreTax],
-  );
-  const newPreTax =
-    Math.round((currentBalancePreTax + preTaxDelta) * 100) / 100;
-  const newHst = Math.round(newPreTax * HST_RATE * 100) / 100;
-  const newTotal = newPreTax + newHst;
+  // balance_amount in this system is tax-inclusive (matches the OVERDUE
+  // card display: contract incl HST − collected). The new charge enters
+  // pre-tax via the input above; we compute the HST on the charge and add
+  // the tax-inclusive total to the current balance. No HST is re-applied
+  // to the existing balance — that was the double-taxing bug.
+  const totalAdditionInclHst = preTaxDelta + hstDelta;
+  const newBalanceInclHst =
+    Math.round((currentBalanceInclHst + totalAdditionInclHst) * 100) / 100;
 
   const toggleReason = (r: ScopeReason) =>
     setReasons((prev) => {
@@ -276,10 +273,9 @@ export default function ScopeChargeModal({
         {/* Context banner */}
         <div className="rounded-lg border border-amber-400/40 bg-amber-50/60 px-3 py-2.5 text-[11px] text-amber-900 leading-snug">
           Mid-job scope additions are super-admin only and trigger an immediate
-          client notification. Pre-tax balance jumps to{" "}
-          <strong>{formatCurrency(newPreTax)}</strong>
-          {newHst > 0 ? <> (+{formatCurrency(newHst)} HST)</> : null} if you
-          submit this charge.
+          client notification. Outstanding balance jumps to{" "}
+          <strong>{formatCurrency(newBalanceInclHst)}</strong> (incl. HST) if
+          you submit this charge.
         </div>
 
         {/* Reason chips */}
@@ -470,41 +466,37 @@ export default function ScopeChargeModal({
           />
         </section>
 
-        {/* Preview. Pre-tax balance is the headline (matches the Money
-            tab's OVERDUE card); HST renders as a +line so the admin can
-            cross-check the visible numbers without doing tax arithmetic
-            in their head. */}
+        {/* Preview. balance_amount is tax-inclusive in this system, so we
+            display "Current outstanding (incl. HST)" directly without
+            re-adding HST. The new charge entered by the admin is pre-tax;
+            we compute the HST on that charge and add the total addition
+            to the current balance. */}
         <section className="rounded-xl border border-[var(--brd)]/70 bg-[var(--bg)]/40 p-4 space-y-1.5">
           <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-1">
             Preview
           </h3>
           <PreviewRow
-            label="Current pre-tax balance"
-            value={formatCurrency(currentBalancePreTax)}
-          />
-          <PreviewRow
-            label="+ HST (13%)"
-            value={formatCurrency(currentHst)}
+            label="Current outstanding (incl. HST)"
+            value={formatCurrency(currentBalanceInclHst)}
           />
           <div className="my-1.5 border-t border-[var(--brd)]/30" />
           <PreviewRow
-            label="Pre-tax delta"
+            label="Charge (pre-tax)"
             value={`+${formatCurrency(preTaxDelta)}`}
           />
           <PreviewRow
-            label="HST delta"
+            label="HST on charge (13%)"
             value={`+${formatCurrency(hstDelta)}`}
+          />
+          <PreviewRow
+            label="Total addition (incl. HST)"
+            value={`+${formatCurrency(totalAdditionInclHst)}`}
+            strong
           />
           <div className="my-1.5 border-t border-[var(--brd)]/30" />
           <PreviewRow
-            label="New pre-tax balance"
-            value={formatCurrency(newPreTax)}
-            strong
-          />
-          <PreviewRow label="+ HST (13%)" value={formatCurrency(newHst)} />
-          <PreviewRow
-            label="New total outstanding"
-            value={formatCurrency(newTotal)}
+            label="New outstanding (incl. HST)"
+            value={formatCurrency(newBalanceInclHst)}
             strong
             highlight
           />
