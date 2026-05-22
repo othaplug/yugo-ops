@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   const { data: moveRow, error: moveErr } = await admin
     .from("moves")
     .select(
-      "id, move_code, client_name, organization_id, to_address, delivery_address, amount, estimate, is_pm_move, completed_at, final_amount",
+      "id, move_code, client_name, organization_id, from_address, to_address, delivery_address, amount, estimate, is_pm_move, completed_at, scheduled_date, final_amount, unit_number, tenant_name, pm_move_kind, pm_reason_code, service_type",
     )
     .eq("id", moveId)
     .single();
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   const { data: org } = await admin
     .from("organizations")
     .select(
-      "name, email, contact_name, type, invoice_due_days, invoice_due_day_of_month, billing_method",
+      "name, email, contact_name, type, vertical, invoice_due_days, invoice_due_day_of_month, billing_method",
     )
     .eq("id", move.organization_id)
     .single();
@@ -152,6 +152,13 @@ export async function POST(req: NextRequest) {
   let squareInvoiceUrl: string | null = null;
 
   if (amount > 0) {
+    // moveDate drives the service-period label on the invoice title.
+    const moveDateRaw =
+      (move as { scheduled_date?: string | null; completed_at?: string | null })
+        .scheduled_date ??
+      (move as { completed_at?: string | null }).completed_at ??
+      null;
+    const moveDate = moveDateRaw ? new Date(moveDateRaw) : new Date();
     const result = await createAndPublishSquareInvoice({
       deliveryId: moveId,
       deliveryNumber: refCode,
@@ -167,6 +174,12 @@ export async function POST(req: NextRequest) {
           ? org.invoice_due_day_of_month
           : null,
       jobType: "move",
+      partnerVertical:
+        (org as { vertical?: string | null }).vertical || org.type || null,
+      buildingName: (move.from_address ?? move.to_address) || null,
+      billingPeriodStart: moveDate,
+      billingPeriodEnd: moveDate,
+      moveCode: move.move_code,
     });
     if (result) {
       squareInvoiceId = result.squareInvoiceId;

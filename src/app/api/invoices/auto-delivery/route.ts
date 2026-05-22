@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   const { data: delivery, error: delErr } = await admin
     .from("deliveries")
     .select(
-      "id, delivery_number, business_name, customer_name, client_name, organization_id, delivery_address, admin_adjusted_price, total_price, quoted_price, items"
+      "id, delivery_number, business_name, customer_name, client_name, organization_id, delivery_address, scheduled_date, created_at, admin_adjusted_price, total_price, quoted_price, items"
     )
     .eq("id", deliveryId)
     .single();
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   const { data: org } = await admin
     .from("organizations")
     .select(
-      "name, email, contact_name, type, invoice_due_days, invoice_due_day_of_month, billing_method",
+      "name, email, contact_name, type, vertical, invoice_due_days, invoice_due_day_of_month, billing_method",
     )
     .eq("id", delivery.organization_id)
     .single();
@@ -107,6 +107,12 @@ export async function POST(req: NextRequest) {
   let squareInvoiceUrl: string | null = null;
 
   if (amount > 0) {
+    const deliveryDateRaw =
+      (delivery as { scheduled_date?: string | null; created_at?: string | null })
+        .scheduled_date ??
+      (delivery as { created_at?: string | null }).created_at ??
+      null;
+    const deliveryDate = deliveryDateRaw ? new Date(deliveryDateRaw) : new Date();
     const result = await createAndPublishSquareInvoice({
       deliveryId,
       deliveryNumber: delivery.delivery_number || deliveryId.slice(0, 8),
@@ -119,6 +125,10 @@ export async function POST(req: NextRequest) {
       invoiceDueDays: org.invoice_due_days === 15 ? 15 : 30,
       invoiceDueDayOfMonth: org.invoice_due_day_of_month === 15 || org.invoice_due_day_of_month === 30 ? org.invoice_due_day_of_month : null,
       jobType: "delivery",
+      partnerVertical:
+        (org as { vertical?: string | null }).vertical || org.type || null,
+      billingPeriodStart: deliveryDate,
+      billingPeriodEnd: deliveryDate,
     });
     if (result) {
       squareInvoiceId = result.squareInvoiceId;

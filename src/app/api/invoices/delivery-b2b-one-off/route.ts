@@ -96,6 +96,12 @@ export async function POST(req: NextRequest) {
   const dueDays = 14;
   const dueDate = new Date(Date.now() + dueDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
+  const deliveryDateRaw =
+    (delivery as { scheduled_date?: string | null; created_at?: string | null })
+      .scheduled_date ??
+    (delivery as { created_at?: string | null }).created_at ??
+    null;
+  const deliveryDate = deliveryDateRaw ? new Date(deliveryDateRaw) : new Date();
   const squareResult = await createAndPublishSquareInvoice({
     deliveryId: deliveryUuid,
     deliveryNumber: delivery.delivery_number || deliveryUuid.slice(0, 8),
@@ -107,6 +113,12 @@ export async function POST(req: NextRequest) {
     contactName: bizName,
     invoiceDueDays: dueDays,
     invoiceDueDayOfMonth: null,
+    jobType: "delivery",
+    // B2B one-off has no partner org, so no vertical — falls back to the
+    // generic "Delivery Services" title.
+    partnerVertical: null,
+    billingPeriodStart: deliveryDate,
+    billingPeriodEnd: deliveryDate,
   });
 
   if (!squareResult) {
