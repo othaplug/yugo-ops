@@ -1542,6 +1542,10 @@ export default function QuoteFormClient({
     "" | "origin" | "destination" | "both"
   >("");
   const [junkItemsDescription, setJunkItemsDescription] = useState("");
+  // Item count drives the single-item flat junk formula ($149 + $50/extra
+  // beyond the first 2). Stays null/0 for residential moves — their
+  // junk_removal pricing uses the addons.junk_removal tier instead.
+  const [junkItemsCount, setJunkItemsCount] = useState<number>(1);
 
   // White glove
   const [declaredValue, setDeclaredValue] = useState("");
@@ -2783,6 +2787,12 @@ export default function QuoteFormClient({
           (Q as { junk_items_description?: unknown }).junk_items_description,
         );
         if (jpItems) setJunkItemsDescription(jpItems);
+        const jpCount = Number(
+          (Q as { junk_items_count?: unknown }).junk_items_count ?? NaN,
+        );
+        if (Number.isFinite(jpCount) && jpCount > 0) {
+          setJunkItemsCount(Math.floor(jpCount));
+        }
 
         // ── factors_applied source for every-other field ──
         const fa =
@@ -4679,6 +4689,9 @@ export default function QuoteFormClient({
         if (junkItemsDescription.trim()) {
           base.junk_items_description = junkItemsDescription.trim();
         }
+        if (junkItemsCount > 0) {
+          base.junk_items_count = Math.floor(junkItemsCount);
+        }
       }
       if (serviceType === "white_glove") {
         const items = whiteGloveItemRows
@@ -5141,6 +5154,7 @@ export default function QuoteFormClient({
       singleItemRows,
       junkPickupFrom,
       junkItemsDescription,
+      junkItemsCount,
       specialtyBuildingReqs,
       specialtyAccessDifficulty,
       binBundleType,
@@ -8464,6 +8478,36 @@ export default function QuoteFormClient({
                           className={`${fieldInput} resize-y min-h-[56px]`}
                         />
                       </Field>
+                      {/* Single-item-only: item count drives the flat formula.
+                          Residential junk removal uses the addons tier instead,
+                          so this field is hidden there. */}
+                      {serviceType === "single_item" && (
+                        <div className="flex items-end gap-3">
+                          <Field label="How many items?">
+                            <input
+                              type="number"
+                              min={1}
+                              max={20}
+                              value={junkItemsCount}
+                              onChange={(e) =>
+                                setJunkItemsCount(
+                                  Math.max(
+                                    1,
+                                    Math.floor(Number(e.target.value) || 1),
+                                  ),
+                                )
+                              }
+                              className={`${fieldInput} w-20`}
+                            />
+                          </Field>
+                          <p className="text-[10px] text-[var(--tx3)] leading-snug pb-2">
+                            Flat $149 covers up to 2 items, +$50 per extra.{" "}
+                            {junkItemsCount > 2
+                              ? `Estimated: $${149 + (junkItemsCount - 2) * 50}`
+                              : "Estimated: $149"}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

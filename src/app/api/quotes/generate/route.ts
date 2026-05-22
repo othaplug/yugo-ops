@@ -228,6 +228,8 @@ interface QuoteInput {
   junk_pickup_from?: "origin" | "destination" | "both";
   /** Internal-only items list. Helps coordinator size the truck tier. */
   junk_items_description?: string;
+  /** Approximate item count being hauled (single_item flat-formula pricing). */
+  junk_items_count?: number;
   // White glove
   declared_value?: number;
   /** Multi-line curated delivery items (preferred). Legacy single-line fields remain as fallback. */
@@ -2329,24 +2331,49 @@ async function calcSingleItem(
   const truckSi = normalizeTruckType(input.truck_type ?? defaultTruck);
   price += plcSi.total + getTruckFeeSync(truckSi, config);
 
-  // ── Junk-removal stop fee ──────────────────────────────────────────────
-  // The addons.junk_removal tier already covers disposal + truck volume.
-  // This is the LABOUR fee for the time spent loading junk at the move
-  // pickup/delivery — no distance math, no drop address.
+  // ── Junk-removal: single-item flat formula ─────────────────────────────
+  // Single-item junk pricing differs from residential:
+  //   residential → addons.junk_removal tier price (truck volume) + stop fee
+  //   single_item → flat $149 base for ≤2 items, +$50 per extra item
+  //                 (junk_items_count). No stop fee, no distance math.
+  //
+  // The coordinator still picks a tier on the addon (the UI requires a
+  // selection for tiered addons) but we IGNORE the tier's $ price for
+  // single_item and apply the flat formula instead. We subtract the
+  // tier's contribution from addonResult below so it isn't double-charged.
   const junkPickupFrom = (input.junk_pickup_from || "").trim();
   const isJunkAddonSelected = (addonResult.breakdown || []).some(
     (b) => (b.slug || "").toLowerCase() === "junk_removal",
   );
-  const junkOneSide = cfgNum(config, "junk_stop_fee_one_side", 50);
-  const junkBothSides = cfgNum(config, "junk_stop_fee_both_sides", 100);
+  const junkAddonTierAmount = isJunkAddonSelected
+    ? (addonResult.breakdown || []).reduce(
+        (s, b) =>
+          (b.slug || "").toLowerCase() === "junk_removal"
+            ? s + (b.price ?? 0)
+            : s,
+        0,
+      )
+    : 0;
+
   let junkStopFee = 0;
-  if (isJunkAddonSelected && junkPickupFrom) {
-    if (junkPickupFrom === "both") junkStopFee = junkBothSides;
-    else if (junkPickupFrom === "origin" || junkPickupFrom === "destination") {
-      junkStopFee = junkOneSide;
-    }
+  let singleItemJunkFlat = 0;
+  if (isJunkAddonSelected) {
+    const junkBase = cfgNum(config, "single_item_junk_removal_base", 149);
+    const junkPerExtra = cfgNum(
+      config,
+      "single_item_junk_removal_per_extra",
+      50,
+    );
+    const itemsCount = Math.max(
+      1,
+      Math.floor(Number(input.junk_items_count ?? 1)),
+    );
+    const extras = Math.max(0, itemsCount - 2);
+    singleItemJunkFlat = junkBase + extras * junkPerExtra;
+    void junkPickupFrom; // captured below for factors; not used for pricing on single_item
   }
-  price += junkStopFee;
+  // Note: junkStopFee stays 0 for single_item — the flat fee covers labour.
+  price += junkStopFee + singleItemJunkFlat;
 
   // Round + floor
   const roundingSi = cfgNum(config, "rounding_nearest", 25);
@@ -2377,9 +2404,10 @@ async function calcSingleItem(
       )
     : 0;
 
-  // Addons (includes junk_removal tier price) folded in last, minus any
-  // double-counted assembly addons.
-  price += addonResult.total - suppressedAddonTotal;
+  // Addons folded in last, minus any double-counted assembly addons AND
+  // minus the junk_removal tier price (which we replaced with the flat
+  // single_item formula above).
+  price += addonResult.total - suppressedAddonTotal - junkAddonTierAmount;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
   const deposit = await calculateDeposit(sb, "single_item", price);
@@ -2449,6 +2477,23 @@ async function calcSingleItem(
       junk_pickup_from: junkPickupFrom || null,
       junk_items_description: input.junk_items_description?.trim() || null,
       junk_stop_fee: junkStopFee,
+      // Single-item junk flat formula breakdown — surfaces so admin can
+      // see "$149 base + 2 extras × $50 = $249" instead of a magic number.
+      junk_items_count: input.junk_items_count ?? null,
+      single_item_junk_flat: singleItemJunkFlat,
+      single_item_junk_base: cfgNum(
+        config,
+        "single_item_junk_removal_base",
+        149,
+      ),
+      single_item_junk_per_extra: cfgNum(
+        config,
+        "single_item_junk_removal_per_extra",
+        50,
+      ),
+      // Tier price we suppressed (the addons.junk_removal tier dollar
+      // value), so the admin breakdown is auditable.
+      junk_addon_tier_amount_suppressed: junkAddonTierAmount,
       // Surfaced so admin + client surfaces can show "Assembly already
       // included from item selection" instead of charging twice.
       assembly_addon_suppressed: itemsHaveAssembly,
@@ -4961,6 +5006,11 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
             junk_pickup_from: input.junk_pickup_from ?? null,
             junk_items_description:
               input.junk_items_description?.trim() || null,
+            junk_items_count:
+              typeof input.junk_items_count === "number" &&
+              input.junk_items_count > 0
+                ? Math.floor(input.junk_items_count)
+                : null,
           }
         : {}),
       // ── Version tracking (in-place updates only) ──────────────────────
