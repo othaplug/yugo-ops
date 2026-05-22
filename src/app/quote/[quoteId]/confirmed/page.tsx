@@ -5,6 +5,7 @@ import { formatMoveDate } from "@/lib/date-format";
 import { TIER_LABELS } from "@/lib/displayLabels";
 import { getCompanyPhone, getCompanyEmail } from "@/lib/config";
 import YugoMarketingFooter from "@/components/YugoMarketingFooter";
+import YugoLogo from "@/components/YugoLogo";
 
 export const dynamic = "force-dynamic";
 
@@ -101,9 +102,11 @@ export default async function QuoteConfirmedPage({
     <div className="min-h-screen bg-[#F9EDE4]">
       {/* Header */}
       <div className="bg-[#2B0416] px-6 py-12 text-center">
-        <p className="text-[10px] tracking-[0.32em] text-[#F9EDE4]/55 uppercase mb-6 font-medium">
-          Yugo
-        </p>
+        {/* Real YUGO logo (cream on wine) — the brand mark should never
+            appear as a styled text fallback. */}
+        <div className="flex items-center justify-center mb-6">
+          <YugoLogo size={28} variant="cream" />
+        </div>
         <div className="w-10 h-10 rounded-full bg-[#F9EDE4]/10 border border-[#F9EDE4]/20 flex items-center justify-center mx-auto mb-4">
           <svg
             viewBox="0 0 20 20"

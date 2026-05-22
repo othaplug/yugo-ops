@@ -271,6 +271,14 @@ interface JobDetail {
   buildingContactName?: string | null;
   buildingContactPhone?: string | null;
   boxEstimate?: number | null;
+  /** Server-side walkthrough completion state. Used to sync local UI
+   *  state on mount/refresh so the walkthrough modal doesn't re-fire after
+   *  the crew has already completed or skipped it. */
+  walkthroughCompleted?: boolean;
+  walkthroughSkipped?: boolean;
+  /** Set when the crew has already submitted the post-move building report
+   *  so the report card stays hidden on subsequent visits. */
+  buildingReportSubmittedAt?: string | null;
   /** Residential multi-day move_projects context for this calendar day */
   moveProjectDay?: {
     projectId: string;
@@ -551,6 +559,17 @@ export default function CrewJobPage({
     }
   }, [job?.id, job?.isPmContractMove, job?.tenantPresent, jobType]);
 
+  // Sync walkthrough flags from the server. Without this, walkthroughDone and
+  // walkthroughSkipped reset to false on every page refresh (they're local
+  // state), and the modal re-fires for a crew that already completed it.
+  // This was the cause of crews getting stuck in an inventory-check loop
+  // mid-job and having to refresh repeatedly with no effect.
+  useEffect(() => {
+    if (!job) return;
+    if (job.walkthroughCompleted) setWalkthroughDone(true);
+    if (job.walkthroughSkipped) setWalkthroughSkipped(true);
+  }, [job?.walkthroughCompleted, job?.walkthroughSkipped]);
+
   useEffect(() => {
     if (
       currentStatus === "arrived_at_pickup" &&
@@ -702,9 +721,14 @@ export default function CrewJobPage({
       setNote("");
       await fetchSession();
       if (status === "arrived_at_pickup") {
-        setWalkthroughModalOpen(true);
-        setWalkthroughDone(false);
-        setWalkthroughSkipped(false);
+        // Only force-open the walkthrough modal if it has not already been
+        // completed or skipped server-side. Previously this also reset the
+        // local "done" flags to false, which caused the modal to re-prompt
+        // every time the crew refreshed mid-job (walkthrough state is now
+        // sourced from job.walkthroughCompleted / job.walkthroughSkipped).
+        if (!job?.walkthroughCompleted && !job?.walkthroughSkipped) {
+          setWalkthroughModalOpen(true);
+        }
       }
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "Failed");
@@ -1609,7 +1633,7 @@ export default function CrewJobPage({
             </Link>
           )}
 
-          {jobCompleted && jobType === "move" && (
+          {jobCompleted && jobType === "move" && !job.buildingReportSubmittedAt && (
             <CrewBuildingReportCard
               moveId={job.id}
               fromAddress={job.fromAddress}

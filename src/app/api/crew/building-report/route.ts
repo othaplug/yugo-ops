@@ -339,6 +339,16 @@ export async function POST(req: NextRequest) {
       if (result.error) return NextResponse.json({ error: result.error }, { status: 500 })
       results.push(result)
     }
+    // Tag the move so the crew page knows the post-move building report is
+    // done. Without this, CrewBuildingReportCard's `done` state was purely
+    // local and reset on every mount — the card reappeared after the crew
+    // ran the equipment check and came back to the job page.
+    if (body.moveId) {
+      await admin
+        .from("moves")
+        .update({ building_report_submitted_at: new Date().toISOString() })
+        .eq("id", body.moveId)
+    }
     return NextResponse.json({ results })
   }
 

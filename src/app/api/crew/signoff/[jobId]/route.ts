@@ -390,23 +390,45 @@ export async function POST(
       : null;
 
   const completedAt = (inserted.signed_at as string) || now;
-  const { wasAlreadyComplete, ok: completeOk, error: completeErr } = await ensureJobCompleted(admin, {
-    jobId: entityId,
-    jobType,
-    completedAt,
-    actualHours,
-  });
+  let { wasAlreadyComplete, ok: completeOk, error: completeErr } =
+    await ensureJobCompleted(admin, {
+      jobId: entityId,
+      jobType,
+      completedAt,
+      actualHours,
+    });
 
+  // First-attempt failures from ensureJobCompleted are usually transient
+  // (write race, stale read after the sign-off insert just landed). Before
+  // this fix, the API returned 503 and the crew had to tap "Submit" again,
+  // which then went through the "already exists" repair path and succeeded.
+  // We now run repairJobCompletionFromEvidence inline as a fallback so the
+  // first tap completes the job in the same request — sign-off is already
+  // saved, no duplicate-tap needed.
   if (!completeOk) {
-    console.error("[signoff] ensureJobCompleted failed:", completeErr);
-    return NextResponse.json(
-      {
-        error:
-          "Sign-off was saved but the job could not be marked complete in the system. Tap submit again or contact the office.",
-        code: "COMPLETION_SYNC_FAILED",
-      },
-      { status: 503 },
+    console.warn(
+      "[signoff] ensureJobCompleted soft-failed, attempting repair:",
+      completeErr,
     );
+    const repair = await repairJobCompletionFromEvidence(
+      admin,
+      entityId,
+      jobType,
+    );
+    if (repair.ok) {
+      completeOk = true;
+      wasAlreadyComplete = !repair.transitioned;
+    } else {
+      console.error("[signoff] repair after ensureJobCompleted failed:", repair.error);
+      return NextResponse.json(
+        {
+          error:
+            "Sign-off was saved but the job could not be marked complete in the system. Tap submit again or contact the office.",
+          code: "COMPLETION_SYNC_FAILED",
+        },
+        { status: 503 },
+      );
+    }
   }
 
   // Create Proof of Delivery record (after the job is terminal in the database).

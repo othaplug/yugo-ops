@@ -4999,7 +4999,7 @@ function CrewChangeRequestBanner({
 
         <div className="border-t border-amber-400/20 pt-2 mt-1">
           <div className="flex items-center justify-between text-[14px] font-bold text-amber-800">
-            <span>Additional charge</span>
+            <span>{added.length === 0 ? "Credit owed" : "Additional charge"}</span>
             <span>
               {total >= 0
                 ? `$${total.toFixed(2)}`
@@ -5014,27 +5014,47 @@ function CrewChangeRequestBanner({
         {error && <p className="mt-2 text-[12px] text-red-500">{error}</p>}
       </div>
 
-      <div className="grid grid-cols-2 border-t border-amber-400/20">
+      {/* Action footer.
+          When `added.length > 0` (the client is being charged for items that
+          weren't on the original quote), show Approve & Pay / Decline.
+          When ONLY items were removed (credit owed back to the client),
+          there's nothing to approve or pay — show a single Acknowledge
+          action that auto-applies the credit. The old "Approve & Pay $-83"
+          / "Decline Extras" pair made no sense for a refund scenario. */}
+      {added.length > 0 ? (
+        <div className="grid grid-cols-2 border-t border-amber-400/20">
+          <button
+            onClick={handleApprove}
+            disabled={approving || declining}
+            className="py-3 text-[13px] font-bold text-white disabled:opacity-50 transition-all active:scale-[0.98]"
+            style={{ background: "linear-gradient(135deg, #2C3E2D, #1C3A2B)" }}
+          >
+            {approving
+              ? "Processing…"
+              : hasCardOnFile
+                ? `Approve & Pay $${total.toFixed(2)}`
+                : "Approve"}
+          </button>
+          <button
+            onClick={handleDecline}
+            disabled={approving || declining}
+            className="py-3 text-[13px] font-medium text-amber-700 hover:bg-amber-400/10 disabled:opacity-50 transition-colors"
+          >
+            {declining ? "…" : "Decline Extras"}
+          </button>
+        </div>
+      ) : (
         <button
           onClick={handleApprove}
           disabled={approving || declining}
-          className="py-3 text-[13px] font-bold text-white disabled:opacity-50 transition-all active:scale-[0.98]"
+          className="block w-full py-3 text-[13px] font-bold text-white disabled:opacity-50 transition-all active:scale-[0.98] border-t border-amber-400/20"
           style={{ background: "linear-gradient(135deg, #2C3E2D, #1C3A2B)" }}
         >
           {approving
-            ? "Processing…"
-            : hasCardOnFile
-              ? `Approve & Pay $${total.toFixed(2)}`
-              : "Approve"}
+            ? "Applying credit…"
+            : `Acknowledge credit of $${Math.abs(total).toFixed(2)}`}
         </button>
-        <button
-          onClick={handleDecline}
-          disabled={approving || declining}
-          className="py-3 text-[13px] font-medium text-amber-700 hover:bg-amber-400/10 disabled:opacity-50 transition-colors"
-        >
-          {declining ? "…" : "Decline Extras"}
-        </button>
-      </div>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { CheckCircle, CircleNotch, Check, ArrowRight } from "@phosphor-icons/react";
+import YugoLogo from "@/components/YugoLogo";
 
 interface WalkthroughItem {
   id: string;
@@ -89,7 +90,9 @@ export default function RemoteWalkthroughPage() {
     return (
       <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center p-6">
         <div className="max-w-sm w-full text-center">
-          <p className="text-xl font-bold tracking-[4px] text-[#2B0416] mb-6">YUGO</p>
+          <div className="flex justify-center mb-6">
+            <YugoLogo size={32} variant="wine" onLightBackground />
+          </div>
           <p className="text-base font-medium text-[#2B0416] mb-2">Link not found</p>
           <p className="text-sm text-gray-500">{errorMessage}</p>
         </div>
@@ -101,7 +104,9 @@ export default function RemoteWalkthroughPage() {
     return (
       <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center p-6">
         <div className="max-w-sm w-full text-center">
-          <p className="text-xl font-bold tracking-[4px] text-[#2B0416] mb-8">YUGO</p>
+          <div className="flex justify-center mb-8">
+            <YugoLogo size={32} variant="wine" onLightBackground />
+          </div>
           <div className="w-16 h-16 rounded-full bg-[#2C3E2D]/10 flex items-center justify-center mx-auto mb-5">
             <CheckCircle size={32} weight="fill" className="text-[#2C3E2D]" aria-hidden />
           </div>
@@ -137,7 +142,9 @@ export default function RemoteWalkthroughPage() {
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="text-center mb-7 pt-4">
-          <p className="text-xl font-bold tracking-[4px] text-[#2B0416]">YUGO</p>
+          <div className="flex justify-center">
+            <YugoLogo size={28} variant="wine" onLightBackground />
+          </div>
           <p className="text-xs text-gray-400 mt-1 tracking-wide uppercase">Move walkthrough</p>
         </div>
 

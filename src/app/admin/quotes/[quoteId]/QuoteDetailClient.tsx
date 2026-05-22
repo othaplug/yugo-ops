@@ -1760,6 +1760,53 @@ export default function QuoteDetailClient({
                         : null;
                     if (quote.tiers) {
                       const t = quote.tiers as Record<string, any>;
+                      // When the client has locked in a tier (booked / paid
+                      // deposit / external booking recorded), the accepted
+                      // amount is the only one that matters — surface it
+                      // singly instead of the original lo–hi range. The
+                      // booked tier is stored in `selected_tier` (set by
+                      // checkout / external-booking flow); we treat the
+                      // presence of a linked move/delivery as a separate
+                      // confirmation signal.
+                      const bookedTierKey =
+                        (typeof quote.selected_tier === "string" &&
+                          t[quote.selected_tier]) ||
+                        (typeof quote.recommended_tier === "string" &&
+                        (linkedMoveCode || linkedDeliveryNumber) &&
+                        t[quote.recommended_tier]
+                          ? quote.recommended_tier
+                          : null)
+                          ? (quote.selected_tier as string) ||
+                            (quote.recommended_tier as string)
+                          : null;
+                      const bookedPrice =
+                        bookedTierKey && t[bookedTierKey]
+                          ? Number(t[bookedTierKey].price)
+                          : null;
+                      if (bookedPrice != null && Number.isFinite(bookedPrice)) {
+                        const tierLabelOut =
+                          bookedTierKey === "estate"
+                            ? "Estate"
+                            : bookedTierKey === "signature"
+                              ? "Signature"
+                              : bookedTierKey === "essential"
+                                ? "Essential"
+                                : bookedTierKey;
+                        return (
+                          <>
+                            <p className="text-[22px] font-bold text-[var(--gold)] font-heading leading-tight">
+                              {fmtCurrency(bookedPrice)}
+                            </p>
+                            <p className="text-[10px] text-[var(--tx3)]/82 mt-0.5">
+                              +{fmtCurrency(Math.round(bookedPrice * HST))} HST (13%)
+                              {" · "}
+                              <span className="text-[var(--gold)]/85 font-semibold">
+                                {tierLabelOut} tier locked
+                              </span>
+                            </p>
+                          </>
+                        );
+                      }
                       const prices = Object.values(t).map(
                         (v: any) => v.price as number,
                       );

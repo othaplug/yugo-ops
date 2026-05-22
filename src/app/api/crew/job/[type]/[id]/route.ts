@@ -856,5 +856,21 @@ export async function GET(
       (m as { client_box_count?: number | null }).client_box_count != null
         ? Math.round(Number((m as { client_box_count?: number | null }).client_box_count))
         : null,
+    // Persisted walkthrough state — read by the crew page so that refreshing
+    // doesn't reset the local `walkthroughDone` flag and re-fire the
+    // walkthrough modal mid-job. See WalkthroughModal callers in
+    // src/app/crew/dashboard/job/[type]/[id]/page.tsx.
+    walkthroughCompleted: Boolean(
+      (m as { walkthrough_completed?: boolean | null }).walkthrough_completed,
+    ),
+    walkthroughSkipped: Boolean(
+      (m as { walkthrough_skipped?: boolean | null }).walkthrough_skipped,
+    ),
+    // Persisted building-report state — coordinator-facing post-move report.
+    // When set, the CrewBuildingReportCard stays hidden so it doesn't
+    // re-prompt after the equipment check.
+    buildingReportSubmittedAt:
+      (m as { building_report_submitted_at?: string | null })
+        .building_report_submitted_at ?? null,
   });
 }

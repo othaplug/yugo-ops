@@ -280,15 +280,38 @@ function TrackingStatusOverlay({
               {CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)}
             </div>
             <div className="text-[11px] text-[var(--tx3)]">
-              {liveStage === "loading"
-                ? "Crew is loading items"
-                : liveStage === "unloading"
-                  ? "Crew is unloading items"
-                  : liveStage === "completed"
-                    ? "Move is complete"
-                    : liveStage === "scheduled"
-                      ? "Crew hasn't departed yet"
-                      : "Crew is on the way"}
+              {(() => {
+                // Match the subtitle to the actual stage so the badge never
+                // contradicts itself. Previous fallback was "Crew is on the
+                // way" for every stage we didn't handle — including
+                // "Arrived at Pickup" and en-route variants.
+                switch (liveStage) {
+                  case "loading":
+                    return "Crew is loading items";
+                  case "unloading":
+                    return "Crew is unloading items";
+                  case "arrived_at_pickup":
+                  case "arrived":
+                    return "Crew is at pickup, preparing to load";
+                  case "arrived_at_destination":
+                    return "Crew is at the destination";
+                  case "in_transit":
+                  case "en_route_to_destination":
+                  case "en_route_venue":
+                  case "en_route_return":
+                    return "Crew is on the way to destination";
+                  case "en_route_to_pickup":
+                  case "en_route":
+                  case "dispatched":
+                    return "Crew is on the way to pickup";
+                  case "completed":
+                    return "Move is complete";
+                  case "scheduled":
+                    return "Crew hasn't departed yet";
+                  default:
+                    return "Crew is on the way";
+                }
+              })()}
             </div>
           </>
         ) : null}
