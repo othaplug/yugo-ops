@@ -1007,7 +1007,9 @@ export default function TrackDeliveryClient({
                     {displayEta != null
                       ? `~${displayEta} min`
                       : isCompleted
-                        ? "Complete"
+                        ? stepCompletedAt?.[3]
+                          ? `Complete · ${formatStepCompletedTime(stepCompletedAt[3])}`
+                          : "Complete"
                         : isInProgress
                           ? CLIENT_STAGE_LABELS[normalizedStage || ""] ||
                             CLIENT_MAIN_STEPS[clientMainStepIdx] ||
