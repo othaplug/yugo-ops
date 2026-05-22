@@ -136,22 +136,28 @@ CREATE INDEX IF NOT EXISTS idx_projects_designer_phase
 
 ALTER TABLE public.project_vendors ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "project_vendors_service_role"
-  ON public.project_vendors
-  FOR ALL
-  TO service_role
-  USING (true)
-  WITH CHECK (true);
+DO $$ BEGIN
+  CREATE POLICY "project_vendors_service_role"
+    ON public.project_vendors
+    FOR ALL
+    TO service_role
+    USING (true)
+    WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE POLICY "project_vendors_auth_read"
-  ON public.project_vendors
-  FOR SELECT
-  TO authenticated
-  USING (
-    project_id IN (
-      SELECT p.id
-      FROM public.projects p
-      INNER JOIN public.partner_users pu ON pu.org_id = p.partner_id
-      WHERE pu.user_id = auth.uid()
-    )
-  );
+DO $$ BEGIN
+  CREATE POLICY "project_vendors_auth_read"
+    ON public.project_vendors
+    FOR SELECT
+    TO authenticated
+    USING (
+      project_id IN (
+        SELECT p.id
+        FROM public.projects p
+        INNER JOIN public.partner_users pu ON pu.org_id = p.partner_id
+        WHERE pu.user_id = auth.uid()
+      )
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
