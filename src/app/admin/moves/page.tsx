@@ -20,7 +20,9 @@ export default async function AllMovesPage() {
   const movesSelect =
     // Keep this select compatible with older DB schemas (avoid newer columns that may not exist yet)
     // actual_hours, est_hours, etc. are used to recalculate margin for completed moves (matches profitability panel)
-    "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, neighbourhood_tier, crew_id, created_at, margin_percent, margin_flag, est_margin_percent, contract_id, is_pm_move, actual_hours, est_hours, actual_crew_count, est_crew_size, distance_km, truck_primary, truck_secondary, move_size, balance_method, deposit_method";
+    // organizations join is used as a display-side fallback so PM-partner moves render as "PM Move" even
+    // if their is_pm_move flag wasn't set at creation time (older create-route code paths).
+    "id, move_code, client_name, client_email, from_address, to_address, scheduled_date, estimate, final_amount, total_price, status, move_type, service_type, tier_selected, neighbourhood_tier, crew_id, created_at, margin_percent, margin_flag, est_margin_percent, contract_id, is_pm_move, organization_id, organizations:organization_id(vertical, type), actual_hours, est_hours, actual_crew_count, est_crew_size, distance_km, truck_primary, truck_secondary, move_size, balance_method, deposit_method";
 
   const minimalMovesSelect =
     // Fallback if extended columns are missing in an older DB schema

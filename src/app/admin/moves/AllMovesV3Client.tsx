@@ -48,7 +48,34 @@ interface Move {
   display_status?: string | null;
   contract_id?: string | null;
   is_pm_move?: boolean | null;
+  organization_id?: string | null;
+  /** Supabase join: organizations:organization_id(vertical, type). */
+  organizations?:
+    | { vertical?: string | null; type?: string | null }
+    | { vertical?: string | null; type?: string | null }[]
+    | null;
   neighbourhood_tier?: string | null;
+}
+
+/** Resolve the linked organization (Supabase join can return obj or array). */
+function moveOrg(m: Move): { vertical?: string | null; type?: string | null } | null {
+  const o = m.organizations;
+  if (!o) return null;
+  return Array.isArray(o) ? o[0] ?? null : o;
+}
+
+const PM_ORG_VERTICALS = new Set<string>([
+  "property_management",
+  "property_management_residential",
+  "property_management_commercial",
+  "developer_builder",
+]);
+
+function moveOrgIsPm(m: Move): boolean {
+  const o = moveOrg(m);
+  if (!o) return false;
+  const v = String(o.vertical ?? o.type ?? "").toLowerCase().trim();
+  return !!v && PM_ORG_VERTICALS.has(v);
 }
 
 interface Quote {
@@ -86,7 +113,10 @@ function normalizeType(m: Move): string {
 }
 
 function moveSegment(m: Move): "pm" | "b2b" | "b2c" {
-  const pm = !!(m.contract_id && String(m.contract_id).trim()) || !!m.is_pm_move;
+  const pm =
+    !!(m.contract_id && String(m.contract_id).trim()) ||
+    !!m.is_pm_move ||
+    moveOrgIsPm(m);
   if (pm) return "pm";
   if (normalizeType(m) === "b2b") return "b2b";
   return "b2c";
@@ -218,7 +248,10 @@ export default function AllMovesV3Client({
       // PM moves carry a default tier that doesn't reflect a real client choice — exclude them.
       const st = String(m.service_type ?? m.move_type ?? "").trim().toLowerCase();
       if (!TIERED_SERVICE_TYPES.has(st)) continue;
-      const isPm = !!(m.contract_id && String(m.contract_id).trim()) || !!m.is_pm_move;
+      const isPm =
+        !!(m.contract_id && String(m.contract_id).trim()) ||
+        !!m.is_pm_move ||
+        moveOrgIsPm(m);
       if (isPm) continue;
       const t = (m.tier_selected || "").trim().toLowerCase();
       if (!t) continue;

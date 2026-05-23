@@ -75,22 +75,44 @@ const isB2bOrDeliverySlug = (raw: string | null | undefined) => {
   );
 };
 
+/** Org verticals that always indicate a PM move regardless of the is_pm_move flag. */
+const PM_VERTICAL_SLUGS = new Set<string>([
+  "property_management",
+  "property_management_residential",
+  "property_management_commercial",
+  "developer_builder",
+]);
+
 /**
  * Resolve the human label for a move's service type, with PM override.
  * PM moves must NEVER show as "B2B Delivery" — use this everywhere a move has is_pm_move context.
  *
- * A move is treated as PM if either is_pm_move is true OR contract_id is set.
- * Both signals are checked so that older moves created before is_pm_move was
- * reliably backfilled still display correctly.
+ * A move is treated as PM if ANY of these are true:
+ *   - is_pm_move flag
+ *   - contract_id set (linked to a partner contract)
+ *   - linked organization's vertical/type is a property management slug
+ * The three signals are checked together so older moves created before
+ * is_pm_move was reliably backfilled still display correctly.
  */
 export function portfolioPmMoveServiceLabel(move: {
   service_type?: string | null;
   is_pm_move?: boolean | null;
   contract_id?: string | null;
+  // Supabase join: `organizations:organization_id(vertical, type)` — may
+  // be an object, an array, or null depending on how the row was fetched.
+  organizations?:
+    | { vertical?: string | null; type?: string | null }
+    | { vertical?: string | null; type?: string | null }[]
+    | null;
 }): string {
+  const orgRaw = move.organizations;
+  const org = Array.isArray(orgRaw) ? orgRaw[0] ?? null : orgRaw ?? null;
+  const orgVertical = String(org?.vertical ?? org?.type ?? "").toLowerCase().trim();
+  const orgIsPm = !!orgVertical && PM_VERTICAL_SLUGS.has(orgVertical);
   const isPm =
     !!move.is_pm_move ||
-    !!(move.contract_id && String(move.contract_id).trim());
+    !!(move.contract_id && String(move.contract_id).trim()) ||
+    orgIsPm;
   if (isPm && isB2bOrDeliverySlug(move.service_type)) {
     return "PM Move";
   }

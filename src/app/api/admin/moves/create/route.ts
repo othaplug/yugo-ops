@@ -204,6 +204,10 @@ export async function POST(req: NextRequest) {
     const partnerOrganizationIdFromRequest =
       (body.organization_id as string)?.trim() || null;
     let organizationId = partnerOrganizationIdFromRequest;
+    // Detect PM-partner moves so they render as "PM Move" not "B2B Delivery"
+    // in admin lists / command center. Default false; flipped to true below
+    // once we look up the org's vertical.
+    let isPmMoveFlag = false;
     const fromAccess = (body.from_access as string)?.trim() || null;
     const toAccess = (body.to_access as string)?.trim() || null;
     const parseParking = (v: unknown): "dedicated" | "street" | "no_dedicated" => {
@@ -512,12 +516,34 @@ export async function POST(req: NextRequest) {
         ? whiteGloveItemsList
         : inventoryItemsList;
 
+    // PM-vertical detection: if the picked partner org is a property
+    // management partner, flag this move so admin lists show "PM Move"
+    // (not "B2B Delivery"). Mirrors the pm-batch route which sets the
+    // same flag for portfolio-driven creation.
+    if (organizationId) {
+      const { data: orgRow } = await db
+        .from("organizations")
+        .select("vertical, type")
+        .eq("id", organizationId)
+        .maybeSingle();
+      const v = String(orgRow?.vertical ?? orgRow?.type ?? "").toLowerCase();
+      if (
+        v === "property_management" ||
+        v === "property_management_residential" ||
+        v === "property_management_commercial" ||
+        v === "developer_builder"
+      ) {
+        isPmMoveFlag = true;
+      }
+    }
+
     const { data: move, error: insertError } = await db
       .from("moves")
       .insert({
         move_type: moveType,
         service_type: serviceType,
         organization_id: organizationId,
+        is_pm_move: isPmMoveFlag,
         client_name: clientName,
         client_email: clientEmail,
         client_phone: clientPhone,
