@@ -24,7 +24,10 @@ import { safePatchDeal } from "@/lib/hubspot/safe-deal-write"
  * Schedule: `0 * * * *` (top of every hour) — see vercel.json.
  */
 
-const SYNC_WINDOW_HOURS = 24
+// 72-hour window catches deals whose initial after() patch failed and whose
+// row wasn't updated again within 24h (e.g. a quote accepted 2 days ago
+// that hasn't had any new activity since booking).
+const SYNC_WINDOW_HOURS = 72
 const HUBSPOT_RATE_LIMIT_DELAY_MS = 120 // ~8 req/s — well under 100 req / 10s
 
 export async function GET(req: NextRequest) {

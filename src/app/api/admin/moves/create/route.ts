@@ -21,6 +21,7 @@ import {
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 import { ontarioHstBreakdownFromPreTax } from "@/lib/format-currency";
 import { autoCreateHubSpotDealForNewMove } from "@/lib/hubspot/auto-create-deal-for-move";
+import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { getMoveDetailPath } from "@/lib/move-code";
 import { sanitizeMoveProjectSchedulePayload } from "@/lib/move-projects/planner-payload";
@@ -654,6 +655,8 @@ export async function POST(req: NextRequest) {
       );
 
     const moveId = move.id;
+    // Hoisted so the HubSpot section (below the post-insert try block) can read it.
+    let resolvedQuoteHubspotDealId: string | null = null;
 
     try {
       let resolvedQuoteUuid: string | null = null;
@@ -664,12 +667,16 @@ export async function POST(req: NextRequest) {
       if (quoteUuidRaw) {
         const { data: quoteRow } = await db
           .from("quotes")
-          .select("id, contact_id, estimated_days, day_breakdown")
+          .select("id, contact_id, estimated_days, day_breakdown, hubspot_deal_id")
           .eq("id", quoteUuidRaw)
           .maybeSingle();
         if (quoteRow?.id) {
           resolvedQuoteUuid = quoteRow.id;
           quoteContactId = quoteRow.contact_id ?? null;
+          resolvedQuoteHubspotDealId =
+            typeof quoteRow.hubspot_deal_id === "string" && quoteRow.hubspot_deal_id.trim()
+              ? quoteRow.hubspot_deal_id.trim()
+              : null;
           scopedEstimatedDays =
             typeof quoteRow.estimated_days === "number" ? quoteRow.estimated_days : 1;
           scopedDayBreakdown = quoteRow.day_breakdown ?? [];
@@ -966,54 +973,74 @@ export async function POST(req: NextRequest) {
       }).catch(() => {});
     }
 
-    /* HubSpot: standalone moves (no quote) never hit /api/quotes/send — create a deal in the OPS+ pipeline. */
+    /* HubSpot: quote-originated moves inherit the quote's existing deal and advance its
+     * stage to "confirmed". Standalone moves (no quote, or quote had no deal yet) get a
+     * fresh deal created. This prevents duplicate deals and ensures the stage advances
+     * when a quote is accepted and a move is booked. */
     let hubspotDuplicate:
       | { dealId: string; dealName: string; dealStageId: string }
       | undefined;
     let hubspotAutoCreateFailed = false;
     const hubSpotToken = process.env.HUBSPOT_ACCESS_TOKEN;
-    if (clientEmail?.trim() && hubSpotToken) {
-      const nameParts = clientName.trim().split(/\s+/);
-      const fName = nameParts[0]?.trim() || "";
-      const lName = nameParts.slice(1).join(" ").trim();
-      const base = getEmailBaseUrl();
-      const path = getMoveDetailPath({ move_code: move.move_code, id: moveId });
-      const moveAdminUrl = `${base}${path}`;
-
-      const created = await autoCreateHubSpotDealForNewMove({
-        sb: db,
-        move: {
-          id: moveId,
-          service_type: serviceType,
-          move_size: moveSize,
-          scheduled_date: (body.scheduled_date as string)?.trim() || null,
-          from_address: fromAddress,
-          to_address: toAddress,
-          from_access: fromAccess,
-          to_access: toAccess,
-          estimate: estimate > 0 ? estimate : null,
-          tier_selected: tierSelected,
-        },
-        moveCode: (move.move_code as string) || "",
-        clientEmail: clientEmail.trim(),
-        firstName: fName,
-        lastName: lName,
-        clientPhone: clientPhone,
-        moveAdminUrl,
-      });
-      if (created?.status === "created" && created.dealId) {
+    if (hubSpotToken) {
+      if (resolvedQuoteHubspotDealId) {
+        // Quote-originated move — inherit the existing HubSpot deal from the quote.
+        // Copy the deal ID onto the move so syncDealStageByMoveId works going forward.
         await db
           .from("moves")
-          .update({ hubspot_deal_id: created.dealId })
+          .update({ hubspot_deal_id: resolvedQuoteHubspotDealId })
           .eq("id", moveId);
-      } else if (created?.status === "duplicate") {
-        hubspotDuplicate = {
-          dealId: created.existingDealId,
-          dealName: created.existingDealName,
-          dealStageId: created.existingDealStageId,
-        };
-      } else if (created == null) {
-        hubspotAutoCreateFailed = true;
+        // Advance stage to "confirmed" (Booked & Scheduled) — fire-and-forget.
+        syncDealStage(
+          resolvedQuoteHubspotDealId,
+          "confirmed",
+          undefined,
+          (body.scheduled_date as string)?.trim() || null,
+        ).catch(() => {});
+      } else if (clientEmail?.trim()) {
+        // Standalone move (no quote or quote had no deal) — create a new deal.
+        const nameParts = clientName.trim().split(/\s+/);
+        const fName = nameParts[0]?.trim() || "";
+        const lName = nameParts.slice(1).join(" ").trim();
+        const base = getEmailBaseUrl();
+        const path = getMoveDetailPath({ move_code: move.move_code, id: moveId });
+        const moveAdminUrl = `${base}${path}`;
+
+        const created = await autoCreateHubSpotDealForNewMove({
+          sb: db,
+          move: {
+            id: moveId,
+            service_type: serviceType,
+            move_size: moveSize,
+            scheduled_date: (body.scheduled_date as string)?.trim() || null,
+            from_address: fromAddress,
+            to_address: toAddress,
+            from_access: fromAccess,
+            to_access: toAccess,
+            estimate: estimate > 0 ? estimate : null,
+            tier_selected: tierSelected,
+          },
+          moveCode: (move.move_code as string) || "",
+          clientEmail: clientEmail.trim(),
+          firstName: fName,
+          lastName: lName,
+          clientPhone: clientPhone,
+          moveAdminUrl,
+        });
+        if (created?.status === "created" && created.dealId) {
+          await db
+            .from("moves")
+            .update({ hubspot_deal_id: created.dealId })
+            .eq("id", moveId);
+        } else if (created?.status === "duplicate") {
+          hubspotDuplicate = {
+            dealId: created.existingDealId,
+            dealName: created.existingDealName,
+            dealStageId: created.existingDealStageId,
+          };
+        } else if (created == null) {
+          hubspotAutoCreateFailed = true;
+        }
       }
     }
 
