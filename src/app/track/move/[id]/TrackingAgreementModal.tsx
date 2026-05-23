@@ -56,10 +56,7 @@ export default function TrackingAgreementModal() {
               }}
             />
           </div>
-          <h2
-            className="text-[22px] font-semibold text-white mb-1"
-            style={{ fontFamily: "var(--font-body)" }}
-          >
+          <h2 className="font-hero text-[22px] font-semibold text-white mb-1">
             Welcome to Yugo Tracking
           </h2>
           <p className="text-[12px] text-white/60">
