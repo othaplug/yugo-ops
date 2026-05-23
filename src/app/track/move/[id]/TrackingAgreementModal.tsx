@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
-import { Shield } from "@phosphor-icons/react";
+import Image from "next/image";
 
 const COOKIE_NAME = "yugo-tracking-terms-accepted";
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // 1 year
@@ -43,13 +43,23 @@ export default function TrackingAgreementModal() {
       >
         {/* Header */}
         <div className="px-6 pt-8 pb-5 text-center" style={{ backgroundColor: WINE }}>
-          <div
-            className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-4"
-            style={{ backgroundColor: `${GOLD}25`, border: `1px solid ${GOLD}40` }}
-          >
-            <Shield size={22} color={GOLD} />
+          <div className="inline-flex items-center justify-center mb-4">
+            <Image
+              src="/yugo-symbol.png"
+              alt="Yugo"
+              width={48}
+              height={48}
+              style={{
+                // Recolour the black symbol to GOLD for the dark wine header
+                filter:
+                  "brightness(0) saturate(100%) invert(62%) sepia(55%) saturate(620%) hue-rotate(1deg) brightness(94%) contrast(90%)",
+              }}
+            />
           </div>
-          <h2 className="font-hero text-[22px] font-semibold text-white mb-1">
+          <h2
+            className="text-[22px] font-semibold text-white mb-1"
+            style={{ fontFamily: "var(--font-body)" }}
+          >
             Welcome to Yugo Tracking
           </h2>
           <p className="text-[12px] text-white/60">
