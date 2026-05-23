@@ -78,15 +78,23 @@ const isB2bOrDeliverySlug = (raw: string | null | undefined) => {
 /**
  * Resolve the human label for a move's service type, with PM override.
  * PM moves must NEVER show as "B2B Delivery" — use this everywhere a move has is_pm_move context.
+ *
+ * A move is treated as PM if either is_pm_move is true OR contract_id is set.
+ * Both signals are checked so that older moves created before is_pm_move was
+ * reliably backfilled still display correctly.
  */
 export function portfolioPmMoveServiceLabel(move: {
   service_type?: string | null;
   is_pm_move?: boolean | null;
+  contract_id?: string | null;
 }): string {
-  if (move.is_pm_move && isB2bOrDeliverySlug(move.service_type)) {
+  const isPm =
+    !!move.is_pm_move ||
+    !!(move.contract_id && String(move.contract_id).trim());
+  if (isPm && isB2bOrDeliverySlug(move.service_type)) {
     return "PM Move";
   }
-  if (move.is_pm_move) {
+  if (isPm) {
     const st = serviceTypeDisplayLabel(move.service_type);
     if (!st.trim() || st === "—") return "PM Move";
     return st;

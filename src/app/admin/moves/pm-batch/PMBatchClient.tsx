@@ -215,7 +215,6 @@ export function PMBatchClient({
         "check",
       );
       router.push("/admin/moves?segment=pm");
-      router.refresh();
     } catch (e) {
       toast(e instanceof Error ? e.message : "Batch failed", "x");
     } finally {

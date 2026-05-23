@@ -3,7 +3,7 @@ import "server-only"
 import { loadRevenueForecastData } from "@/lib/admin/revenue-forecast-data"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { formatJobId, getMoveCode } from "@/lib/move-code"
-import { serviceTypeDisplayLabel } from "@/lib/displayLabels"
+import { portfolioPmMoveServiceLabel } from "@/lib/displayLabels"
 import {
   addCalendarDaysYmd,
   getAppTimezone,
@@ -564,8 +564,14 @@ export const loadCommandCenterData = async () => {
       tag: (() => {
         const stRaw =
           m.service_type != null ? String(m.service_type).trim() : ""
-        if (!stRaw) return "Move"
-        const lbl = serviceTypeDisplayLabel(stRaw)
+        const isPm =
+          !!m.is_pm_move ||
+          !!(m.contract_id && String(m.contract_id).trim() !== "")
+        if (!stRaw && !isPm) return "Move"
+        const lbl = portfolioPmMoveServiceLabel({
+          service_type: stRaw || null,
+          is_pm_move: isPm,
+        })
         return lbl === "—" ? "Move" : lbl
       })(),
       tier_selected:
