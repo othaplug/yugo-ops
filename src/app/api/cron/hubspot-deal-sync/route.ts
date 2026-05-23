@@ -3,32 +3,48 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { buildAllDealProperties } from "@/lib/hubspot/deal-properties-builder"
 import { buildHubSpotDealName } from "@/lib/hubspot/deal-name"
 import { safePatchDeal } from "@/lib/hubspot/safe-deal-write"
+import { syncDealStage } from "@/lib/hubspot/sync-deal-stage"
 
 /**
  * Hourly self-healing HubSpot deal sync.
  *
- * Even with every live write path now wrapped in `after()` and routed
- * through the safe builder + sanitizer, a single failure mode could still
- * leave a deal with empty OPS+ Details: a Vercel function timeout, a
- * transient HubSpot 5xx, a rate-limit refusal, or a new code path that
- * forgets to call the builder. This cron is the safety net.
+ * Syncs ALL quotes and moves that have a hubspot_deal_id — no time-window
+ * filter. At current volumes (~25–50 deals) the full pass runs in < 10s
+ * and is well within HubSpot's rate limits (120ms delay → ~8 req/s vs
+ * 100 req/10s limit). PATCHing the same values is a no-op in HubSpot,
+ * so re-confirming correct state is always safe.
  *
- * It re-runs the same payload builder + PATCH against every quote and
- * move that has a `hubspot_deal_id` and was updated in the last
- * SYNC_WINDOW_HOURS hours. PATCHing the same values is a no-op in HubSpot
- * (the API treats identical values as "no change"), so this is safe to
- * run repeatedly. If a deal was patched correctly by the live flow, the
- * cron just re-confirms it; if the live flow missed it, the cron fills
- * it in within ≤ 1 hour.
+ * Beyond patching OPS+ Detail properties, this cron also syncs each
+ * deal's stage from the current DB status. This catches deals whose
+ * live stage-sync hook never fired (e.g. moves created from quotes
+ * before the quote's hubspot_deal_id was inherited onto the move).
  *
  * Schedule: `0 * * * *` (top of every hour) — see vercel.json.
  */
 
-// 72-hour window catches deals whose initial after() patch failed and whose
-// row wasn't updated again within 24h (e.g. a quote accepted 2 days ago
-// that hasn't had any new activity since booking).
-const SYNC_WINDOW_HOURS = 72
 const HUBSPOT_RATE_LIMIT_DELAY_MS = 120 // ~8 req/s — well under 100 req / 10s
+
+/** Map a quote DB status to the yugoTrigger to pass to syncDealStage. */
+function quoteStageFromStatus(status: string | null | undefined): string | null {
+  const s = String(status ?? "").toLowerCase()
+  if (s === "booked" || s === "accepted") return "confirmed"
+  if (s === "cancelled") return "cancelled"
+  if (s === "declined" || s === "lost") return "lost"
+  if (s === "expired") return "expired"
+  // sent / viewed / draft — already handled by live hooks on the way in; skip
+  return null
+}
+
+/** Map a move DB status to the yugoTrigger to pass to syncDealStage. */
+function moveStageFromStatus(status: string | null | undefined): string | null {
+  const s = String(status ?? "").toLowerCase().replace(/-/g, "_")
+  if (["completed", "delivered", "paid", "final_payment_received"].includes(s))
+    return "completed"
+  if (["in_progress", "dispatched", "in_transit"].includes(s)) return "in_progress"
+  if (["confirmed", "booked", "scheduled"].includes(s)) return "confirmed"
+  if (s === "cancelled") return "cancelled"
+  return null
+}
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization")
@@ -45,23 +61,24 @@ export async function GET(req: NextRequest) {
   }
 
   const sb = createAdminClient()
-  const sinceIso = new Date(Date.now() - SYNC_WINDOW_HOURS * 60 * 60 * 1000).toISOString()
 
   const results = {
     quotes_synced: 0,
     moves_synced: 0,
+    stages_synced: 0,
     failures: 0,
     errors: [] as string[],
   }
 
   // ── Quotes ─────────────────────────────────────────────────────────
+  // No updated_at filter — sync every quote with a deal ID so properties
+  // and stage are always up to date regardless of when it was last touched.
   const { data: quotes, error: qErr } = await sb
     .from("quotes")
     .select(
-      "quote_id, hubspot_deal_id, from_address, to_address, from_access, to_access, service_type, move_date, move_size, custom_price, tiers, est_crew_size, est_hours, truck_primary, recommended_tier, factors_applied, contact_id, contacts:contact_id(name)",
+      "quote_id, status, hubspot_deal_id, from_address, to_address, from_access, to_access, service_type, move_date, move_size, custom_price, tiers, est_crew_size, est_hours, truck_primary, recommended_tier, factors_applied, contact_id, contacts:contact_id(name)",
     )
     .not("hubspot_deal_id", "is", null)
-    .gte("updated_at", sinceIso)
 
   if (qErr) {
     return NextResponse.json({ ok: false, error: qErr.message }, { status: 500 })
@@ -124,6 +141,16 @@ export async function GET(req: NextRequest) {
         results.failures++
         results.errors.push(`${q.quote_id}: HTTP ${res.status}`)
       }
+
+      // Sync deal stage from current quote status (skips sent/viewed/draft
+      // since those are handled by live hooks and don't need backfilling).
+      const stageTrigger = quoteStageFromStatus(q.status)
+      if (stageTrigger) {
+        await syncDealStage(q.hubspot_deal_id, stageTrigger, undefined, q.move_date ?? null).catch(
+          () => {},
+        )
+        results.stages_synced++
+      }
     } catch (err) {
       results.failures++
       results.errors.push(`${q.quote_id}: ${err instanceof Error ? err.message : String(err)}`)
@@ -135,10 +162,9 @@ export async function GET(req: NextRequest) {
   const { data: moves, error: mErr } = await sb
     .from("moves")
     .select(
-      "move_code, hubspot_deal_id, client_name, tenant_name, from_address, to_address, from_access, to_access, service_type, scheduled_date, move_size, estimate, amount, total_price, tier_selected, est_crew_size, est_hours, truck_primary, is_pm_move",
+      "move_code, status, hubspot_deal_id, client_name, tenant_name, from_address, to_address, from_access, to_access, service_type, scheduled_date, move_size, estimate, amount, total_price, tier_selected, est_crew_size, est_hours, truck_primary, is_pm_move",
     )
     .not("hubspot_deal_id", "is", null)
-    .gte("updated_at", sinceIso)
 
   if (mErr) {
     return NextResponse.json({ ok: false, error: mErr.message }, { status: 500 })
@@ -198,6 +224,18 @@ export async function GET(req: NextRequest) {
         results.failures++
         results.errors.push(`${m.move_code}: HTTP ${res.status}`)
       }
+
+      // Sync deal stage from current move status.
+      const stageTrigger = moveStageFromStatus(m.status)
+      if (stageTrigger) {
+        await syncDealStage(
+          m.hubspot_deal_id,
+          stageTrigger,
+          undefined,
+          m.scheduled_date ?? null,
+        ).catch(() => {})
+        results.stages_synced++
+      }
     } catch (err) {
       results.failures++
       results.errors.push(`${m.move_code}: ${err instanceof Error ? err.message : String(err)}`)
@@ -210,12 +248,11 @@ export async function GET(req: NextRequest) {
     .from("webhook_logs")
     .insert({
       source: "cron_hubspot_deal_sync",
-      event_type:
-        results.failures > 0 ? "partial_failure" : "ok",
+      event_type: results.failures > 0 ? "partial_failure" : "ok",
       payload: {
-        window_hours: SYNC_WINDOW_HOURS,
         quotes_synced: results.quotes_synced,
         moves_synced: results.moves_synced,
+        stages_synced: results.stages_synced,
         failures: results.failures,
         errors: results.errors.slice(0, 25),
       },
