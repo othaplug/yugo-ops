@@ -1,4 +1,4 @@
-import { MapPin, Calendar, Check, Wrench, Clock, Shield, Sparkle as Sparkles, type Icon as LucideIcon } from "@phosphor-icons/react";
+import { MapPin, Calendar, Check, Wrench, Shield, Sparkle as Sparkles, type Icon as LucideIcon } from "@phosphor-icons/react";
 import {
   type Quote,
   WINE,
@@ -9,21 +9,6 @@ import {
 } from "../quote-shared";
 import { toTitleCase } from "@/lib/format-text";
 import { formatPlatformDisplay } from "@/lib/date-format";
-
-const SPECIALTY_BUILDING_LABELS: Record<string, string> = {
-  elevator_booking: "Elevator booking required",
-  insurance_certificate: "Insurance certificate required",
-  restricted_hours: "Restricted move hours",
-  loading_dock_booking: "Loading dock booking required",
-};
-
-const SPECIALTY_ACCESS_LABELS: Record<string, string> = {
-  straight_path: "Straight path",
-  one_turn: "One turn",
-  multiple_turns: "Multiple turns",
-  tight_staircase: "Tight staircase",
-  requires_rigging_or_crane: "Requires rigging or crane",
-};
 
 const PROJECT_TYPE_LABELS: Record<string, string> = {
   art_installation: "Art Installation",
@@ -46,14 +31,6 @@ interface Props {
 export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) {
   const f = quote.factors_applied as Record<string, unknown> | null;
   const price = quote.custom_price ?? 0;
-  const buildingReqs = Array.isArray(f?.specialty_building_requirements)
-    ? (f.specialty_building_requirements as string[])
-    : [];
-  const accessKey =
-    typeof f?.specialty_access_difficulty === "string" && f.specialty_access_difficulty.trim().length > 0
-      ? f.specialty_access_difficulty.trim()
-      : "";
-  const accessLabel = accessKey ? (SPECIALTY_ACCESS_LABELS[accessKey] ?? toTitleCase(accessKey.replace(/_/g, " "))) : "";
   const tax = Math.round(price * TAX_RATE);
   const deposit = calculateDeposit("specialty", price);
   const projectType = (f?.project_type as string) ?? "custom";
@@ -65,12 +42,12 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
     "$2M cargo insurance",
   ];
 
+  // Build the requirements list. We DO NOT auto-push a "Timeline" line \u2014
+  // the engine defaults that field to 4 hours which is wrong for any
+  // long-distance specialty (Ottawa\u2192Toronto runs 9\u201312 hours), and there's
+  // no reliable way to compute the real on-site time from a quote alone.
+  // Coordinator-set flags (crating, climate, equipment) still render.
   const requirements: { icon: LucideIcon; title: string; desc: string }[] = [];
-  requirements.push({
-    icon: Clock,
-    title: "Timeline",
-    desc: `Estimated ${(f?.timeline_hours as number) ?? "\u2014"} hours of on-site work`,
-  });
   if (f?.custom_crating) {
     requirements.push({
       icon: Sparkles,
@@ -93,7 +70,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
     });
   }
 
-  const breakdown = ([
+  const rawBreakdown = ([
     f?.base_estimate && { label: "Base Estimate", amount: f.base_estimate as number },
     f?.timeline_surcharge && { label: "Timeline Factor", amount: f.timeline_surcharge as number },
     f?.custom_crating_surcharge && {
@@ -113,6 +90,20 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
   ] as (false | null | undefined | { label: string; amount: number })[]).filter(
     (x): x is { label: string; amount: number } => !!x,
   );
+
+  // Suppress the breakdown when a coordinator override is in effect.
+  // The engine's stale surcharges (distance, climate, etc.) stay in
+  // factors_applied even after an override drops the headline price, so
+  // a $1,850 "Distance" line would appear above a $1,100 final price —
+  // confusing and erodes trust. Two signals catch this:
+  //   1. override_price_pre_tax explicitly set in factors_applied
+  //   2. sum of breakdown lines diverges from the displayed price by >$5
+  //      (covers older quotes / cases where the override flag wasn't written)
+  const hasOverride =
+    (typeof f?.override_price_pre_tax === "number" && (f.override_price_pre_tax as number) > 0) ||
+    (rawBreakdown.length > 0 &&
+      Math.abs(rawBreakdown.reduce((sum, it) => sum + it.amount, 0) - price) > 5);
+  const breakdown = hasOverride ? [] : rawBreakdown;
 
   return (
     <section className="mb-10 space-y-8">
@@ -167,34 +158,11 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
         </div>
       </div>
 
-      {(buildingReqs.length > 0 || accessLabel) && (
-        <div className="pt-6 border-t border-[var(--brd)]/30">
-          <h2 className="admin-section-h2 mb-3">
-            Site &amp; building
-          </h2>
-          {buildingReqs.length > 0 ? (
-            <ul className="space-y-1.5 mb-3">
-              {buildingReqs.map((key) => (
-                <li key={key} className="flex items-start gap-2 text-[12px]" style={{ color: FOREST }}>
-                  <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: FOREST }} />
-                  <span>{SPECIALTY_BUILDING_LABELS[key] ?? toTitleCase(key.replace(/_/g, " "))}</span>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          {accessLabel ? (
-            <p className="text-[12px]" style={{ color: FOREST }}>
-              <span className="font-semibold">Access: </span>
-              {accessLabel}
-            </p>
-          ) : null}
-          {accessKey === "requires_rigging_or_crane" ? (
-            <p className="text-[10px] mt-2 leading-snug rounded-lg px-3 py-2" style={{ backgroundColor: "#FFF8E7", color: "#7A5C12" }}>
-              Crane/rigging adds $1,500–3,000. Coordinator will confirm exact cost.
-            </p>
-          ) : null}
-        </div>
-      )}
+      {/* Site & building section removed from the client-facing layout —
+          access classification ("Straight path", "One turn", etc.) and
+          internal building requirements are crew/coordinator metadata,
+          not part of the client proposal. Crew sees this on the move
+          detail / walkthrough pages. */}
 
       {/* Special Requirements */}
       {requirements.length > 0 && (
