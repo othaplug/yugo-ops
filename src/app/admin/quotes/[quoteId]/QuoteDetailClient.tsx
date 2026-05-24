@@ -43,6 +43,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import type { QuotePaymentPipelineMode } from "@/lib/quotes/payment-pipeline-mode";
 import { InfoHint } from "@/components/ui/InfoHint";
 import ExternalBookingModal from "./ExternalBookingModal";
+import { normalizeTierKey } from "@/lib/tiers/tier-definitions";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -1961,6 +1962,31 @@ export default function QuoteDetailClient({
                   })()}
                 </div>
               </div>
+              {/* Essential + assembly warning */}
+              {(() => {
+                const activeTier = normalizeTierKey(
+                  (quote.selected_tier as string | null) ??
+                  (quote.recommended_tier as string | null)
+                );
+                const assemblyAddonRequired =
+                  (factors as any)?.essential_assembly_addon_required === true ||
+                  (activeTier === "essential" &&
+                    (quote as any).assembly_required === true &&
+                    ((quote as any).assembly_minutes ?? 0) > 0);
+                if (activeTier !== "essential" || !assemblyAddonRequired) return null;
+                return (
+                  <div className="mt-3 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-[11px] font-semibold text-amber-800">
+                      Assembly not included in Essential
+                    </p>
+                    <p className="text-[11px] text-amber-600 mt-0.5">
+                      Items detected that need assembly. Add the assembly add-on ($85/item or $199 bundle)
+                      or upgrade to Signature where assembly is included for all items.
+                    </p>
+                  </div>
+                );
+              })()}
+
               <div className="mt-5 h-px bg-[var(--brd)]/60" />
               {/* Truck + Crew */}
               {(quote.truck_primary ||

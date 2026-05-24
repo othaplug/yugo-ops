@@ -40,6 +40,7 @@ import {
   TRACK_EYEBROW_CLASS,
   TRACK_CARD_TITLE_CLASS,
 } from "@/lib/client-theme";
+import { getTierOps, normalizeTierKey } from "@/lib/tiers/tier-definitions";
 import {
   ArrowsClockwise,
   CaretDown,
@@ -1839,6 +1840,118 @@ export default function TrackMoveClient({
               {getStatusLabel(statusVal)}
             </span>
           </div>
+
+          {/* Tier scope briefing — tells crew what is and isn't included */}
+          {!isNonMoveProductTrack && (() => {
+            const rawTier = move.tier_selected || move.tier || move.service_tier || "";
+            const tierKey = normalizeTierKey(rawTier);
+            const ops = getTierOps(tierKey);
+            const tierLabel = tierKey.charAt(0).toUpperCase() + tierKey.slice(1);
+            const assemblyAddonPurchased = Array.isArray(move.addons)
+              ? move.addons.some(
+                  (a: { slug?: string; key?: string }) =>
+                    ["assembly_single", "assembly_bundle"].includes(a.slug ?? a.key ?? ""),
+                )
+              : false;
+
+            return (
+              <div
+                className="mb-4 rounded-2xl px-4 py-3 border"
+                style={{ backgroundColor: `${WINE}06`, borderColor: `${WINE}18` }}
+              >
+                <p
+                  className="text-[11px] uppercase tracking-wider font-semibold mb-2"
+                  style={{ color: `${WINE}80` }}
+                >
+                  {tierLabel} — Crew Scope
+                </p>
+                <div className="space-y-2">
+                  {/* Assembly */}
+                  {!ops.includesAssembly && !assemblyAddonPurchased && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-red-500 shrink-0 mt-0.5 text-sm font-bold">✕</span>
+                      <div>
+                        <p className="text-[13px] font-semibold" style={{ color: WINE }}>
+                          Assembly not included
+                        </p>
+                        <p className="text-[11px] mt-0.5" style={{ color: FOREST, opacity: 0.65 }}>
+                          Do not disassemble or reassemble any furniture unless the client
+                          has purchased the assembly add-on. Verify before proceeding.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {ops.includesAssembly && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-[13px] shrink-0 mt-0.5" style={{ color: FOREST }}>✓</span>
+                      <p className="text-[13px]" style={{ color: FOREST }}>
+                        Assembly included — disassemble and reassemble as needed
+                      </p>
+                    </div>
+                  )}
+                  {!ops.includesAssembly && assemblyAddonPurchased && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-amber-600 shrink-0 mt-0.5 text-sm">✓</span>
+                      <p className="text-[13px]" style={{ color: FOREST }}>
+                        Assembly add-on purchased — proceed with disassembly and reassembly
+                      </p>
+                    </div>
+                  )}
+                  {/* Wrapping */}
+                  {!ops.includesFullWrap && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-amber-600 shrink-0 mt-0.5 text-sm font-bold">⚠</span>
+                      <div>
+                        <p className="text-[13px] font-semibold" style={{ color: FOREST }}>
+                          Up to {ops.wrappedItemLimit} items wrapped
+                        </p>
+                        <p className="text-[11px] mt-0.5" style={{ color: FOREST, opacity: 0.65 }}>
+                          Check inventory notes for which {ops.wrappedItemLimit} items to wrap.
+                          Do not wrap additional items without client confirmation.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {ops.includesFullWrap && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-[13px] shrink-0 mt-0.5" style={{ color: FOREST }}>✓</span>
+                      <p className="text-[13px]" style={{ color: FOREST }}>
+                        Full wrap — every piece of furniture wrapped, no exceptions
+                      </p>
+                    </div>
+                  )}
+                  {/* Placement */}
+                  {!ops.includesRoomOfChoice && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-[13px] shrink-0 mt-0.5" style={{ color: FOREST, opacity: 0.4 }}>→</span>
+                      <p className="text-[13px]" style={{ color: FOREST }}>
+                        Entry point placement — items placed at entry or first available room only
+                      </p>
+                    </div>
+                  )}
+                  {ops.includesRoomOfChoice && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-[13px] shrink-0 mt-0.5" style={{ color: FOREST }}>✓</span>
+                      <p className="text-[13px]" style={{ color: FOREST }}>
+                        Room-of-choice placement — place every item where the client directs
+                      </p>
+                    </div>
+                  )}
+                  {/* Estate protocol */}
+                  {ops.namedDirector && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-[13px] shrink-0 mt-0.5" style={{ color: WINE }}>★</span>
+                      <p className="text-[13px] font-semibold" style={{ color: WINE }}>
+                        Estate tier — white glove protocol in effect.
+                        Four-point blanket wrap, no dragging, no stacking.
+                        Photo document all specialty items before and after.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {(() => {
             const estRaw = move.est_crew_size;

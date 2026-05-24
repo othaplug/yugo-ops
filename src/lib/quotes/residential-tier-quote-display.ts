@@ -16,7 +16,7 @@ export function normalizeResidentialTierKey(t: string | null | undefined): Resid
 }
 
 /**
- * Complete “Your Move Includes” rows per tier — no merge, no dedupe, not read from platform_config.
+ * Complete "Your Move Includes" rows per tier — no merge, no dedupe, not read from platform_config.
  * Truck (row 0) and crew (row 1) titles/descriptions are filled from live quote data.
  */
 export function getResolvedMoveIncludes(
@@ -73,17 +73,10 @@ const RESOLVED_ESSENTIAL_MOVE_INCLUDES: TierFeature[] = [
   },
   {
     key: "wrapping",
-    card: "Protective wrapping for all standard furniture",
-    title: "Protective wrapping for all standard furniture",
-    desc: "Standard furniture wrapped in quilted moving blankets",
+    card: "Protective wrapping for up to 3 furniture pieces",
+    title: "Protective wrapping for up to 3 furniture pieces",
+    desc: "Client selects which 3 items are wrapped in quilted moving blankets",
     iconName: "Package",
-  },
-  {
-    key: "assembly",
-    card: "Basic disassembly & reassembly",
-    title: "Basic disassembly & reassembly",
-    desc: "We take it apart and put it back together",
-    iconName: "Wrench",
   },
   {
     key: "floor",
@@ -101,9 +94,9 @@ const RESOLVED_ESSENTIAL_MOVE_INCLUDES: TierFeature[] = [
   },
   {
     key: "placement_standard",
-    card: "Standard placement (entry point only)",
-    title: "Standard placement (entry point only)",
-    desc: "Items placed at the main entry or threshold; room-by-room placement is included on higher tiers.",
+    card: "Entry point placement",
+    title: "Entry point placement",
+    desc: "Items placed at the main entry or threshold — room-of-choice placement is available on Signature and Estate",
     iconName: "MapPin",
   },
   {
@@ -126,13 +119,6 @@ const RESOLVED_ESSENTIAL_MOVE_INCLUDES: TierFeature[] = [
     title: "Guaranteed flat price",
     desc: "The price you see is the price you pay",
     iconName: "DollarSign",
-  },
-  {
-    key: "damage",
-    card: "Zero-damage commitment",
-    title: "Zero-damage commitment",
-    desc: "Your belongings, protected and insured",
-    iconName: "ShieldCheck",
   },
 ];
 
@@ -152,34 +138,6 @@ const RESOLVED_SIGNATURE_MOVE_INCLUDES: TierFeature[] = [
     iconName: "Users",
   },
   {
-    key: "wrapping",
-    card: "Complete furniture wrapping — every piece, no exceptions",
-    title: "Complete furniture wrapping",
-    desc: "Every piece individually wrapped and padded — no exceptions",
-    iconName: "Package",
-  },
-  {
-    key: "assembly",
-    card: "Full disassembly & reassembly",
-    title: "Full disassembly & reassembly",
-    desc: "Complete furniture breakdown and expert reassembly",
-    iconName: "Wrench",
-  },
-  {
-    key: "floor",
-    card: "Floor & door frame protection",
-    title: "Floor & door frame protection",
-    desc: "Runners, booties, and corner guards throughout",
-    iconName: "Home",
-  },
-  {
-    key: "equipment",
-    card: "All equipment included",
-    title: "All equipment included",
-    desc: "Dollies, straps, tools — nothing extra to rent",
-    iconName: "Toolbox",
-  },
-  {
     key: "valuation",
     card: "Enhanced declared value — up to $50,000 total coverage",
     title: "Enhanced declared value",
@@ -187,31 +145,38 @@ const RESOLVED_SIGNATURE_MOVE_INCLUDES: TierFeature[] = [
     iconName: "ShieldCheck",
   },
   {
-    key: "tracking",
-    card: "Real-time GPS move tracking",
-    title: "Real-time GPS move tracking",
-    desc: "Follow your move live from any device",
-    iconName: "MapPin",
+    key: "wrapping",
+    card: "Complete furniture wrapping — every piece, no exceptions",
+    title: "Complete furniture wrapping — every piece, no exceptions",
+    desc: "Every item wrapped in quilted moving blankets — no exceptions",
+    iconName: "Package",
   },
   {
     key: "mattress_tv",
     card: "Mattress and television protection bags",
     title: "Mattress and television protection bags",
-    desc: "Dedicated bags for every mattress and TV in your home",
+    desc: "Dedicated protection bags for every mattress and TV in your home",
     iconName: "Shield",
   },
   {
+    key: "assembly",
+    card: "Furniture disassembly and reassembly — beds, desks, standard furniture",
+    title: "Furniture disassembly and reassembly",
+    desc: "Beds, desks, and standard furniture taken apart and put back together",
+    iconName: "Wrench",
+  },
+  {
     key: "placement",
-    card: "Room-of-choice placement throughout the home",
-    title: "Room-of-choice placement throughout the home",
+    card: "Room-of-choice placement throughout your home",
+    title: "Room-of-choice placement throughout your home",
     desc: "Every piece placed in the exact room you want — not just the entry",
     iconName: "Home",
   },
   {
     key: "wardrobe",
-    card: "Wardrobe box provided for immediate use",
-    title: "Wardrobe box provided for immediate use",
-    desc: "Hang your clothes directly on move day — no folding, no creasing",
+    card: "Wardrobe box for hanging clothes — returned after your move",
+    title: "Wardrobe box for hanging clothes",
+    desc: "Provided and returned after your move — no folding, no creasing",
     iconName: "Shirt",
   },
   {
@@ -229,18 +194,32 @@ const RESOLVED_SIGNATURE_MOVE_INCLUDES: TierFeature[] = [
     iconName: "Phone",
   },
   {
+    key: "floor",
+    card: "Floor, doorway, and elevator protection",
+    title: "Floor, doorway, and elevator protection",
+    desc: "Runners, booties, and corner guards at every touchpoint",
+    iconName: "Home",
+  },
+  {
+    key: "equipment",
+    card: "All equipment included",
+    title: "All equipment included",
+    desc: "Dollies, straps, tools — nothing extra to rent",
+    iconName: "Toolbox",
+  },
+  {
+    key: "tracking",
+    card: "Real-time GPS move tracking",
+    title: "Real-time GPS move tracking",
+    desc: "Follow your move live from any device",
+    iconName: "MapPin",
+  },
+  {
     key: "price",
     card: "Guaranteed flat price",
     title: "Guaranteed flat price",
     desc: "The price you see is the price you pay",
     iconName: "DollarSign",
-  },
-  {
-    key: "damage",
-    card: "Zero-damage commitment",
-    title: "Zero-damage commitment",
-    desc: "Your belongings, protected and insured",
-    iconName: "ShieldCheck",
   },
 ];
 
@@ -259,75 +238,115 @@ const RESOLVED_ESTATE_MOVE_INCLUDES: TierFeature[] = [
     desc: "Licensed, insured, background-checked movers",
     iconName: "Users",
   },
+  // Pre-move planning
   {
     key: "coordinator",
-    card: "Dedicated move coordinator from booking through final placement",
-    title: "Dedicated move coordinator from booking through final placement",
-    desc: "One person owns your move end to end — booking, planning, crew, and final placement",
+    card: "Dedicated Estate Move Director — named, direct contact from booking to completion",
+    title: "Dedicated Estate Move Director",
+    desc: "Your director's name and direct line from booking through completion — one person owns this entirely",
     iconName: "Phone",
   },
   {
     key: "walkthrough",
-    card: "Pre-move walkthrough with room-by-room placement plan",
-    title: "Pre-move walkthrough with room-by-room placement plan",
-    desc: "We map every piece to its destination room before move day, so nothing is improvised",
+    card: "In-home walkthrough and room-by-room transition planning",
+    title: "In-home walkthrough and room-by-room transition planning",
+    desc: "Your Director maps every piece to its destination room before move day — nothing improvised",
     iconName: "ClipboardCheck",
   },
   {
-    key: "wrapping",
-    card: "Full furniture wrapping and protection",
-    title: "Full furniture wrapping and protection",
-    desc: "Every piece individually wrapped, padded, and protected",
-    iconName: "Package",
+    key: "inventory",
+    card: "Full inventory documentation — every item photographed before loading",
+    title: "Full inventory documentation",
+    desc: "Every item photographed and catalogued before loading — complete evidentiary record",
+    iconName: "ClipboardCheck",
   },
-  {
-    key: "assembly",
-    card: "Complex disassembly & precision reassembly",
-    title: "Complex disassembly & precision reassembly",
-    desc: "Complete furniture breakdown and expert reassembly",
-    iconName: "Wrench",
-  },
-  {
-    key: "floor",
-    card: "Floor and property protection throughout",
-    title: "Floor and property protection throughout",
-    desc: "Premium runners, booties, and guards at every touchpoint",
-    iconName: "Home",
-  },
-  {
-    key: "packing_service",
-    card: "Full packing and unpacking — every room, every item",
-    title: "Full packing and unpacking — every room, every item",
-    desc: "Crew packs every room before move day and unpacks every box at your new home",
-    iconName: "Package",
-  },
+  // White glove handling
   {
     key: "white_glove",
-    card: "White glove handling for art, antiques, and high-value pieces",
-    title: "White glove handling for art, antiques, and high-value pieces",
-    desc: "Museum-grade specialist care for fine art, antiques, and one-of-a-kind possessions",
+    card: "Specialist white glove crew — four-point blanket wrap, no dragging, no stacking",
+    title: "Specialist white glove crew",
+    desc: "Four-point blanket wrap on every piece — no dragging, no stacking, no shortcuts",
     iconName: "Star",
   },
   {
     key: "condition_docs",
-    card: "Condition documentation before and after for all specialty items",
-    title: "Condition documentation before and after for all specialty items",
-    desc: "Photo and written records of every specialty piece before pickup and after placement — full evidentiary trail if any item is questioned",
+    card: "Fine art, antique, and fragile item handling under specialist protocol",
+    title: "Fine art, antique, and fragile item handling under specialist protocol",
+    desc: "Museum-grade specialist care for fine art, antiques, and one-of-a-kind possessions",
     iconName: "Eye",
   },
   {
-    key: "placement",
-    card: "Precision placement in every room",
-    title: "Precision placement in every room",
-    desc: "Every piece positioned exactly where you envision it",
+    key: "wrapping",
+    card: "Full furniture wrapping — every piece, no exceptions",
+    title: "Full furniture wrapping — every piece, no exceptions",
+    desc: "Every item wrapped and padded — specialist protocol throughout",
+    iconName: "Package",
+  },
+  {
+    key: "assembly",
+    card: "Furniture disassembly and precision reassembly",
+    title: "Furniture disassembly and precision reassembly",
+    desc: "Every piece taken apart and expertly reassembled at your new home",
+    iconName: "Wrench",
+  },
+  // Full home preparation
+  {
+    key: "packing_service",
+    card: "Complete professional packing — every room, every item",
+    title: "Complete professional packing",
+    desc: "Every room packed with premium materials before move day",
+    iconName: "Package",
+  },
+  {
+    key: "unpacking_service",
+    card: "Complete unpacking and room setup — shelves, closets, placement per your plan",
+    title: "Complete unpacking and room setup",
+    desc: "Everything unpacked, placed, and arranged per your Director's room plan",
     iconName: "Home",
   },
+  {
+    key: "debris",
+    card: "All debris and packing materials removed at completion",
+    title: "All debris and packing materials removed",
+    desc: "We haul away every blanket, box, and wrap so your new home is move-in ready",
+    iconName: "Trash2",
+  },
+  // Arrival experience
+  {
+    key: "placement",
+    card: "Furniture placement refinement and final room adjustments",
+    title: "Furniture placement refinement and final room adjustments",
+    desc: "Every piece positioned exactly where you envision it — adjustments made until it's right",
+    iconName: "Home",
+  },
+  // Coverage and support
   {
     key: "valuation",
     card: "Full replacement value — current market value, no depreciation",
     title: "Full replacement value — current market value, no depreciation",
-    desc: "Items replaced at today's market value — no depreciation, no payout caps below $10,000 per item, up to $100,000 per move",
+    desc: "Items replaced at today's market value — no depreciation, no payout caps below $10,000 per item",
     iconName: "ShieldCheck",
+  },
+  {
+    key: "mattress_tv",
+    card: "Mattress and television protection bags",
+    title: "Mattress and television protection bags",
+    desc: "Dedicated bags for every mattress and TV in your home",
+    iconName: "Shield",
+  },
+  {
+    key: "wardrobe",
+    card: "Wardrobe boxes for hanging clothes",
+    title: "Wardrobe boxes for hanging clothes",
+    desc: "Provided and returned after your move — no folding, no creasing",
+    iconName: "Shirt",
+  },
+  {
+    key: "floor",
+    card: "Floor, doorway, and elevator protection throughout",
+    title: "Floor, doorway, and elevator protection throughout",
+    desc: "Premium runners, booties, and corner guards at every touchpoint",
+    iconName: "Home",
   },
   {
     key: "equipment",
@@ -344,45 +363,17 @@ const RESOLVED_ESTATE_MOVE_INCLUDES: TierFeature[] = [
     iconName: "MapPin",
   },
   {
-    key: "mattress_tv",
-    card: "Mattress and television protection bags",
-    title: "Mattress and television protection bags",
-    desc: "Dedicated bags for every mattress and TV in your home",
-    iconName: "Shield",
-  },
-  {
-    key: "wardrobe",
-    card: "Wardrobe boxes included",
-    title: "Wardrobe boxes included",
-    desc: "5 wardrobe boxes for hanging clothes — no folding, no creasing",
-    iconName: "Shirt",
-  },
-  {
-    key: "debris",
-    card: "Debris and all packaging removed at completion",
-    title: "Debris and all packaging removed at completion",
-    desc: "We haul away every blanket, box, and wrap so your new home is move-in ready",
-    iconName: "Trash2",
-  },
-  {
-    key: "inventory",
-    card: "Pre-move inventory planning and oversight",
-    title: "Pre-move inventory planning and oversight",
-    desc: "Full inventory documented before and after your move, with the coordinator overseeing every line item",
-    iconName: "ClipboardCheck",
-  },
-  {
     key: "concierge",
-    card: "30-day post-move concierge — direct line to your coordinator",
-    title: "30-day post-move concierge — direct line to your coordinator",
-    desc: "Direct line to the same coordinator for 30 days after move day — no support queues",
+    card: "30-day post-move concierge — direct line to your Director",
+    title: "30-day post-move concierge — direct line to your Director",
+    desc: "Direct line to the same Director for 30 days after move day — no support queues",
     iconName: "Phone",
   },
   {
     key: "perks",
-    card: "Exclusive Yugo Circle partner offers & perks",
-    title: "Exclusive Yugo Circle partner offers & perks",
-    desc: "Member-only partner discounts, settling-in services, and curated home offers",
+    card: "Exclusive Yugo Circle access — partner benefits and priority scheduling",
+    title: "Exclusive Yugo Circle access",
+    desc: "Member-only partner benefits, settling-in services, and priority scheduling",
     iconName: "Gift",
   },
   {
@@ -392,16 +383,9 @@ const RESOLVED_ESTATE_MOVE_INCLUDES: TierFeature[] = [
     desc: "The price you see is the price you pay",
     iconName: "DollarSign",
   },
-  {
-    key: "damage",
-    card: "Zero-damage commitment",
-    title: "Zero-damage commitment",
-    desc: "Your belongings, protected and insured",
-    iconName: "ShieldCheck",
-  },
 ];
 
-/** Signature tier: lines after “Everything in Essential, plus:” on tier cards only (not merged into “Your Move Includes”). */
+/** Signature tier: lines after "Everything in Essential, plus:" on tier cards only (not merged into "Your Move Includes"). */
 export const DEFAULT_SIGNATURE_ADDITIONS: TierFeature[] = [
   {
     key: "valuation",
@@ -414,8 +398,8 @@ export const DEFAULT_SIGNATURE_ADDITIONS: TierFeature[] = [
   {
     key: "wrapping",
     card: "Complete furniture wrapping — every piece, no exceptions",
-    title: "Complete furniture wrapping",
-    desc: "Every piece individually wrapped and padded — no exceptions",
+    title: "Complete furniture wrapping — every piece, no exceptions",
+    desc: "Every item wrapped in quilted moving blankets — no exceptions",
     iconName: "Package",
   },
   {
@@ -426,17 +410,24 @@ export const DEFAULT_SIGNATURE_ADDITIONS: TierFeature[] = [
     iconName: "Shield",
   },
   {
+    key: "assembly",
+    card: "Furniture disassembly and reassembly — beds, desks, standard furniture",
+    title: "Furniture disassembly and reassembly",
+    desc: "Beds, desks, and standard furniture taken apart and put back together",
+    iconName: "Wrench",
+  },
+  {
     key: "placement",
-    card: "Room-of-choice placement throughout the home",
-    title: "Room-of-choice placement throughout the home",
+    card: "Room-of-choice placement throughout your home",
+    title: "Room-of-choice placement throughout your home",
     desc: "Every piece placed in the exact room you want — not just the entry",
     iconName: "Compass",
   },
   {
     key: "wardrobe",
-    card: "Wardrobe box provided for immediate use",
-    title: "Wardrobe box provided for immediate use",
-    desc: "Hang your clothes directly on move day — no folding, no creasing",
+    card: "Wardrobe box for hanging clothes — returned after your move",
+    title: "Wardrobe box for hanging clothes",
+    desc: "Provided and returned after your move — no folding, no creasing",
     iconName: "Shirt",
   },
   {
@@ -455,71 +446,80 @@ export const DEFAULT_SIGNATURE_ADDITIONS: TierFeature[] = [
   },
 ];
 
-/** Estate tier: lines after “Everything in Signature, plus:” on tier cards only. */
+/** Estate tier: lines after "Everything in Signature, plus:" on tier cards only. */
 export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
+  // Named director replaces coordinator
   {
-    key: "valuation",
-    card: "Full replacement value — current market value, no depreciation",
-    title: "Full replacement value",
-    desc: "Items replaced at today's market value — no depreciation, no payout caps below $10,000 per item, up to $100,000 per move",
-    iconName: "ShieldCheck",
+    key: "coordinator",
+    card: "Dedicated Estate Move Director — named, direct contact from booking to completion",
+    title: "Dedicated Estate Move Director",
+    desc: "Your director's name and direct line from booking through completion — one person owns this entirely",
+    iconName: "Phone",
     highlight: true,
   },
   {
-    key: "coordinator",
-    card: "Dedicated move coordinator from booking through final placement",
-    title: "Dedicated move coordinator from booking through final placement",
-    desc: "One person owns your move end to end — booking, planning, crew, and final placement",
-    iconName: "Phone",
-  },
-  {
     key: "walkthrough",
-    card: "Pre-move walkthrough with room-by-room placement plan",
-    title: "Pre-move walkthrough with room-by-room placement plan",
-    desc: "We map every piece to its destination room before move day, so nothing is improvised",
+    card: "In-home walkthrough and room-by-room transition planning",
+    title: "In-home walkthrough and room-by-room transition planning",
+    desc: "Your Director maps every piece to its destination room before move day",
     iconName: "ClipboardCheck",
   },
   {
-    key: "packing_service",
-    card: "Full packing and unpacking — every room, every item",
-    title: "Full packing and unpacking — every room, every item",
-    desc: "Crew packs every room before move day and unpacks every box at your new home",
-    iconName: "Package",
+    key: "inventory",
+    card: "Full inventory documentation — every item photographed before loading",
+    title: "Full inventory documentation",
+    desc: "Every item photographed and catalogued before loading — complete evidentiary record",
+    iconName: "ClipboardCheck",
   },
   {
     key: "white_glove",
-    card: "White glove handling for art, antiques, and high-value pieces",
-    title: "White glove handling for art, antiques, and high-value pieces",
-    desc: "Museum-grade specialist care for fine art, antiques, and one-of-a-kind possessions",
+    card: "Specialist white glove crew — four-point blanket wrap, no dragging, no stacking",
+    title: "Specialist white glove crew",
+    desc: "Four-point blanket wrap on every piece — no dragging, no stacking, no shortcuts",
     iconName: "Star",
     highlight: true,
   },
   {
     key: "condition_docs",
-    card: "Condition documentation before and after for all specialty items",
-    title: "Condition documentation before and after for all specialty items",
-    desc: "Photo and written records of every specialty piece before pickup and after placement — full evidentiary trail if any item is questioned",
+    card: "Fine art, antique, and fragile item handling under specialist protocol",
+    title: "Fine art, antique, and fragile item handling",
+    desc: "Museum-grade specialist care for fine art, antiques, and one-of-a-kind possessions",
     iconName: "Eye",
   },
   {
-    key: "inventory",
-    card: "Pre-move inventory planning and oversight",
-    title: "Pre-move inventory planning and oversight",
-    desc: "Full inventory documented before and after your move, with the coordinator overseeing every line item",
-    iconName: "ClipboardCheck",
+    key: "packing_service",
+    card: "Complete professional packing — every room, every item",
+    title: "Complete professional packing",
+    desc: "Every room packed with premium materials before move day",
+    iconName: "Package",
+  },
+  {
+    key: "unpacking_service",
+    card: "Complete unpacking and room setup — shelves, closets, placement per your plan",
+    title: "Complete unpacking and room setup",
+    desc: "Everything unpacked, placed, and arranged per your Director's room plan",
+    iconName: "Home",
+  },
+  {
+    key: "valuation",
+    card: "Full replacement value — current market value, no depreciation",
+    title: "Full replacement value",
+    desc: "Items replaced at today's market value — no depreciation, no payout caps below $10,000 per item",
+    iconName: "ShieldCheck",
+    highlight: true,
   },
   {
     key: "concierge",
-    card: "30-day post-move concierge — direct line to your coordinator",
-    title: "30-day post-move concierge — direct line to your coordinator",
-    desc: "Direct line to the same coordinator for 30 days after move day — no support queues",
+    card: "30-day post-move concierge — direct line to your Director",
+    title: "30-day post-move concierge — direct line to your Director",
+    desc: "Direct line to the same Director for 30 days after move day — no support queues",
     iconName: "Phone",
   },
   {
     key: "perks",
-    card: "Exclusive Yugo Circle partner offers & perks",
-    title: "Exclusive Yugo Circle partner offers & perks",
-    desc: "Member-only partner discounts, settling-in services, and curated home offers",
+    card: "Exclusive Yugo Circle access — partner benefits and priority scheduling",
+    title: "Exclusive Yugo Circle access",
+    desc: "Member-only partner benefits, settling-in services, and priority scheduling",
     iconName: "Gift",
   },
 ];
@@ -527,8 +527,8 @@ export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
 const DEFAULT_ESSENTIAL: TierFeature[] = [
   {
     key: "truck",
-    card: "Dedicated Moving Truck",
-    title: "Dedicated Moving Truck",
+    card: "Dedicated moving truck",
+    title: "Dedicated moving truck",
     desc: "Fully equipped for your move",
     iconName: "Truck",
   },
@@ -541,17 +541,10 @@ const DEFAULT_ESSENTIAL: TierFeature[] = [
   },
   {
     key: "wrapping",
-    card: "Protective wrapping for all standard furniture",
-    title: "Protective wrapping for all standard furniture",
-    desc: "Standard furniture wrapped in quilted moving blankets",
-    iconName: "Armchair",
-  },
-  {
-    key: "assembly",
-    card: "Basic disassembly & reassembly",
-    title: "Basic disassembly & reassembly",
-    desc: "We take it apart and put it back together",
-    iconName: "Wrench",
+    card: "Protective wrapping for up to 3 furniture pieces",
+    title: "Protective wrapping for up to 3 furniture pieces",
+    desc: "Client selects which 3 items are wrapped in quilted moving blankets",
+    iconName: "Package",
   },
   {
     key: "floor",
@@ -569,9 +562,9 @@ const DEFAULT_ESSENTIAL: TierFeature[] = [
   },
   {
     key: "placement_standard",
-    card: "Standard placement (entry point only)",
-    title: "Standard placement (entry point only)",
-    desc: "Items placed at the main entry or threshold; room-by-room placement is included on higher tiers.",
+    card: "Entry point placement",
+    title: "Entry point placement",
+    desc: "Items placed at the main entry or threshold — room-of-choice placement is available on Signature and Estate",
     iconName: "MapPin",
   },
   {
@@ -587,6 +580,13 @@ const DEFAULT_ESSENTIAL: TierFeature[] = [
     title: "Real-time GPS move tracking",
     desc: "Follow your move live from any device",
     iconName: "MapPin",
+  },
+  {
+    key: "price",
+    card: "Guaranteed flat price",
+    title: "Guaranteed flat price",
+    desc: "The price you see is the price you pay",
+    iconName: "DollarSign",
   },
 ];
 
@@ -606,7 +606,7 @@ export const DEFAULT_RESIDENTIAL_TIER_FEATURES_STORAGE: ResidentialTierFeaturesS
 /**
  * Stable merge id when `key` is omitted (legacy JSON, hand-edited admin rows).
  * MUST align with canonical `TierFeature.key` values so Signature/Estate additions replace Essential rows
- * instead of stacking (e.g. “key furniture” wrapping vs “all furniture” wrapping share `wrapping`).
+ * instead of stacking (e.g. "key furniture" wrapping vs "all furniture" wrapping share `wrapping`).
  */
 export function inferFeatureKeyFromContent(f: TierFeature): string {
   const blob = `${f.card} ${f.title} ${f.desc}`.toLowerCase().replace(/\s+/g, " ");
@@ -736,7 +736,7 @@ export function mergeResidentialIncludeLinesDeduped(base: string[], extra: strin
 }
 
 /**
- * Tier card “plus:” bullets: show additions whose key is new vs the resolved lower tier,
+ * Tier card "plus:" bullets: show additions whose key is new vs the resolved lower tier,
  * or any row marked `highlight` (major upgrades you still want called out on the card).
  */
 export function filterTierCardAdditions(priorResolved: TierFeature[], additions: TierFeature[]): TierFeature[] {
@@ -834,7 +834,7 @@ export function expandResidentialTierFeaturesStorage(s: ResidentialTierFeaturesS
 
 export type ResidentialTierFeatureBundle = {
   full: Record<(typeof TIER_ORDER)[number], TierFeature[]>;
-  /** Bullets after the “plus” line on tier cards (empty when using legacy full-array layout). */
+  /** Bullets after the "plus" line on tier cards (empty when using legacy full-array layout). */
   cardAdditions: { signature: TierFeature[]; estate: TierFeature[] };
   useAdditiveCards: { signature: boolean; estate: boolean };
 };

@@ -528,6 +528,22 @@ export default function ResidentialLayout({
                       </p>
                     )}
 
+                    {/* Upgrade nudge — Essential only, not collapsed */}
+                    {!isCollapsed && tierKey === "essential" && (
+                      <p className="text-xs text-gray-400 mt-1 mb-4 text-center px-2 leading-relaxed shrink-0">
+                        Most clients moving a{" "}
+                        {quote.move_size === "1br"
+                          ? "1-bedroom"
+                          : quote.move_size === "2br"
+                            ? "2-bedroom"
+                            : quote.move_size === "3br"
+                              ? "3-bedroom"
+                              : "full"}{" "}
+                        home choose Signature for complete protection and
+                        room-of-choice placement.
+                      </p>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => onSelectTier(tierKey)}

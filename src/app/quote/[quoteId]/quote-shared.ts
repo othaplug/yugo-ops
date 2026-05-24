@@ -268,33 +268,31 @@ export type ResidentialQuoteTierMetaMap = Record<
 export const TIER_META: ResidentialQuoteTierMetaMap = {
   essential: {
     label: TIER_LABELS.essential,
-    tagline: "Precision and care, handled efficiently.",
+    tagline: "Precision, without the extras.",
     accent: FOREST,
     bg: "#FFFFFF",
     border: "#E2DDD5",
-    footer:
-      "Best for: simple, well-prepared moves with minimal handling needs.",
+    footer: "Best for: organized, prepared moves with minimal handling needs.",
   },
   signature: {
     label: TIER_LABELS.signature,
-    tagline:
-      "A fully managed move, where everything is handled before you have to think about it.",
+    tagline: "Everything protected. Nothing exposed.",
     badge: "RECOMMENDED",
     accent: WINE,
     bg: "#FFFDF8",
     border: `${WINE}45`,
     footer:
-      "Best for: complete home moves where time, flow, and peace of mind matter.",
+      "Best for: full-home moves where protection, flow, and peace of mind matter.",
     inclusionsIntro: "Everything in Essential, plus:",
   },
   estate: {
     label: TIER_LABELS.estate,
-    tagline:
-      "A private standard, executed with intention from start to finish.",
+    tagline: "A fully managed home transition.",
     accent: WINE,
     bg: "#FDF8FA",
     border: WINE,
-    footer: "Best for: high-value homes, art, antiques & complete transitions.",
+    footer:
+      "Best for: clients who expect every detail handled — high-value homes, art, antiques, complete transitions.",
     inclusionsIntro: "Everything in Signature, plus:",
   },
 };

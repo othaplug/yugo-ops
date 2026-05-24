@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { TIER_DEFINITIONS } from "@/lib/tiers/tier-definitions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuth } from "@/lib/api-auth";
 import { isSuperAdminEmail } from "@/lib/super-admin";
@@ -1223,6 +1224,8 @@ async function calcResidential(
   labour: LabourEstimate,
   deadheadInfo: { distance_km: number; drive_time_min: number } | null,
   returnInfo: { distance_km: number; drive_time_min: number } | null,
+  /** Labour estimate with assembly minutes zeroed — used to compute Essential tier price (assembly is an add-on). */
+  labourNoAssembly: LabourEstimate,
 ) {
   const pricingDebug =
     input.debug_pricing === true ||
@@ -1536,9 +1539,17 @@ async function calcResidential(
       const minHoursFloor = minHoursFloors[input.move_size ?? "2br"] ?? 3;
       // White glove adds +1 minimum hour
       const effectiveMinHours = input.service_type === "white_glove" ? minHoursFloor + 1 : minHoursFloor;
+
+      // Signature + Estate: full hours including assembly
       const effectiveHours = Math.max(labour.estimatedHours, effectiveMinHours);
       const actualManHours = labour.crewSize * effectiveHours;
       const extraManHoursRaw = Math.max(0, actualManHours - baselineManHours);
+
+      // Essential: assembly NOT included — use no-assembly labour for the delta
+      const essentialLabour = labourNoAssembly ?? labour;
+      const effectiveHoursEssential = Math.max(essentialLabour?.estimatedHours ?? labour.estimatedHours, effectiveMinHours);
+      const actualManHoursEssential = (essentialLabour?.crewSize ?? labour.crewSize) * effectiveHoursEssential;
+      const extraManHoursEssential = Math.max(0, actualManHoursEssential - baselineManHours);
 
       // ── Labour delta sanity guard ──────────────────────────────────────────
       // Don't add a delta if the (pre-delta) effective hourly rate is already at or
@@ -1557,11 +1568,15 @@ async function calcResidential(
       // means the base rate is misconfigured for this size — surface a warning
       // and suppress the surcharge rather than silently ballooning the price.
       const maxExtraManHours = 1;
+      const cappedExtraManHoursEssential = rateAlreadyAboveFloor
+        ? 0
+        : Math.min(extraManHoursEssential, maxExtraManHours);
       const cappedExtraManHours = rateAlreadyAboveFloor
         ? 0
         : Math.min(extraManHoursRaw, maxExtraManHours);
 
-      tieredLabourDelta.essential = Math.round(cappedExtraManHours * labourRates.essential);
+      // Essential uses no-assembly hours; Signature/Estate use full hours with assembly
+      tieredLabourDelta.essential = Math.round(cappedExtraManHoursEssential * labourRates.essential);
       tieredLabourDelta.signature = Math.round(cappedExtraManHours * labourRates.signature);
       tieredLabourDelta.estate    = Math.round(cappedExtraManHours * labourRates.estate);
 
@@ -1571,23 +1586,28 @@ async function calcResidential(
       pd("Step 6.5 — labour delta sanity guard:", {
         marketAdjustedPrice,
         actualManHours,
+        actualManHoursEssential,
         preDeltaEffectiveRate: Math.round(preDeltaEffectiveRate * 100) / 100,
         labourFloorEssential,
         rateAlreadyAboveFloor,
         extraManHoursRaw,
+        extraManHoursEssential,
         cappedExtraManHours,
+        cappedExtraManHoursEssential,
         suppressed: rateAlreadyAboveFloor || extraManHoursRaw > maxExtraManHours,
       });
 
       pd("Step 6 — labour vs benchmark:", {
         labour_crew: labour.crewSize,
         labour_estimated_hours: labour.estimatedHours,
+        essential_estimated_hours: essentialLabour?.estimatedHours ?? labour.estimatedHours,
         benchmark_crew: bm.baseline_crew,
         benchmark_hours: bm.baseline_hours,
         baseline_man_hours: baselineManHours,
         min_hours_floor: minHoursFloor,
         effective_min_hours: effectiveMinHours,
         effective_hours_used: effectiveHours,
+        effective_hours_essential: effectiveHoursEssential,
         actual_man_hours: actualManHours,
         extra_man_hours: extraManHoursRaw,
         capped_extra_man_hours: cappedExtraManHours,
@@ -1618,13 +1638,15 @@ async function calcResidential(
 
   const rounding = cfgNum(config, "rounding_nearest", 50);
   const minJob = cfgNum(config, "minimum_job_amount", 549);
-  // Support both old and new config key names during transition
+  // Support both old and new config key names during transition.
+  // Code-level fallbacks come from TIER_DEFINITIONS so they stay in sync with the canonical definition.
+  // The live value is always platform_config (admin-editable via Pricing Settings).
   const curatedMult = cfgNum(config, "tier_essential_multiplier",
     cfgNum(config, "tier_curated_multiplier",
-    cfgNum(config, "tier_essentials_multiplier", 1.0)));
+    cfgNum(config, "tier_essentials_multiplier", TIER_DEFINITIONS.essential.pricing.multiplier)));
   const signatureMultBase = cfgNum(config, "tier_signature_multiplier",
-    cfgNum(config, "tier_premier_multiplier", 1.50));
-  const estateMult = cfgNum(config, "tier_estate_multiplier", 3.15);
+    cfgNum(config, "tier_premier_multiplier", TIER_DEFINITIONS.signature.pricing.multiplier));
+  const estateMult = cfgNum(config, "tier_estate_multiplier", TIER_DEFINITIONS.estate.pricing.multiplier);
 
   /**
    * Size-adjusted Signature multiplier.
@@ -1958,6 +1980,12 @@ async function calcResidential(
       assembly_items_count: Array.isArray(input.assembly_items) ? input.assembly_items.length : 0,
       assembly_override:
         input.assembly_override !== undefined ? input.assembly_override : null,
+      // Essential tier: assembly is an add-on, not included. Flag for admin preview warning.
+      essential_assembly_addon_required:
+        !TIER_DEFINITIONS.essential.ops.includesAssembly &&
+        (input.assembly_override === true ||
+          (input.assembly_override !== false && input.assembly_required === true)) &&
+        (input.assembly_minutes ?? 0) > 0,
       // Estimated cost / margin (admin only — not shown to clients)
       estimated_cost: {
         labour: estLabourCost,
@@ -4153,6 +4181,8 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       : undefined;
 
   let labourClient: { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } | null = null;
+  // Declared here so it's in scope after the if/else block (used at calcResidential call site).
+  let labourClientNoAssembly: LabourEstimate = null;
 
   if (adjustedScore > 0) {
     let catalogMinCrew: number | undefined;
@@ -4179,6 +4209,30 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       effectiveAssemblyOn && (input.assembly_minutes ?? 0) > 0
         ? input.assembly_minutes!
         : 0;
+
+    // Assembly is NOT included in Essential tier — it's an add-on.
+    // Compute a no-assembly labour estimate for the Essential tier price,
+    // and the standard (with-assembly) estimate for Signature and Estate.
+    labourClientNoAssembly =
+      labourAssemblyMinutes > 0
+        ? estimateLabourFromScore(
+            adjustedScore,
+            distInfo?.distance_km ?? 0,
+            input.from_access,
+            input.to_access,
+            input.move_size ?? "2br",
+            {
+              driveTimeMinutes: distInfo?.drive_time_min,
+              specialtyItems: input.specialty_items,
+              whiteGloveHoursMultiplier: false,
+              hoursEstimateMode: "client_on_job",
+              truckInventoryScore: truckInventoryScoreForLabour,
+              catalogMinCrew,
+              assemblyMinutes: 0,
+            },
+          )
+        : null;
+
     labourClient = estimateLabourFromScore(
       adjustedScore,
       distInfo?.distance_km ?? 0,
@@ -4262,6 +4316,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         labourForResidential,
         deadheadInfo,
         returnInfo,
+        labourClientNoAssembly ?? labourForResidential,
       );
       tiers = res.tiers;
       factors = res.factors;
@@ -5057,6 +5112,16 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         last_regenerated_by: authUser?.id ?? null,
         is_revised: ["sent", "viewed"].includes(String(existingQuoteSnapshot.status ?? "")),
       } : {}),
+      // ── Tier ops snapshot (residential) — freezes the service contract at booking time ──
+      ...(svcType === "local_move" || svcType === "long_distance"
+        ? {
+            tier_ops_snapshot: {
+              essential: TIER_DEFINITIONS.essential.ops,
+              signature: TIER_DEFINITIONS.signature.ops,
+              estate: TIER_DEFINITIONS.estate.ops,
+            },
+          }
+        : {}),
     };
 
     if (isUpdate) {
