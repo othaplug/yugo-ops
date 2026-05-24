@@ -2713,7 +2713,15 @@ async function calcSpecialty(
     }
   }
   const projectBase = baseMap[pt] ?? baseMap.custom ?? 500;
-  const hours = input.timeline_hours ?? 4;
+  // Internal default for the price calculation only — DO NOT write this
+  // default into factors_applied. The 4-hour fallback is wrong for any
+  // long-distance specialty (Ottawa→Toronto is a 9–12 hour day) and
+  // misleads the client when it leaks to the quote page. We track
+  // whether the value was coordinator-provided so we can persist
+  // timeline_hours only when it's meaningful.
+  const timelineHoursExplicit =
+    typeof input.timeline_hours === "number" && Number.isFinite(input.timeline_hours);
+  const hours = timelineHoursExplicit ? (input.timeline_hours as number) : 4;
   const flatBaseTypes = new Set([
     "piano_upright",
     "piano_grand",
@@ -2791,7 +2799,10 @@ async function calcSpecialty(
     } as TierResult,
     factors: {
       project_base: projectBase,
-      timeline_hours: hours,
+      // Only persist timeline_hours when the coordinator explicitly set
+      // it — otherwise downstream renderers would surface the engine's
+      // 4-hour default as if it were a real estimate.
+      ...(timelineHoursExplicit ? { timeline_hours: hours } : {}),
       distance_surcharge: distanceSurcharge,
       crating_surcharge: (input.custom_crating_pieces ?? 0) * cratingPerPiece,
       climate_surcharge: input.climate_control ? climateSur : 0,
@@ -4831,8 +4842,40 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       }
       tiers = nextTiers;
     }
+    // Zero out engine-computed surcharge fields. The override sets a
+    // new headline price that ignores the engine's per-component math,
+    // but the old surcharge values stay in factors_applied unless we
+    // explicitly clear them. Left in place, they confused the client
+    // quote page (e.g. "Distance $1,850" rendered above a $1,100 total)
+    // and made audit logs / admin tools show contradictory numbers.
+    // Setting to 0 makes downstream `f?.xxx_surcharge && {...}` checks
+    // falsy so they drop out of breakdown tables cleanly. We keep
+    // descriptive fields (project_base, truck_recommended, building
+    // requirements, access difficulty, system_price) since they're
+    // factual context, not pricing claims.
+    const engineSurchargeFields = [
+      "distance_surcharge",
+      "crating_surcharge",
+      "climate_surcharge",
+      "equipment_surcharge",
+      "custom_crating_surcharge",
+      "climate_control_surcharge",
+      "timeline_surcharge",
+      "parking_long_carry_total",
+      "truck_surcharge",
+      "base_estimate",
+      "weight_surcharge",
+      "access_surcharge",
+      "long_carry_surcharge",
+      "stairs_surcharge",
+    ] as const;
+    const cleared: Record<string, number> = {};
+    for (const field of engineSurchargeFields) {
+      if (field in (factors as Record<string, unknown>)) cleared[field] = 0;
+    }
     factors = {
       ...factors,
+      ...cleared,
       override_price_pre_tax: quoteOvr,
       override_reason: quoteOvrReason,
     };
