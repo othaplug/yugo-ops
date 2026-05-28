@@ -795,6 +795,67 @@ export default function NewDeliveryForm({
         }
       }
 
+      // R1 Part 2: if the operator chose a receive-and-deliver or
+      // receive-and-recover scope, create the inbound_shipments row
+      // and FK-link it to the new delivery. Fire-and-forget so the
+      // delivery create flow continues even if the inbound write
+      // errors — failure is logged server-side, surfaced via a console
+      // warn here, and the operator can manually add the shipment from
+      // /admin/inbound-shipments/new afterward.
+      if (
+        (jobScope === "receive_and_deliver" || jobScope === "receive_and_recover") &&
+        (inboundDraft.carrier_name.trim() ||
+          inboundDraft.carrier_tracking_number.trim())
+      ) {
+        const declaredValNum = inboundDraft.declared_value
+          ? Number(inboundDraft.declared_value)
+          : null;
+        const originPrefix = inboundDraft.origin_country.trim()
+          ? `Origin: ${inboundDraft.origin_country.trim()}.`
+          : "";
+        const scopeNote =
+          jobScope === "receive_and_recover"
+            ? "Scope: receive + deliver + recover original (swap)."
+            : "Scope: receive at warehouse + deliver.";
+        const combinedInstructions = [
+          originPrefix,
+          scopeNote,
+          inboundDraft.special_instructions.trim(),
+        ]
+          .filter(Boolean)
+          .join(" ");
+        fetch("/api/admin/inbound-shipments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            delivery_id: created.id,
+            organization_id: organizationId || null,
+            carrier_name: inboundDraft.carrier_name.trim() || null,
+            carrier_tracking_number:
+              inboundDraft.carrier_tracking_number.trim() || null,
+            carrier_eta: inboundDraft.carrier_eta || null,
+            customer_name: customerName.trim() || null,
+            customer_email: customerEmail.trim() || null,
+            customer_phone: customerPhone.trim() || null,
+            customer_address: deliveryAddress.trim() || null,
+            special_instructions: combinedInstructions || null,
+            service_level: "white_glove",
+            requires_assembly: false,
+            requires_debris_removal: false,
+            allow_empty_items: true,
+            // delivery_value carried for downstream pricing / audit
+            ...(declaredValNum != null && Number.isFinite(declaredValNum)
+              ? { declared_value: declaredValNum }
+              : {}),
+          }),
+        }).catch((err) => {
+          console.warn(
+            "[NewDeliveryForm] inbound_shipments link failed",
+            err instanceof Error ? err.message : err,
+          );
+        });
+      }
+
       clearDraft();
       const path = created.delivery_number
         ? `/admin/deliveries/${encodeURIComponent(created.delivery_number)}`

@@ -289,6 +289,30 @@ interface HubSpotContact {
 
 type HubSpotMatchKind = "email" | "phone" | "company_name" | "company";
 
+/**
+ * R1 Part 2: payload announced by B2BJobsDeliveryForm to its parent
+ * after a successful save. Lets the parent (e.g. B2BOneOffDeliveryForm
+ * wrapper, QuoteFormClient embed) do post-save work like creating an
+ * inbound_shipments row from the JobScopeSection's local state.
+ *
+ * `kind`:
+ *   - "delivery" → /api/admin/deliveries/create succeeded; `id` is the
+ *     deliveries.id (use for inbound_shipments.delivery_id FK).
+ *   - "quote"    → /api/quotes/generate + /api/quotes/send succeeded;
+ *     `id` is the human quote_id slug (use with
+ *     /api/admin/quotes/{id}/link-inbound-shipment).
+ *
+ * The form AWAITS the callback before navigating away so any async
+ * inbound-shipment write the parent fires can complete first. Errors
+ * thrown by the callback are caught and surfaced as a non-blocking
+ * console warning — the form proceeds to navigate either way.
+ */
+export type B2BJobsSubmitSuccess = {
+  kind: "delivery" | "quote";
+  id: string;
+  deliveryNumber?: string | null;
+};
+
 export type B2BJobsDeliveryFormProps = {
   crews?: B2BJobsCrew[];
   organizations?: B2BJobsOrg[];
@@ -297,6 +321,13 @@ export type B2BJobsDeliveryFormProps = {
   embed?: boolean;
   /** Sync dimensional state to parent (Generate Quote sidebar + submit payload). */
   onEmbedStateChange?: (state: B2BJobsEmbedSnapshot) => void;
+  /**
+   * R1 Part 2: fired after a successful delivery create or quote send.
+   * Awaited before navigation. Parents use this to attach an
+   * inbound_shipments row to the freshly-created delivery/quote when
+   * the JobScopeSection has scope != direct_delivery.
+   */
+  onSubmitSuccess?: (result: B2BJobsSubmitSuccess) => Promise<void> | void;
 };
 
 export default function B2BJobsDeliveryForm({
@@ -305,6 +336,7 @@ export default function B2BJobsDeliveryForm({
   verticals = [],
   embed = false,
   onEmbedStateChange,
+  onSubmitSuccess,
 }: B2BJobsDeliveryFormProps) {
   const router = useRouter();
   const embedCbRef = useRef(onEmbedStateChange);
@@ -1564,6 +1596,23 @@ export default function B2BJobsDeliveryForm({
           }),
         }).catch(() => {});
       }
+      // R1 Part 2: announce success so parents (B2BOneOffDeliveryForm
+      // wrapper, QuoteFormClient embed) can attach an
+      // inbound_shipments row before we navigate away.
+      if (onSubmitSuccess) {
+        try {
+          await onSubmitSuccess({
+            kind: "delivery",
+            id: created.id,
+            deliveryNumber: created.delivery_number ?? null,
+          });
+        } catch (err) {
+          console.warn(
+            "[B2BJobsDeliveryForm] onSubmitSuccess threw",
+            err instanceof Error ? err.message : err,
+          );
+        }
+      }
       const path = created.delivery_number
         ? `/admin/deliveries/${encodeURIComponent(created.delivery_number)}`
         : `/admin/deliveries/${created.id}`;
@@ -1790,6 +1839,19 @@ export default function B2BJobsDeliveryForm({
       }
 
       clearDraft();
+      // R1 Part 2: announce success so the parent can link an
+      // inbound_shipments row to this quote (via
+      // /api/admin/quotes/{quote_id}/link-inbound-shipment).
+      if (onSubmitSuccess) {
+        try {
+          await onSubmitSuccess({ kind: "quote", id: qid });
+        } catch (err) {
+          console.warn(
+            "[B2BJobsDeliveryForm] onSubmitSuccess threw",
+            err instanceof Error ? err.message : err,
+          );
+        }
+      }
       router.push(`/admin/quotes/${encodeURIComponent(qid)}`);
       router.refresh();
     } catch (e) {

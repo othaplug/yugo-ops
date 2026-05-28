@@ -10543,10 +10543,7 @@ export default function QuoteFormClient({
                   </p>
                   {/* R1: Job scope picker — captures whether this is a
                      direct-delivery, receive-and-deliver, or
-                     receive-and-recover (swap) job. When an inbound scope
-                     is selected, the section also collects carrier /
-                     waybill / ETA / declared-value. State is held here
-                     but linkage to inbound_shipments happens in R1 Part 2. */}
+                     receive-and-recover (swap) job. */}
                   <JobScopeSection
                     value={jobScope}
                     onChange={setJobScope}
@@ -10559,6 +10556,75 @@ export default function QuoteFormClient({
                     organizations={b2bOrganizations}
                     crews={b2bCrews}
                     onEmbedStateChange={handleB2bEmbedStateChange}
+                    onSubmitSuccess={async (result) => {
+                      // R1 Part 2: link an inbound_shipments row to the
+                      // freshly-created delivery or quote when the
+                      // scope picker indicates an inbound leg.
+                      if (!scopeRequiresInbound(jobScope)) return;
+                      const carrier = inboundDraft.carrier_name.trim();
+                      const tracking = inboundDraft.carrier_tracking_number.trim();
+                      if (!carrier && !tracking) return;
+                      const declaredValNum = inboundDraft.declared_value
+                        ? Number(inboundDraft.declared_value)
+                        : null;
+                      const originPrefix = inboundDraft.origin_country.trim()
+                        ? `Origin: ${inboundDraft.origin_country.trim()}.`
+                        : "";
+                      const scopeNote =
+                        jobScope === "receive_and_recover"
+                          ? "Scope: receive + deliver + recover original (swap)."
+                          : "Scope: receive at warehouse + deliver.";
+                      const combinedInstructions = [
+                        originPrefix,
+                        scopeNote,
+                        inboundDraft.special_instructions.trim(),
+                      ]
+                        .filter(Boolean)
+                        .join(" ");
+                      // origin_country is already folded into
+                      // combinedInstructions above; omitting it as a
+                      // top-level field avoids the link endpoint double-
+                      // prefixing "Origin: …".
+                      const inboundPayload = {
+                        carrier_name: carrier || null,
+                        carrier_tracking_number: tracking || null,
+                        carrier_eta: inboundDraft.carrier_eta || null,
+                        special_instructions: combinedInstructions || null,
+                        service_level: "white_glove" as const,
+                        requires_assembly: false,
+                        requires_debris_removal: false,
+                        ...(declaredValNum != null && Number.isFinite(declaredValNum)
+                          ? { declared_value: declaredValNum }
+                          : {}),
+                      };
+                      try {
+                        if (result.kind === "delivery") {
+                          await fetch("/api/admin/inbound-shipments", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              delivery_id: result.id,
+                              allow_empty_items: true,
+                              ...inboundPayload,
+                            }),
+                          });
+                        } else {
+                          await fetch(
+                            `/api/admin/quotes/${encodeURIComponent(result.id)}/link-inbound-shipment`,
+                            {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify(inboundPayload),
+                            },
+                          );
+                        }
+                      } catch (err) {
+                        console.warn(
+                          "[QuoteFormClient B2B embed] inbound link failed",
+                          err instanceof Error ? err.message : err,
+                        );
+                      }
+                    }}
                   />
                 </div>
               )}

@@ -93,10 +93,29 @@ export async function POST(req: NextRequest) {
       receiving_fee,
       total_price,
       billing_method,
+      // R1 Part 2: when a delivery is created via NewDeliveryForm /
+      // B2BJobsDeliveryForm with a scope of receive_and_deliver /
+      // receive_and_recover, we POST here with the resulting
+      // delivery_id so the inbound_shipments row is FK-linked back.
+      delivery_id,
+      // R1 Part 2: tolerate empty items when this row is created from
+      // the scope picker (the items live on the parent delivery's own
+      // inventory). Requires at least one of (items, delivery_id,
+      // carrier_tracking_number) so the row isn't completely empty.
+      allow_empty_items,
     } = body;
 
     if (!Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: "At least one item is required" }, { status: 400 });
+      const hasParentLink = !!delivery_id;
+      const hasCarrierWaybill =
+        typeof carrier_tracking_number === "string" &&
+        carrier_tracking_number.trim().length > 0;
+      if (!allow_empty_items && !hasParentLink && !hasCarrierWaybill) {
+        return NextResponse.json(
+          { error: "At least one item is required" },
+          { status: 400 },
+        );
+      }
     }
 
     const db = createAdminClient();
@@ -125,6 +144,9 @@ export async function POST(req: NextRequest) {
 
     const hasCustomerNow = !customer_later;
     const insert = {
+      // R1 Part 2: optional FK back to the delivery row that owns this
+      // inbound shipment. Null for legacy / standalone creates.
+      delivery_id: delivery_id || null,
       organization_id: organization_id || null,
       partner_name: orgSnap.partner_name,
       partner_contact_name: orgSnap.partner_contact_name,
