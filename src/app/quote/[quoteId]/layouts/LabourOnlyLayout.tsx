@@ -286,8 +286,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
 
       {/* Investment summary */}
       <div
-        className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden"
-        style={{ borderColor: FOREST }}
+        className="bg-white rounded-2xl overflow-hidden"
       >
         <div
           className="px-5 py-4 border-b"
