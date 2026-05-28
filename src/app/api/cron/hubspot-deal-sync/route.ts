@@ -65,9 +65,48 @@ export async function GET(req: NextRequest) {
   const results = {
     quotes_synced: 0,
     moves_synced: 0,
+    deal_ids_propagated: 0,
     stages_synced: 0,
     failures: 0,
     errors: [] as string[],
+  }
+
+  // ── Propagate deal IDs from quotes → moves ─────────────────────────
+  // Moves created before their quote's hubspot_deal_id was set (or where
+  // the quote's deal was created later via the retry button) have a NULL
+  // hubspot_deal_id even though their source quote has one. Find and fix.
+  const { data: orphanMoves } = await sb
+    .from("moves")
+    .select("id, move_code, status, scheduled_date, quote_id")
+    .is("hubspot_deal_id", null)
+    .not("quote_id", "is", null)
+
+  for (const m of orphanMoves ?? []) {
+    try {
+      if (!m.quote_id) continue
+      const { data: q } = await sb
+        .from("quotes")
+        .select("hubspot_deal_id")
+        .eq("id", m.quote_id)
+        .single()
+      const dealId = (q?.hubspot_deal_id as string | null | undefined)
+      if (!dealId) continue
+
+      // Write deal ID onto the move so subsequent runs and live hooks work.
+      await sb.from("moves").update({ hubspot_deal_id: dealId }).eq("id", m.id)
+
+      // Immediately sync the deal to the move's actual current stage.
+      const stageTrigger = moveStageFromStatus(m.status)
+      if (stageTrigger) {
+        await syncDealStage(dealId, stageTrigger, undefined, m.scheduled_date ?? null).catch(() => {})
+        results.stages_synced++
+      }
+
+      results.deal_ids_propagated++
+    } catch (err) {
+      results.errors.push(`propagate ${m.move_code}: ${err instanceof Error ? err.message : String(err)}`)
+    }
+    await new Promise((r) => setTimeout(r, HUBSPOT_RATE_LIMIT_DELAY_MS))
   }
 
   // ── Quotes ─────────────────────────────────────────────────────────
@@ -252,6 +291,7 @@ export async function GET(req: NextRequest) {
       payload: {
         quotes_synced: results.quotes_synced,
         moves_synced: results.moves_synced,
+        deal_ids_propagated: results.deal_ids_propagated,
         stages_synced: results.stages_synced,
         failures: results.failures,
         errors: results.errors.slice(0, 25),

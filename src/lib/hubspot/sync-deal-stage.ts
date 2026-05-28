@@ -156,9 +156,30 @@ export function deliveryStatusToHubspotTrigger(statusRaw: string | null | undefi
 export async function syncDealStageByMoveId(moveId: string, newStatus: string): Promise<void> {
   try {
     const sb = createAdminClient();
-    const { data } = await sb.from("moves").select("hubspot_deal_id, scheduled_date").eq("id", moveId).single();
-    if (data?.hubspot_deal_id) {
-      await syncDealStage(data.hubspot_deal_id, newStatus, undefined, data.scheduled_date as string | null);
+    const { data } = await sb
+      .from("moves")
+      .select("hubspot_deal_id, scheduled_date, quote_id")
+      .eq("id", moveId)
+      .single();
+
+    let dealId = data?.hubspot_deal_id as string | null | undefined;
+
+    // If the move has no deal ID, fall back to the source quote's deal ID and backfill.
+    if (!dealId && data?.quote_id) {
+      const { data: q } = await sb
+        .from("quotes")
+        .select("hubspot_deal_id")
+        .eq("id", data.quote_id)
+        .single();
+      dealId = q?.hubspot_deal_id as string | null | undefined;
+      if (dealId) {
+        // Backfill so future syncs don't need this fallback.
+        try { await sb.from("moves").update({ hubspot_deal_id: dealId }).eq("id", moveId); } catch { /* non-blocking */ }
+      }
+    }
+
+    if (dealId) {
+      await syncDealStage(dealId, newStatus, undefined, data?.scheduled_date as string | null);
     }
   } catch {
     // never block

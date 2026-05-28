@@ -165,9 +165,31 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ quoteId: s
 
   await sb.from("quotes").update({ hubspot_deal_id: created.dealId }).eq("quote_id", quoteId)
 
-  const status = String((quote as { status?: string }).status || "").toLowerCase()
-  const trigger = status === "viewed" ? "viewed" : "quote_sent"
+  // Sync to the actual current state — not blindly to "quote_sent".
+  // If the quote is already accepted/booked, or the move is completed, reflect that.
+  const qStatus = String((quote as { status?: string }).status || "").toLowerCase()
+  let trigger = "quote_sent"
+  if (qStatus === "viewed") trigger = "viewed"
+  else if (qStatus === "accepted" || qStatus === "booked") trigger = "confirmed"
+
+  // Check if there's an associated move with a terminal/advanced status.
+  const { data: move } = await sb
+    .from("moves")
+    .select("id, status")
+    .eq("quote_id", (quote as { id?: string }).id ?? "")
+    .maybeSingle()
+
+  if (move) {
+    const mStatus = String(move.status || "").toLowerCase().replace(/-/g, "_")
+    if (["completed", "delivered", "paid", "final_payment_received"].includes(mStatus)) trigger = "completed"
+    else if (["in_progress", "dispatched", "in_transit"].includes(mStatus)) trigger = "in_progress"
+    else if (["confirmed", "booked", "scheduled"].includes(mStatus)) trigger = "confirmed"
+
+    // Propagate deal ID to the move so live hooks and cron work going forward.
+    try { await sb.from("moves").update({ hubspot_deal_id: created.dealId }).eq("id", move.id) } catch { /* non-blocking */ }
+  }
+
   await syncDealStage(created.dealId, trigger).catch(() => {})
 
-  return NextResponse.json({ success: true, dealId: created.dealId })
+  return NextResponse.json({ success: true, dealId: created.dealId, stageSynced: trigger })
 }
