@@ -300,18 +300,6 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
         <div className="p-5 md:p-6">
           <table className="w-full text-[12px] mb-4">
             <tbody>
-              {/* Flat-rate service line — no formula, no hourly rate */}
-              <tr>
-                <td className="py-2" style={{ color: `${FOREST}80` }}>
-                  {jobCategory && JOB_CATEGORY_LABELS[jobCategory]
-                    ? JOB_CATEGORY_LABELS[jobCategory]
-                    : "Labour service"}
-                  {crewSize > 1 ? ` · ${crewSize}-person crew` : ""}
-                </td>
-                <td className="py-2 text-right font-medium" style={{ color: FOREST }}>
-                  {fmtPrice(price - truckFee - accessSurcharge - labourStorageFee)}
-                </td>
-              </tr>
               {truckFee > 0 && (
                 <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
                   <td className="py-2" style={{ color: `${FOREST}80` }}>Truck</td>
