@@ -396,6 +396,12 @@ interface QuoteInput {
   labour_description?: string;
   labour_storage_needed?: boolean;
   labour_storage_weeks?: number;
+  /** Job category for ops context and client display (e.g. assembly, rearrange, debris_removal). */
+  labour_job_category?: string;
+  /** Scope complexity — affects price. standard | moderate | complex */
+  labour_complexity?: "standard" | "moderate" | "complex";
+  /** Item weight class — affects price. standard | heavy | very_heavy */
+  labour_weight_class?: "standard" | "heavy" | "very_heavy";
   // Bin rental (service_type bin_rental)
   bin_bundle_type?: "studio" | "1br" | "2br" | "3br" | "4br_plus" | "custom";
   bin_custom_count?: number;
@@ -3120,13 +3126,9 @@ async function calcB2bOneoff(
   price += b2bLocationExtras.lines.reduce((s, l) => s + l.amount, 0);
   price += addonResult.total;
   const tax = Math.round(price * taxRate);
-
-  let deposit: number;
-  if (price < 300) {
-    deposit = price;
-  } else {
-    deposit = 100;
-  }
+  const b2bTotal = price + tax;
+  // Global rule: quotes under $550 (with tax) require full payment at booking.
+  const deposit = b2bTotal < 550 ? b2bTotal : 100;
 
   const b2bFeatures = await fetchTierFeatures(sb, "b2b_delivery", "custom");
   const b2bIncludes = b2bFeatures.length > 0 ? b2bFeatures : [
@@ -3765,7 +3767,7 @@ async function calcLabourOnly(
     cfgNum(config, "labour_only_rate", 80),
   );
   const crewSize = input.labour_crew_size ?? 2;
-  const hours = input.labour_hours ?? 3;
+  const hours = input.labour_hours ?? 1;
   const truckFee = input.labour_truck_required ? cfgNum(config, "labour_only_truck_fee", 150) : 0;
   const accessSurcharge = await getAccessSurcharge(sb, input.from_access);
   const rounding = cfgNum(config, "rounding_nearest", 50);
@@ -3775,7 +3777,22 @@ async function calcLabourOnly(
     !!input.labour_weekend || isMoveDateWeekend(input.move_date || "");
   const afterHours = !!input.labour_after_hours;
 
-  let basePrice = crewSize * hours * labourRate;
+  // Complexity multiplier — increases base price for scope/access difficulty.
+  const COMPLEXITY_MULT: Record<string, number> = {
+    standard: 1.0,
+    moderate: cfgNum(config, "labour_only_complexity_moderate", 1.25),
+    complex:  cfgNum(config, "labour_only_complexity_complex",  1.5),
+  };
+  // Weight class multiplier — increases base price when items are heavy.
+  const WEIGHT_MULT: Record<string, number> = {
+    standard:   1.0,
+    heavy:      cfgNum(config, "labour_only_weight_heavy",      1.2),
+    very_heavy: cfgNum(config, "labour_only_weight_very_heavy", 1.45),
+  };
+  const complexityMult = COMPLEXITY_MULT[input.labour_complexity ?? "standard"] ?? 1.0;
+  const weightMult     = WEIGHT_MULT[input.labour_weight_class ?? "standard"] ?? 1.0;
+
+  let basePrice = crewSize * hours * labourRate * complexityMult * weightMult;
   if (weekend) basePrice += cfgNum(config, "labour_only_weekend", 100);
   if (afterHours) basePrice *= cfgNum(config, "labour_only_after_hours_multiplier", 1.15);
 
@@ -3798,20 +3815,26 @@ async function calcLabourOnly(
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
   const total = price + tax;
-  const deposit = Math.max(100, Math.round(total * 0.25));
 
+  // Global rule: quotes under $550 (with tax) require full payment at booking.
+  // Otherwise labour_only is 50% deposit, minimum $200.
+  const deposit = total < 550
+    ? total
+    : Math.max(200, Math.round(total * 0.5));
+
+  // Internal ops context only — not shown on client quote.
   const labourIncludes = [
-    `${crewSize} movers × ${hours} hours`,
-    `Labour rate: $${labourRate}/mover/hr`,
-    input.labour_truck_required ? `Truck included (+$${truckFee})` : "No truck required (crew arrives in van)",
+    `${crewSize}-person crew`,
+    input.labour_truck_required ? `Truck included (+$${truckFee})` : "No truck required",
     ...(accessSurcharge > 0 ? [`Access surcharge: $${accessSurcharge}`] : []),
     ...(input.labour_storage_needed
-      ? [
-          `Storage between visits: ~${storageWeeks} week${storageWeeks !== 1 ? "s" : ""} @ $${storageWeekly}/wk (estimate)`,
-        ]
+      ? [`Storage between visits: ~${storageWeeks} week${storageWeeks !== 1 ? "s" : ""} @ $${storageWeekly}/wk`]
       : []),
     ...((input.labour_visits ?? 1) >= 2
-      ? [`Visit 1 (${input.move_date ?? "TBD"}): $${visit1Price}`, `Visit 2 (${input.labour_second_visit_date ?? "TBD"}): $${visit2Price} (return visit discount)`]
+      ? [
+          `Visit 1 (${input.move_date ?? "TBD"}): $${visit1Price}`,
+          `Visit 2 (${input.labour_second_visit_date ?? "TBD"}): $${visit2Price} (return visit discount)`,
+        ]
       : []),
   ];
 
@@ -3828,6 +3851,11 @@ async function calcLabourOnly(
       hours,
       labour_rate: labourRate,
       base_price: basePrice,
+      complexity: input.labour_complexity ?? "standard",
+      complexity_multiplier: complexityMult,
+      weight_class: input.labour_weight_class ?? "standard",
+      weight_multiplier: weightMult,
+      job_category: input.labour_job_category ?? null,
       labour_only_weekend_applied: weekend,
       labour_only_after_hours_applied: afterHours,
       truck_fee: truckFee,
@@ -3847,7 +3875,7 @@ async function calcLabourOnly(
       crewSize,
       estimatedHours: hours,
       hoursRange: `${hours}hr`,
-      truckSize: input.labour_truck_required ? "20ft" : "Van",
+      truckSize: input.labour_truck_required ? "20ft" : "none",
     },
   };
 }
@@ -4832,7 +4860,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       }
       if (svcType === "labour_only") {
         const tot = Math.round(preTax * (1 + taxOvr));
-        return Math.max(100, Math.round(tot * 0.25));
+        return tot < 550 ? tot : Math.max(200, Math.round(tot * 0.5));
       }
       return calculateDeposit(sb, depKey, preTax);
     }
@@ -5021,7 +5049,11 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   }
 
   const primaryPrice = tiers ? tiers.essential.price : custom_price!.price;
-  const depositAmount = tiers ? tiers.essential.deposit : custom_price!.deposit;
+  const storedTaxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
+  const primaryTotal = primaryPrice + Math.round(primaryPrice * storedTaxRate);
+  const computedDeposit = tiers ? tiers.essential.deposit : custom_price!.deposit;
+  // Global rule: any quote under $550 (total with tax) requires full payment at booking.
+  const depositAmount = primaryTotal < 550 ? primaryTotal : computedDeposit;
 
   // Resolve contact: use provided contact_id, or look up / create from client info
   let contactId = input.contact_id || null;

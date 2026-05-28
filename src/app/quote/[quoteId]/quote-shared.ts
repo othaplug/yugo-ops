@@ -453,12 +453,14 @@ export function calculateDeposit(
   total: number,
   tier?: string,
 ): number {
+  // Global rule: any quote under $550 (total with tax) requires full payment at booking.
+  if (total < 550) return total;
+
   if (serviceType === "local_move" && tier) {
     return calculateTieredDeposit(tier, total);
   }
   switch (serviceType) {
     case "local_move":
-      if (total < 500) return total;
       if (total < 3000) return 150;
       return Math.max(150, Math.round(total * 0.1));
     case "long_distance":
@@ -466,10 +468,8 @@ export function calculateDeposit(
     case "office_move":
       return total < 5000 ? Math.round(total * 0.25) : Math.round(total * 0.3);
     case "single_item":
-      if (total < 500) return total;
       return 100;
     case "white_glove":
-      if (total < 500) return total;
       if (total < 1000) return 100;
       if (total < 3000) return 150;
       return Math.round(total * 0.1);
@@ -477,7 +477,6 @@ export function calculateDeposit(
       return total < 5000 ? Math.round(total * 0.3) : Math.round(total * 0.5);
     case "b2b_oneoff":
     case "b2b_delivery":
-      if (total < 300) return total;
       return 100;
     case "event":
       return Math.max(300, Math.round(total * 0.25));
@@ -486,7 +485,6 @@ export function calculateDeposit(
     case "bin_rental":
       return total;
     default:
-      if (total < 500) return total;
       if (total < 3000) return 150;
       return Math.round(total * 0.1);
   }

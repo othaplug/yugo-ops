@@ -1849,24 +1849,11 @@ export default function QuotePageClient({
               />
             </>
           ) : quote.service_type === "labour_only" ? (
-            <>
-              <InclusionsShowcase
-                ref={comparisonRef}
-                selectedTier={selectedTier}
-                isResidential={isResidential}
-                residentialTierFeatures={residentialTierFeatures}
-                truckPrimary={quote.truck_primary}
-                truckSecondary={quote.truck_secondary}
-                crewSize={quote.est_crew_size}
-                assemblyRequired={quote.assembly_override ?? quote.assembly_required}
-                truckPricingNote={truckBreakdownClientNote}
-              />
-              <LabourOnlyLayout
-                quote={quoteForDisplay}
-                onConfirm={handleConfirm}
-                confirmed={confirmed}
-              />
-            </>
+            <LabourOnlyLayout
+              quote={quoteForDisplay}
+              onConfirm={handleConfirm}
+              confirmed={confirmed}
+            />
           ) : quote.service_type === "bin_rental" ? (
             <BinRentalLayout
               quote={quoteForDisplay}

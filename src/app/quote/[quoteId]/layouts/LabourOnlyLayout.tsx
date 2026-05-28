@@ -2,9 +2,9 @@ import {
   MapPin,
   Check,
   Users,
-  Clock,
   Truck,
   Calendar,
+  Tag,
 } from "@phosphor-icons/react";
 import {
   type Quote,
@@ -26,11 +26,7 @@ function fmtDate(d: string | null | undefined): string {
   if (!d) return "TBD";
   return formatPlatformDisplay(
     new Date(d + "T00:00:00"),
-    {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-    },
+    { weekday: "long", month: "long", day: "numeric" },
     "TBD",
   );
 }
@@ -39,27 +35,31 @@ function fmtShort(d: string | null | undefined): string {
   if (!d) return "TBD";
   return formatPlatformDisplay(
     new Date(d + "T00:00:00"),
-    {
-      month: "short",
-      day: "numeric",
-    },
+    { month: "short", day: "numeric" },
     "TBD",
   );
 }
 
-export default function LabourOnlyLayout({
-  quote,
-  onConfirm,
-  confirmed,
-}: Props) {
+const JOB_CATEGORY_LABELS: Record<string, string> = {
+  assembly:         "Furniture Assembly & Setup",
+  rearrange:        "In-Home Rearrangement",
+  debris_removal:   "Debris & Packaging Removal",
+  appliance:        "Appliance Placement",
+  staging:          "Home Staging",
+  tv_mounting:      "TV Mounting & Setup",
+  other:            "Labour Service",
+};
+
+export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props) {
   const f = (quote.factors_applied ?? {}) as Record<string, unknown>;
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
-  const deposit = calculateDeposit("labour_only", price + tax);
+  const total = price + tax;
+  const deposit = calculateDeposit("labour_only", total);
+  const balance = total - deposit;
+  const fullPayment = balance === 0;
 
   const crewSize = (f.crew_size as number) ?? 2;
-  const hours = (f.hours as number) ?? 2;
-  const labourRate = (f.labour_rate as number) ?? 85;
   const truckFee = (f.truck_fee as number) ?? 0;
   const accessSurcharge = (f.access_surcharge as number) ?? 0;
   const visits = (f.visits as number) ?? 1;
@@ -67,6 +67,7 @@ export default function LabourOnlyLayout({
   const visit2Price = (f.visit2_price as number) ?? 0;
   const visit2Date = (f.visit2_date as string) ?? null;
   const description = (f.labour_description as string) ?? null;
+  const jobCategory = (f.job_category as string) ?? null;
   const storageNeeded = f.labour_storage_needed === true;
   const storageWeeks =
     typeof f.labour_storage_weeks === "number" ? f.labour_storage_weeks : null;
@@ -75,12 +76,18 @@ export default function LabourOnlyLayout({
   const labourStorageFee =
     typeof f.labour_storage_fee === "number" ? f.labour_storage_fee : 0;
 
+  const categoryLabel =
+    jobCategory && JOB_CATEGORY_LABELS[jobCategory]
+      ? JOB_CATEGORY_LABELS[jobCategory]
+      : description
+        ? description.split(/[,.]/, 1)[0]
+        : "Professional Labour";
+
   const includes = [
     `${crewSize} professional movers`,
     "All tools and equipment",
     "Floor protection",
-    `${hours} hours of service`,
-    `Additional hours at $${labourRate}/hr per mover`,
+    "Guaranteed flat price",
   ];
 
   return (
@@ -101,9 +108,7 @@ export default function LabourOnlyLayout({
               Labour Service
             </span>
             <h2 className="font-hero text-[26px] mt-2" style={{ color: WINE }}>
-              {description
-                ? description.split(/[,.]/, 1)[0]
-                : "Professional Labour"}
+              {categoryLabel}
             </h2>
           </div>
         </div>
@@ -111,10 +116,7 @@ export default function LabourOnlyLayout({
         {/* Location + date */}
         <div className="grid sm:grid-cols-2 gap-3 pt-4 border-t border-[var(--brd)]/30">
           <div className="flex items-start gap-2">
-            <MapPin
-              className="w-4 h-4 shrink-0 mt-0.5"
-              style={{ color: WINE }}
-            />
+            <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
             <div>
               <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">
                 Work Address
@@ -126,18 +128,12 @@ export default function LabourOnlyLayout({
           </div>
           {quote.move_date && (
             <div className="flex items-start gap-2">
-              <Calendar
-                className="w-4 h-4 shrink-0 mt-0.5"
-                style={{ color: FOREST }}
-              />
+              <Calendar className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
               <div>
                 <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">
                   Date
                 </p>
-                <p
-                  className="text-[12px] font-medium"
-                  style={{ color: FOREST }}
-                >
+                <p className="text-[12px] font-medium" style={{ color: FOREST }}>
                   {fmtDate(quote.move_date)}
                 </p>
               </div>
@@ -158,7 +154,9 @@ export default function LabourOnlyLayout({
             {description}
           </div>
         )}
-        {storageNeeded && storageWeeks != null && labourStorageFee > 0 ? (
+
+        {/* Storage note */}
+        {storageNeeded && storageWeeks != null && labourStorageFee > 0 && (
           <div
             className="mt-4 p-3 rounded-xl text-[11px] leading-relaxed border"
             style={{
@@ -172,30 +170,22 @@ export default function LabourOnlyLayout({
             </p>
             <p>
               Estimated {storageWeeks} week{storageWeeks !== 1 ? "s" : ""} at{" "}
-              {fmtPrice(storageWeeklyRate)}/week -{" "}
-              <span className="font-semibold">
-                {fmtPrice(labourStorageFee)}
-              </span>{" "}
-              storage estimate (based on volume; coordinator may adjust).
+              {fmtPrice(storageWeeklyRate)}/week —{" "}
+              <span className="font-semibold">{fmtPrice(labourStorageFee)}</span>{" "}
+              storage estimate (coordinator may adjust).
             </p>
           </div>
-        ) : null}
+        )}
       </div>
 
-      {/* Crew + time */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Crew + truck — hours removed (client pays for scope, not time) */}
+      <div className="grid grid-cols-2 gap-3">
         <div
           className="p-4 rounded-xl text-center"
-          style={{
-            backgroundColor: `${WINE}06`,
-            border: `1px solid ${WINE}15`,
-          }}
+          style={{ backgroundColor: `${WINE}06`, border: `1px solid ${WINE}15` }}
         >
           <Users className="w-5 h-5 mx-auto mb-1.5" style={{ color: WINE }} />
-          <p
-            className="text-[22px] font-bold tabular-nums"
-            style={{ color: WINE }}
-          >
+          <p className="text-[22px] font-bold tabular-nums" style={{ color: WINE }}>
             {crewSize}
           </p>
           <p
@@ -203,27 +193,6 @@ export default function LabourOnlyLayout({
             style={{ color: `${WINE}60` }}
           >
             Movers
-          </p>
-        </div>
-        <div
-          className="p-4 rounded-xl text-center"
-          style={{
-            backgroundColor: `${FOREST}08`,
-            border: `1px solid ${FOREST}20`,
-          }}
-        >
-          <Clock className="w-5 h-5 mx-auto mb-1.5" style={{ color: FOREST }} />
-          <p
-            className="text-[22px] font-bold tabular-nums"
-            style={{ color: FOREST }}
-          >
-            {hours}
-          </p>
-          <p
-            className="text-[9px] font-bold uppercase tracking-wider mt-0.5"
-            style={{ color: `${FOREST}80` }}
-          >
-            Hours
           </p>
         </div>
         <div
@@ -252,7 +221,7 @@ export default function LabourOnlyLayout({
         </div>
       </div>
 
-      {/* Visits breakdown if 2 visits */}
+      {/* Two-visit schedule */}
       {visits >= 2 && (
         <div
           className="bg-white rounded-2xl border shadow-sm overflow-hidden"
@@ -260,10 +229,7 @@ export default function LabourOnlyLayout({
         >
           <div
             className="px-5 py-3.5 border-b"
-            style={{
-              backgroundColor: `${FOREST}08`,
-              borderColor: `${FOREST}25`,
-            }}
+            style={{ backgroundColor: `${FOREST}08`, borderColor: `${FOREST}25` }}
           >
             <h2 className="admin-section-h2" style={{ color: WINE }}>
               Two-Visit Schedule
@@ -275,17 +241,11 @@ export default function LabourOnlyLayout({
                 <p className="text-[11px] font-bold" style={{ color: FOREST }}>
                   Visit 1, {fmtShort(quote.move_date)}
                 </p>
-                <p
-                  className="text-[10px] mt-0.5"
-                  style={{ color: `${FOREST}60` }}
-                >
-                  {crewSize} movers × {hours}h
+                <p className="text-[10px] mt-0.5" style={{ color: `${FOREST}60` }}>
+                  {crewSize} movers
                 </p>
               </div>
-              <span
-                className="text-[15px] font-bold tabular-nums"
-                style={{ color: FOREST }}
-              >
+              <span className="text-[15px] font-bold tabular-nums" style={{ color: FOREST }}>
                 {fmtPrice(visit1Price)}
               </span>
             </div>
@@ -294,17 +254,11 @@ export default function LabourOnlyLayout({
                 <p className="text-[11px] font-bold" style={{ color: FOREST }}>
                   Visit 2, {fmtShort(visit2Date)}
                 </p>
-                <p
-                  className="text-[10px] mt-0.5"
-                  style={{ color: `${FOREST}60` }}
-                >
-                  Return visit, 15% return discount
+                <p className="text-[10px] mt-0.5" style={{ color: `${FOREST}60` }}>
+                  Return visit, 15% discount
                 </p>
               </div>
-              <span
-                className="text-[15px] font-bold tabular-nums"
-                style={{ color: FOREST }}
-              >
+              <span className="text-[15px] font-bold tabular-nums" style={{ color: FOREST }}>
                 {fmtPrice(visit2Price)}
               </span>
             </div>
@@ -322,10 +276,7 @@ export default function LabourOnlyLayout({
                 className="w-3.5 h-3.5 shrink-0 mt-0.5"
                 style={{ color: FOREST }}
               />
-              <span
-                className="text-[12px] leading-snug"
-                style={{ color: FOREST }}
-              >
+              <span className="text-[12px] leading-snug" style={{ color: FOREST }}>
                 {item}
               </span>
             </div>
@@ -347,43 +298,43 @@ export default function LabourOnlyLayout({
           </h2>
         </div>
         <div className="p-5 md:p-6">
-          {/* Breakdown */}
           <table className="w-full text-[12px] mb-4">
             <tbody>
+              {/* Flat-rate service line — no formula, no hourly rate */}
               <tr>
                 <td className="py-2" style={{ color: `${FOREST}80` }}>
-                  {crewSize} movers × {hours} hrs × ${labourRate}/hr
+                  {jobCategory && JOB_CATEGORY_LABELS[jobCategory]
+                    ? JOB_CATEGORY_LABELS[jobCategory]
+                    : "Labour service"}
+                  {crewSize > 1 ? ` · ${crewSize}-person crew` : ""}
                 </td>
-                <td
-                  className="py-2 text-right font-medium"
-                  style={{ color: FOREST }}
-                >
-                  {fmtPrice(crewSize * hours * labourRate)}
+                <td className="py-2 text-right font-medium" style={{ color: FOREST }}>
+                  {fmtPrice(price - truckFee - accessSurcharge - labourStorageFee)}
                 </td>
               </tr>
               {truckFee > 0 && (
                 <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
-                  <td className="py-2" style={{ color: `${FOREST}80` }}>
-                    Truck
-                  </td>
-                  <td
-                    className="py-2 text-right font-medium"
-                    style={{ color: FOREST }}
-                  >
+                  <td className="py-2" style={{ color: `${FOREST}80` }}>Truck</td>
+                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>
                     {fmtPrice(truckFee)}
                   </td>
                 </tr>
               )}
               {accessSurcharge > 0 && (
                 <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
-                  <td className="py-2" style={{ color: `${FOREST}80` }}>
-                    Access surcharge
-                  </td>
-                  <td
-                    className="py-2 text-right font-medium"
-                    style={{ color: FOREST }}
-                  >
+                  <td className="py-2" style={{ color: `${FOREST}80` }}>Access surcharge</td>
+                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>
                     {fmtPrice(accessSurcharge)}
+                  </td>
+                </tr>
+              )}
+              {storageNeeded && labourStorageFee > 0 && (
+                <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
+                  <td className="py-2" style={{ color: `${FOREST}80` }}>
+                    Storage ({storageWeeks ?? "-"} wk × {fmtPrice(storageWeeklyRate)})
+                  </td>
+                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>
+                    {fmtPrice(labourStorageFee)}
                   </td>
                 </tr>
               )}
@@ -392,25 +343,8 @@ export default function LabourOnlyLayout({
                   <td className="py-2" style={{ color: `${FOREST}80` }}>
                     Return visit ({fmtShort(visit2Date)})
                   </td>
-                  <td
-                    className="py-2 text-right font-medium"
-                    style={{ color: FOREST }}
-                  >
+                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>
                     {fmtPrice(visit2Price)}
-                  </td>
-                </tr>
-              )}
-              {storageNeeded && labourStorageFee > 0 && (
-                <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
-                  <td className="py-2" style={{ color: `${FOREST}80` }}>
-                    Storage estimate ({storageWeeks ?? "-"} wk ×{" "}
-                    {fmtPrice(storageWeeklyRate)})
-                  </td>
-                  <td
-                    className="py-2 text-right font-medium"
-                    style={{ color: FOREST }}
-                  >
-                    {fmtPrice(labourStorageFee)}
                   </td>
                 </tr>
               )}
@@ -421,17 +355,11 @@ export default function LabourOnlyLayout({
             className="border-t-2 pt-4 text-center"
             style={{ borderColor: `${FOREST}30` }}
           >
-            <p
-              className="font-hero text-[36px] md:text-[44px]"
-              style={{ color: WINE }}
-            >
+            <p className="font-hero text-[36px] md:text-[44px]" style={{ color: WINE }}>
               {fmtPrice(price)}
             </p>
-            <p
-              className="text-[12px] mt-1 mb-5"
-              style={{ color: `${FOREST}70` }}
-            >
-              +{fmtPrice(tax)} HST &middot; Total {fmtPrice(price + tax)}
+            <p className="text-[12px] mt-1 mb-5" style={{ color: `${FOREST}70` }}>
+              +{fmtPrice(tax)} HST &middot; Total {fmtPrice(total)}
             </p>
             <button
               type="button"
@@ -444,12 +372,13 @@ export default function LabourOnlyLayout({
                   <Check className="w-4 h-4" /> Booked
                 </span>
               ) : (
-                `Pay ${fmtPrice(deposit)} Deposit & Book`
+                `Pay ${fmtPrice(deposit)}${fullPayment ? "" : " Deposit"} & Book`
               )}
             </button>
             <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
-              50% deposit &middot; Balance of {fmtPrice(price + tax - deposit)}{" "}
-              due on day of service
+              {fullPayment
+                ? "Full payment required at booking — no balance due."
+                : `Deposit to confirm &middot; Balance of ${fmtPrice(balance)} due on day of service`}
             </p>
           </div>
         </div>

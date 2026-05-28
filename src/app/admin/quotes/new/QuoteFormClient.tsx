@@ -1949,7 +1949,7 @@ export default function QuoteFormClient({
   const [workAccess, setWorkAccess] = useState("");
   const [labourDescription, setLabourDescription] = useState("");
   const [labourCrewSize, setLabourCrewSize] = useState(2);
-  const [labourHours, setLabourHours] = useState(3);
+  const [labourHours, setLabourHours] = useState(1);
   const [labourTruckRequired, setLabourTruckRequired] = useState(false);
   const [labourVisits, setLabourVisits] = useState(1);
   const [labourSecondVisitDate, setLabourSecondVisitDate] = useState("");
@@ -1958,6 +1958,9 @@ export default function QuoteFormClient({
   const [labourContext, setLabourContext] = useState("");
   const [labourWeekend, setLabourWeekend] = useState(false);
   const [labourAfterHours, setLabourAfterHours] = useState(false);
+  const [labourJobCategory, setLabourJobCategory] = useState("");
+  const [labourComplexity, setLabourComplexity] = useState<"standard" | "moderate" | "complex">("standard");
+  const [labourWeightClass, setLabourWeightClass] = useState<"standard" | "heavy" | "very_heavy">("standard");
 
   // Bin rental
   const [binPickupSameAsDelivery, setBinPickupSameAsDelivery] = useState(true);
@@ -4910,6 +4913,9 @@ export default function QuoteFormClient({
         base.labour_storage_weeks = labourStorageNeeded
           ? labourStorageWeeks
           : undefined;
+        base.labour_job_category = labourJobCategory || undefined;
+        base.labour_complexity = labourComplexity !== "standard" ? labourComplexity : undefined;
+        base.labour_weight_class = labourWeightClass !== "standard" ? labourWeightClass : undefined;
       }
       if (serviceType === "b2b_delivery") {
         base.b2b_business_name = b2bBusinessName.trim() || undefined;
@@ -5181,6 +5187,9 @@ export default function QuoteFormClient({
       labourContext,
       labourWeekend,
       labourAfterHours,
+      labourJobCategory,
+      labourComplexity,
+      labourWeightClass,
       b2bBusinessName,
       effectiveB2bVerticalCode,
       b2bPartnerOrgId,
@@ -10151,15 +10160,63 @@ export default function QuoteFormClient({
                       }
                     />
                   </div>
-                  <Field label="Description of Work *">
-                    <textarea
-                      value={labourDescription}
-                      onChange={(e) => setLabourDescription(e.target.value)}
-                      rows={3}
-                      placeholder="Rearrange living room furniture, assemble new bookshelf…"
-                      className={`${fieldInput} resize-none`}
-                    />
-                  </Field>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Field label="Job Category">
+                      <select
+                        value={labourJobCategory}
+                        onChange={(e) => setLabourJobCategory(e.target.value)}
+                        className={fieldInput}
+                      >
+                        <option value="">Select category…</option>
+                        <option value="assembly">Furniture Assembly & Setup</option>
+                        <option value="rearrange">In-Home Rearrangement</option>
+                        <option value="debris_removal">Debris & Packaging Removal</option>
+                        <option value="appliance">Appliance Placement</option>
+                        <option value="staging">Home Staging</option>
+                        <option value="tv_mounting">TV Mounting & Setup</option>
+                        <option value="other">Other / Custom</option>
+                      </select>
+                    </Field>
+                    <Field label="Description of Work *">
+                      <textarea
+                        value={labourDescription}
+                        onChange={(e) => setLabourDescription(e.target.value)}
+                        rows={2}
+                        placeholder="Rearrange living room furniture, assemble new bookshelf…"
+                        className={`${fieldInput} resize-none`}
+                      />
+                    </Field>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Field label="Scope Complexity">
+                      <select
+                        value={labourComplexity}
+                        onChange={(e) =>
+                          setLabourComplexity(e.target.value as "standard" | "moderate" | "complex")
+                        }
+                        className={fieldInput}
+                      >
+                        <option value="standard">Standard — clear access, light furniture</option>
+                        <option value="moderate">Moderate — some heavy items, stairs, tight spaces</option>
+                        <option value="complex">Complex — heavy items, multiple floors, high assembly</option>
+                      </select>
+                      <p className="text-[10px] text-[var(--tx3)] mt-0.5">Moderate +25% · Complex +50%</p>
+                    </Field>
+                    <Field label="Item Weight Class">
+                      <select
+                        value={labourWeightClass}
+                        onChange={(e) =>
+                          setLabourWeightClass(e.target.value as "standard" | "heavy" | "very_heavy")
+                        }
+                        className={fieldInput}
+                      >
+                        <option value="standard">Standard — typical household furniture</option>
+                        <option value="heavy">Heavy — appliances, gym equipment, safes</option>
+                        <option value="very_heavy">Very Heavy — piano, commercial equipment</option>
+                      </select>
+                      <p className="text-[10px] text-[var(--tx3)] mt-0.5">Heavy +20% · Very Heavy +45%</p>
+                    </Field>
+                  </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <Field label="Crew Size">
                       <select
@@ -10169,13 +10226,14 @@ export default function QuoteFormClient({
                         }
                         className={fieldInput}
                       >
+                        <option value={1}>1-Person Crew</option>
                         <option value={2}>2-Person Crew</option>
                         <option value={3}>3-Person Crew</option>
                         <option value={4}>4-Person Crew</option>
                         <option value={5}>5-Person Crew</option>
                       </select>
                     </Field>
-                    <Field label="Estimated Hours">
+                    <Field label="Estimated Hours (internal)">
                       <select
                         value={labourHours}
                         onChange={(e) => setLabourHours(Number(e.target.value))}
