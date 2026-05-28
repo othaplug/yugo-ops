@@ -65,6 +65,13 @@ import {
 } from "./b2b-one-off-ui";
 import SpecialtyTransportQuoteBuilder from "./SpecialtyTransportQuoteBuilder";
 import MoveScopeSection from "./MoveScopeSection";
+import JobScopeSection, {
+  type JobScope,
+  type InboundShipmentDraft,
+  EMPTY_INBOUND_DRAFT,
+  scopeRequiresInbound,
+  validateInboundDraft,
+} from "./JobScopeSection";
 import {
   WhiteGloveItemsEditor,
   createDefaultWhiteGloveItem,
@@ -1314,6 +1321,14 @@ export default function QuoteFormClient({
   // ── Form state ────────────────────────────
   const [serviceType, setServiceType] = useState("local_move");
   const serviceTypeUrlAppliedRef = useRef(false);
+  // R1: B2B job scope + linked inbound-shipment draft. When the chosen
+  // scope is receive_and_deliver / receive_and_recover, JobScopeSection
+  // collects carrier/waybill/ETA/declared-value which is POSTed to
+  // /api/admin/quotes/[id]/link-inbound-shipment on submit.
+  const [jobScope, setJobScope] = useState<JobScope>("direct_delivery");
+  const [inboundDraft, setInboundDraft] = useState<InboundShipmentDraft>(
+    EMPTY_INBOUND_DRAFT,
+  );
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -10526,6 +10541,18 @@ export default function QuoteFormClient({
                     Same B2B Jobs form as Deliveries: verticals, dimensional
                     pricing, multi-stop routes, draft / quote / schedule.
                   </p>
+                  {/* R1: Job scope picker — captures whether this is a
+                     direct-delivery, receive-and-deliver, or
+                     receive-and-recover (swap) job. When an inbound scope
+                     is selected, the section also collects carrier /
+                     waybill / ETA / declared-value. State is held here
+                     but linkage to inbound_shipments happens in R1 Part 2. */}
+                  <JobScopeSection
+                    value={jobScope}
+                    onChange={setJobScope}
+                    inbound={inboundDraft}
+                    onInboundChange={setInboundDraft}
+                  />
                   <B2BJobsDeliveryForm
                     embed
                     verticals={deliveryVerticals}

@@ -22,7 +22,11 @@ type AuditAction =
   | "mfa_verified"
   | "scope_charge_added"
   | "crew_reassigned_in_progress"
-  | "crew_members_changed_in_progress";
+  | "crew_members_changed_in_progress"
+  // R1: inbound shipment lifecycle from quote-side actions
+  | "inbound_shipment_created"
+  | "inbound_shipment_linked"
+  | "inbound_shipment_updated";
 
 type ResourceType =
   | "move"
@@ -34,7 +38,8 @@ type ResourceType =
   | "delivery_vertical"
   | "partner_vertical_rates"
   | "user"
-  | "system";
+  | "system"
+  | "inbound_shipment";
 
 interface AuditEntry {
   userId?: string | null;
