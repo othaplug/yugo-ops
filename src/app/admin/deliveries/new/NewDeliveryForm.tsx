@@ -19,6 +19,11 @@ import MultiStopAddressField, {
 import DraftBanner from "@/components/ui/DraftBanner";
 import { Plus, Trash as Trash2, Stack as Layers } from "@phosphor-icons/react";
 import B2BMultiStopRouteSection from "@/components/admin/b2b/B2BMultiStopRouteSection";
+import JobScopeSection, {
+  type JobScope,
+  type InboundShipmentDraft,
+  EMPTY_INBOUND_DRAFT,
+} from "@/app/admin/quotes/new/JobScopeSection";
 import {
   b2bVerticalQuickAddPresets,
   normalizeB2bVerticalFormCode,
@@ -142,6 +147,14 @@ export default function NewDeliveryForm({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // R1: job scope picker — captures whether this delivery is direct,
+  // receive-and-deliver, or receive-and-recover (swap). When an inbound
+  // scope is selected, the section collects carrier / waybill / ETA /
+  // declared-value. Visible above the Customer section.
+  const [jobScope, setJobScope] = useState<JobScope>("direct_delivery");
+  const [inboundDraft, setInboundDraft] = useState<InboundShipmentDraft>(
+    EMPTY_INBOUND_DRAFT,
+  );
   const [projectType, setProjectType] = useState(
     ["retail", "designer", "hospitality", "gallery"].includes(typeFromUrl)
       ? typeFromUrl
@@ -945,6 +958,20 @@ export default function NewDeliveryForm({
             )}
           </section>
         )}
+
+        {/* R1: Job scope picker. Direct delivery is the default and
+           preserves the existing flow. Receive-and-deliver and
+           receive-and-recover reveal inbound shipment fields (carrier,
+           waybill, ETA, declared value) — captured locally; the link
+           to inbound_shipments is established in R1 Part 2. */}
+        <section className="space-y-2">
+          <JobScopeSection
+            value={jobScope}
+            onChange={setJobScope}
+            inbound={inboundDraft}
+            onInboundChange={setInboundDraft}
+          />
+        </section>
 
         {/* Section: Customer details */}
         <section ref={deliveryHs.containerRef} className="space-y-2">
