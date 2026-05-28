@@ -200,6 +200,28 @@ interface QuoteInput {
   /** Pre-tax price override (all service types except bin_rental); requires `quote_price_override_reason`. */
   quote_price_override?: number;
   quote_price_override_reason?: string;
+  /**
+   * R2: Structured override reason code from a controlled taxonomy
+   * (competitive_match | partner_acquisition | multi_job_discount |
+   *  scope_overstated | goodwill | other). Stored alongside the existing
+   * free-text override_reason so analytics can regress benchmarks.
+   */
+  quote_price_override_reason_code?: string;
+  /**
+   * R2: Consignee separation. When the quote's billing contact is
+   * different from the end recipient (B2B drop-ship), these fields carry
+   * the deliver-to party. Left undefined for same-as-bill-to quotes.
+   */
+  deliver_to_name?: string;
+  deliver_to_email?: string;
+  deliver_to_phone?: string;
+  deliver_to_notes?: string;
+  /**
+   * R2: Inbound shipment foreign key. Set when the quote scope is
+   * "receive at warehouse + deliver" (Fritz Hansen pattern). Links the
+   * quote to the inbound_shipments row that tracks carrier/waybill/ETA.
+   */
+  inbound_shipment_id?: string;
   // Single item / White glove
   item_description?: string;
   item_category?: string;
@@ -5032,7 +5054,23 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const expiryDays = cfgNum(config, "quote_expiry_days", 7);
+  // R2: per-service-type quote validity. Reads quote_expiry_policy first;
+  // falls back to the global platform_config default if no row exists.
+  // The wholesale verticals (white_glove_swap, b2b_delivery) need a much
+  // longer horizon than the 7-day residential default.
+  let expiryDays = cfgNum(config, "quote_expiry_days", 7);
+  {
+    const expiryServiceKey =
+      svcType === "b2b_oneoff" ? "b2b_delivery" : svcType;
+    const { data: policyRow } = await sb
+      .from("quote_expiry_policy")
+      .select("days")
+      .eq("service_type", expiryServiceKey)
+      .maybeSingle();
+    if (policyRow?.days && Number.isFinite(Number(policyRow.days))) {
+      expiryDays = Number(policyRow.days);
+    }
+  }
 
   if (!isPreview) {
     const mpForFlags = moveProjectPayloadSchema.safeParse(input.move_project);
@@ -5086,6 +5124,24 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       override_price: quoteOvr !== undefined ? quoteOvr : null,
       override_reason: quoteOvr !== undefined ? quoteOvrReason : null,
       override_by: quoteOvr !== undefined ? authUser?.id ?? null : null,
+      // R2: structured override-reason code from controlled taxonomy.
+      // Only persisted when an override is applied; null otherwise.
+      override_reason_code:
+        quoteOvr !== undefined
+          ? input.quote_price_override_reason_code?.trim() || null
+          : null,
+      // R2: declared cargo value at quote time (mirrors moves.declared_value).
+      declared_value:
+        typeof input.declared_value === "number" && Number.isFinite(input.declared_value)
+          ? input.declared_value
+          : null,
+      // R2: bill-to vs deliver-to consignee separation.
+      deliver_to_name: input.deliver_to_name?.trim() || null,
+      deliver_to_email: input.deliver_to_email?.trim() || null,
+      deliver_to_phone: input.deliver_to_phone?.trim() || null,
+      deliver_to_notes: input.deliver_to_notes?.trim() || null,
+      // R2: inbound shipment link for receive-and-deliver scopes.
+      inbound_shipment_id: input.inbound_shipment_id?.trim() || null,
       deposit_amount: depositAmount,
       factors_applied: factors,
       selected_addons: addonResult.breakdown,
