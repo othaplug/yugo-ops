@@ -1100,23 +1100,23 @@ function labourOnlyTemplate(d: QuoteTemplateData): string {
     if (locAccess) rows.push(["Access", locAccess]);
   }
   rows.push(["Date", dateDisplay(d.moveDate)]);
-  if (d.labourCrewSize != null && d.labourHours != null) {
-    rows.push([
-      "Crew",
-      `${d.labourCrewSize} movers \u00d7 ${d.labourHours} hours`,
-    ]);
+  if (d.labourCrewSize != null) {
+    rows.push(["Crew", `${d.labourCrewSize}-person crew`]);
   }
   if (d.labourVisits != null && d.labourVisits >= 2)
     rows.push(["Visits", "2 visits scheduled"]);
 
   const total = d.customPrice ?? 0;
   const tax = Math.round(total * 0.13);
-  const deposit = Math.max(200, Math.round((total + tax) * 0.5));
-
-  const labourNote =
-    d.labourCrewSize && d.labourHours && d.labourRate
-      ? `${d.labourCrewSize} movers \u00d7 ${d.labourHours} hrs \u00d7 $${d.labourRate}/hr`
-      : "";
+  const totalWithTax = total + tax;
+  // Global rule: quotes under $550 (with tax) require full payment at booking.
+  const deposit = totalWithTax < 550
+    ? totalWithTax
+    : Math.max(200, Math.round(totalWithTax * 0.5));
+  const fullPayment = deposit >= totalWithTax;
+  const depositLine = fullPayment
+    ? "Full payment required at booking"
+    : `Deposit to book: <strong style="color:#F5EEE6 !important;-webkit-text-fill-color:#F5EEE6;mso-color-alt:#F5EEE6;">${formatCurrencyEmail(deposit)}</strong>`;
 
   return quoteEmailLayout(`
     ${subHeading("Your Service Quote")}
@@ -1126,10 +1126,9 @@ function labourOnlyTemplate(d: QuoteTemplateData): string {
     ${detailsPlain(rows)}
     <div class="yugo-on-wine" style="background:${CARD};border:1px solid ${ACCENT_ROSE_MUTED}44;border-radius:0;padding:24px;text-align:center;margin-bottom:24px">
       <div style="font-family:${EMAIL_SANS_STACK};font-size:12px;font-weight:700;color:#F5EEE6 !important;-webkit-text-fill-color:#F5EEE6;mso-color-alt:#F5EEE6;letter-spacing:0;text-transform:uppercase;margin-bottom:8px;">Labour service</div>
-      ${labourNote ? `<div style="font-size:12px;color:#E8DFD3 !important;-webkit-text-fill-color:#E8DFD3;mso-color-alt:#E8DFD3;margin-bottom:10px">${labourNote}</div>` : ""}
       <div style="font-family:${HERO_FONT};font-size:32px;font-weight:700;color:#F5EEE6 !important;-webkit-text-fill-color:#F5EEE6;mso-color-alt:#F5EEE6;letter-spacing:0;">${formatCurrencyEmail(total)}</div>
-      <div style="font-size:11px;color:#E8DFD3 !important;-webkit-text-fill-color:#E8DFD3;mso-color-alt:#E8DFD3;margin-top:6px">+${formatCurrencyEmail(tax)} HST &middot; Total ${formatCurrencyEmail(total + tax)}</div>
-      <div style="font-size:11px;color:#E8DFD3 !important;-webkit-text-fill-color:#E8DFD3;mso-color-alt:#E8DFD3;margin-top:4px">Deposit to book: <strong style="color:#F5EEE6 !important;-webkit-text-fill-color:#F5EEE6;mso-color-alt:#F5EEE6;">${formatCurrencyEmail(deposit)}</strong> (50%)</div>
+      <div style="font-size:11px;color:#E8DFD3 !important;-webkit-text-fill-color:#E8DFD3;mso-color-alt:#E8DFD3;margin-top:6px">+${formatCurrencyEmail(tax)} HST &middot; Total ${formatCurrencyEmail(totalWithTax)}</div>
+      <div style="font-size:11px;color:#E8DFD3 !important;-webkit-text-fill-color:#E8DFD3;mso-color-alt:#E8DFD3;margin-top:4px">${depositLine}</div>
     </div>
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
     ${ctaButton(d.quoteUrl, "View Quote & Book")}
