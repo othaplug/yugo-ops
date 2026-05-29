@@ -115,7 +115,7 @@ export async function GET(req: NextRequest) {
   const { data: quotes, error: qErr } = await sb
     .from("quotes")
     .select(
-      "quote_id, status, hubspot_deal_id, from_address, to_address, from_access, to_access, service_type, move_date, move_size, custom_price, tiers, est_crew_size, est_hours, truck_primary, recommended_tier, factors_applied, contact_id, contacts:contact_id(name)",
+      "id, quote_id, status, hubspot_deal_id, from_address, to_address, from_access, to_access, service_type, move_date, move_size, custom_price, tiers, est_crew_size, est_hours, truck_primary, recommended_tier, factors_applied, contact_id, contacts:contact_id(name)",
     )
     .not("hubspot_deal_id", "is", null)
 
@@ -185,10 +185,29 @@ export async function GET(req: NextRequest) {
       // since those are handled by live hooks and don't need backfilling).
       const stageTrigger = quoteStageFromStatus(q.status)
       if (stageTrigger) {
-        await syncDealStage(q.hubspot_deal_id, stageTrigger, undefined, q.move_date ?? null).catch(
-          () => {},
-        )
-        results.stages_synced++
+        // Guard: never let a quote stage sync downgrade a deal that already
+        // has a terminal move (completed / paid). The move owns the stage
+        // once it reaches a terminal state — letting the quote re-set it to
+        // "confirmed" every hour causes the deal to flip between Booked and
+        // Closed Won on every cron tick, generating a HubSpot notification
+        // each time.
+        let skipStageSync = false
+        if (stageTrigger === "confirmed" && (q as { id?: string }).id) {
+          const { data: terminalMove } = await sb
+            .from("moves")
+            .select("id")
+            .eq("quote_id", (q as { id: string }).id)
+            .in("status", ["completed", "delivered", "paid", "final_payment_received"])
+            .maybeSingle()
+          if (terminalMove) skipStageSync = true
+        }
+
+        if (!skipStageSync) {
+          await syncDealStage(q.hubspot_deal_id, stageTrigger, undefined, q.move_date ?? null).catch(
+            () => {},
+          )
+          results.stages_synced++
+        }
       }
     } catch (err) {
       results.failures++
