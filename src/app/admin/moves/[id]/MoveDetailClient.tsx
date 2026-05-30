@@ -18,6 +18,7 @@ import {
 import MoveNotifyButton from "../MoveNotifyButton";
 import ResendTrackingLinkButton from "../ResendTrackingLinkButton";
 import ResendBookingEmailsButton from "../ResendBookingEmailsButton";
+import SuppressPostMoveCommsButton from "../SuppressPostMoveCommsButton";
 import MoveContactModal from "./MoveContactModal";
 import EditMoveDetailsModal from "./EditMoveDetailsModal";
 import ScopeChargeModal from "./ScopeChargeModal";
@@ -991,6 +992,15 @@ export default function MoveDetailClient({
                 <MoveNotifyButton move={move} />
                 <ResendTrackingLinkButton move={move} />
                 {isSuperAdmin && <ResendBookingEmailsButton move={move} />}
+                <PageMetaDivider />
+              </>
+            )}
+            {/* Suppress every automated post-move email / SMS for this
+               move. Most useful on completed moves where the standard
+               24-48h / 72h / 365d lifecycle would otherwise fire. */}
+            {isCompleted && (
+              <>
+                <SuppressPostMoveCommsButton move={move} />
                 <PageMetaDivider />
               </>
             )}
