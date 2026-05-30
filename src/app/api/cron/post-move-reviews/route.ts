@@ -46,6 +46,30 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, processed: 0 });
   }
 
+  // Walkthrough rating lookup: if the client gave us a rating via the
+  // in-app Experience Rating section (saved to review_requests.client_rating)
+  // we honor it as a low-satisfaction signal even when moves.nps_score is
+  // null. Without this the cron sent a Google review request to a client
+  // who had already rated 2/5 in the walkthrough — embarrassing, and
+  // the user explicitly forbids it.
+  const moveIds = moves.map((m) => m.id);
+  const walkthroughRatingByMove = new Map<string, number>();
+  if (moveIds.length > 0) {
+    const { data: rrRows } = await supabase
+      .from("review_requests")
+      .select("move_id, client_rating, created_at")
+      .in("move_id", moveIds)
+      .not("client_rating", "is", null)
+      .order("created_at", { ascending: false });
+    // Latest non-null rating per move wins (rows already sorted newest-first).
+    for (const r of rrRows ?? []) {
+      const mid = String(r.move_id ?? "");
+      if (!mid || walkthroughRatingByMove.has(mid)) continue;
+      const rating = Number(r.client_rating);
+      if (Number.isFinite(rating)) walkthroughRatingByMove.set(mid, rating);
+    }
+  }
+
   const { data: coordConfig } = await supabase
     .from("platform_config")
     .select("key, value")
@@ -70,11 +94,31 @@ export async function GET(req: NextRequest) {
         ? `${baseUrl}/referral?ref=${encodeURIComponent(move.move_code || move.id)}`
         : null;
 
-    const score = move.nps_score as number | null;
+    const npsScore = move.nps_score as number | null;
+    const walkthroughRating = walkthroughRatingByMove.get(String(move.id)) ?? null;
+    // Effective rating = the LOWEST of any rating we have on file. If the
+    // client rated 2/5 in the walkthrough we must respect that even if
+    // moves.nps_score is null. Threshold for "low" is <= 3 to align with
+    // the in-app walkthrough UI (which shows Google CTA only at 4-5).
+    const effectiveScore = (() => {
+      const candidates: number[] = [];
+      if (typeof npsScore === "number" && Number.isFinite(npsScore)) candidates.push(npsScore);
+      if (typeof walkthroughRating === "number" && Number.isFinite(walkthroughRating)) {
+        candidates.push(walkthroughRating);
+      }
+      if (candidates.length === 0) return null;
+      return Math.min(...candidates);
+    })();
+    const isLowSatisfaction = effectiveScore !== null && effectiveScore <= 3;
 
     try {
-      if (score !== null && score < 4) {
-        /* ── Low satisfaction: send internal alert + client follow-up ── */
+      if (isLowSatisfaction) {
+        /* ── Low satisfaction: send internal alert + client follow-up.
+              DO NOT send the Google review request — the client already
+              told us they aren't happy, asking for a public review
+              would damage the brand. Instead, alert the super admin and
+              send a service-recovery follow-up so the coordinator can
+              reach out personally. ── */
 
         const adminEmail = process.env.SUPER_ADMIN_EMAIL;
         if (adminEmail) {
@@ -83,13 +127,17 @@ export async function GET(req: NextRequest) {
             clientEmail: move.client_email,
             clientPhone: move.client_phone || "",
             moveCode: move.move_code || move.id,
-            npsScore: score,
+            npsScore: effectiveScore as number,
             moveDate: move.scheduled_date,
           });
 
+          const ratingSourceLabel =
+            walkthroughRating !== null && walkthroughRating <= 3 && npsScore !== walkthroughRating
+              ? `walkthrough ${walkthroughRating}/5`
+              : `${effectiveScore}/5`;
           await sendEmail({
             to: adminEmail,
-            subject: `Low satisfaction: ${move.client_name} ${move.move_code} (${score}/5)`,
+            subject: `Low satisfaction: ${move.client_name} ${move.move_code} (${ratingSourceLabel}) — DO NOT send Google review`,
             html: alertHtml,
           });
         }
@@ -110,7 +158,7 @@ export async function GET(req: NextRequest) {
 
         results.followUpsSent++;
       } else {
-        /* ── Good score (>= 4) or no score: send review request ── */
+        /* ── Good score (>= 4) or no score on either signal: send review request ── */
 
         await sendEmail({
           to: move.client_email,

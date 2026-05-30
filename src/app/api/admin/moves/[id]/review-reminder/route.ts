@@ -44,6 +44,21 @@ export async function POST(
     );
   }
 
+  // Hard guard: if the client already rated 1-3 stars via the walkthrough,
+  // we never send a Google review request. The post-move reviews cron
+  // skips low-rated moves automatically; this protects the manual
+  // "Send request" button too. Coordinator should reach out personally
+  // — see the service-recovery panel on the move detail page.
+  const existingClientRating = Number(rr.client_rating ?? NaN);
+  if (Number.isFinite(existingClientRating) && existingClientRating <= 3) {
+    return NextResponse.json(
+      {
+        error: `Client rated ${existingClientRating}/5 in the walkthrough. Google review request is suppressed. Reach out personally instead — see the service-recovery panel on the move detail page.`,
+      },
+      { status: 400 }
+    );
+  }
+
   if (action === "send") {
     if (rr.status !== "pending") {
       return NextResponse.json(

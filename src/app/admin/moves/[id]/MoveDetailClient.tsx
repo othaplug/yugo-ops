@@ -1747,6 +1747,58 @@ export default function MoveDetailClient({
                     </p>
                   )}
                 </div>
+
+                {/* Low-rating service-recovery guidance. The post-move
+                   reviews cron will suppress the Google review email for
+                   client_rating <= 3 — this panel surfaces what the
+                   coordinator should do INSTEAD. */}
+                {reviewRequest.client_rating != null &&
+                  reviewRequest.client_rating <= 3 && (
+                    <div className="mt-3 rounded-md border border-amber-300/60 bg-amber-50/60 p-3">
+                      <p className="text-[10px] font-bold tracking-widest uppercase text-amber-900 mb-1.5">
+                        ⚠ Do not request a Google review
+                      </p>
+                      <p className="text-[12px] text-amber-900/90 leading-snug mb-2">
+                        Client rated {reviewRequest.client_rating}/5. The
+                        post-move reviews cron has been instructed to skip
+                        the Google review email for this move. Reach out
+                        personally instead:
+                      </p>
+                      <ul className="list-disc pl-5 text-[12px] text-amber-900/90 leading-relaxed space-y-1">
+                        <li>
+                          <strong>Call within 24 hours.</strong> The first
+                          24 hours is the recovery window — a phone call
+                          from the coordinator (or owner for 1-2 stars)
+                          beats any email.
+                        </li>
+                        <li>
+                          <strong>Send a personalized email,</strong> not a
+                          template. Acknowledge the specific feedback
+                          above, name the failure, propose a concrete
+                          remedy (credit, redo, partial refund).
+                        </li>
+                        <li>
+                          <strong>Document the recovery.</strong> Note the
+                          conversation, agreed remedy, and timeline in
+                          internal notes. Audit trail matters if this
+                          escalates.
+                        </li>
+                        {reviewRequest.client_rating <= 2 && (
+                          <li>
+                            <strong>Escalate to owner / GM.</strong> 1-2
+                            stars warrants direct owner attention before
+                            the client posts publicly elsewhere.
+                          </li>
+                        )}
+                        <li>
+                          <strong>Re-invite a review only after recovery.</strong>{" "}
+                          If the issue is resolved to their satisfaction,
+                          THEN you can ask for a Google review manually —
+                          not before.
+                        </li>
+                      </ul>
+                    </div>
+                  )}
               </div>
             ) : null}
           </div>
