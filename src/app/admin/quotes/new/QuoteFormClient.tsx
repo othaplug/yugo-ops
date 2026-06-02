@@ -72,6 +72,7 @@ import JobScopeSection, {
   scopeRequiresInbound,
   validateInboundDraft,
 } from "./JobScopeSection";
+import TierPriceOverrideEditor from "./TierPriceOverrideEditor";
 import {
   WhiteGloveItemsEditor,
   createDefaultWhiteGloveItem,
@@ -1991,6 +1992,16 @@ export default function QuoteFormClient({
 
   /** Pre-tax override sent to /api/quotes/generate (not used for B2B / bin rental). */
   const [quotePreTaxOverride, setQuotePreTaxOverride] = useState("");
+  // Per-tier price overrides. Distinct from the global quote_price_override
+  // above — that one scales all three tiers proportionally; this map
+  // replaces a specific tier's price with an absolute number (e.g. Estate
+  // at $6,000 to match a competitor while Essential/Signature stay
+  // engine-priced). Each tier carries its own price + reason.
+  const [tierPriceOverrides, setTierPriceOverrides] = useState<
+    Partial<
+      Record<"essential" | "signature" | "estate", { price: string; reason: string }>
+    >
+  >({});
   const [quotePreTaxOverrideReason, setQuotePreTaxOverrideReason] =
     useState("");
 
@@ -5042,6 +5053,26 @@ export default function QuoteFormClient({
         if (qo !== undefined) {
           base.quote_price_override = qo;
           base.quote_price_override_reason = quotePreTaxOverrideReason.trim();
+        }
+        // Per-tier overrides: residential local_move + long_distance only.
+        // Each entry must have a positive price AND a reason ≥ 3 chars
+        // (server validates again; client filters here for clean payload).
+        if (serviceType === "local_move" || serviceType === "long_distance") {
+          const cleanedOverrides: Record<
+            string,
+            { price: number; reason: string }
+          > = {};
+          for (const tk of ["essential", "signature", "estate"] as const) {
+            const entry = tierPriceOverrides[tk];
+            if (!entry) continue;
+            const p = parseFloat(entry.price);
+            const r = entry.reason.trim();
+            if (!Number.isFinite(p) || p <= 0 || r.length < 3) continue;
+            cleanedOverrides[tk] = { price: Math.round(p), reason: r };
+          }
+          if (Object.keys(cleanedOverrides).length > 0) {
+            base.tier_price_overrides = cleanedOverrides;
+          }
         }
       }
 
@@ -11026,6 +11057,36 @@ export default function QuoteFormClient({
                   </div>
                 </div>
               )}
+
+          {/* Per-tier price override — residential only.
+             Distinct from the global override below: per-tier sets an
+             absolute price on a single tier (e.g. Estate to $6,000)
+             without affecting the others. Global override below scales
+             all three tiers proportionally. They compose if both are
+             set (per-tier applies first, then global ratio relative to
+             whatever Essential ends up at). */}
+          {(serviceType === "local_move" || serviceType === "long_distance") && (
+            <div className="px-0 sm:px-0 pb-1 pt-4 mt-2">
+              <TierPriceOverrideEditor
+                value={tierPriceOverrides}
+                onChange={setTierPriceOverrides}
+                enginePrices={{
+                  essential:
+                    typeof quoteResult?.tiers?.essential?.price === "number"
+                      ? quoteResult.tiers.essential.price
+                      : undefined,
+                  signature:
+                    typeof quoteResult?.tiers?.signature?.price === "number"
+                      ? quoteResult.tiers.signature.price
+                      : undefined,
+                  estate:
+                    typeof quoteResult?.tiers?.estate?.price === "number"
+                      ? quoteResult.tiers.estate.price
+                      : undefined,
+                }}
+              />
+            </div>
+          )}
 
           {serviceType !== "bin_rental" &&
             serviceType !== "b2b_delivery" &&

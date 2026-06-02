@@ -201,6 +201,23 @@ interface QuoteInput {
   quote_price_override?: number;
   quote_price_override_reason?: string;
   /**
+   * Per-tier override map (residential local_move + long_distance only).
+   * Targets one or more tiers independently — unlike `quote_price_override`
+   * which scales all three tiers proportionally. Each entry replaces that
+   * tier's natural engine price; tax / total / deposit are recomputed
+   * from the override.
+   *   { estate: { price: 6000, reason: "competitive match" } }
+   * Per-tier overrides apply BEFORE the global override (so admin can use
+   * both: e.g. discount Estate to a flat number, then proportionally
+   * scale the rest).
+   */
+  tier_price_overrides?: Partial<
+    Record<
+      "essential" | "signature" | "estate",
+      { price?: number; reason?: string }
+    >
+  >;
+  /**
    * R2: Structured override reason code from a controlled taxonomy
    * (competitive_match | partner_acquisition | multi_job_discount |
    *  scope_overstated | goodwill | other). Stored alongside the existing
@@ -4884,6 +4901,89 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   const enginePreTaxHeadline = tiers ? tiers.essential.price : custom_price?.price ?? 0;
   factors = { ...factors, system_price: enginePreTaxHeadline };
 
+  // ── Per-tier price overrides ────────────────────────────────────────
+  // Apply BEFORE the global ratio-based override so the two systems
+  // compose cleanly: per-tier targets a specific tier with an absolute
+  // price (e.g. "Estate at $6,000 to match a competitor"); global
+  // proportionally scales whatever is left.
+  //
+  // Validation:
+  //   - residential tiered quotes only (tiers is null for custom_price)
+  //   - each override price must be a positive finite number
+  //   - reason must be ≥ 3 chars (mirrors global override rule)
+  //   - unknown tier keys are ignored silently
+  if (
+    tiers &&
+    input.tier_price_overrides &&
+    typeof input.tier_price_overrides === "object"
+  ) {
+    const taxRateLocal = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
+    const depKeyLocal: string = (() => {
+      switch (svcType) {
+        case "local_move":
+          return "residential";
+        case "long_distance":
+          return "long_distance";
+        case "office_move":
+          return "office";
+        case "single_item":
+          return "single_item";
+        case "white_glove":
+          return "white_glove";
+        case "specialty":
+          return "specialty";
+        default:
+          return "residential";
+      }
+    })();
+    const tierOverridesApplied: Array<{
+      tier: string;
+      original: number;
+      override: number;
+      reason: string;
+    }> = [];
+    const nextTiers: Record<string, TierResult> = { ...tiers };
+    for (const tk of ["essential", "signature", "estate"] as const) {
+      const ovEntry = input.tier_price_overrides[tk];
+      if (!ovEntry || typeof ovEntry !== "object") continue;
+      const ovPrice = Number(ovEntry.price);
+      if (!Number.isFinite(ovPrice) || ovPrice <= 0) continue;
+      const ovReason = String(ovEntry.reason ?? "").trim();
+      if (ovReason.length < 3) {
+        return NextResponse.json(
+          {
+            error: `Per-tier override on ${tk} requires a reason (at least 3 characters).`,
+          },
+          { status: 400 },
+        );
+      }
+      const t = tiers[tk];
+      if (!t) continue;
+      const newPrice = Math.round(ovPrice);
+      const newDeposit = await calculateDeposit(sb, depKeyLocal, newPrice);
+      nextTiers[tk] = {
+        ...t,
+        price: newPrice,
+        tax: Math.round(newPrice * taxRateLocal),
+        total: Math.round(newPrice * (1 + taxRateLocal)),
+        deposit: newDeposit,
+      };
+      tierOverridesApplied.push({
+        tier: tk,
+        original: t.price,
+        override: newPrice,
+        reason: ovReason,
+      });
+    }
+    if (tierOverridesApplied.length > 0) {
+      tiers = nextTiers;
+      factors = {
+        ...factors,
+        tier_overrides_applied: tierOverridesApplied,
+      };
+    }
+  }
+
   const quoteOvr = parsePositivePreTaxOverride(input.quote_price_override);
   const quoteOvrReason = String(input.quote_price_override_reason ?? "").trim();
   if (quoteOvr !== undefined) {
@@ -5216,6 +5316,23 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       override_price: quoteOvr !== undefined ? quoteOvr : null,
       override_reason: quoteOvr !== undefined ? quoteOvrReason : null,
       override_by: quoteOvr !== undefined ? authUser?.id ?? null : null,
+      // Per-tier price overrides — sanitised copy of what was applied.
+      // Cleared (set to null) when the input doesn't carry any overrides
+      // so regenerating a quote can also REMOVE overrides cleanly.
+      tier_price_overrides: (() => {
+        const map = input.tier_price_overrides;
+        if (!map || typeof map !== "object") return null;
+        const out: Record<string, { price: number; reason: string }> = {};
+        for (const tk of ["essential", "signature", "estate"] as const) {
+          const ov = map[tk];
+          if (!ov || typeof ov !== "object") continue;
+          const p = Number(ov.price);
+          const r = String(ov.reason ?? "").trim();
+          if (!Number.isFinite(p) || p <= 0 || r.length < 3) continue;
+          out[tk] = { price: Math.round(p), reason: r };
+        }
+        return Object.keys(out).length > 0 ? out : null;
+      })(),
       // R2: structured override-reason code from controlled taxonomy.
       // Only persisted when an override is applied; null otherwise.
       override_reason_code:
