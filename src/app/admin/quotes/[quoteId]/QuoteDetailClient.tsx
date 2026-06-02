@@ -944,6 +944,40 @@ export default function QuoteDetailClient({
             )}
           </p>
 
+          {/* Presentation-mode badge — only surfaces when the quote has
+             a non-default mode tagged, so the comparison default doesn't
+             clutter every row. Tells the coordinator at a glance how the
+             client will see the quote. Click-through goes to the
+             preview page rendered with the same mode. */}
+          {(() => {
+            const mode = String(
+              (quote as { presentation_mode?: string }).presentation_mode ?? "",
+            ).toLowerCase();
+            if (mode !== "estate_only" && mode !== "estate_featured") {
+              return null;
+            }
+            const label =
+              mode === "estate_only"
+                ? "Estate only — single-tier render"
+                : "Estate featured — Estate first, others collapsed";
+            return (
+              <div className="pt-2">
+                <a
+                  href={`/admin/quotes/preview-presentation?mode=${mode}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-[11px] font-semibold border border-[var(--wine)]/30 bg-[var(--wine)]/[0.06] text-[var(--wine)] hover:bg-[var(--wine)]/[0.12] transition"
+                  title="Click to preview how this mode renders to the client"
+                >
+                  <span className="text-[9px] uppercase tracking-wider opacity-70">
+                    Presentation
+                  </span>
+                  <span>{label}</span>
+                </a>
+              </div>
+            );
+          })()}
+
           {(quote.sent_at || hubspotLinkedId) && (
             <div className="pt-2">
               {hubspotLinkedId ? (

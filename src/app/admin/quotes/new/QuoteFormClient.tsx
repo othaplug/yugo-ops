@@ -11120,10 +11120,16 @@ export default function QuoteFormClient({
                     </div>
                     <div className="text-[11px] text-[var(--tx2)] mt-0.5">
                       Estate is the recommended tier. Choose how the client
-                      sees the quote — full comparison, Estate featured, or
-                      Estate only. (Renders for the latter two ship in the
-                      next release; for now the column is persisted so
-                      operators can tag quotes correctly.)
+                      sees the quote. Preview each mode at{" "}
+                      <a
+                        href="/admin/quotes/preview-presentation"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline hover:no-underline"
+                      >
+                        /admin/quotes/preview-presentation
+                      </a>
+                      .
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
