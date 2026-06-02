@@ -63,7 +63,13 @@ export function detectDayCount(input: MoveScopeDetectionInput): number {
   const hasPacking = tier === "estate" && isLargeHome
   if (hasPacking) days += 1
 
-  const hasUnpacking = tier === "estate" && isLargeHome
+  // Unpack is BUNDLED with move day per calculateEstateDays (the move
+  // day's hours include unpack labour — see estate-schedule.ts where
+  // every plan returns unpackIncluded: true). Adding a separate unpack
+  // day here would expand the schedule to 3 days when calculateEstateDays
+  // says 2 (and would double-bill the labour). Always false; kept as a
+  // named const for code-search readability.
+  const hasUnpacking = false
   if (hasUnpacking) days += 1
 
   const hasSpecialtyCrating =
@@ -152,9 +158,10 @@ export function computeMoveScopeAddonPreTax(
   const isLargeHome = ms === "3br" || ms === "4br" || ms === "5br_plus"
 
   // STRICT auto-trigger: Estate + large home only.
-  // Keep in lockstep with detectDayCount above.
+  // Keep in lockstep with detectDayCount above. hasUnpacking is FALSE —
+  // unpack rolls into move day (see comment in detectDayCount).
   const hasPacking = tier === "estate" && isLargeHome
-  const hasUnpacking = tier === "estate" && isLargeHome
+  const hasUnpacking = false
 
   const hasSpecialtyCrating =
     input.specialty_items?.some((it) => CRATING_SPECIALTY_TYPES.has(it.type)) ?? false
@@ -377,9 +384,18 @@ export function applyMoveScopeAddonToResidentialTiers(
     }
   }
 
+  // Estate's tier price already bakes in the multi-day labour cost via
+  // estateLoadedMultiDayCost (see calcResidential in generate/route.ts —
+  // the Estate base price is derived from estateLoadedLabourCost on the
+  // calculateEstateDays plan). Applying the pack-day day-rate addon ON
+  // TOP of that double-counts the labour the client is already paying
+  // for. Essential and Signature don't bake in multi-day labour, so the
+  // addon legitimately represents the scope-tax for stretching their
+  // operational shape to match the multi-day Estate plan; they keep
+  // getting bumped. See operator audit 2026-06-02 (YG-30272).
   return {
     essential: bumpOne(tiers.essential, curPct, curMin),
     signature: bumpOne(tiers.signature, sigPct, sigMin),
-    estate: bumpOne(tiers.estate, estPct, estMin),
+    estate: tiers.estate,
   }
 }

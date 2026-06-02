@@ -5098,6 +5098,56 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     };
   }
 
+  // ── Recompute margin %s against FINAL tier prices ───────────────────
+  // estimated_margin_* was first computed inside calcResidential using
+  // the pre-addon tier prices (lines ~1999-2003). Several price-changing
+  // steps happen after that:
+  //   1. applyMoveScopeAddonToResidentialTiers bumps Essential/Signature
+  //   2. Per-tier overrides (tier_price_overrides)
+  //   3. Global override (quote_price_override)
+  // Without this recompute the persisted margin% reflects pre-addon
+  // prices — e.g. Essential showed 7% when actual margin on the final
+  // $3,100 price is ~46%. We use the same cost basis as calcResidential
+  // (estimated_cost.total for Essential/Signature; total_estate_ops for
+  // Estate which uses estateLoadedLabourCost).
+  if (tiers) {
+    const fr = factors as Record<string, unknown>;
+    const cost = fr.estimated_cost as
+      | { total?: number; total_estate_ops?: number }
+      | undefined;
+    const costTotal =
+      cost && typeof cost.total === "number" ? cost.total : null;
+    const costTotalEstateOps =
+      cost && typeof cost.total_estate_ops === "number"
+        ? cost.total_estate_ops
+        : costTotal;
+    const marginFor = (price: number, c: number | null): number | null => {
+      if (c == null || price <= 0) return null;
+      return Math.round(((price - c) / price) * 100);
+    };
+    const essPrice = tiers.essential?.price ?? 0;
+    const sigPrice = tiers.signature?.price ?? 0;
+    const estPriceFinal = tiers.estate?.price ?? 0;
+    const newEssMargin = marginFor(essPrice, costTotal);
+    const newSigMargin = marginFor(sigPrice, costTotal);
+    const newEstMargin = marginFor(estPriceFinal, costTotalEstateOps);
+    factors = {
+      ...factors,
+      ...(newEssMargin != null
+        ? {
+            estimated_margin_essential: newEssMargin,
+            estimated_margin_curated: newEssMargin, // legacy alias
+          }
+        : {}),
+      ...(newSigMargin != null
+        ? { estimated_margin_signature: newSigMargin }
+        : {}),
+      ...(newEstMargin != null
+        ? { estimated_margin_estate: newEstMargin }
+        : {}),
+    };
+  }
+
   // Persist the coordinator's name into factors_applied so the
   // booking → move-create path can copy it onto moves.coordinator_name.
   // Kept as a string (never the literal "false") — empty trims become null.
