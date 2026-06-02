@@ -193,7 +193,18 @@ function fmtMoveDayLabel(iso: string): string {
   });
 }
 
-/** Human-readable lines for quote confirm + emails (not raw DB keys). */
+/**
+ * Human-readable lines for quote confirm + emails (not raw DB keys).
+ *
+ * Move day intentionally does NOT carry an hours estimate. Stating
+ * "about 7 hours" creates a contract expectation that doesn't survive
+ * real-world friction (long carries, elevator delays, traffic, client
+ * pace) — and a client whose move ran 9 hours after being told 7 reads
+ * the variance as a service failure rather than normal scope. Move day
+ * is a full-day commitment; the coordinator confirms timing the day-of.
+ * Pack day still shows hours because pack day is more bounded (the box
+ * count is the rate-limit, not the route) and the variance is smaller.
+ */
 export function buildEstateScheduleLines(
   plan: EstateDayPlan,
   moveDateIso: string,
@@ -203,27 +214,25 @@ export function buildEstateScheduleLines(
   const packIso = plan.packDay ? addCalendarDaysIso(move, -1) : "";
 
   if (plan.days <= 1 || !plan.packDay) {
-    const h = Math.round(plan.moveDay.hours);
     return [
-      `Single-day visit: pack, move, and unpack. ${plan.moveDay.crew} crew members, about ${h} hours, ${truckLabel}.`,
+      `Single-day visit: pack, move, and unpack. ${plan.moveDay.crew} crew members, ${truckLabel}. Full day.`,
     ];
   }
 
   const packDate = fmtMoveDayLabel(packIso);
   const moveDate = fmtMoveDayLabel(move);
   const ph = Math.round(plan.packDay.hours);
-  const mh = Math.round(plan.moveDay.hours);
 
   if (plan.days >= 3) {
     return [
       `Packing (${packDate}): ${plan.packDay.crew} professional packers, about ${ph} hours. Belongings packed, labeled, and protected.`,
-      `Move and unpack (${moveDate} onward): ${plan.moveDay.crew} movers and ${truckLabel}. Placement and unpacking at destination, about ${mh} hours per day. Your coordinator confirms the final schedule.`,
+      `Move and unpack (${moveDate} onward): ${plan.moveDay.crew} movers and ${truckLabel}. Placement and unpacking at destination across the full schedule. Your coordinator confirms the final timing.`,
     ];
   }
 
   return [
     `Packing (${packDate}): ${plan.packDay.crew} professional packers, about ${ph} hours. Belongings packed, labeled, and protected.`,
-    `Move and unpack (${moveDate}): ${plan.moveDay.crew} movers and ${truckLabel}. Full move, placement, and unpacking at destination, about ${mh} hours.`,
+    `Move and unpack (${moveDate}): ${plan.moveDay.crew} movers and ${truckLabel}. Full move, placement, and unpacking at destination. Full day.`,
   ];
 }
 
