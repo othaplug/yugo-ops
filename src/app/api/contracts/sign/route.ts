@@ -65,6 +65,8 @@ interface ContractData {
   /** When present with length > 1, PDF lists each pickup instead of a single From line. */
   pickup_stops?: ContractStopPdf[];
   dropoff_stops?: ContractStopPdf[];
+  /** Drawn signature PNG data URL (mirrored from top-level for audit). */
+  signature_image?: string | null;
 }
 
 interface ContractSignPayload {
@@ -73,13 +75,15 @@ interface ContractSignPayload {
   agreement_version: string;
   user_agent: string;
   contract_data: ContractData;
+  /** Drawn signature PNG data URL — required alongside typed_name. */
+  signature_image?: string | null;
 }
 
 const CANCELLATION_TEXT: Record<string, string> = {
   local_move:
-    "Full refund if cancelled 48+ hours before move. Non-refundable within 48 hours.",
+    "Full refund if cancelled 48 or more hours before your scheduled move date. Cancellations within 48 hours: deposit is non-refundable. After 48 hours: full payment taken is not refundable.",
   long_distance:
-    "Full refund if cancelled 72+ hours before move. Non-refundable within 72 hours.",
+    "Full refund if cancelled 48 or more hours before your scheduled move date. Cancellations within 48 hours: deposit is non-refundable. After 48 hours: full payment taken is not refundable.",
   office_move:
     "Full refund if cancelled 72+ hours before relocation. Non-refundable within 72 hours.",
   single_item:
@@ -336,6 +340,28 @@ function generateContractPdf(
   setSectionLabel(doc, 12);
   doc.text("Electronic Signature", margin, y);
   y += 8;
+
+  /* Embed drawn signature image when present (PNG data URL). Sized
+     to fit ~60mm wide × ~22mm tall so a typical signature is legible
+     without dominating the page. Falls through gracefully if jsPDF
+     can't decode the data URL. */
+  const sigImg = payload.signature_image ?? cd.signature_image ?? null;
+  if (sigImg && typeof sigImg === "string" && sigImg.startsWith("data:image/")) {
+    try {
+      checkPageBreak();
+      const sigW = 60;
+      const sigH = 22;
+      doc.addImage(sigImg, "PNG", margin, y, sigW, sigH);
+      // Hairline under the signature so it reads as "on the line"
+      doc.setDrawColor(...GRAY_LIGHT);
+      doc.setLineWidth(0.2);
+      doc.line(margin, y + sigH + 1, margin + sigW, y + sigH + 1);
+      y += sigH + 5;
+    } catch (sigErr) {
+      console.error("[contract-pdf] Signature image embed failed:", sigErr);
+    }
+  }
+
   setBodyText(doc, 10);
   doc.text(`Signed by: ${payload.typed_name}`, margin, y);
   y += 6;
@@ -377,10 +403,32 @@ export async function POST(req: Request) {
     }
 
     const body = (await req.json()) as Partial<ContractSignPayload>;
-    const { quote_id, typed_name, agreement_version, user_agent, contract_data } = body;
+    const {
+      quote_id,
+      typed_name,
+      agreement_version,
+      user_agent,
+      contract_data,
+      signature_image,
+    } = body;
 
     if (!quote_id || !typed_name || !agreement_version || !contract_data) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    // Drawn signature is required alongside typed name. We accept it
+    // top-level or nested inside contract_data (older clients).
+    const resolvedSignature =
+      signature_image ?? contract_data.signature_image ?? null;
+    if (
+      !resolvedSignature ||
+      typeof resolvedSignature !== "string" ||
+      !resolvedSignature.startsWith("data:image/")
+    ) {
+      return NextResponse.json(
+        { error: "A drawn signature is required to sign the agreement." },
+        { status: 400 },
+      );
     }
 
     const ipAddress = getClientIp(req);
@@ -398,7 +446,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Quote not found" }, { status: 404 });
     }
 
-    /* 2. Store contract_signed event */
+    /* 2. Store contract_signed event. We do NOT store the full data URL
+          in event metadata (event metadata is queried often and a PNG
+          data URL can be ~30KB). The signature image is preserved in the
+          generated PDF and uploaded to storage below; metadata records
+          only that a drawn signature was captured + its rough size. */
     await supabase.from("quote_events").insert({
       quote_id,
       event_type: "contract_signed",
@@ -411,6 +463,8 @@ export async function POST(req: Request) {
         grand_total: contract_data.grand_total,
         deposit: contract_data.deposit,
         package_label: contract_data.package_label,
+        signature_captured: true,
+        signature_bytes: resolvedSignature.length,
       },
     });
 
@@ -422,7 +476,14 @@ export async function POST(req: Request) {
         getCompanyDisplayName(),
       ]);
       const pdfBuffer = generateContractPdf(
-        { quote_id, typed_name, agreement_version, user_agent: user_agent ?? "", contract_data },
+        {
+          quote_id,
+          typed_name,
+          agreement_version,
+          user_agent: user_agent ?? "",
+          contract_data,
+          signature_image: resolvedSignature,
+        },
         ipAddress,
         signedAt,
         companyLegalName,

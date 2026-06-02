@@ -31,6 +31,7 @@ import {
   SIGNATURE_CTA,
 } from "@/app/quote/[quoteId]/signature-quote-ui";
 import type { PremiumShellKind } from "@/app/quote/[quoteId]/quote-premium-shell";
+import SignaturePad from "./SignaturePad";
 
 /** Nested under the quote step h2 (e.g. “Review & book”) — not a second section heading */
 const AGREEMENT_DOC_TITLE_CLASS =
@@ -115,9 +116,9 @@ interface Props {
 
 const CANCELLATION_POLICY: Record<string, string> = {
   local_move:
-    "Full refund if cancelled 48 or more hours before your scheduled move date. Cancellations within 48 hours: deposit is non-refundable.",
+    "Full refund if cancelled 48 or more hours before your scheduled move date. Cancellations within 48 hours: deposit is non-refundable. After 48 hours: full payment taken is not refundable.",
   long_distance:
-    "Full refund if cancelled 72 or more hours before your scheduled move date. Cancellations within 72 hours: deposit is non-refundable.",
+    "Full refund if cancelled 48 or more hours before your scheduled move date. Cancellations within 48 hours: deposit is non-refundable. After 48 hours: full payment taken is not refundable.",
   office_move:
     "Full refund if cancelled 72 or more hours before your scheduled relocation date. Cancellations within 72 hours: deposit is non-refundable.",
   single_item:
@@ -228,6 +229,11 @@ export default function ContractSign({
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [typedName, setTypedName] = useState("");
+  // Drawn signature — PNG data URL or null when canvas is empty.
+  // Required alongside typedName: typed name = legal claim of identity +
+  // intent; drawn signature = visible signature for the contract PDF
+  // and audit trail.
+  const [drawnSignature, setDrawnSignature] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
@@ -236,7 +242,12 @@ export default function ContractSign({
   const contractStartedRef = useRef(false);
 
   const q = quoteData;
-  const canSign = typedName.trim().length >= 2 && agreed && !signing && !signed;
+  const canSign =
+    typedName.trim().length >= 2 &&
+    !!drawnSignature &&
+    agreed &&
+    !signing &&
+    !signed;
   const balance = q.grandTotal - q.deposit;
   const cancellation =
     CANCELLATION_POLICY[q.serviceType] ?? CANCELLATION_POLICY.local_move;
@@ -299,9 +310,14 @@ export default function ContractSign({
         body: JSON.stringify({
           quote_id: q.quoteId,
           typed_name: typedName.trim(),
+          // Drawn signature PNG data URL — required alongside typed_name.
+          // Server persists this in contract_data.signature_image for the
+          // audit trail; embedded into the contract PDF where possible.
+          signature_image: drawnSignature,
           agreement_version: "1.3",
           user_agent: navigator.userAgent,
           contract_data: {
+            signature_image: drawnSignature,
             service_type: q.serviceType,
             residential_tier: q.residentialTier ?? null,
             package_label: q.packageLabel,
@@ -887,6 +903,32 @@ export default function ContractSign({
               color: onPremiumShell ? premiumAccent : FOREST,
               backgroundColor: "#FFFFFF",
             }}
+          />
+        </div>
+
+        {/* Drawn signature — required alongside the typed legal name.
+           Typed name = legal intent. Drawn signature = visual signature
+           that lands on the contract PDF + audit trail. Both must be
+           present to enable Sign & Continue. */}
+        <div>
+          <label
+            className={`block ${QUOTE_EYEBROW_CLASS} mb-1.5`}
+            style={{ color: agreementTheme.signLabel }}
+          >
+            Signature
+          </label>
+          <SignaturePad
+            onChange={(dataUrl) => {
+              setDrawnSignature(dataUrl);
+              // Treat starting to draw as contract-started for
+              // analytics, mirroring the typed-name behaviour above.
+              if (!contractStartedRef.current && dataUrl) {
+                contractStartedRef.current = true;
+                onContractStarted?.();
+              }
+            }}
+            disabled={signing || signed}
+            inkColor={onPremiumShell ? premiumAccent : FOREST}
           />
         </div>
 
