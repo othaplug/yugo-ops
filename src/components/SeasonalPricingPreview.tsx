@@ -46,6 +46,13 @@ interface Props {
   compact?: boolean;
   /** When compact + true (e.g. Estate quote on wine), use cream/wine-tinted chart on dark shell. */
   onDarkBackground?: boolean;
+  /**
+   * Fix #9: when an actual move date is locked in, telling the client they
+   *   "could save by moving in May or September" is unactionable noise that
+   *   just creates buyer's remorse. Pass moveDateIso so the chart can
+   *   suppress the savings nudge when the date is < 30 days out.
+   */
+  moveDateIso?: string | null;
 }
 
 export default function SeasonalPricingPreview({
@@ -54,7 +61,20 @@ export default function SeasonalPricingPreview({
   onSelectMonth,
   compact = false,
   onDarkBackground = false,
+  moveDateIso,
 }: Props) {
+  // Fix #9: suppress the "save ~$X by moving in May or Sep" copy when the
+  // client's move is locked in (less than 30 days out). At that point the
+  // savings message is unactionable; replace with a calm confirmation that
+  // the chosen date's price is fixed.
+  const daysUntilMove = (() => {
+    const iso = String(moveDateIso ?? "").trim();
+    if (!iso) return null;
+    const d = new Date(`${iso}T12:00:00`);
+    if (Number.isNaN(d.getTime())) return null;
+    return Math.floor((d.getTime() - Date.now()) / 86400000);
+  })();
+  const showSeasonNudge = daysUntilMove === null || daysUntilMove > 30;
   const months = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => {
       const month = i + 1;
@@ -183,7 +203,7 @@ export default function SeasonalPricingPreview({
             Dec
           </span>
         </div>
-        {cheapestMonth && !selectedMonthData?.isPeak && (
+        {showSeasonNudge && cheapestMonth && !selectedMonthData?.isPeak && (
           <p
             style={{
               fontSize: 11,
@@ -200,7 +220,7 @@ export default function SeasonalPricingPreview({
             saves ~${(maxPrice - cheapestMonth.price).toLocaleString()}
           </p>
         )}
-        {selectedMonthData?.isPeak && (
+        {showSeasonNudge && selectedMonthData?.isPeak && (
           <p
             style={{
               fontSize: 11,
@@ -215,6 +235,23 @@ export default function SeasonalPricingPreview({
               (months.find((m) => m.month === 5)?.price ?? 0)
             ).toLocaleString()}
             .
+          </p>
+        )}
+        {/* Fix #9: When the move date is locked in (<30 days out), the
+           savings nudge above is unactionable. Replace with a calm
+           confirmation so the chart still has a footer line but doesn't
+           plant buyer's remorse. */}
+        {!showSeasonNudge && (
+          <p
+            style={{
+              fontSize: 11,
+              color: dark ? "rgba(249,237,228,0.85)" : FOREST,
+              opacity: dark ? 1 : 0.6,
+              margin: "8px 0 0",
+              lineHeight: 1.4,
+            }}
+          >
+            Your move date is locked at this price — guaranteed.
           </p>
         )}
       </div>

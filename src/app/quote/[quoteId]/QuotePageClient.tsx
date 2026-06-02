@@ -1703,6 +1703,10 @@ export default function QuotePageClient({
                   selectedMonth={moveMonth}
                   compact
                   onDarkBackground={premiumShell}
+                  /* Fix #9: pass the actual move date so the chart suppresses
+                     the "you could save by moving in X" nudge when the move
+                     is <30 days out (the date is effectively locked). */
+                  moveDateIso={quote.move_date}
                 />
               </div>
             );
@@ -2079,6 +2083,10 @@ export default function QuotePageClient({
                     ? tiers[selectedTier]
                     : null
                 }
+                /* Fix #7: Estate clients should see every add-on immediately
+                   — no "View all" hidden state. The selectedTierKey lets
+                   AddOnsSection initialise showAll = true when Estate. */
+                selectedTierKey={isResidential ? selectedTier : null}
                 moveSize={quote.move_size}
                 toggleAddon={toggleAddon}
                 updateQty={updateQty}
@@ -2788,8 +2796,12 @@ export default function QuotePageClient({
         )}
 
         <footer className={`py-5 text-center border-t ${shellBorderTopClass}`}>
+          {/* Fix #6: This IS Yugo's own product — "Powered by Yugo" is template
+             leftover that only makes sense on white-label tools. Drop the logo
+             block; the Yugo wordmark already lives in the header. */}
           <YugoMarketingFooter
             contactEmail={branding.email}
+            showLogo={false}
             logoVariant={premiumShell ? "cream" : "black"}
             onLightBackground={!premiumShell}
             logoSize={14}
@@ -5288,6 +5300,7 @@ function AddOnsSection({
   grandTotal,
   deposit,
   selectedTierData,
+  selectedTierKey,
   toggleAddon,
   updateQty,
   updateTierIdx,
@@ -5308,6 +5321,9 @@ function AddOnsSection({
   grandTotal: number;
   deposit: number;
   selectedTierData: TierData | null;
+  /** Currently selected tier key (essential / signature / estate). Used by
+   *  Fix #7 to show every add-on expanded by default on Estate. */
+  selectedTierKey?: string | null;
   moveSize?: string | null;
   toggleAddon: (addon: Addon) => void;
   updateQty: (id: string, qty: number) => void;
@@ -5340,7 +5356,12 @@ function AddOnsSection({
       : premiumShellKind === "signature"
         ? SIGNATURE_CTA
         : FOREST;
-  const [showAll, setShowAll] = useState(false);
+  // Fix #7: Estate clients see every add-on expanded — they expect to see
+  // everything available, not a teaser with a "View all" reveal. Other
+  // tiers keep the original collapsed default.
+  const [showAll, setShowAll] = useState(
+    String(selectedTierKey ?? "").toLowerCase() === "estate",
+  );
   const [expandedContents, setExpandedContents] = useState<Set<string>>(
     new Set(),
   );

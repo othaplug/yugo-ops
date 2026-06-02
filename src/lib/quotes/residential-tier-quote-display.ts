@@ -320,11 +320,15 @@ const RESOLVED_ESTATE_MOVE_INCLUDES: TierFeature[] = [
     iconName: "Home",
   },
   // Coverage and support
+  // Fix #3: tier card MUST match the protection-detail page caps. Saying
+  // "current market value, no depreciation" while the protection page shows
+  // "up to $10,000 per item / $100,000 per move" reads as deceptive once
+  // the client opens both. State the caps up front.
   {
     key: "valuation",
-    card: "Full replacement value — current market value, no depreciation",
-    title: "Full replacement value — current market value, no depreciation",
-    desc: "Items replaced at today's market value — no depreciation, no payout caps below $10,000 per item",
+    card: "Full replacement value — up to $10,000 per item · $100,000 per move · zero deductible",
+    title: "Full replacement value — up to $10,000 per item · $100,000 per move · zero deductible",
+    desc: "Items replaced at today's market value. Items over $10,000 can be individually declared for additional coverage.",
     iconName: "ShieldCheck",
   },
   {
@@ -500,11 +504,13 @@ export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
     desc: "Everything unpacked, placed, and arranged per your Director's room plan",
     iconName: "Home",
   },
+  // Fix #3: Estate valuation copy MUST match the protection-detail page.
+  // See essential's "valuation" entry above for the full rationale.
   {
     key: "valuation",
-    card: "Full replacement value — current market value, no depreciation",
-    title: "Full replacement value",
-    desc: "Items replaced at today's market value — no depreciation, no payout caps below $10,000 per item",
+    card: "Full replacement value — up to $10,000 per item · $100,000 per move · zero deductible",
+    title: "Full replacement value — up to $10,000 per item · $100,000 per move · zero deductible",
+    desc: "Items replaced at today's market value. Items over $10,000 can be individually declared for additional coverage.",
     iconName: "ShieldCheck",
     highlight: true,
   },

@@ -133,9 +133,14 @@ export const EstateExperienceSection = React.forwardRef<
                 title={truckLabel}
                 description="Fully equipped and prepared exclusively for your move."
               />
+              {/* Fix #2: Crew size is day-specific on multi-day Estate plans
+                 (typically pack day uses crew-1, move day uses crew). Stating
+                 a single number here contradicted the schedule below. Phrase
+                 as a range so the schedule's per-day breakdown is the source
+                 of truth, not this card. */}
               <EstateFeatureCard
-                title={`Professional Crew of ${crewN}`}
-                description="Licensed, insured, background-checked. The same team from start to finish."
+                title={`Professional crew sized for your home (${Math.max(2, crewN - 1)}–${crewN} specialists across pack and move days)`}
+                description="Licensed, insured, background-checked. The same team across pack day, move day, and unpacking."
               />
               <EstateFeatureCard
                 title="White Glove Handling"
@@ -195,9 +200,13 @@ export const EstateExperienceSection = React.forwardRef<
               Protection & Ongoing Support
             </h3>
             <div className="grid md:grid-cols-2 gap-6">
+              {/* Fix #3: title held a headline that contradicted the per-item
+                 cap below it. Either we promise "no caps" up front and remove
+                 the dollar caps, or we state the caps in the headline. We
+                 state the caps. The protection-detail page already does. */}
               <EstateFeatureCard
-                title="Full replacement value — current market value, no depreciation"
-                description="Items replaced at today's market value. Up to $10,000 per item, $100,000 per move. Zero deductible."
+                title="Full replacement value — up to $10,000 per item · $100,000 per move"
+                description="Items replaced at today's market value, zero deductible. Items over $10,000 can be individually declared for additional coverage."
               />
               <EstateFeatureCard
                 title="All Packing Materials Included"
@@ -215,19 +224,13 @@ export const EstateExperienceSection = React.forwardRef<
           </div>
         </div>
 
-        <div className="mt-16 pt-8 border-t border-[#66143D]/30 flex flex-wrap gap-8 justify-center">
-          <div className="text-center">
-            <p
-              className="text-lg font-serif"
-              style={{ color: ESTATE_ON_WINE.primary }}
-            >
-              Zero-Damage Commitment
-            </p>
-            <p className="text-sm" style={{ color: ESTATE_ON_WINE.muted }}>
-              Your belongings, protected and insured
-            </p>
-          </div>
-        </div>
+        {/* Fix #3: "Zero-Damage Commitment" used to live here next to the
+           valuation cards. It conflated two different claims: "zero
+           deductible" (insurance term — no out-of-pocket on a claim) with
+           a service promise ("we won't damage anything"). Clients reading
+           both wondered: if something IS damaged, do you fix it for free
+           or just promise it won't happen? Removing the standalone claim;
+           the valuation coverage IS the commitment. One promise, not two. */}
       </div>
     </section>
   );

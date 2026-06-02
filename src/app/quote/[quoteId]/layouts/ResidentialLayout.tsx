@@ -528,20 +528,43 @@ export default function ResidentialLayout({
                       </p>
                     )}
 
-                    {/* Upgrade nudge — Essential only, not collapsed */}
+                    {/* Fix #4: Upgrade nudge — Essential only, not collapsed.
+                       Suppressed when Estate is the coordinator-recommended tier
+                       (saying "most clients choose Signature" while Estate is
+                       pre-selected as RECOMMENDED contradicts itself). When
+                       Estate is recommended, surface the limitation instead. */}
                     {!isCollapsed && tierKey === "essential" && (
-                      <p className="text-xs text-gray-400 mt-1 mb-4 text-center px-2 leading-relaxed shrink-0">
-                        Most clients moving a{" "}
-                        {quote.move_size === "1br"
-                          ? "1-bedroom"
-                          : quote.move_size === "2br"
-                            ? "2-bedroom"
-                            : quote.move_size === "3br"
-                              ? "3-bedroom"
-                              : "full"}{" "}
-                        home choose Signature for complete protection and
-                        room-of-choice placement.
-                      </p>
+                      recommendedTier === "estate" ? (
+                        <p className="text-xs text-amber-600 mt-1 mb-4 text-center px-2 leading-relaxed shrink-0">
+                          Your coordinator recommended Estate for this move.
+                          Essential has significant limitations for a{" "}
+                          {quote.move_size === "1br"
+                            ? "1-bedroom"
+                            : quote.move_size === "2br"
+                              ? "2-bedroom"
+                              : quote.move_size === "3br"
+                                ? "3-bedroom"
+                                : quote.move_size === "4br"
+                                  ? "4-bedroom"
+                                  : quote.move_size === "5br_plus"
+                                    ? "5+ bedroom"
+                                    : "full"}{" "}
+                          home of this scope.
+                        </p>
+                      ) : recommendedTier === "signature" ? (
+                        <p className="text-xs text-gray-400 mt-1 mb-4 text-center px-2 leading-relaxed shrink-0">
+                          Most clients moving a{" "}
+                          {quote.move_size === "1br"
+                            ? "1-bedroom"
+                            : quote.move_size === "2br"
+                              ? "2-bedroom"
+                              : quote.move_size === "3br"
+                                ? "3-bedroom"
+                                : "full"}{" "}
+                          home choose Signature for complete protection and
+                          room-of-choice placement.
+                        </p>
+                      ) : null
                     )}
 
                     <button
