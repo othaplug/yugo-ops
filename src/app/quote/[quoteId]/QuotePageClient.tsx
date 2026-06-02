@@ -173,6 +173,51 @@ const TRUCK_LUXURY: Record<string, string> = {
   "26ft": "26ft maximum-capacity moving truck",
 };
 
+/**
+ * Display safety-net for the truck recommendation. The engine now floors
+ * truck_primary by move size at quote-generate time, but quotes already
+ * in the DB may carry a stale truck_primary='sprinter' on a 3BR+ that
+ * predates the engine fix. Without this guard the client would still see
+ * "Dedicated Sprinter van" on an old 3BR Estate quote — exactly the
+ * dangerous string the engine fix is meant to prevent.
+ *
+ * Mirrors floorTruckByMoveSize in /api/quotes/generate so display and
+ * persistence agree.
+ */
+const TRUCK_FLOOR_BY_MOVE_SIZE: Record<string, string> = {
+  studio: "sprinter",
+  partial: "sprinter",
+  "1br": "16ft",
+  "2br": "16ft",
+  "3br": "20ft",
+  "4br": "24ft",
+  "5br_plus": "26ft",
+};
+const TRUCK_SIZE_RANK = [
+  "none",
+  "sprinter",
+  "16ft",
+  "20ft",
+  "24ft",
+  "26ft",
+] as const;
+function flooredTruckLabel(
+  truckPrimary: string | null | undefined,
+  moveSize: string | null | undefined,
+  truckSecondary?: string | null,
+): string {
+  const key = String(moveSize ?? "").toLowerCase();
+  const floor = TRUCK_FLOOR_BY_MOVE_SIZE[key] ?? "16ft";
+  const floorIdx = TRUCK_SIZE_RANK.indexOf(floor as (typeof TRUCK_SIZE_RANK)[number]);
+  const truckIdx = truckPrimary
+    ? TRUCK_SIZE_RANK.indexOf(truckPrimary as (typeof TRUCK_SIZE_RANK)[number])
+    : -1;
+  const effective =
+    truckIdx === -1 || truckIdx < floorIdx ? floor : (truckPrimary as string);
+  const base = TRUCK_LUXURY[effective] ?? effective;
+  return truckSecondary ? `${base} + support van` : base;
+}
+
 /** Client delivery / B2B — replaces residential "Your Move Includes" copy. */
 const LOGISTICS_INCLUSION_FEATURES: TierFeature[] = [
   {
@@ -280,6 +325,26 @@ export default function QuotePageClient({
   googleReviewCountLabel?: string;
 }) {
   const isResidential = quote.service_type === "local_move" && !!quote.tiers;
+
+  /**
+   * Display-time floor of quote.truck_primary by move size. Engine-side
+   * fix in /api/quotes/generate now floors at write-time, but quotes
+   * already in the DB may still carry a stale truck_primary='sprinter'
+   * on a 3BR+ from before the engine fix. Routing every InclusionsShowcase
+   * + estate-experience consumer through this derived value means a
+   * client viewing any old quote sees the correct truck size — never
+   * the dangerous "Dedicated Sprinter van" on a 3BR.
+   */
+  const flooredTruckPrimary = ((): string | null => {
+    if (!quote.truck_primary) return null;
+    const key = String(quote.move_size ?? "").toLowerCase();
+    const floor = TRUCK_FLOOR_BY_MOVE_SIZE[key];
+    if (!floor) return quote.truck_primary;
+    const floorIdx = TRUCK_SIZE_RANK.indexOf(floor as (typeof TRUCK_SIZE_RANK)[number]);
+    const truckIdx = TRUCK_SIZE_RANK.indexOf(quote.truck_primary as (typeof TRUCK_SIZE_RANK)[number]);
+    if (truckIdx === -1 || truckIdx < floorIdx) return floor;
+    return quote.truck_primary;
+  })();
   const tiers = quote.tiers as Record<string, TierData> | null;
 
   const quoteForDisplay = useMemo(
@@ -1676,7 +1741,7 @@ export default function QuotePageClient({
                 selectedTier={selectedTier}
                 isResidential={isResidential}
                 residentialTierFeatures={residentialTierFeatures}
-                truckPrimary={quote.truck_primary}
+                truckPrimary={flooredTruckPrimary}
                 truckSecondary={quote.truck_secondary}
                 crewSize={quote.est_crew_size}
                 assemblyRequired={quote.assembly_override ?? quote.assembly_required}
@@ -1695,7 +1760,7 @@ export default function QuotePageClient({
                 selectedTier={selectedTier}
                 isResidential={isResidential}
                 residentialTierFeatures={residentialTierFeatures}
-                truckPrimary={quote.truck_primary}
+                truckPrimary={flooredTruckPrimary}
                 truckSecondary={quote.truck_secondary}
                 crewSize={quote.est_crew_size}
                 assemblyRequired={quote.assembly_override ?? quote.assembly_required}
@@ -1721,7 +1786,7 @@ export default function QuotePageClient({
                   selectedTier={selectedTier}
                   isResidential={isResidential}
                   residentialTierFeatures={residentialTierFeatures}
-                  truckPrimary={quote.truck_primary}
+                  truckPrimary={flooredTruckPrimary}
                   truckSecondary={quote.truck_secondary}
                   crewSize={quote.est_crew_size}
                   variant="logistics"
@@ -1741,7 +1806,7 @@ export default function QuotePageClient({
                 selectedTier={selectedTier}
                 isResidential={isResidential}
                 residentialTierFeatures={residentialTierFeatures}
-                truckPrimary={quote.truck_primary}
+                truckPrimary={flooredTruckPrimary}
                 truckSecondary={quote.truck_secondary}
                 crewSize={quote.est_crew_size}
                 variant="logistics"
@@ -1778,7 +1843,7 @@ export default function QuotePageClient({
                 selectedTier={selectedTier}
                 isResidential={isResidential}
                 residentialTierFeatures={residentialTierFeatures}
-                truckPrimary={quote.truck_primary}
+                truckPrimary={flooredTruckPrimary}
                 truckSecondary={quote.truck_secondary}
                 crewSize={quote.est_crew_size}
                 assemblyRequired={quote.assembly_override ?? quote.assembly_required}
@@ -1798,7 +1863,7 @@ export default function QuotePageClient({
                 selectedTier={selectedTier}
                 isResidential={isResidential}
                 residentialTierFeatures={residentialTierFeatures}
-                truckPrimary={quote.truck_primary}
+                truckPrimary={flooredTruckPrimary}
                 truckSecondary={quote.truck_secondary}
                 crewSize={quote.est_crew_size}
                 variant="logistics"
@@ -1829,7 +1894,7 @@ export default function QuotePageClient({
                 selectedTier={selectedTier}
                 isResidential={isResidential}
                 residentialTierFeatures={residentialTierFeatures}
-                truckPrimary={quote.truck_primary}
+                truckPrimary={flooredTruckPrimary}
                 truckSecondary={quote.truck_secondary}
                 crewSize={quote.est_crew_size}
                 variant="event"
@@ -1867,7 +1932,7 @@ export default function QuotePageClient({
                 selectedTier={selectedTier}
                 isResidential={isResidential}
                 residentialTierFeatures={residentialTierFeatures}
-                truckPrimary={quote.truck_primary}
+                truckPrimary={flooredTruckPrimary}
                 truckSecondary={quote.truck_secondary}
                 crewSize={quote.est_crew_size}
                 assemblyRequired={quote.assembly_override ?? quote.assembly_required}
@@ -1914,10 +1979,11 @@ export default function QuotePageClient({
                 ref={comparisonRef}
                 truckLabel={
                   quote.truck_primary
-                    ? quote.truck_secondary
-                      ? `${TRUCK_LUXURY[quote.truck_primary] ?? quote.truck_primary} + support van`
-                      : (TRUCK_LUXURY[quote.truck_primary] ??
-                        quote.truck_primary)
+                    ? flooredTruckLabel(
+                        quote.truck_primary,
+                        quote.move_size,
+                        quote.truck_secondary,
+                      )
                     : "Your dedicated moving truck"
                 }
                 crewSize={quote.est_crew_size}
@@ -1929,7 +1995,7 @@ export default function QuotePageClient({
                   selectedTier={selectedTier}
                   isResidential={isResidential}
                   residentialTierFeatures={residentialTierFeatures}
-                  truckPrimary={quote.truck_primary}
+                  truckPrimary={flooredTruckPrimary}
                   truckSecondary={quote.truck_secondary}
                   crewSize={quote.est_crew_size}
                   assemblyRequired={quote.assembly_override ?? quote.assembly_required}
@@ -3680,9 +3746,15 @@ function ConfirmDetailsSection({
   const protectionLabel =
     VALUATION_TIER_LABELS[protectionKey] ??
     getDisplayLabel(includedValuation, "valuation");
-  const truckLine = quote.truck_primary
-    ? (TRUCK_LUXURY[quote.truck_primary] ?? quote.truck_primary)
-    : "Moving truck";
+  // Floor the truck label here as well — ConfirmDetailsSection renders
+  // the "Your Team" summary the client confirms before reserving, so the
+  // Sprinter-on-3BR display safety net must apply here too. Uses the
+  // module-level flooredTruckLabel helper which mirrors the engine floor.
+  const truckLine = flooredTruckLabel(
+    quote.truck_primary,
+    quote.move_size,
+    quote.truck_secondary,
+  );
   const faConfirm = quote.factors_applied as Record<string, unknown> | null;
   const truckPricingLine: string | null = null;
   const moveSummarySegments: { key: string; node: React.ReactNode }[] = [

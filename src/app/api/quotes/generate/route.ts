@@ -591,13 +591,68 @@ function normalizeTruckType(raw: string | undefined | null): TruckKey {
   return "sprinter";
 }
 
-/** Align with inventory-labour truck tiers so surcharge matches crew estimate. */
-function recommendedTruckFromInventoryScore(score: number): TruckKey {
-  if (score <= 15) return "sprinter";
-  if (score <= 25) return "16ft";
-  if (score <= 50) return "20ft";
-  if (score <= 75) return "24ft";
-  return "26ft";
+/**
+ * Hard structural minimums by move size. A Sprinter (~270 cuft) cannot
+ * physically move a 3BR home regardless of inventory score — if a client
+ * has a sparse inventory list, the score-based recommendation comes back
+ * "sprinter" but the actual home contents would never fit. This map
+ * floors the recommendation so the engine never under-sizes the truck.
+ *
+ * Bumps from the pre-existing BASE_TRUCK_FOR_MOVE_SIZE:
+ *   - 4br floored to "24ft" (was 20ft) — 4BR with full Estate packing
+ *     consistently overruns a 20ft.
+ *   - 3br locked at "20ft" minimum — was the exact bug behind the
+ *     Sprinter-on-3BR-Estate quote.
+ */
+const TRUCK_FLOOR_BY_MOVE_SIZE: Record<string, TruckKey> = {
+  studio: "sprinter",
+  partial: "sprinter",
+  "1br": "16ft",
+  "2br": "16ft",
+  "3br": "20ft",
+  "4br": "24ft",
+  "5br_plus": "26ft",
+};
+
+/** Ranking helper — higher index = larger truck. */
+const TRUCK_SIZE_RANK: readonly TruckKey[] = [
+  "none",
+  "sprinter",
+  "16ft",
+  "20ft",
+  "24ft",
+  "26ft",
+] as const;
+
+/** Floor a truck recommendation to the structural minimum for the move size. */
+export function floorTruckByMoveSize(
+  truck: TruckKey | null | undefined,
+  moveSize: string | null | undefined,
+): TruckKey {
+  const key = String(moveSize ?? "").toLowerCase();
+  const floor: TruckKey =
+    TRUCK_FLOOR_BY_MOVE_SIZE[key] ?? ("16ft" as TruckKey);
+  const floorIdx = TRUCK_SIZE_RANK.indexOf(floor);
+  const truckIdx = truck ? TRUCK_SIZE_RANK.indexOf(truck) : -1;
+  if (truckIdx === -1 || truckIdx < floorIdx) return floor;
+  return truck as TruckKey;
+}
+
+/**
+ * Align with inventory-labour truck tiers so surcharge matches crew estimate.
+ * Floored by move size so a sparse-inventory 3BR can't be sold a Sprinter.
+ */
+function recommendedTruckFromInventoryScore(
+  score: number,
+  moveSize?: string | null,
+): TruckKey {
+  let pick: TruckKey;
+  if (score <= 15) pick = "sprinter";
+  else if (score <= 25) pick = "16ft";
+  else if (score <= 50) pick = "20ft";
+  else if (score <= 75) pick = "24ft";
+  else pick = "26ft";
+  return floorTruckByMoveSize(pick, moveSize);
 }
 
 /** Default truck included in base rate for each move size (no surcharge if recommendation matches). */
@@ -1374,9 +1429,14 @@ async function calcResidential(
     invResult.totalItems > 0
       ? (invResult.itemScore ?? 0) + (invResult.boxCount ?? 0) * 0.3
       : invResult.inventoryScore;
+  // Coordinator override (input.truck_type) wins — but ONLY after flooring
+  // by move size. Without the floor, a coordinator setting truck_type to
+  // "sprinter" on a 3BR Estate would silently undersize the truck and
+  // mis-price the job. Floor protects against operator mistakes as well
+  // as the score-based recommender.
   const recTruck = input.truck_type
-    ? normalizeTruckType(input.truck_type)
-    : recommendedTruckFromInventoryScore(truckSizingScore);
+    ? floorTruckByMoveSize(normalizeTruckType(input.truck_type), input.move_size)
+    : recommendedTruckFromInventoryScore(truckSizingScore, input.move_size);
   const truckSur = residentialTruckFeeUpgrade(config, input.move_size, recTruck);
 
   const estateDayPlan = calculateEstateDays(input.move_size ?? "2br", invResult.inventoryScore);
