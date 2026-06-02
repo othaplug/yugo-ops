@@ -1740,6 +1740,29 @@ export default function QuotePageClient({
               : "bg-[#FFFBF7] text-gray-900 -mx-5 md:-mx-6 px-5 md:px-6 pt-3 pb-10 mb-2 rounded-b-md"
           }
         >
+          {/* Fix #8: Building profile lifted ABOVE the price chart.
+             These questions are pricing INPUTS (commercial tenants on
+             lower floors, above 20th floor, old/small elevators all
+             affect crew time + truck pick). Asking them AFTER the price
+             is shown made clients wonder if answering "yes" would jack
+             up the quote — implicit pressure to lie. Asking BEFORE the
+             price chart frames them honestly as scoping questions.
+             Note: the card POSTs to client-building-intelligence on
+             change so the coordinator sees responses in admin; pricing
+             does not recompute client-side (that's by design — engine
+             re-runs require regenerate). */}
+          {isResidential && tiers && !booked && (
+            <div className="mb-6">
+              <ClientBuildingIntelCard
+                quoteId={quote.quote_id}
+                publicActionToken={publicActionToken}
+                shellKind={shellKind}
+                fromAccess={quote.from_access}
+                onDarkSurface={premiumShell}
+              />
+            </div>
+          )}
+
           {/* ═══ SEASONAL PRICING BANNER ═══ */}
           {(() => {
             if (booked || !quote.move_date) return null;
@@ -1771,17 +1794,12 @@ export default function QuotePageClient({
           })()}
 
           {/* ═══ Tier cards (residential) or service-type layouts ═══ */}
+          {/* Fix #8: ClientBuildingIntelCard moved out of this section
+             and rendered above the seasonal pricing banner — keep this
+             section focused on tier selection so the visual order is
+             building scope → price context → tier choice. */}
           {isResidential && tiers ? (
             <section ref={tiersRef} className="scroll-mt-6">
-              {!booked && (
-                <ClientBuildingIntelCard
-                  quoteId={quote.quote_id}
-                  publicActionToken={publicActionToken}
-                  shellKind={shellKind}
-                  fromAccess={quote.from_access}
-                  onDarkSurface={premiumShell}
-                />
-              )}
               <ResidentialLayout
                 quote={quoteForDisplay}
                 tiers={tiers}
