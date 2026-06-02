@@ -90,6 +90,25 @@ function formatMoveSize(raw: string | null | undefined): string {
   return MOVE_SIZE_LABELS[raw] ?? displayLabel(raw);
 }
 
+/* Truck slugs surface in residential / event quote emails. Render
+   them as plain human labels so clients never see "sprinter" or "26ft"
+   in their inbox. The Sprinter is branded "Extended Sprinter van" on
+   the client quote page (see TRUCK_LUXURY in QuotePageClient.tsx) — we
+   mirror that here for consistency. */
+const TRUCK_DISPLAY_LABELS: Record<string, string> = {
+  sprinter: "Extended Sprinter van",
+  "16ft": "16ft truck",
+  "20ft": "20ft truck",
+  "24ft": "24ft truck",
+  "26ft": "26ft truck",
+};
+
+function formatTruckSize(raw: string | null | undefined): string {
+  if (!raw) return "";
+  const key = String(raw).toLowerCase().trim();
+  return TRUCK_DISPLAY_LABELS[key] ?? displayLabel(raw);
+}
+
 /* ─── Shared layout wrapper ─── */
 
 const INSTRUMENT_SERIF_LINK =
@@ -703,7 +722,7 @@ function residentialTemplate(d: QuoteTemplateData): string {
     rows.push(["Crew", `${d.estCrewSize} professional movers`]);
   if (d.estHours != null && d.estHours > 0)
     rows.push(["Est. duration", `~${d.estHours} hours`]);
-  if (d.truckSize) rows.push(["Truck", d.truckSize]);
+  if (d.truckSize) rows.push(["Truck", formatTruckSize(d.truckSize)]);
 
   return quoteEmailLayout(`
     ${subHeading("Your Moving Quote")}
@@ -762,7 +781,7 @@ function longDistanceTemplate(d: QuoteTemplateData): string {
     rows.push(["Crew", `${d.estCrewSize} professional movers`]);
   if (d.estHours != null && d.estHours > 0)
     rows.push(["Est. duration", `~${d.estHours} hours`]);
-  if (d.truckSize) rows.push(["Truck", d.truckSize]);
+  if (d.truckSize) rows.push(["Truck", formatTruckSize(d.truckSize)]);
 
   const price =
     d.customPrice ??
@@ -820,7 +839,11 @@ function officeTemplate(d: QuoteTemplateData): string {
 function singleItemTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.itemDescription) rows.push(["Item", d.itemDescription]);
-  if (d.itemCategory) rows.push(["Category", d.itemCategory]);
+  // Category was previously rendered here using the raw DB slug
+  // (e.g. "small_light"). That leaks an internal taxonomy into a
+  // client email. The item description above already conveys what's
+  // being moved; weight/category nuances surface in the quote page
+  // itself, not in the email summary.
   const pickupsSi = Array.isArray(d.pickupLocations)
     ? d.pickupLocations.filter((p) => p.address?.trim())
     : [];

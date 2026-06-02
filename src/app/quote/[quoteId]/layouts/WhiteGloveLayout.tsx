@@ -12,6 +12,7 @@ import {
   WG_ITEM_CATEGORIES,
   WG_WEIGHT_CLASS_OPTIONS,
 } from "@/lib/quotes/white-glove-pricing";
+import { decideBookingPayment } from "@/lib/quotes/booking-payment-window";
 
 const WG_BUILDING_LABELS: Record<string, string> = {
   elevator_booking: "Elevator booking required",
@@ -119,6 +120,15 @@ export default function WhiteGloveLayout({
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
   const deposit = calculateDeposit("white_glove", price);
+  // Same booking-window rule as SingleItemLayout — bookings inside the
+  // 48h cancellation window collect full payment up front to match the
+  // non-refundable policy. See src/lib/quotes/booking-payment-window.ts.
+  const wgBookingDecision = decideBookingPayment({
+    moveDate: quote.move_date,
+    deposit,
+    grandTotal: price + tax,
+  });
+  const wgIsFullPayment = price < 500 || wgBookingDecision.requireFullPayment;
   const declaredValue = f?.declared_value as number | undefined;
   const weightSurcharge =
     typeof f?.weight_surcharge === "number" && f.weight_surcharge > 0
@@ -464,7 +474,7 @@ export default function WhiteGloveLayout({
         >
           {confirmed ? (
             "SELECTED"
-          ) : price < 500 ? (
+          ) : wgIsFullPayment ? (
             `CONFIRM DELIVERY · ${fmtPrice(price + tax)}`
           ) : (
             `CONFIRM DELIVERY · ${fmtPrice(deposit)} DEPOSIT`
@@ -474,8 +484,8 @@ export default function WhiteGloveLayout({
           className="text-[10px] mt-2 leading-relaxed"
           style={{ color: `${FOREST}50` }}
         >
-          {price < 500
-            ? "Full payment is due no later than 48 hours before your scheduled delivery."
+          {wgIsFullPayment
+            ? "Full payment is due now to confirm this delivery."
             : `Deposit due now to reserve your date. Remaining balance of ${fmtPrice(price + tax - deposit)} is due no later than 48 hours before your scheduled delivery.`}
         </p>
       </div>

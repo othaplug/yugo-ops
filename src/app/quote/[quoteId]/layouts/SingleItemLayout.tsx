@@ -13,6 +13,7 @@ import {
   type SingleItemLine,
 } from "@/lib/quotes/single-item-types";
 import { getSingleItemQuoteCopy } from "@/lib/quotes/single-item-copy";
+import { decideBookingPayment } from "@/lib/quotes/booking-payment-window";
 
 interface Props {
   quote: Quote;
@@ -36,7 +37,19 @@ export default function SingleItemLayout({
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
   const deposit = calculateDeposit("single_item", price);
-  const isFullPayment = price < 500;
+  // Full-payment-at-booking triggers:
+  //   1. Tiny tickets (< $500) — not worth a two-step charge.
+  //   2. Move date inside the 48h cancellation window — deposit is non-
+  //      refundable past that point, so we collect the whole total up
+  //      front to match the refund policy and avoid arriving on the day
+  //      of a job with only the deposit captured. See
+  //      src/lib/quotes/booking-payment-window.ts.
+  const bookingDecision = decideBookingPayment({
+    moveDate: quote.move_date,
+    deposit,
+    grandTotal: price + tax,
+  });
+  const isFullPayment = price < 500 || bookingDecision.requireFullPayment;
 
   // Resolve the per-line array. Old quotes with scalar fields synthesize
   // a one-row array; new quotes pass through unchanged. Single source of
