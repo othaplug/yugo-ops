@@ -4067,8 +4067,15 @@ function ConfirmDetailsSection({
                   className="text-xs mt-1"
                   style={{ color: shellText!.secondary }}
                 >
-                  Balance of {fmtPrice(balanceDue)} due 48 hours before your
-                  move
+                  {/* Fix #5: Estate clients pay balance on move day, not
+                     48h before. They are high-value, relationship-based
+                     clients; demanding ~$6K two days before the move
+                     reads as transactional at exactly the moment we
+                     should feel concierge-grade. Lower tiers keep the
+                     48h pre-charge to protect cash flow. */}
+                  {String(selectedTier ?? "").toLowerCase() === "estate"
+                    ? `Balance of ${fmtPrice(balanceDue)} due on move day`
+                    : `Balance of ${fmtPrice(balanceDue)} due 48 hours before your move`}
                 </p>
               </div>
             </div>
@@ -4430,8 +4437,11 @@ function ConfirmDetailsSection({
                   <span className="tabular-nums">{fmtPrice(deposit)}</span>
                 </p>
                 <p className="text-[11px] mt-1" style={{ color: inkBody }}>
-                  Balance of {fmtPrice(balanceDue)} due 48 hours before your
-                  move
+                  {/* Fix #5: see note above — Estate balance is due on
+                     move day, not 48h before. */}
+                  {String(selectedTier ?? "").toLowerCase() === "estate"
+                    ? `Balance of ${fmtPrice(balanceDue)} due on move day`
+                    : `Balance of ${fmtPrice(balanceDue)} due 48 hours before your move`}
                 </p>
               </div>
             </div>

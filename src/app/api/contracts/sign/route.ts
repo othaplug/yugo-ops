@@ -255,7 +255,15 @@ function generateContractPdf(
   doc.text(`Deposit: ${fmtCurrency(cd.deposit)}`, margin, y);
   y += 5;
 
-  const balDue = BALANCE_DUE_TEXT[cd.service_type] ?? "before service date";
+  // Fix #5: Estate residential clients pay balance on move day, not 48h
+  // before. Other residential tiers and other service types keep the
+  // standard BALANCE_DUE_TEXT.
+  const isEstateResidential =
+    cd.service_type === "local_move" &&
+    String(cd.residential_tier ?? "").toLowerCase() === "estate";
+  const balDue = isEstateResidential
+    ? "on move day"
+    : (BALANCE_DUE_TEXT[cd.service_type] ?? "before service date");
   const balanceAmt = cd.grand_total - cd.deposit;
   if (balanceAmt <= 0.005) {
     doc.text(`Balance: ${fmtCurrency(0)} (full payment at booking)`, margin, y);
