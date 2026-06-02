@@ -225,6 +225,15 @@ interface QuoteInput {
    */
   quote_price_override_reason_code?: string;
   /**
+   * Client-facing presentation mode. Only meaningful when
+   * recommended_tier === 'estate' on residential / long-distance.
+   *   comparison       (default) — all three tiers shown
+   *   estate_featured  — all three shown, Estate visually dominant
+   *   estate_only      — single-tier Estate render
+   * Unknown values silently fall back to 'comparison' at persistence.
+   */
+  presentation_mode?: "comparison" | "estate_featured" | "estate_only";
+  /**
    * R2: Consignee separation. When the quote's billing contact is
    * different from the end recipient (B2B drop-ship), these fields carry
    * the deliver-to party. Left undefined for same-as-bill-to quotes.
@@ -5337,6 +5346,26 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         quoteOvr !== undefined
           ? input.quote_price_override_reason_code?.trim() || null
           : null,
+      // Presentation mode — only respected when recommended_tier is
+      // 'estate' and service is residential/long-distance; otherwise
+      // forced to 'comparison' so the column never carries a
+      // non-meaningful state for non-Estate quotes.
+      presentation_mode: (() => {
+        const requested = input.presentation_mode;
+        const tierOk =
+          normalizeRecommendedTierForDb(input.recommended_tier) === "estate";
+        const serviceOk =
+          svcType === "local_move" || svcType === "long_distance";
+        if (!tierOk || !serviceOk) return "comparison";
+        if (
+          requested === "comparison" ||
+          requested === "estate_featured" ||
+          requested === "estate_only"
+        ) {
+          return requested;
+        }
+        return "comparison";
+      })(),
       // R2: declared cargo value at quote time (mirrors moves.declared_value).
       declared_value:
         typeof input.declared_value === "number" && Number.isFinite(input.declared_value)

@@ -166,7 +166,9 @@ import {
    ═══════════════════════════════════════════════════ */
 
 const TRUCK_LUXURY: Record<string, string> = {
-  sprinter: "Dedicated Sprinter van",
+  // "Extended Sprinter van" matches the Estate schedule label and the
+  // operator-confirmed vehicle for studio / partial / 1BR moves.
+  sprinter: "Extended Sprinter van",
   "16ft": "16ft fully equipped moving truck",
   "20ft": "20ft dedicated moving truck",
   "24ft": "24ft full-capacity moving truck",
@@ -182,9 +184,12 @@ const TRUCK_LUXURY: Record<string, string> = {
  * the constants below are kept in lockstep with the lib by code review.
  */
 const TRUCK_FLOOR_BY_MOVE_SIZE: Record<string, string> = {
-  studio: "16ft",
-  partial: "16ft",
-  "1br": "16ft",
+  // Studio / partial / 1BR all use the Extended Sprinter van (operator
+  // decision 2026-05). UI surfaces "sprinter" as "Extended Sprinter van"
+  // via the TRUCK_LUXURY map above.
+  studio: "sprinter",
+  partial: "sprinter",
+  "1br": "sprinter",
   "2br": "16ft",
   "3br": "24ft",
   "4br": "24ft",

@@ -27,11 +27,17 @@ import { displayLabel } from "@/lib/displayLabels";
 
 export type TruckKey = "sprinter" | "16ft" | "20ft" | "24ft" | "26ft";
 
-/** Minimum truck size — engine and display floor any recommendation that goes below. */
+/**
+ * Minimum truck size — engine and display floor any recommendation
+ * that goes below this for the move size. Studio / partial / 1BR all
+ * run on the extended Sprinter van (operator decision 2026-05) — the
+ * "sprinter" key here is what surfaces in the UI as "Extended Sprinter
+ * van" (see TRUCK_LUXURY in QuotePageClient.tsx).
+ */
 export const TRUCK_MINIMUMS: Record<string, TruckKey> = {
-  studio: "16ft",
-  partial: "16ft",
-  "1br": "16ft",
+  studio: "sprinter",
+  partial: "sprinter",
+  "1br": "sprinter",
   "2br": "16ft",
   "3br": "24ft",
   "4br": "24ft",
@@ -40,9 +46,9 @@ export const TRUCK_MINIMUMS: Record<string, TruckKey> = {
 
 /** Recommended truck — what the engine should default to absent other signals. */
 export const TRUCK_RECOMMENDATIONS: Record<string, TruckKey> = {
-  studio: "16ft",
-  partial: "16ft",
-  "1br": "16ft",
+  studio: "sprinter",
+  partial: "sprinter",
+  "1br": "sprinter",
   "2br": "20ft",
   "3br": "24ft",
   "4br": "26ft",

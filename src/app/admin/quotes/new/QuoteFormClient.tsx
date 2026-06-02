@@ -1992,6 +1992,12 @@ export default function QuoteFormClient({
 
   /** Pre-tax override sent to /api/quotes/generate (not used for B2B / bin rental). */
   const [quotePreTaxOverride, setQuotePreTaxOverride] = useState("");
+  // Presentation mode — controls how the client sees the quote. Only
+  // surfaced in the admin UI when recommended_tier is Estate; otherwise
+  // forced to 'comparison' server-side at persistence.
+  const [presentationMode, setPresentationMode] = useState<
+    "comparison" | "estate_featured" | "estate_only"
+  >("comparison");
   // Per-tier price overrides. Distinct from the global quote_price_override
   // above — that one scales all three tiers proportionally; this map
   // replaces a specific tier's price with an absolute number (e.g. Estate
@@ -5073,6 +5079,16 @@ export default function QuoteFormClient({
           if (Object.keys(cleanedOverrides).length > 0) {
             base.tier_price_overrides = cleanedOverrides;
           }
+        }
+        // Presentation mode — only meaningful when Estate is recommended
+        // on residential/long-distance. Server forces 'comparison' for
+        // everything else; we still send the local state so the audit
+        // trail is consistent.
+        if (
+          (serviceType === "local_move" || serviceType === "long_distance") &&
+          recommendedTier === "estate"
+        ) {
+          base.presentation_mode = presentationMode;
         }
       }
 
@@ -11087,6 +11103,88 @@ export default function QuoteFormClient({
               />
             </div>
           )}
+
+          {/* Presentation mode selector — Estate recommended only.
+             Coordinator picks how the client sees the quote.
+             For now (Option A) only the column is persisted; the
+             client-side renders for estate_featured / estate_only ship
+             in a follow-up session. Operators can start tagging quotes
+             today so the audit / analytics trail is correct. */}
+          {(serviceType === "local_move" || serviceType === "long_distance") &&
+            recommendedTier === "estate" && (
+              <div className="px-0 sm:px-0 pb-1 pt-4 mt-2">
+                <div className="rounded-xl border border-[var(--brd)] bg-white p-4">
+                  <div className="mb-3">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--tx2)]">
+                      Client presentation
+                    </div>
+                    <div className="text-[11px] text-[var(--tx2)] mt-0.5">
+                      Estate is the recommended tier. Choose how the client
+                      sees the quote — full comparison, Estate featured, or
+                      Estate only. (Renders for the latter two ship in the
+                      next release; for now the column is persisted so
+                      operators can tag quotes correctly.)
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {(
+                      [
+                        {
+                          value: "comparison" as const,
+                          label: "Full comparison",
+                          desc: "Essential, Signature, and Estate side-by-side. Best for clients still deciding or price-sensitive.",
+                        },
+                        {
+                          value: "estate_featured" as const,
+                          label: "Estate featured (recommended)",
+                          desc: "All three tiers shown, but Estate is visually dominant and pre-selected. Keeps the price anchor working in your favor.",
+                          recommended: true,
+                        },
+                        {
+                          value: "estate_only" as const,
+                          label: "Estate only",
+                          desc: "Client sees only the Estate tier. Best for referred clients or those already sold on premium service.",
+                        },
+                      ] as const
+                    ).map((opt) => {
+                      const checked = presentationMode === opt.value;
+                      return (
+                        <label
+                          key={opt.value}
+                          className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition ${
+                            checked
+                              ? "border-[var(--wine)] bg-[var(--wine)]/[0.04]"
+                              : "border-[var(--brd)] hover:bg-[var(--bg)]/40"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="presentation-mode"
+                            value={opt.value}
+                            checked={checked}
+                            onChange={() => setPresentationMode(opt.value)}
+                            className="mt-0.5 accent-[var(--wine)]"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[12px] font-semibold text-[var(--tx)] flex items-center gap-2">
+                              {opt.label}
+                              {"recommended" in opt && opt.recommended && (
+                                <span className="text-[9px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5 bg-[var(--wine)]/10 text-[var(--wine)]">
+                                  Recommended
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-[var(--tx2)] leading-snug mt-0.5">
+                              {opt.desc}
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
 
           {serviceType !== "bin_rental" &&
             serviceType !== "b2b_delivery" &&
