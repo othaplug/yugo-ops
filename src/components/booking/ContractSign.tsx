@@ -240,13 +240,7 @@ export default function ContractSign({
   const balance = q.grandTotal - q.deposit;
   const cancellation =
     CANCELLATION_POLICY[q.serviceType] ?? CANCELLATION_POLICY.local_move;
-  // Fix #5: Estate residential balance is due on move day, not 48h before.
-  // Lower residential tiers + other service types keep their stock copy.
-  const balanceDue =
-    q.serviceType === "local_move" &&
-    String(q.residentialTier ?? "").toLowerCase() === "estate"
-      ? "on move day"
-      : (BALANCE_DUE[q.serviceType] ?? "before service date");
+  const balanceDue = BALANCE_DUE[q.serviceType] ?? "before service date";
   const isBinRental = q.serviceType === "bin_rental";
   const isB2BDelivery =
     q.serviceType === "b2b_oneoff" || q.serviceType === "b2b_delivery";

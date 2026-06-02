@@ -133,8 +133,7 @@ const ESTATE_FAQ: { category: string; questions: { q: string; a: string }[] }[] 
         },
         {
           q: "When is the balance due?",
-          // Fix #5: Estate clients pay balance on move day, not 48h before.
-          a: "Your deposit secures your date. The remaining balance is due on move day for Estate clients — not 48 hours in advance. Your Director will confirm the exact timing, and we charge the card on file once the move is complete. You will receive a reminder before the charge is processed.",
+          a: "Your deposit secures your date. The remaining balance is due 48 hours before your move date. We charge the card on file according to the payment terms in your agreement. You will receive a reminder before the charge is processed.",
         },
       ],
     },
