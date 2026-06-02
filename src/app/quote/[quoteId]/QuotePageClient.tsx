@@ -445,7 +445,65 @@ export default function QuotePageClient({
   const [valuationUpgradeSelected, setValuationUpgradeSelected] =
     useState(false);
   const prevSelectedTierRef = useRef<string | null>(null);
-  const [declarations, setDeclarations] = useState<HighValueDeclaration[]>([]);
+  // Fix #10: Hydrate declarations from quote.high_value_declarations so
+  // they persist across page reloads (was React-state-only — invisible
+  // to coordinator and lost on refresh).
+  const [declarations, setDeclarations] = useState<HighValueDeclaration[]>(
+    () => {
+      const raw = (quote as { high_value_declarations?: unknown }).high_value_declarations;
+      if (!Array.isArray(raw)) return [];
+      const out: HighValueDeclaration[] = [];
+      for (const r of raw) {
+        const row = (r ?? {}) as {
+          item_name?: unknown;
+          declared_value?: unknown;
+          fee?: unknown;
+        };
+        const name = String(row.item_name ?? "").trim();
+        const v = Number(row.declared_value);
+        const f = Number(row.fee);
+        if (!name || !Number.isFinite(v) || v <= 0) continue;
+        out.push({
+          item_name: name,
+          declared_value: v,
+          fee: Number.isFinite(f) ? f : 0,
+        });
+      }
+      return out;
+    },
+  );
+
+  // Fix #10: Debounced persistence — when declarations change, POST the
+  // full array to /api/quotes/[id]/declarations so the coordinator sees
+  // them on the admin quote detail page. Skipped until first user edit
+  // (declarationsDirtyRef) to avoid an empty write on every page load.
+  const declarationsDirtyRef = useRef(false);
+  useEffect(() => {
+    if (!declarationsDirtyRef.current) return;
+    if (!publicActionToken) return;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => {
+      fetch(`/api/quotes/${encodeURIComponent(quote.quote_id)}/declarations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: publicActionToken,
+          declarations,
+        }),
+        signal: ctrl.signal,
+      }).catch((err) => {
+        if ((err as { name?: string })?.name === "AbortError") return;
+        console.warn(
+          "[quote-page] declarations persist failed",
+          err instanceof Error ? err.message : err,
+        );
+      });
+    }, 400); // debounce
+    return () => {
+      clearTimeout(t);
+      ctrl.abort();
+    };
+  }, [declarations, publicActionToken, quote.quote_id]);
 
   // Referral code state
   const [referralCode, setReferralCode] = useState(
@@ -2125,12 +2183,15 @@ export default function QuotePageClient({
                 upgradeSelected={valuationUpgradeSelected}
                 onToggleUpgrade={() => setValuationUpgradeSelected((p) => !p)}
                 declarations={declarations}
-                onAddDeclaration={(d) =>
-                  setDeclarations((prev) => [...prev, d])
-                }
-                onRemoveDeclaration={(idx) =>
-                  setDeclarations((prev) => prev.filter((_, i) => i !== idx))
-                }
+                onAddDeclaration={(d) => {
+                  // Fix #10: mark dirty so the effect persists the array
+                  declarationsDirtyRef.current = true;
+                  setDeclarations((prev) => [...prev, d]);
+                }}
+                onRemoveDeclaration={(idx) => {
+                  declarationsDirtyRef.current = true;
+                  setDeclarations((prev) => prev.filter((_, i) => i !== idx));
+                }}
                 journeyCopy={valuationJourneyCopy}
                 premiumShellKind={shellKind}
               />
