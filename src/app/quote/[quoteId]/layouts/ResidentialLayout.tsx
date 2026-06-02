@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import {
   Check,
   CaretRight as ChevronRight,
@@ -69,6 +70,20 @@ interface Props {
   selectedTier: string | null;
   onSelectTier: (tierKey: string) => void;
   recommendedTier?: string;
+  /**
+   * How the comparison is shown to the client.
+   *   "comparison"      (default) — all three tiers side-by-side
+   *   "estate_featured" — Estate rendered first, Essential + Signature
+   *                       in a collapsible "Compare with other packages"
+   *                       section below (price-anchor preserved but
+   *                       Estate is the obvious primary)
+   *   "estate_only"     — single-tier Estate render, no comparison.
+   *                       Heading copy changes from "Choose your package"
+   *                       to "Your Estate move".
+   * Effective only when recommendedTier === "estate" — for other
+   * recommendations the parent forces "comparison".
+   */
+  presentationMode?: "comparison" | "estate_featured" | "estate_only";
   /** When true, unselected tier cards collapse to compact view */
   hasSelection?: boolean;
   /**
@@ -94,6 +109,7 @@ export default function ResidentialLayout({
   selectedTier,
   onSelectTier,
   recommendedTier = "signature",
+  presentationMode = "comparison",
   hasSelection = false,
   darkShellInk = null,
   tierFeaturesConfig,
@@ -101,6 +117,27 @@ export default function ResidentialLayout({
   useAdditiveTierCards = { signature: false, estate: false },
   tierMetaMap,
 }: Props) {
+  // Presentation-mode gates. estate-featured / estate-only are only
+  // honored when Estate is the recommended tier — server forces
+  // "comparison" otherwise, but defending here too in case a stale
+  // mode value lands on a quote that re-recommended a different tier.
+  const isEstateRecommended = (recommendedTier ?? "").toLowerCase() === "estate";
+  const effectiveMode: "comparison" | "estate_featured" | "estate_only" =
+    isEstateRecommended ? presentationMode : "comparison";
+  const isEstateOnly = effectiveMode === "estate_only";
+  const isEstateFeatured = effectiveMode === "estate_featured";
+  const [otherPackagesOpen, setOtherPackagesOpen] = React.useState(false);
+  // For estate_featured: render Estate first as a hero card, then
+  // Essential + Signature in a collapsible "Compare with other
+  // packages" section below.
+  const heroTiers: readonly string[] = isEstateOnly
+    ? ["estate"]
+    : isEstateFeatured
+      ? ["estate"]
+      : (TIER_ORDER as readonly string[]);
+  const compareTiers: readonly string[] = isEstateFeatured
+    ? ["essential", "signature"]
+    : [];
   const d = darkShellInk;
   /** Selected tier CTA on premium shell: rose on wine, forest on Signature; cream page stays FOREST */
   const selectedTierCtaBg = d
@@ -125,14 +162,21 @@ export default function ResidentialLayout({
           className={`${QUOTE_SECTION_H2_CLASS} mb-2`}
           style={{ color: d ? d.primary : WINE }}
         >
-          Choose your package
+          {isEstateOnly
+            ? "Your Estate move"
+            : isEstateFeatured
+              ? "Your Estate move plan"
+              : "Choose your package"}
         </h2>
         <p
           className="text-[13px] leading-relaxed max-w-md mx-auto"
           style={{ color: d ? d.body : FOREST_BODY }}
         >
-          Every package includes a professional crew, truck, and blanket
-          wrapping.
+          {isEstateOnly
+            ? "A fully managed home transition — every detail handled."
+            : isEstateFeatured
+              ? "Your coordinator has prepared Estate for this move. Other packages remain available below for reference."
+              : "Every package includes a professional crew, truck, and blanket wrapping."}
         </p>
         {quote.expires_at && (
           <p
@@ -235,8 +279,15 @@ export default function ResidentialLayout({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch max-w-6xl md:max-w-7xl lg:max-w-7xl xl:max-w-[84rem] mx-auto min-w-0 px-2">
-        {TIER_ORDER.map((tierKey) => {
+      {/*
+        Per-tier card renderer. Pulled into a closure so the
+        estate_featured mode can render Estate as a hero row above the
+        collapsible "Compare with other packages" group — same card
+        markup, no duplication.
+        Returns null when the tier is missing from tiers/tierMetaMap.
+      */}
+      {((): React.ReactNode => {
+        const renderTierCard = (tierKey: string): React.ReactNode => {
           const t = tiers[tierKey];
           if (!t) return null;
           const meta = tierMetaMap[tierKey];
@@ -614,8 +665,61 @@ export default function ResidentialLayout({
               </div>
             </div>
           );
-        })}
-      </div>
+        };
+
+        // Hero row — Estate-only / Estate-featured: just Estate.
+        // Comparison: all three.
+        const heroGridCols = isEstateOnly
+          ? "grid-cols-1 max-w-md"
+          : isEstateFeatured
+            ? "grid-cols-1 max-w-2xl"
+            : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch max-w-6xl md:max-w-7xl lg:max-w-7xl xl:max-w-[84rem] px-2";
+        return (
+          <>
+            <div className={`grid ${heroGridCols} mx-auto min-w-0 ${!isEstateOnly && !isEstateFeatured ? "" : "gap-5"}`}>
+              {heroTiers.map((k) => (
+                <React.Fragment key={`hero-${k}`}>{renderTierCard(k)}</React.Fragment>
+              ))}
+            </div>
+
+            {/* Estate-featured: collapsible "Compare with other
+                packages" block. Estate is the obvious primary above;
+                Essential + Signature live here for clients who want to
+                see what they're trading off. Default-collapsed so the
+                page feels focused; click expands to a 2-col grid. */}
+            {isEstateFeatured && compareTiers.length > 0 && (
+              <div className="mt-10 max-w-4xl mx-auto px-2">
+                <button
+                  type="button"
+                  onClick={() => setOtherPackagesOpen((p) => !p)}
+                  className="w-full flex items-center justify-between gap-3 py-3 border-t border-b transition-opacity hover:opacity-80"
+                  style={{
+                    borderColor: d ? `${d.muted}66` : `${FOREST_MUTED}55`,
+                    color: d ? d.muted : FOREST_MUTED,
+                  }}
+                  aria-expanded={otherPackagesOpen}
+                >
+                  <span className="text-[11px] font-bold tracking-[0.14em] uppercase">
+                    Compare with other packages
+                  </span>
+                  <span className="text-[11px]">
+                    {otherPackagesOpen ? "Hide" : "Show"}
+                  </span>
+                </button>
+                {otherPackagesOpen && (
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch min-w-0 opacity-90">
+                    {compareTiers.map((k) => (
+                      <React.Fragment key={`compare-${k}`}>
+                        {renderTierCard(k)}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        );
+      })()}
     </section>
   );
 }

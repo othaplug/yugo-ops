@@ -1853,6 +1853,18 @@ export default function QuotePageClient({
                 selectedTier={selectedTier}
                 onSelectTier={handleSelectTier}
                 recommendedTier={recommendedTierNorm}
+                /* Quote-time presentation mode picked by the coordinator.
+                   ResidentialLayout self-defends if the mode isn't valid
+                   for the current recommendedTier (forces comparison). */
+                presentationMode={
+                  (
+                    (quote as { presentation_mode?: string }).presentation_mode
+                  )?.trim() === "estate_only"
+                    ? "estate_only"
+                    : (quote as { presentation_mode?: string }).presentation_mode === "estate_featured"
+                      ? "estate_featured"
+                      : "comparison"
+                }
                 hasSelection={false}
                 darkShellInk={darkInk}
                 tierFeaturesConfig={residentialTierFeatures}
