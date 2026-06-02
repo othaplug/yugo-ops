@@ -118,6 +118,11 @@ import MoveProjectQuoteTimeline, {
   type MoveProjectQuotePayload,
 } from "./MoveProjectQuoteTimeline";
 import ClientBuildingIntelCard from "./ClientBuildingIntelCard";
+import {
+  calculateEstateDays,
+  buildEstateScheduleLines,
+  estateScheduleHeadline,
+} from "@/lib/quotes/estate-schedule";
 import type { ProjectQuoteBreakdown } from "@/lib/move-projects/residential-project-quote-lines";
 import SingleItemLayout from "./layouts/SingleItemLayout";
 import WhiteGloveLayout from "./layouts/WhiteGloveLayout";
@@ -346,6 +351,46 @@ export default function QuotePageClient({
     const truckIdx = TRUCK_SIZE_RANK.indexOf(quote.truck_primary as (typeof TRUCK_SIZE_RANK)[number]);
     if (truckIdx === -1 || truckIdx < floorIdx) return floor;
     return quote.truck_primary;
+  })();
+
+  /**
+   * Display-time floor of est_crew_size by move size. Same rationale as
+   * the truck floor above — quotes generated before the crew-minimum
+   * fix carry est_crew_size=3 on a 3BR, but operationally a 3BR move
+   * needs 4 movers. Without this guard the client sees "3 professional
+   * movers" on a quote whose engine recommendation has since been
+   * corrected. Mirrors MOVER_MINIMUMS in crew-and-truck-minimums.ts.
+   */
+  const CREW_FLOOR_BY_MOVE_SIZE: Record<string, number> = {
+    studio: 2,
+    partial: 2,
+    "1br": 2,
+    "2br": 2,
+    "3br": 4,
+    "4br": 4,
+    "5br_plus": 5,
+  };
+  const PACK_CREW_FLOOR_BY_MOVE_SIZE: Record<string, number> = {
+    studio: 2,
+    partial: 2,
+    "1br": 2,
+    "2br": 2,
+    "3br": 3,
+    "4br": 4,
+    "5br_plus": 4,
+  };
+  const flooredCrewSize = ((): number | null => {
+    const stored = quote.est_crew_size;
+    const key = String(quote.move_size ?? "").toLowerCase();
+    const floor = CREW_FLOOR_BY_MOVE_SIZE[key];
+    if (typeof floor !== "number") return stored ?? null;
+    if (typeof stored !== "number" || !Number.isFinite(stored)) return floor;
+    return Math.max(floor, stored);
+  })();
+  const flooredPackCrewSize = ((): number | null => {
+    const key = String(quote.move_size ?? "").toLowerCase();
+    const floor = PACK_CREW_FLOOR_BY_MOVE_SIZE[key];
+    return typeof floor === "number" ? floor : null;
   })();
   const tiers = quote.tiers as Record<string, TierData> | null;
 
@@ -1825,7 +1870,7 @@ export default function QuotePageClient({
                 residentialTierFeatures={residentialTierFeatures}
                 truckPrimary={flooredTruckPrimary}
                 truckSecondary={quote.truck_secondary}
-                crewSize={quote.est_crew_size}
+                crewSize={flooredCrewSize}
                 assemblyRequired={quote.assembly_override ?? quote.assembly_required}
                 truckPricingNote={truckBreakdownClientNote}
               />
@@ -1844,7 +1889,7 @@ export default function QuotePageClient({
                 residentialTierFeatures={residentialTierFeatures}
                 truckPrimary={flooredTruckPrimary}
                 truckSecondary={quote.truck_secondary}
-                crewSize={quote.est_crew_size}
+                crewSize={flooredCrewSize}
                 assemblyRequired={quote.assembly_override ?? quote.assembly_required}
                 truckPricingNote={truckBreakdownClientNote}
               />
@@ -1870,7 +1915,7 @@ export default function QuotePageClient({
                   residentialTierFeatures={residentialTierFeatures}
                   truckPrimary={flooredTruckPrimary}
                   truckSecondary={quote.truck_secondary}
-                  crewSize={quote.est_crew_size}
+                  crewSize={flooredCrewSize}
                   variant="logistics"
                   truckPricingNote={truckBreakdownClientNote}
                 />
@@ -1890,7 +1935,7 @@ export default function QuotePageClient({
                 residentialTierFeatures={residentialTierFeatures}
                 truckPrimary={flooredTruckPrimary}
                 truckSecondary={quote.truck_secondary}
-                crewSize={quote.est_crew_size}
+                crewSize={flooredCrewSize}
                 variant="logistics"
                 logisticsClientPreset="white_glove"
                 truckPricingNote={truckBreakdownClientNote}
@@ -1927,7 +1972,7 @@ export default function QuotePageClient({
                 residentialTierFeatures={residentialTierFeatures}
                 truckPrimary={flooredTruckPrimary}
                 truckSecondary={quote.truck_secondary}
-                crewSize={quote.est_crew_size}
+                crewSize={flooredCrewSize}
                 assemblyRequired={quote.assembly_override ?? quote.assembly_required}
                 truckPricingNote={truckBreakdownClientNote}
               />
@@ -1947,7 +1992,7 @@ export default function QuotePageClient({
                 residentialTierFeatures={residentialTierFeatures}
                 truckPrimary={flooredTruckPrimary}
                 truckSecondary={quote.truck_secondary}
-                crewSize={quote.est_crew_size}
+                crewSize={flooredCrewSize}
                 variant="logistics"
                 logisticsLeadPackage={b2bPackageLeadIcon}
                 logisticsB2bHandling={
@@ -1978,7 +2023,7 @@ export default function QuotePageClient({
                 residentialTierFeatures={residentialTierFeatures}
                 truckPrimary={flooredTruckPrimary}
                 truckSecondary={quote.truck_secondary}
-                crewSize={quote.est_crew_size}
+                crewSize={flooredCrewSize}
                 variant="event"
                 eventFeatures={eventFeatures}
                 showEventSetupFeature={
@@ -2016,7 +2061,7 @@ export default function QuotePageClient({
                 residentialTierFeatures={residentialTierFeatures}
                 truckPrimary={flooredTruckPrimary}
                 truckSecondary={quote.truck_secondary}
-                crewSize={quote.est_crew_size}
+                crewSize={flooredCrewSize}
                 assemblyRequired={quote.assembly_override ?? quote.assembly_required}
                 truckPricingNote={truckBreakdownClientNote}
               />
@@ -2068,7 +2113,7 @@ export default function QuotePageClient({
                       )
                     : "Your dedicated moving truck"
                 }
-                crewSize={quote.est_crew_size}
+                crewSize={flooredCrewSize}
               />
             ) : (
               <section className="scroll-mt-6">
@@ -2079,7 +2124,7 @@ export default function QuotePageClient({
                   residentialTierFeatures={residentialTierFeatures}
                   truckPrimary={flooredTruckPrimary}
                   truckSecondary={quote.truck_secondary}
-                  crewSize={quote.est_crew_size}
+                  crewSize={flooredCrewSize}
                   assemblyRequired={quote.assembly_override ?? quote.assembly_required}
                   truckPricingNote={truckBreakdownClientNote}
                   premiumShellKind={shellKind}
@@ -3863,7 +3908,21 @@ function ConfirmDetailsSection({
       key: "crew",
       node: (
         <span>
-          <strong>Crew:</strong> {quote.est_crew_size ?? 3} professional movers
+          <strong>Crew:</strong>{" "}
+          {(() => {
+            // Inline crew floor mirrors CREW_FLOOR_BY_MOVE_SIZE in the
+            // parent QuotePageClient — old quotes with est_crew_size=3
+            // on a 3BR surface here too. See crew-and-truck-minimums.ts.
+            const stored = quote.est_crew_size;
+            const flr: Record<string, number> = {
+              studio: 2, partial: 2, "1br": 2, "2br": 2,
+              "3br": 4, "4br": 4, "5br_plus": 5,
+            };
+            const f = flr[String(quote.move_size ?? "").toLowerCase()] ?? 3;
+            const n = typeof stored === "number" ? Math.max(f, stored) : f;
+            return n;
+          })()}{" "}
+          professional movers
         </span>
       ),
     },
@@ -4050,7 +4109,17 @@ function ConfirmDetailsSection({
                 Your Team
               </p>
               <p style={{ color: shellText!.primary }}>
-                {quote.est_crew_size ?? 3} professional movers
+                {(() => {
+                  // Inline floor — see comment in moveSummarySegments above.
+                  const stored = quote.est_crew_size;
+                  const flr: Record<string, number> = {
+                    studio: 2, partial: 2, "1br": 2, "2br": 2,
+                    "3br": 4, "4br": 4, "5br_plus": 5,
+                  };
+                  const f = flr[String(quote.move_size ?? "").toLowerCase()] ?? 3;
+                  return typeof stored === "number" ? Math.max(f, stored) : f;
+                })()}{" "}
+                professional movers
               </p>
               <p className="text-sm" style={{ color: shellText!.secondary }}>
                 {truckLine}
@@ -4260,22 +4329,67 @@ function ConfirmDetailsSection({
                     0
                 ) &&
                 (() => {
-                  const plan = faConfirm?.estate_day_plan as
-                    | { days?: number }
-                    | undefined;
-                  const lines = faConfirm?.estate_schedule_lines as
-                    | string[]
-                    | undefined;
-                  const head = faConfirm?.estate_schedule_headline as
-                    | string
-                    | undefined;
-                  if (
-                    !plan ||
-                    (plan.days ?? 0) <= 1 ||
-                    !lines?.length ||
-                    !head?.trim()
-                  )
-                    return null;
+                  // Re-derive the Estate schedule lines client-side from
+                  // move_size + inventory_score. The stored
+                  // factors_applied.estate_schedule_lines is baked at quote-
+                  // generate time and won't reflect new crew/truck minimums
+                  // for quotes generated before the floor fix. Recomputing
+                  // here means an old quote with "3 movers" on a 3BR
+                  // automatically renders as "4 movers" once the floors
+                  // updated. calculateEstateDays already applies the
+                  // floors via applyMinimums().
+                  const moveSize = String(quote.move_size ?? "").toLowerCase();
+                  // inventory_score is on the row but not in the typed
+                  // Quote shape — cast to read it without widening the
+                  // type for one consumer.
+                  const invScore =
+                    typeof (quote as unknown as { inventory_score?: number })
+                      .inventory_score === "number"
+                      ? (quote as unknown as { inventory_score: number })
+                          .inventory_score
+                      : 0;
+                  const livePlan = calculateEstateDays(moveSize, invScore);
+                  if ((livePlan.days ?? 0) <= 1) return null;
+
+                  // Truck label uses an inline floor (flooredTruckPrimary
+                  // lives in the parent QuotePageClient scope, not here in
+                  // ConfirmDetailsSection). Mirrors TRUCK_FLOOR_BY_MOVE_SIZE
+                  // in the parent.
+                  const ESTATE_SCHEDULE_TRUCK_LABELS: Record<string, string> = {
+                    sprinter: "Extended Sprinter van",
+                    "16ft": "16ft fully equipped truck",
+                    "20ft": "20ft dedicated moving truck",
+                    "24ft": "24ft full-size moving truck",
+                    "26ft": "26ft maximum-capacity truck",
+                  };
+                  const inlineTruckFloor: Record<string, string> = {
+                    studio: "sprinter", partial: "sprinter", "1br": "sprinter",
+                    "2br": "16ft", "3br": "24ft", "4br": "24ft",
+                    "5br_plus": "26ft",
+                  };
+                  const inlineFloorKey =
+                    inlineTruckFloor[moveSize] ?? "16ft";
+                  const truckRank = ["sprinter", "16ft", "20ft", "24ft", "26ft"];
+                  const storedTruck = quote.truck_primary;
+                  const storedIdx = storedTruck
+                    ? truckRank.indexOf(storedTruck)
+                    : -1;
+                  const floorIdx = truckRank.indexOf(inlineFloorKey);
+                  const flooredKey =
+                    storedIdx === -1 || storedIdx < floorIdx
+                      ? inlineFloorKey
+                      : (storedTruck as string);
+                  const truckLabel =
+                    ESTATE_SCHEDULE_TRUCK_LABELS[flooredKey] ??
+                    "dedicated moving truck";
+
+                  const liveLines = buildEstateScheduleLines(
+                    livePlan,
+                    quote.move_date ?? "",
+                    truckLabel,
+                  );
+                  const liveHead = estateScheduleHeadline(livePlan);
+                  if (!liveLines.length || !liveHead.trim()) return null;
                   return (
                     <div
                       className="my-4 pt-4 border-t-2 text-center max-w-xl mx-auto"
@@ -4298,10 +4412,10 @@ function ConfirmDetailsSection({
                           className="text-[13px] font-semibold leading-snug tracking-tight"
                           style={{ color: ink }}
                         >
-                          {head.trim()}
+                          {liveHead.trim()}
                         </p>
                         <div className="space-y-2.5 text-left max-w-md mx-auto">
-                          {lines.map((ln, i) => (
+                          {liveLines.map((ln, i) => (
                             <p
                               key={i}
                               className="text-[12px] leading-relaxed pl-3 border-l-2"
@@ -4523,22 +4637,50 @@ function ConfirmDetailsSection({
           selectedTier === "estate" &&
           !hideEstateScheduleSummary &&
           (() => {
-            const plan = faConfirm?.estate_day_plan as
-              | { days?: number }
-              | undefined;
-            const lines = faConfirm?.estate_schedule_lines as
-              | string[]
-              | undefined;
-            const head = faConfirm?.estate_schedule_headline as
-              | string
-              | undefined;
-            if (
-              !plan ||
-              (plan.days ?? 0) <= 1 ||
-              !lines?.length ||
-              !head?.trim()
-            )
-              return null;
+            // See companion comment ~250 lines above. Recomputing the
+            // Estate schedule from move_size + inventory_score so old
+            // quotes pick up the current crew/truck minimums.
+            const moveSize = String(quote.move_size ?? "").toLowerCase();
+            const invScore =
+              typeof (quote as unknown as { inventory_score?: number })
+                .inventory_score === "number"
+                ? (quote as unknown as { inventory_score: number })
+                    .inventory_score
+                : 0;
+            const livePlan = calculateEstateDays(moveSize, invScore);
+            if ((livePlan.days ?? 0) <= 1) return null;
+            const ESTATE_SCHEDULE_TRUCK_LABELS: Record<string, string> = {
+              sprinter: "Extended Sprinter van",
+              "16ft": "16ft fully equipped truck",
+              "20ft": "20ft dedicated moving truck",
+              "24ft": "24ft full-size moving truck",
+              "26ft": "26ft maximum-capacity truck",
+            };
+            // Inline floor — flooredTruckPrimary is in the parent scope.
+            const inlineTruckFloor: Record<string, string> = {
+              studio: "sprinter", partial: "sprinter", "1br": "sprinter",
+              "2br": "16ft", "3br": "24ft", "4br": "24ft", "5br_plus": "26ft",
+            };
+            const inlineFloorKey =
+              inlineTruckFloor[moveSize] ?? "16ft";
+            const truckRank = ["sprinter", "16ft", "20ft", "24ft", "26ft"];
+            const storedTruck = quote.truck_primary;
+            const storedIdx = storedTruck ? truckRank.indexOf(storedTruck) : -1;
+            const floorIdx = truckRank.indexOf(inlineFloorKey);
+            const flooredKey =
+              storedIdx === -1 || storedIdx < floorIdx
+                ? inlineFloorKey
+                : (storedTruck as string);
+            const truckLabel =
+              ESTATE_SCHEDULE_TRUCK_LABELS[flooredKey] ??
+              "dedicated moving truck";
+            const liveLines = buildEstateScheduleLines(
+              livePlan,
+              quote.move_date ?? "",
+              truckLabel,
+            );
+            const liveHead = estateScheduleHeadline(livePlan);
+            if (!liveLines.length || !liveHead.trim()) return null;
             return (
               <div
                 className="mt-10 pt-8 border-t text-center max-w-xl mx-auto"
@@ -4567,10 +4709,10 @@ function ConfirmDetailsSection({
                     className="text-[13px] font-semibold leading-snug tracking-tight"
                     style={{ color: shellText!.primary }}
                   >
-                    {head.trim()}
+                    {liveHead.trim()}
                   </p>
                   <div className="space-y-2.5 text-left max-w-md mx-auto">
-                    {lines.map((ln, i) => (
+                    {liveLines.map((ln, i) => (
                       <p
                         key={i}
                         className={`text-[12px] leading-relaxed pl-3 border-l-2 ${
