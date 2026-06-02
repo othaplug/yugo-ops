@@ -174,22 +174,19 @@ const TRUCK_LUXURY: Record<string, string> = {
 };
 
 /**
- * Display safety-net for the truck recommendation. The engine now floors
- * truck_primary by move size at quote-generate time, but quotes already
- * in the DB may carry a stale truck_primary='sprinter' on a 3BR+ that
- * predates the engine fix. Without this guard the client would still see
- * "Dedicated Sprinter van" on an old 3BR Estate quote — exactly the
- * dangerous string the engine fix is meant to prevent.
- *
- * Mirrors floorTruckByMoveSize in /api/quotes/generate so display and
- * persistence agree.
+ * Display safety-net for the truck recommendation. Mirrors the shared
+ * crew-and-truck-minimums.ts so display, engine, Estate schedule, and
+ * admin form all agree. Inlined here (rather than imported) because
+ * QuotePageClient is a "use client" boundary and the shared lib pulls
+ * in displayLabel which would force unnecessary client bundle weight;
+ * the constants below are kept in lockstep with the lib by code review.
  */
 const TRUCK_FLOOR_BY_MOVE_SIZE: Record<string, string> = {
-  studio: "sprinter",
-  partial: "sprinter",
+  studio: "16ft",
+  partial: "16ft",
   "1br": "16ft",
   "2br": "16ft",
-  "3br": "20ft",
+  "3br": "24ft",
   "4br": "24ft",
   "5br_plus": "26ft",
 };

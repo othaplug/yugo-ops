@@ -608,56 +608,34 @@ function normalizeTruckType(raw: string | undefined | null): TruckKey {
   return "sprinter";
 }
 
-/**
- * Hard structural minimums by move size. A Sprinter (~270 cuft) cannot
- * physically move a 3BR home regardless of inventory score — if a client
- * has a sparse inventory list, the score-based recommendation comes back
- * "sprinter" but the actual home contents would never fit. This map
- * floors the recommendation so the engine never under-sizes the truck.
- *
- * Bumps from the pre-existing BASE_TRUCK_FOR_MOVE_SIZE:
- *   - 4br floored to "24ft" (was 20ft) — 4BR with full Estate packing
- *     consistently overruns a 20ft.
- *   - 3br locked at "20ft" minimum — was the exact bug behind the
- *     Sprinter-on-3BR-Estate quote.
- */
-const TRUCK_FLOOR_BY_MOVE_SIZE: Record<string, TruckKey> = {
-  studio: "sprinter",
-  partial: "sprinter",
-  "1br": "16ft",
-  "2br": "16ft",
-  "3br": "20ft",
-  "4br": "24ft",
-  "5br_plus": "26ft",
-};
+// Hard truck + crew minimums live in the shared library so the engine,
+// the Estate schedule generator, the client display, and the admin
+// override form all agree on a single source of truth. See
+// /src/lib/quotes/crew-and-truck-minimums.ts for the operator audit
+// rationale (Sprinter near-miss on a 3BR; 4-mover requirement on 3BR+).
+//
+// floorTruckByMoveSize is re-exported under the same name to keep
+// existing call sites working — internally it now delegates to the
+// shared lib, which carries the updated 3BR=24ft minimum (was 20ft).
+import {
+  floorTruckByMoveSize as floorTruckByMoveSizeShared,
+  type TruckKey as SharedTruckKey,
+} from "@/lib/quotes/crew-and-truck-minimums";
 
-/** Ranking helper — higher index = larger truck. */
-const TRUCK_SIZE_RANK: readonly TruckKey[] = [
-  "none",
-  "sprinter",
-  "16ft",
-  "20ft",
-  "24ft",
-  "26ft",
-] as const;
-
-/** Floor a truck recommendation to the structural minimum for the move size. */
 export function floorTruckByMoveSize(
   truck: TruckKey | null | undefined,
   moveSize: string | null | undefined,
 ): TruckKey {
-  const key = String(moveSize ?? "").toLowerCase();
-  const floor: TruckKey =
-    TRUCK_FLOOR_BY_MOVE_SIZE[key] ?? ("16ft" as TruckKey);
-  const floorIdx = TRUCK_SIZE_RANK.indexOf(floor);
-  const truckIdx = truck ? TRUCK_SIZE_RANK.indexOf(truck) : -1;
-  if (truckIdx === -1 || truckIdx < floorIdx) return floor;
-  return truck as TruckKey;
+  return floorTruckByMoveSizeShared(
+    truck as SharedTruckKey | null | undefined,
+    moveSize,
+  ) as TruckKey;
 }
 
 /**
  * Align with inventory-labour truck tiers so surcharge matches crew estimate.
- * Floored by move size so a sparse-inventory 3BR can't be sold a Sprinter.
+ * Floored by move size so a sparse-inventory 3BR can't be sold a Sprinter
+ * (or anything smaller than a 24ft).
  */
 function recommendedTruckFromInventoryScore(
   score: number,
@@ -4407,10 +4385,30 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
   }
 
   let labour = labourClient;
+  // Floor crew size by move-size. The inventory-score labour estimator can
+  // return crew=2 on a sparse-inventory 3BR; operationally a 3BR move
+  // needs 4 movers. Mirrors the truck floor a few lines above. See
+  // src/lib/quotes/crew-and-truck-minimums.ts for rationale.
+  // (Uses input.service_type directly because svcType isn't in scope yet
+  //  here — declared a few lines below.)
+  if (
+    labour &&
+    (input.service_type === "local_move" ||
+      input.service_type === "long_distance") &&
+    typeof labour.crewSize === "number"
+  ) {
+    const { floorMoversByMoveSize: _floorMov } = await import(
+      "@/lib/quotes/crew-and-truck-minimums"
+    );
+    const flooredCrew = _floorMov(labour.crewSize, input.move_size);
+    if (flooredCrew !== labour.crewSize) {
+      labour = { ...labour, crewSize: flooredCrew };
+    }
+  }
   // Residential tier math must use the same labour model as `labour` in the JSON response
   // (client on-job hours). A separate ops-only estimate (full cycle / return) inflated preview
   // and new saves vs the crew/hours line coordinators see.
-  const labourForResidential = labourClient;
+  const labourForResidential = labour;
 
   // Global crating calculation (applies to all service types)
   const cratingBySize = parseJsonConfig<Record<string, number>>(config, "crating_prices", {});

@@ -1,7 +1,20 @@
 /**
  * Estate tier: multi-day pack vs move labour plan (local residential).
  * Used for admin cost estimate, factors_applied (client confirm + emails), and quote copy.
+ *
+ * Crew counts are floored by src/lib/quotes/crew-and-truck-minimums.ts so
+ * a 3BR Estate plan can't ship with fewer than 4 movers / 3 packers
+ * regardless of the per-size table below. The table below remains as
+ * the BASELINE; the floor only kicks in when the baseline is too low
+ * for the move size. See the lib for rationale (operator audit
+ * 2026-05: 3BR with 3 movers + 2 packers was operationally
+ * unworkable).
  */
+
+import {
+  floorMoversByMoveSize,
+  floorPackersByMoveSize,
+} from "@/lib/quotes/crew-and-truck-minimums";
 
 export type EstatePackMoveDay = { crew: number; hours: number };
 
@@ -22,56 +35,85 @@ export function calculateEstateDays(
   switch (ms) {
     case "studio":
     case "1br":
-      return {
+      return applyMinimums({
+        moveSize: ms,
         days: 1,
         packDay: null,
         moveDay: { crew: 2, hours: 5 },
         unpackIncluded: true,
-      };
+      });
     case "2br":
       if (score > 50) {
-        return {
+        return applyMinimums({
+          moveSize: ms,
           days: 2,
           packDay: { crew: 2, hours: 5 },
           moveDay: { crew: 3, hours: 6 },
           unpackIncluded: true,
-        };
+        });
       }
-      return {
+      return applyMinimums({
+        moveSize: ms,
         days: 1,
         packDay: null,
         moveDay: { crew: 2, hours: 6 },
         unpackIncluded: true,
-      };
+      });
     case "3br":
-      return {
+      return applyMinimums({
+        moveSize: ms,
         days: 2,
-        packDay: { crew: 2, hours: 6 },
-        moveDay: { crew: 3, hours: 7 },
+        packDay: { crew: 2, hours: 6 }, // floored to 3 packers below
+        moveDay: { crew: 3, hours: 7 }, // floored to 4 movers below
         unpackIncluded: true,
-      };
+      });
     case "4br":
-      return {
+      return applyMinimums({
+        moveSize: ms,
         days: 2,
-        packDay: { crew: 3, hours: 7 },
+        packDay: { crew: 3, hours: 7 }, // floored to 4 packers below
         moveDay: { crew: 4, hours: 8 },
         unpackIncluded: true,
-      };
+      });
     case "5br_plus":
-      return {
+      return applyMinimums({
+        moveSize: ms,
         days: 3,
-        packDay: { crew: 3, hours: 8 },
-        moveDay: { crew: 4, hours: 9 },
+        packDay: { crew: 3, hours: 8 }, // floored to 4 packers below
+        moveDay: { crew: 4, hours: 9 }, // floored to 5 movers below
         unpackIncluded: true,
-      };
+      });
     default:
-      return {
+      return applyMinimums({
+        moveSize: ms,
         days: 1,
         packDay: null,
         moveDay: { crew: 2, hours: 5 },
         unpackIncluded: true,
-      };
+      });
   }
+}
+
+/**
+ * Apply the hard crew minimums from crew-and-truck-minimums.ts to an
+ * EstateDayPlan. Pack crew floored to PACKER_MINIMUMS, move crew to
+ * MOVER_MINIMUMS. If the table baseline above is already at or above
+ * the floor, the plan is returned unchanged.
+ */
+function applyMinimums(
+  plan: EstateDayPlan & { moveSize: string },
+): EstateDayPlan {
+  const { moveSize, ...rest } = plan;
+  return {
+    ...rest,
+    packDay: rest.packDay
+      ? { ...rest.packDay, crew: floorPackersByMoveSize(rest.packDay.crew, moveSize) }
+      : null,
+    moveDay: {
+      ...rest.moveDay,
+      crew: floorMoversByMoveSize(rest.moveDay.crew, moveSize),
+    },
+  };
 }
 
 export function estateLoadedLabourCost(
