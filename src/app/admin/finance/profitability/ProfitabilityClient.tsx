@@ -19,7 +19,6 @@ import {
 import {
   TrendUp as TrendingUp,
   TrendDown as TrendingDown,
-  Warning as AlertTriangle,
   Download,
   CaretDown as ChevronDown,
   ArrowsDownUp as ArrowUpDown,
@@ -1301,24 +1300,24 @@ export default function ProfitabilityClient() {
               className="text-[var(--tx)]"
               bgClass="bg-[var(--gold)]/5 border-[var(--gold)]/15"
             />
+            {/* Total Profit — gross profit across the selected window.
+                Matches the "Gross Margin" and "Avg Profit Per Job" cards
+                (both gross). Replaces the prior "Low Margin Alerts"
+                tile — operators want the absolute dollar figure on the
+                summary row; per-job margin flags still surface in the
+                Margin Health Flags section and the job table below. */}
             <StatCard
-              label="Low Margin Alerts"
-              value={String(summary?.lowMarginCount ?? 0)}
-              sub="Jobs below 25% gross"
-              className={
-                summary?.lowMarginCount
-                  ? "text-red-800 dark:text-red-400"
-                  : "text-emerald-800 dark:text-emerald-400"
-              }
-              bgClass={
-                summary?.lowMarginCount
-                  ? "bg-red-500/10 border-red-500/20"
-                  : "bg-emerald-500/10 border-emerald-500/20"
-              }
+              label="Total Profit"
+              value={formatCurrency(summary?.totalGrossProfit ?? 0)}
+              sub={`${summary?.moveCount ?? 0} completed jobs · ${getRange(preset).label}`}
+              className={marginColor(summary?.avgGrossMargin ?? 0, target)}
+              bgClass={marginBg(summary?.avgGrossMargin ?? 0, target)}
               icon={
-                summary?.lowMarginCount ? (
-                  <AlertTriangle className="w-4 h-4" />
-                ) : null
+                (summary?.totalGrossProfit ?? 0) >= 0 ? (
+                  <TrendingUp className="w-4 h-4" />
+                ) : (
+                  <TrendingDown className="w-4 h-4" />
+                )
               }
             />
           </div>
