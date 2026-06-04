@@ -2374,6 +2374,44 @@ export default function QuoteFormClient({
   // Quote result (set only after successful generate; required for Send)
   const [quoteResult, setQuoteResult] = useState<QuoteResult | null>(null);
   const [quoteId, setQuoteId] = useState<string | null>(null);
+
+  /**
+   * Live preview of `quoteResult.tiers` with the operator's in-flight
+   * per-tier overrides overlaid on top. Without this overlay the right
+   * rail keeps showing the engine price ($650) even after the operator
+   * has typed an override ($680) — they have to click Regenerate to see
+   * it land, which makes the override feel broken. The overlay only
+   * touches the price / tax / total trio; deposit and includes stay on
+   * the last-generated values until Regenerate, because the server
+   * recomputes deposit from the residential category.
+   *
+   * Regenerate still persists the override + audit trail server-side;
+   * this is purely a display sync so the operator doesn't second-guess
+   * whether their input registered.
+   */
+  const previewTiers = useMemo(() => {
+    const baseTiers = quoteResult?.tiers;
+    if (!baseTiers) return baseTiers;
+    const overrides = tierPriceOverrides;
+    if (!overrides || Object.keys(overrides).length === 0) return baseTiers;
+    const TAX_RATE_FOR_PREVIEW = 0.13;
+    const next: Record<string, TierResult> = { ...baseTiers };
+    for (const tk of ["essential", "signature", "estate"] as const) {
+      const ov = overrides[tk];
+      const base = baseTiers[tk];
+      if (!ov || !base) continue;
+      const ovPrice = parseFloat(ov.price);
+      if (!Number.isFinite(ovPrice) || ovPrice <= 0) continue;
+      if (Math.abs(ovPrice - base.price) < 0.005) continue;
+      next[tk] = {
+        ...base,
+        price: Math.round(ovPrice),
+        tax: Math.round(ovPrice * TAX_RATE_FOR_PREVIEW),
+        total: Math.round(ovPrice * (1 + TAX_RATE_FOR_PREVIEW)),
+      };
+    }
+    return next;
+  }, [quoteResult?.tiers, tierPriceOverrides]);
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendSuccess, setSendSuccess] = useState(false);
@@ -11606,7 +11644,11 @@ export default function QuoteFormClient({
                     {quoteResult.tiers ? (
                       <>
                         <TiersDisplay
-                          tiers={quoteResult.tiers}
+                          // previewTiers overlays in-flight per-tier
+                          // overrides onto the last-generated tiers so
+                          // the right rail reflects $680 the moment it
+                          // is typed, not only after Regenerate.
+                          tiers={previewTiers ?? quoteResult.tiers}
                           recommendedTier={recommendedTier}
                           estateMultiDayUplift={(() => {
                             const f = quoteResult.factors as

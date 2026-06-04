@@ -207,9 +207,8 @@ export default function TierPriceOverrideEditor({
       </div>
 
       <p className="text-[10px] text-[var(--tx2)] mt-3 leading-snug">
-        Saved to <code>quotes.tier_price_overrides</code> on generate.
-        Audit trail (original → override) lands in{" "}
-        <code>factors_applied.tier_overrides_applied</code>.
+        Click <strong>Regenerate</strong> to apply the override to the quote.
+        The original engine price stays in the audit trail.
       </p>
     </div>
   );
