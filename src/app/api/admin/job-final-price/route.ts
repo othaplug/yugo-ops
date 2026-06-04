@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     const { data: delivery, error: dErr } = await db
       .from("deliveries")
       .select(
-        "id, status, total_price, admin_adjusted_price, quoted_price, delivery_number",
+        "id, status, total_price, admin_adjusted_price, override_price, quoted_price, delivery_number",
       )
       .eq("id", jobId)
       .single();
@@ -89,12 +89,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Reflect what effectiveDeliveryPrice() reads when picking "current
+    // price" for the UI. If override_price was set pre-completion (e.g.
+    // operator dropped a $2,100 calc to $980), it ranks above
+    // admin_adjusted_price — so we must read AND write the same field
+    // hierarchy or the modal's "Current price" lies on the next open.
     const original = Number(
-      delivery.admin_adjusted_price ??
+      delivery.override_price ??
+        delivery.admin_adjusted_price ??
         delivery.total_price ??
         delivery.quoted_price ??
         0,
     );
+
+    // No-op guard: a same-value save just creates noise in the audit
+    // trail ("$X to $X. Actual") and confuses the next reader.
+    if (Math.abs(newPrice - original) < 0.005) {
+      return NextResponse.json(
+        { error: "New price is the same as the current price." },
+        { status: 400 },
+      );
+    }
 
     const { data: inv } = await db
       .from("invoices")
@@ -122,12 +137,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Keep every column effectiveDeliveryPrice() inspects in sync —
+    // otherwise a stale override_price wins next render and the modal
+    // reports an outdated current price (see DLV-30274: override_price
+    // sat at $980 while admin_adjusted_price was $860, so the modal
+    // kept asking the operator to "adjust" a value they'd already set).
+    // Only write override_price when one was already present so we
+    // don't accidentally introduce one for jobs that never had a pre-
+    // completion override.
+    const updatePayload: Record<string, number> = {
+      total_price: newPrice,
+      admin_adjusted_price: newPrice,
+    };
+    if (
+      delivery.override_price != null &&
+      Number(delivery.override_price) > 0
+    ) {
+      updatePayload.override_price = newPrice;
+    }
+
     const { error: upErr } = await db
       .from("deliveries")
-      .update({
-        total_price: newPrice,
-        admin_adjusted_price: newPrice,
-      })
+      .update(updatePayload)
       .eq("id", jobId);
 
     if (upErr) {
@@ -181,6 +212,15 @@ export async function POST(req: NextRequest) {
       move.amount ??
       0,
   );
+
+  // No-op guard mirrors the delivery branch — keeps the audit trail
+  // free of "$X to $X" rows that confuse anyone reading it later.
+  if (Math.abs(newPrice - original) < 0.005) {
+    return NextResponse.json(
+      { error: "New price is the same as the current price." },
+      { status: 400 },
+    );
+  }
 
   const { data: moveInv } = await db
     .from("invoices")

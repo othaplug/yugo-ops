@@ -94,6 +94,13 @@ export default function PostCompletionPriceEdit({
       setError("Enter a valid amount");
       return;
     }
+    // Reject no-op edits — otherwise re-clicking Save creates noise rows
+    // in the audit history ("$X to $X. <reason>") and confuses operators
+    // reading the trail later. Server enforces the same rule.
+    if (Math.abs(n - currentPrice) < 0.005) {
+      setError("New price is the same as the current price — nothing to save.");
+      return;
+    }
     if (!reason.trim() || reason.trim().length < 3) {
       setError("Add a short reason for the change");
       return;
@@ -252,7 +259,7 @@ export default function PostCompletionPriceEdit({
             <button
               type="button"
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || priceDiff === 0 || reason.trim().length < 3}
               className={outlineBtn}
             >
               {saving ? "Saving" : "Save price change"}
