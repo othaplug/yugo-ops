@@ -240,6 +240,23 @@ export async function GET(req: NextRequest) {
       return null;
     }
 
+    // Normalize calendar status for filter matching. Different job kinds
+    // use different terminal verbs:
+    //   - moves use "completed"
+    //   - B2B deliveries use "delivered"
+    // The filter dropdown only exposes "completed", which used to hide
+    // every delivered B2B job. We coerce delivered → completed so a
+    // single "Completed" filter pick captures both. Similarly map
+    // "confirmed" → "scheduled" so a Confirmed B2B delivery counts as
+    // Scheduled for the dropdown.
+    function normalizeCalendarStatus(raw: string | null | undefined): string {
+      const s = String(raw ?? "").toLowerCase().replace(/-/g, "_");
+      if (!s) return "scheduled";
+      if (s === "delivered") return "completed";
+      if (s === "confirmed") return "scheduled";
+      return s;
+    }
+
     for (const m of moves || []) {
       if ((m as { move_project_id?: string | null }).move_project_id) {
         continue;
@@ -248,7 +265,7 @@ export async function GET(req: NextRequest) {
       if (!dk) continue;
       if (crewFilter && m.crew_id !== crewFilter) continue;
       if (typeFilter && typeFilter !== "move") continue;
-      if (statusFilter && (m.status || "scheduled") !== statusFilter) continue;
+      if (statusFilter && normalizeCalendarStatus(m.status) !== statusFilter) continue;
 
       const crew = m.crew_id ? crewListForLookup.find((c) => c.id === m.crew_id) : null;
       const moveSize = (m.move_size as string | null)?.toLowerCase() || null;
@@ -336,7 +353,7 @@ export async function GET(req: NextRequest) {
       if (!dk) continue;
       if (crewFilter && d.crew_id !== crewFilter) continue;
       if (typeFilter && typeFilter !== "delivery") continue;
-      if (statusFilter && (d.status || "scheduled") !== statusFilter) continue;
+      if (statusFilter && normalizeCalendarStatus(d.status) !== statusFilter) continue;
 
       const crewD = d.crew_id ? crewListForLookup.find((c) => c.id === d.crew_id) : null;
       const itemCount = Array.isArray(d.items) ? d.items.length : null;

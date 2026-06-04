@@ -5,8 +5,9 @@ import { buildHubSpotDealName } from "@/lib/hubspot/deal-name"
 import { safePatchDeal } from "@/lib/hubspot/safe-deal-write"
 import { syncDealStage, deliveryStatusToHubspotTrigger } from "@/lib/hubspot/sync-deal-stage"
 import { autoCreateHubSpotDealForNewDelivery } from "@/lib/hubspot/auto-create-deal-for-delivery"
+import { autoCreateHubSpotDealForNewMove } from "@/lib/hubspot/auto-create-deal-for-move"
 import { getEmailBaseUrl } from "@/lib/email-base-url"
-import { getDeliveryDetailPath } from "@/lib/move-code"
+import { getDeliveryDetailPath, getMoveDetailPath } from "@/lib/move-code"
 
 /**
  * Hourly self-healing HubSpot deal sync.
@@ -68,6 +69,7 @@ export async function GET(req: NextRequest) {
   const results = {
     quotes_synced: 0,
     moves_synced: 0,
+    moves_deal_created: 0,
     deliveries_synced: 0,
     deliveries_deal_created: 0,
     deal_ids_propagated: 0,
@@ -306,6 +308,161 @@ export async function GET(req: NextRequest) {
     await new Promise((r) => setTimeout(r, HUBSPOT_RATE_LIMIT_DELAY_MS))
   }
 
+  // ── Moves without a deal ID (Path B — auto-create) ─────────────────
+  // Mirrors the deliveries Path B below. PM portfolio moves in particular
+  // tend to lack hubspot_deal_id because:
+  //   1. They're created via /api/admin/moves/pm-batch, where the post-
+  //      insert HubSpot call is fire-and-forget and can silently fail.
+  //   2. The tenant is identified by a unit code (e.g. "1316 WL"), not a
+  //      person — client_email is null, so the simple auto-create path
+  //      bails. We need to fall back to the partner contract's
+  //      organization email.
+  // Verified against the live DB: every PM move in /admin/b2b/jobs has
+  // hubspot_deal_id = null. This pass back-fills them and any other
+  // standalone-create move that missed the post-insert HubSpot call.
+  const baseUrl = getEmailBaseUrl()
+
+  const { data: movesNoDeal } = await sb
+    .from("moves")
+    .select(
+      "id, move_code, status, scheduled_date, client_name, client_email, tenant_name, from_address, to_address, from_access, to_access, service_type, move_size, estimate, amount, total_price, tier_selected, is_pm_move, contract_id",
+    )
+    .is("hubspot_deal_id", null)
+    .not("scheduled_date", "is", null)
+    .not("status", "in", "(cancelled,draft)")
+
+  // Cache per-contract resolved fallback email so multiple moves on the
+  // same contract don't re-hit the DB.
+  const contractEmailCache = new Map<string, string | null>()
+
+  async function resolvePmFallbackEmail(
+    contractId: string | null,
+  ): Promise<string | null> {
+    if (!contractId) return null
+    if (contractEmailCache.has(contractId)) {
+      return contractEmailCache.get(contractId) ?? null
+    }
+    try {
+      const { data: contract } = await sb
+        .from("partner_contracts")
+        .select("partner_id")
+        .eq("id", contractId)
+        .maybeSingle()
+      const orgId = (contract?.partner_id as string | null) ?? null
+      if (!orgId) {
+        contractEmailCache.set(contractId, null)
+        return null
+      }
+      const { data: org } = await sb
+        .from("organizations")
+        .select("email, billing_email, partner_coordinator_email")
+        .eq("id", orgId)
+        .maybeSingle()
+      const e =
+        (org?.email as string | null) ||
+        (org?.billing_email as string | null) ||
+        (org?.partner_coordinator_email as string | null) ||
+        null
+      const normalized = e ? String(e).trim().toLowerCase() : null
+      contractEmailCache.set(contractId, normalized)
+      return normalized
+    } catch {
+      contractEmailCache.set(contractId, null)
+      return null
+    }
+  }
+
+  for (const m of movesNoDeal ?? []) {
+    try {
+      const isPm = !!(m.is_pm_move as boolean | null)
+      // Email resolution: direct client_email > PM fallback (org email).
+      let email = String(m.client_email ?? "").trim().toLowerCase()
+      if (!email && isPm) {
+        email =
+          (await resolvePmFallbackEmail(
+            (m.contract_id as string | null) ?? null,
+          )) ?? ""
+      }
+      if (!email) continue
+
+      const displayName = String(
+        m.client_name ?? m.tenant_name ?? "Tenant",
+      ).trim()
+      const nameParts = displayName.split(/\s+/)
+      const fn = nameParts[0] || (isPm ? "Portfolio" : "Client")
+      const ln = nameParts.slice(1).join(" ") || (isPm ? "move" : "")
+
+      const estimate =
+        typeof m.estimate === "number"
+          ? m.estimate
+          : typeof m.amount === "number"
+            ? m.amount
+            : typeof m.total_price === "number"
+              ? m.total_price
+              : null
+
+      const detailPath = getMoveDetailPath({
+        move_code: (m.move_code as string | null) ?? null,
+        id: m.id as string,
+      })
+
+      const created = await autoCreateHubSpotDealForNewMove({
+        sb,
+        move: {
+          id: m.id as string,
+          service_type: (m.service_type as string | null) ?? "local_move",
+          move_size: (m.move_size as string | null) ?? null,
+          scheduled_date: (m.scheduled_date as string | null) ?? null,
+          from_address: (m.from_address as string | null) ?? null,
+          to_address: (m.to_address as string | null) ?? null,
+          from_access: (m.from_access as string | null) ?? null,
+          to_access: (m.to_access as string | null) ?? null,
+          estimate,
+          tier_selected: (m.tier_selected as string | null) ?? null,
+          is_pm_move: isPm,
+        },
+        moveCode: String(m.move_code ?? m.id),
+        clientEmail: email,
+        firstName: fn,
+        lastName: ln,
+        moveAdminUrl: `${baseUrl}${detailPath}`,
+        // PM moves can legitimately share an inbox (one org email
+        // covers many units), so don't collapse them into one deal.
+        skipDuplicateCheck: isPm,
+      })
+
+      if (created?.status === "created" && created.dealId) {
+        await sb
+          .from("moves")
+          .update({ hubspot_deal_id: created.dealId })
+          .eq("id", m.id)
+        const trig = moveStageFromStatus(m.status)
+        if (trig) {
+          await syncDealStage(
+            created.dealId,
+            trig,
+            undefined,
+            (m.scheduled_date as string | null) ?? null,
+          ).catch(() => {})
+          results.stages_synced++
+        }
+        results.moves_deal_created++
+      } else if (created?.status === "duplicate" && created.existingDealId) {
+        await sb
+          .from("moves")
+          .update({ hubspot_deal_id: created.existingDealId })
+          .eq("id", m.id)
+        results.deal_ids_propagated++
+      }
+    } catch (err) {
+      results.failures++
+      results.errors.push(
+        `${m.move_code ?? m.id}: ${err instanceof Error ? err.message : String(err)}`,
+      )
+    }
+    await new Promise((r) => setTimeout(r, HUBSPOT_RATE_LIMIT_DELAY_MS))
+  }
+
   // ── Deliveries ──────────────────────────────────────────────────────
   // Until this pass landed, the deliveries table was a HubSpot blind
   // spot: only the admin-direct create route (/api/admin/deliveries/
@@ -325,8 +482,6 @@ export async function GET(req: NextRequest) {
   if (dErr) {
     results.errors.push(`deliveries select: ${dErr.message}`)
   }
-
-  const base = getEmailBaseUrl()
 
   for (const d of deliveriesAll ?? []) {
     try {
@@ -456,7 +611,7 @@ export async function GET(req: NextRequest) {
           (d.contact_phone as string | null) ??
           (d.customer_phone as string | null) ??
           null,
-        deliveryAdminUrl: `${base}${detailPath}`,
+        deliveryAdminUrl: `${baseUrl}${detailPath}`,
       })
 
       if (createdHs?.status === "created" && createdHs.dealId) {
@@ -497,6 +652,7 @@ export async function GET(req: NextRequest) {
       payload: {
         quotes_synced: results.quotes_synced,
         moves_synced: results.moves_synced,
+        moves_deal_created: results.moves_deal_created,
         deliveries_synced: results.deliveries_synced,
         deliveries_deal_created: results.deliveries_deal_created,
         deal_ids_propagated: results.deal_ids_propagated,
