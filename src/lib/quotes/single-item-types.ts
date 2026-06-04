@@ -30,6 +30,36 @@ export const SINGLE_ITEM_CATEGORY_VALUES = [
 
 export type SingleItemCategory = (typeof SINGLE_ITEM_CATEGORY_VALUES)[number];
 
+/**
+ * Client-facing label for an item_category slug. Keeps the same wording
+ * the admin form uses (`ITEM_CATEGORIES` in QuoteFormClient.tsx) so the
+ * quote page, emails, and contract PDF all read identically. Falls back
+ * to a title-cased slug for legacy values not in the canonical set —
+ * better than leaking "small_light" raw to a client.
+ */
+const SINGLE_ITEM_CATEGORY_LABELS: Record<string, string> = {
+  small_light: "Small / light",
+  standard_furniture: "Standard furniture",
+  large_heavy: "Large / heavy",
+  appliance: "Heavy appliance",
+  oversized: "Oversized",
+  fragile_specialty: "Fragile / specialty",
+  multiple_2_to_5: "Multiple items",
+};
+
+export function formatSingleItemCategoryLabel(
+  raw: string | null | undefined,
+): string {
+  if (!raw) return "Item";
+  const key = String(raw).trim().toLowerCase();
+  if (!key) return "Item";
+  const hit = SINGLE_ITEM_CATEGORY_LABELS[key];
+  if (hit) return hit;
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export const SINGLE_ITEM_ASSEMBLY_VALUES = [
   "None",
   "Disassembly at pickup",

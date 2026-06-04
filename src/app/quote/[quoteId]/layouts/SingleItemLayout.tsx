@@ -7,9 +7,9 @@ import {
   fmtPrice,
   calculateDeposit,
 } from "../quote-shared";
-import { toTitleCase } from "@/lib/format-text";
 import {
   resolveSingleItemLines,
+  formatSingleItemCategoryLabel,
   type SingleItemLine,
 } from "@/lib/quotes/single-item-types";
 import { getSingleItemQuoteCopy } from "@/lib/quotes/single-item-copy";
@@ -322,7 +322,11 @@ function SingleItemHeader({
   fallbackLabel: string;
   compact?: boolean;
 }) {
-  const category = toTitleCase(line.item_category || "item").replace(/_/g, " ");
+  // Use the canonical label map so we never leak the DB slug
+  // (e.g. "small_light" → "Small / light"). toTitleCase used to turn
+  // it into "Small Light" which is technically readable but still
+  // looks like an internal taxonomy to the client.
+  const category = formatSingleItemCategoryLabel(line.item_category);
   const weight = line.weight_class || null;
   const qty = Math.max(1, Math.floor(line.quantity || 1));
   const description = line.item_description?.trim() || fallbackLabel;

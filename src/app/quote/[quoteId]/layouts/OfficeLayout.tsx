@@ -14,7 +14,7 @@ import {
   fmtPrice,
   calculateDeposit,
 } from "../quote-shared";
-import { toTitleCase } from "@/lib/format-text";
+import { toTitleCase, formatAccessForDisplay } from "@/lib/format-text";
 import { formatMoveDate } from "@/lib/date-format";
 
 interface Props {
@@ -55,11 +55,17 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
       },
       quote.from_access && {
         label: "Origin Access",
-        value: toTitleCase(quote.from_access),
+        // Use the access label map (loading_dock → "Loading dock") so
+        // we don't leak DB slugs into the client-facing quote.
+        value:
+          formatAccessForDisplay(quote.from_access) ??
+          toTitleCase(quote.from_access),
       },
       quote.to_access && {
         label: "Destination Access",
-        value: toTitleCase(quote.to_access),
+        value:
+          formatAccessForDisplay(quote.to_access) ??
+          toTitleCase(quote.to_access),
       },
     ] as (false | null | undefined | { label: string; value: string })[]
   ).filter((x): x is { label: string; value: string } => !!x);

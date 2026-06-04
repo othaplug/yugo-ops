@@ -13,6 +13,27 @@ import type { ProjectQuoteBreakdown } from "@/lib/move-projects/residential-proj
 import { ESTATE_ON_WINE } from "./estate-quote-ui";
 import { premiumShellInk, type PremiumShellKind } from "./quote-premium-shell";
 
+// Local truck-slug → client-facing label map. Mirrors TRUCK_LUXURY on
+// QuotePageClient and TRUCK_DISPLAY_LABELS in the email templates so a
+// 26ft truck reads "26ft truck" / a Sprinter reads "Extended Sprinter
+// van" everywhere — never the raw DB slug.
+const TRUCK_SLUG_LABELS: Record<string, string> = {
+  sprinter: "Extended Sprinter van",
+  "16ft": "16ft truck",
+  "20ft": "20ft truck",
+  "24ft": "24ft truck",
+  "26ft": "26ft truck",
+};
+
+function truckSlugToLabel(raw: string | null | undefined): string {
+  if (!raw) return "";
+  const k = String(raw).toLowerCase().trim();
+  if (TRUCK_SLUG_LABELS[k]) return TRUCK_SLUG_LABELS[k];
+  // Fall back to title-casing legacy ad-hoc values so we still never
+  // expose a raw underscore-slug.
+  return k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export type MoveProjectPhaseRow = Record<string, unknown> & {
   id?: string;
   phase_name?: string | null;
@@ -113,7 +134,7 @@ export default function MoveProjectQuoteTimeline({
                     )}
                     <div className="flex flex-wrap gap-3 mt-2 text-[11px] opacity-55" style={{ color: "#2B0416" }}>
                       {typeof day.crew_size === "number" && <span>{day.crew_size} crew</span>}
-                      {day.truck_type && <span>{String(day.truck_type)} truck</span>}
+                      {day.truck_type && <span>{truckSlugToLabel(String(day.truck_type))}</span>}
                       {typeof day.estimated_hours === "number" && <span>~{day.estimated_hours} hours</span>}
                     </div>
                   </div>

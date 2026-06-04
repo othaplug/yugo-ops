@@ -47,7 +47,7 @@ import DeliveryCrewPhotosSection from "./DeliveryCrewPhotosSection";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
-import { toTitleCase } from "@/lib/format-text";
+import { toTitleCase, formatAccessForDisplay } from "@/lib/format-text";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
 import { deliveryEligibleForAdminPrepaidMark } from "@/lib/delivery-prepaid-eligibility";
@@ -1581,7 +1581,9 @@ export default function DeliveryDetailClient({
                       </div>
                       {delivery.pickup_access && (
                         <div className="text-[10px] text-[var(--tx3)] mt-0.5">
-                          Access: {delivery.pickup_access}
+                          Access:{" "}
+                          {formatAccessForDisplay(delivery.pickup_access) ??
+                            delivery.pickup_access}
                         </div>
                       )}
                     </div>
@@ -1835,7 +1837,10 @@ export default function DeliveryDetailClient({
                             </div>
                             {delivery.delivery_access && (
                               <div className="text-[10px] text-[var(--tx3)] mt-0.5">
-                                Access: {delivery.delivery_access}
+                                Access:{" "}
+                                {formatAccessForDisplay(
+                                  delivery.delivery_access,
+                                ) ?? delivery.delivery_access}
                               </div>
                             )}
                           </div>
