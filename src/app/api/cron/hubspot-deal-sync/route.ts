@@ -3,7 +3,10 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { buildAllDealProperties } from "@/lib/hubspot/deal-properties-builder"
 import { buildHubSpotDealName } from "@/lib/hubspot/deal-name"
 import { safePatchDeal } from "@/lib/hubspot/safe-deal-write"
-import { syncDealStage } from "@/lib/hubspot/sync-deal-stage"
+import { syncDealStage, deliveryStatusToHubspotTrigger } from "@/lib/hubspot/sync-deal-stage"
+import { autoCreateHubSpotDealForNewDelivery } from "@/lib/hubspot/auto-create-deal-for-delivery"
+import { getEmailBaseUrl } from "@/lib/email-base-url"
+import { getDeliveryDetailPath } from "@/lib/move-code"
 
 /**
  * Hourly self-healing HubSpot deal sync.
@@ -65,6 +68,8 @@ export async function GET(req: NextRequest) {
   const results = {
     quotes_synced: 0,
     moves_synced: 0,
+    deliveries_synced: 0,
+    deliveries_deal_created: 0,
     deal_ids_propagated: 0,
     stages_synced: 0,
     failures: 0,
@@ -301,6 +306,188 @@ export async function GET(req: NextRequest) {
     await new Promise((r) => setTimeout(r, HUBSPOT_RATE_LIMIT_DELAY_MS))
   }
 
+  // ── Deliveries ──────────────────────────────────────────────────────
+  // Until this pass landed, the deliveries table was a HubSpot blind
+  // spot: only the admin-direct create route (/api/admin/deliveries/
+  // create) attempted to create a deal, and even there it bailed when
+  // the contact email was missing. B2B deliveries created via quote
+  // accept, payment process, or backfill silently produced no deal —
+  // the operator's HubSpot pipeline was missing every B2B job in
+  // /admin/b2b/jobs. We now mirror the moves pass for deliveries and
+  // also try to auto-create a deal for any delivery that's still
+  // missing one and has an email we can attach a contact to.
+  const { data: deliveriesAll, error: dErr } = await sb
+    .from("deliveries")
+    .select(
+      "id, delivery_number, status, hubspot_deal_id, client_name, business_name, contact_name, customer_name, contact_email, customer_email, end_customer_email, contact_phone, customer_phone, pickup_address, delivery_address, pickup_access, delivery_access, scheduled_date, calculated_price, quoted_price, total_price, booking_type, vertical_code, recommended_vehicle, estimated_duration_hours, crew_id",
+    )
+
+  if (dErr) {
+    results.errors.push(`deliveries select: ${dErr.message}`)
+  }
+
+  const base = getEmailBaseUrl()
+
+  for (const d of deliveriesAll ?? []) {
+    try {
+      const statusLower = String(d.status ?? "").toLowerCase()
+      // Skip drafts / unscheduled — same rule the create route uses.
+      if (!d.scheduled_date) continue
+      if (statusLower === "draft" || statusLower === "pending_approval") continue
+
+      const businessName = String(d.business_name ?? d.client_name ?? "").trim()
+      const primaryContactLabel =
+        String(d.contact_name ?? d.customer_name ?? d.client_name ?? "").trim()
+      const nameParts = primaryContactLabel.split(/\s+/)
+      const fn = nameParts[0] ?? ""
+      const ln = nameParts.slice(1).join(" ")
+      const subtotal =
+        d.calculated_price != null && Number.isFinite(Number(d.calculated_price))
+          ? Number(d.calculated_price)
+          : d.quoted_price != null && Number.isFinite(Number(d.quoted_price))
+            ? Number(d.quoted_price)
+            : d.total_price != null && Number.isFinite(Number(d.total_price))
+              ? Number(d.total_price)
+              : null
+      const serviceTypeLabel =
+        String(d.booking_type ?? "").toLowerCase() === "one_off"
+          ? "b2b_one_off_delivery"
+          : String(d.booking_type ?? "").toLowerCase() === "day_rate"
+            ? "b2b_day_rate_delivery"
+            : (d.vertical_code as string | null) || "b2b_delivery"
+
+      // ── Path A: deal already exists — patch + stage sync.
+      if (d.hubspot_deal_id) {
+        const dealName = buildHubSpotDealName({
+          serviceType: serviceTypeLabel,
+          isPmMove: false,
+          firstName: fn,
+          lastName: ln,
+          businessName: businessName || undefined,
+          fromAddress: (d.pickup_address as string | null) ?? undefined,
+          fallbackCode: `Delivery ${d.delivery_number}`,
+        })
+        const props: Record<string, string> = {
+          dealname: dealName,
+          ...buildAllDealProperties({
+            jobId: String(d.delivery_number ?? ""),
+            firstName: fn,
+            lastName: ln,
+            fromAddress: d.pickup_address as string | null,
+            toAddress: d.delivery_address as string | null,
+            fromAccess: d.pickup_access as string | null,
+            toAccess: d.delivery_access as string | null,
+            serviceType: serviceTypeLabel,
+            moveDate: d.scheduled_date as string | null,
+            moveSize: null,
+            subtotal,
+            tierSelected: null,
+            crewSize: null,
+            estimatedHours:
+              d.estimated_duration_hours != null
+                ? Number(d.estimated_duration_hours)
+                : null,
+            truckType: (d.recommended_vehicle as string | null) ?? null,
+            isPmMove: false,
+          }),
+        }
+        const res = await safePatchDeal(token, d.hubspot_deal_id, props)
+        if (res.ok || res.status === 204) {
+          results.deliveries_synced++
+        } else {
+          results.failures++
+          results.errors.push(`${d.delivery_number}: HTTP ${res.status}`)
+        }
+        const trig = deliveryStatusToHubspotTrigger(d.status as string | null)
+        if (trig) {
+          await syncDealStage(
+            d.hubspot_deal_id,
+            trig,
+            undefined,
+            (d.scheduled_date as string | null) ?? null,
+          ).catch(() => {})
+          results.stages_synced++
+        }
+        await new Promise((r) => setTimeout(r, HUBSPOT_RATE_LIMIT_DELAY_MS))
+        continue
+      }
+
+      // ── Path B: no deal yet — try to auto-create it (idempotent;
+      //    findExistingOpenDealForContactEmail prevents duplicates).
+      const email = (
+        (d.contact_email as string | null) ||
+        (d.customer_email as string | null) ||
+        (d.end_customer_email as string | null) ||
+        ""
+      ).trim().toLowerCase()
+      if (!email) continue
+
+      const fnSafe = fn || "Contact"
+      const detailPath = getDeliveryDetailPath({
+        delivery_number: (d.delivery_number as string | null) ?? undefined,
+        id: d.id as string,
+      })
+      const createdHs = await autoCreateHubSpotDealForNewDelivery({
+        sb,
+        delivery: {
+          id: d.id as string,
+          scheduled_date: (d.scheduled_date as string | null) ?? null,
+          pickup_address: (d.pickup_address as string | null) ?? null,
+          delivery_address: (d.delivery_address as string | null) ?? null,
+          pickup_access: (d.pickup_access as string | null) ?? null,
+          delivery_access: (d.delivery_access as string | null) ?? null,
+          calculated_price:
+            d.calculated_price != null ? Number(d.calculated_price) : null,
+          quoted_price:
+            d.quoted_price != null ? Number(d.quoted_price) : null,
+          total_price:
+            d.total_price != null ? Number(d.total_price) : null,
+          booking_type: (d.booking_type as string | null) ?? null,
+          vertical_code: (d.vertical_code as string | null) ?? null,
+          business_name: businessName || null,
+          client_name: (d.client_name as string | null) ?? null,
+          contact_name: (d.contact_name as string | null) ?? null,
+        },
+        deliveryNumber: String(d.delivery_number ?? ""),
+        clientEmail: email,
+        firstName: fnSafe,
+        lastName: ln,
+        clientPhone:
+          (d.contact_phone as string | null) ??
+          (d.customer_phone as string | null) ??
+          null,
+        deliveryAdminUrl: `${base}${detailPath}`,
+      })
+
+      if (createdHs?.status === "created" && createdHs.dealId) {
+        await sb
+          .from("deliveries")
+          .update({ hubspot_deal_id: createdHs.dealId })
+          .eq("id", d.id)
+        const trig = deliveryStatusToHubspotTrigger(d.status as string | null)
+        if (trig) {
+          await syncDealStage(createdHs.dealId, trig).catch(() => {})
+          results.stages_synced++
+        }
+        results.deliveries_deal_created++
+      } else if (createdHs?.status === "duplicate" && createdHs.existingDealId) {
+        // Attach the existing deal back to the delivery so future runs
+        // skip Path B and the live hooks find a valid deal id.
+        await sb
+          .from("deliveries")
+          .update({ hubspot_deal_id: createdHs.existingDealId })
+          .eq("id", d.id)
+        results.deal_ids_propagated++
+      }
+    } catch (err) {
+      results.failures++
+      results.errors.push(
+        `${d.delivery_number}: ${err instanceof Error ? err.message : String(err)}`,
+      )
+    }
+    await new Promise((r) => setTimeout(r, HUBSPOT_RATE_LIMIT_DELAY_MS))
+  }
+
   // ── Audit trail ─────────────────────────────────────────────────────
   await sb
     .from("webhook_logs")
@@ -310,6 +497,8 @@ export async function GET(req: NextRequest) {
       payload: {
         quotes_synced: results.quotes_synced,
         moves_synced: results.moves_synced,
+        deliveries_synced: results.deliveries_synced,
+        deliveries_deal_created: results.deliveries_deal_created,
         deal_ids_propagated: results.deal_ids_propagated,
         stages_synced: results.stages_synced,
         failures: results.failures,
