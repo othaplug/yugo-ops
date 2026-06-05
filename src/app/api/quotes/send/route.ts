@@ -221,17 +221,18 @@ export async function POST(req: NextRequest) {
     );
     const platformCompanyName = await getCompanyDisplayName();
 
-    const storedMoveSize = (quote.move_size as string | null) ?? null;
-    const inventoryScore = (quote.inventory_score as number | null) ?? (factors.inventory_score as number | null) ?? null;
-    const inventoryItems = (quote.inventory_items as { quantity?: number }[] | null) ?? [];
-    const itemCount = Array.isArray(inventoryItems) ? inventoryItems.reduce((s, i) => s + (i.quantity ?? 1), 0) : 0;
-    const suggests2br = (inventoryScore != null && inventoryScore >= 28) || itemCount >= 14;
-    const moveSize =
-      storedMoveSize === "1br" && suggests2br ? "2br" : storedMoveSize;
-
-    if (storedMoveSize === "1br" && suggests2br) {
-      await supabase.from("quotes").update({ move_size: "2br" }).eq("quote_id", quoteId);
-    }
+    // Use the operator's stored move_size verbatim. This route used to
+    // silently coerce "1br" → "2br" when inventory_score ≥ 28 OR item
+    // count ≥ 14 AND mutated the `quotes` row to match — so an operator
+    // who picked 1BR could send an email saying "2 Bedroom" and find
+    // their quote rewritten to 2BR with no warning anywhere.
+    //
+    // The pricing engine already scales prices via inventory_modifier,
+    // so a heuristic size bump is not needed for billing. If the
+    // operator's selection looks wrong for the inventory entered, the
+    // admin form already surfaces inventory_warnings on the live
+    // preview — that's where any nudge belongs, not here on send.
+    const moveSize = (quote.move_size as string | null) ?? null;
 
     type EventLegEmailRow = {
       label: string;
