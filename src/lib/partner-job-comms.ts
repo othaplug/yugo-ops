@@ -76,19 +76,24 @@ export function deliveryRecipientTrackUrl(d: {
 }
 
 /**
- * @param clientFacing When true, never use internal crew team names (e.g. Alpha); use neutral client copy only.
+ * External SMS copy for checkpoint status updates.
+ *
+ * IMPORTANT: NEVER interpolate the internal crew name (Alpha, Team B,
+ * Bravo, etc.) into anything that leaves our system. This applies to
+ * BOTH client SMS and partner SMS — partners are external to us too,
+ * and operator preference is firm on this. The only place crew names
+ * may appear externally is the admin dashboard / dispatch UI, which
+ * does not call into this helper.
+ *
+ * The function used to take a `clientFacing` flag that gated this
+ * decision. Removed — partner SMS was the only false-path caller and
+ * it was wrong.
  */
 function checkpointSmsLine(
   status: PartnerCheckpointStatus,
   jobType: "move" | "delivery",
-  teamName: string,
-  clientFacing = false,
 ): string {
-  const crew = clientFacing
-    ? jobType === "move"
-      ? "Your moving team"
-      : "Your crew"
-    : (teamName || "Yugo crew").trim();
+  const crew = jobType === "move" ? "Your moving team" : "Your crew";
   if (jobType === "delivery") {
     switch (status) {
       case "en_route_to_pickup":
@@ -104,9 +109,7 @@ function checkpointSmsLine(
       case "completed":
         return `Your delivery is complete. Thanks for choosing Yugo.`;
       default:
-        return clientFacing
-          ? `You have a new delivery update from Yugo.`
-          : `Delivery update from ${crew}.`;
+        return `You have a new delivery update from Yugo.`;
     }
   }
   switch (status) {
@@ -127,9 +130,7 @@ function checkpointSmsLine(
     case "completed":
       return `Your move is complete. Thanks for choosing Yugo.`;
     default:
-      return clientFacing
-        ? `You have a new move update from Yugo.`
-        : `Move update from ${crew}.`;
+      return `You have a new move update from Yugo.`;
   }
 }
 
@@ -156,11 +157,13 @@ export async function sendPartnerDeliveryCheckpointSms(opts: {
   row: PartnerDeliveryCheckpointRow;
   status: PartnerCheckpointStatus;
   jobType: "delivery";
-  teamName: string;
+  /** Retained for call-site compatibility; intentionally unused — SMS
+   *  copy is neutral and never carries the internal crew name. */
+  teamName?: string;
   notifyPartner: boolean;
   notifyClient: boolean;
 }): Promise<void> {
-  const { row, status, teamName, notifyPartner, notifyClient } = opts;
+  const { row, status, notifyPartner, notifyClient } = opts;
   if (!isPartnerClassDelivery(row)) return;
   if (!notifyPartner && !notifyClient) return;
 
@@ -185,8 +188,10 @@ export async function sendPartnerDeliveryCheckpointSms(opts: {
   ).trim();
   const bizUrl = deliveryBusinessTrackUrl(row);
   const recUrl = deliveryRecipientTrackUrl(row);
-  const linePartner = checkpointSmsLine(status, "delivery", teamName, false);
-  const lineClient = checkpointSmsLine(status, "delivery", teamName, true);
+  // One neutral copy — partner and recipient both get "Your crew".
+  // Tracking URLs still differ (business vs recipient view).
+  const linePartner = checkpointSmsLine(status, "delivery");
+  const lineClient = linePartner;
 
   const sent = new Set<string>();
   const sendIf = async (raw: string, url: string, line: string) => {
@@ -210,6 +215,9 @@ export type PartnerMoveCheckpointRow = {
   id: string;
   organization_id?: string | null;
   client_phone?: string | null;
+  /** Portfolio PM moves — skip SMS entirely; PM partners use the admin
+   *  portal for status. When undefined we re-read it from the DB. */
+  is_pm_move?: boolean | null;
 };
 
 /**
@@ -218,11 +226,13 @@ export type PartnerMoveCheckpointRow = {
 export async function sendPartnerMoveCheckpointSms(opts: {
   row: PartnerMoveCheckpointRow;
   status: PartnerCheckpointStatus;
-  teamName: string;
+  /** Retained for call-site compatibility; intentionally unused — SMS
+   *  copy is neutral and never carries the internal crew name. */
+  teamName?: string;
   notifyPartner: boolean;
   notifyClient: boolean;
 }): Promise<void> {
-  const { row, status, teamName, notifyPartner, notifyClient } = opts;
+  const { row, status, notifyPartner, notifyClient } = opts;
   if (!row.organization_id) return;
 
   const admin = createAdminClient();
@@ -235,19 +245,34 @@ export async function sendPartnerMoveCheckpointSms(opts: {
   if (!org || org.type === "b2c") return;
   if (!notifyPartner && !notifyClient) return;
 
+  // Pull move_code + is_pm_move in one query — also lets us catch PM
+  // moves whose row was created before the caller started passing
+  // is_pm_move down through PartnerMoveCheckpointRow.
   const { data: m } = await admin
     .from("moves")
-    .select("move_code")
+    .select("move_code, is_pm_move")
     .eq("id", row.id)
     .maybeSingle();
+
+  // PM portfolio moves: skip SMS to BOTH partner and tenant. The PM org
+  // contact phone tends to be wired in as `client_phone` for the move
+  // (set in /api/admin/moves/pm-batch), so without this guard the same
+  // partner contact gets every checkpoint twice — once via org.phone
+  // and once via the move's "client" phone. PM partners use the admin
+  // portal for live status; SMS noise is what they're trying to avoid.
+  const isPmMove =
+    !!(row.is_pm_move ?? (m?.is_pm_move as boolean | null | undefined));
+  if (isPmMove) return;
+
   const orgPhone = (org.phone || "").trim();
   const clientPhone = (row.client_phone || "").trim();
   const trackUrl = buildPublicMoveTrackUrl({
     id: row.id,
     move_code: m?.move_code ?? null,
   });
-  const linePartner = checkpointSmsLine(status, "move", teamName, false);
-  const lineClient = checkpointSmsLine(status, "move", teamName, true);
+  // One neutral copy for both partner and client — never the crew name.
+  const linePartner = checkpointSmsLine(status, "move");
+  const lineClient = linePartner;
 
   const sent = new Set<string>();
   const sendIf = async (raw: string, line: string) => {

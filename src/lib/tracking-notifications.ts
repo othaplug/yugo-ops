@@ -276,6 +276,9 @@ export async function notifyOnCheckpoint(
     id: string;
     organization_id?: string | null;
     client_phone?: string | null;
+    /** Forwarded so sendPartnerMoveCheckpointSms can short-circuit PM
+     *  moves without a second DB hit. */
+    is_pm_move?: boolean | null;
   } | null = null;
   let deliveryRowForSms: {
     id: string;
@@ -296,7 +299,7 @@ export async function notifyOnCheckpoint(
     const { data: move } = await admin
       .from("moves")
       .select(
-        "id, client_email, move_code, from_address, to_address, client_name, tier_selected, organization_id, client_phone",
+        "id, client_email, move_code, from_address, to_address, client_name, tier_selected, organization_id, client_phone, is_pm_move",
       )
       .eq("id", jobId)
       .single();
@@ -306,6 +309,7 @@ export async function notifyOnCheckpoint(
         organization_id: (move as { organization_id?: string | null })
           .organization_id,
         client_phone: (move as { client_phone?: string | null }).client_phone,
+        is_pm_move: (move as { is_pm_move?: boolean | null }).is_pm_move,
       };
       estateMove = isEstateTier(
         (move as { tier_selected?: string | null }).tier_selected,
