@@ -26,6 +26,31 @@ import {
   quoteFormServiceDateLabel,
 } from "@/lib/quotes/quote-field-labels";
 import { serviceTypeDisplayLabel, getDisplayLabel } from "@/lib/displayLabels";
+import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
+
+// Local mirror of QuoteFormClient's PARKING_OPTIONS. Kept inline rather
+// than exported so the create form remains the source of truth — if the
+// option set grows there, this list needs the same update.
+const PARKING_OPTIONS = [
+  { value: "dedicated", label: "Dedicated / loading dock" },
+  { value: "street", label: "Street parking" },
+  { value: "no_dedicated", label: "No dedicated parking (+$75)" },
+] as const;
+
+type ParkingOption = (typeof PARKING_OPTIONS)[number]["value"];
+
+function coerceParking(raw: unknown): ParkingOption {
+  const s = String(raw ?? "").trim().toLowerCase();
+  return PARKING_OPTIONS.some((o) => o.value === s)
+    ? (s as ParkingOption)
+    : "dedicated";
+}
+
+const RECOMMENDED_TIER_OPTIONS = [
+  { value: "essential", label: "Essential" },
+  { value: "signature", label: "Signature" },
+  { value: "estate", label: "Estate" },
+] as const;
 import type {
   WhiteGloveAssembly,
   WhiteGloveItemCategory,
@@ -326,6 +351,50 @@ export default function EditQuoteClient({
   const [moveSize, setMoveSize] = useState(oq.move_size || "");
   const [reason, setReason] = useState("");
 
+  // ── Scheduling / building access pre-fill ────────────────
+  // All of these are persisted as top-level columns on `quotes` (verified
+  // against YG-30277: preferred_time="09:30", arrival_window="Morning
+  // (8:00 AM–10:00 AM)", from_parking="dedicated", etc.) but the edit
+  // form used to leave them blank on load — so the operator would
+  // re-generate the quote and silently lose every one of those choices.
+  // State + UI + buildPayload now mirror the create form so re-quote is
+  // a true round-trip.
+  const [preferredTime, setPreferredTime] = useState<string>(
+    typeof oq.preferred_time === "string" ? oq.preferred_time : "",
+  );
+  const [arrivalWindow, setArrivalWindow] = useState<string>(() => {
+    const raw = typeof oq.arrival_window === "string" ? oq.arrival_window.trim() : "";
+    if (raw) return raw;
+    return TIME_WINDOW_OPTIONS[1] ?? TIME_WINDOW_OPTIONS[0] ?? "";
+  });
+  const [fromParking, setFromParking] = useState<ParkingOption>(() =>
+    coerceParking(oq.from_parking),
+  );
+  const [toParking, setToParking] = useState<ParkingOption>(() =>
+    coerceParking(oq.to_parking),
+  );
+  const [fromLongCarry, setFromLongCarry] = useState<boolean>(
+    Boolean(oq.from_long_carry),
+  );
+  const [toLongCarry, setToLongCarry] = useState<boolean>(
+    Boolean(oq.to_long_carry),
+  );
+  const [recommendedTier, setRecommendedTier] = useState<string>(() => {
+    const r = String(oq.recommended_tier ?? "signature").toLowerCase().trim();
+    return r === "essential" || r === "signature" || r === "estate"
+      ? r
+      : "signature";
+  });
+  // assembly_override is tri-state: true = forced on, false = forced off,
+  // null = auto-detect from inventory. Persist null when the column is
+  // null so the engine falls back to its own detection on re-generate.
+  const [assemblyOverride, setAssemblyOverride] = useState<boolean | null>(
+    () => {
+      const v = oq.assembly_override;
+      return typeof v === "boolean" ? v : null;
+    },
+  );
+
   // ── Office move fields ────────────────────────────────────
   const [squareFootage, setSquareFootage] = useState(
     String(factors.square_footage || oq.square_footage || ""),
@@ -568,14 +637,15 @@ export default function EditQuoteClient({
     0;
 
   const tierForAddons = useMemo(() => {
-    const r = (oq.recommended_tier ?? "signature")
-      .toString()
-      .toLowerCase()
-      .trim();
+    // Read from live state (recommendedTier) instead of the stale
+    // originalQuote value, so toggling the tier selector immediately
+    // updates which add-ons are visible (Estate hides packing/unpacking
+    // because they're rolled into the tier).
+    const r = recommendedTier.toLowerCase().trim();
     return r === "essential" || r === "signature" || r === "estate"
       ? r
       : "signature";
-  }, [oq.recommended_tier]);
+  }, [recommendedTier]);
 
   // ── Addon helpers ─────────────────────────────────────────
   const applicableAddons = useMemo(() => {
@@ -655,7 +725,49 @@ export default function EditQuoteClient({
       contact_id: contact?.id || oq.contact_id,
       hubspot_deal_id: oq.hubspot_deal_id || undefined,
       selected_addons: Array.from(selectedAddons.values()),
+      // Scheduling / building-access fields prefilled from the original
+      // quote — pass them on every regenerate so the engine doesn't drop
+      // them when it recomputes prices.
+      preferred_time: preferredTime || undefined,
+      arrival_window: arrivalWindow || undefined,
+      from_parking: fromParking,
+      to_parking: toParking,
+      from_long_carry: fromLongCarry,
+      to_long_carry: toLongCarry,
+      recommended_tier: recommendedTier,
     };
+    // assembly_override is tri-state. Only send explicit booleans; null
+    // tells the engine to auto-detect from inventory.
+    if (assemblyOverride !== null) {
+      payload.assembly_override = assemblyOverride;
+    }
+    // Carry-forward of operator-set fields that have no dedicated UI on
+    // this page. Without these, hitting Re-Generate would silently drop
+    // the per-tier override, presentation mode, valuation upgrade, and
+    // the size-conflict acknowledgement that the operator already made
+    // on the create form.
+    if (
+      oq.tier_price_overrides &&
+      typeof oq.tier_price_overrides === "object" &&
+      Object.keys(oq.tier_price_overrides as Record<string, unknown>).length > 0
+    ) {
+      payload.tier_price_overrides = oq.tier_price_overrides;
+    }
+    if (typeof oq.presentation_mode === "string" && oq.presentation_mode) {
+      payload.presentation_mode = oq.presentation_mode;
+    }
+    if (typeof oq.valuation_tier === "string" && oq.valuation_tier) {
+      payload.valuation_tier = oq.valuation_tier;
+    }
+    if (
+      typeof oq.valuation_upgrade_cost === "number" &&
+      oq.valuation_upgrade_cost > 0
+    ) {
+      payload.valuation_upgrade_cost = oq.valuation_upgrade_cost;
+    }
+    if (oq.size_override_confirmed === true) {
+      payload.size_override_confirmed = true;
+    }
     if (serviceType !== "white_glove" && moveSize) {
       payload.move_size = moveSize;
     }
@@ -810,6 +922,14 @@ export default function EditQuoteClient({
     factors,
     extraFromStops,
     extraToStops,
+    preferredTime,
+    arrivalWindow,
+    fromParking,
+    toParking,
+    fromLongCarry,
+    toLongCarry,
+    recommendedTier,
+    assemblyOverride,
   ]);
 
   // After multi-stop rows load, capture baseline so we do not call pricing until the user changes scope.
@@ -1409,7 +1529,151 @@ export default function EditQuoteClient({
               </select>
             </div>
           )}
+          {/* Scheduling: preferred time + arrival window — mirrors the
+              create form. These persist on quotes (preferred_time,
+              arrival_window) and used to be silently dropped on every
+              re-quote because the edit form never showed or sent them. */}
+          {serviceType !== "bin_rental" && serviceType !== "labour_only" && (
+            <>
+              <div>
+                <label className={labelClass}>Preferred Time</label>
+                <input
+                  type="time"
+                  value={preferredTime}
+                  onChange={(e) => setPreferredTime(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Arrival Window</label>
+                <select
+                  value={arrivalWindow}
+                  onChange={(e) => setArrivalWindow(e.target.value)}
+                  className={inputClass}
+                >
+                  {TIME_WINDOW_OPTIONS.map((label) => (
+                    <option key={label} value={label}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+          {/* Recommended tier — affects which add-ons are visible and
+              which tier is highlighted on the client quote page. */}
+          {(serviceType === "local_move" ||
+            serviceType === "long_distance") && (
+            <div>
+              <label className={labelClass}>Recommended Tier</label>
+              <select
+                value={recommendedTier}
+                onChange={(e) => setRecommendedTier(e.target.value)}
+                className={inputClass}
+              >
+                {RECOMMENDED_TIER_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
+
+        {/* Building access surcharges: parking + long carry. These flow
+            straight into the pricing engine via from_parking / to_parking
+            and from_long_carry / to_long_carry — the edit form used to
+            send neither, so re-generating would reset parking back to
+            "dedicated" and clear any long-carry flag. */}
+        {(serviceType === "local_move" ||
+          serviceType === "long_distance" ||
+          serviceType === "white_glove") && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div className="space-y-2">
+              <label className={labelClass}>From Parking</label>
+              <select
+                value={fromParking}
+                onChange={(e) =>
+                  setFromParking(e.target.value as ParkingOption)
+                }
+                className={inputClass}
+              >
+                {PARKING_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={fromLongCarry}
+                  onChange={(e) => setFromLongCarry(e.target.checked)}
+                  className="accent-[var(--gold)] w-3.5 h-3.5"
+                />
+                From address: long carry (+$75)
+              </label>
+            </div>
+            <div className="space-y-2">
+              <label className={labelClass}>To Parking</label>
+              <select
+                value={toParking}
+                onChange={(e) => setToParking(e.target.value as ParkingOption)}
+                className={inputClass}
+              >
+                {PARKING_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={toLongCarry}
+                  onChange={(e) => setToLongCarry(e.target.checked)}
+                  className="accent-[var(--gold)] w-3.5 h-3.5"
+                />
+                To address: long carry (+$75)
+              </label>
+            </div>
+          </div>
+        )}
+
+        {/* Assembly override — tri-state. Operators may force assembly on
+            for moves the auto-detector misses (high-end builds, dressers
+            without obvious item slugs), or force it off when the client
+            confirmed disassembly themselves. Null = auto. */}
+        {(serviceType === "local_move" ||
+          serviceType === "long_distance") && (
+          <div className="pt-2">
+            <label className={labelClass}>Assembly Required</label>
+            <div className="flex gap-2">
+              {[
+                { value: null, label: "Auto-detect" },
+                { value: true, label: "Yes — required" },
+                { value: false, label: "No — not required" },
+              ].map((opt) => {
+                const active = assemblyOverride === opt.value;
+                return (
+                  <button
+                    key={String(opt.value)}
+                    type="button"
+                    onClick={() => setAssemblyOverride(opt.value)}
+                    className={`px-3 py-1.5 rounded-md text-[11px] font-semibold border transition-colors ${
+                      active
+                        ? "bg-[var(--admin-primary-fill)] text-[var(--btn-text-on-accent)] border-[var(--admin-primary-fill)]"
+                        : "bg-[var(--bg)] text-[var(--tx2)] border-[var(--brd)] hover:border-[var(--admin-primary-fill)]/40"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ── Office move ── */}
         {serviceType === "office_move" && (
