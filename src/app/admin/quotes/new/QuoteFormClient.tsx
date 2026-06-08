@@ -5567,6 +5567,34 @@ export default function QuoteFormClient({
       );
       if (!confirmed) return;
     }
+    // Guard: assembly override is YES but inventory has zero items that
+    // require assembly. The client said yes on intake but the coordinator
+    // built the inventory without assembly items — so the quote will
+    // promise "assembly included" without billing or scheduling time for
+    // it, and the crew will arrive to a bed frame that nobody is paid to
+    // put together. Force the coordinator to either add assembly items
+    // or flip the override before the quote leaves the building.
+    if (
+      assemblyOverride === true &&
+      (serviceType === "local_move" || serviceType === "long_distance")
+    ) {
+      const fac = (quoteResult?.factors ?? {}) as Record<string, unknown>;
+      const items =
+        typeof fac.assembly_items_count === "number"
+          ? (fac.assembly_items_count as number)
+          : 0;
+      const minutes =
+        typeof fac.assembly_minutes === "number"
+          ? (fac.assembly_minutes as number)
+          : 0;
+      if (items === 0 && minutes === 0) {
+        toast(
+          "Assembly is set to Required but no inventory items have assembly. Add the items that need assembly OR switch the assembly flag to Auto / No before sending — otherwise the crew arrives to work they're not paid for.",
+          "alertTriangle",
+        );
+        return;
+      }
+    }
     setSending(true);
     try {
       const res = await fetch("/api/quotes/send", {

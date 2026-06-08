@@ -1155,6 +1155,32 @@ export default function EditQuoteClient({
     const quoteIdToSend = newQuoteId || oq.quote_id;
     if (!quoteIdToSend) return;
     setError(null);
+    // Mirror create-form guard: refuse to send when assembly_override
+    // is YES but the regenerated quote shows zero assembly items /
+    // minutes. Same reasoning as QuoteFormClient.handleSend — crew
+    // arriving to assemble a bed nobody billed for is the failure
+    // mode this catches.
+    if (
+      assemblyOverride === true &&
+      (serviceType === "local_move" || serviceType === "long_distance")
+    ) {
+      const fac = (newQuoteResult?.factors ??
+        {}) as Record<string, unknown>;
+      const items =
+        typeof fac.assembly_items_count === "number"
+          ? (fac.assembly_items_count as number)
+          : 0;
+      const minutes =
+        typeof fac.assembly_minutes === "number"
+          ? (fac.assembly_minutes as number)
+          : 0;
+      if (items === 0 && minutes === 0) {
+        setError(
+          "Assembly is set to Required but no inventory items have assembly. Add the items that need assembly OR switch Assembly to Auto / No, then Re-Generate before sending.",
+        );
+        return;
+      }
+    }
     setLinking(true);
     try {
       const res = await fetch("/api/quotes/send", {
@@ -1176,7 +1202,14 @@ export default function EditQuoteClient({
     } finally {
       setLinking(false);
     }
-  }, [newQuoteId, oq.quote_id, oq.hubspot_deal_id]);
+  }, [
+    newQuoteId,
+    oq.quote_id,
+    oq.hubspot_deal_id,
+    assemblyOverride,
+    serviceType,
+    newQuoteResult,
+  ]);
 
   const newPrice =
     newQuoteResult?.tiers?.essential?.price ??
