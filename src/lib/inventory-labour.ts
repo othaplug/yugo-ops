@@ -112,13 +112,45 @@ export function estimateLabourFromScore(
     crewSize = Math.max(crewSize, Math.round(catalogFloor));
   }
 
-  // Hard access: walk-up 3rd floor or higher adds +1 at that end
-  // Include walk_up_4th_plus — matches access_scores table and QuoteForm dropdown
-  const hardAccess3 = ["walk_up_3", "walk_up_3rd", "walk_up_4_plus", "walk_up_4plus", "walk_up_4th", "walk_up_4th_plus"];
-  if (fromAccess && hardAccess3.includes(fromAccess)) crewSize += 1;
-  if (toAccess && hardAccess3.includes(toAccess)) crewSize += 1;
+  // Hard access crew bump — walk-up-3rd-or-higher adds +1 at that end,
+  // but ONLY when the inventory is heavy enough that a third mover is
+  // operationally needed. Previously this was unconditional and would
+  // push a light 1BR (e.g. YG-30277, score 17.7) from crew=2 to crew=3
+  // just because the destination was a 3rd-floor walk-up, which then
+  // false-flagged the labour-rate validation (rate / crew × hours
+  // dropped below the $50 floor purely because we divided by an
+  // inflated crew). The threshold matches the score breakpoint that
+  // would otherwise auto-elevate to crew=3 anyway — so on light moves
+  // we stay at 2, and on moderately-loaded moves we still add the
+  // extra mover the stairs require.
+  const HARD_ACCESS_3 = [
+    "walk_up_3",
+    "walk_up_3rd",
+    "walk_up_4_plus",
+    "walk_up_4plus",
+    "walk_up_4th",
+    "walk_up_4th_plus",
+  ];
+  // Threshold matches the inventory-score breakpoint at line 98 that
+  // bumps crew 2→3 organically. Walk-up-3rd on a score >= 22 ends up
+  // back at the same crew=3 the engine would pick anyway; below that
+  // we trust the 2-mover crew + extra hours to cover the stairs.
+  const WALKUP_CREW_BUMP_THRESHOLD = 22;
+  const fromIsHard3 = fromAccess ? HARD_ACCESS_3.includes(fromAccess) : false;
+  const toIsHard3 = toAccess ? HARD_ACCESS_3.includes(toAccess) : false;
+  if (
+    (fromIsHard3 || toIsHard3) &&
+    inventoryScore >= WALKUP_CREW_BUMP_THRESHOLD
+  ) {
+    // Only count one bump per move, not one per end — two walk-ups on
+    // the same job add stair time, not necessarily a second extra
+    // mover. The 4th-floor rule below adds a second bump when warranted.
+    crewSize += 1;
+  }
 
-  // Walk-up 4th+ with moderate inventory = +1 crew (Section 2 rule)
+  // Walk-up 4th+ with moderate inventory = +1 crew (Section 2 rule).
+  // Kept as the secondary bump path because 4th-floor walk-ups
+  // legitimately need an extra body on every carry.
   const hardAccess4th = ["walk_up_4_plus", "walk_up_4plus", "walk_up_4th", "walk_up_4th_plus"];
   const has4thPlus = (fromAccess && hardAccess4th.includes(fromAccess)) || (toAccess && hardAccess4th.includes(toAccess));
   if (has4thPlus && inventoryScore > 35) crewSize += 1;
