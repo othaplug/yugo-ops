@@ -24,6 +24,7 @@ import {
   Images,
   Copy,
   ClockCounterClockwise,
+  PaperPlaneTilt,
 } from "@phosphor-icons/react";
 import {
   ADMIN_TOOLBAR_DESTRUCTIVE_ACTION_CLASS,
@@ -493,6 +494,47 @@ export default function QuoteDetailClient({
   const [photoRequestError, setPhotoRequestError] = useState<string | null>(
     null,
   );
+
+  // One-click send-to-client from the detail page. Previously the only
+  // way to send a draft quote was to open the multi-step form, page
+  // back to Step 4, and click Send Quote — which forced the operator
+  // through every step even when nothing needed changing. This button
+  // mirrors the form's send: it POSTs to /api/quotes/send with the
+  // quote_id; the route resolves the recipient email from the contact
+  // FK on its own, so no extra payload is needed here.
+  const [sendBusy, setSendBusy] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [sendStatus, setSendStatus] = useState<string>(
+    String(quote.status || "draft"),
+  );
+  const handleSendQuote = async () => {
+    if (sendBusy || sendStatus !== "draft") return;
+    setSendBusy(true);
+    setSendError(null);
+    try {
+      const res = await fetch("/api/quotes/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ quoteId: quote.quote_id }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        success?: boolean;
+      };
+      if (!res.ok || data.success === false) {
+        throw new Error(data.error ?? "Failed to send quote");
+      }
+      setSendStatus("sent");
+      // Reload server data so the page header flips Draft → Sent and
+      // the timeline picks up the new sent_at / expires_at.
+      router.refresh();
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Failed to send");
+    } finally {
+      setSendBusy(false);
+    }
+  };
 
   const handleRequestPhotos = async () => {
     if (photoRequestBusy || photoRequestSent) return;
@@ -1089,6 +1131,39 @@ export default function QuoteDetailClient({
 
           {/* Row 4: action buttons, wrap on mobile */}
           <div className="flex items-center gap-2 flex-wrap pt-1">
+            {/* Send-to-client — only meaningful on drafts. Hidden once
+                the quote is sent / accepted / declined, since the
+                "Client view" link covers visibility from that point on. */}
+            {sendStatus === "draft" && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void handleSendQuote()}
+                  disabled={sendBusy}
+                  className="inline-flex items-center justify-center gap-1.5 min-h-[30px] px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--btn-text-on-accent)] bg-[var(--admin-primary-fill)] hover:bg-[var(--admin-primary-fill-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  title="Send this quote to the client by email now"
+                >
+                  <PaperPlaneTilt
+                    weight="regular"
+                    className="w-3 h-3 shrink-0"
+                    aria-hidden
+                  />
+                  {sendBusy ? "Sending…" : "Send to client"}
+                  {!sendBusy && (
+                    <CaretRight
+                      weight="bold"
+                      className="w-3 h-3 shrink-0 opacity-90"
+                      aria-hidden
+                    />
+                  )}
+                </button>
+                {sendError && (
+                  <span className="text-[11px] text-[var(--red)]">
+                    {sendError}
+                  </span>
+                )}
+              </>
+            )}
             <button
               type="button"
               onClick={() => {
