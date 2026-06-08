@@ -1755,36 +1755,79 @@ async function calcResidential(
   /**
    * Size-adjusted Signature multiplier.
    *
-   * The flat 1.50× multiplier produces a labour rate above the market ceiling on small
-   * moves (studio / 1br). Scale it down for small jobs so the Signature card stays
-   * within the competitive ceiling. The platform_config value is treated as the 3BR
-   * baseline; smaller sizes proportionally reduce, larger sizes match or slightly
-   * exceed. Capped at the configured value so we never silently inflate.
+   * The flat platform_config Signature multiplier (currently 1.52×)
+   * produces an effective labour rate above the market ceiling on
+   * small moves (studio / 1br) — the engine then flags its own quote
+   * as "above_ceiling", embarrassingly visible to operators. Scale
+   * the multiplier down for small jobs so the Signature card stays
+   * inside the competitive band. The configured value is treated as
+   * the 3BR baseline; smaller sizes proportionally reduce. Capped at
+   * the configured value so we never silently inflate.
+   *
+   * Tightened 2026-06 after YG-30281 (1BR) flagged Signature
+   * effective rate $110/hr — above ceiling. 1BR factor pulled from
+   * 0.90 → 0.80 so a 1BR Signature lands ~×1.22 instead of ~×1.37
+   * over Essential. Studio similar.
    */
   const SIGNATURE_SIZE_FACTOR: Record<string, number> = {
-    studio: 0.86,    // ~1.30 if base is 1.50
-    "1br": 0.90,     // ~1.35
-    "2br": 0.97,     // ~1.45
-    "3br": 1.0,      // baseline (1.50)
-    "4br": 1.03,     // ~1.55
-    "5br_plus": 1.07, // ~1.60
-    partial: 0.90,
+    studio: 0.78,
+    "1br": 0.80,
+    "2br": 0.92,
+    "3br": 1.0,      // baseline
+    "4br": 1.03,
+    "5br_plus": 1.07,
+    partial: 0.80,
+  };
+  /**
+   * Size-adjusted Estate multiplier.
+   *
+   * Mirrors SIGNATURE_SIZE_FACTOR. The platform_config Estate
+   * multiplier (currently 3.35×) is calibrated for 3BR+ Estate moves
+   * — pack day + move day + unpack day, full white-glove crew, an
+   * Estate-tier truck. Applying that same flat multiplier to a 1BR
+   * with score 15.6 produces a $3,300 quote on a $288 cost basis
+   * (89% margin), which both reads as predatory to the operator AND
+   * is operationally indefensible — a 1BR Estate move doesn't
+   * actually consume Estate-grade resources.
+   *
+   * Scale Estate down hard for small sizes so the tier card reads as
+   * a sensible upgrade from Signature rather than an obvious overcharge.
+   * 3BR remains baseline (no change for the segment Estate was
+   * designed for).
+   */
+  const ESTATE_SIZE_FACTOR: Record<string, number> = {
+    studio: 0.55,
+    "1br": 0.62,
+    "2br": 0.80,
+    "3br": 1.0,      // baseline (×3.35)
+    "4br": 1.04,
+    "5br_plus": 1.08,
+    partial: 0.62,
   };
   const sizeKey = (input.move_size || "2br").toLowerCase().trim();
   const signatureMult = signatureMultBase * (SIGNATURE_SIZE_FACTOR[sizeKey] ?? 1.0);
+  const estateMultScaled = estateMult * (ESTATE_SIZE_FACTOR[sizeKey] ?? 1.0);
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
 
   // Step 5: TIER MULTIPLIERS applied to market-adjusted price
   // Step 6: TIERED LABOUR DELTA added after (so premium tiers pay more for overages)
+  // Both Signature and Estate use the size-scaled multiplier so small
+  // moves get a sensible upgrade ladder; 3BR is the baseline where
+  // the platform_config value lands exactly.
   let curBase = roundTo(subtotal * curatedMult, rounding) + tieredLabourDelta.essential;
   let sigBase = roundTo(subtotal * signatureMult, rounding) + tieredLabourDelta.signature;
   let estBase =
-    roundTo(subtotal * estateMult, rounding) + tieredLabourDelta.estate + estateMultiDayLabourUplift;
+    roundTo(subtotal * estateMultScaled, rounding) +
+    tieredLabourDelta.estate +
+    estateMultiDayLabourUplift;
 
   pd("Step 7 — tier multipliers & rounding (config):", {
     tier_essential_multiplier: curatedMult,
     tier_signature_multiplier: signatureMult,
-    tier_estate_multiplier: estateMult,
+    tier_signature_size_factor: SIGNATURE_SIZE_FACTOR[sizeKey] ?? 1.0,
+    tier_estate_multiplier_base: estateMult,
+    tier_estate_multiplier_scaled: estateMultScaled,
+    tier_estate_size_factor: ESTATE_SIZE_FACTOR[sizeKey] ?? 1.0,
     rounding_nearest: rounding,
     minimum_job_amount: minJob,
     tax_rate: taxRate,
