@@ -2031,6 +2031,14 @@ async function calcResidential(
       surcharges_total: surchargesTotal,
       market_adjusted_price: marketAdjustedPrice,
       date_multiplier: dateMult.multiplier,
+      // Sub-breakdown of where the date_multiplier came from so the
+      // operator (and the client-facing breakdown) can explain WHY
+      // a Sunday move costs more. Without this, the form just shows
+      // "Date factor: 1.155" with no context — operators on YG-30277
+      // asked where the Sunday premium went because the multiplier
+      // was being silently applied without a labelled line item.
+      date_multiplier_factors:
+        (dateMult as { factors?: Record<string, number> }).factors ?? null,
       neighbourhood_multiplier: neighbourhood.multiplier,
       neighbourhood_tier: neighbourhood.tier,
       access_surcharge: accessSurcharge,

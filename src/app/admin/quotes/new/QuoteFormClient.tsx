@@ -14603,6 +14603,11 @@ function PriceBreakdownResidential({
     typeof factors.date_multiplier === "number"
       ? factors.date_multiplier
       : null;
+  const dateMultFactors =
+    (factors.date_multiplier_factors as
+      | Record<string, number>
+      | null
+      | undefined) ?? null;
   const neighMult =
     typeof factors.neighbourhood_multiplier === "number"
       ? factors.neighbourhood_multiplier
@@ -14767,7 +14772,71 @@ function PriceBreakdownResidential({
             />
           )}
           {dateMult !== null && (
-            <Row label="Date factor" value={fmtMod(dateMult)} />
+            <Row
+              label="Date factor"
+              value={fmtMod(dateMult)}
+              sub={(() => {
+                // Render the sub-breakdown so "Date factor 1.155"
+                // becomes "Weekend +5% · Peak season +10% · Month-end
+                // +5%". Without this the multiplier looks like a magic
+                // number — operators have asked specifically where
+                // Sunday premiums "went" because there's no labelled
+                // line. The factors map is built by
+                // computeCalendarDateMultiplier in the engine.
+                if (!dateMultFactors) return undefined;
+                const parts: string[] = [];
+                const fmt = (n: number) => {
+                  const pct = Math.round((n - 1) * 100);
+                  return pct > 0
+                    ? `+${pct}%`
+                    : pct < 0
+                      ? `${pct}%`
+                      : "no change";
+                };
+                if (
+                  typeof dateMultFactors.weekend === "number" &&
+                  dateMultFactors.weekend !== 1
+                ) {
+                  parts.push(`Weekend ${fmt(dateMultFactors.weekend)}`);
+                }
+                if (
+                  typeof dateMultFactors.season === "number" &&
+                  dateMultFactors.season !== 1
+                ) {
+                  parts.push(
+                    `${
+                      dateMultFactors.season >= 1.1
+                        ? "Peak season"
+                        : "Shoulder season"
+                    } ${fmt(dateMultFactors.season)}`,
+                  );
+                }
+                if (
+                  typeof dateMultFactors.month_boundary === "number" &&
+                  dateMultFactors.month_boundary !== 1
+                ) {
+                  parts.push(
+                    `Month-end/start ${fmt(dateMultFactors.month_boundary)}`,
+                  );
+                }
+                if (
+                  typeof dateMultFactors.raw_before_cap === "number" &&
+                  dateMultFactors.raw_before_cap >
+                    (typeof dateMultFactors.cap_max === "number"
+                      ? dateMultFactors.cap_max
+                      : 1.2)
+                ) {
+                  parts.push(
+                    `capped at ${fmtMod(
+                      typeof dateMultFactors.cap_max === "number"
+                        ? dateMultFactors.cap_max
+                        : 1.2,
+                    )}`,
+                  );
+                }
+                return parts.length > 0 ? parts.join(" · ") : undefined;
+              })()}
+            />
           )}
           {neighMult !== null && (
             <Row
