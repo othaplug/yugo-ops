@@ -27,6 +27,9 @@ import {
 } from "@/lib/quotes/quote-field-labels";
 import { serviceTypeDisplayLabel, getDisplayLabel } from "@/lib/displayLabels";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
+import TierPriceOverrideEditor, {
+  type TierPriceOverrideMap,
+} from "@/app/admin/quotes/new/TierPriceOverrideEditor";
 
 // Local mirror of QuoteFormClient's PARKING_OPTIONS. Kept inline rather
 // than exported so the create form remains the source of truth — if the
@@ -420,6 +423,58 @@ export default function EditQuoteClient({
     priorOverrides?.truck ? priorOverrides.truck.to : "",
   );
 
+  // ── Per-tier price override ──────────────────────────────
+  // Operators set absolute prices for one or more tiers (e.g. match a
+  // competitor on Estate without dropping Essential/Signature). Pre-
+  // fill from quotes.tier_price_overrides so re-quote round-trips the
+  // setting instead of forcing the operator to re-enter it. Same
+  // editor component used in the create form so the UX matches.
+  const [tierPriceOverrides, setTierPriceOverrides] =
+    useState<TierPriceOverrideMap>(() => {
+      const raw = oq.tier_price_overrides as
+        | Partial<
+            Record<
+              "essential" | "signature" | "estate",
+              { price?: number | string; reason?: string }
+            >
+          >
+        | null
+        | undefined;
+      if (!raw || typeof raw !== "object") return {};
+      const out: TierPriceOverrideMap = {};
+      for (const tk of ["essential", "signature", "estate"] as const) {
+        const e = raw[tk];
+        if (!e) continue;
+        const p =
+          typeof e.price === "number"
+            ? String(e.price)
+            : typeof e.price === "string"
+              ? e.price
+              : "";
+        const r = typeof e.reason === "string" ? e.reason : "";
+        if (!p) continue;
+        out[tk] = { price: p, reason: r };
+      }
+      return out;
+    });
+
+  // ── Coordinator global pre-tax price override ─────────────
+  // Single-number override that scales all tiers proportionally
+  // (distinct from the per-tier override above). Stored on quotes as
+  // override_price_pre_tax + override_reason. Pre-fill so editing the
+  // quote keeps the operator's earlier override intact unless they
+  // explicitly clear it.
+  const [quotePreTaxOverride, setQuotePreTaxOverride] = useState<string>(
+    typeof oq.override_price_pre_tax === "number" &&
+      oq.override_price_pre_tax > 0
+      ? String(oq.override_price_pre_tax)
+      : "",
+  );
+  const [quotePreTaxOverrideReason, setQuotePreTaxOverrideReason] =
+    useState<string>(
+      typeof oq.override_reason === "string" ? oq.override_reason : "",
+    );
+
   // ── Office move fields ────────────────────────────────────
   const [squareFootage, setSquareFootage] = useState(
     String(factors.square_footage || oq.square_footage || ""),
@@ -795,18 +850,51 @@ export default function EditQuoteClient({
     if (truckOverride.trim()) {
       payload.truck_size_override = truckOverride.trim();
     }
+    // Per-tier price override — read from LIVE editor state (previously
+    // this was a stale carry-forward of oq.tier_price_overrides, which
+    // meant the operator could open the form but couldn't actually
+    // change the override). Same sanitisation as the create form:
+    // positive price + reason >= 3 chars or the entry is dropped.
+    if (
+      serviceType === "local_move" ||
+      serviceType === "long_distance"
+    ) {
+      const cleanedOverrides: Record<
+        string,
+        { price: number; reason: string }
+      > = {};
+      for (const tk of ["essential", "signature", "estate"] as const) {
+        const entry = tierPriceOverrides[tk];
+        if (!entry) continue;
+        const p = parseFloat(entry.price);
+        const r = entry.reason.trim();
+        if (!Number.isFinite(p) || p <= 0 || r.length < 3) continue;
+        cleanedOverrides[tk] = { price: Math.round(p), reason: r };
+      }
+      if (Object.keys(cleanedOverrides).length > 0) {
+        payload.tier_price_overrides = cleanedOverrides;
+      }
+    }
+    // Coordinator global pre-tax override (separate field). Only sent
+    // when a positive number is entered AND a reason is provided —
+    // server validates the same rule but skipping invalid input here
+    // keeps the payload clean.
+    if (quotePreTaxOverride.trim()) {
+      const n = parseFloat(quotePreTaxOverride.replace(/[^0-9.]/g, ""));
+      if (
+        Number.isFinite(n) &&
+        n > 0 &&
+        quotePreTaxOverrideReason.trim().length >= 3
+      ) {
+        payload.quote_price_override = Math.round(n);
+        payload.quote_price_override_reason =
+          quotePreTaxOverrideReason.trim();
+      }
+    }
     // Carry-forward of operator-set fields that have no dedicated UI on
     // this page. Without these, hitting Re-Generate would silently drop
-    // the per-tier override, presentation mode, valuation upgrade, and
-    // the size-conflict acknowledgement that the operator already made
-    // on the create form.
-    if (
-      oq.tier_price_overrides &&
-      typeof oq.tier_price_overrides === "object" &&
-      Object.keys(oq.tier_price_overrides as Record<string, unknown>).length > 0
-    ) {
-      payload.tier_price_overrides = oq.tier_price_overrides;
-    }
+    // presentation mode, valuation upgrade, and the size-conflict
+    // acknowledgement that the operator already made on the create form.
     if (typeof oq.presentation_mode === "string" && oq.presentation_mode) {
       payload.presentation_mode = oq.presentation_mode;
     }
@@ -987,6 +1075,9 @@ export default function EditQuoteClient({
     crewOverride,
     hoursOverride,
     truckOverride,
+    tierPriceOverrides,
+    quotePreTaxOverride,
+    quotePreTaxOverrideReason,
   ]);
 
   // After multi-stop rows load, capture baseline so we do not call pricing until the user changes scope.
@@ -1869,6 +1960,107 @@ export default function EditQuoteClient({
                   : null}
               </p>
             )}
+          </div>
+        )}
+
+        {/* ── Per-tier price override + global coordinator override ──
+            Same UX as the create form (admin/quotes/new). Operator
+            had no way to set / change overrides on the edit page
+            until this block landed — the carry-forward at the API
+            payload level preserved an existing override but didn't
+            let it be modified.
+
+            Per-tier: pin one or more tiers to absolute prices.
+            Global: scale all tiers proportionally to a single
+            pre-tax target. Both validated server-side too. */}
+        {(serviceType === "local_move" ||
+          serviceType === "long_distance") && (
+          <div className="pt-2">
+            <SectionDivider label="Price overrides" />
+            <div className="mt-3">
+              <TierPriceOverrideEditor
+                value={tierPriceOverrides}
+                onChange={setTierPriceOverrides}
+                enginePrices={{
+                  essential:
+                    typeof newQuoteResult?.tiers?.essential?.price === "number"
+                      ? newQuoteResult.tiers.essential.price
+                      : typeof oq.tiers?.essential?.price === "number"
+                        ? oq.tiers.essential.price
+                        : undefined,
+                  signature:
+                    typeof newQuoteResult?.tiers?.signature?.price === "number"
+                      ? newQuoteResult.tiers.signature.price
+                      : typeof oq.tiers?.signature?.price === "number"
+                        ? oq.tiers.signature.price
+                        : undefined,
+                  estate:
+                    typeof newQuoteResult?.tiers?.estate?.price === "number"
+                      ? newQuoteResult.tiers.estate.price
+                      : typeof oq.tiers?.estate?.price === "number"
+                        ? oq.tiers.estate.price
+                        : undefined,
+                }}
+                savedPrices={{
+                  essential:
+                    typeof newQuoteResult?.tiers?.essential?.price === "number"
+                      ? newQuoteResult.tiers.essential.price
+                      : typeof oq.tiers?.essential?.price === "number"
+                        ? oq.tiers.essential.price
+                        : undefined,
+                  signature:
+                    typeof newQuoteResult?.tiers?.signature?.price === "number"
+                      ? newQuoteResult.tiers.signature.price
+                      : typeof oq.tiers?.signature?.price === "number"
+                        ? oq.tiers.signature.price
+                        : undefined,
+                  estate:
+                    typeof newQuoteResult?.tiers?.estate?.price === "number"
+                      ? newQuoteResult.tiers.estate.price
+                      : typeof oq.tiers?.estate?.price === "number"
+                        ? oq.tiers.estate.price
+                        : undefined,
+                }}
+              />
+            </div>
+
+            <div className="rounded-xl border border-[var(--brd)] bg-white p-4 mt-3 space-y-2">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--tx2)]">
+                Coordinator price override (pre-tax)
+              </div>
+              <p className="text-[11px] text-[var(--tx2)] leading-snug">
+                Optional. Sets a single pre-tax total that scales all tiers
+                proportionally. Reason required when an amount is entered.
+                For a single-tier match use the per-tier editor above.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                <div>
+                  <label className={labelClass}>Override amount ($)</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={quotePreTaxOverride}
+                    onChange={(e) => setQuotePreTaxOverride(e.target.value)}
+                    placeholder="Leave blank for engine price"
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>
+                    Reason (required if overriding)
+                  </label>
+                  <input
+                    type="text"
+                    value={quotePreTaxOverrideReason}
+                    onChange={(e) =>
+                      setQuotePreTaxOverrideReason(e.target.value)
+                    }
+                    placeholder="e.g. Competitive match, stairs not in model…"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
