@@ -2280,26 +2280,16 @@ export default function EditQuoteClient({
                   serviceType === "office_move" ? "commercial" : "residential"
                 }
               />
-              {/* Box count (also wired via InventoryInput boxCount above for score/labour) */}
-              {(serviceType === "local_move" ||
-                serviceType === "long_distance") && (
-                <div className="mt-4">
-                  <label className={labelClass}>
-                    Client Boxes{" "}
-                    <span className="font-normal text-[var(--tx3)]">
-                      (affects volume)
-                    </span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={clientBoxCount}
-                    onChange={(e) => setClientBoxCount(e.target.value)}
-                    className={`${inputClass} max-w-[160px]`}
-                    placeholder="e.g. 20"
-                  />
-                </div>
-              )}
+              {/* Box count was previously rendered here as a SECOND
+                  input alongside the dropdown inside InventoryInput,
+                  showing the same clientBoxCount value through two
+                  different widgets — the dropdown shows the range
+                  label ("5–10 boxes") while the numeric below showed
+                  the exact count ("8"), confusing operators reading
+                  the form. The InventoryInput dropdown already
+                  exposes a "Custom" option that opens an inline
+                  numeric for exact counts, so the duplicate field
+                  was redundant. */}
             </div>
           )}
 
