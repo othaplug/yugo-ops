@@ -43,7 +43,8 @@
       "Bash(cp /Users/kog/Developer/yugo-ops/.claude/worktrees/intelligent-bhaskara-9bb934/supabase/migrations/20260506110000_rebrand_domain_opsplus_to_yugoplus.sql /Users/kog/Developer/yugo-ops/supabase/migrations/)",
       "Bash(gh pr create --title 'feat: quote pipeline fix, HubSpot dupe resolution, GCal integration, domain rebrand' --base main --head claude/intelligent-bhaskara-9bb934 --body ' *)",
       "Bash(gh pr *)",
-      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")"
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(curl -s 'https://mpaqqjhxrgxuwumirwxo.supabase.co/rest/v1/quotes?select=tier_ops_snapshot,essential_addons&limit=1' -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wYXFxamh4cmd4dXd1bWlyd3hvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxMDg4OCwiZXhwIjoyMDg2NTg2ODg4fQ.kjolSJ-IXOIy7BjCSnTxA0zggDEpqGtoS_dXrfiV34I' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wYXFxamh4cmd4dXd1bWlyd3hvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTAxMDg4OCwiZXhwIjoyMDg2NTg2ODg4fQ.kjolSJ-IXOIy7BjCSnTxA0zggDEpqGtoS_dXrfiV34I')"
     ]
   }
 }

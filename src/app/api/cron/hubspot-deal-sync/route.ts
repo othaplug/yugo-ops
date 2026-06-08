@@ -668,6 +668,9 @@ export async function GET(req: NextRequest) {
       source: "cron_hubspot_deal_sync",
       event_type: results.failures > 0 ? "partial_failure" : "ok",
       payload: {
+        // Deploy marker — bumped 2026-06-08 to confirm enum fixes
+        // (L: service_type, M: package_type) are live.
+        build: "2026-06-08-enum-fix",
         quotes_synced: results.quotes_synced,
         moves_synced: results.moves_synced,
         moves_deal_created: results.moves_deal_created,
