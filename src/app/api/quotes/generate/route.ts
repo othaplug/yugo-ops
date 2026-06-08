@@ -197,6 +197,18 @@ interface QuoteInput {
   // Labour only — schedule premiums
   labour_weekend?: boolean;
   labour_after_hours?: boolean;
+  /**
+   * Operator overrides for residential / long-distance labour estimate.
+   * The engine's auto-estimate (estimateLabourFromScore) can be too
+   * aggressive in edge cases — e.g. the walk-up-3rd unconditional +1
+   * crew bump that pushed YG-30277 from 2 → 3 movers despite a light
+   * 1BR inventory. These let a coordinator pin crew / hours / truck
+   * to operationally correct values. All optional; engine auto-picks
+   * when unset. Stored in factors_applied.operator_overrides for audit.
+   */
+  crew_size_override?: number;
+  est_hours_override?: number;
+  truck_size_override?: string;
   /** Pre-tax price override (all service types except bin_rental); requires `quote_price_override_reason`. */
   quote_price_override?: number;
   quote_price_override_reason?: string;
@@ -4414,6 +4426,97 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       labour = { ...labour, crewSize: flooredCrew };
     }
   }
+
+  // Operator overrides — applied AFTER the move-size floor so the floor
+  // still acts as a safety net, but coordinator wins for tighter values.
+  // Pin crew / hours / truck when set. The hours-range string is
+  // recomputed so the live preview shows the override (not the stale
+  // engine estimate). Recorded in factors_applied.operator_overrides
+  // for the audit trail.
+  const operatorOverridesApplied: {
+    crew?: { from: number; to: number };
+    hours?: { from: number; to: number };
+    truck?: { from: string; to: string };
+  } = {};
+  if (
+    labour &&
+    (input.service_type === "local_move" ||
+      input.service_type === "long_distance")
+  ) {
+    if (
+      typeof input.crew_size_override === "number" &&
+      Number.isFinite(input.crew_size_override) &&
+      input.crew_size_override >= 1 &&
+      input.crew_size_override <= 8 &&
+      input.crew_size_override !== labour.crewSize
+    ) {
+      operatorOverridesApplied.crew = {
+        from: labour.crewSize,
+        to: Math.round(input.crew_size_override),
+      };
+      labour = {
+        ...labour,
+        crewSize: Math.round(input.crew_size_override),
+      };
+    }
+    if (
+      typeof input.est_hours_override === "number" &&
+      Number.isFinite(input.est_hours_override) &&
+      input.est_hours_override >= 1 &&
+      input.est_hours_override <= 24 &&
+      Math.abs(input.est_hours_override - labour.estimatedHours) > 0.01
+    ) {
+      const newHours = Math.round(input.est_hours_override * 2) / 2;
+      const lo = Math.max(1, Math.round((newHours * 0.93) * 2) / 2);
+      const hi = Math.round((newHours * 1.07) * 2) / 2;
+      operatorOverridesApplied.hours = {
+        from: labour.estimatedHours,
+        to: newHours,
+      };
+      labour = {
+        ...labour,
+        estimatedHours: newHours,
+        hoursRange:
+          lo === hi ? `${lo} hours` : `${lo}–${hi} hours`,
+      };
+    }
+    if (
+      typeof input.truck_size_override === "string" &&
+      input.truck_size_override.trim() &&
+      input.truck_size_override.trim() !== labour.truckSize
+    ) {
+      const tk = input.truck_size_override.trim();
+      operatorOverridesApplied.truck = {
+        from: labour.truckSize,
+        to: tk,
+      };
+      labour = { ...labour, truckSize: tk };
+    }
+    // Mirror the same overrides onto the no-assembly variant used for
+    // Essential tier pricing so the operator's crew/hours pin doesn't
+    // get bypassed when assembly is required.
+    if (labourClientNoAssembly) {
+      if (operatorOverridesApplied.crew) {
+        labourClientNoAssembly = {
+          ...labourClientNoAssembly,
+          crewSize: operatorOverridesApplied.crew.to,
+        };
+      }
+      if (operatorOverridesApplied.hours) {
+        labourClientNoAssembly = {
+          ...labourClientNoAssembly,
+          estimatedHours: operatorOverridesApplied.hours.to,
+        };
+      }
+      if (operatorOverridesApplied.truck) {
+        labourClientNoAssembly = {
+          ...labourClientNoAssembly,
+          truckSize: operatorOverridesApplied.truck.to,
+        };
+      }
+    }
+  }
+
   // Residential tier math must use the same labour model as `labour` in the JSON response
   // (client on-job hours). A separate ops-only estimate (full cycle / return) inflated preview
   // and new saves vs the crew/hours line coordinators see.
@@ -4470,6 +4573,16 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       // Use labour (inventory-based or base_rates fallback) when available so quote shows correct crew/hours
       displayCrew = labour ? labour.crewSize : res.minCrew;
       displayHours = labour ? labour.estimatedHours : res.estHours;
+      // Audit: stash operator overrides into factors_applied so the
+      // admin detail page can show "Crew 2 (override; engine wanted 3)"
+      // and so re-quote can re-read the override on edit. Only present
+      // when something was actually overridden.
+      if (Object.keys(operatorOverridesApplied).length > 0) {
+        factors = {
+          ...factors,
+          operator_overrides: operatorOverridesApplied,
+        };
+      }
       break;
     }
     case "office_move": {
@@ -4482,6 +4595,16 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       const res = await calcLongDistance(sb, input, config, distInfo, neighbourhood, dateMult, addonResult);
       custom_price = res.custom_price;
       factors = res.factors;
+      // Operator overrides audit (same shape as local_move). Long-
+      // distance doesn't currently consume labour overrides in its own
+      // calc, but we still surface the audit trail so the operator can
+      // see what they pinned.
+      if (Object.keys(operatorOverridesApplied).length > 0) {
+        factors = {
+          ...factors,
+          operator_overrides: operatorOverridesApplied,
+        };
+      }
       break;
     }
     case "single_item": {

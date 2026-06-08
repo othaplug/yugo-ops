@@ -395,6 +395,31 @@ export default function EditQuoteClient({
     },
   );
 
+  // ── Operator overrides for crew / hours / truck ──────────
+  // Engine auto-picks these from inventory score + access; coordinator
+  // can pin them when the auto-pick is wrong (e.g. walk-up-3rd was
+  // bumping a light 1BR from crew 2 → 3 on YG-30277). Empty string =
+  // no override; engine auto-picks. Pre-fill from the prior overrides
+  // stored in factors_applied.operator_overrides so re-quote is a
+  // true round-trip.
+  const priorOverrides =
+    (factors.operator_overrides as
+      | {
+          crew?: { from: number; to: number };
+          hours?: { from: number; to: number };
+          truck?: { from: string; to: string };
+        }
+      | undefined) ?? undefined;
+  const [crewOverride, setCrewOverride] = useState<string>(
+    priorOverrides?.crew ? String(priorOverrides.crew.to) : "",
+  );
+  const [hoursOverride, setHoursOverride] = useState<string>(
+    priorOverrides?.hours ? String(priorOverrides.hours.to) : "",
+  );
+  const [truckOverride, setTruckOverride] = useState<string>(
+    priorOverrides?.truck ? priorOverrides.truck.to : "",
+  );
+
   // ── Office move fields ────────────────────────────────────
   const [squareFootage, setSquareFootage] = useState(
     String(factors.square_footage || oq.square_footage || ""),
@@ -741,6 +766,19 @@ export default function EditQuoteClient({
     if (assemblyOverride !== null) {
       payload.assembly_override = assemblyOverride;
     }
+    // Operator overrides — pin crew / hours / truck when coordinator
+    // sees the engine's auto-estimate is wrong. Empty string = auto.
+    const crewN = parseInt(crewOverride, 10);
+    if (Number.isFinite(crewN) && crewN >= 1 && crewN <= 8) {
+      payload.crew_size_override = crewN;
+    }
+    const hoursN = parseFloat(hoursOverride);
+    if (Number.isFinite(hoursN) && hoursN >= 1 && hoursN <= 24) {
+      payload.est_hours_override = hoursN;
+    }
+    if (truckOverride.trim()) {
+      payload.truck_size_override = truckOverride.trim();
+    }
     // Carry-forward of operator-set fields that have no dedicated UI on
     // this page. Without these, hitting Re-Generate would silently drop
     // the per-tier override, presentation mode, valuation upgrade, and
@@ -930,6 +968,9 @@ export default function EditQuoteClient({
     toLongCarry,
     recommendedTier,
     assemblyOverride,
+    crewOverride,
+    hoursOverride,
+    truckOverride,
   ]);
 
   // After multi-stop rows load, capture baseline so we do not call pricing until the user changes scope.
@@ -1672,6 +1713,113 @@ export default function EditQuoteClient({
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* Operator overrides — crew / hours / truck. Engine auto-picks
+            from inventory + access; this is the escape hatch when the
+            auto-pick is operationally wrong. Leave blank for auto.
+            Currently the engine's walk-up-3rd unconditional crew bump
+            forces a third mover on light 1BR walk-ups — until that
+            engine rule is loosened, this is how operators ship a
+            correct quote. */}
+        {(serviceType === "local_move" ||
+          serviceType === "long_distance") && (
+          <div className="pt-2">
+            <SectionDivider label="Crew / Hours / Truck (operator override)" />
+            <p className="text-[11px] text-[var(--tx3)] mt-2 mb-3 leading-snug">
+              Leave blank for the engine&apos;s auto-pick. Set values
+              when the auto-pick is wrong for the job (e.g. a light 1BR
+              with a 3rd-floor walk-up shouldn&apos;t need 3 movers).
+              The override is logged to{" "}
+              <span className="font-medium text-[var(--tx2)]">
+                factors_applied.operator_overrides
+              </span>{" "}
+              for audit.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className={labelClass}>
+                  Crew size{" "}
+                  {livePreview?.labour?.crewSize ? (
+                    <span className="text-[var(--tx3)] font-normal">
+                      (engine: {livePreview.labour.crewSize})
+                    </span>
+                  ) : null}
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={8}
+                  step={1}
+                  value={crewOverride}
+                  onChange={(e) => setCrewOverride(e.target.value)}
+                  placeholder="auto"
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>
+                  Estimated hours{" "}
+                  {livePreview?.labour?.estimatedHours ? (
+                    <span className="text-[var(--tx3)] font-normal">
+                      (engine: {livePreview.labour.estimatedHours})
+                    </span>
+                  ) : null}
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={24}
+                  step={0.5}
+                  value={hoursOverride}
+                  onChange={(e) => setHoursOverride(e.target.value)}
+                  placeholder="auto"
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>
+                  Truck size{" "}
+                  {livePreview?.labour?.truckSize ? (
+                    <span className="text-[var(--tx3)] font-normal">
+                      (engine: {livePreview.labour.truckSize})
+                    </span>
+                  ) : null}
+                </label>
+                <select
+                  value={truckOverride}
+                  onChange={(e) => setTruckOverride(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Auto</option>
+                  <option value="sprinter">Sprinter</option>
+                  <option value="16ft">16ft</option>
+                  <option value="20ft">20ft</option>
+                  <option value="24ft">24ft</option>
+                  <option value="26ft">26ft</option>
+                </select>
+              </div>
+            </div>
+            {priorOverrides && (
+              <p className="text-[10px] text-[var(--tx3)] mt-2 leading-snug">
+                Last re-generate used:{" "}
+                {priorOverrides.crew
+                  ? `crew ${priorOverrides.crew.to} (engine wanted ${priorOverrides.crew.from})`
+                  : null}
+                {priorOverrides.crew &&
+                (priorOverrides.hours || priorOverrides.truck)
+                  ? " · "
+                  : ""}
+                {priorOverrides.hours
+                  ? `hours ${priorOverrides.hours.to} (engine wanted ${priorOverrides.hours.from})`
+                  : null}
+                {priorOverrides.hours && priorOverrides.truck ? " · " : ""}
+                {priorOverrides.truck
+                  ? `truck ${priorOverrides.truck.to} (engine wanted ${priorOverrides.truck.from})`
+                  : null}
+              </p>
+            )}
           </div>
         )}
 
