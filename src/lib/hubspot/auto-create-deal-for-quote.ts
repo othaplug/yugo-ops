@@ -224,8 +224,10 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
     pipeline: pipelineId,
     dealstage: stageId,
     quote_url: quoteUrl,
-    firstname: firstName,
-    lastname: lastName,
+    // firstname / lastname removed — those are Contact properties, not
+    // Deal properties. Writing them to the deal throws 400
+    // PROPERTY_DOESNT_EXIST and kills the create. The names attach via
+    // the deal→contact association built below.
     package_type: dealPackageType(svcType, false, String(quote.recommended_tier ?? "").trim()),
     ...yugoJobProperties({ jobId: quoteIdText, jobNo, serviceType: svcType }),
     ...buildAllYugoProperties({

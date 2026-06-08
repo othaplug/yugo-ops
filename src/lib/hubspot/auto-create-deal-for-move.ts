@@ -133,8 +133,10 @@ export async function autoCreateHubSpotDealForNewMove(opts: {
     pipeline: pipelineId,
     dealstage: stageId,
     quote_url: moveAdminUrl,
-    firstname: firstName,
-    lastname: lastName,
+    // firstname / lastname removed — those are Contact properties, not
+    // Deal properties. Writing them to the deal payload throws
+    // 400 PROPERTY_DOESNT_EXIST and kills the whole create. The names
+    // attach via the deal→contact association built below.
     package_type: dealPackageType(svcType, move.is_pm_move, String(move.tier_selected ?? "").trim()),
     ...yugoJobProperties({ jobId: moveCode, jobNo, serviceType: svcType }),
     ...buildAllYugoProperties({

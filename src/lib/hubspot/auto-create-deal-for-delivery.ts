@@ -160,8 +160,12 @@ export async function autoCreateHubSpotDealForNewDelivery(opts: {
     pipeline: pipelineId,
     dealstage: stageId,
     quote_url: deliveryAdminUrl,
-    firstname: firstName,
-    lastname: lastName,
+    // NOTE: firstname / lastname live on the HubSpot Contact, not the
+    // Deal. Writing them to the deal payload throws
+    //   400 PROPERTY_DOESNT_EXIST: "firstname does not exist"
+    // and silently kills the whole create. Removed — the names are
+    // already attached via the deal→contact association built below
+    // (findOrCreateHubSpotContact + association block).
     // HubSpot enum: Yugo Basic | Yugo Plus+ | Yugo VIP. Was "b2b" raw,
     // which trips 400 INVALID_OPTION on every create. B2B deliveries
     // surface as Yugo Plus+ for pipeline reporting parity with other
