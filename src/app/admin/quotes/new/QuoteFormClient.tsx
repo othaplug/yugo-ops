@@ -5595,6 +5595,43 @@ export default function QuoteFormClient({
         return;
       }
     }
+    // Guard: per-tier override entered but not yet regenerated. The live
+    // preview overlays the override on quoteResult.tiers so the right
+    // rail SHOWS $5,500 immediately when typed — but the saved quote row
+    // still carries the engine prices until Regenerate runs. Sending in
+    // this state ships the OLD prices to the client (the bug on YG-30282:
+    // operator overrode Estate to $5,500, the rail showed $5,500, the
+    // client view rendered $5,350). Refuse the send and tell the
+    // operator exactly which tier is stale.
+    if (
+      (serviceType === "local_move" || serviceType === "long_distance") &&
+      quoteResult?.tiers
+    ) {
+      const stale: string[] = [];
+      for (const tk of ["essential", "signature", "estate"] as const) {
+        const entry = tierPriceOverrides[tk];
+        if (!entry) continue;
+        const overridePrice = parseFloat(entry.price);
+        if (!Number.isFinite(overridePrice) || overridePrice <= 0) continue;
+        if (entry.reason.trim().length < 3) continue;
+        const savedPrice = quoteResult.tiers?.[tk]?.price ?? null;
+        if (
+          typeof savedPrice === "number" &&
+          Math.abs(overridePrice - savedPrice) >= 1
+        ) {
+          stale.push(
+            `${tk.charAt(0).toUpperCase() + tk.slice(1)} ($${savedPrice} → $${Math.round(overridePrice)})`,
+          );
+        }
+      }
+      if (stale.length > 0) {
+        toast(
+          `Per-tier override is set but the saved quote still has the old price for ${stale.join(", ")}. Click Regenerate to apply, then Send Quote.`,
+          "alertTriangle",
+        );
+        return;
+      }
+    }
     setSending(true);
     try {
       const res = await fetch("/api/quotes/send", {
@@ -11153,6 +11190,26 @@ export default function QuoteFormClient({
                 value={tierPriceOverrides}
                 onChange={setTierPriceOverrides}
                 enginePrices={{
+                  essential:
+                    typeof quoteResult?.tiers?.essential?.price === "number"
+                      ? quoteResult.tiers.essential.price
+                      : undefined,
+                  signature:
+                    typeof quoteResult?.tiers?.signature?.price === "number"
+                      ? quoteResult.tiers.signature.price
+                      : undefined,
+                  estate:
+                    typeof quoteResult?.tiers?.estate?.price === "number"
+                      ? quoteResult.tiers.estate.price
+                      : undefined,
+                }}
+                // savedPrices mirrors enginePrices for the create form
+                // (both come from quoteResult.tiers, i.e. the
+                // last-generated quote). They diverge from the typed
+                // override the moment the operator edits a field,
+                // which is what the "Pending · regenerate" badge keys
+                // off of inside the editor.
+                savedPrices={{
                   essential:
                     typeof quoteResult?.tiers?.essential?.price === "number"
                       ? quoteResult.tiers.essential.price

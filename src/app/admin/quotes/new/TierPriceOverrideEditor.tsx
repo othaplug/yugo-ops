@@ -36,6 +36,15 @@ type Props = {
   onChange: (next: TierPriceOverrideMap) => void;
   /** Engine-natural prices for each tier (shown as the "was" price). Optional. */
   enginePrices?: Partial<Record<TierKey, number>>;
+  /**
+   * What's currently SAVED on the most-recent generated quote, per tier.
+   * When an override value diverges from this, we badge the row "PENDING
+   * — click Regenerate". Without this hint operators on YG-30282 sent a
+   * quote where the right rail showed the overridden $5,500 but the
+   * saved tiers still had $5,350, and the client received the stale
+   * price.
+   */
+  savedPrices?: Partial<Record<TierKey, number>>;
   disabled?: boolean;
 };
 
@@ -51,6 +60,7 @@ export default function TierPriceOverrideEditor({
   value,
   onChange,
   enginePrices,
+  savedPrices,
   disabled = false,
 }: Props) {
   const [expanded, setExpanded] = React.useState<TierKey | null>(null);
@@ -100,6 +110,20 @@ export default function TierPriceOverrideEditor({
             (Number.isFinite(priceNum) &&
               priceNum > 0 &&
               reasonTrimmed.length >= 3);
+          // "Pending — regenerate" badge fires when the entered
+          // override has a valid price + reason BUT the saved tier
+          // price hasn't caught up yet. Without this cue the right rail
+          // shows the override (previewTiers overlay) and the operator
+          // assumes the quote is saved, then sends the stale price.
+          const savedTier = savedPrices?.[tier];
+          const pendingRegenerate =
+            !!entry &&
+            valid &&
+            Number.isFinite(priceNum) &&
+            priceNum > 0 &&
+            reasonTrimmed.length >= 3 &&
+            typeof savedTier === "number" &&
+            Math.abs(priceNum - savedTier) >= 1;
 
           return (
             <div
@@ -123,6 +147,14 @@ export default function TierPriceOverrideEditor({
                   {entry && Number.isFinite(priceNum) && priceNum > 0 && (
                     <span className="text-[11px] font-semibold text-[var(--wine)]">
                       → {fmt(priceNum)}
+                    </span>
+                  )}
+                  {pendingRegenerate && (
+                    <span
+                      className="shrink-0 text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5 bg-amber-100 text-amber-800 border border-amber-300"
+                      title={`Saved quote still has ${fmt(savedTier!)}. Click Regenerate to apply ${fmt(priceNum)}.`}
+                    >
+                      Pending · regenerate
                     </span>
                   )}
                 </div>
