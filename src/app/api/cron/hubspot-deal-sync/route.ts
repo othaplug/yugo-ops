@@ -432,15 +432,14 @@ export async function GET(req: NextRequest) {
       })
 
       if (created == null) {
-        // autoCreateHubSpotDealForNewMove returns null silently when
-        // pipelineId/stageId can't be resolved or HubSpot API rejects.
-        // Surface those failures so they don't sit invisible forever
-        // (the original bug: 11 moves + 6 deliveries stuck at null
-        // hubspot_deal_id with no log entry explaining why).
         results.errors.push(
-          `${m.move_code ?? m.id}: auto-create returned null (check HUBSPOT_ACCESS_TOKEN, pipeline_id, stage_booked, or HubSpot 4xx)`,
+          `${m.move_code ?? m.id}: auto-create returned null (check HUBSPOT_ACCESS_TOKEN, pipeline_id, stage_booked)`,
         )
-      } else if (created?.status === "created" && created.dealId) {
+      } else if (created.status === "failed") {
+        results.errors.push(
+          `${m.move_code ?? m.id}: ${created.reason}`,
+        )
+      } else if (created.status === "created" && created.dealId) {
         await sb
           .from("moves")
           .update({ hubspot_deal_id: created.dealId })
@@ -624,15 +623,14 @@ export async function GET(req: NextRequest) {
       })
 
       if (createdHs == null) {
-        // Mirror the moves Path B logging — null = silent HubSpot
-        // failure (pipeline/stage missing, 4xx from /crm/v3/objects/
-        // deals, missing token). Surfacing this stops B2B deliveries
-        // from sitting forever at hubspot_deal_id=null with no
-        // explanation in the audit trail.
         results.errors.push(
-          `${d.delivery_number}: auto-create returned null (check HUBSPOT_ACCESS_TOKEN, pipeline_id, stage_booked, or HubSpot 4xx)`,
+          `${d.delivery_number}: auto-create returned null (check HUBSPOT_ACCESS_TOKEN, pipeline_id, stage_booked)`,
         )
-      } else if (createdHs?.status === "created" && createdHs.dealId) {
+      } else if (createdHs.status === "failed") {
+        results.errors.push(
+          `${d.delivery_number}: ${createdHs.reason}`,
+        )
+      } else if (createdHs.status === "created" && createdHs.dealId) {
         await sb
           .from("deliveries")
           .update({ hubspot_deal_id: createdHs.dealId })

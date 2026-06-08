@@ -187,7 +187,10 @@ export async function autoCreateHubSpotDealForNewMove(opts: {
       dealRes.status,
       t.slice(0, 2000),
     )
-    return null
+    return {
+      status: "failed",
+      reason: `HTTP ${dealRes.status}: ${t.slice(0, 400).replace(/\s+/g, " ")}`,
+    }
   }
 
   const dealData = (await dealRes.json()) as { id?: string }

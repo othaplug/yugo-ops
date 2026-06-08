@@ -215,7 +215,14 @@ export async function autoCreateHubSpotDealForNewDelivery(opts: {
       dealRes.status,
       t.slice(0, 2000),
     )
-    return null
+    // Surface the HubSpot rejection up to the caller so the cron's
+    // audit log shows the actual property name + message (e.g.
+    // "package_type INVALID_OPTION"), not just a silent null.
+    // Trimmed to keep webhook_logs.payload tidy.
+    return {
+      status: "failed",
+      reason: `HTTP ${dealRes.status}: ${t.slice(0, 400).replace(/\s+/g, " ")}`,
+    }
   }
 
   const dealData = (await dealRes.json()) as { id?: string }
