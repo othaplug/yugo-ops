@@ -538,21 +538,37 @@ export default function EditQuoteClient({
     () => {
       const saved = oq.inventory_items;
       if (!Array.isArray(saved) || saved.length === 0) return [];
-      // Saved items may lack weight_score — enrich from itemWeights lookup
       return saved.map((item: any) => {
         const iw = itemWeights.find((w) => w.slug === item.slug);
         const name = item.name || iw?.item_name || item.slug || "";
         const slug = item.slug || undefined;
-        const ws = item.weight_score ?? iw?.weight_score ?? 1;
+        // Prefer the catalog's authoritative weight_score over whatever
+        // was persisted on the line — older quote rows (e.g. YG-30277)
+        // carry stale scores from before catalog re-categorisation
+        // (the freezer-standalone case: catalog says score 2.5 / heavy
+        // tier; the saved line had score 2.5 but tier_code "standard").
+        const catalogScore = iw?.weight_score;
+        const ws =
+          typeof catalogScore === "number" && catalogScore > 0
+            ? catalogScore
+            : (item.weight_score ?? 1);
+        // Re-derive the tier from the (now-authoritative) score. If the
+        // saved tier_code disagrees with what the score implies AND the
+        // item is from the catalog (has a slug), trust the catalog — the
+        // operator can still manually downgrade in the UI if they want.
+        // Custom items (no slug) keep their saved tier as-is.
+        const savedTier =
+          typeof item.weight_tier_code === "string" && item.weight_tier_code
+            ? item.weight_tier_code
+            : null;
+        const inferredTier = inferWeightTierFromLegacyScore(Number(ws));
+        const weight_tier_code = slug ? inferredTier : (savedTier ?? inferredTier);
         return {
           slug,
           name,
           quantity: item.quantity || 1,
           weight_score: ws,
-          weight_tier_code:
-            typeof item.weight_tier_code === "string" && item.weight_tier_code
-              ? item.weight_tier_code
-              : inferWeightTierFromLegacyScore(Number(ws)),
+          weight_tier_code,
           actual_weight_lbs:
             typeof item.actual_weight_lbs === "number" &&
             item.actual_weight_lbs > 0
