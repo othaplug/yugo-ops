@@ -162,7 +162,11 @@ export async function autoCreateHubSpotDealForNewDelivery(opts: {
     quote_url: deliveryAdminUrl,
     firstname: firstName,
     lastname: lastName,
-    package_type: "b2b",
+    // HubSpot enum: Yugo Basic | Yugo Plus+ | Yugo VIP. Was "b2b" raw,
+    // which trips 400 INVALID_OPTION on every create. B2B deliveries
+    // surface as Yugo Plus+ for pipeline reporting parity with other
+    // B2B / PM deals (same bucket used by dealPackageType).
+    package_type: "Yugo Plus+",
     ...yugoJobProperties({ jobId: deliveryNumber, jobNo, serviceType: svc }),
     ...buildAllDealProperties({
       jobId: deliveryNumber,

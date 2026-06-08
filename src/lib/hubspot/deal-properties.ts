@@ -14,11 +14,39 @@ import { serviceCategory } from "@/lib/hubspot/deal-name"
 import { mapServiceTypeToHubSpot } from "@/lib/hubspot/deal-properties-builder"
 
 /**
+ * HubSpot `package_type` is an enum dropdown with three values only:
+ *   Yugo Basic  · Yugo Plus+  · Yugo VIP
+ *
+ * Internal slugs (essential / signature / estate / b2b / pm_move) trip
+ * 400 INVALID_OPTION and silently kill the entire deal create — same
+ * failure mode as service_type (fix L). Map all internal values to one
+ * of the three allowed enum strings.
+ *
+ *   essential / curated   → Yugo Basic
+ *   signature / premier   → Yugo Plus+
+ *   estate                → Yugo VIP
+ *   b2b / pm              → Yugo Plus+ (closest match: professional
+ *                           white-glove without the Estate concierge
+ *                           overhead)
+ */
+const PACKAGE_TYPE_HUBSPOT_VALUES: Record<string, string> = {
+  essential: "Yugo Basic",
+  curated: "Yugo Basic",
+  essentials: "Yugo Basic",
+  signature: "Yugo Plus+",
+  premier: "Yugo Plus+",
+  estate: "Yugo VIP",
+  b2b: "Yugo Plus+",
+  pm: "Yugo Plus+",
+  pm_move: "Yugo Plus+",
+}
+
+/**
  * Return the correct HubSpot `package_type` property value for a deal.
  *
- * B2B and PM deals always get "b2b".
- * Residential deals get the actual tier slug (signature / curated / essential),
- * defaulting to "signature" when no tier is set.
+ * B2B and PM deals always surface as Yugo Plus+ (their pricing tier in
+ * HubSpot's reporting bucket). Residential deals use the selected tier;
+ * default to Yugo Plus+ (Signature) when no tier is set.
  */
 export function dealPackageType(
   serviceType: string | null | undefined,
@@ -26,8 +54,11 @@ export function dealPackageType(
   tierSelected: string | null | undefined,
 ): string {
   const cat = serviceCategory(serviceType, isPmMove)
-  if (cat === "b2b" || cat === "pm") return "b2b"
-  return String(tierSelected || "").trim() || "signature"
+  if (cat === "b2b" || cat === "pm") {
+    return PACKAGE_TYPE_HUBSPOT_VALUES.b2b
+  }
+  const slug = String(tierSelected || "").trim().toLowerCase()
+  return PACKAGE_TYPE_HUBSPOT_VALUES[slug] ?? "Yugo Plus+"
 }
 
 /**
