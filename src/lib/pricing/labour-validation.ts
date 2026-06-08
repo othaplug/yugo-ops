@@ -211,16 +211,26 @@ export function validateLabourRate(
   let status: LabourValidationStatus = "within_range"
   let message: string | null = null
 
+  // Message phrasing matters here. This rate is the EFFECTIVE per-mover
+  // margin (labour_component ÷ crew ÷ hours), NOT the engine's billing
+  // labour rate ($55–$75/hr depending on tier). Operators kept reading
+  // "Labour rate $42/hr" as the billing rate and arguing the engine
+  // was undercharging — when in reality the billing rate was fine and
+  // the validation rate was being deflated by an inflated crew count.
+  // The message now spells that out so the operator knows where to
+  // look (crew/hours, not the rate config).
   if (effectiveRate > ceiling.max) {
     status = "above_ceiling"
     message =
-      `Labour rate $${effectiveRate.toFixed(0)}/hr per mover exceeds ${String(ceilingKey)} ceiling of $${ceiling.max}/hr. ` +
+      `Per-mover labour margin $${effectiveRate.toFixed(0)}/hr exceeds ${String(ceilingKey)} ceiling of $${ceiling.max}/hr. ` +
+      `(This is labour_component ÷ crew ÷ hours — the margin rate, not the engine billing rate.) ` +
       `Review: crew size may be too small for this move, or the price is above market for this tier.`
   } else if (effectiveRate < ceiling.min) {
     status = "below_floor"
     message =
-      `Labour rate $${effectiveRate.toFixed(0)}/hr per mover is below ${String(ceilingKey)} floor of $${ceiling.min}/hr. ` +
-      `This move may be underpriced. Margin risk.`
+      `Per-mover labour margin $${effectiveRate.toFixed(0)}/hr is below ${String(ceilingKey)} floor of $${ceiling.min}/hr. ` +
+      `(This is labour_component ÷ crew ÷ hours — the margin rate, not the engine billing rate.) ` +
+      `Often caused by an inflated crew count — try the Crew override on the form, or reduce hours, before lowering the price.`
   }
 
   return {
