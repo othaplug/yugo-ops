@@ -11,6 +11,7 @@
  */
 
 import { serviceCategory } from "@/lib/hubspot/deal-name"
+import { mapServiceTypeToHubSpot } from "@/lib/hubspot/deal-properties-builder"
 
 /**
  * Return the correct HubSpot `package_type` property value for a deal.
@@ -48,8 +49,14 @@ export function yugoJobProperties(opts: {
 }): Record<string, string> {
   const out: Record<string, string> = {}
   const no = opts.jobNo?.trim() || opts.jobId?.trim().replace(/^[A-Z]+-/, "")
-  const st = opts.serviceType?.trim().toLowerCase()
+  // HubSpot's service_type is an enum dropdown — writing the raw OPS+
+  // slug ("cabinetry", "b2b_oneoff", etc.) trips 400 INVALID_OPTION
+  // and silently kills the entire deal create. Route through the
+  // shared SERVICE_TYPE_HUBSPOT_VALUES mapper so this helper and
+  // buildAllDealProperties (which spreads after it) write the same
+  // canonical value. Unmapped slugs → omitted (don't crash the create).
+  const stMapped = mapServiceTypeToHubSpot(opts.serviceType)
   if (no) out.job_no = no
-  if (st) out.service_type = st
+  if (stMapped) out.service_type = stMapped
   return out
 }

@@ -73,7 +73,20 @@ const MOVE_SIZE_HUBSPOT_VALUES: Record<string, string> = {
   single_item: "Single Item",
 }
 
-const SERVICE_TYPE_HUBSPOT_VALUES: Record<string, string> = {
+/**
+ * HubSpot `service_type` is an enum dropdown with a fixed list of
+ * portal-side options. Any value we write must be one of:
+ *   Local Move, Long-Distance Move, Office Move, Specialty Move,
+ *   White Glove Move, Home Delivery, White Glove Delivery, Other,
+ *   Event Services, Single Item
+ *
+ * Anything else → HubSpot returns 400 INVALID_OPTION → deal create
+ * fails entirely. Exported so deal-properties.ts can share the
+ * mapping (yugoJobProperties was writing raw slugs like "cabinetry",
+ * "b2b_oneoff", "b2b_one_off_delivery" → 100% of B2B + PM deal
+ * creates failed silently in the hourly cron).
+ */
+export const SERVICE_TYPE_HUBSPOT_VALUES: Record<string, string> = {
   local_move: "Local Move",
   long_distance: "Long-Distance Move",
   long_distance_move: "Long-Distance Move",
@@ -90,11 +103,46 @@ const SERVICE_TYPE_HUBSPOT_VALUES: Record<string, string> = {
   b2b_delivery: "Home Delivery",
   b2b_oneoff: "Home Delivery",
   b2b_one_off: "Home Delivery",
+  // booking-type-derived labels (see deliveryServiceLabel in
+  // auto-create-deal-for-delivery.ts) — map to Home Delivery so the
+  // HubSpot enum stays a closed set.
+  b2b_one_off_delivery: "Home Delivery",
+  b2b_day_rate_delivery: "Home Delivery",
   commercial_delivery: "Home Delivery",
+  // B2B vertical_code values used as fallback when booking_type is
+  // missing. None of them have a HubSpot enum option of their own;
+  // they're all flavours of "Home Delivery" for pipeline reporting.
+  cabinetry: "Home Delivery",
+  furniture_retail: "Home Delivery",
+  furniture_design: "Home Delivery",
+  designer: "Home Delivery",
+  flooring: "Home Delivery",
+  hospitality: "Home Delivery",
+  art_specialty: "White Glove Delivery",
+  medical_technical: "White Glove Delivery",
   white_glove_delivery: "White Glove Delivery",
   // bin_rental + labour_only have no precise enum match — fall through to "Other".
   bin_rental: "Other",
   labour_only: "Other",
+}
+
+/**
+ * Public mapper for `service_type` → HubSpot enum. Returns null when
+ * the slug isn't in the map, so callers can omit the property rather
+ * than write a value HubSpot will reject. Mirrors mapEnum() below but
+ * exported so other deal-properties helpers (yugoJobProperties) write
+ * the same value.
+ */
+export function mapServiceTypeToHubSpot(
+  raw: string | null | undefined,
+): string | null {
+  const v = String(raw ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_")
+  if (!v) return null
+  return SERVICE_TYPE_HUBSPOT_VALUES[v] ?? null
 }
 
 const LOST_REASON_HUBSPOT_VALUES: Record<string, string> = {
