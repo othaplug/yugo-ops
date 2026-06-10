@@ -654,7 +654,31 @@ export default function MoveDetailClient({
       setAssignedMembers(new Set());
     }
   }, [move.crew_id, move.assigned_members, selectedCrew?.members, crewModalOpen]);
-  const estimate = Number(move.estimate ?? move.amount ?? 0);
+  // Effective contract amount for the header pill, Partner Statement,
+  // balance bar, and progress chart.
+  //
+  // Priority order (verified against MV-30284 — PM move post-completion
+  // adjustment from $1,189 → $989):
+  //   final_amount → set by /api/admin/job-final-price after a post-
+  //                  completion price edit (fix in commit 9fb5128d).
+  //   total_price  → updated alongside final_amount; current effective.
+  //   amount       → legacy alias kept in lockstep with total_price.
+  //   estimate     → ORIGINAL booking value; never updated post-edit.
+  //                  Final fallback so quotes from before the price-
+  //                  edit infra still render a number.
+  //
+  // Previously this fell through to `estimate` first, so MV-30284's
+  // header read "Contract $1,189" and "Partner Statement $1,344"
+  // while the same page's Profitability Revenue read $989 (which
+  // already used the right priority). Same conceptual value, two
+  // different displays — a guaranteed double-take from operators.
+  const estimate = Number(
+    move.final_amount ??
+      move.total_price ??
+      move.amount ??
+      move.estimate ??
+      0,
+  );
   const depositPaid = Number(
     move.deposit_amount ?? Math.round(estimate * 0.25),
   );
@@ -928,7 +952,20 @@ export default function MoveDetailClient({
       {
         id: "value",
         label: "Contract",
-        value: formatCurrency(Number(move.estimate ?? move.amount ?? 0) || 0),
+        // Same priority as `estimate` / `revenue` derivations below:
+        // final_amount (post-completion edit) → total_price → amount →
+        // estimate (original booking value). Previously this pill read
+        // estimate first and showed $1,189 on MV-30284 while the rest
+        // of the page showed the adjusted $989.
+        value: formatCurrency(
+          Number(
+            move.final_amount ??
+              move.total_price ??
+              move.amount ??
+              move.estimate ??
+              0,
+          ) || 0,
+        ),
       },
     ],
     [
@@ -937,6 +974,8 @@ export default function MoveDetailClient({
       move.status,
       move.estimate,
       move.amount,
+      move.total_price,
+      move.final_amount,
     ],
   );
 
@@ -4054,7 +4093,15 @@ function MoveProfitCard({ move }: { move: any }) {
 
   if (!costs) return null;
 
-  const revenue = move.final_amount ?? move.estimate ?? move.amount ?? 0;
+  // Mirror the same priority used for the contract pill at the top of
+  // the file (estimate const) so Revenue and Contract can't drift
+  // again: final_amount → total_price → amount → estimate.
+  const revenue =
+    move.final_amount ??
+    move.total_price ??
+    move.amount ??
+    move.estimate ??
+    0;
   const marginColor =
     costs.grossMargin >= target
       ? "text-emerald-400"
