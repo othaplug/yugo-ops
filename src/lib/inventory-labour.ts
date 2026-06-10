@@ -58,6 +58,20 @@ export interface LabourOptions {
    * calcAssemblyMinutes() so quotes with bed frames / standing desks correctly reflect added time.
    */
   assemblyMinutes?: number;
+  /**
+   * Residential service tier — affects wall-clock hours because each
+   * tier does a different amount of work per item:
+   *   essential — basic blanket wrap on key pieces, no per-item
+   *               wrapping, no assembly (add-on). FASTEST.
+   *   signature — full furniture wrapping, basic disassembly /
+   *               reassembly included. ~12% more time per item.
+   *   estate    — white-glove protocol, four-point blanket wrap, no
+   *               stacking, room-of-choice placement, full disassembly
+   *               + reassembly with concierge. ~28% more time per item.
+   * Defaults to "signature" so legacy callers (which assumed signature-
+   * level care) don't see a price change.
+   */
+  tier?: "essential" | "signature" | "estate";
 }
 
 export type InventorySlugLine = { slug?: string | null; quantity?: number | null };
@@ -157,21 +171,96 @@ export function estimateLabourFromScore(
 
   crewSize = Math.min(6, crewSize);
 
-  // ─── Hours estimate ────────────────────────────────────────────────────────
-  // Loading: inventory score / 12 (boxes move in batches on dollies)
-  const loadHours = inventoryScore / 12;
-  const unloadHours = loadHours * 0.75;
+  // ─── Hours estimate (WALL-CLOCK, accounting for parallel crew) ────────────
+  //
+  // Previous version (broken): treated `inventoryScore / 12` as wall-
+  // clock hours regardless of crew. A 3BR with score 79.4 + 4 movers
+  // came out at 17.5h — physically impossible. The number was actually
+  // man-hours for a single mover doing everything sequentially.
+  //
+  // Verified against YG-30285 (3BR, score 79.4, 70 items, crew 4, 1.5km
+  // townhouse→townhouse, full assembly). Industry benchmark for that
+  // job: 5–7 hours wall-clock with 4 movers. Engine was claiming 17.5h
+  // → quote ranged $2,300–$6,845 + flagged unprofitable on Essential.
+  //
+  // New model: split work into PARALLELISABLE tasks (load/unload/
+  // assembly — multiple crew can do these concurrently) and SERIAL
+  // tasks (drive + ramp-up overhead — one clock for the whole crew).
+  //
+  // Parallel-task wall-clock = manHours / effectiveCrew, where
+  // effectiveCrew = crewSize * efficiency. Efficiency is < 1 because
+  // doorways, stairs, the truck door — only N people can carry through
+  // a hallway at once. For ground-floor moves ~0.85; walk-ups ~0.65.
+
+  // Tier-aware "care factor" — Estate crews wrap each item with
+  // four-point blanket protection and do room-of-choice placement, so
+  // each carry takes ~28% longer than Essential's blanket-key-pieces-
+  // only approach. Default 1.0 (no change) when the caller doesn't
+  // specify a tier, so legacy call sites that compute a single shared
+  // hours estimate don't silently inflate prices.
+  const TIER_CARE_MULT: Record<string, number> = {
+    essential: 0.90,  // skip per-item wrap; basic packing only
+    signature: 1.0,   // baseline — historical formula was calibrated here
+    estate: 1.15,     // white-glove care adds ~15% per item
+  };
+  const careMultiplier =
+    options?.tier && TIER_CARE_MULT[options.tier] != null
+      ? TIER_CARE_MULT[options.tier]
+      : 1.0;
+
+  // Parallel efficiency by access. Walk-ups force serial trips through
+  // a single stairwell so the marginal value of mover #3, #4, #5
+  // drops. Ground floor and elevators allow near-linear scaling.
+  function accessEfficiency(a: string | undefined): number {
+    const v = (a ?? "").toLowerCase();
+    if (
+      v === "walk_up_3" ||
+      v === "walk_up_3rd" ||
+      v.startsWith("walk_up_4")
+    ) {
+      return 0.55;
+    }
+    if (v === "walk_up_2" || v === "walk_up_2nd") return 0.7;
+    if (v === "basement" || v === "basement_stairs") return 0.75;
+    if (v === "long_carry" || v === "narrow_stairs") return 0.7;
+    return 0.85; // ground_floor, elevator, loading_dock
+  }
+  const fromEff = accessEfficiency(fromAccess);
+  const toEff = accessEfficiency(toAccess);
+  const loadEffectiveCrew = Math.max(1, crewSize * fromEff);
+  const unloadEffectiveCrew = Math.max(1, crewSize * toEff);
+
+  // Load/unload man-hours (the old formula's "wall-clock"-ish numbers
+  // are actually closer to total work-time, so we treat them as
+  // man-hours). Divide by effective parallel crew → real wall-clock.
+  const loadManHours = (inventoryScore / 12) * careMultiplier;
+  const unloadManHours = loadManHours * 0.75;
+  const loadHours = loadManHours / loadEffectiveCrew;
+  const unloadHours = unloadManHours / unloadEffectiveCrew;
+
+  // Assembly is typically done by 1–2 dedicated crew members in
+  // parallel with the rest of the team unloading. Cap parallelism at 2
+  // — it's awkward to have 3+ people clustered around one bed frame.
   const baseDisassemblyHours = DISASSEMBLY_BY_SIZE[sizeKey] ?? 0.5;
-  // Assembly auto-detection: if calcAssemblyMinutes() supplied a positive number, floor at base.
-  const itemAssemblyHours =
-    options?.assemblyMinutes && options.assemblyMinutes > 0
-      ? options.assemblyMinutes / 60
-      : 0;
-  const disassemblyHours = Math.max(baseDisassemblyHours, itemAssemblyHours);
+  const itemAssemblyMinutes = options?.assemblyMinutes ?? 0;
+  let disassemblyHours: number;
+  if (itemAssemblyMinutes > 0) {
+    const assemblyParallel = Math.min(2, Math.max(1, crewSize - 2));
+    const assemblyManHours = (itemAssemblyMinutes / 60) * careMultiplier;
+    disassemblyHours = Math.max(
+      baseDisassemblyHours,
+      assemblyManHours / Math.max(1, assemblyParallel * 0.9),
+    );
+  } else {
+    // Tier multiplier still applies to the base — Estate's "full
+    // disassembly + reassembly" floor is longer than Essential's
+    // "basic" floor even before any auto-detected items.
+    disassemblyHours = baseDisassemblyHours * careMultiplier;
+  }
 
   const mode = options?.hoursEstimateMode ?? "crew_full_cycle";
 
-  // Drive time: client quote shows loaded move only; crew_full_cycle uses Section 4C/4E ops model.
+  // Drive time — does NOT divide by crew. One driver, one clock.
   let driveHours: number;
   if (mode === "client_on_job") {
     if (options?.driveTimeMinutes !== undefined) {
