@@ -133,8 +133,27 @@ export async function GET(req: NextRequest) {
   for (const q of quotes ?? []) {
     try {
       const tiers = q.tiers as Record<string, { price?: number }> | null
+      // Use the RECOMMENDED tier's price for the HubSpot deal amount,
+      // not Essential. Previously every Signature- or Estate-quoted
+      // deal showed up on the pipeline at the Essential price, which
+      // threw off forecasts and made the sales team chase the wrong
+      // number. Mirrors the recommendedTierPrice() helper in
+      // auto-create-deal-for-quote.ts.
+      const recRaw = String(q.recommended_tier ?? "")
+        .trim()
+        .toLowerCase()
+      const recKey =
+        recRaw === "signature" || recRaw === "estate" || recRaw === "essential"
+          ? recRaw
+          : recRaw === "curated" || recRaw === "essentials"
+            ? "essential"
+            : null
       const price =
-        tiers?.essential?.price ?? tiers?.curated?.price ?? Number(q.custom_price ?? 0) ?? null
+        (recKey ? tiers?.[recKey]?.price : undefined) ??
+        tiers?.essential?.price ??
+        tiers?.curated?.price ??
+        Number(q.custom_price ?? 0) ??
+        null
       const contactRaw = (q as { contacts?: { name?: string | null } | { name?: string | null }[] | null }).contacts
       const contact = Array.isArray(contactRaw) ? contactRaw[0] ?? null : contactRaw
       const fullName = String(contact?.name ?? "").trim()
@@ -241,13 +260,20 @@ export async function GET(req: NextRequest) {
       const parts = name.split(/\s+/)
       const fn = parts.shift() || ""
       const ln = parts.join(" ")
+      // Match MoveDetailClient's contract priority (commit 4a9d74b7):
+      // total_price → amount → estimate. A move that was booked with
+      // the client picking Signature/Estate sees total_price reflect
+      // THAT choice (set by the move-create route). estimate is the
+      // original booking value, used only as a legacy fallback. Was:
+      // m.estimate first, which on a post-completion-adjusted move
+      // would push the STALE original to HubSpot.
       const subtotal =
-        typeof m.estimate === "number"
-          ? m.estimate
+        typeof m.total_price === "number"
+          ? m.total_price
           : typeof m.amount === "number"
             ? m.amount
-            : typeof m.total_price === "number"
-              ? m.total_price
+            : typeof m.estimate === "number"
+              ? m.estimate
               : null
       const dealName = buildHubSpotDealName({
         serviceType: m.service_type as string | null | undefined,
@@ -392,13 +418,18 @@ export async function GET(req: NextRequest) {
       const fn = nameParts[0] || (isPm ? "Portfolio" : "Client")
       const ln = nameParts.slice(1).join(" ") || (isPm ? "move" : "")
 
+      // Match the moves Path A subtotal priority above and
+      // MoveDetailClient (commit 4a9d74b7): prefer total_price (current
+      // effective) over estimate (original booking). Picks the SELECTED
+      // tier price on bookings that came from a recommended-Estate
+      // quote → client-chose-Signature flow.
       const estimate =
-        typeof m.estimate === "number"
-          ? m.estimate
+        typeof m.total_price === "number"
+          ? m.total_price
           : typeof m.amount === "number"
             ? m.amount
-            : typeof m.total_price === "number"
-              ? m.total_price
+            : typeof m.estimate === "number"
+              ? m.estimate
               : null
 
       const detailPath = getMoveDetailPath({

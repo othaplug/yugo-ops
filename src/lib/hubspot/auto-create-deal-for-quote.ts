@@ -21,8 +21,45 @@ function dealToContactAssociationTypeId(): number {
   return Number.isFinite(n) && n > 0 ? n : 3;
 }
 
-function essentialPrice(quote: Record<string, unknown>): number | null {
+/**
+ * Price used for the HubSpot deal's `amount` field at quote-send time.
+ *
+ * Previously this hardcoded Essential's price for every quote — so a
+ * Signature- or Estate-recommended $5,628 quote showed as "Amount
+ * $2,200" on the HubSpot pipeline, throwing off every forecast and
+ * making the sales team chase the wrong number. The deal amount now
+ * reflects the actual RECOMMENDED tier the operator quoted.
+ *
+ * Priority:
+ *   1. tiers[recommended_tier].price — the tier the operator pointed
+ *      the client at
+ *   2. essential / curated / essentials — fallback for legacy quotes
+ *      without a recommended_tier set
+ *   3. custom_price — non-tiered quote types (single_item, white_glove,
+ *      labour_only, etc.)
+ *
+ * When the move is booked and the client picks a specific tier, the
+ * move-create flow updates the deal amount to the chosen tier price —
+ * see hubspotMoveDealAfterInsert. So pipeline rows track the
+ * recommended price during the sales cycle and the actual sale once
+ * the move materializes.
+ */
+function recommendedTierPrice(quote: Record<string, unknown>): number | null {
   const tiers = quote.tiers as Record<string, { price?: number }> | null | undefined;
+  const recRaw = String(quote.recommended_tier ?? "")
+    .trim()
+    .toLowerCase();
+  const recKey =
+    recRaw === "signature" || recRaw === "estate" || recRaw === "essential"
+      ? recRaw
+      : recRaw === "curated" || recRaw === "essentials"
+        ? "essential"
+        : null;
+  if (recKey && tiers) {
+    const fromRec = tiers[recKey]?.price;
+    if (typeof fromRec === "number" && !Number.isNaN(fromRec)) return fromRec;
+  }
+  // Legacy fallback — no recommended_tier set on the quote.
   const t =
     tiers?.essential?.price ??
     tiers?.curated?.price ??
@@ -180,7 +217,7 @@ export async function autoCreateHubSpotDealForSentQuote(opts: {
 
   const prefix = await getQuoteIdPrefix(sb);
   const jobNo = quoteNumericSuffixForHubSpot(quoteIdText, prefix);
-  const price = essentialPrice(quote);
+  const price = recommendedTierPrice(quote);
 
   // formatTier in buildHubSpotDealName handles the slug → label mapping
   // ("essential" → "Essential", "signature" → "Signature"), so don't

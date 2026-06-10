@@ -1023,6 +1023,26 @@ export async function POST(req: NextRequest) {
           undefined,
           (body.scheduled_date as string)?.trim() || null,
         ).catch(() => {});
+        // Patch the deal amount to the SELECTED tier's price at booking
+        // time so the pipeline shows the actual sale value immediately,
+        // not the recommended-tier price the quote-send wrote. Without
+        // this, sales would wait up to an hour for the cron to sync
+        // and the forecast number would lag. Fire-and-forget — if it
+        // misses, the hourly cron catches up.
+        if (estimate > 0) {
+          (async () => {
+            try {
+              const { safePatchDeal } = await import(
+                "@/lib/hubspot/safe-deal-write"
+              );
+              await safePatchDeal(hubSpotToken, resolvedQuoteHubspotDealId, {
+                amount: String(Math.round(estimate)),
+              });
+            } catch {
+              /* cron catches up */
+            }
+          })();
+        }
       } else if (clientEmail?.trim()) {
         // Standalone move (no quote or quote had no deal) — create a new deal.
         const nameParts = clientName.trim().split(/\s+/);

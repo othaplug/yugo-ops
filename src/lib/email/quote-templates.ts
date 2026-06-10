@@ -272,6 +272,19 @@ export interface QuoteTemplateData {
   coordinatorName?: string | null;
   coordinatorPhone?: string | null;
   recommendedTier?: string | null;
+  /**
+   * Client-facing presentation layout. Read from
+   * quotes.presentation_mode. Drives the residential email:
+   *   comparison       — all three tiers shown equally
+   *   estate_featured  — Estate hero, others collapsed below
+   *   estate_only      — Estate only, recommendation note up top
+   * Defaults to 'comparison' when unset.
+   */
+  presentationMode?:
+    | "comparison"
+    | "estate_featured"
+    | "estate_only"
+    | null;
   // Event
   eventName?: string | null;
   eventReturnDate?: string | null;
@@ -563,12 +576,28 @@ function tierCards(
             .join("")
         : "";
 
+      // HST + total disclosure under each price. Canadian clients
+      // expect to see what they actually pay at checkout — bare
+      // pre-tax numbers caused operators to field "is this with HST?"
+      // questions on every quote. Falls back to a tax-rate calc when
+      // the tier doesn't carry tax/total directly.
+      const tierTax =
+        typeof (t as { tax?: number }).tax === "number"
+          ? (t as { tax?: number }).tax!
+          : Math.round(t.price * 0.13);
+      const tierTotal =
+        typeof (t as { total?: number }).total === "number"
+          ? (t as { total?: number }).total!
+          : t.price + tierTax;
+      const hstLine = `<div style="font-family:${EMAIL_SANS_STACK};font-size:11px;font-weight:500;color:${lineColor} !important;-webkit-text-fill-color:${lineColor};margin-top:4px;margin-bottom:${isRec ? "14px" : "2px"};opacity:0.85;">+ ${formatCurrencyEmail(tierTax)} HST · Total ${formatCurrencyEmail(tierTotal)}</div>`;
+
       const cardContent = `
         <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:${cardBg};border:${borderStyle};margin-bottom:12px;">
           <tr>
             <td class="${cellClass}" style="padding:${padVal};background-color:${cardBg};">
               <div style="${titleBase}color:${titleColor} !important;-webkit-text-fill-color:${titleColor};">${label}${badge}</div>
-              <div style="font-family:${HERO_FONT};font-size:${priceSz};font-weight:400;color:${priceColor} !important;-webkit-text-fill-color:${priceFill};line-height:1;margin-bottom:${isRec ? "16px" : "4px"};">${formatCurrencyEmail(t.price)}</div>
+              <div style="font-family:${HERO_FONT};font-size:${priceSz};font-weight:400;color:${priceColor} !important;-webkit-text-fill-color:${priceFill};line-height:1;margin-bottom:4px;">${formatCurrencyEmail(t.price)}</div>
+              ${hstLine}
               ${includesRows ? `<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:4px;">${includesRows}</table>` : ""}
             </td>
           </tr>
@@ -684,6 +713,7 @@ function addressRowsWithAccess(
 /* Residential (3-tier) */
 function residentialTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
+  if (d.quoteId) rows.push(["Quote", d.quoteId]);
   if (d.moveSize) rows.push(["Move Size", formatMoveSize(d.moveSize)]);
   const pickups = Array.isArray(d.pickupLocations)
     ? d.pickupLocations.filter((p) => p.address?.trim())
@@ -720,18 +750,63 @@ function residentialTemplate(d: QuoteTemplateData): string {
   if (d.distance) rows.push(["Distance", d.distance]);
   if (d.estCrewSize != null && d.estCrewSize > 0)
     rows.push(["Crew", `${d.estCrewSize} professional movers`]);
-  if (d.estHours != null && d.estHours > 0)
-    rows.push(["Est. duration", `~${d.estHours} hours`]);
+  // Est. duration deliberately omitted from every client email.
+  // Operator decision — duration is an admin planning value used to
+  // estimate labour cost and crew scheduling, not a client promise.
+  // Telling the client "~7 hours" anchors them to a number we may
+  // miss on a particularly heavy day (and clients quote it back when
+  // they ask for refunds). Crew + Truck stay because the client can
+  // see those at arrival and they're operationally relevant.
+  void d.estHours;
   if (d.truckSize) rows.push(["Truck", formatTruckSize(d.truckSize)]);
 
+  // Hero + body copy keyed to the operator's presentation choice.
+  // Estate-featured / estate-only carry an Estate-confident voice;
+  // comparison uses the original "three options to choose from" copy.
+  const mode = d.presentationMode ?? "comparison";
+  const estateConfident =
+    d.recommendedTier === "estate" &&
+    (mode === "estate_featured" || mode === "estate_only");
+
+  const heroSub = estateConfident
+    ? "Your Estate Move Plan"
+    : "Your Moving Quote";
+  const heroGreeting = `Hi${d.clientName ? ` ${d.clientName}` : ""}${
+    estateConfident ? ", your Estate move plan is ready" : ""
+  }`;
+  const heroBody = estateConfident
+    ? "Your coordinator has prepared the Estate package for this move — fully managed, white-glove, with a dedicated coordinator from booking through final placement. Other packages are listed below for reference."
+    : "We have prepared three flat-rate service options tailored to your move. Every package includes professional movers, a dedicated truck, and full protection. Choose the level of care that suits you best.";
+
+  // For Estate-featured / Estate-only: recommendation note goes ABOVE
+  // the tier card(s) so the client reads "why Estate" before they see
+  // the price. For comparison: the note stays below as a soft nudge
+  // after the lineup.
+  const recommendationAbove = estateConfident
+    ? estateRecommendationNote(d.recommendedTier)
+    : "";
+  const recommendationBelow = estateConfident
+    ? ""
+    : estateRecommendationNote(d.recommendedTier);
+
+  // estate_only: render Estate card alone. estate_featured + comparison
+  // both render all three cards; the styling already up-weights the
+  // recommended tier (bullets shown, larger price, badge).
+  const tierBlock = d.tiers
+    ? mode === "estate_only" && d.tiers.estate
+      ? tierCards({ estate: d.tiers.estate }, d.quoteUrl, "estate")
+      : tierCards(d.tiers, d.quoteUrl, d.recommendedTier)
+    : "";
+
   return quoteEmailLayout(`
-    ${subHeading("Your Moving Quote")}
-    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`)}
-    ${bodyText("We have prepared three flat-rate service options tailored to your move. Every package includes professional movers, a dedicated truck, and full protection. Choose the level of care that suits you best.")}
+    ${subHeading(heroSub)}
+    ${heading(heroGreeting)}
+    ${bodyText(heroBody)}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
-    ${d.tiers ? tierCards(d.tiers, d.quoteUrl, d.recommendedTier) : ""}
-    ${estateRecommendationNote(d.recommendedTier)}
+    ${recommendationAbove}
+    ${tierBlock}
+    ${recommendationBelow}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
     ${ctaButton(d.quoteUrl, "View Full Quote & Book")}
     ${whyYugoBlock()}
@@ -779,8 +854,14 @@ function longDistanceTemplate(d: QuoteTemplateData): string {
   rows.push(["Date", dateDisplay(d.moveDate)]);
   if (d.estCrewSize != null && d.estCrewSize > 0)
     rows.push(["Crew", `${d.estCrewSize} professional movers`]);
-  if (d.estHours != null && d.estHours > 0)
-    rows.push(["Est. duration", `~${d.estHours} hours`]);
+  // Est. duration deliberately omitted from every client email.
+  // Operator decision — duration is an admin planning value used to
+  // estimate labour cost and crew scheduling, not a client promise.
+  // Telling the client "~7 hours" anchors them to a number we may
+  // miss on a particularly heavy day (and clients quote it back when
+  // they ask for refunds). Crew + Truck stay because the client can
+  // see those at arrival and they're operationally relevant.
+  void d.estHours;
   if (d.truckSize) rows.push(["Truck", formatTruckSize(d.truckSize)]);
 
   const price =
@@ -878,8 +959,14 @@ function singleItemTemplate(d: QuoteTemplateData): string {
   rows.push(["Delivery Date", dateDisplay(d.moveDate)]);
   if (d.estCrewSize != null && d.estCrewSize > 0)
     rows.push(["Crew", quoteEmailCrewLine(d.estCrewSize, "single_item")]);
-  if (d.estHours != null && d.estHours > 0)
-    rows.push(["Est. duration", `~${d.estHours} hours`]);
+  // Est. duration deliberately omitted from every client email.
+  // Operator decision — duration is an admin planning value used to
+  // estimate labour cost and crew scheduling, not a client promise.
+  // Telling the client "~7 hours" anchors them to a number we may
+  // miss on a particularly heavy day (and clients quote it back when
+  // they ask for refunds). Crew + Truck stay because the client can
+  // see those at arrival and they're operationally relevant.
+  void d.estHours;
 
   const price =
     d.customPrice ??
@@ -938,8 +1025,14 @@ function whiteGloveTemplate(d: QuoteTemplateData): string {
   rows.push(["Delivery Date", dateDisplay(d.moveDate)]);
   if (d.estCrewSize != null && d.estCrewSize > 0)
     rows.push(["Crew", quoteEmailCrewLine(d.estCrewSize, "white_glove")]);
-  if (d.estHours != null && d.estHours > 0)
-    rows.push(["Est. duration", `~${d.estHours} hours`]);
+  // Est. duration deliberately omitted from every client email.
+  // Operator decision — duration is an admin planning value used to
+  // estimate labour cost and crew scheduling, not a client promise.
+  // Telling the client "~7 hours" anchors them to a number we may
+  // miss on a particularly heavy day (and clients quote it back when
+  // they ask for refunds). Crew + Truck stay because the client can
+  // see those at arrival and they're operationally relevant.
+  void d.estHours;
 
   const price =
     d.customPrice ??
@@ -977,8 +1070,14 @@ function specialtyTemplate(d: QuoteTemplateData): string {
   rows.push(["Target Date", dateDisplay(d.moveDate)]);
   if (d.estCrewSize != null && d.estCrewSize > 0)
     rows.push(["Crew", `${d.estCrewSize} professional movers`]);
-  if (d.estHours != null && d.estHours > 0)
-    rows.push(["Est. duration", `~${d.estHours} hours`]);
+  // Est. duration deliberately omitted from every client email.
+  // Operator decision — duration is an admin planning value used to
+  // estimate labour cost and crew scheduling, not a client promise.
+  // Telling the client "~7 hours" anchors them to a number we may
+  // miss on a particularly heavy day (and clients quote it back when
+  // they ask for refunds). Crew + Truck stay because the client can
+  // see those at arrival and they're operationally relevant.
+  void d.estHours;
 
   const price = d.customPrice;
 
