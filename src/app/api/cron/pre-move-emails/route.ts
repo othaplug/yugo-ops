@@ -371,6 +371,11 @@ export async function GET(req: NextRequest) {
   }
 
   /* ── T-24 Hour Emails ── */
+  // NOTE: deliberately NOT pulling crews:crew_id(name). The crews row
+  // carries the internal team identifier ("Alpha", "Bravo", "Team B")
+  // which must never appear in client-facing copy — operator was
+  // surprised to see "Crew lead: Alpha" in the preview. We render
+  // assigned_members (the actual mover first names) instead.
   const { data: moves24 } = await supabase
     .from("moves")
     .select(
@@ -378,8 +383,7 @@ export async function GET(req: NextRequest) {
       id, move_code, client_name, client_email, client_phone,
       scheduled_date, scheduled_time, from_address, to_address,
       crew_id, crew_size, est_crew_size, assigned_members,
-      truck_info, arrival_window, tier_selected,
-      crews:crew_id(name)
+      truck_info, arrival_window, tier_selected
     `,
     )
     .in("status", ["confirmed", "scheduled"])
@@ -403,12 +407,15 @@ export async function GET(req: NextRequest) {
       const trackToken = signTrackToken("move", move.id);
       const trackingUrl = `${baseUrl}/track/move/${move.move_code ?? move.id}?token=${trackToken}`;
 
-      const crewRaw = move.crews as
-        | { name: string }
-        | { name: string }[]
-        | null;
-      const crew = Array.isArray(crewRaw) ? (crewRaw[0] ?? null) : crewRaw;
-      const crewLeadName = crew?.name || null;
+      // Pull the actual mover first names from assigned_members
+      // (already a string[] of names like ["John", "Gary"]). The team
+      // identifier from `crews.name` is internal-only and never goes
+      // to a client.
+      const assignedNames = Array.isArray(move.assigned_members)
+        ? (move.assigned_members as unknown[])
+            .map((n) => String(n ?? "").trim())
+            .filter(Boolean)
+        : [];
       // Source-of-truth crew size — see src/lib/moves/crew-size.ts.
       // Previously fell back to crews.members.length which is the entire
       // crew ROSTER, not the count assigned to this specific move (the
@@ -435,7 +442,7 @@ export async function GET(req: NextRequest) {
             moveDate: move.scheduled_date,
             fromAddress: move.from_address || "",
             toAddress: move.to_address || "",
-            crewLeadName,
+            crewMembers: assignedNames,
             crewSize,
             truckInfo: move.truck_info || null,
             arrivalWindow: move.arrival_window || move.scheduled_time || null,

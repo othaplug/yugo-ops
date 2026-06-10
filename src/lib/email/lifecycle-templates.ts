@@ -274,6 +274,15 @@ export interface PreMove24hrData {
   moveDate: string | null;
   fromAddress: string;
   toAddress: string;
+  /**
+   * First names of the movers assigned to this job ("John", "Gary",
+   * etc.). Rendered as "Your crew: John & Gary". Replaces the old
+   * `crewLeadName` field which leaked the internal team identifier
+   * ("Alpha", "Bravo") into client-facing copy.
+   */
+  crewMembers?: string[] | null;
+  /** @deprecated retained for backward compat with existing callers;
+   *  the template ignores it. Use `crewMembers` instead. */
   crewLeadName?: string | null;
   crewSize?: number | null;
   truckInfo?: string | null;
@@ -281,6 +290,19 @@ export interface PreMove24hrData {
   coordinatorName?: string | null;
   coordinatorPhone?: string | null;
   trackingUrl: string;
+}
+
+/**
+ * Format an array of crew first names into a friendly natural-language
+ * list: ["John"] → "John", ["John","Gary"] → "John & Gary",
+ * ["John","Gary","Alex"] → "John, Gary & Alex".
+ */
+function formatCrewNames(names: string[]): string {
+  const clean = names.map((n) => n.trim()).filter(Boolean);
+  if (clean.length === 0) return "";
+  if (clean.length === 1) return clean[0];
+  if (clean.length === 2) return `${clean[0]} & ${clean[1]}`;
+  return `${clean.slice(0, -1).join(", ")} & ${clean[clean.length - 1]}`;
 }
 
 export function preMove24hrEmail(d: PreMove24hrData): string {
@@ -291,13 +313,21 @@ export function preMove24hrEmail(d: PreMove24hrData): string {
       Everything is in place for your move tomorrow. Your arrival window and crew details are below.
     </p>
 
+    ${(() => {
+      // Crew block — render real mover first names ("Your crew: John
+      // & Gary") instead of the internal team identifier ("Crew lead:
+      // Alpha"). Falls back gracefully when names aren't available.
+      const names = Array.isArray(d.crewMembers) ? d.crewMembers : [];
+      const namesLine = formatCrewNames(names);
+      return `
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:18px;font-family:${PREMIUM_FONT}">
       <tr><td style="${CONTRACT_HDR_FULL}">Crew details</td></tr>
-      ${d.crewLeadName ? creamContractKvRow("Crew lead", escapeHtmlEmail(d.crewLeadName), LKV_VALUE) : ""}
+      ${namesLine ? creamContractKvRow("Your crew", escapeHtmlEmail(namesLine), LKV_VALUE) : ""}
       ${d.crewSize ? creamContractKvRow("Crew size", `${d.crewSize} movers`, LKV_VALUE) : ""}
       ${d.truckInfo ? creamContractKvRow("Truck", escapeHtmlEmail(d.truckInfo), LKV_VALUE) : ""}
       ${creamContractKvRow("Arrival", escapeHtmlEmail(d.arrivalWindow ?? "Morning window - your coordinator will confirm the exact time"), LKV_VALUE_REF)}
-    </table>
+    </table>`;
+    })()}
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:20px;font-family:${PREMIUM_FONT}">
       <tr><td style="${CONTRACT_HDR_FULL}">Move details</td></tr>

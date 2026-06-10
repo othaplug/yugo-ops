@@ -257,7 +257,10 @@ export function getStyleSampleTemplateJobs(ctx: StyleSampleRecipientContext): St
         moveDate: "2026-04-16",
         fromAddress: "100 King St W, Toronto, ON",
         toAddress: "200 Queen St E, Toronto, ON",
-        crewLeadName: "Jordan",
+        // Sample real first names — the cron passes assigned_members
+        // from the move row. crewLeadName is deprecated; kept here as
+        // a backward-compat reference for the preview tool.
+        crewMembers: ["Jordan", "Connor", "Alex"],
         crewSize: 3,
         truckInfo: "26 ft box truck",
         arrivalWindow: "8:00 AM – 10:00 AM",
