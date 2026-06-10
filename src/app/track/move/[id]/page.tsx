@@ -39,14 +39,58 @@ export default async function TrackMovePage({
   // Clients bookmarking this URL years later still see their perks + referral code.
   const linkExpired = false;
 
+  // Crew object passed to the client tree. Two scrubs happen here so
+  // no downstream component (TrackMoveClient, TrackLiveMap, the map
+  // popups in Mapbox/Leaflet) ever sees the internal team identifier
+  // ("Alpha", "Bravo", "Team B"):
+  //
+  //   1. crew.name is replaced with a friendly mover-names list built
+  //      from move.assigned_members ("John & Gary"), or a neutral
+  //      "Your moving crew" when names aren't on the row yet.
+  //   2. move.assigned_crew_name (which crew-job-snapshot.ts also
+  //      writes from crews.name) is overwritten on the move object
+  //      with the same scrubbed value, because TrackMoveClient reads
+  //      assigned_crew_name FIRST and falls back to crew.name only as
+  //      a tiebreaker. Both fields now agree on the safe value.
+  //
+  // The crew id is preserved so the live tracking subscription
+  // (crew_locations realtime channel) still works.
+  function clientFacingCrewName(assigned: unknown): string {
+    const names = Array.isArray(assigned)
+      ? (assigned as unknown[])
+          .map((n) => String(n ?? "").trim())
+          .filter(Boolean)
+      : [];
+    if (names.length === 0) return "Your moving crew";
+    if (names.length === 1) return names[0];
+    if (names.length === 2) return `${names[0]} & ${names[1]}`;
+    return `${names.slice(0, -1).join(", ")} & ${names[names.length - 1]}`;
+  }
+
+  const clientCrewLabel = clientFacingCrewName(move.assigned_members);
+
   let crew: { id: string; name: string; members?: string[] } | null = null;
   if (move.crew_id) {
     const { data: c } = await supabase
       .from("crews")
-      .select("id, name, members")
+      .select("id, members")
       .eq("id", move.crew_id)
       .single();
-    crew = c;
+    if (c) {
+      crew = {
+        id: c.id,
+        // NEVER c.name — that's the internal team identifier.
+        name: clientCrewLabel,
+        members: Array.isArray(c.members) ? c.members : undefined,
+      };
+    }
+  }
+
+  // Same scrub on the move row's assigned_crew_name before it gets
+  // serialised down to the client component.
+  if (move && typeof move === "object") {
+    (move as { assigned_crew_name?: string | null }).assigned_crew_name =
+      clientCrewLabel === "Your moving crew" ? null : clientCrewLabel;
   }
 
   // Approved fees from change requests and extra items (for client balance)

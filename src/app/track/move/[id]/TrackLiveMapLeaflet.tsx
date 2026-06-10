@@ -273,7 +273,12 @@ export function TrackLiveMapLeaflet({
       )}
       {hasPosition && crew && (
         <Marker position={[crew.current_lat, crew.current_lng]} icon={makeCrewIcon(bearing)}>
-          <Popup>{(crew.name || "Crew").replace("Team ", "")}</Popup>
+          {/* crew.name is already scrubbed at the source
+              (/track/move/[id]/page.tsx — clientFacingCrewName). The
+              previous .replace("Team ", "") was a partial fix that
+              still leaked everything after the prefix. No longer
+              needed. */}
+          <Popup>{crew.name || "Your moving crew"}</Popup>
         </Marker>
       )}
     </MapContainer>
