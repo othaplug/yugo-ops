@@ -13055,52 +13055,69 @@ export default function QuoteFormClient({
                       tiers?.signature?.price ?? tiers?.premier?.price ?? 0;
                     const estPrice = tiers?.estate?.price ?? 0;
                     const estTotalCost = cost?.total ?? 0;
-                    // Show true margin alongside gross. Numbers come from the
-                    // engine — no client-side math, single source of truth.
+                    // Helpers to recompute margins on-the-fly using the
+                    // CURRENTLY DISPLAYED price (which may have been
+                    // bumped by a per-tier or global override). The
+                    // engine-stamped `estimated_margin_*` and
+                    // `true_margin_*` values reflect the ENGINE price
+                    // only, so if we read them directly the panel
+                    // shows stale margins after an override — a YG-30286
+                    // bug where Essential displayed 32% true at $720
+                    // when the real number at $720 is 43%. Single
+                    // source of truth: this calc using displayedPrice +
+                    // the cost stack fields.
+                    const computeGross = (displayedPrice: number) =>
+                      displayedPrice > 0
+                        ? Math.round(
+                            ((displayedPrice - estTotalCost) / displayedPrice) *
+                              100,
+                          )
+                        : 0;
+                    const computeTrue = (
+                      displayedPrice: number,
+                      ohShare: number,
+                      claimsReserve: number,
+                    ) =>
+                      displayedPrice > 0
+                        ? Math.round(
+                            ((displayedPrice -
+                              estTotalCost -
+                              ohShare -
+                              claimsReserve) /
+                              displayedPrice) *
+                              100,
+                          )
+                        : null;
+                    const ohShareEss = cost?.oh_share_essential ?? 0;
+                    const ohShareSig = cost?.oh_share_signature ?? 0;
+                    const ohShareEst = cost?.oh_share_estate ?? 0;
+                    const claimsEss = cost?.claims_reserve_essential ?? 0;
+                    const claimsSig = cost?.claims_reserve_signature ?? 0;
+                    const claimsEst = cost?.claims_reserve_estate ?? 0;
                     const margins = [
                       {
                         label: "Essential",
                         price: curPrice,
-                        margin:
-                          typeof f.estimated_margin_essential === "number"
-                            ? f.estimated_margin_essential
-                            : typeof f.estimated_margin_curated === "number"
-                              ? f.estimated_margin_curated
-                              : 0,
-                        trueMargin:
-                          typeof f.true_margin_essential === "number"
-                            ? (f.true_margin_essential as number)
-                            : null,
-                        ohShare: cost?.oh_share_essential ?? 0,
-                        claimsReserve: cost?.claims_reserve_essential ?? 0,
+                        margin: computeGross(curPrice),
+                        trueMargin: computeTrue(curPrice, ohShareEss, claimsEss),
+                        ohShare: ohShareEss,
+                        claimsReserve: claimsEss,
                       },
                       {
                         label: "Signature",
                         price: sigPrice,
-                        margin:
-                          typeof f.estimated_margin_signature === "number"
-                            ? f.estimated_margin_signature
-                            : 0,
-                        trueMargin:
-                          typeof f.true_margin_signature === "number"
-                            ? (f.true_margin_signature as number)
-                            : null,
-                        ohShare: cost?.oh_share_signature ?? 0,
-                        claimsReserve: cost?.claims_reserve_signature ?? 0,
+                        margin: computeGross(sigPrice),
+                        trueMargin: computeTrue(sigPrice, ohShareSig, claimsSig),
+                        ohShare: ohShareSig,
+                        claimsReserve: claimsSig,
                       },
                       {
                         label: "Estate",
                         price: estPrice,
-                        margin:
-                          typeof f.estimated_margin_estate === "number"
-                            ? f.estimated_margin_estate
-                            : 0,
-                        trueMargin:
-                          typeof f.true_margin_estate === "number"
-                            ? (f.true_margin_estate as number)
-                            : null,
-                        ohShare: cost?.oh_share_estate ?? 0,
-                        claimsReserve: cost?.claims_reserve_estate ?? 0,
+                        margin: computeGross(estPrice),
+                        trueMargin: computeTrue(estPrice, ohShareEst, claimsEst),
+                        ohShare: ohShareEst,
+                        claimsReserve: claimsEst,
                       },
                     ].filter((t) => t.price > 0);
                     // Per-tier true-margin floors. Configurable via
