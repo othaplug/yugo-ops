@@ -1786,14 +1786,21 @@ export default function EditQuoteClient({
                   </option>
                 ))}
               </select>
-              <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)] cursor-pointer">
+              <label className="flex items-start gap-2 text-[12px] text-[var(--tx2)] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={fromLongCarry}
                   onChange={(e) => setFromLongCarry(e.target.checked)}
-                  className="accent-[var(--gold)] w-3.5 h-3.5"
+                  className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5"
                 />
-                From address: long carry (+$75)
+                <span>
+                  Add $75 long-carry surcharge for pickup
+                  {fromLongCarry ? (
+                    <span className="ml-1 text-emerald-600 font-medium">— applied</span>
+                  ) : (
+                    <span className="ml-1 text-[var(--tx3)]">— not applied</span>
+                  )}
+                </span>
               </label>
             </div>
             <div className="space-y-2">
@@ -1809,14 +1816,21 @@ export default function EditQuoteClient({
                   </option>
                 ))}
               </select>
-              <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)] cursor-pointer">
+              <label className="flex items-start gap-2 text-[12px] text-[var(--tx2)] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={toLongCarry}
                   onChange={(e) => setToLongCarry(e.target.checked)}
-                  className="accent-[var(--gold)] w-3.5 h-3.5"
+                  className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5"
                 />
-                To address: long carry (+$75)
+                <span>
+                  Add $75 long-carry surcharge for destination
+                  {toLongCarry ? (
+                    <span className="ml-1 text-emerald-600 font-medium">— applied</span>
+                  ) : (
+                    <span className="ml-1 text-[var(--tx3)]">— not applied</span>
+                  )}
+                </span>
               </label>
             </div>
           </div>

@@ -6852,18 +6852,28 @@ export default function QuoteFormClient({
                               ))}
                             </select>
                           </div>
-                          <label className="mt-1 flex w-full min-w-full cursor-pointer items-center gap-2 text-[12px] text-[var(--tx2)] basis-full sm:mt-2">
+                          <label className="mt-1 flex w-full min-w-full cursor-pointer items-start gap-2 text-[12px] text-[var(--tx2)] basis-full sm:mt-2">
                             <input
                               type="checkbox"
                               checked={fromLongCarry}
                               onChange={(e) =>
                                 setFromLongCarry(e.target.checked)
                               }
-                              className={checkboxAccentClass}
+                              className={`${checkboxAccentClass} mt-0.5`}
                             />
-                            {serviceType === "white_glove"
-                              ? "Pickup location: Long carry (50m+ from truck to entrance) (+$75)"
-                              : "From address: Long carry (50m+ from truck to entrance) (+$75)"}
+                            <span>
+                              Add $75 long-carry surcharge
+                              {serviceType === "white_glove" ? " for pickup" : " for pickup address"}
+                              {" "}
+                              <span className="text-[var(--tx3)]">
+                                (use when truck is 50m+ from entrance)
+                              </span>
+                              {fromLongCarry ? (
+                                <span className="ml-1 text-emerald-600 font-medium">— applied</span>
+                              ) : (
+                                <span className="ml-1 text-[var(--tx3)]">— not applied</span>
+                              )}
+                            </span>
                           </label>
                         </div>
                       </div>
@@ -6902,17 +6912,27 @@ export default function QuoteFormClient({
                             ))}
                           </select>
                         </div>
-                        <label className="flex cursor-pointer items-center gap-2 text-[12px] text-[var(--tx2)]">
+                        <label className="flex cursor-pointer items-start gap-2 text-[12px] text-[var(--tx2)]">
                           <input
                             type="checkbox"
                             checked={toLongCarry}
                             onChange={(e) =>
                               setToLongCarry(e.target.checked)
                             }
-                            className={checkboxAccentClass}
+                            className={`${checkboxAccentClass} mt-0.5`}
                           />
-                          To address: Long carry (50m+ from truck to entrance)
-                          (+$75)
+                          <span>
+                            Add $75 long-carry surcharge for destination
+                            {" "}
+                            <span className="text-[var(--tx3)]">
+                              (use when truck is 50m+ from entrance)
+                            </span>
+                            {toLongCarry ? (
+                              <span className="ml-1 text-emerald-600 font-medium">— applied</span>
+                            ) : (
+                              <span className="ml-1 text-[var(--tx3)]">— not applied</span>
+                            )}
+                          </span>
                         </label>
                       </div>
                     )}
@@ -7028,18 +7048,28 @@ export default function QuoteFormClient({
                               ))}
                             </select>
                           </div>
-                          <label className="mt-1 flex w-full min-w-full cursor-pointer items-center gap-2 text-[12px] text-[var(--tx2)] basis-full sm:mt-2">
+                          <label className="mt-1 flex w-full min-w-full cursor-pointer items-start gap-2 text-[12px] text-[var(--tx2)] basis-full sm:mt-2">
                             <input
                               type="checkbox"
                               checked={toLongCarry}
                               onChange={(e) =>
                                 setToLongCarry(e.target.checked)
                               }
-                              className={checkboxAccentClass}
+                              className={`${checkboxAccentClass} mt-0.5`}
                             />
-                            {serviceType === "white_glove"
-                              ? "Delivery location: Long carry (50m+ from truck to entrance) (+$75)"
-                              : "To address: Long carry (50m+ from truck to entrance) (+$75)"}
+                            <span>
+                              Add $75 long-carry surcharge
+                              {serviceType === "white_glove" ? " for delivery" : " for destination address"}
+                              {" "}
+                              <span className="text-[var(--tx3)]">
+                                (use when truck is 50m+ from entrance)
+                              </span>
+                              {toLongCarry ? (
+                                <span className="ml-1 text-emerald-600 font-medium">— applied</span>
+                              ) : (
+                                <span className="ml-1 text-[var(--tx3)]">— not applied</span>
+                              )}
+                            </span>
                           </label>
                         </div>
                       </div>
@@ -14918,7 +14948,11 @@ function PriceBreakdownResidential({
     value,
     sub,
   }: {
-    label: string;
+    // ReactNode (was string) so callers can pass JSX inline — e.g. the
+    // tier-prices section embeds a "(1.50× Essential · includes …)"
+    // span next to the tier name to make the multiplier label
+    // self-documenting. See YG-30286 tier-multiplier labelling fix.
+    label: React.ReactNode;
     value: React.ReactNode;
     sub?: React.ReactNode;
   }) => (
@@ -15216,8 +15250,26 @@ function PriceBreakdownResidential({
         <div>
           <SectionTitle>Tier prices</SectionTitle>
           <BreakdownCard>
+            {/* Effective ratio relative to Essential. The headline
+                multipliers (×1.5 Signature, ×3.15 Estate) refer to the
+                tier MULTIPLIER applied to the subtotal — but tier prices
+                also include tier-specific flat additions (assembly
+                bundle, full wrap, packing supplies, multi-day labour
+                uplift), so the displayed price isn't literally
+                subtotal × multiplier. Showing the effective ratio
+                vs Essential makes the per-tier value spread legible
+                to the operator without claiming the math is a clean
+                multiply. YG-30286 surfaced the labelling bug —
+                "Essential ×1.0" → $720 while subtotal was $599 made
+                the math read as inconsistent.
+            */}
             <Row
-              label="Essential (×1.0)"
+              label={
+                <span>
+                  Essential
+                  <span className="ml-1 text-[10px] text-[var(--tx3)]">(base)</span>
+                </span>
+              }
               value={
                 <span className="font-bold text-[var(--gold)]">
                   {fmtPrice(essentialPrice)}
@@ -15226,7 +15278,14 @@ function PriceBreakdownResidential({
             />
             {signaturePrice != null && (
               <Row
-                label="Signature (×1.50)"
+                label={
+                  <span>
+                    Signature
+                    <span className="ml-1 text-[10px] text-[var(--tx3)]">
+                      ({(signaturePrice / Math.max(1, essentialPrice)).toFixed(2)}× Essential · includes assembly + full wrap)
+                    </span>
+                  </span>
+                }
                 value={
                   <span className="font-bold text-[var(--gold)]">
                     {fmtPrice(signaturePrice)}
@@ -15236,7 +15295,14 @@ function PriceBreakdownResidential({
             )}
             {estatePrice != null && (
               <Row
-                label="Estate (×3.15)"
+                label={
+                  <span>
+                    Estate
+                    <span className="ml-1 text-[10px] text-[var(--tx3)]">
+                      ({(estatePrice / Math.max(1, essentialPrice)).toFixed(2)}× Essential · includes white-glove care + supplies allowance{estatePrice > 0 && essentialPrice > 0 ? " + multi-day labour" : ""})
+                    </span>
+                  </span>
+                }
                 value={
                   <span className="font-bold text-[var(--gold)]">
                     {fmtPrice(estatePrice)}

@@ -6,6 +6,7 @@ import {
   catalogMinCrewFromInventorySlugs,
   estimateLabourFromScore,
 } from "@/lib/inventory-labour";
+import { floorTruckByMoveSize } from "@/lib/quotes/crew-and-truck-minimums";
 import { validateInventoryQuantity } from "@/lib/inventory-quantity-validation";
 import {
   fuzzyFilterItemWeights,
@@ -407,9 +408,19 @@ export default function InventoryInput({
   // per-tier pricing.
   const labourEstimate = useMemo(() => {
     if (!showLabourEstimate || labourScore <= 0) return null;
+    // Truck score must match engine's `truckSizingScore` formula in
+    // generate/route.ts so the preview doesn't say "16ft" when the
+    // engine is actually charging for 20ft. YG-30286 bug: preview
+    // used labourScore (24.45 after the -0.15/box adjustment), engine
+    // used itemScore + boxCount × 0.3 (28.2). Differed by 4 points
+    // which crossed the 25 → 20ft threshold, so the preview displayed
+    // a 16ft recommendation while the quote charged a 20ft upgrade
+    // surcharge.
+    const truckScore = (inventoryScore ?? 0) + (boxCount ?? 0) * 0.3;
     const baseOpts = {
       hoursEstimateMode: "client_on_job" as const,
       catalogMinCrew,
+      truckInventoryScore: truckScore,
     };
     const sig = estimateLabourFromScore(
       labourScore, distanceKm, fromAccess, toAccess, moveSize,
@@ -423,12 +434,18 @@ export default function InventoryInput({
       labourScore, distanceKm, fromAccess, toAccess, moveSize,
       { ...baseOpts, tier: "estate" as const },
     );
+    // Apply the move-size truck floor so the preview matches what the
+    // engine actually charges. estimateLabourFromScore returns a
+    // score-only recommendation; the engine floors that by move size
+    // before applying any surcharge. Mirroring the floor here keeps
+    // both surfaces in lockstep.
+    const flooredTruck = floorTruckByMoveSize(sig.truckSize, moveSize);
     return {
       // Backward-compat fields read elsewhere
       crewSize: sig.crewSize,
       estimatedHours: sig.estimatedHours,
       hoursRange: sig.hoursRange,
-      truckSize: sig.truckSize,
+      truckSize: flooredTruck,
       calibrationVersion: sig.calibrationVersion,
       // Per-tier hours for spread display
       hoursEssential: ess.estimatedHours,
@@ -438,6 +455,8 @@ export default function InventoryInput({
   }, [
     showLabourEstimate,
     labourScore,
+    inventoryScore,
+    boxCount,
     distanceKm,
     fromAccess,
     toAccess,
