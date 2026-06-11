@@ -1612,10 +1612,14 @@ async function calcResidential(
   });
 
   // ── Tiered labour delta (v2): extra hours above baseline, per-tier rates ─
+  // Defaults bumped 2026-06-11 to luxury positioning (Essential 65 / Signature
+  // 80 / Estate 95). Each tier's per-mover-hour gross margin now lands at or
+  // above the corresponding true-margin floor (55/62/70). See migration
+  // 20260611000000_labour_rate_luxury_calibration.sql for the rationale.
   const labourRates = {
-    essential: cfgNum(config, "labour_rate_essential", cfgNum(config, "labour_rate_curated", cfgNum(config, "labour_rate_per_mover_hour", 55))),
-    signature: cfgNum(config, "labour_rate_signature", cfgNum(config, "labour_rate_per_mover_hour", 65)),
-    estate:    cfgNum(config, "labour_rate_estate",    cfgNum(config, "labour_rate_per_mover_hour", 75)),
+    essential: cfgNum(config, "labour_rate_essential", cfgNum(config, "labour_rate_curated", cfgNum(config, "labour_rate_per_mover_hour", 65))),
+    signature: cfgNum(config, "labour_rate_signature", cfgNum(config, "labour_rate_per_mover_hour", 80)),
+    estate:    cfgNum(config, "labour_rate_estate",    cfgNum(config, "labour_rate_per_mover_hour", 95)),
   };
   // Legacy single rate for breakdown display
   const labourRate = labourRates.essential;
@@ -5134,10 +5138,12 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       svcType === "white_glove")
   ) {
     const fObj = factors as Record<string, unknown>;
+    // Fallback bumped from 55 → 65 to match the new luxury Essential baseline
+    // (2026-06-11). See migration 20260611000000_labour_rate_luxury_calibration.
     const labourRate =
       typeof fObj.labour_rate === "number" && Number.isFinite(fObj.labour_rate)
         ? fObj.labour_rate
-        : cfgNum(config, "labour_rate_per_mover_hour", 55);
+        : cfgNum(config, "labour_rate_per_mover_hour", 65);
     const pricing = computeMoveProjectPricingPreview(moveProjectParsed.data, {
       labourRatePerMoverHour: labourRate,
       truckDayRate: cfgNum(config, "move_project_truck_day_rate", 135),
