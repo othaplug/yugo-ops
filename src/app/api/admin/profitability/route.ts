@@ -5,6 +5,7 @@ import {
   calculateMoveProfitability,
   calculateDeliveryProfitability,
   getMonthlyOverhead,
+  getDailyOverheadBurn,
   movePaysCardProcessingFee,
   deliveryPaysCardProcessingFee,
 } from "@/lib/finance/calculateProfit";
@@ -188,6 +189,14 @@ export async function GET(req: NextRequest) {
   const totalJobCount = completedMoves.length + completedDeliveries.length;
   const monthlyMoveCount = totalJobCount || 1;
   const targetMargin = parseFloat(config.target_gross_margin_pct ?? "40");
+  // Daily overhead burn for per-row allocation. Computed once and passed
+  // through so every row uses the same number. NB: deliberately uses the
+  // CURRENT config snapshot — historical re-cost would require storing the
+  // daily burn at completion time. For Phase 1 we accept the small drift.
+  const dailyBurnForRows = getDailyOverheadBurn(config);
+  const claimsReservePctForOverrides = parseFloat(
+    config.overhead_claims_reserve_pct ?? "0.005",
+  ) || 0;
 
   /** Extract FSA (first 3 chars of Canadian postal code) from an address string */
   function extractFSA(addr: string | null | undefined): string | null {
@@ -222,6 +231,7 @@ export async function GET(req: NextRequest) {
     const jobsOnSameDay = dayStr ? (jobsOnScheduledDay[dayStr] ?? 1) : 1;
     let costs = calculateMoveProfitability(moveCostInput, config, monthlyMoveCount, {
       jobsOnSameDay,
+      dailyOverheadBurn: dailyBurnForRows,
     });
     // Apply per-job overrides (only override fields that were explicitly set)
     const ov = costOverridesMap[m.id];
@@ -233,7 +243,11 @@ export async function GET(req: NextRequest) {
       const processing = ov.processing != null ? ov.processing : costs.processing;
       const totalDirect = labour + fuel + truck + supplies;
       const grossProfit = revenue - totalDirect;
-      const netProfit = grossProfit;
+      // Override path: still subtract OH share + claims reserve so the override
+      // doesn't accidentally inflate margin past true contribution.
+      const ohShareOv = dailyBurnForRows > 0 ? dailyBurnForRows / Math.max(1, jobsOnSameDay) : 0;
+      const claimsReserveOv = Math.round(revenue * claimsReservePctForOverrides * 100) / 100;
+      const netProfit = grossProfit - ohShareOv - claimsReserveOv;
       costs = {
         ...costs,
         labour: Math.round(labour),
@@ -242,7 +256,8 @@ export async function GET(req: NextRequest) {
         supplies,
         processing: Math.round(processing * 100) / 100,
         totalDirect: Math.round(totalDirect),
-        allocatedOverhead: 0,
+        allocatedOverhead: Math.round(ohShareOv),
+        claimsReserve: claimsReserveOv,
         grossProfit: Math.round(grossProfit),
         netProfit: Math.round(netProfit),
         grossMargin: revenue > 0 ? Math.round(((grossProfit / revenue) * 100) * 10) / 10 : 0,
@@ -270,6 +285,7 @@ export async function GET(req: NextRequest) {
         balance_method: m.balance_method ?? null,
         deposit_method: m.deposit_method ?? null,
       }),
+      jobs_on_same_day: jobsOnSameDay,
       ...costs,
     };
   });
@@ -285,7 +301,7 @@ export async function GET(req: NextRequest) {
       revenue,
       config,
       monthlyMoveCount,
-      { jobsOnSameDay: dJobsOnSameDay },
+      { jobsOnSameDay: dJobsOnSameDay, dailyOverheadBurn: dailyBurnForRows },
     );
     // Apply per-job overrides
     const ov = costOverridesMap[d.id];
@@ -297,7 +313,9 @@ export async function GET(req: NextRequest) {
       const processing = ov.processing != null ? ov.processing : costs.processing;
       const totalDirect = labour + fuel + truck + supplies;
       const grossProfit = revenue - totalDirect;
-      const netProfit = grossProfit;
+      const ohShareOv = dailyBurnForRows > 0 ? dailyBurnForRows / Math.max(1, dJobsOnSameDay) : 0;
+      const claimsReserveOv = Math.round(revenue * claimsReservePctForOverrides * 100) / 100;
+      const netProfit = grossProfit - ohShareOv - claimsReserveOv;
       costs = {
         ...costs,
         labour: Math.round(labour),
@@ -306,7 +324,8 @@ export async function GET(req: NextRequest) {
         supplies,
         processing: Math.round(processing * 100) / 100,
         totalDirect: Math.round(totalDirect),
-        allocatedOverhead: 0,
+        allocatedOverhead: Math.round(ohShareOv),
+        claimsReserve: claimsReserveOv,
         grossProfit: Math.round(grossProfit),
         netProfit: Math.round(netProfit),
         grossMargin: revenue > 0 ? Math.round(((grossProfit / revenue) * 100) * 10) / 10 : 0,
@@ -333,6 +352,7 @@ export async function GET(req: NextRequest) {
         payment_method: d.payment_method ?? null,
         balance_method: d.balance_method ?? null,
       }),
+      jobs_on_same_day: dJobsOnSameDay,
       ...costs,
     };
   });
@@ -343,34 +363,60 @@ export async function GET(req: NextRequest) {
   const totalDirectCost = rows.reduce((s, r) => s + r.totalDirect, 0);
   const totalGrossProfit = totalRevenue - totalDirectCost;
   const avgGrossMargin = totalRevenue > 0 ? Math.round(((totalGrossProfit / totalRevenue) * 100) * 10) / 10 : 0;
-  const totalNetProfit = totalGrossProfit;
-  const avgNetMargin = avgGrossMargin;
+  // True totals sum each row's allocated OH share + claims reserve. With
+  // per-row OH allocation now live, net != gross.
+  const totalAllocatedOh = rows.reduce((s, r) => s + (r.allocatedOverhead ?? 0), 0);
+  const totalClaimsReserve = rows.reduce((s, r) => s + (r.claimsReserve ?? 0), 0);
+  const totalNetProfit = totalGrossProfit - totalAllocatedOh - totalClaimsReserve;
+  const avgNetMargin = totalRevenue > 0
+    ? Math.round(((totalNetProfit / totalRevenue) * 100) * 10) / 10
+    : 0;
   const avgProfitPerMove = rows.length > 0 ? Math.round(totalGrossProfit / rows.length) : 0;
   const lowMarginCount = rows.filter((r) => r.grossMargin < 25).length;
 
   const overhead = getMonthlyOverhead(config);
+  const dailyBurn = getDailyOverheadBurn(config);
+  const workingDays = parseFloat(config.truck_working_days_per_month ?? "22") || 22;
   const avgRevenue = rows.length > 0 ? totalRevenue / rows.length : 0;
-  const breakEven = avgRevenue > 0 ? Math.ceil(overhead / (avgRevenue - (totalDirectCost / (rows.length || 1)))) : 0;
+  const avgDirectPerJob = rows.length > 0 ? totalDirectCost / rows.length : 0;
+  const avgGrossProfitPerJob = avgRevenue - avgDirectPerJob;
+  const breakEven = avgGrossProfitPerJob > 0
+    ? Math.ceil(overhead / avgGrossProfitPerJob)
+    : 0;
 
   return NextResponse.json({
     rows,
     summary: {
       avgGrossMargin, avgNetMargin, avgProfitPerMove, lowMarginCount,
       totalRevenue, totalDirectCost, totalGrossProfit, totalNetProfit,
+      totalAllocatedOh: Math.round(totalAllocatedOh),
+      totalClaimsReserve: Math.round(totalClaimsReserve * 100) / 100,
       moveCount: rows.length, targetMargin,
     },
     overhead: {
       total: overhead,
+      // perDay = monthly ÷ working days. The headline number under Model A.
+      // perMove retained for backward-compat but downgraded to "if you spread
+      // the same OH evenly across this window's completed jobs" — not the
+      // figure operators should anchor on.
+      perDay: dailyBurn,
       perMove: rows.length > 0 ? Math.round(overhead / rows.length) : overhead,
+      workingDays,
       breakEven,
       items: {
         software: parseFloat(config.monthly_software_cost ?? "250"),
         autoInsurance: parseFloat(config.monthly_auto_insurance ?? "1000"),
         glInsurance: parseFloat(config.monthly_gl_insurance ?? "300"),
+        wsib: parseFloat(config.monthly_wsib ?? "0"),
+        moversLiability: parseFloat(config.monthly_movers_liability ?? "0"),
         marketing: parseFloat(config.monthly_marketing_budget ?? "1000"),
         officeAdmin: parseFloat(config.monthly_office_admin ?? "350"),
+        bookkeeping: parseFloat(config.monthly_bookkeeping ?? "0"),
+        phoneInternet: parseFloat(config.monthly_phone_internet ?? "0"),
+        vehicleMaintenance: parseFloat(config.monthly_vehicle_maintenance ?? "0"),
         ownerDraw: parseFloat(config.monthly_owner_draw ?? "0"),
       },
+      claimsReservePct: parseFloat(config.overhead_claims_reserve_pct ?? "0.005"),
     },
   });
 }

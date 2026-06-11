@@ -13027,6 +13027,20 @@ export default function QuoteFormClient({
                           fuel?: number;
                           supplies?: number;
                           total?: number;
+                          monthly_overhead?: number;
+                          oh_daily_burn?: number;
+                          oh_working_days?: number;
+                          oh_share_essential?: number;
+                          oh_share_signature?: number;
+                          oh_share_estate?: number;
+                          oh_days_estate?: number;
+                          claims_reserve_pct?: number;
+                          claims_reserve_essential?: number;
+                          claims_reserve_signature?: number;
+                          claims_reserve_estate?: number;
+                          true_cost_essential?: number;
+                          true_cost_signature?: number;
+                          true_cost_estate?: number;
                         }
                       | undefined;
                     const tiers = quoteResult.tiers as
@@ -13041,6 +13055,8 @@ export default function QuoteFormClient({
                       tiers?.signature?.price ?? tiers?.premier?.price ?? 0;
                     const estPrice = tiers?.estate?.price ?? 0;
                     const estTotalCost = cost?.total ?? 0;
+                    // Show true margin alongside gross. Numbers come from the
+                    // engine — no client-side math, single source of truth.
                     const margins = [
                       {
                         label: "Essential",
@@ -13051,6 +13067,12 @@ export default function QuoteFormClient({
                             : typeof f.estimated_margin_curated === "number"
                               ? f.estimated_margin_curated
                               : 0,
+                        trueMargin:
+                          typeof f.true_margin_essential === "number"
+                            ? (f.true_margin_essential as number)
+                            : null,
+                        ohShare: cost?.oh_share_essential ?? 0,
+                        claimsReserve: cost?.claims_reserve_essential ?? 0,
                       },
                       {
                         label: "Signature",
@@ -13059,6 +13081,12 @@ export default function QuoteFormClient({
                           typeof f.estimated_margin_signature === "number"
                             ? f.estimated_margin_signature
                             : 0,
+                        trueMargin:
+                          typeof f.true_margin_signature === "number"
+                            ? (f.true_margin_signature as number)
+                            : null,
+                        ohShare: cost?.oh_share_signature ?? 0,
+                        claimsReserve: cost?.claims_reserve_signature ?? 0,
                       },
                       {
                         label: "Estate",
@@ -13067,8 +13095,23 @@ export default function QuoteFormClient({
                           typeof f.estimated_margin_estate === "number"
                             ? f.estimated_margin_estate
                             : 0,
+                        trueMargin:
+                          typeof f.true_margin_estate === "number"
+                            ? (f.true_margin_estate as number)
+                            : null,
+                        ohShare: cost?.oh_share_estate ?? 0,
+                        claimsReserve: cost?.claims_reserve_estate ?? 0,
                       },
                     ].filter((t) => t.price > 0);
+                    // Per-tier true-margin floors. Configurable via
+                    // platform_config but defaults reflect the luxury
+                    // positioning the operator set: Essential ≥55%, Signature
+                    // ≥62%, Estate ≥70%. Used for the soft warning ribbon.
+                    const trueFloorByTier: Record<string, number> = {
+                      Essential: 55,
+                      Signature: 62,
+                      Estate: 70,
+                    };
 
                     function marginAlertStyle(m: number) {
                       if (m < 15) {
@@ -13099,50 +13142,130 @@ export default function QuoteFormClient({
                       };
                     }
 
+                    // Identify tiers below their luxury floor for the banner.
+                    const belowFloorTiers = margins
+                      .filter(
+                        (m) =>
+                          m.trueMargin != null &&
+                          m.trueMargin < (trueFloorByTier[m.label] ?? 50),
+                      )
+                      .map((m) => ({
+                        label: m.label,
+                        trueMargin: m.trueMargin,
+                        floor: trueFloorByTier[m.label] ?? 50,
+                      }));
                     return (
                       <>
-                        {margins.map(({ label, price, margin }) => {
-                          const alert = marginAlertStyle(margin);
-                          const profit = price - estTotalCost;
-                          const AlertIcon = alert.Icon;
-                          return (
-                            <div
-                              key={label}
-                              className="flex items-start justify-between gap-2 py-1.5 border-b border-[var(--brd)]/40 last:border-0"
-                            >
-                              <div>
-                                <span className="text-[var(--tx2)] font-medium">
-                                  {label}
-                                </span>
-                                <span className="text-[var(--tx3)] ml-1.5">
-                                  {fmtPrice(price)}
-                                </span>
-                              </div>
-                              <div className="text-right shrink-0 max-w-[min(100%,12rem)]">
-                                <span
-                                  className={`inline-flex items-center gap-1.5 font-bold tabular-nums ${alert.cls}`}
-                                >
-                                  {margin}%
-                                  <AlertIcon
-                                    className="w-3.5 h-3.5 shrink-0"
-                                    weight="bold"
-                                    aria-hidden
-                                  />
-                                </span>
-                                <p className="text-[9px] text-[var(--tx3)] leading-snug">
-                                  {alert.hint}
+                        {belowFloorTiers.length > 0 && (
+                          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5 text-[10px]">
+                            <div className="flex items-start gap-1.5">
+                              <Warning
+                                weight="fill"
+                                className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5"
+                              />
+                              <div className="space-y-0.5">
+                                <p className="font-semibold text-amber-700 dark:text-amber-300">
+                                  True margin below luxury floor on{" "}
+                                  {belowFloorTiers.map((t) => t.label).join(", ")}
                                 </p>
-                                <p className="text-[9px] text-[var(--tx3)]">
-                                  profit {fmtPrice(profit)}
+                                <ul className="text-amber-700/90 dark:text-amber-200/85 leading-snug">
+                                  {belowFloorTiers.map((t) => (
+                                    <li key={t.label}>
+                                      • {t.label}: {t.trueMargin}% true vs{" "}
+                                      {t.floor}% floor
+                                    </li>
+                                  ))}
+                                </ul>
+                                <p className="text-amber-600/90 dark:text-amber-300/75 text-[9px] mt-1">
+                                  Informational — pricing algorithm is not auto-bumping.
+                                  Review inputs or proceed manually if the price is intentional.
                                 </p>
                               </div>
                             </div>
-                          );
-                        })}
+                          </div>
+                        )}
+                        {margins.map(
+                          ({
+                            label,
+                            price,
+                            margin,
+                            trueMargin,
+                            ohShare,
+                            claimsReserve,
+                          }) => {
+                            const alert = marginAlertStyle(margin);
+                            const profit = price - estTotalCost;
+                            // True profit subtracts OH share + claims reserve.
+                            const trueProfit = profit - ohShare - claimsReserve;
+                            const AlertIcon = alert.Icon;
+                            const floor = trueFloorByTier[label] ?? 50;
+                            const belowFloor =
+                              trueMargin != null && trueMargin < floor;
+                            const trueClass =
+                              trueMargin == null
+                                ? "text-[var(--tx3)]"
+                                : trueMargin < 0
+                                  ? "text-red-500"
+                                  : belowFloor
+                                    ? "text-amber-500"
+                                    : "text-emerald-400";
+                            return (
+                              <div
+                                key={label}
+                                className="flex items-start justify-between gap-2 py-1.5 border-b border-[var(--brd)]/40 last:border-0"
+                              >
+                                <div>
+                                  <span className="text-[var(--tx2)] font-medium">
+                                    {label}
+                                  </span>
+                                  <span className="text-[var(--tx3)] ml-1.5">
+                                    {fmtPrice(price)}
+                                  </span>
+                                </div>
+                                <div className="text-right shrink-0 max-w-[min(100%,14rem)]">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <span
+                                      className={`inline-flex items-center gap-1 font-bold tabular-nums ${alert.cls}`}
+                                    >
+                                      {margin}%
+                                      <AlertIcon
+                                        className="w-3.5 h-3.5 shrink-0"
+                                        weight="bold"
+                                        aria-hidden
+                                      />
+                                    </span>
+                                    <span className="text-[9px] text-[var(--tx3)]">
+                                      gross
+                                    </span>
+                                  </div>
+                                  {trueMargin != null && (
+                                    <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                                      <span
+                                        className={`font-semibold tabular-nums ${trueClass}`}
+                                      >
+                                        {trueMargin}%
+                                      </span>
+                                      <span className="text-[9px] text-[var(--tx3)]">
+                                        true {belowFloor && `(floor ${floor}%)`}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <p className="text-[9px] text-[var(--tx3)] leading-snug">
+                                    {alert.hint}
+                                  </p>
+                                  <p className="text-[9px] text-[var(--tx3)]">
+                                    profit {fmtPrice(profit)} · true{" "}
+                                    {fmtPrice(trueProfit)}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          },
+                        )}
                         {cost && (
                           <div className="pt-1 text-[10px] text-[var(--tx3)] space-y-0.5">
                             <div className="flex justify-between">
-                              <span>Est. cost</span>
+                              <span>Direct cost</span>
                               <span className="tabular-nums text-[var(--tx2)]">
                                 {fmtPrice(estTotalCost)}
                               </span>
@@ -13155,6 +13278,33 @@ export default function QuoteFormClient({
                                 {fmtPrice(cost.supplies ?? 0)}
                               </span>
                             </div>
+                            {cost.oh_daily_burn != null &&
+                              cost.oh_share_essential != null && (
+                                <div className="flex justify-between text-[9px] pt-1 border-t border-[var(--brd)]/40 mt-1">
+                                  <span>
+                                    Overhead{" "}
+                                    {fmtPrice(cost.oh_share_essential)}
+                                    {cost.oh_days_estate &&
+                                    cost.oh_days_estate > 1
+                                      ? ` (Estate ×${cost.oh_days_estate} days)`
+                                      : ""}{" "}
+                                    · daily burn{" "}
+                                    {fmtPrice(cost.oh_daily_burn)} ÷{" "}
+                                    {cost.oh_working_days ?? 22} working days
+                                  </span>
+                                </div>
+                              )}
+                            {cost.claims_reserve_pct != null &&
+                              cost.claims_reserve_essential != null && (
+                                <div className="flex justify-between text-[9px]">
+                                  <span>
+                                    Claims reserve{" "}
+                                    {fmtPrice(cost.claims_reserve_essential)}{" "}
+                                    ({(cost.claims_reserve_pct * 100).toFixed(2)}
+                                    % of revenue)
+                                  </span>
+                                </div>
+                              )}
                           </div>
                         )}
                       </>

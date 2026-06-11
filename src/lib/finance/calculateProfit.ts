@@ -14,13 +14,19 @@ export interface MoveCosts {
   /** Estimated card processing pass-through (client-paid); 0 if not card. Never included in totalDirect. */
   processing: number;
   totalDirect: number;
-  /** Kept for API shape; always 0 (no per-job overhead allocation). */
+  /**
+   * Per-job overhead share: dailyBurn ÷ jobsOnSameDay. Calculated by callers
+   * that pass `dailyOverheadShare` in spread opts. Subtracted from grossProfit
+   * to produce netProfit (= true contribution).
+   */
   allocatedOverhead: number;
+  /** Revenue × claims_reserve_pct. Subtracted from grossProfit alongside overhead. */
+  claimsReserve: number;
   grossProfit: number;
-  /** Same as gross profit (no per-job overhead). */
+  /** True contribution: grossProfit − allocatedOverhead − claimsReserve. */
   netProfit: number;
   grossMargin: number;
-  /** Same as gross margin. */
+  /** True contribution as a % of revenue. */
   netMargin: number;
 }
 
@@ -77,14 +83,24 @@ function buildCosts(
   supplies: number,
   config: Record<string, string>,
   includeProcessingEstimate: boolean,
+  /**
+   * Per-row OH allocation: daily burn divided by same-day job count.
+   * Drives true (post-overhead) profit columns on the profitability table.
+   * 0 means no allocation — preserve legacy behaviour for callers that don't
+   * pass it.
+   */
+  allocatedOverhead = 0,
 ): MoveCosts {
   const processing = includeProcessingEstimate ? paymentProcessingEstimate(revenue, config) : 0;
   const totalDirect = labour + fuel + truck + supplies;
-  const allocatedOverhead = 0;
+  const claimsReserve = getClaimsReserveAmount(revenue, config);
   const grossProfit = revenue - totalDirect;
-  const netProfit = grossProfit;
+  // Net profit subtracts the per-row OH share + revenue-scaled claims reserve.
+  // grossMargin keeps its meaning ("after direct costs"); netMargin is now the
+  // true contribution number.
+  const netProfit = grossProfit - allocatedOverhead - claimsReserve;
   const grossMargin = revenue > 0 ? Math.round(((grossProfit / revenue) * 100) * 10) / 10 : 0;
-  const netMargin = grossMargin;
+  const netMargin = revenue > 0 ? Math.round(((netProfit / revenue) * 100) * 10) / 10 : 0;
   return {
     labour: Math.round(labour),
     fuel: Math.round(fuel * 100) / 100,
@@ -93,6 +109,7 @@ function buildCosts(
     processing: Math.round(processing * 100) / 100,
     totalDirect: Math.round(totalDirect),
     allocatedOverhead: Math.round(allocatedOverhead),
+    claimsReserve: Math.round(claimsReserve * 100) / 100,
     grossProfit: Math.round(grossProfit),
     netProfit: Math.round(netProfit),
     grossMargin,
@@ -103,6 +120,12 @@ function buildCosts(
 export type ProfitabilitySpreadOpts = {
   /** Jobs (moves + deliveries) on the same scheduled calendar day sharing daily truck/insurance; min 1. */
   jobsOnSameDay?: number;
+  /**
+   * Daily overhead burn (monthly OH ÷ working days). If provided, divided by
+   * jobsOnSameDay to compute the per-row OH share that gets subtracted into
+   * netProfit. Pass 0 / omit to preserve gross-only view.
+   */
+  dailyOverheadBurn?: number;
 };
 
 export function calculateMoveProfitability(
@@ -161,7 +184,22 @@ export function calculateMoveProfitability(
   const supplies = cfg(config, suppliesKey, suppliesFallback);
 
   const includeProcessingEstimate = movePaysCardProcessingFee(move);
-  return buildCosts(revenue, labour, fuel, truck, supplies, config, includeProcessingEstimate);
+  // Same-day OH share. Truck above already divides by `divisor` — overhead
+  // follows the same model: a day with N jobs spreads daily burn across all N.
+  const ohShare =
+    spreadOpts?.dailyOverheadBurn && spreadOpts.dailyOverheadBurn > 0
+      ? spreadOpts.dailyOverheadBurn / divisor
+      : 0;
+  return buildCosts(
+    revenue,
+    labour,
+    fuel,
+    truck,
+    supplies,
+    config,
+    includeProcessingEstimate,
+    ohShare,
+  );
 }
 
 /**
@@ -206,16 +244,45 @@ export function calculateDeliveryProfitability(
     payment_method: d.payment_method as string | null | undefined,
     balance_method: d.balance_method as string | null | undefined,
   });
-  return buildCosts(revenue, labour, fuel, truck, supplies, config, includeProcessingEstimate);
+  const ohShareD =
+    spreadOpts?.dailyOverheadBurn && spreadOpts.dailyOverheadBurn > 0
+      ? spreadOpts.dailyOverheadBurn / divisor
+      : 0;
+  return buildCosts(
+    revenue,
+    labour,
+    fuel,
+    truck,
+    supplies,
+    config,
+    includeProcessingEstimate,
+    ohShareD,
+  );
 }
 
+/**
+ * Standard monthly overhead categories. Fleet costs are NOT included here —
+ * truck cost recovery happens per-job via day rates (Model A: assets earn their
+ * keep on jobs they run, not via spread allocation). See calculateMoveProfitability.
+ *
+ * The luxury-business expansion (WSIB, movers' liability, phone, bookkeeping,
+ * vehicle maintenance) was added 2026-06-10 — previously these costs were either
+ * undercounted or invisible in margin math. All default to 0 so existing
+ * deployments don't see surprise overhead jumps; operator fills in real values
+ * from current P&L.
+ */
 export function getMonthlyOverhead(config: Record<string, string>): number {
   const standard =
     cfg(config, "monthly_software_cost", 250) +
     cfg(config, "monthly_auto_insurance", 1000) +
     cfg(config, "monthly_gl_insurance", 300) +
+    cfg(config, "monthly_wsib", 0) +
+    cfg(config, "monthly_movers_liability", 0) +
     cfg(config, "monthly_marketing_budget", 1000) +
     cfg(config, "monthly_office_admin", 350) +
+    cfg(config, "monthly_bookkeeping", 0) +
+    cfg(config, "monthly_phone_internet", 0) +
+    cfg(config, "monthly_vehicle_maintenance", 0) +
     cfg(config, "monthly_owner_draw", 0);
 
   let custom = 0;
@@ -225,6 +292,35 @@ export function getMonthlyOverhead(config: Record<string, string>): number {
   } catch { /* invalid JSON, skip */ }
 
   return standard + custom;
+}
+
+/**
+ * Daily overhead burn — monthly overhead spread across working days. This is
+ * the figure shown to operators at quote time and used to allocate per-job
+ * OH share (split across same-day jobs at profitability view).
+ *
+ * Per-day was picked over per-move because moves aren't time-equal: a 3-day
+ * Estate move consumes 3× the insurance/office/coordinator capacity of a
+ * 1-day Essential — flat per-move flattens this and over-credits short jobs.
+ */
+export function getDailyOverheadBurn(config: Record<string, string>): number {
+  const monthly = getMonthlyOverhead(config);
+  const workingDays = cfg(config, "truck_working_days_per_month", 22);
+  if (workingDays <= 0) return 0;
+  return Math.round((monthly / workingDays) * 100) / 100;
+}
+
+/**
+ * Claims reserve as a % of revenue — applied per job. Separate from monthly
+ * OH because it scales with job size, not flat business burn. Default 0.5%
+ * matches industry rule-of-thumb for damages/disputes.
+ */
+export function getClaimsReserveAmount(
+  revenue: number,
+  config: Record<string, string>,
+): number {
+  const pct = cfg(config, "overhead_claims_reserve_pct", 0.005);
+  return Math.round(revenue * pct * 100) / 100;
 }
 
 export interface CustomOverheadItem {

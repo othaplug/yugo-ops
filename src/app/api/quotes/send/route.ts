@@ -316,6 +316,18 @@ export async function POST(req: NextRequest) {
         coordinatorName,
         coordinatorPhone,
         recommendedTier: quote.recommended_tier ?? "signature",
+        // Feed presentation_mode through so the residential email
+        // honors the operator's layout choice (Estate-featured / Estate-
+        // only / comparison). Without this the email always rendered
+        // the 3-tier comparison layout regardless of what the admin
+        // form had stored.
+        presentationMode:
+          typeof quote.presentation_mode === "string" &&
+          (quote.presentation_mode === "comparison" ||
+            quote.presentation_mode === "estate_featured" ||
+            quote.presentation_mode === "estate_only")
+            ? quote.presentation_mode
+            : null,
         // Event
         eventName: (factors.event_name as string) ?? null,
         eventReturnDate: (factors.return_date as string) ?? null,

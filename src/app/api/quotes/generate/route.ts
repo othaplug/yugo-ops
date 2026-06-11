@@ -2057,6 +2057,67 @@ async function calcResidential(
   const estSigMarginPct  = sigPrice > 0 ? Math.round(((sigPrice - estTotalCost) / sigPrice) * 100) : 0;
   const estEstMarginPct  = estPrice > 0 ? Math.round(((estPrice - estTotalCostEstateOps) / estPrice) * 100) : 0;
 
+  // ─── Overhead allocation (true contribution margin) ─────────────────
+  // Per-day model: monthly overhead ÷ working days = daily burn. At quote
+  // time we assume worst case (1 job/day) so the operator sees the
+  // floor margin. If multiple jobs run that day, actual will be higher.
+  //
+  // For Essential / Signature this is 1 × daily_burn (single-day local moves
+  // are the dominant case). For Estate, the existing day-plan provides the
+  // multi-day count which is multiplied through.
+  //
+  // Claims reserve is revenue-scaled per industry default (0.5%).
+  //
+  // Single source of truth is the Monthly Overhead UI at /admin/finance/
+  // profitability — read via getMonthlyOverhead/getDailyOverheadBurn which
+  // share key names. See src/lib/finance/calculateProfit.ts.
+  const monthlyOhStandard =
+    cfgNum(config, "monthly_software_cost", 250) +
+    cfgNum(config, "monthly_auto_insurance", 1000) +
+    cfgNum(config, "monthly_gl_insurance", 300) +
+    cfgNum(config, "monthly_wsib", 0) +
+    cfgNum(config, "monthly_movers_liability", 0) +
+    cfgNum(config, "monthly_marketing_budget", 1000) +
+    cfgNum(config, "monthly_office_admin", 350) +
+    cfgNum(config, "monthly_bookkeeping", 0) +
+    cfgNum(config, "monthly_phone_internet", 0) +
+    cfgNum(config, "monthly_vehicle_maintenance", 0) +
+    cfgNum(config, "monthly_owner_draw", 0);
+  let monthlyOhCustom = 0;
+  try {
+    const customRaw = config.get("custom_overhead_items") ?? "[]";
+    const items = JSON.parse(customRaw) as { amount?: number }[];
+    monthlyOhCustom = items.reduce((s, i) => s + (Number(i?.amount) || 0), 0);
+  } catch { /* ignore malformed JSON */ }
+  const monthlyOverhead = monthlyOhStandard + monthlyOhCustom;
+  const ohWorkingDays = Math.max(1, cfgNum(config, "truck_working_days_per_month", 22));
+  const dailyBurnOh = monthlyOverhead / ohWorkingDays;
+  // Estate spans multiple days; Essential / Signature assumed 1 unless the
+  // quote was explicitly multi-day via the scope picker (estate_day_plan).
+  const ohDaysEssSig = 1;
+  const ohDaysEstate = Math.max(1, estateDayPlan.days || 1);
+  const ohShareEssential = Math.round(dailyBurnOh * ohDaysEssSig);
+  const ohShareSignature = Math.round(dailyBurnOh * ohDaysEssSig);
+  const ohShareEstate = Math.round(dailyBurnOh * ohDaysEstate);
+  const claimsReservePct = cfgNum(config, "overhead_claims_reserve_pct", 0.005);
+  const claimsReserveEss = Math.round(curPrice * claimsReservePct);
+  const claimsReserveSig = Math.round(sigPrice * claimsReservePct);
+  const claimsReserveEst = Math.round(estPrice * claimsReservePct);
+  // True contribution = price − direct cost − overhead share − claims reserve.
+  // Per-tier — each uses its own price and the appropriate OH-day count.
+  const trueCostEssential = estTotalCost + ohShareEssential + claimsReserveEss;
+  const trueCostSignature = estTotalCost + ohShareSignature + claimsReserveSig;
+  const trueCostEstate = estTotalCostEstateOps + ohShareEstate + claimsReserveEst;
+  const trueMarginEssential = curPrice > 0
+    ? Math.round(((curPrice - trueCostEssential) / curPrice) * 100)
+    : 0;
+  const trueMarginSignature = sigPrice > 0
+    ? Math.round(((sigPrice - trueCostSignature) / sigPrice) * 100)
+    : 0;
+  const trueMarginEstate = estPrice > 0
+    ? Math.round(((estPrice - trueCostEstate) / estPrice) * 100)
+    : 0;
+
   return {
     tiers,
     minCrew,
@@ -2150,6 +2211,23 @@ async function calcResidential(
         supplies: estSuppliesCost,
         total: estTotalCost,
         total_estate_ops: estTotalCostEstateOps,
+        // Overhead allocation — per-day model, worst-case 1 job/day.
+        // True margin reflects what's left after the company's daily burn
+        // and damage-claims reserve are subtracted. Operator-facing only.
+        monthly_overhead: Math.round(monthlyOverhead),
+        oh_daily_burn: Math.round(dailyBurnOh * 100) / 100,
+        oh_working_days: ohWorkingDays,
+        oh_share_essential: ohShareEssential,
+        oh_share_signature: ohShareSignature,
+        oh_share_estate: ohShareEstate,
+        oh_days_estate: ohDaysEstate,
+        claims_reserve_pct: claimsReservePct,
+        claims_reserve_essential: claimsReserveEss,
+        claims_reserve_signature: claimsReserveSig,
+        claims_reserve_estate: claimsReserveEst,
+        true_cost_essential: trueCostEssential,
+        true_cost_signature: trueCostSignature,
+        true_cost_estate: trueCostEstate,
         // Three-leg fuel detail — let the admin margin card expand to
         // show why the fuel cost is what it is. See three-leg-fuel.ts.
         fuel_breakdown: {
@@ -2189,6 +2267,12 @@ async function calcResidential(
       estimated_margin_essential:   estMarginPct,
       estimated_margin_signature: estSigMarginPct,
       estimated_margin_estate:    estEstMarginPct,
+      // True margin per tier — after monthly OH allocation and claims reserve.
+      // The number the operator should anchor on for "is this job actually
+      // profitable" decisions. See estimated_cost.* for the inputs.
+      true_margin_essential: trueMarginEssential,
+      true_margin_signature: trueMarginSignature,
+      true_margin_estate:    trueMarginEstate,
     },
     cratingTotal,
     estateSuppliesAllowance,
@@ -4928,9 +5012,26 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       : null;
 
   if (truckResult.primary && tiers) {
+    // The truck label that gets stored on quote.truck_primary (and
+    // shown in MOVE DETAILS) is residentialPricedTruck — derived from
+    // factors.truck_recommended in calcResidential. allocateTruck()
+    // and recTruck can disagree (e.g. 3BR with light inventory: pricing
+    // truck = 24ft, allocator = 20ft). The previous code used the
+    // allocator value here, so MOVE DETAILS read 24ft while the tier
+    // bullet said "20ft dedicated moving truck" — clients saw the
+    // contradiction. Always prefer the priced truck when it's set;
+    // fall back to the allocator only when the priced truck is missing.
+    const preferredTruckKey =
+      residentialPricedTruck && residentialPricedTruck !== "none"
+        ? residentialPricedTruck
+        : truckResult.primary.vehicle_type;
+    const primaryDisplay =
+      TRUCK_DISPLAY[preferredTruckKey] ||
+      TRUCK_DISPLAY[truckResult.primary.vehicle_type] ||
+      truckResult.primary.display_name;
     const truckLine = truckResult.isMultiVehicle && truckResult.secondary
-      ? `${TRUCK_DISPLAY[truckResult.primary.vehicle_type] || truckResult.primary.display_name} + support van`
-      : TRUCK_DISPLAY[truckResult.primary.vehicle_type] || truckResult.primary.display_name;
+      ? `${primaryDisplay} + support van`
+      : primaryDisplay;
     for (const tierName of Object.keys(tiers)) {
       const t = tiers[tierName];
       const idx = t.includes.findIndex((s: string) => s.toLowerCase().includes("truck") || s.toLowerCase().includes("sprinter"));
@@ -5574,6 +5675,14 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       // 'estate' and service is residential/long-distance; otherwise
       // forced to 'comparison' so the column never carries a
       // non-meaningful state for non-Estate quotes.
+      //
+      // Default for Estate quotes: when the admin form doesn't send an
+      // explicit presentation_mode, fall back to 'estate_featured' (not
+      // 'comparison'). Reason: an Estate recommendation already says
+      // "this is the right tier for the client" — comparison mode then
+      // anchors the email on Essential's lower price, which is the
+      // opposite of what the operator's recommendation intended. Older
+      // quotes that explicitly chose 'comparison' still get it.
       presentation_mode: (() => {
         const requested = input.presentation_mode;
         const tierOk =
@@ -5588,7 +5697,8 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
         ) {
           return requested;
         }
-        return "comparison";
+        // No explicit mode + Estate recommendation = estate_featured.
+        return "estate_featured";
       })(),
       // R2: declared cargo value at quote time (mirrors moves.declared_value).
       declared_value:

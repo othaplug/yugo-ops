@@ -13,6 +13,14 @@ const STANDARD_OVERHEAD_KEYS = [
   "monthly_software_cost",
   "monthly_auto_insurance",
   "monthly_gl_insurance",
+  // Added 2026-06-10 — luxury-business OH categories previously invisible.
+  // Operator owes a one-time backfill from current P&L; default 0 means no
+  // behaviour change until the value is set.
+  "monthly_wsib",                 // Workers' Comp / WSIB premium
+  "monthly_movers_liability",     // Cargo / movers' liability (distinct from GL)
+  "monthly_bookkeeping",          // Outsourced bookkeeping / accounting
+  "monthly_phone_internet",       // Mobile lines, office internet, hotspots
+  "monthly_vehicle_maintenance",  // Oil, tires, brakes, washes (NOT lease)
   "monthly_marketing_budget",
   "monthly_office_admin",
   "monthly_owner_draw",
@@ -40,6 +48,16 @@ const COST_MODEL_KEYS = [
   "payment_processing_pct",
   "payment_processing_flat",
   "target_gross_margin_pct",
+  // Claims reserve as a % of revenue. Applied per-job (scales with job size),
+  // not part of monthly OH burn. Default 0.005 (0.5%) — industry standard
+  // for damages/disputes provisioning.
+  "overhead_claims_reserve_pct",
+  // Per-tier true-margin floors (luxury positioning). Engine surfaces a
+  // warning if a tier's projected true margin falls below these; does NOT
+  // auto-bump price. See PR 5.
+  "true_margin_floor_essential",
+  "true_margin_floor_signature",
+  "true_margin_floor_estate",
 ];
 
 export async function GET() {

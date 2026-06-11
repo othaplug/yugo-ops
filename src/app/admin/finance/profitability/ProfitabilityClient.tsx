@@ -27,6 +27,7 @@ import {
   Trash as Trash2,
   X,
   PencilSimple as Pencil,
+  Warning,
 } from "@phosphor-icons/react";
 import { useToast } from "@/app/admin/components/Toast";
 import {
@@ -55,6 +56,7 @@ interface ProfitRow {
   processing: number;
   totalDirect: number;
   allocatedOverhead: number;
+  claimsReserve: number;
   grossProfit: number;
   netProfit: number;
   grossMargin: number;
@@ -62,6 +64,8 @@ interface ProfitRow {
   hasOverride?: boolean;
   /** Card payment: show processing pass-through estimate in the Proc. column. */
   paid_with_card?: boolean;
+  /** Count of completed jobs sharing this row's scheduled date. Drives OH share split. */
+  jobs_on_same_day?: number;
 }
 
 type CostField = "labour" | "fuel" | "truck" | "supplies" | "processing";
@@ -75,15 +79,22 @@ interface Summary {
   totalDirectCost: number;
   totalGrossProfit: number;
   totalNetProfit: number;
+  /** Sum of per-row OH allocations across the window. */
+  totalAllocatedOh?: number;
+  /** Sum of revenue-scaled claims reserves across the window. */
+  totalClaimsReserve?: number;
   moveCount: number;
   targetMargin: number;
 }
 
 interface OverheadData {
   total: number;
+  perDay: number;
   perMove: number;
+  workingDays: number;
   breakEven: number;
   items: Record<string, number>;
+  claimsReservePct: number;
 }
 
 /* ════════════ date ranges ════════════ */
@@ -371,13 +382,21 @@ const STANDARD_OVERHEAD_FIELDS: {
   key: string;
   label: string;
   defaultVal: number;
+  help?: string;
 }[] = [
-  { key: "monthly_software_cost", label: "Software & Tools", defaultVal: 250 },
-  { key: "monthly_auto_insurance", label: "Auto Insurance", defaultVal: 1000 },
-  { key: "monthly_gl_insurance", label: "GL Insurance", defaultVal: 300 },
-  { key: "monthly_marketing_budget", label: "Marketing", defaultVal: 1000 },
-  { key: "monthly_office_admin", label: "Office / Admin", defaultVal: 350 },
-  { key: "monthly_owner_draw", label: "Owner Draw", defaultVal: 0 },
+  { key: "monthly_software_cost", label: "Software & Tools", defaultVal: 250, help: "OPS+, HubSpot, Square, Mapbox, hosting" },
+  { key: "monthly_auto_insurance", label: "Auto Insurance", defaultVal: 1000, help: "Fleet vehicle insurance" },
+  { key: "monthly_gl_insurance", label: "GL Insurance", defaultVal: 300, help: "General liability — slips/falls, premises" },
+  // Added 2026-06-10 — luxury OH expansion. All default 0 so existing data
+  // isn't affected until operator fills in real numbers.
+  { key: "monthly_wsib", label: "WSIB / Workers' Comp", defaultVal: 0, help: "Premium for crew injury coverage (Ontario WSIB)" },
+  { key: "monthly_movers_liability", label: "Movers' Liability", defaultVal: 0, help: "Cargo / in-transit damage coverage — separate from GL" },
+  { key: "monthly_marketing_budget", label: "Marketing", defaultVal: 1000, help: "Ads, SEO, referral fees, branding" },
+  { key: "monthly_office_admin", label: "Office / Admin", defaultVal: 350, help: "Rent, utilities, office supplies" },
+  { key: "monthly_bookkeeping", label: "Bookkeeping / Accounting", defaultVal: 0, help: "Outsourced bookkeeping, year-end accounting, legal" },
+  { key: "monthly_phone_internet", label: "Phone / Internet", defaultVal: 0, help: "Mobile lines, office internet, crew hotspots" },
+  { key: "monthly_vehicle_maintenance", label: "Vehicle Maintenance", defaultVal: 0, help: "Oil, tires, brakes, washes (NOT lease — that's in Fleet)" },
+  { key: "monthly_owner_draw", label: "Owner Draw", defaultVal: 0, help: "Owner compensation drawn from the business" },
 ];
 
 const TRUCK_FLEET = [
@@ -411,6 +430,11 @@ function OverheadEditor({
         config[f.key] ?? String(f.defaultVal),
       ]),
     ),
+  );
+  // Claims reserve as % of revenue — applied per-job, scales with job size.
+  // Stored as 0.005 (= 0.5%) but UI shows the percentage form for legibility.
+  const [claimsReservePct, setClaimsReservePct] = useState<string>(
+    () => String(parseFloat(config.overhead_claims_reserve_pct ?? "0.005") * 100),
   );
   // Truck monthly & daily overrides
   const [truckMonthly, setTruckMonthly] = useState<Record<string, string>>(() =>
@@ -468,6 +492,11 @@ function OverheadEditor({
       ...standard,
       truck_working_days_per_month: truckWorkingDays,
       custom_overhead_items: JSON.stringify(customItems),
+      // Convert UI percentage (0.5) → stored decimal (0.005). Guard against
+      // garbage input by clamping to [0, 1].
+      overhead_claims_reserve_pct: String(
+        Math.max(0, Math.min(1, (parseFloat(claimsReservePct) || 0) / 100)),
+      ),
     };
     for (const t of TRUCK_FLEET) {
       body[`truck_monthly_cost_${t.key}`] = truckMonthly[t.key] ?? "0";
@@ -485,14 +514,19 @@ function OverheadEditor({
     onSaved();
   };
 
+  // Bottom-total bug fix (2026-06-10): fleet was being summed into the
+  // monthly overhead total, but Model A treats trucks as direct per-job cost
+  // (recovered via day rates) — not as fixed monthly burn. Including fleet
+  // double-counted Sprinter cost (once in OH, again in per-move truck cost).
+  // The fleet panel below is informational + drives day rates only.
+  const total =
+    Object.values(standard).reduce((s, v) => s + (parseFloat(v) || 0), 0) +
+    customItems.reduce((s, i) => s + i.amount, 0);
   const truckMonthlyTotal = TRUCK_FLEET.reduce(
     (s, t) => s + (parseFloat(truckMonthly[t.key] ?? "0") || 0),
     0,
   );
-  const total =
-    Object.values(standard).reduce((s, v) => s + (parseFloat(v) || 0), 0) +
-    truckMonthlyTotal +
-    customItems.reduce((s, i) => s + i.amount, 0);
+  void truckMonthlyTotal; // Kept for potential future display, not summed into total
 
   return (
     <div className="space-y-5">
@@ -504,7 +538,10 @@ function OverheadEditor({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {STANDARD_OVERHEAD_FIELDS.map((f) => (
             <div key={f.key}>
-              <label className="block text-[9px] font-medium text-[var(--tx3)] mb-1">
+              <label
+                className="block text-[9px] font-medium text-[var(--tx3)] mb-1"
+                title={f.help}
+              >
                 {f.label}
               </label>
               <div className="relative">
@@ -520,6 +557,7 @@ function OverheadEditor({
                     setStandard((p) => ({ ...p, [f.key]: e.target.value }))
                   }
                   className="admin-premium-input admin-premium-input--leading admin-premium-input--compact w-full pl-5"
+                  title={f.help}
                 />
               </div>
             </div>
@@ -595,6 +633,41 @@ function OverheadEditor({
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Per-job allocations (revenue-scaled OH) */}
+      <div>
+        <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">
+          Per-Job Allocations
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label
+              className="block text-[9px] font-medium text-[var(--tx3)] mb-1"
+              title="Reserve as % of revenue for damage claims and disputes. Industry standard: 0.5%."
+            >
+              Claims Reserve (% of revenue)
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                value={claimsReservePct}
+                onChange={(e) => setClaimsReservePct(e.target.value)}
+                className="admin-premium-input admin-premium-input--compact w-full pr-6"
+                title="Reserve as % of revenue for damage claims and disputes. Industry standard: 0.5%."
+              />
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[var(--tx3)]">
+                %
+              </span>
+            </div>
+            <div className="text-[9px] text-[var(--tx3)] mt-1">
+              Applied to revenue per job. Industry default 0.5%.
+            </div>
+          </div>
         </div>
       </div>
 
@@ -776,8 +849,9 @@ export default function ProfitabilityClient() {
   const router = useRouter();
   const { toast: showToast } = useToast();
 
-  // 14 columns (no Tier col; incl. conditional Supplies): ID,Date,Client,Type,Revenue,Hours,Labour,Fuel,Truck,Supplies,Proc,DirectCost,GrossProfit,Margin
-  const COL_INITIAL = [72, 80, 150, 90, 76, 52, 76, 60, 60, 72, 60, 88, 92, 68];
+  // 16 columns (no Tier col; incl. conditional Supplies):
+  // ID, Date, Client, Type, Revenue, Hours, Labour, Fuel, Truck, Supplies, Proc, DirectCost, OH Alloc, GrossProfit, GrossMargin, TrueMargin
+  const COL_INITIAL = [72, 80, 150, 90, 76, 52, 76, 60, 60, 72, 60, 88, 76, 88, 72, 80];
   const { widths: colWidths, Handle: ColHandle } = useColResize(
     COL_INITIAL.length,
     COL_INITIAL,
@@ -818,13 +892,20 @@ export default function ProfitabilityClient() {
           void processing;
           const totalDirect = labour + fuel + truck + supplies;
           const grossProfit = revenue - totalDirect;
-          const netProfit = grossProfit;
+          // Preserve OH share + claims from the server's prior calc — optimistic
+          // update keeps the displayed true margin consistent until the next
+          // refresh lands. If the OH config changed between edits, the next
+          // realtime tick will overwrite this anyway.
+          const ohShare = r.allocatedOverhead ?? 0;
+          const claimsReserve = r.claimsReserve ?? 0;
+          const netProfit = grossProfit - ohShare - claimsReserve;
           return {
             ...updated,
             totalDirect: Math.round(totalDirect),
             grossProfit: Math.round(grossProfit),
             netProfit: Math.round(netProfit),
-            allocatedOverhead: 0,
+            allocatedOverhead: ohShare,
+            claimsReserve,
             grossMargin:
               revenue > 0
                 ? Math.round((grossProfit / revenue) * 100 * 10) / 10
@@ -1103,8 +1184,13 @@ export default function ProfitabilityClient() {
       "Supplies",
       "Card proc. (est., pass-through)",
       "Direct Cost",
+      "OH Allocation",
+      "Same-day jobs",
+      "Claims Reserve",
       "Gross Profit",
       "Gross Margin %",
+      "Net Profit (true)",
+      "True Margin %",
     ];
     const csvRows = filteredRows.map((r) =>
       [
@@ -1122,8 +1208,13 @@ export default function ProfitabilityClient() {
         r.supplies,
         r.paid_with_card ? r.processing : "",
         r.totalDirect,
+        r.allocatedOverhead ?? 0,
+        r.jobs_on_same_day ?? 1,
+        r.claimsReserve ?? 0,
         r.grossProfit,
         r.grossMargin,
+        r.netProfit,
+        r.netMargin,
       ].join(","),
     );
     const blob = new Blob([headers.join(",") + "\n" + csvRows.join("\n")], {
@@ -1269,6 +1360,179 @@ export default function ProfitabilityClient() {
         </div>
       ) : (
         <>
+          {/* ─── Month-to-date P&L card (only on this_month preset) ─── */}
+          {preset === "this_month" && summary && overhead && (() => {
+            // Pure Option B view — the "are we making money this month" number.
+            // No allocation games: revenue MTD − direct costs MTD − full monthly
+            // OH = net profit. On-pace extrapolates linearly through end of
+            // month. This is what the operator should look at first.
+            const totalRev = summary.totalRevenue ?? 0;
+            const totalDirect = summary.totalDirectCost ?? 0;
+            const grossProfit = totalRev - totalDirect;
+            const monthlyOh = overhead.total ?? 0;
+            // True running monthly P&L: gross profit accumulates as jobs land;
+            // OH burn is the full monthly figure regardless of how far we are
+            // into the month. The delta is the actual "real" number.
+            const netProfit = grossProfit - monthlyOh;
+            const now = new Date();
+            const daysIntoMonth = now.getDate();
+            const daysInMonth = new Date(
+              now.getFullYear(),
+              now.getMonth() + 1,
+              0,
+            ).getDate();
+            const progressPct = Math.round(
+              (daysIntoMonth / daysInMonth) * 100,
+            );
+            // On-pace: project gross profit linearly. Caveat: monthly OH is a
+            // fixed monthly figure, not pro-rated — projection compares to
+            // full-month OH so the operator sees the realistic month-end net.
+            const projectedGrossProfit =
+              daysIntoMonth > 0
+                ? Math.round((grossProfit / daysIntoMonth) * daysInMonth)
+                : 0;
+            const projectedNetProfit = projectedGrossProfit - monthlyOh;
+            const netClass =
+              netProfit >= 0
+                ? "text-emerald-700 dark:text-emerald-300"
+                : "text-red-600 dark:text-red-400";
+            const projNetClass =
+              projectedNetProfit >= 0
+                ? "text-emerald-700 dark:text-emerald-300"
+                : "text-red-600 dark:text-red-400";
+            return (
+              <div className="border-t border-[var(--brd)]/30 pt-5">
+                <div className="bg-gradient-to-br from-[var(--card)] to-[var(--bg2)] border border-[var(--brd)] rounded-xl p-5">
+                  <div className="flex items-baseline justify-between mb-4">
+                    <div>
+                      <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">
+                        Month-to-date P&amp;L
+                      </p>
+                      <h3 className="text-[15px] font-bold text-[var(--tx)]">
+                        {now.toLocaleString("en-US", {
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </h3>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+                        Through day {daysIntoMonth} of {daysInMonth} ({progressPct}%)
+                      </p>
+                      <div className="w-32 h-1.5 bg-[var(--bg)] rounded-full mt-1 overflow-hidden">
+                        <div
+                          className="h-full bg-[var(--gold)] transition-all"
+                          style={{ width: `${progressPct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-[12px]">
+                    {/* Left col — running figures */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between">
+                        <span className="text-[var(--tx3)]">Revenue</span>
+                        <span className="font-medium text-[var(--tx)] tabular-nums">
+                          {formatCurrency(totalRev)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[var(--tx3)]">Direct costs</span>
+                        <span className="font-medium text-rose-700 dark:text-rose-400 tabular-nums">
+                          −{formatCurrency(totalDirect)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between border-t border-[var(--brd)]/40 pt-1.5">
+                        <span className="text-[var(--tx2)]">Gross profit</span>
+                        <span className="font-semibold text-emerald-700 dark:text-emerald-300 tabular-nums">
+                          {formatCurrency(grossProfit)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[var(--tx3)]">
+                          Monthly overhead
+                        </span>
+                        <span className="font-medium text-rose-700 dark:text-rose-400 tabular-nums">
+                          −{formatCurrency(monthlyOh)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between border-t border-[var(--brd)]/40 pt-1.5">
+                        <span className="text-[var(--tx)] font-semibold">
+                          Net profit (MTD)
+                        </span>
+                        <span
+                          className={`font-bold tabular-nums ${netClass}`}
+                        >
+                          {formatCurrency(netProfit)}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Right col — month-end projection */}
+                    <div className="space-y-1.5">
+                      <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">
+                        Month-end projection
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[var(--tx3)]">
+                          Gross profit (on pace)
+                        </span>
+                        <span className="font-medium text-[var(--tx2)] tabular-nums">
+                          {formatCurrency(projectedGrossProfit)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[var(--tx3)]">
+                          Monthly overhead
+                        </span>
+                        <span className="font-medium text-[var(--tx2)] tabular-nums">
+                          −{formatCurrency(monthlyOh)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between border-t border-[var(--brd)]/40 pt-1.5">
+                        <span className="text-[var(--tx)] font-semibold">
+                          Projected net
+                        </span>
+                        <span
+                          className={`font-bold tabular-nums ${projNetClass}`}
+                        >
+                          {formatCurrency(projectedNetProfit)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-[10px]">
+                        <span className="text-[var(--tx3)]">
+                          OH burn rate
+                        </span>
+                        <span className="text-[var(--tx3)] tabular-nums">
+                          {formatCurrency(overhead.perDay)}/day ×{" "}
+                          {overhead.workingDays} working days
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-[10px]">
+                        <span className="text-[var(--tx3)]">
+                          Break-even pace
+                        </span>
+                        <span className="text-[var(--tx3)] tabular-nums">
+                          ~{overhead.breakEven} jobs needed
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  {netProfit < 0 && projectedNetProfit < 0 && (
+                    <div className="mt-3 pt-3 border-t border-[var(--brd)]/40 flex items-start gap-2 text-[10px] text-red-600 dark:text-red-400">
+                      <Warning weight="bold" className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      <span>
+                        On pace to lose{" "}
+                        {formatCurrency(Math.abs(projectedNetProfit))} this
+                        month. Either revenue must grow or overhead/direct
+                        costs must come down.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* ─── Top Stats ─── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 border-t border-[var(--brd)]/30 pt-5">
             <StatCard
@@ -1956,6 +2220,18 @@ export default function ProfitabilityClient() {
                         <ColHandle col={11} />
                       </th>,
                       <th
+                        key="oh"
+                        title="Per-job overhead share: daily burn ÷ same-day jobs."
+                        className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none"
+                        onClick={() => toggleSort("allocatedOverhead")}
+                      >
+                        <span className="inline-flex items-center gap-0.5">
+                          OH Alloc
+                          <ArrowUpDown className="w-2.5 h-2.5 opacity-40" />
+                        </span>
+                        <ColHandle col={12} />
+                      </th>,
+                      <th
                         key="gp"
                         className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none"
                         onClick={() => toggleSort("grossProfit")}
@@ -1964,18 +2240,31 @@ export default function ProfitabilityClient() {
                           Gross Profit
                           <ArrowUpDown className="w-2.5 h-2.5 opacity-40" />
                         </span>
-                        <ColHandle col={12} />
+                        <ColHandle col={13} />
                       </th>,
                       <th
                         key="mg"
+                        title="Gross margin — revenue minus direct costs only."
                         className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none"
                         onClick={() => toggleSort("grossMargin")}
                       >
                         <span className="inline-flex items-center gap-0.5">
-                          Margin
+                          Gross %
                           <ArrowUpDown className="w-2.5 h-2.5 opacity-40" />
                         </span>
-                        <ColHandle col={13} />
+                        <ColHandle col={14} />
+                      </th>,
+                      <th
+                        key="tm"
+                        title="True margin — after OH allocation and claims reserve. The number that matters."
+                        className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none"
+                        onClick={() => toggleSort("netMargin")}
+                      >
+                        <span className="inline-flex items-center gap-0.5">
+                          True %
+                          <ArrowUpDown className="w-2.5 h-2.5 opacity-40" />
+                        </span>
+                        <ColHandle col={15} />
                       </th>,
                     ].filter(Boolean)}
                   </tr>
@@ -2078,6 +2367,21 @@ export default function ProfitabilityClient() {
                         <td className="py-1.5 px-2 font-medium text-rose-900 dark:text-rose-400 overflow-hidden text-ellipsis whitespace-nowrap">
                           {formatCurrency(r.totalDirect)}
                         </td>
+                        <td
+                          title={
+                            r.jobs_on_same_day && r.jobs_on_same_day > 1
+                              ? `Split across ${r.jobs_on_same_day} jobs on this day`
+                              : "Full daily burn (1 job on this day)"
+                          }
+                          className="py-1.5 px-2 text-amber-700 dark:text-amber-400/85 overflow-hidden text-ellipsis whitespace-nowrap tabular-nums"
+                        >
+                          {formatCurrency(r.allocatedOverhead ?? 0)}
+                          {r.jobs_on_same_day && r.jobs_on_same_day > 1 && (
+                            <span className="ml-1 text-[9px] text-[var(--tx3)]">
+                              /{r.jobs_on_same_day}
+                            </span>
+                          )}
+                        </td>
                         <td className="py-1.5 px-2 font-medium text-emerald-800 dark:text-emerald-400 overflow-hidden text-ellipsis whitespace-nowrap">
                           {formatCurrency(r.grossProfit)}
                         </td>
@@ -2086,6 +2390,38 @@ export default function ProfitabilityClient() {
                         >
                           {pct(r.grossMargin)}
                         </td>
+                        {(() => {
+                          // Tier-aware floor: luxury positioning sets Essential
+                          // 55%, Signature 62%, Estate 70%. Non-residential
+                          // (deliveries, single-item) uses 25% fallback.
+                          const tierFloor =
+                            r.tier === "essential" || r.tier === "curated"
+                              ? 55
+                              : r.tier === "signature"
+                                ? 62
+                                : r.tier === "estate"
+                                  ? 70
+                                  : 25;
+                          const trueClass =
+                            r.netMargin < 0
+                              ? "text-red-600 dark:text-red-400"
+                              : r.netMargin < tierFloor
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-emerald-700 dark:text-emerald-300";
+                          return (
+                            <td
+                              title={`After OH ${formatCurrency(r.allocatedOverhead ?? 0)} and claims reserve ${formatCurrency(r.claimsReserve ?? 0)}. Floor ${tierFloor}%.`}
+                              className={`py-1.5 px-2 font-bold overflow-hidden text-ellipsis whitespace-nowrap ${trueClass}`}
+                            >
+                              {pct(r.netMargin)}
+                              {r.netMargin < tierFloor && r.netMargin >= 0 && (
+                                <span className="ml-1 text-[8px] text-amber-500 font-normal">
+                                  &lt;{tierFloor}%
+                                </span>
+                              )}
+                            </td>
+                          );
+                        })()}
                       </tr>
                     );
                   })}
@@ -2116,10 +2452,7 @@ export default function ProfitabilityClient() {
                 </span>
                 {overhead && (
                   <span className="text-[11px] text-[var(--tx3)]">
-                    {formatCurrency(overhead.total)}/mo · ~
-                    {formatCurrency(overhead.perMove)} per job if spread (not
-                    deducted from job rows) · break-even ~{overhead.breakEven}{" "}
-                    jobs
+                    {formatCurrency(overhead.total)}/mo · {formatCurrency(overhead.perDay)}/day burn ({overhead.workingDays} working days) · break-even ~{overhead.breakEven} jobs/mo
                   </span>
                 )}
               </div>
@@ -2132,9 +2465,11 @@ export default function ProfitabilityClient() {
             {showOverhead && (
               <div className="px-5 pb-5 border-t border-[var(--brd)]/40">
                 <p className="text-[10px] text-[var(--tx3)] pt-3 pb-4">
-                  Edit fixed monthly business costs. Job-level gross margin uses
-                  labour, truck, fuel, and supplies only. Overhead is for
-                  company-wide and break-even modeling, not per-job deductions.
+                  Source of truth for company overhead. Monthly total ÷ working days = daily burn.
+                  At quote time, each job is allocated one day&apos;s share (worst case: 1 job/day);
+                  on the profitability table, the same daily burn is split across actual same-day jobs.
+                  Fleet costs below are <strong>informational only</strong> — truck cost recovery happens
+                  per-job via day rates (not in this total).
                 </p>
                 <OverheadEditor config={overheadConfig} onSaved={fetchData} />
               </div>
