@@ -448,13 +448,40 @@ export function calculateTieredDeposit(tier: string, total: number): number {
   }
 }
 
+/**
+ * Compute days between today and the move date. Returns Infinity if
+ * move_date is not supplied / invalid — so calling code falls back to
+ * the legacy "advance booking" path rather than accidentally locking
+ * in full payment.
+ */
+export function daysUntilMove(moveDate: string | null | undefined): number {
+  if (!moveDate) return Infinity;
+  const target = new Date(`${moveDate.trim().slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(target.getTime())) return Infinity;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const ms = target.getTime() - today.getTime();
+  return Math.floor(ms / (24 * 60 * 60 * 1000));
+}
+
 export function calculateDeposit(
   serviceType: string,
   total: number,
   tier?: string,
+  moveDate?: string | null,
 ): number {
   // Global rule: any quote under $550 (total with tax) requires full payment at booking.
   if (total < 550) return total;
+
+  // Universal short-notice rule (operator decision 2026-06-11): bookings
+  // less than 4 days from the move date require full payment at booking.
+  // The 4-day window matches the operator's 48-hour-before-move balance
+  // collection window — a booking made 3 days out leaves no operational
+  // gap to collect a balance before crew dispatch. Applies to ALL
+  // service types so a last-minute Estate or labour-only book doesn't
+  // ship without payment locked in.
+  const dUntil = daysUntilMove(moveDate);
+  if (dUntil < 4) return total;
 
   if (serviceType === "local_move" && tier) {
     return calculateTieredDeposit(tier, total);
@@ -481,7 +508,12 @@ export function calculateDeposit(
     case "event":
       return Math.max(300, Math.round(total * 0.25));
     case "labour_only":
-      return Math.max(200, Math.round(total * 0.5));
+      // Operator change 2026-06-11: labour-only bookings made 4+ days
+      // out require a flat $150 deposit (not 50%). Under-4-days short-
+      // notice case already handled by the universal rule above.
+      // Removes the old 50% rule which was generating $452 deposits
+      // on $904 jobs — too aggressive for a flat-rate hourly service.
+      return 150;
     case "bin_rental":
       return total;
     default:
@@ -520,6 +552,7 @@ export function getOfflineDepositInclusiveFromQuote(quote: {
   tiers?: unknown;
   custom_price?: number | null;
   deposit_amount?: number | null;
+  move_date?: string | null;
 }): number {
   const { basePrice, totalWithTax } = getQuoteTotalWithTaxFromRow(quote);
   const st = String(quote.service_type ?? "");
@@ -532,6 +565,12 @@ export function getOfflineDepositInclusiveFromQuote(quote: {
     return totalWithTax;
   }
 
+  // Short-notice booking — calculateDeposit will return full amount
+  // when daysUntilMove < 4. We pass move_date so it honors that rule.
+  if (daysUntilMove(quote.move_date) < 4) {
+    return totalWithTax;
+  }
+
   const tier = String(quote.selected_tier ?? "");
   let depositPreTax: number;
   if (st === "local_move" && tier) {
@@ -541,6 +580,7 @@ export function getOfflineDepositInclusiveFromQuote(quote: {
       st === "local_move" ? "local_move" : st,
       basePrice,
       tier || undefined,
+      quote.move_date,
     );
   }
 

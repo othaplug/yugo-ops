@@ -917,7 +917,24 @@ async function calculateDeposit(
   sb: SupabaseAdmin,
   serviceType: string,
   amount: number,
+  moveDate?: string | null,
 ): Promise<number> {
+  // Universal short-notice rule (2026-06-11): bookings less than 4 days
+  // from the move date pay the full amount up front, regardless of the
+  // deposit_rules table. Operator policy: 48-hour-before-move balance
+  // collection window can't be honoured if we book inside it.
+  if (moveDate) {
+    const target = new Date(`${String(moveDate).trim().slice(0, 10)}T00:00:00`);
+    if (!Number.isNaN(target.getTime())) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const daysOut = Math.floor(
+        (target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
+      );
+      if (daysOut < 4) return Math.round(amount);
+    }
+  }
+
   const bracket = amountBracket(amount);
   const { data } = await sb
     .from("deposit_rules")
@@ -2393,7 +2410,7 @@ async function calcOffice(
   price += addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
-  const deposit = await calculateDeposit(sb, "office", price);
+  const deposit = await calculateDeposit(sb, "office", price, input.move_date);
 
   const officeFeatures = await fetchTierFeatures(sb, "office_move", "custom");
   const includes = officeFeatures.length > 0 ? [...officeFeatures] : [
@@ -2473,7 +2490,7 @@ async function calcLongDistance(
   price += addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
-  const deposit = await calculateDeposit(sb, "long_distance", price);
+  const deposit = await calculateDeposit(sb, "long_distance", price, input.move_date);
 
   const ldIncludes = await fetchTierFeatures(sb, "long_distance", "custom");
   const longDistanceIncludes = ldIncludes.length > 0 ? ldIncludes : [
@@ -2728,7 +2745,7 @@ async function calcSingleItem(
   price += addonResult.total - suppressedAddonTotal - junkAddonTierAmount;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
-  const deposit = await calculateDeposit(sb, "single_item", price);
+  const deposit = await calculateDeposit(sb, "single_item", price, input.move_date);
 
   const totalUnits = effectiveLines.reduce(
     (s, l) => s + Math.max(1, Math.floor(l.quantity ?? 1)),
@@ -2864,7 +2881,7 @@ async function calcWhiteGlove(
   price += addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
-  const deposit = await calculateDeposit(sb, "white_glove", price);
+  const deposit = await calculateDeposit(sb, "white_glove", price, input.move_date);
 
   const truckWg = normalizeTruckType(input.truck_type ?? "sprinter");
   const truckDisplay =
@@ -3036,7 +3053,7 @@ async function calcSpecialty(
   price += addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
-  const deposit = await calculateDeposit(sb, "specialty", price);
+  const deposit = await calculateDeposit(sb, "specialty", price, input.move_date);
 
   const spFeatures = await fetchTierFeatures(sb, "specialty", "custom");
   const specialtyIncludes = spFeatures.length > 0 ? spFeatures : [
@@ -4050,11 +4067,25 @@ async function calcLabourOnly(
   const tax = Math.round(price * taxRate);
   const total = price + tax;
 
-  // Global rule: quotes under $550 (with tax) require full payment at booking.
-  // Otherwise labour_only is 50% deposit, minimum $200.
-  const deposit = total < 550
-    ? total
-    : Math.max(200, Math.round(total * 0.5));
+  // Deposit rules (operator decision 2026-06-11):
+  //  1. Quotes under $550 (with tax) → full payment at booking.
+  //  2. Booking less than 4 days from move → full payment at booking.
+  //  3. Otherwise labour-only = flat $150 deposit (was 50%).
+  // The 4-day window matches the 48-hour-before-move balance collection
+  // window; a booking 3 days out leaves no operational gap to collect.
+  const moveDateStr = (input.move_date ?? "").trim();
+  let daysOut = Infinity;
+  if (moveDateStr) {
+    const target = new Date(`${moveDateStr.slice(0, 10)}T00:00:00`);
+    if (!Number.isNaN(target.getTime())) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      daysOut = Math.floor(
+        (target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
+      );
+    }
+  }
+  const deposit = total < 550 || daysOut < 4 ? total : 150;
 
   // Internal ops context only — not shown on client quote.
   const labourIncludes = [
@@ -5267,7 +5298,7 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
       const t = tiers[tk];
       if (!t) continue;
       const newPrice = Math.round(ovPrice);
-      const newDeposit = await calculateDeposit(sb, depKeyLocal, newPrice);
+      const newDeposit = await calculateDeposit(sb, depKeyLocal, newPrice, input.move_date);
       nextTiers[tk] = {
         ...t,
         price: newPrice,
@@ -5320,16 +5351,35 @@ async function handleQuoteGenerate(req: NextRequest): Promise<NextResponse> {
     };
     const depKey = depositSvcMap[svcType] ?? "specialty";
 
+    // Short-notice rule shared with the main engine path (see top of
+    // calculateDeposit). Centralises so an override doesn't accidentally
+    // bypass the 4-day full-payment cutoff.
+    const moveDateForDep = input.move_date ?? null;
+    let daysOutForDep = Infinity;
+    if (moveDateForDep) {
+      const target = new Date(`${String(moveDateForDep).slice(0, 10)}T00:00:00`);
+      if (!Number.isNaN(target.getTime())) {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        daysOutForDep = Math.floor(
+          (target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
+        );
+      }
+    }
     async function depositAfterOverride(preTax: number): Promise<number> {
+      const tot = Math.round(preTax * (1 + taxOvr));
+      if (daysOutForDep < 4) return tot;
       if (svcType === "event") {
         const minDeposit = cfgNum(config, "event_min_deposit", 300);
         return Math.max(minDeposit, Math.ceil(preTax * 0.25));
       }
       if (svcType === "labour_only") {
-        const tot = Math.round(preTax * (1 + taxOvr));
-        return tot < 550 ? tot : Math.max(200, Math.round(tot * 0.5));
+        // Flat $150 deposit when booked 4+ days out (operator change
+        // 2026-06-11 — old 50% rule was too aggressive). Under-4-days
+        // already returned `tot` above.
+        return tot < 550 ? tot : 150;
       }
-      return calculateDeposit(sb, depKey, preTax);
+      return calculateDeposit(sb, depKey, preTax, moveDateForDep);
     }
 
     if (custom_price && !tiers) {

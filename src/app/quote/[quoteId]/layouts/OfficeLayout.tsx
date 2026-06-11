@@ -386,8 +386,7 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
               )}
             </button>
             <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
-              {price < 5000 ? "25%" : "30%"} deposit &middot; Balance due on
-              completion
+              {price < 5000 ? "25%" : "30%"} deposit · Balance due 48 hours before your service
             </p>
           </div>
         </div>

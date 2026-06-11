@@ -6128,8 +6128,8 @@ function AddOnsSection({
                 {fmtPrice(deposit)}
               </span>
               {premiumChrome
-                ? " deposit to reserve · Balance due before your move"
-                : " deposit to confirm · Balance due on move day"}
+                ? " deposit to reserve · Balance due 48 hours before your move"
+                : " deposit to confirm · Balance due 48 hours before your move"}
             </p>
           </div>
         )}

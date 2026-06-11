@@ -55,11 +55,30 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
   const total = price + tax;
-  const deposit = calculateDeposit("labour_only", total);
+  // Pass move_date so the 4-day full-payment rule applies (operator
+  // change 2026-06-11). Labour-only bookings 4+ days out get a $150
+  // deposit; under that, full payment is due at booking.
+  const deposit = calculateDeposit("labour_only", total, undefined, quote.move_date);
   const balance = total - deposit;
   const fullPayment = balance === 0;
 
   const crewSize = (f.crew_size as number) ?? 2;
+  const hours = (f.hours as number) ?? 0;
+  const labourRate = (f.labour_rate as number) ?? 0;
+  const basePrice =
+    typeof f.base_price === "number" && f.base_price > 0
+      ? (f.base_price as number)
+      : crewSize * hours * labourRate;
+  const complexity = (f.complexity as string) ?? "standard";
+  const complexityMult =
+    typeof f.complexity_multiplier === "number"
+      ? (f.complexity_multiplier as number)
+      : 1;
+  const weightClass = (f.weight_class as string) ?? "standard";
+  const weightMult =
+    typeof f.weight_multiplier === "number"
+      ? (f.weight_multiplier as number)
+      : 1;
   const truckFee = (f.truck_fee as number) ?? 0;
   const accessSurcharge = (f.access_surcharge as number) ?? 0;
   const visits = (f.visits as number) ?? 1;
@@ -75,6 +94,19 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
     typeof f.storage_weekly_rate === "number" ? f.storage_weekly_rate : 75;
   const labourStorageFee =
     typeof f.labour_storage_fee === "number" ? f.labour_storage_fee : 0;
+  // Labels for complexity / weight multipliers when > 1.
+  const complexityLabel =
+    complexity === "moderate"
+      ? "Complexity (moderate)"
+      : complexity === "complex"
+        ? "Complexity (complex)"
+        : null;
+  const weightLabel =
+    weightClass === "heavy"
+      ? "Heavy items"
+      : weightClass === "very_heavy"
+        ? "Very heavy items"
+        : null;
 
   const categoryLabel =
     jobCategory && JOB_CATEGORY_LABELS[jobCategory]
@@ -299,6 +331,47 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
         <div className="p-5 md:p-6">
           <table className="w-full text-[12px] mb-4">
             <tbody>
+              {/* Labour line — always shown so the client can see what
+                  they're paying for. Computed as crew × hours × rate,
+                  matching the engine's base before multipliers. The
+                  multipliers below tell the rest of the story honestly
+                  rather than hiding inside the headline total. */}
+              {basePrice > 0 && crewSize > 0 && hours > 0 && labourRate > 0 && (
+                <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
+                  <td className="py-2" style={{ color: `${FOREST}80` }}>
+                    Labour ({crewSize}-person crew × {hours}hr × ${labourRate}/hr)
+                  </td>
+                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>
+                    {fmtPrice(Math.round(crewSize * hours * labourRate))}
+                  </td>
+                </tr>
+              )}
+              {complexityLabel && complexityMult > 1 && (
+                <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
+                  <td className="py-2" style={{ color: `${FOREST}80` }}>
+                    {complexityLabel} (×{complexityMult})
+                  </td>
+                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>
+                    +{fmtPrice(
+                      Math.round(crewSize * hours * labourRate * (complexityMult - 1)),
+                    )}
+                  </td>
+                </tr>
+              )}
+              {weightLabel && weightMult > 1 && (
+                <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
+                  <td className="py-2" style={{ color: `${FOREST}80` }}>
+                    {weightLabel} (×{weightMult})
+                  </td>
+                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>
+                    +{fmtPrice(
+                      Math.round(
+                        crewSize * hours * labourRate * complexityMult * (weightMult - 1),
+                      ),
+                    )}
+                  </td>
+                </tr>
+              )}
               {truckFee > 0 && (
                 <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
                   <td className="py-2" style={{ color: `${FOREST}80` }}>Truck</td>
@@ -365,7 +438,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
             <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
               {fullPayment
                 ? "Full payment required at booking — no balance due."
-                : `Deposit to confirm &middot; Balance of ${fmtPrice(balance)} due on day of service`}
+                : `Deposit to confirm · Balance of ${fmtPrice(balance)} due 48 hours before your move`}
             </p>
           </div>
         </div>
