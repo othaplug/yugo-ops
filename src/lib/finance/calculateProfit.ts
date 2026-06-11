@@ -5,7 +5,14 @@
  * Card processing fees are a client pass-through (added to what they pay), not Yugo operating cost, so they are
  * never subtracted from margin. When the client paid by card, we still show an estimated pass-through amount for reference.
  * Monthly business overhead is not allocated per job; see finance profitability page for company-wide overhead.
+ *
+ * Labour cost: derived from per-role wages + payroll burden when the
+ * `crew_hourly_cost` / `crew_loaded_hourly_rate` keys aren't explicitly
+ * set. See src/lib/finance/payroll-burden.ts for the math (2026 Ontario
+ * verified rates). This keeps per-job labour cost auditable rather than
+ * an opaque $25/$28 magic number.
  */
+import { getAverageCrewLoadedRate } from "./payroll-burden";
 export interface MoveCosts {
   labour: number;
   fuel: number;
@@ -169,7 +176,12 @@ export function calculateMoveProfitability(
   const revenue = Number(move.estimate ?? 0) || 0;
   const hours = Number(move.actual_hours ?? move.est_hours ?? 4) || 4;
   const crewSize = Number(move.actual_crew_count ?? move.est_crew_size ?? move.crew_count ?? 2) || 2;
-  const labour = crewSize * hours * cfg(config, "crew_hourly_cost", 25);
+  // Loaded crew cost per mover-hour. Explicit `crew_hourly_cost` keeps
+  // legacy behaviour; absent it, derive from wages + payroll burden.
+  const explicitLoaded = cfg(config, "crew_hourly_cost", 0);
+  const loadedPerMoverHour =
+    explicitLoaded > 0 ? explicitLoaded : getAverageCrewLoadedRate(config);
+  const labour = crewSize * hours * loadedPerMoverHour;
 
   const distanceKm = Number(move.distance_km ?? 20) || 20;
   const fuel = distanceKm * 2 * cfg(config, "fuel_cost_per_km", 0.35);
@@ -235,7 +247,12 @@ export function calculateDeliveryProfitability(
   const defaultHours = isDayRate ? 8 : 4;
   const hours = Number(d.actual_hours ?? defaultHours) || defaultHours;
   const crewSize = Number(d.actual_crew_count ?? d.est_crew_size ?? 2) || 2;
-  const labour = crewSize * hours * cfg(config, "crew_hourly_cost", 25);
+  // Loaded crew cost per mover-hour. Explicit `crew_hourly_cost` keeps
+  // legacy behaviour; absent it, derive from wages + payroll burden.
+  const explicitLoaded = cfg(config, "crew_hourly_cost", 0);
+  const loadedPerMoverHour =
+    explicitLoaded > 0 ? explicitLoaded : getAverageCrewLoadedRate(config);
+  const labour = crewSize * hours * loadedPerMoverHour;
 
   const zoneKm = d.zone != null ? (Number(d.zone) === 1 ? 15 : Number(d.zone) === 2 ? 35 : 50) : 20;
   const distanceKm = Number(d.distance_km ?? zoneKm) || zoneKm;

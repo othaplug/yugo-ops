@@ -416,6 +416,237 @@ const TRUCK_FLEET = [
   },
 ];
 
+/**
+ * Crew wages + payroll burden — derives the loaded crew cost rate
+ * (per mover-hour) used in the per-job labour cost calculation.
+ *
+ * Displays the live math so the operator can see exactly what each
+ * mover, driver, and crew lead actually costs the business per hour
+ * once CPP / EI / WSIB / vacation are layered on. Replaces the
+ * opaque $28 single-rate number.
+ *
+ * See src/lib/finance/payroll-burden.ts for the calculation + Ontario
+ * 2026 rate citations.
+ */
+function CrewLoadedRateEditor({
+  config,
+  onChange,
+}: {
+  config: Record<string, string>;
+  onChange: (updates: Record<string, string>) => void;
+}) {
+  const readNum = (k: string, fallback: number): string => {
+    const raw = config[k];
+    if (raw === undefined || raw === "") return String(fallback);
+    return raw;
+  };
+  // Wages
+  const [moverWage, setMoverWage] = useState(() => readNum("crew_pay_rate_mover", 22));
+  const [driverWage, setDriverWage] = useState(() => readNum("crew_pay_rate_driver", 25));
+  const [leadWage, setLeadWage] = useState(() => readNum("crew_pay_rate_lead", 28));
+  // Burdens (stored as percentages in the UI; converted to decimal on save)
+  const [cppPct, setCppPct] = useState(
+    () => String(parseFloat(readNum("payroll_burden_cpp_pct", 0.0595)) * 100),
+  );
+  const [eiPct, setEiPct] = useState(
+    () => String(parseFloat(readNum("payroll_burden_ei_pct", 0.02296)) * 100),
+  );
+  const [wsibPct, setWsibPct] = useState(
+    () => String(parseFloat(readNum("payroll_burden_wsib_pct", 0.0123)) * 100),
+  );
+  const [vacationPct, setVacationPct] = useState(
+    () => String(parseFloat(readNum("payroll_burden_vacation_pct", 0.04)) * 100),
+  );
+  const [ehtPct, setEhtPct] = useState(
+    () => String(parseFloat(readNum("payroll_burden_eht_pct", 0)) * 100),
+  );
+  // Push updates to parent. Wage values stay as strings (the form's
+  // existing pattern); burden values converted to decimals on save.
+  const pushUpdates = () => {
+    onChange({
+      crew_pay_rate_mover: moverWage,
+      crew_pay_rate_driver: driverWage,
+      crew_pay_rate_lead: leadWage,
+      payroll_burden_cpp_pct: String((parseFloat(cppPct) || 0) / 100),
+      payroll_burden_ei_pct: String((parseFloat(eiPct) || 0) / 100),
+      payroll_burden_wsib_pct: String((parseFloat(wsibPct) || 0) / 100),
+      payroll_burden_vacation_pct: String((parseFloat(vacationPct) || 0) / 100),
+      payroll_burden_eht_pct: String((parseFloat(ehtPct) || 0) / 100),
+    });
+  };
+  useEffect(() => {
+    pushUpdates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moverWage, driverWage, leadWage, cppPct, eiPct, wsibPct, vacationPct, ehtPct]);
+  // Live math
+  const burdenSum =
+    (parseFloat(cppPct) || 0) / 100 +
+    (parseFloat(eiPct) || 0) / 100 +
+    (parseFloat(wsibPct) || 0) / 100 +
+    (parseFloat(vacationPct) || 0) / 100 +
+    (parseFloat(ehtPct) || 0) / 100;
+  const burdenMult = 1 + burdenSum;
+  const moverLoaded = (parseFloat(moverWage) || 0) * burdenMult;
+  const driverLoaded = (parseFloat(driverWage) || 0) * burdenMult;
+  const leadLoaded = (parseFloat(leadWage) || 0) * burdenMult;
+  // Weighted avg for typical 4-crew (2 movers + 1 driver + 1 lead)
+  const weightedAvg = (moverLoaded * 2 + driverLoaded + leadLoaded) / 4;
+
+  const burdenInput = (
+    label: string,
+    value: string,
+    setValue: (v: string) => void,
+    help: string,
+  ) => (
+    <div>
+      <label
+        className="block text-[9px] font-medium text-[var(--tx3)] mb-1"
+        title={help}
+      >
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          type="number"
+          min="0"
+          max="100"
+          step="0.001"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="admin-premium-input admin-premium-input--compact w-full pr-6"
+          title={help}
+        />
+        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[var(--tx3)]">
+          %
+        </span>
+      </div>
+    </div>
+  );
+
+  const wageInput = (
+    label: string,
+    value: string,
+    setValue: (v: string) => void,
+    loaded: number,
+  ) => (
+    <div>
+      <label className="block text-[9px] font-medium text-[var(--tx3)] mb-1">
+        {label} (base wage)
+      </label>
+      <div className="relative">
+        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[var(--tx3)]">
+          $
+        </span>
+        <input
+          type="number"
+          min="0"
+          step="0.5"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="admin-premium-input admin-premium-input--leading admin-premium-input--compact w-full pl-5 pr-12"
+        />
+        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-[var(--tx3)]">
+          /hr
+        </span>
+      </div>
+      <div className="text-[10px] text-[var(--gold)] mt-1">
+        Loaded: <strong>{formatCurrency(Math.round(loaded * 100) / 100)}/hr</strong>{" "}
+        <span className="text-[var(--tx3)]">
+          (× {burdenMult.toFixed(4)})
+        </span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-3 border-t border-[var(--brd)]/40 pt-4">
+      <div>
+        <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">
+          Crew Wages &amp; Payroll Burden
+        </div>
+        <p className="text-[10px] text-[var(--tx3)] mb-3">
+          Loaded crew rate ($/mover-hour) used in the per-job labour cost is{" "}
+          <strong>derived</strong> from these inputs:{" "}
+          <em>wage × (1 + CPP + EI + WSIB + vacation + EHT)</em>. Updating
+          the rates below changes margin estimates on every new quote
+          immediately. Existing quotes keep their stamped cost.
+        </p>
+      </div>
+      {/* Per-role base wages */}
+      <div>
+        <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">
+          Base Wages by Role
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {wageInput("Mover", moverWage, setMoverWage, moverLoaded)}
+          {wageInput("Driver", driverWage, setDriverWage, driverLoaded)}
+          {wageInput("Crew lead", leadWage, setLeadWage, leadLoaded)}
+        </div>
+      </div>
+      {/* Burden rates */}
+      <div>
+        <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">
+          Payroll Burden (Ontario 2026)
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {burdenInput("CPP (employer)", cppPct, setCppPct, "CRA 2026 employer rate: 5.95% on pensionable $3,500–$73,200 YMPE")}
+          {burdenInput("EI (employer)", eiPct, setEiPct, "CRA 2026: 1.4× employee rate 1.64% = 2.296% on insurable to $65,700")}
+          {burdenInput("WSIB", wsibPct, setWsibPct, "Ontario 2026 average $1.23/$100 = 1.23%. Moving industry (NAICS 484) is typically 3-5%; check your actual class-G rate.")}
+          {burdenInput("Vacation", vacationPct, setVacationPct, "Ontario ESA minimum 4% (bumps to 6% after 5 years service)")}
+          {burdenInput("EHT", ehtPct, setEhtPct, "Employer Health Tax: 0% under $1M payroll exemption; 1.95% above")}
+        </div>
+      </div>
+      {/* Live summary */}
+      <div className="bg-[var(--bg)] rounded-lg p-3 text-[11px] space-y-1.5">
+        <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1.5">
+          Live Loaded Rates
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
+          <div>
+            <span className="text-[var(--tx3)]">Burden multiplier:</span>{" "}
+            <strong className="text-[var(--tx)]">×{burdenMult.toFixed(4)}</strong>
+            <div className="text-[9px] text-[var(--tx3)]">
+              (sum {(burdenSum * 100).toFixed(2)}%)
+            </div>
+          </div>
+          <div>
+            <span className="text-[var(--tx3)]">Mover loaded:</span>{" "}
+            <strong className="text-[var(--gold)]">
+              {formatCurrency(Math.round(moverLoaded * 100) / 100)}/hr
+            </strong>
+          </div>
+          <div>
+            <span className="text-[var(--tx3)]">Driver loaded:</span>{" "}
+            <strong className="text-[var(--gold)]">
+              {formatCurrency(Math.round(driverLoaded * 100) / 100)}/hr
+            </strong>
+          </div>
+          <div>
+            <span className="text-[var(--tx3)]">Lead loaded:</span>{" "}
+            <strong className="text-[var(--gold)]">
+              {formatCurrency(Math.round(leadLoaded * 100) / 100)}/hr
+            </strong>
+          </div>
+        </div>
+        <div className="pt-1.5 border-t border-[var(--brd)]/40 flex items-center justify-between">
+          <span className="text-[var(--tx2)] font-medium">
+            Weighted-avg crew loaded (2 movers + 1 driver + 1 lead):
+          </span>
+          <strong className="text-[var(--gold)] text-[13px]">
+            {formatCurrency(Math.round(weightedAvg * 100) / 100)}/mover-hr
+          </strong>
+        </div>
+        <p className="text-[9px] text-[var(--tx3)] leading-snug pt-1">
+          This is the cost the engine uses for the per-job Labour line.
+          Lower this by negotiating wages down or by class-G WSIB code change;
+          raise it by giving senior crew members a wage bump. Updates are
+          live on the next quote generated.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function OverheadEditor({
   config,
   onSaved,
@@ -436,6 +667,11 @@ function OverheadEditor({
   const [claimsReservePct, setClaimsReservePct] = useState<string>(
     () => String(parseFloat(config.overhead_claims_reserve_pct ?? "0.005") * 100),
   );
+  // Crew wages + payroll burden updates — pushed up from
+  // CrewLoadedRateEditor; bundled into the same PATCH body on save so
+  // both the standard OH fields and the loaded-rate inputs persist
+  // atomically.
+  const [crewLoadedExtras, setCrewLoadedExtras] = useState<Record<string, string>>({});
   // Truck monthly & daily overrides
   const [truckMonthly, setTruckMonthly] = useState<Record<string, string>>(() =>
     Object.fromEntries(
@@ -490,6 +726,9 @@ function OverheadEditor({
     setSaving(true);
     const body: Record<string, string> = {
       ...standard,
+      // Crew wages + payroll burden bundled into the same PATCH.
+      // CrewLoadedRateEditor already converts UI percentages to decimals.
+      ...crewLoadedExtras,
       truck_working_days_per_month: truckWorkingDays,
       custom_overhead_items: JSON.stringify(customItems),
       // Convert UI percentage (0.5) → stored decimal (0.005). Guard against
@@ -635,6 +874,16 @@ function OverheadEditor({
           ))}
         </div>
       </div>
+
+      {/* Crew wages + payroll burden — derives the loaded crew cost
+          per mover-hour used in per-job labour cost. Replaces the
+          opaque $28 single-figure default with explicit inputs the
+          operator can audit and update each January (when CRA + WSIB
+          publish new rates). Updates ride along on the OH save. */}
+      <CrewLoadedRateEditor
+        config={config}
+        onChange={setCrewLoadedExtras}
+      />
 
       {/* Per-job allocations (revenue-scaled OH) */}
       <div>

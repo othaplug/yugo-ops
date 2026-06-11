@@ -58,6 +58,20 @@ const COST_MODEL_KEYS = [
   "true_margin_floor_essential",
   "true_margin_floor_signature",
   "true_margin_floor_estate",
+  // Per-role base wages — fed into the loaded-rate calculator
+  // (src/lib/finance/payroll-burden.ts) so the engine derives crew
+  // cost from auditable inputs instead of a magic $28 number.
+  "crew_pay_rate_mover",
+  "crew_pay_rate_driver",
+  "crew_pay_rate_lead",
+  // Payroll burden constants (Ontario 2026 defaults — see
+  // payroll-burden.ts for verified sources). Operator updates these
+  // each January when CRA + WSIB publish new rates.
+  "payroll_burden_cpp_pct",
+  "payroll_burden_ei_pct",
+  "payroll_burden_wsib_pct",
+  "payroll_burden_vacation_pct",
+  "payroll_burden_eht_pct",
 ];
 
 export async function GET() {

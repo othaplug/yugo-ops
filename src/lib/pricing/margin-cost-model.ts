@@ -3,6 +3,8 @@
  * Uses platform_config keys with documented fallbacks.
  */
 
+import { getAverageCrewLoadedRate } from "@/lib/finance/payroll-burden";
+
 type PricingConfig = Map<string, string> | Record<string, string>;
 
 function cfgNum(config: PricingConfig, key: string, fallback: number): number {
@@ -203,7 +205,36 @@ export function estimateFuelCostWithDeadhead(
   return Math.round(totalKm * litersPerKm * fuelPrice * 100) / 100;
 }
 
-/** Loaded crew cost rate ($/mover-hour) for margin model. */
+/**
+ * Loaded crew cost rate ($/mover-hour) for margin model.
+ *
+ * Resolution order:
+ *   1. Explicit `crew_loaded_hourly_rate` override (legacy / coordinator
+ *      lock-in) → respected if set
+ *   2. Explicit `cost_per_mover_hour` (older legacy key) → respected
+ *   3. **Derived from per-role wages + payroll burden** (new 2026-06-11):
+ *      computes weighted-avg loaded rate from `crew_pay_rate_*` and
+ *      `payroll_burden_*` config. See src/lib/finance/payroll-burden.ts
+ *      for the math and verified 2026 Ontario rate sources.
+ *   4. Hardcoded $28 fallback if no config exists at all
+ *
+ * The derived path is now the recommended default — operator should
+ * leave `crew_loaded_hourly_rate` unset so the engine computes from
+ * audited components, not a frozen magic number.
+ */
 export function crewLoadedHourlyRate(config: PricingConfig): number {
-  return cfgNum(config, "crew_loaded_hourly_rate", cfgNum(config, "cost_per_mover_hour", 28));
+  const explicit = cfgNum(config, "crew_loaded_hourly_rate", 0);
+  if (explicit > 0) return explicit;
+  const legacyExplicit = cfgNum(config, "cost_per_mover_hour", 0);
+  if (legacyExplicit > 0) return legacyExplicit;
+  // Derive from per-role wages + burden. config is a Map<string,string>
+  // here; convert to the Record shape payroll-burden.ts expects.
+  const asRecord: Record<string, string> = {};
+  if (config instanceof Map) {
+    for (const [k, v] of config.entries()) asRecord[k] = String(v);
+  } else if (config && typeof config === "object") {
+    for (const [k, v] of Object.entries(config)) asRecord[k] = String(v);
+  }
+  const derived = getAverageCrewLoadedRate(asRecord);
+  return derived > 0 ? derived : 28;
 }
