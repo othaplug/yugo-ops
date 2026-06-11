@@ -398,12 +398,43 @@ export default function InventoryInput({
     [value, itemWeights],
   );
 
+  // Three-tier labour estimate. The inventory preview can't know which
+  // tier the operator will recommend, so we compute all three and show
+  // the Signature (baseline) value as the headline, with Essential and
+  // Estate as a spread. Operator gets immediate context for which tier
+  // they're looking at without having to switch screens. The Margin
+  // Estimate panel in QuoteFormClient shows the same numbers tied to
+  // per-tier pricing.
   const labourEstimate = useMemo(() => {
     if (!showLabourEstimate || labourScore <= 0) return null;
-    return estimateLabourFromScore(labourScore, distanceKm, fromAccess, toAccess, moveSize, {
-      hoursEstimateMode: "client_on_job",
+    const baseOpts = {
+      hoursEstimateMode: "client_on_job" as const,
       catalogMinCrew,
-    });
+    };
+    const sig = estimateLabourFromScore(
+      labourScore, distanceKm, fromAccess, toAccess, moveSize,
+      { ...baseOpts, tier: "signature" as const },
+    );
+    const ess = estimateLabourFromScore(
+      labourScore, distanceKm, fromAccess, toAccess, moveSize,
+      { ...baseOpts, tier: "essential" as const, assemblyMinutes: 0 },
+    );
+    const est = estimateLabourFromScore(
+      labourScore, distanceKm, fromAccess, toAccess, moveSize,
+      { ...baseOpts, tier: "estate" as const },
+    );
+    return {
+      // Backward-compat fields read elsewhere
+      crewSize: sig.crewSize,
+      estimatedHours: sig.estimatedHours,
+      hoursRange: sig.hoursRange,
+      truckSize: sig.truckSize,
+      calibrationVersion: sig.calibrationVersion,
+      // Per-tier hours for spread display
+      hoursEssential: ess.estimatedHours,
+      hoursSignature: sig.estimatedHours,
+      hoursEstate: est.estimatedHours,
+    };
   }, [
     showLabourEstimate,
     labourScore,
@@ -966,11 +997,19 @@ export default function InventoryInput({
               <span className="text-[var(--tx3)]">{totalItems} items</span>
             </div>
             {labourEstimate && (
-              <div className="text-[10px] text-[var(--tx2)]">
-                Recommended truck: <strong>{labourEstimate.truckSize}</strong> ·
-                Crew: <strong>{labourEstimate.crewSize}</strong> ·
-                Est. hours: <strong>{labourEstimate.hoursRange}</strong>
-              </div>
+              <>
+                <div className="text-[10px] text-[var(--tx2)]">
+                  Recommended truck: <strong>{labourEstimate.truckSize}</strong> ·
+                  Crew: <strong>{labourEstimate.crewSize}</strong> ·
+                  Est. hours (Signature): <strong>{labourEstimate.hoursRange}</strong>
+                </div>
+                <div
+                  className="text-[9px] text-[var(--tx3)] mt-0.5"
+                  title="Hours estimate by service tier. Essential skips per-item wrap + assembly; Estate adds four-point blanket protection + room-of-choice placement."
+                >
+                  Essential ~{labourEstimate.hoursEssential}h · Signature ~{labourEstimate.hoursSignature}h · Estate ~{labourEstimate.hoursEstate}h
+                </div>
+              </>
             )}
           </div>
         </div>

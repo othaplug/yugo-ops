@@ -2170,6 +2170,13 @@ async function calcResidential(
       inventory_items_count: invResult.totalItems,
       labour_actual_crew: labour?.crewSize ?? null,
       labour_actual_hours: labour?.estimatedHours ?? null,
+      // Engine version that produced this quote's hours. When a quote is
+      // re-opened after a formula recalibration, the admin form can
+      // surface "this quote's hours are stale, re-generate to refresh".
+      // See LABOUR_CALIBRATION_VERSION in src/lib/inventory-labour.ts.
+      labour_calibration_version:
+        (labour as { calibrationVersion?: number } | null | undefined)
+          ?.calibrationVersion ?? null,
       labour_baseline_crew: benchmark?.baseline_crew ?? null,
       labour_baseline_hours: benchmark?.baseline_hours ?? null,
       labour_rate: labourRate,

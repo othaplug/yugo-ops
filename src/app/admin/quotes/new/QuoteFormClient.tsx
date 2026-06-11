@@ -15488,6 +15488,7 @@ function LegacyFactorsDisplay({
     "labour_rate",
     "labour_rate_per_mover_hour",
     "labour_extra_man_hours",
+    "labour_calibration_version",
     "packing_supplies_included",
     "distance_modifier",
     "inventory_modifier",
