@@ -93,8 +93,10 @@ export async function POST(req: NextRequest) {
     referenceCode: delivery.delivery_number,
   });
 
-  const dueDays = 14;
-  const dueDate = new Date(Date.now() + dueDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  // B2B one-off delivery invoices are due immediately on receipt.
+  // Partner-org deliveries follow Net 15 / Net 30 via auto-delivery; this route handles the no-account case.
+  const dueDays = 0;
+  const dueDate = new Date().toISOString().slice(0, 10);
 
   const deliveryDateRaw =
     (delivery as { scheduled_date?: string | null; created_at?: string | null })

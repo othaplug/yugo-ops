@@ -382,7 +382,9 @@ function computeDueDateIso(input: {
     }
     return due.toISOString().slice(0, 10);
   }
-  const days = input.invoiceDueDays || 30;
+  // Use ?? not || so an explicit 0 (due-on-receipt) is honoured;
+  // partner-org callers continue to pass 15 / 30 from their config.
+  const days = input.invoiceDueDays ?? 30;
   return new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
     .toISOString()
     .slice(0, 10);
