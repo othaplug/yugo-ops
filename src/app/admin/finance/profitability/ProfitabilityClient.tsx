@@ -2464,13 +2464,26 @@ export default function ProfitabilityClient() {
 
             {showOverhead && (
               <div className="px-5 pb-5 border-t border-[var(--brd)]/40">
-                <p className="text-[10px] text-[var(--tx3)] pt-3 pb-4">
-                  Source of truth for company overhead. Monthly total ÷ working days = daily burn.
-                  At quote time, each job is allocated one day&apos;s share (worst case: 1 job/day);
-                  on the profitability table, the same daily burn is split across actual same-day jobs.
-                  Fleet costs below are <strong>informational only</strong> — truck cost recovery happens
-                  per-job via day rates (not in this total).
-                </p>
+                <div className="text-[10px] text-[var(--tx3)] pt-3 pb-4 space-y-1.5">
+                  <p>
+                    Source of truth for company overhead. Monthly total ÷ working days = daily burn.
+                    At quote time, each job is allocated one day&apos;s share (worst case: 1 job/day);
+                    on the profitability table, the same daily burn is split across actual same-day jobs.
+                  </p>
+                  <p>
+                    <strong className="text-[var(--tx2)]">Not double-counted with per-job costs.</strong>{" "}
+                    The per-job profit table already subtracts labour (crew × hours × loaded rate),
+                    truck (day rate), fuel (km × rate), and supplies (by move size) from revenue.
+                    Overhead here is everything else: insurance premiums, software, marketing, office,
+                    G&amp;A. Fleet costs below are <strong>informational only</strong> — truck cost
+                    recovery happens per-job via day rates, not in this total.
+                  </p>
+                  <p className="text-[var(--tx3)]/85">
+                    <em>Heads-up on WSIB:</em> if your loaded crew rate ($28/mover-hr default)
+                    already includes the WSIB premium, leave that field at $0 to avoid
+                    double-counting. If your loaded rate is wage + CPP/EI only, fill in real WSIB.
+                  </p>
+                </div>
                 <OverheadEditor config={overheadConfig} onSaved={fetchData} />
               </div>
             )}

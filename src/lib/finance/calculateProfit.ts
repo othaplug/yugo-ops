@@ -30,8 +30,24 @@ export interface MoveCosts {
   netMargin: number;
 }
 
+/**
+ * Read a numeric config value, falling back ONLY when the key is
+ * missing or unparseable. Treats explicit "0" as 0 (not a falsy
+ * trigger that swaps in the fallback).
+ *
+ * The old `|| fallback` pattern silently overrode the operator's
+ * explicit zero — when Marketing was saved as $0, the engine kept
+ * computing as if Marketing = $1,000. This produced the YG-30286
+ * overhead mismatch where the Monthly Overhead header read
+ * $2,400/mo while the bottom-of-panel sum (which is computed in
+ * React local state, where 0 stays 0) read $1,400. Same bug
+ * inflated the MTD P&L card's "Monthly overhead" line by ~$1,000.
+ */
 function cfg(config: Record<string, string>, key: string, fallback = 0): number {
-  return parseFloat(config[key] ?? "") || fallback;
+  const raw = config[key];
+  if (raw === undefined || raw === null || raw === "") return fallback;
+  const parsed = parseFloat(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 /** True when final balance was paid by card, or balance unset and deposit was card. */
@@ -272,14 +288,20 @@ export function calculateDeliveryProfitability(
  * from current P&L.
  */
 export function getMonthlyOverhead(config: Record<string, string>): number {
+  // Fallback defaults are 0 across the board (changed 2026-06-11). The
+  // engine should NOT assume $1,000 of marketing or $1,000 of auto
+  // insurance just because a key is unset — that silently inflates
+  // monthly overhead and depresses true margins on every quote.
+  // Operator fills in real values from current P&L; an absent value
+  // means "not tracked / not paid this month" = $0.
   const standard =
-    cfg(config, "monthly_software_cost", 250) +
-    cfg(config, "monthly_auto_insurance", 1000) +
-    cfg(config, "monthly_gl_insurance", 300) +
+    cfg(config, "monthly_software_cost", 0) +
+    cfg(config, "monthly_auto_insurance", 0) +
+    cfg(config, "monthly_gl_insurance", 0) +
     cfg(config, "monthly_wsib", 0) +
     cfg(config, "monthly_movers_liability", 0) +
-    cfg(config, "monthly_marketing_budget", 1000) +
-    cfg(config, "monthly_office_admin", 350) +
+    cfg(config, "monthly_marketing_budget", 0) +
+    cfg(config, "monthly_office_admin", 0) +
     cfg(config, "monthly_bookkeeping", 0) +
     cfg(config, "monthly_phone_internet", 0) +
     cfg(config, "monthly_vehicle_maintenance", 0) +
