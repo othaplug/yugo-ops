@@ -90,6 +90,8 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
     "All tools and equipment",
     "Floor protection",
     "Guaranteed flat price",
+    "General liability — $5M coverage",
+    "WSIB covered — every crew member",
   ];
 
   return (
@@ -286,6 +288,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
         </div>
       </div>
 
+
       {/* Investment summary */}
       <div
         className="bg-white rounded-2xl overflow-hidden"
@@ -357,10 +360,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
             </table>
           )}
 
-          <div
-            className="border-t-2 pt-4 text-center"
-            style={{ borderColor: `${FOREST}30` }}
-          >
+          <div className="pt-4 text-center">
             <p className="font-hero text-[36px] md:text-[44px]" style={{ color: WINE }}>
               {fmtPrice(price)}
             </p>

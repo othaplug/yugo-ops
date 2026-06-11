@@ -403,7 +403,7 @@ function whyYugoBlock(): string {
     ],
     [
       "Fully insured",
-      "WSIB coverage, $2M General Liability, and comprehensive cargo insurance",
+      "WSIB coverage, $5M General Liability, and comprehensive cargo insurance",
     ],
   ];
   return `

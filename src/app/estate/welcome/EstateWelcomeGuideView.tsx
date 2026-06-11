@@ -197,7 +197,7 @@ const PROTECTION_LINES: string[] = [
   "Repair by our verified professionals or full replacement valuation, per your Estate agreement.",
   "Up to $10,000 per item, $100,000 per move.",
   "Zero deductible.",
-  "$2M commercial liability.",
+  "$5M commercial liability.",
 ];
 
 const AFTER_MOVE_FEATURES: { title: string; description: string }[] = [

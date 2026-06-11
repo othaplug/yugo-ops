@@ -17,7 +17,7 @@ const DEFAULT_INCLUDES = [
   "Basic disassembly & reassembly",
   "Floor & wall protection",
   "Real-time GPS tracking throughout transit",
-  "$2M cargo insurance included",
+  "$5M cargo insurance included",
 ];
 
 interface Props {

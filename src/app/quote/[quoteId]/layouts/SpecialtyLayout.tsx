@@ -39,7 +39,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
     "Experienced specialty crew",
     "Custom protective materials",
     "Project coordination",
-    "$2M cargo insurance",
+    "$5M cargo insurance",
   ];
 
   // Build the requirements list. We DO NOT auto-push a "Timeline" line \u2014

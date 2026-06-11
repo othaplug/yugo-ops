@@ -35,7 +35,7 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
     "Elevator & stair protection",
     "Weekend scheduling available",
     "Dedicated project coordinator",
-    "$2M commercial cargo insurance",
+    "$5M commercial cargo insurance",
   ];
 
   const scopeItems = (
