@@ -4131,10 +4131,20 @@ async function calcLabourOnly(
       visit2_date: input.labour_second_visit_date || null,
       labour_description: input.labour_description || null,
       parking_long_carry_total: plcLab.total,
-      labour_storage_needed: !!input.labour_storage_needed,
-      labour_storage_weeks: input.labour_storage_needed ? storageWeeks : null,
-      storage_weekly_rate: storageWeekly,
-      labour_storage_fee: labourStorageFee,
+      // Storage fields are conditionally stamped (2026-06-11): when the
+      // client didn't request storage we DON'T leave the rate/needed
+      // flags in factors_applied — the admin breakdown surface kept
+      // rendering "Storage Weekly Rate $150" lines on labour-only jobs
+      // that had no storage, which confused operators and clients on
+      // every preview. Now the fields only appear when storage is real.
+      ...(input.labour_storage_needed
+        ? {
+            labour_storage_needed: true,
+            labour_storage_weeks: storageWeeks,
+            storage_weekly_rate: storageWeekly,
+            labour_storage_fee: labourStorageFee,
+          }
+        : {}),
     },
     labour: {
       crewSize,

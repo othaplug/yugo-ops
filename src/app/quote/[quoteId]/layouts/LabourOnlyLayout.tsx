@@ -63,24 +63,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
   const fullPayment = balance === 0;
 
   const crewSize = (f.crew_size as number) ?? 2;
-  const hours = (f.hours as number) ?? 0;
-  const labourRate = (f.labour_rate as number) ?? 0;
-  const basePrice =
-    typeof f.base_price === "number" && f.base_price > 0
-      ? (f.base_price as number)
-      : crewSize * hours * labourRate;
-  const complexity = (f.complexity as string) ?? "standard";
-  const complexityMult =
-    typeof f.complexity_multiplier === "number"
-      ? (f.complexity_multiplier as number)
-      : 1;
-  const weightClass = (f.weight_class as string) ?? "standard";
-  const weightMult =
-    typeof f.weight_multiplier === "number"
-      ? (f.weight_multiplier as number)
-      : 1;
   const truckFee = (f.truck_fee as number) ?? 0;
-  const accessSurcharge = (f.access_surcharge as number) ?? 0;
   const visits = (f.visits as number) ?? 1;
   const visit1Price = (f.visit1_price as number) ?? price;
   const visit2Price = (f.visit2_price as number) ?? 0;
@@ -94,19 +77,6 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
     typeof f.storage_weekly_rate === "number" ? f.storage_weekly_rate : 75;
   const labourStorageFee =
     typeof f.labour_storage_fee === "number" ? f.labour_storage_fee : 0;
-  // Labels for complexity / weight multipliers when > 1.
-  const complexityLabel =
-    complexity === "moderate"
-      ? "Complexity (moderate)"
-      : complexity === "complex"
-        ? "Complexity (complex)"
-        : null;
-  const weightLabel =
-    weightClass === "heavy"
-      ? "Heavy items"
-      : weightClass === "very_heavy"
-        ? "Very heavy items"
-        : null;
 
   const categoryLabel =
     jobCategory && JOB_CATEGORY_LABELS[jobCategory]
@@ -329,87 +299,63 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
           </h2>
         </div>
         <div className="p-5 md:p-6">
-          <table className="w-full text-[12px] mb-4">
-            <tbody>
-              {/* Labour line — always shown so the client can see what
-                  they're paying for. Computed as crew × hours × rate,
-                  matching the engine's base before multipliers. The
-                  multipliers below tell the rest of the story honestly
-                  rather than hiding inside the headline total. */}
-              {basePrice > 0 && crewSize > 0 && hours > 0 && labourRate > 0 && (
-                <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
-                  <td className="py-2" style={{ color: `${FOREST}80` }}>
-                    Labour ({crewSize}-person crew × {hours}hr × ${labourRate}/hr)
-                  </td>
-                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>
-                    {fmtPrice(Math.round(crewSize * hours * labourRate))}
-                  </td>
-                </tr>
-              )}
-              {complexityLabel && complexityMult > 1 && (
-                <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
-                  <td className="py-2" style={{ color: `${FOREST}80` }}>
-                    {complexityLabel} (×{complexityMult})
-                  </td>
-                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>
-                    +{fmtPrice(
-                      Math.round(crewSize * hours * labourRate * (complexityMult - 1)),
-                    )}
-                  </td>
-                </tr>
-              )}
-              {weightLabel && weightMult > 1 && (
-                <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
-                  <td className="py-2" style={{ color: `${FOREST}80` }}>
-                    {weightLabel} (×{weightMult})
-                  </td>
-                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>
-                    +{fmtPrice(
-                      Math.round(
-                        crewSize * hours * labourRate * complexityMult * (weightMult - 1),
-                      ),
-                    )}
-                  </td>
-                </tr>
-              )}
-              {truckFee > 0 && (
-                <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
-                  <td className="py-2" style={{ color: `${FOREST}80` }}>Truck</td>
-                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>
-                    {fmtPrice(truckFee)}
-                  </td>
-                </tr>
-              )}
-              {accessSurcharge > 0 && (
-                <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
-                  <td className="py-2" style={{ color: `${FOREST}80` }}>Access surcharge</td>
-                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>
-                    {fmtPrice(accessSurcharge)}
-                  </td>
-                </tr>
-              )}
-              {storageNeeded && labourStorageFee > 0 && (
-                <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
-                  <td className="py-2" style={{ color: `${FOREST}80` }}>
-                    Storage ({storageWeeks ?? "-"} wk × {fmtPrice(storageWeeklyRate)})
-                  </td>
-                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>
-                    {fmtPrice(labourStorageFee)}
-                  </td>
-                </tr>
-              )}
-              {visits >= 2 && visit2Price > 0 && (
-                <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
-                  <td className="py-2" style={{ color: `${FOREST}80` }}>
-                    Return visit ({fmtShort(visit2Date)})
-                  </td>
-                  <td className="py-2 text-right font-medium" style={{ color: FOREST }}>
-                    {fmtPrice(visit2Price)}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          {/* Investment Summary is intentionally bare on labour-only
+              quotes (operator decision 2026-06-11). Client review of
+              YG-30287 surfaced confusion when this section itemized
+              labour base + complexity + heavy + access — none of which
+              the client needs to see. Truck / storage / return visits
+              are kept because they represent genuinely separate
+              services the client opted into; everything else is rolled
+              into the headline price below.
+          */}
+          {(truckFee > 0 ||
+            (storageNeeded && labourStorageFee > 0) ||
+            (visits >= 2 && visit2Price > 0)) && (
+            <table className="w-full text-[12px] mb-4">
+              <tbody>
+                {truckFee > 0 && (
+                  <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
+                    <td className="py-2" style={{ color: `${FOREST}80` }}>
+                      Truck
+                    </td>
+                    <td
+                      className="py-2 text-right font-medium"
+                      style={{ color: FOREST }}
+                    >
+                      {fmtPrice(truckFee)}
+                    </td>
+                  </tr>
+                )}
+                {storageNeeded && labourStorageFee > 0 && (
+                  <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
+                    <td className="py-2" style={{ color: `${FOREST}80` }}>
+                      Storage ({storageWeeks ?? "-"} wk ×{" "}
+                      {fmtPrice(storageWeeklyRate)})
+                    </td>
+                    <td
+                      className="py-2 text-right font-medium"
+                      style={{ color: FOREST }}
+                    >
+                      {fmtPrice(labourStorageFee)}
+                    </td>
+                  </tr>
+                )}
+                {visits >= 2 && visit2Price > 0 && (
+                  <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
+                    <td className="py-2" style={{ color: `${FOREST}80` }}>
+                      Return visit ({fmtShort(visit2Date)})
+                    </td>
+                    <td
+                      className="py-2 text-right font-medium"
+                      style={{ color: FOREST }}
+                    >
+                      {fmtPrice(visit2Price)}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
 
           <div
             className="border-t-2 pt-4 text-center"

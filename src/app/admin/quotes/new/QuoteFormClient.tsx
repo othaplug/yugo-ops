@@ -14617,6 +14617,21 @@ function LabourOnlyPriceDisplay({
   const crewSize = factors.crew_size as number | undefined;
   const hours = factors.hours as number | undefined;
   const labourRate = factors.labour_rate as number | undefined;
+  // Multipliers — needed to make the breakdown math actually add up.
+  // Previously the panel showed `crew × hours × rate = $640` and
+  // `access = $75` then jumped to `Total $1,050` without revealing the
+  // $320 of complexity (×1.25) + weight (×1.2) markup. YG-30287 review:
+  // operator couldn't reconcile the headline number against the lines.
+  const complexity = (factors.complexity as string) ?? "standard";
+  const complexityMult =
+    typeof factors.complexity_multiplier === "number"
+      ? (factors.complexity_multiplier as number)
+      : 1;
+  const weightClass = (factors.weight_class as string) ?? "standard";
+  const weightMult =
+    typeof factors.weight_multiplier === "number"
+      ? (factors.weight_multiplier as number)
+      : 1;
   const truckFee = (factors.truck_fee as number | undefined) ?? 0;
   const accessSurcharge = (factors.access_surcharge as number | undefined) ?? 0;
   const visits = (factors.visits as number | undefined) ?? 1;
@@ -14633,6 +14648,27 @@ function LabourOnlyPriceDisplay({
     typeof factors.storage_weekly_rate === "number"
       ? factors.storage_weekly_rate
       : null;
+  const complexityLabel =
+    complexity === "moderate"
+      ? "Complexity (moderate)"
+      : complexity === "complex"
+        ? "Complexity (complex)"
+        : null;
+  const weightLabel =
+    weightClass === "heavy"
+      ? "Heavy items"
+      : weightClass === "very_heavy"
+        ? "Very heavy items"
+        : null;
+  const labourBase = crewSize && hours && labourRate ? crewSize * hours * labourRate : 0;
+  const complexityAdd =
+    complexityMult > 1 && labourBase > 0
+      ? Math.round(labourBase * (complexityMult - 1))
+      : 0;
+  const weightAdd =
+    weightMult > 1 && labourBase > 0
+      ? Math.round(labourBase * complexityMult * (weightMult - 1))
+      : 0;
 
   const isV2 = useQuoteFormIsV2();
   const ink = getCreamTierInk(isV2);
@@ -14655,7 +14691,27 @@ function LabourOnlyPriceDisplay({
               {crewSize}-person crew × {hours}hr × ${labourRate}/hr
             </span>
             <span className={`font-medium ${card.body}`}>
-              {fmtPrice(crewSize * hours * labourRate)}
+              {fmtPrice(labourBase)}
+            </span>
+          </div>
+        )}
+        {complexityLabel && complexityAdd > 0 && (
+          <div className="flex justify-between">
+            <span className={card.muted}>
+              {complexityLabel} (×{complexityMult})
+            </span>
+            <span className={`font-medium ${card.body}`}>
+              +{fmtPrice(complexityAdd)}
+            </span>
+          </div>
+        )}
+        {weightLabel && weightAdd > 0 && (
+          <div className="flex justify-between">
+            <span className={card.muted}>
+              {weightLabel} (×{weightMult})
+            </span>
+            <span className={`font-medium ${card.body}`}>
+              +{fmtPrice(weightAdd)}
             </span>
           </div>
         )}
