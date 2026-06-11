@@ -59,17 +59,18 @@ export function detectDayCount(input: MoveScopeDetectionInput): number {
   // volume) are handled below — they're unrelated to packing.
   // ─────────────────────────────────────────────────────────────────────────
   const isLargeHome = ms === "3br" || ms === "4br" || ms === "5br_plus"
+  const isHugeHome = ms === "4br" || ms === "5br_plus"
 
   const hasPacking = tier === "estate" && isLargeHome
   if (hasPacking) days += 1
 
-  // Unpack is BUNDLED with move day per calculateEstateDays (the move
-  // day's hours include unpack labour — see estate-schedule.ts where
-  // every plan returns unpackIncluded: true). Adding a separate unpack
-  // day here would expand the schedule to 3 days when calculateEstateDays
-  // says 2 (and would double-bill the labour). Always false; kept as a
-  // named const for code-search readability.
-  const hasUnpacking = false
+  // 4BR+ Estate now splits unpack into its own calendar day (operator
+  // change 2026-06-11; aligns with NAVL / Crown industry standard for
+  // full-service white-glove at this size). 3BR Estate still bundles
+  // unpack into the move day (10-12h combined day). See
+  // calculateEstateDays in estate-schedule.ts for the structural plan
+  // (its `unpackDay` field is the authoritative source).
+  const hasUnpacking = tier === "estate" && isHugeHome
   if (hasUnpacking) days += 1
 
   const hasSpecialtyCrating =
@@ -103,9 +104,15 @@ export function describeMoveScopeAutoReason(input: MoveScopeDetectionInput): str
   const ms = normSize(input.move_size)
   parts.push(formatMoveSizeForReason(ms))
 
-  // Packing/unpacking add-on slugs are intentionally NOT listed here as
-  // day-driving factors. They are flat-fee add-ons (Mode A) and do not
-  // expand the schedule into additional billed days. See detectDayCount.
+  // Structural Estate day-triggers (Mode B, not addon slugs):
+  //   - Estate + 3BR+   → +1 pack day
+  //   - Estate + 4BR+   → +1 unpack day (separate from move day)
+  // Packing/unpacking ADD-ON slugs (full_packing, unpacking) remain Mode
+  // A flat fees and aren't listed here. See detectDayCount.
+  const isLargeHome = ms === "3br" || ms === "4br" || ms === "5br_plus"
+  const isHugeHome = ms === "4br" || ms === "5br_plus"
+  if (tier === "estate" && isLargeHome) parts.push("packing day")
+  if (tier === "estate" && isHugeHome) parts.push("dedicated unpack day")
   const hasSpecialtyCrating =
     input.specialty_items?.some((it) => CRATING_SPECIALTY_TYPES.has(it.type)) ?? false
   if (hasSpecialtyCrating && input.crating_required) parts.push("specialty crating")
@@ -156,12 +163,15 @@ export function computeMoveScopeAddonPreTax(
   // client (the YG-30238 bug). See detectDayCount for the same rule.
   // ─────────────────────────────────────────────────────────────────────────
   const isLargeHome = ms === "3br" || ms === "4br" || ms === "5br_plus"
+  const isHugeHome = ms === "4br" || ms === "5br_plus"
 
   // STRICT auto-trigger: Estate + large home only.
-  // Keep in lockstep with detectDayCount above. hasUnpacking is FALSE —
-  // unpack rolls into move day (see comment in detectDayCount).
+  // 4BR+ Estate adds a SEPARATE unpack day (bill it as a pack-day-rate
+  // line). 3BR Estate still rolls unpack into the move day. Keep in
+  // lockstep with detectDayCount above and the EstateDayPlan.unpackDay
+  // field in src/lib/quotes/estate-schedule.ts.
   const hasPacking = tier === "estate" && isLargeHome
-  const hasUnpacking = false
+  const hasUnpacking = tier === "estate" && isHugeHome
 
   const hasSpecialtyCrating =
     input.specialty_items?.some((it) => CRATING_SPECIALTY_TYPES.has(it.type)) ?? false

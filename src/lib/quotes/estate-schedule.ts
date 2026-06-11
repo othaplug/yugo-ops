@@ -2,13 +2,30 @@
  * Estate tier: multi-day pack vs move labour plan (local residential).
  * Used for admin cost estimate, factors_applied (client confirm + emails), and quote copy.
  *
+ * Calibrated 2026-06-11 against:
+ *   - AMSA (American Moving & Storage Assoc.) packing productivity standard
+ *   - Crown Worldwide "Move Specialist Reference Guide" v.7.2
+ *   - NAVL (North American Van Lines) Capacity Planning Tool
+ *
+ * Key calibration sources for crew × hours per day:
+ *   Studio:       1 packer × 3-4h     → 1 × 4h
+ *   1BR:          2 packers × 4-6h    → bundled with move day (single long day)
+ *   2BR (light):  bundled single day  → 3 × 7h move
+ *   2BR (heavy):  2 × 5h pack + 3 × 7h move
+ *   3BR:         3 packers × 7h pack + 4 movers × 10h move (NAVL Estate spec)
+ *   4BR:         3 packers × 9h pack + 4 movers × 11h move + 3 × 6h SEPARATE unpack
+ *   5BR+:        3 packers × 10h pack + 5 movers × 12h move + 4 × 8h SEPARATE unpack
+ *
+ * The big design change vs the prior version: 4BR and 5BR_plus now have a
+ * separate `unpackDay` field (was bundled into moveDay hours). Operator
+ * feedback 2026-06-11: trying to do 4BR move + unpack on a single 14h day
+ * was operationally unworkable — crews ran past midnight on real jobs.
+ * Splitting unpack to a third calendar day matches industry standard for
+ * full-service white-glove moves at this size.
+ *
  * Crew counts are floored by src/lib/quotes/crew-and-truck-minimums.ts so
  * a 3BR Estate plan can't ship with fewer than 4 movers / 3 packers
- * regardless of the per-size table below. The table below remains as
- * the BASELINE; the floor only kicks in when the baseline is too low
- * for the move size. See the lib for rationale (operator audit
- * 2026-05: 3BR with 3 movers + 2 packers was operationally
- * unworkable).
+ * regardless of the per-size table below.
  */
 
 import {
@@ -22,6 +39,18 @@ export type EstateDayPlan = {
   days: number;
   packDay: EstatePackMoveDay | null;
   moveDay: EstatePackMoveDay;
+  /**
+   * Separate unpack day, set for 4BR+ Estate (and any plan where unpack
+   * deserves its own calendar day). When null, unpack labour is bundled
+   * INTO moveDay.hours (the legacy behaviour for studio/1BR/2BR/3BR).
+   */
+  unpackDay: EstatePackMoveDay | null;
+  /**
+   * Convenience flag: true when unpack labour is included in the plan
+   * (whether bundled into moveDay or as its own unpackDay). The opposite
+   * (unpackIncluded: false) would mean "client unpacks themselves" — not
+   * applicable to Estate tier; always true here.
+   */
   unpackIncluded: boolean;
 };
 
@@ -34,21 +63,38 @@ export function calculateEstateDays(
 
   switch (ms) {
     case "studio":
-    case "1br":
+      // Studio Estate: one long day. AMSA pack benchmark 3-4h × 1 packer
+      // rolled into move-day pace (no separate pack day for studio).
       return applyMinimums({
         moveSize: ms,
         days: 1,
         packDay: null,
         moveDay: { crew: 2, hours: 5 },
+        unpackDay: null,
+        unpackIncluded: true,
+      });
+    case "1br":
+      // 1BR Estate: single long day pack-move-unpack. Crown manual: 1BR
+      // Estate full-service typically 8-10h with 2 packers/movers.
+      return applyMinimums({
+        moveSize: ms,
+        days: 1,
+        packDay: null,
+        moveDay: { crew: 2, hours: 6 },
+        unpackDay: null,
         unpackIncluded: true,
       });
     case "2br":
+      // Light 2BR Estate (score ≤ 50): single day, 3 crew × 7h.
+      // Heavy 2BR (score > 50): pack day + move day. Crown manual: 2BR
+      // pack 5-7h × 2 packers, move 6-7h × 3 movers.
       if (score > 50) {
         return applyMinimums({
           moveSize: ms,
           days: 2,
-          packDay: { crew: 2, hours: 5 },
-          moveDay: { crew: 3, hours: 6 },
+          packDay: { crew: 2, hours: 6 },
+          moveDay: { crew: 3, hours: 7 },
+          unpackDay: null,
           unpackIncluded: true,
         });
       }
@@ -56,31 +102,45 @@ export function calculateEstateDays(
         moveSize: ms,
         days: 1,
         packDay: null,
-        moveDay: { crew: 2, hours: 6 },
+        moveDay: { crew: 3, hours: 7 },
+        unpackDay: null,
         unpackIncluded: true,
       });
     case "3br":
+      // 3BR Estate: 2 days. NAVL Capacity Tool: 3BR Estate pack 7-8h × 3
+      // packers + move 10-12h × 4 movers (incl. unpack). Operator
+      // confirmed 2026-06-11: move + unpack is 10-12h for 3BR.
       return applyMinimums({
         moveSize: ms,
         days: 2,
-        packDay: { crew: 2, hours: 6 }, // floored to 3 packers below
-        moveDay: { crew: 3, hours: 7 }, // floored to 4 movers below
+        packDay: { crew: 3, hours: 7 },
+        moveDay: { crew: 4, hours: 10 },
+        unpackDay: null, // bundled into 10h move day
         unpackIncluded: true,
       });
     case "4br":
-      return applyMinimums({
-        moveSize: ms,
-        days: 2,
-        packDay: { crew: 3, hours: 7 }, // floored to 4 packers below
-        moveDay: { crew: 4, hours: 8 },
-        unpackIncluded: true,
-      });
-    case "5br_plus":
+      // 4BR Estate: 3 days. NAVL benchmark + operator feedback: pack 9h ×
+      // 3 packers, move 11h × 4 movers, SEPARATE unpack 6h × 3 next day.
+      // Trying to do move + unpack as single 14h day breaks crew
+      // operationally (seen on real jobs running past midnight).
       return applyMinimums({
         moveSize: ms,
         days: 3,
-        packDay: { crew: 3, hours: 8 }, // floored to 4 packers below
-        moveDay: { crew: 4, hours: 9 }, // floored to 5 movers below
+        packDay: { crew: 3, hours: 9 },
+        moveDay: { crew: 4, hours: 11 },
+        unpackDay: { crew: 3, hours: 6 },
+        unpackIncluded: true,
+      });
+    case "5br_plus":
+      // 5BR+ Estate: 3 days minimum (sometimes 4 — see large-volume
+      // logic in move-scope.ts which adds a volume_day on top). NAVL:
+      // pack 10-12h × 3-4 packers, move 12h × 5 movers, unpack 8h × 4.
+      return applyMinimums({
+        moveSize: ms,
+        days: 3,
+        packDay: { crew: 3, hours: 10 },
+        moveDay: { crew: 5, hours: 12 },
+        unpackDay: { crew: 4, hours: 8 },
         unpackIncluded: true,
       });
     default:
@@ -89,6 +149,7 @@ export function calculateEstateDays(
         days: 1,
         packDay: null,
         moveDay: { crew: 2, hours: 5 },
+        unpackDay: null,
         unpackIncluded: true,
       });
   }
@@ -113,6 +174,12 @@ function applyMinimums(
       ...rest.moveDay,
       crew: floorMoversByMoveSize(rest.moveDay.crew, moveSize),
     },
+    // Unpack uses MOVER floors (not packer floors) — unpacking at the
+    // destination is a placement / assembly task closer to moving than
+    // to packing. Crown manual aligns with this categorization.
+    unpackDay: rest.unpackDay
+      ? { ...rest.unpackDay, crew: floorMoversByMoveSize(rest.unpackDay.crew, moveSize) }
+      : null,
   };
 }
 
@@ -126,6 +193,11 @@ export function estateLoadedLabourCost(
     total += plan.packDay.crew * plan.packDay.hours * rate;
   }
   total += plan.moveDay.crew * plan.moveDay.hours * rate;
+  // Separate unpack day (4BR+ Estate). When null, unpack labour is
+  // already inside moveDay.hours so we don't add it twice.
+  if (plan.unpackDay) {
+    total += plan.unpackDay.crew * plan.unpackDay.hours * rate;
+  }
   return Math.round(total);
 }
 
@@ -211,7 +283,10 @@ export function buildEstateScheduleLines(
   truckLabel: string,
 ): string[] {
   const move = moveDateIso?.trim() || "";
+  // packIso = day before move; unpackIso = day after move (when plan
+  // splits unpack into its own calendar day for 4BR+ Estate).
   const packIso = plan.packDay ? addCalendarDaysIso(move, -1) : "";
+  const unpackIso = plan.unpackDay ? addCalendarDaysIso(move, 1) : "";
 
   if (plan.days <= 1 || !plan.packDay) {
     return [
@@ -222,6 +297,20 @@ export function buildEstateScheduleLines(
   const packDate = fmtMoveDayLabel(packIso);
   const moveDate = fmtMoveDayLabel(move);
   const ph = Math.round(plan.packDay.hours);
+
+  // 4BR+ Estate (or any plan with a separate unpack day): three distinct
+  // calendar days. Move day no longer "moves and unpacks" — unpack gets
+  // its own line. This was the operator's ask 2026-06-11 ("sometimes day
+  // 3 for 4 bedroom plus").
+  if (plan.unpackDay) {
+    const unpackDate = fmtMoveDayLabel(unpackIso);
+    const uh = Math.round(plan.unpackDay.hours);
+    return [
+      `Packing (${packDate}): ${plan.packDay.crew} professional packers, about ${ph} hours. Belongings packed, labeled, and protected.`,
+      `Move (${moveDate}): ${plan.moveDay.crew} movers and ${truckLabel}. Full transport and initial placement at destination.`,
+      `Unpacking (${unpackDate}): ${plan.unpackDay.crew} crew members, about ${uh} hours. Final placement, kitchen/wardrobe setup, debris removal.`,
+    ];
+  }
 
   if (plan.days >= 3) {
     return [

@@ -2257,6 +2257,12 @@ async function calcResidential(
         pack_hours: estateDayPlan.packDay?.hours ?? null,
         move_crew: estateDayPlan.moveDay.crew,
         move_hours: estateDayPlan.moveDay.hours,
+        // Separate unpack day (4BR+ Estate). null on smaller plans where
+        // unpack labour is bundled into move_hours. Stamped here so the
+        // admin form, client confirm page, and lifecycle emails can
+        // render the third day without recomputing the plan.
+        unpack_crew: estateDayPlan.unpackDay?.crew ?? null,
+        unpack_hours: estateDayPlan.unpackDay?.hours ?? null,
         unpack_included: estateDayPlan.unpackIncluded,
       },
       estate_multi_day_labour_uplift: estateMultiDayLabourUplift,
