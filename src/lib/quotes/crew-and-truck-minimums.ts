@@ -38,7 +38,12 @@ export const TRUCK_MINIMUMS: Record<string, TruckKey> = {
   studio: "sprinter",
   partial: "sprinter",
   "1br": "sprinter",
-  "2br": "16ft",
+  // 2BR floor lowered to sprinter (2026-06-11) — light 2BRs fit in the
+  // Sprinter cargo van (~400 cu ft) and the operator prefers running
+  // the owned vehicle on every job we can. Heavier 2BRs still get
+  // bumped up via the score-based recommender (see
+  // recommendedTruckFromInventoryScore in generate/route.ts).
+  "2br": "sprinter",
   "3br": "24ft",
   "4br": "24ft",
   "5br_plus": "26ft",

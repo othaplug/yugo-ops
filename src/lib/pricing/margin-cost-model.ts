@@ -160,7 +160,20 @@ const TRUCK_DAILY_DEFAULTS: Record<string, number> = {
   none: 0,
 };
 
-/** Per-move truck cost = daily cost / average moves per truck per day. */
+/**
+ * Per-move truck cost = daily cost / average moves per truck per day.
+ *
+ * Owned-vehicle exception (2026-06-11): if `truck_monthly_cost_<type>` is
+ * set > 0, that vehicle is OWNED (lease) and its fixed monthly cost
+ * already flows into Monthly Overhead. The per-job direct-cost line
+ * returns $0 so we don't double-count (lease in OH + day rate per job).
+ * Day rate stays editable in the Fleet panel as the wear-and-tear
+ * charge — but operator decision 2026-06-11 sets wear-and-tear to $0
+ * for the Sprinter (we don't currently charge for it).
+ *
+ * Rented trucks (16ft / 20ft / 26ft with $0 monthly) still bill the
+ * day rate per use — that's the truly-variable cost.
+ */
 export function estimateTruckCostPerMove(truckType: string, config: PricingConfig): number {
   const k = (truckType || "16ft").toLowerCase().replace(/\s+/g, "") as keyof typeof TRUCK_DAILY_CFG_KEYS;
   const normalized =
@@ -168,6 +181,11 @@ export function estimateTruckCostPerMove(truckType: string, config: PricingConfi
       ? k
       : "16ft";
   if (normalized === "none") return 0;
+
+  // Owned vehicle (lease in OH) — return 0 to avoid double-counting.
+  const monthlyKey = `truck_monthly_cost_${normalized}`;
+  const monthly = cfgNum(config, monthlyKey, 0);
+  if (monthly > 0) return 0;
 
   const cfgKey = TRUCK_DAILY_CFG_KEYS[normalized];
   const dailyDefault = TRUCK_DAILY_DEFAULTS[normalized] ?? 100;

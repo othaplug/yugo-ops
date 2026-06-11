@@ -393,12 +393,17 @@ export function estimateLabourFromScore(
   const minHours = MIN_HOURS_BY_SIZE[sizeKey] ?? 3.0;
   totalHours = Math.max(minHours, totalHours);
 
+  // Truck thresholds shifted 2026-06-11 to match engine's score-based
+  // recommender (recommendedTruckFromInventoryScore in generate/route.ts).
+  // Operator prefers running the owned Sprinter on light jobs whenever
+  // it physically fits, leaving rented trucks for jobs that need them.
   const truckScore = options?.truckInventoryScore ?? inventoryScore;
-  let truckSize = "16ft";
-  if (truckScore > 25) truckSize = "20ft";
-  if (truckScore > 50) truckSize = "24ft";
-  if (truckScore > 75) truckSize = "26ft";
-  if (truckScore > 90) truckSize = "26ft + trailer or 2 trucks";
+  let truckSize = "sprinter";
+  if (truckScore > 25) truckSize = "16ft";
+  if (truckScore > 45) truckSize = "20ft";
+  if (truckScore > 65) truckSize = "24ft";
+  if (truckScore > 85) truckSize = "26ft";
+  if (truckScore > 95) truckSize = "26ft + trailer or 2 trucks";
 
   // ±7% range rounded to nearest 0.5 h, capped at 1.5 h span
   const roundHalf = (n: number) => Math.round(n * 2) / 2;

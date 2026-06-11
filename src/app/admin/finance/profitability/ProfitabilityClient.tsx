@@ -402,15 +402,20 @@ const STANDARD_OVERHEAD_FIELDS: {
 const TRUCK_FLEET = [
   {
     key: "sprinter",
-    label: "Sprinter",
-    monthlyDefault: 1300,
-    dailyDefault: 65,
+    label: "Sprinter (owned)",
+    monthlyDefault: 1533,
+    // Sprinter day rate $0 — wear-and-tear not charged (operator
+    // decision 2026-06-11). Lease in Monthly OH.
+    dailyDefault: 0,
   },
-  { key: "16ft", label: "16 ft", monthlyDefault: 1300, dailyDefault: 70 },
-  { key: "20ft", label: "20 ft", monthlyDefault: 1700, dailyDefault: 80 },
+  // Day rate defaults bumped 2026-06-11 to current Toronto rental
+  // market (16ft $100, 20ft $150). Monthly default $0 because these
+  // are rented per-use, not owned.
+  { key: "16ft", label: "16 ft (rental)", monthlyDefault: 0, dailyDefault: 100 },
+  { key: "20ft", label: "20 ft (rental)", monthlyDefault: 0, dailyDefault: 150 },
   {
     key: "26ft",
-    label: "26 ft (per use)",
+    label: "26 ft (rental, per use)",
     monthlyDefault: 0,
     dailyDefault: 295,
   },
@@ -696,12 +701,14 @@ function OverheadEditor({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Derived daily rate for display
+  // Derived daily rate for display.
+  // Owned vehicles (monthly > 0): per-job cost is $0 — lease lives in OH.
+  // Display the dailyDefault (wear-and-tear, currently $0 for the
+  // Sprinter) so the operator sees what the engine charges per job.
+  // Old behaviour computed monthly/days as the day rate, which was
+  // confusing once the model split into owned-in-OH vs rented-per-use.
   const derivedDaily = (key: string): number => {
-    const monthly = parseFloat(truckMonthly[key] ?? "0");
-    const days = parseFloat(truckWorkingDays) || 22;
     const t = TRUCK_FLEET.find((x) => x.key === key);
-    if (monthly > 0) return Math.round((monthly / days) * 100) / 100;
     return t?.dailyDefault ?? 0;
   };
 
@@ -753,19 +760,24 @@ function OverheadEditor({
     onSaved();
   };
 
-  // Bottom-total bug fix (2026-06-10): fleet was being summed into the
-  // monthly overhead total, but Model A treats trucks as direct per-job cost
-  // (recovered via day rates) — not as fixed monthly burn. Including fleet
-  // double-counted Sprinter cost (once in OH, again in per-move truck cost).
-  // The fleet panel below is informational + drives day rates only.
-  const total =
-    Object.values(standard).reduce((s, v) => s + (parseFloat(v) || 0), 0) +
-    customItems.reduce((s, i) => s + i.amount, 0);
-  const truckMonthlyTotal = TRUCK_FLEET.reduce(
+  // Model refinement (2026-06-11 — operator decision): OWNED vehicles
+  // (truck with monthly lease > 0) belong in OH because the lease is
+  // fixed cost paid regardless of utilization. RENTED vehicles
+  // (monthly $0, day rate only) stay variable cost recovered per-job.
+  //
+  // Old Model A excluded ALL fleet — that left the Sprinter's
+  // $1,533/mo lease unrecovered on idle days, bleeding ~$1,100/mo
+  // invisibly. New mixed model: owned in OH, rentals per-job. Per-job
+  // truck cost for owned vehicles returns $0 (see truckDailyRate in
+  // calculateProfit.ts) so we don't double-count.
+  const ownedTruckMonthly = TRUCK_FLEET.reduce(
     (s, t) => s + (parseFloat(truckMonthly[t.key] ?? "0") || 0),
     0,
   );
-  void truckMonthlyTotal; // Kept for potential future display, not summed into total
+  const total =
+    Object.values(standard).reduce((s, v) => s + (parseFloat(v) || 0), 0) +
+    customItems.reduce((s, i) => s + i.amount, 0) +
+    ownedTruckMonthly;
 
   return (
     <div className="space-y-5">
@@ -806,7 +818,7 @@ function OverheadEditor({
 
       {/* Fleet / Truck costs */}
       <div>
-        <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center gap-3 mb-1">
           <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">
             Fleet Monthly Costs
           </div>
@@ -825,6 +837,13 @@ function OverheadEditor({
             />
           </div>
         </div>
+        <p className="text-[10px] text-[var(--tx3)] mb-2 leading-snug">
+          Trucks with a monthly lease set are <strong>owned</strong> — that
+          monthly cost flows into the Overhead total (paid whether or not the
+          truck runs). Per-job cost on owned trucks is $0. Trucks with $0
+          monthly are <strong>rented</strong> — they cost nothing when idle
+          and bill the day rate per use.
+        </p>
         <div className="space-y-2">
           {TRUCK_FLEET.map((t) => (
             <div key={t.key} className="flex items-center gap-3">
@@ -2720,17 +2739,21 @@ export default function ProfitabilityClient() {
                     on the profitability table, the same daily burn is split across actual same-day jobs.
                   </p>
                   <p>
-                    <strong className="text-[var(--tx2)]">Not double-counted with per-job costs.</strong>{" "}
-                    The per-job profit table already subtracts labour (crew × hours × loaded rate),
-                    truck (day rate), fuel (km × rate), and supplies (by move size) from revenue.
-                    Overhead here is everything else: insurance premiums, software, marketing, office,
-                    G&amp;A. Fleet costs below are <strong>informational only</strong> — truck cost
-                    recovery happens per-job via day rates, not in this total.
+                    <strong className="text-[var(--tx2)]">Mixed fleet model — owned in OH, rentals per-job.</strong>{" "}
+                    Per-job profit table subtracts labour (crew × hours × loaded rate),
+                    fuel (km × rate), and supplies (by move size).
+                    For trucks: <strong>owned vehicles</strong> (Fleet panel below with a
+                    monthly lease set) flow their <strong>monthly cost into this overhead total</strong> —
+                    you pay the lease whether the truck runs or not. Per-job truck cost
+                    on owned vehicles is $0. <strong>Rented vehicles</strong> (Fleet
+                    panel monthly $0) bill the day rate per use only.
                   </p>
                   <p className="text-[var(--tx3)]/85">
-                    <em>Heads-up on WSIB:</em> if your loaded crew rate ($28/mover-hr default)
-                    already includes the WSIB premium, leave that field at $0 to avoid
-                    double-counting. If your loaded rate is wage + CPP/EI only, fill in real WSIB.
+                    <em>Heads-up on WSIB:</em> if your loaded crew rate already includes the
+                    WSIB premium, leave that field at $0 to avoid double-counting.
+                    Current default loaded rate derives from per-role wages + payroll
+                    burden (see Crew Wages section), so WSIB is folded in unless you set
+                    it to 0 in burden settings.
                   </p>
                 </div>
                 <OverheadEditor config={overheadConfig} onSaved={fetchData} />

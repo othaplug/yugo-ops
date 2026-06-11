@@ -662,11 +662,17 @@ function recommendedTruckFromInventoryScore(
   score: number,
   moveSize?: string | null,
 ): TruckKey {
+  // Thresholds shifted 2026-06-11 to favour the owned Sprinter on
+  // light jobs (operator preference: run the asset we already own).
+  // Sprinter cargo: ~400 cu ft, comfortably handles studios, most
+  // 1BRs, and light 2BRs (≤ score 25). Heavier loads still upgrade
+  // through 16ft / 20ft / 24ft / 26ft. Floor by move size kicks in
+  // for 3BR+ which always needs a real truck.
   let pick: TruckKey;
-  if (score <= 15) pick = "sprinter";
-  else if (score <= 25) pick = "16ft";
-  else if (score <= 50) pick = "20ft";
-  else if (score <= 75) pick = "24ft";
+  if (score <= 25) pick = "sprinter";
+  else if (score <= 45) pick = "16ft";
+  else if (score <= 65) pick = "20ft";
+  else if (score <= 85) pick = "24ft";
   else pick = "26ft";
   return floorTruckByMoveSize(pick, moveSize);
 }

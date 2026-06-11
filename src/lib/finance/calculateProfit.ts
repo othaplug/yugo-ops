@@ -186,14 +186,21 @@ export function calculateMoveProfitability(
   const distanceKm = Number(move.distance_km ?? 20) || 20;
   const fuel = distanceKm * 2 * cfg(config, "fuel_cost_per_km", 0.35);
 
-  const workingDays = cfg(config, "truck_working_days_per_month", 22);
   const truckDailyRate = (type: string): number => {
+    // Owned-vehicle exception (2026-06-11): when `truck_monthly_cost_<type>`
+    // > 0, the truck is OWNED — its lease flows into Monthly Overhead, so
+    // per-job direct cost is $0 to avoid double-counting. Sprinter
+    // wear-and-tear is currently $0 by operator decision (we don't
+    // charge for it).
+    const monthly = parseFloat(config[`truck_monthly_cost_${type}`] ?? "");
+    if (monthly > 0) return 0;
+    // Rented trucks: bill the per-use day rate.
     const explicit = parseFloat(config[`truck_daily_cost_${type}`] ?? "");
     if (explicit > 0) return explicit;
-    const monthly = parseFloat(config[`truck_monthly_cost_${type}`] ?? "");
-    if (monthly > 0) return Math.round((monthly / workingDays) * 100) / 100;
-    const defaults: Record<string, number> = { sprinter: 65, "16ft": 70, "20ft": 80, "26ft": 295 };
-    return defaults[type] ?? 75;
+    // Industry defaults — bumped 2026-06-11 to match current Toronto
+    // rental market: 16ft $100/day, 20ft $150/day, 26ft $295/day per use.
+    const defaults: Record<string, number> = { sprinter: 0, "16ft": 100, "20ft": 150, "26ft": 295 };
+    return defaults[type] ?? 100;
   };
   const truckType = (move.truck_primary ?? "sprinter").toLowerCase().replace(/[^a-z0-9]/g, "");
   const truckDailyCombined =
@@ -330,7 +337,21 @@ export function getMonthlyOverhead(config: Record<string, string>): number {
     custom = items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
   } catch { /* invalid JSON, skip */ }
 
-  return standard + custom;
+  // Owned-vehicle leases (2026-06-11). Any truck with a non-zero
+  // `truck_monthly_cost_<type>` is an OWNED vehicle whose fixed monthly
+  // cost belongs in overhead (you pay the lease whether or not the truck
+  // runs that day). Rentals stay at $0 monthly and bill per-use.
+  // Operator review: a Sprinter at $1,533/mo running only 7 days per
+  // month was bleeding ~$1,100/mo of unrecovered fixed cost — invisible
+  // until this change. See chat thread 2026-06-11.
+  const ownedFleet =
+    cfg(config, "truck_monthly_cost_sprinter", 0) +
+    cfg(config, "truck_monthly_cost_16ft", 0) +
+    cfg(config, "truck_monthly_cost_20ft", 0) +
+    cfg(config, "truck_monthly_cost_24ft", 0) +
+    cfg(config, "truck_monthly_cost_26ft", 0);
+
+  return standard + custom + ownedFleet;
 }
 
 /**
